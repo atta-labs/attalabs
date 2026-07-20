@@ -12,13 +12,26 @@
 // via globals.css's `@layer base { * { @apply border-border } }`. Using
 // currentColor underlined the pinned header in the foreground colour on every
 // theme — the exact mismatch the rule was meant to prevent.
+//
+// The outer header cells are rounded to match. Sticky mode sets the installed
+// container to `overflow-visible` (scrollable-table.tsx) so the PAGE is the
+// scroll context — but retro is the only library whose installed container is
+// `rounded`, and `overflow: visible` stops a radius from clipping its children.
+// Without this the pinned header's `bg-muted` paints a square corner over the
+// container's rounded one. `rounded-tl`/`rounded-tr` are NOT a hardcoded radius:
+// globals.css's `@theme inline` declares `--radius`, so they compile to
+// `border-radius: var(--radius)` — the same token the container's own `rounded`
+// resolves to, so both track the theme together. `border-radius: inherit` cannot
+// work here (a <th> inherits from <tr>, not the container) and `overflow-hidden`
+// is not an option either: it would trap the sticky header inside the box and
+// defeat page-sticky entirely.
 import type { ComponentProps } from 'react'
 import { cn } from '../../../lib/utils'
 import { Table as InstalledTable, TableCell as InstalledTableCell } from '../installed/table'
 import { makeScrollableTable } from '../../../lib/scrollable-table'
 
 const STICKY_HEADER =
-  '@min-[780px]/tbl:[&_thead_th]:sticky @min-[780px]/tbl:[&_thead_th]:top-0 @min-[780px]/tbl:[&_thead_th]:z-10 @min-[780px]/tbl:[&_thead_th]:bg-muted @min-[780px]/tbl:[&_thead_th]:shadow-[inset_0_-2px_0_0_var(--border)]'
+  '@min-[780px]/tbl:[&_thead_th]:sticky @min-[780px]/tbl:[&_thead_th]:top-0 @min-[780px]/tbl:[&_thead_th]:z-10 @min-[780px]/tbl:[&_thead_th]:bg-muted @min-[780px]/tbl:[&_thead_th]:shadow-[inset_0_-2px_0_0_var(--border)] @min-[780px]/tbl:[&_thead_th:first-child]:rounded-tl @min-[780px]/tbl:[&_thead_th:last-child]:rounded-tr'
 
 export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)
 export type { ScrollableTableProps as TableProps } from '../../../lib/scrollable-table'
