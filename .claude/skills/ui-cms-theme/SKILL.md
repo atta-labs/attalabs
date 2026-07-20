@@ -74,6 +74,8 @@ theme defined.
 tuned themes, and switching library re-selects a compatible theme rather than
 leaving a broken pairing in place.
 
+The two flagged themes are seeded by `packages/cms/scripts/seed-neobrutalist-themes.ts` (`bun run seed:neobrutalist-themes`), so their values are reproducible into a fresh dataset rather than living only in published documents.
+
 **The flag is explicit, never derived.** Deriving it from "has a `shadowColor`"
 would let a theme drift into the neobrutalist list because someone set an unrelated
 field, and the real requirement — a border solid enough to contrast with that
