@@ -45,7 +45,7 @@ Sanity CMS
 
 ---
 
-### Colour-group fields that are not surfaces (D-130)
+### Colour-group fields that are not surfaces (D-131)
 
 Three fields in the `light`/`dark` colour groups do not name a surface or an ink. They
 exist because the vendored neobrutalist components reference them and the theme system

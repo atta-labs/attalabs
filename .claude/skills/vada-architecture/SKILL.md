@@ -137,7 +137,7 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 
 ---
 
-## UI token roles (D-130)
+## UI token roles (D-131)
 
 Vāda renders through `@atta/ui` and follows the repo-wide token-role doctrine:
 **`accent` is a surface, `primary` is the highlight.** The neobrutalist libraries use
