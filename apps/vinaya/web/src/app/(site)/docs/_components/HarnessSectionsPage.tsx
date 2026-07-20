@@ -94,7 +94,7 @@ function SectionBlock({ section }: { section: HarnessSection }) {
           target='_blank'
           rel='noreferrer'
           variant='link'
-          className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-accent'
+          className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-primary'
         >
           View source
           <ArrowUpRight className='h-3.5 w-3.5' />

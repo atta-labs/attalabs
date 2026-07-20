@@ -57,15 +57,15 @@ type IterationCardProps = {
 }
 
 export function IterationCard({ iteration: it, href, showProjects = false }: IterationCardProps) {
-  const wrapperClassName = 'rounded-lg border border-border bg-card transition-colors hover:border-accent group block'
+  const wrapperClassName = 'rounded-lg border border-border bg-card transition-colors hover:border-primary group block'
 
   const content = (
-    <Card className='border-0 bg-transparent'>
+    <Card className='transition-colors group-hover:border-primary'>
       <CardHeader className='pb-2'>
         <CardTitle className='flex items-center justify-between font-serif text-xl text-card-foreground'>
           <span>{it.name}</span>
           {href ? (
-            <ArrowRight className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent' />
+            <ArrowRight className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary' />
           ) : null}
         </CardTitle>
       </CardHeader>

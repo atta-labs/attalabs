@@ -103,7 +103,7 @@ export default async function HomePage() {
                 href={`/studio/projects/${project.name}`}
                 className='group flex items-baseline justify-between gap-2 font-mono text-xs text-muted-foreground'
               >
-                <span className='text-card-foreground group-hover:text-accent'>{project.name}</span>
+                <span className='text-card-foreground group-hover:text-primary'>{project.name}</span>
                 <span className='truncate text-muted-foreground/70'>{project.path}</span>
               </NextLink>
             ))
@@ -121,7 +121,7 @@ export default async function HomePage() {
               const href = iterationHref(it)
               const row = (
                 <>
-                  <span className='truncate text-card-foreground group-hover:text-accent'>{it.name}</span>
+                  <span className='truncate text-card-foreground group-hover:text-primary'>{it.name}</span>
                   <span className='shrink-0 text-muted-foreground/70'>
                     {it.taskCounts.forgeAvailable ? `${it.taskCounts.done}/${it.taskCounts.total}` : `${it.taskCount}`}
                   </span>

@@ -27,7 +27,7 @@ export function DashboardCard({
   children: ReactNode
 }) {
   return (
-    <Card className='flex flex-col border border-border bg-card'>
+    <Card className='flex flex-col'>
       <CardHeader className='pb-3'>
         <CardTitle className='flex items-baseline justify-between gap-2 font-serif text-xl text-card-foreground'>
           <span>{title}</span>
@@ -40,7 +40,7 @@ export function DashboardCard({
           <NextLink
             variant='unstyled'
             href={href}
-            className='group inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-accent'
+            className='group inline-flex items-center gap-1 font-mono text-xs text-muted-foreground transition-colors hover:text-primary'
           >
             {viewAllLabel}
             <ArrowRight className='size-3 transition-transform group-hover:translate-x-0.5' />

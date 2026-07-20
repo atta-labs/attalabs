@@ -100,11 +100,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
   return (
     <div className='space-y-8'>
       <nav className='font-mono text-xs text-muted-foreground'>
-        <NextLink variant='unstyled' href='/studio/projects' className='hover:text-accent'>
+        <NextLink variant='unstyled' href='/studio/projects' className='hover:text-primary'>
           projects
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={`/studio/projects/${project.name}`} className='hover:text-accent'>
+        <NextLink variant='unstyled' href={`/studio/projects/${project.name}`} className='hover:text-primary'>
           {project.name}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
@@ -115,9 +115,9 @@ export default async function IterationPage({ params }: { params: Promise<Params
         <div className='flex items-center gap-3'>
           <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Iteration</p>
           {archived ? (
-            <Badge className='bg-muted/40 text-muted-foreground border-border'>Archived</Badge>
+            <Badge className='bg-muted/40 text-muted-foreground'>Archived</Badge>
           ) : (
-            <Badge className='bg-success/10 text-success border-success/40'>Active</Badge>
+            <Badge className='bg-success/10 text-success'>Active</Badge>
           )}
         </div>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>{iteration.name || slug}</h1>
@@ -159,7 +159,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
           // shell scroll horizontally on a narrow viewport. Card has NO
           // `overflow-hidden`: the pinned header must be free to escape it to stick
           // to the shell, and horizontal overflow must reach the shell to scroll.
-          <div className='rounded-lg border border-border bg-card'>
+          <div>
             <Table
               stickyHeader
               className='min-w-[760px] table-fixed'
@@ -221,7 +221,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                                 href={issueUrl(task.issue) as string}
                                 target='_blank'
                                 rel='noreferrer'
-                                className='hover:text-accent hover:underline'
+                                className='hover:text-primary hover:underline'
                               >
                                 #{task.issue}
                               </a>
@@ -245,7 +245,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                                     href={reviewPr.url}
                                     target='_blank'
                                     rel='noreferrer'
-                                    className='block font-mono text-xs text-muted-foreground hover:text-accent hover:underline'
+                                    className='block font-mono text-xs text-muted-foreground hover:text-primary hover:underline'
                                   >
                                     PR #{reviewPr.number}
                                   </a>
@@ -326,7 +326,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
         ) : (
           // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
           // No card `overflow-hidden` so the pinned header can stick to the shell.
-          <div className='rounded-lg border border-border bg-card'>
+          <div>
             <Table stickyHeader className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
               <TableHeader>
                 <TableRow>

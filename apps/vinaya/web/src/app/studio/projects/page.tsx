@@ -30,13 +30,13 @@ export default async function ProjectsPage() {
               key={project.name}
               variant='unstyled'
               href={`/studio/projects/${project.name}`}
-              className='group block rounded-lg border border-border bg-card transition-colors hover:border-accent'
+              className='group block rounded-lg border border-border bg-card transition-colors hover:border-primary'
             >
-              <Card className='border-0 bg-transparent'>
+              <Card className='transition-colors group-hover:border-primary'>
                 <CardHeader className='pb-2'>
                   <CardTitle className='flex items-center justify-between font-serif text-xl text-card-foreground'>
                     <span>{project.name}</span>
-                    <ArrowRight className='size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent' />
+                    <ArrowRight className='size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary' />
                   </CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-1 font-mono text-xs text-muted-foreground'>

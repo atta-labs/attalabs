@@ -54,55 +54,55 @@ type StatusVisual = {
 const STATUS_VISUALS: Record<DerivedStatus, StatusVisual> = {
   backlog: {
     label: 'Backlog',
-    badgeClass: 'bg-muted/40 text-muted-foreground border-border',
+    badgeClass: 'bg-muted/40 text-muted-foreground',
     accentClass: 'border-border',
     description: 'Not dispatched yet.'
   },
   todo: {
     label: 'Todo',
-    badgeClass: 'bg-muted/40 text-foreground border-border',
+    badgeClass: 'bg-muted/40 text-foreground',
     accentClass: 'border-border',
     description: 'Assigned, awaiting branch.'
   },
   'in-flight': {
     label: 'In-flight',
-    badgeClass: 'bg-primary/15 text-primary border-primary/50',
+    badgeClass: 'bg-primary/15 text-primary',
     accentClass: 'border-primary/50',
     description: 'Branch open, no PR yet.'
   },
   'in-review': {
     label: 'In review',
-    badgeClass: 'bg-accent/15 text-accent border-accent/50',
-    accentClass: 'border-accent/50',
+    badgeClass: 'bg-primary/15 text-primary',
+    accentClass: 'border-primary/50',
     description: 'PR open, awaiting review.'
   },
   'changes-requested': {
     label: 'Changes requested',
-    badgeClass: 'bg-warning/10 text-warning border-warning/40',
+    badgeClass: 'bg-warning/10 text-warning',
     accentClass: 'border-warning/40',
     description: 'Reviewer asked for changes.'
   },
   merged: {
     label: 'Merged',
-    badgeClass: 'bg-success/25 text-success border-success/70',
+    badgeClass: 'bg-success/25 text-success',
     accentClass: 'border-success/70',
     description: 'PR merged.'
   },
   dropped: {
     label: 'Dropped',
-    badgeClass: 'bg-muted/40 text-muted-foreground border-border',
+    badgeClass: 'bg-muted/40 text-muted-foreground',
     accentClass: 'border-border',
     description: 'Issue closed NOT_PLANNED — legitimately abandoned. No action needed.'
   },
   incoherent: {
     label: 'Incoherent',
-    badgeClass: 'bg-destructive/30 text-destructive border-destructive/80',
+    badgeClass: 'bg-destructive/30 text-destructive',
     accentClass: 'border-destructive/80',
     description: 'Closed COMPLETED but no merged PR — governance signal broken. Needs human investigation.'
   },
   blocked: {
     label: 'Blocked',
-    badgeClass: 'bg-destructive/20 text-destructive border-destructive/60',
+    badgeClass: 'bg-destructive/20 text-destructive',
     accentClass: 'border-destructive/60',
     description: '`aeg:blocked` label set on the Issue.'
   }
@@ -142,14 +142,14 @@ export function todoDispatchVisual(result: DispatchResult): TodoDispatchVisual {
   if (result.ready) {
     return {
       label: 'Ready',
-      badgeClass: 'bg-success/10 text-success border-success/40',
+      badgeClass: 'bg-success/10 text-success',
       title: 'Dispatch gate passes — dispatchable right now.'
     }
   }
   const refs = extractBlockerRefs(result.blockers)
   return {
     label: refs.length > 0 ? `Blocked · needs ${refs.join(' ')}` : 'Blocked',
-    badgeClass: 'bg-destructive/10 text-destructive border-destructive/40',
+    badgeClass: 'bg-destructive/10 text-destructive',
     title: result.blockers.join('\n')
   }
 }

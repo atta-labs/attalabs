@@ -67,7 +67,7 @@ export function HarnessCard({ kindTag, title, badges, detail, guards, href }: Ha
           <NextLink
             href={href}
             variant='link'
-            className='mt-auto inline-flex w-fit items-center gap-1 pt-1 text-card-foreground text-sm hover:text-accent'
+            className='mt-auto inline-flex w-fit items-center gap-1 pt-1 text-card-foreground text-sm hover:text-primary'
           >
             Read the doctrine
             <ArrowUpRight className='h-3.5 w-3.5' />
