@@ -3,10 +3,15 @@
  *
  * An iteration's board lives under a project (`/studio/projects/<project>/…`),
  * so an iteration with no project has no board route to point at. That is a
- * real state, not an error: `projects` is derived from the `project:<name>`
- * labels on the iteration's `iteration:<slug>`-labelled Issues, and an
- * iteration whose Issues carry no `project:*` label at all (live example at
- * time of writing: `state-machine-v1`) legitimately resolves to `[]`.
+ * real state, not an error. `projects` is the union of TWO sources on the
+ * iteration's `iteration:<slug>`-labelled Issues: the `project:<name>` labels
+ * AND each Issue body's `**Project:**` field (`@atta/aeg-forge-state`'s
+ * `list-tasks.ts`). An iteration resolves to `[]` only when BOTH are absent —
+ * a missing `project:*` label alone is not enough, since the field still
+ * resolves a board (`state-machine-v1` carries no such label and resolves via
+ * its field). Live board-less example at time of writing:
+ * `admin-ui-library-picker-v1`, whose one Issue has no label and whose field
+ * says the project is none.
  *
  * Both halves live here because the href derivation was duplicated verbatim in
  * `studio/page.tsx` and `studio/iterations/IterationsTabs.tsx`, and the reason
