@@ -1,8 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button as BasicButton, Card as BasicCard } from '@atta/ui/components'
-import { useComponents } from '@atta/ui/lib/library-provider'
+import { Button, Card } from '@atta/ui/components'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
 import { usePortalPreview } from '@/hooks/usePortalPreview'
@@ -71,9 +70,13 @@ export function ThemeBrowser({
   currentFontSans: string | null
   username: string
 }) {
-  const comps = useComponents()
-  const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
-  const Card = (comps.Card as typeof BasicCard | undefined) ?? BasicCard
+  // D-035: owner chrome renders the BUILD-TIME library. `Button`/`Card` come
+  // from the FLAT `@atta/ui/components` import, which herald's next.config.ts
+  // aliases to `packages/ui/generated/herald/components.ts` — same path
+  // HeraldTopBar uses. Resolving them through `useComponents()` instead meant
+  // the runtime map returned `{}` until its dynamic import landed and these
+  // fell back to basic's frameless Card, so the theme rows rendered flat while
+  // the topbar beside them carried the chrome library's frame.
 
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId)
   const [schemeByTheme, setSchemeByTheme] = useState<Record<string, ColorScheme>>(() => {
