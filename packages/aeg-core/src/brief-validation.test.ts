@@ -19,6 +19,7 @@ import {
   checkWorktreeStep0,
   headerRegion
 } from './brief-validation'
+import { EOLS, FENCE_DELIMS, fenceShapes } from './fixtures/fence-shapes'
 import { readTierFromPrBody } from './pr-tier'
 
 const WELL_FORMED = `
@@ -334,48 +335,34 @@ describe('checkClosesN', () => {
  * a dimension here, not another one-off `it`.
  */
 describe('checkClosesN — fence matrix', () => {
-  const EOLS = [
-    ['LF', '\n'],
-    ['CRLF', '\r\n']
-  ] as const
-  const FENCES = [
-    ['backtick', '`'],
-    ['tilde', '~']
-  ] as const
-  const LENGTHS = [3, 4, 6] as const
+  // Shapes come from the shared enumeration (`fixtures/fence-shapes.ts`), not a
+  // local table: `anchored-region.test.ts` iterates the same list against
+  // `maskCode`, so a dimension added there covers both consumers at once.
+  for (const { name, open, close, eol } of fenceShapes()) {
+    it(`${name}: closed fence hides Closes #5`, () => {
+      expect(checkClosesN(['Summary.', '', open, 'Closes #5', close, ''].join(eol)).status).toBe('fail')
+    })
 
+    it(`${name}: unclosed fence hides Closes #5 to EOF`, () => {
+      expect(checkClosesN(['Summary.', '', open, 'Closes #5'].join(eol)).status).toBe('fail')
+    })
+
+    it(`${name}: a real bare Closes #5 outside the fence still passes`, () => {
+      const body = ['Ships it. Closes #5', '', open, 'Example: Closes #99', close, ''].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+
+    it(`${name}: a longer closer still closes the fence`, () => {
+      const longer = close[0]?.repeat(close.length + 2) as string
+      const body = ['Ships it. Closes #5', '', open, 'x', longer, '', 'tail'].join(eol)
+      expect(checkClosesN(body).status).toBe('pass')
+    })
+  }
+
+  // Rules below are properties of the fence *scanner* rather than of a shape,
+  // so they stay here rather than multiplying the shared matrix.
   for (const [eolName, eol] of EOLS) {
-    for (const [fenceName, ch] of FENCES) {
-      for (const len of LENGTHS) {
-        const fence = ch.repeat(len)
-        const info = ch === '`' ? 'js' : 'js x'
-
-        it(`${eolName}/${fenceName}×${len}: closed fence hides Closes #5`, () => {
-          const body = ['Summary.', '', fence, 'Closes #5', fence, ''].join(eol)
-          expect(checkClosesN(body).status).toBe('fail')
-        })
-
-        it(`${eolName}/${fenceName}×${len}: fence with info string hides Closes #5`, () => {
-          const body = ['Summary.', '', fence + info, 'Closes #5', fence, ''].join(eol)
-          expect(checkClosesN(body).status).toBe('fail')
-        })
-
-        it(`${eolName}/${fenceName}×${len}: unclosed fence hides Closes #5 to EOF`, () => {
-          const body = ['Summary.', '', fence, 'Closes #5'].join(eol)
-          expect(checkClosesN(body).status).toBe('fail')
-        })
-
-        it(`${eolName}/${fenceName}×${len}: a real bare Closes #5 outside the fence still passes`, () => {
-          const body = ['Ships it. Closes #5', '', fence, 'Example: Closes #99', fence, ''].join(eol)
-          expect(checkClosesN(body).status).toBe('pass')
-        })
-
-        it(`${eolName}/${fenceName}×${len}: a longer closer still closes the fence`, () => {
-          const body = ['Ships it. Closes #5', '', fence, 'x', ch.repeat(len + 2), '', 'tail'].join(eol)
-          expect(checkClosesN(body).status).toBe('pass')
-        })
-      }
-
+    for (const [fenceName, ch] of FENCE_DELIMS) {
       it(`${eolName}/${fenceName}: a shorter run cannot close a longer fence`, () => {
         const body = ['Summary.', '', ch.repeat(5), 'Closes #5', ch.repeat(3), ''].join(eol)
         expect(checkClosesN(body).status).toBe('fail')

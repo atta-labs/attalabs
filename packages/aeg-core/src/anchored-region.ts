@@ -49,13 +49,35 @@ export const ANCHOR_FIELDS = ['CLOSES', 'PROJECT', 'TIER', 'PREMISE', 'TEST-PLAN
 export type AnchorField = (typeof ANCHOR_FIELDS)[number]
 
 /**
- * Replaces fenced code blocks and inline code spans with same-length filler so
- * marker *positions* can be searched code-blind while every index still maps
- * 1:1 onto the original body (the returned region is always sliced from the
- * original, never from the mask).
+ * Replaces fenced code blocks, indented code blocks, and inline code spans with
+ * same-length filler so marker *positions* can be searched code-blind while
+ * every index still maps 1:1 onto the original body (the returned region is
+ * always sliced from the original, never from the mask).
+ *
+ * **This is the same code recognition as `stripCode`, and must stay so.** It ran
+ * on the naive `` /```[\s\S]*?```/g `` + single-backtick regexes long after
+ * `stripCode` was hardened off them, 27 lines below in this same file — so a
+ * decoy `AEG:CLOSES` anchor inside a tilde fence, a ≥4-backtick fence, or a
+ * double-backtick span was invisible to the mask, won `anchoredRegion`, and
+ * `extractClosesReferences`/`extractIssue` then resolved a *wrong* Issue number
+ * (PR #617 review). That is worse than the strandings this PR exists to fix: the
+ * post-merge Archivist reads `extractIssue` to explicitly close the Issue, so
+ * the failure mode is closing an unrelated Issue, not failing to close one. The
+ * two functions differ **only** in what they emit for a code line — filler here,
+ * nothing in `stripCode` — which is why both delegate to the same scanners
+ * rather than each carrying a copy of the grammar. A divergence between them is
+ * a bug by construction, not a style difference.
+ *
+ * Unlike `stripCode`, this one **must not normalise line endings**: doing so
+ * would change the body's length and break the 1:1 index mapping that is this
+ * function's entire purpose. The fence patterns therefore tolerate a trailing
+ * `\r` themselves, and the filler covers it (a masked `\r` becomes a space —
+ * same length, and the mask is never read as text, only searched for marker
+ * positions).
  */
 function maskCode(body: string): string {
-  return body.replace(/```[\s\S]*?```/g, (m) => ' '.repeat(m.length)).replace(/`[^`\n]*`/g, (m) => ' '.repeat(m.length))
+  const fill = (line: string) => ' '.repeat(line.length)
+  return maskIndentedCode(maskFencedCode(body, fill), fill).replace(/(`+)[^\n]*?\1/g, (m) => ' '.repeat(m.length))
 }
 
 /**
@@ -77,27 +99,44 @@ function maskCode(body: string): string {
  * instead peeled the outer backticks as two empty spans and left the inner
  * `Closes #5` surviving as bare text (a false-green: passed the gate, but
  * GitHub, seeing a code span, refused to auto-close — PR #617 review). Fenced
- * blocks are stripped first (see `stripFencedCode`) so a fence line is never
+ * blocks are stripped first (see `maskFencedCode`) so a fence line is never
  * mis-read as an inline span; 4-space **indented** code blocks are stripped in
- * between (see `stripIndentedCode`).
+ * between (see `maskIndentedCode`).
  */
 export function stripCode(body: string): string {
-  // Normalise line endings FIRST. The line scanners below anchor with `$`, and
+  // Normalise line endings FIRST. The line scanners below anchor per line, and
   // JS's `.`/`[ \t]` never match `\r`, so a CRLF body would open no fence at all
   // and let a fenced `Closes #N` walk free (PR #617 security re-pass). Doing it
   // once here keeps every sub-stripper line-ending agnostic, rather than
-  // teaching each individual regex about `\r` and missing the next one.
+  // teaching each individual regex about `\r` and missing the next one. (The
+  // fence patterns tolerate a trailing `\r` anyway, for `maskCode`, which cannot
+  // normalise without breaking its index mapping — belt and braces, not dead
+  // code: `maskIndentedCode`'s blank-line and indent reads also want LF here.)
   const normalised = body.replace(/\r\n?/g, '\n')
-  return stripIndentedCode(stripFencedCode(normalised)).replace(/(`+)[^\n]*?\1/g, '')
+  const blank = () => ''
+  return maskIndentedCode(maskFencedCode(normalised, blank), blank).replace(/(`+)[^\n]*?\1/g, '')
 }
 
-/** An opening code fence: ≤3 leading spaces, then a run of ≥3 backticks or ≥3 tildes, then an info string. */
-const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/
-/** A candidate closing fence: ≤3 leading spaces, a bare run of fence chars, nothing but whitespace after. */
-const FENCE_CLOSE = /^ {0,3}(`+|~+)[ \t]*$/
+/**
+ * What a scanner emits in place of one code line: `''` for `stripCode` (removal),
+ * same-length filler for `maskCode` (index-preserving). The single knob the two
+ * differ on — everything else about code recognition is shared.
+ */
+type LineFill = (line: string) => string
 
 /**
- * Blanks CommonMark **fenced code blocks**, matching a fence to its own closer
+ * An opening code fence: ≤3 leading spaces, then a run of ≥3 backticks or ≥3
+ * tildes, then an info string. `[^\r\n]*` + `\r?$` rather than `.*$` so a CRLF
+ * body opens a fence for `maskCode`, which cannot normalise (`stripCode`
+ * normalises first, so this is redundant there and load-bearing here).
+ */
+const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
+/** A candidate closing fence: ≤3 leading spaces, a bare run of fence chars, nothing but whitespace after. */
+const FENCE_CLOSE = /^ {0,3}(`+|~+)[ \t]*\r?$/
+
+/**
+ * Blanks (`stripCode`) or same-length-masks (`maskCode`) CommonMark **fenced
+ * code blocks**, matching a fence to its own closer
  * by character *and* run length.
  *
  * Replaces an earlier `` /```[\s\S]*?```/g `` regex that got three cases wrong
@@ -118,7 +157,7 @@ const FENCE_CLOSE = /^ {0,3}(`+|~+)[ \t]*$/
  * also renders it, so a `Closes #N` after a stray fence is genuinely inside
  * code and must not count.
  */
-function stripFencedCode(body: string): string {
+function maskFencedCode(body: string, fill: LineFill): string {
   let fenceChar: string | null = null
   let fenceLen = 0
 
@@ -133,14 +172,14 @@ function stripFencedCode(body: string): string {
         if (marker[0] === '`' && (open[2] as string).includes('`')) return line
         fenceChar = marker[0] as string
         fenceLen = marker.length
-        return ''
+        return fill(line)
       }
       const close = line.match(FENCE_CLOSE)
       if (close && (close[1] as string)[0] === fenceChar && (close[1] as string).length >= fenceLen) {
         fenceChar = null
         fenceLen = 0
       }
-      return ''
+      return fill(line)
     })
     .join('\n')
 }
@@ -160,7 +199,8 @@ function indentWidth(line: string): number {
 }
 
 /**
- * Blanks CommonMark **indented code blocks** (a run of ≥4-column-indented lines
+ * Blanks (`stripCode`) or same-length-masks (`maskCode`) CommonMark **indented
+ * code blocks** (a run of ≥4-column-indented lines
  * that begins after a blank line), so an indented `Closes #N` is ignored exactly
  * as GitHub's auto-close parser ignores it.
  *
@@ -178,7 +218,7 @@ function indentWidth(line: string): number {
  *     that a genuine indented code block nested inside a list is left unstripped
  *     (a false-green in that rare shape) — the safe direction of the trade.
  */
-function stripIndentedCode(body: string): string {
+function maskIndentedCode(body: string, fill: LineFill): string {
   const lines = body.split('\n')
   let inList = false
   let inCode = false
@@ -194,7 +234,7 @@ function stripIndentedCode(body: string): string {
     if (indent >= 4 && (inCode || (prevBlank && !inList))) {
       inCode = true
       prevBlank = false
-      return '' // blank the code line, keeping line count stable
+      return fill(line) // blank/mask the code line, keeping line count stable
     }
 
     inCode = false
