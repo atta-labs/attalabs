@@ -116,7 +116,30 @@ function maskCode(body: string): string {
  * works on stripped text, and a decoy anchor inside code never survives to be
  * sliced at all.
  */
-export function stripCode(body: string): string {
+/**
+ * How `stripCode` treats **inline** code spans. Block code (fences, indented
+ * blocks) is always stripped — that is the quoted-example case every caller
+ * wants blinded.
+ *
+ * - `'strip'` (default) — the D-078/#617 shape: spans go too, because a
+ *   `` `Closes #5` `` is code to GitHub's auto-close parser and must be to this
+ *   one. Every existing caller relies on it; the default never changes.
+ * - `'keep'` — block-blind, span-aware. For checks whose subject *is* a path,
+ *   because prose writes paths in backticks by convention: a rationale saying
+ *   "edits `packages/ui`" is declaring its surface, not quoting an example, and
+ *   a span-blind scan of it finds nothing at all (`checkBlastRadiusScope` /
+ *   `checkRationaleNamesDocs`, issue-validation.ts). The span's delimiting
+ *   backticks are left in place — no second regex exists to peel them, and
+ *   every consumer matches on path-token boundaries, for which a backtick is
+ *   already a boundary character.
+ *
+ * The knob lives here rather than in the callers so "one stripper, never a
+ * duplicated regex" stays literally true: both modes run the same fence,
+ * indent, and span patterns, and a future fix to any of them lands on both.
+ */
+export type StripCodeOptions = { inlineSpans?: 'strip' | 'keep' }
+
+export function stripCode(body: string, options: StripCodeOptions = {}): string {
   // Normalise line endings FIRST. The line scanners below anchor per line, and
   // JS's `.`/`[ \t]` never match `\r`, so a CRLF body would open no fence at all
   // and let a fenced `Closes #N` walk free (PR #617 security re-pass). Doing it
@@ -127,7 +150,9 @@ export function stripCode(body: string): string {
   // code: `maskIndentedCode`'s blank-line and indent reads also want LF here.)
   const normalised = body.replace(/\r\n?/g, '\n')
   const blank = () => ''
-  return maskIndentedCode(maskFencedCode(normalised, blank), blank).replace(/(`+)[^\n]*?\1/g, '')
+  const blocksStripped = maskIndentedCode(maskFencedCode(normalised, blank), blank)
+  if (options.inlineSpans === 'keep') return blocksStripped
+  return blocksStripped.replace(/(`+)[^\n]*?\1/g, '')
 }
 
 /**
