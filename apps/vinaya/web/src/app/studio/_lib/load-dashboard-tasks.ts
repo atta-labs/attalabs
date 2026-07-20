@@ -34,6 +34,7 @@ import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
 import { loadActiveIterations } from '@/lib/repo-state'
 import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
+import { boardHref } from '@/app/studio/_lib/iteration-href'
 
 export type TaskCategory = 'ready' | 'blocked' | 'in-flight' | 'in-review' | 'changes-requested' | 'backlog'
 
@@ -94,7 +95,7 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
           snapshot.repo && task.issue != null
             ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
             : null
-        const iterationHref = task.projects[0] ? `/studio/projects/${task.projects[0]}/iterations/${fileSlug}` : null
+        const iterationHref = boardHref(task.projects, fileSlug)
         const base = {
           iterationSlug: fileSlug,
           iterationHref,

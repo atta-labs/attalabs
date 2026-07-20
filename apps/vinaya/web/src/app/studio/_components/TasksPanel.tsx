@@ -5,6 +5,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { DashboardTask, TaskCategory } from '@/app/studio/_lib/load-dashboard-tasks'
+import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
 
 /**
  * The dashboard's Tasks card body (task 11 #571) — every Ready / active /
@@ -126,7 +127,11 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                         {task.iterationSlug}
                       </NextLink>
                     ) : (
-                      task.iterationSlug
+                      // No project → no board route. Say why, rather than
+                      // rendering the slug as an unexplained dead label.
+                      <span className='cursor-help' title={NO_BOARD_REASON}>
+                        {task.iterationSlug}
+                      </span>
                     )}
                   </span>
                 )}

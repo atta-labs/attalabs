@@ -17,11 +17,28 @@
 
 import type { IterationSummary } from '@/lib/repo-state'
 
-/** Shown as a `title=` tooltip, and inline on the iteration card. */
-export const NO_BOARD_REASON = 'No board — no task in this iteration declares a project.'
+/** Shown as a `title=` tooltip, and inline on the iteration card.
+ *
+ * Deliberately says "no project is declared" rather than "no task declares a
+ * project": `projects` is also `[]` for an iteration with no tasks at all (an
+ * open Milestone with no Issues cut yet), and a reason that asserts tasks exist
+ * would be its own small lie in exactly the case this string is meant to
+ * explain honestly. */
+export const NO_BOARD_REASON = 'No board — no project is declared for this iteration.'
+
+/**
+ * The one board-route builder. Takes the project list rather than a summary so
+ * the Tasks card — which resolves a board href per *task* (`task.projects`),
+ * not per iteration summary — shares this exact rule instead of re-deriving it.
+ * An empty first project is treated as absent: a `project:` label with no name
+ * would otherwise build `/studio/projects//iterations/<slug>`.
+ */
+export function boardHref(projects: readonly string[], fileSlug: string): string | null {
+  const project = projects[0]
+  return project ? `/studio/projects/${project}/iterations/${fileSlug}` : null
+}
 
 /** An iteration's board href — its first project's detail route, or null. */
 export function iterationHref(it: IterationSummary): string | null {
-  const project = it.projects[0]
-  return project ? `/studio/projects/${project}/iterations/${it.fileSlug}` : null
+  return boardHref(it.projects, it.fileSlug)
 }
