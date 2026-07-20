@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button as BasicButton } from '@atta/ui/components'
+import { Button as BasicButton, Card as BasicCard } from '@atta/ui/components'
 import { useComponents } from '@atta/ui/lib/library-provider'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import type { ThemeData } from '@atta/ui/lib/preview-theme-utils'
@@ -73,6 +73,7 @@ export function ThemeBrowser({
 }) {
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
+  const Card = (comps.Card as typeof BasicCard | undefined) ?? BasicCard
 
   const [selectedId, setSelectedId] = useState<string | null>(currentThemeId)
   const [schemeByTheme, setSchemeByTheme] = useState<Record<string, ColorScheme>>(() => {
@@ -197,7 +198,7 @@ export function ThemeBrowser({
             const hasBoth = schemes?.hasDark && schemes?.hasLight
 
             return (
-              <div
+              <Card
                 key={theme._id}
                 role='button'
                 tabIndex={0}
@@ -208,7 +209,7 @@ export function ThemeBrowser({
                     handleSelect(theme._id)
                   }
                 }}
-                className={`mx-2 my-1.5 flex cursor-pointer items-center gap-3 rounded px-4 py-3 text-left transition-colors ${
+                className={`mx-2 my-1.5 flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors ${
                   isSelected ? 'bg-primary/10' : 'hover:bg-foreground/5'
                 }`}
               >
@@ -242,7 +243,7 @@ export function ThemeBrowser({
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>
