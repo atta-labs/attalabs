@@ -17,7 +17,9 @@ import {
   checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
-  headerRegion
+  headerRegion,
+  inferBranchFromBody,
+  isBriefShaped
 } from './brief-validation'
 import { EOLS, FENCE_DELIMS, fenceShapes } from './fixtures/fence-shapes'
 import { readTierFromPrBody } from './pr-tier'
@@ -536,6 +538,93 @@ describe('checkBriefSections', () => {
     expect(errors).toHaveLength(2)
     expect(errors[0]).toMatch(/Project/)
     expect(errors[1]).toMatch(/For/)
+  })
+})
+
+describe('isBriefShaped', () => {
+  it('detects a real brief', () => {
+    expect(isBriefShaped(WELL_FORMED)).toBe(true)
+  })
+
+  it('still detects a brief that is MISSING its documentation-update list', () => {
+    // The exact live failure this gate exists for: a standalone fix brief
+    // shipped with no §7 list. Detection must survive the omission it catches,
+    // or the gate silently exempts precisely the bodies it should grade.
+    const withoutDocList = WELL_FORMED.replace(/### 7\. Documentation-update list[\s\S]*?(?=### 10\.)/, '')
+    expect(withoutDocList).not.toMatch(/Documentation-update list/)
+    expect(isBriefShaped(withoutDocList)).toBe(true)
+    expect(checkBriefSections(withoutDocList, false, readTierFromPrBody).errors).toEqual([
+      expect.stringMatching(/Documentation-update list/)
+    ])
+  })
+
+  it('does not detect an ordinary PR body — the exemption the bypass protects', () => {
+    const dependencyBump =
+      '## Summary\n\nBumps `zod` from 3.23.8 to 3.24.1.\n\n## Test plan\n\n- [ ] **[agent]** `bun test` passes.\n\n## Scope\n\nLockfile only.\n\n**Tier:** 0\n'
+    expect(isBriefShaped(dependencyBump)).toBe(false)
+  })
+
+  it('does not detect a body carrying exactly one marker', () => {
+    const oneMarker = '## Stop conditions\n\n- Something went wrong.\n'
+    expect(isBriefShaped(oneMarker)).toBe(false)
+  })
+
+  it.each(
+    fenceShapes()
+  )('does not detect a brief QUOTED inside a fence ($name) — discussing a brief is not carrying one', ({
+    open,
+    close,
+    eol
+  }) => {
+    const quoted = [
+      '## Summary',
+      '',
+      "Documents the brief grammar. Here's a sample brief:",
+      '',
+      open,
+      '## Technical surface map',
+      '- `packages/aeg-core/src/brief-validation.ts`',
+      '',
+      '## Stop conditions',
+      '- Pre-flight failure.',
+      '',
+      '**Autonomy:** Do not stop to ask clarifying questions.',
+      close,
+      ''
+    ].join(eol)
+    expect(isBriefShaped(quoted)).toBe(false)
+  })
+})
+
+describe('inferBranchFromBody', () => {
+  it('reads the branch from the Step 0 worktree command inside a fence', () => {
+    expect(inferBranchFromBody(WELL_FORMED)).toBe('task/aeg-governance-hardening/2')
+  })
+  it('reads a non-task branch the same way', () => {
+    expect(inferBranchFromBody('git worktree add .worktrees/fix/x -b fix/x origin/main')).toBe('fix/x')
+  })
+  it('returns empty when the body has no Step 0', () => {
+    expect(inferBranchFromBody('## Summary\n\nA dependency bump.')).toBe('')
+  })
+})
+
+describe('checkBriefSections — requireClosesN', () => {
+  const withoutCloses = WELL_FORMED.replace('Closes #252', 'Ships it.')
+
+  it('requires Closes #N by default (every existing caller is unchanged)', () => {
+    const { errors } = checkBriefSections(withoutCloses, false, readTierFromPrBody)
+    expect(errors).toEqual([expect.stringMatching(/Closes #N/)])
+  })
+
+  it('skips Closes #N when requireClosesN is false — a standalone fix brief has no Issue to close', () => {
+    const { errors } = checkBriefSections(withoutCloses, false, readTierFromPrBody, { requireClosesN: false })
+    expect(errors).toEqual([])
+  })
+
+  it('still grades every other section when requireClosesN is false', () => {
+    const withoutDocList = withoutCloses.replace(/### 7\. Documentation-update list[\s\S]*?(?=### 10\.)/, '')
+    const { errors } = checkBriefSections(withoutDocList, false, readTierFromPrBody, { requireClosesN: false })
+    expect(errors).toEqual([expect.stringMatching(/Documentation-update list/)])
   })
 })
 

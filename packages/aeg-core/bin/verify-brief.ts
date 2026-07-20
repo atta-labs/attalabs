@@ -19,11 +19,24 @@
  * itself, the same way `verify-docs.ts` derives tier from the diff when no
  * `Tier:` field is present.
  *
- * Non-task-branch bypass: mirrors `checkClosesN`'s existing rule (a task PR is
- * `task/<iter>/<n>`; anything else — a plain `fix/…`/`chore/…` engineering
- * branch — is silently bypassed). Without this, every ordinary non-AEG-task
- * PR would fail for lacking the full brief grammar it was never meant to
- * carry. Reads `BRANCH` the same way `verify-coherence.ts --closes-n` does.
+ * Bypass rule: the exemption is for bodies that are **not briefs**, not for
+ * branches that are not tasks. An ordinary non-AEG PR (a one-line dependency
+ * bump) carries no brief and must not be forced to grow one — that is what the
+ * bypass protects. But the branch name was the wrong proxy for it: a standalone
+ * `fix/*` brief is a brief, and under the old branch-only rule it bypassed every
+ * section check (a fix brief shipped with no §7 doc-update list and nothing
+ * caught it). So `verify-brief` validates when the branch is `task/<iter>/<n>`
+ * **or** the body is brief-shaped (`isBriefShaped`), and bypasses only when
+ * neither holds. `Closes #N` stays a task-branch-only requirement — see
+ * `BriefSectionsOptions.requireClosesN`. Reads `BRANCH` the same way
+ * `verify-coherence.ts --closes-n` does.
+ *
+ * Authoring-time entry (`--body-file <path>`): the same validator, run against a
+ * brief file before a PR (or even a branch) exists, so a Brief Author can gate a
+ * brief at authoring time instead of discovering the gap in CI after dispatch.
+ * With no `BRANCH`/`--branch`, the branch is inferred from the brief's own Step 0
+ * `git worktree add … -b <branch>` line, which is where a brief declares what it
+ * is going to be.
  *
  * Plan-PR Closes guard (D-077): runs BEFORE the non-task-branch bypass above,
  * since a `plan/*` branch is itself non-task and would otherwise never reach
@@ -31,16 +44,22 @@
  */
 
 import { execSync } from 'node:child_process'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import {
   checkBriefSections,
   checkForgeTitle,
   checkPlanPrNoCloses,
+  inferBranchFromBody,
+  isBriefShaped,
   isDecisionLog,
   readTierFromPrBody
 } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dir, '../../..')
+// Captured BEFORE the chdir below: a relative `--body-file` path is relative to
+// where the author ran the command, not to the repo root this script moves to.
+const INVOCATION_CWD = process.cwd()
 process.chdir(REPO_ROOT)
 
 function sh(cmd: string): string {
@@ -72,6 +91,44 @@ export function deriveTouchesLock(base: string): boolean {
 
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
+/**
+ * A flag's parse outcome. The three cases are kept distinct because collapsing
+ * "absent" and "present but unparseable" into one `null` is a silent-green path:
+ * `--body-file` with a fumbled path (shell glob, tab-completion miss, wrong arg
+ * order) would fall through to the empty-`PR_BODY` branch and exit 0, handing a
+ * Brief Author a green on a brief nobody graded — the exact failure class this
+ * gate exists to eliminate, reintroduced through its own new entry point
+ * (PR #631 review MAJOR).
+ */
+type FlagRead = { state: 'absent' } | { state: 'value'; value: string } | { state: 'missing-value' }
+
+/** Reads `--flag value` or `--flag=value` from argv. See `FlagRead` for why the empty case is not `null`. */
+function readFlag(argv: string[], name: string): FlagRead {
+  const idx = argv.indexOf(`--${name}`)
+  if (idx !== -1) {
+    const next = argv[idx + 1]
+    if (next !== undefined && !next.startsWith('--')) return { state: 'value', value: next }
+    return { state: 'missing-value' }
+  }
+  const inline = argv.find((a) => a.startsWith(`--${name}=`))
+  if (inline !== undefined) {
+    const value = inline.slice(name.length + 3)
+    return value.length > 0 ? { state: 'value', value } : { state: 'missing-value' }
+  }
+  return { state: 'absent' }
+}
+
+/** Exits non-zero on a flag that was passed with no usable value; returns `null` only when truly absent. */
+function requireFlagValue(argv: string[], name: string): string | null {
+  const read = readFlag(argv, name)
+  if (read.state === 'missing-value') {
+    console.error(`\n[verify-brief] FAILED — \`--${name}\` was passed with no value.`)
+    console.error(`[verify-brief] Usage: --${name} <value> (or --${name}=<value>).`)
+    process.exit(1)
+  }
+  return read.state === 'value' ? read.value : null
+}
+
 export function main(): void {
   // Title grammar is universal (every PR title rides into merge commits and
   // derived views), so it runs BEFORE the non-task-branch bypass — the ring-1
@@ -86,8 +143,24 @@ export function main(): void {
     }
   }
 
-  const branch = process.env.BRANCH ?? ''
-  const prBody = process.env.PR_BODY ?? ''
+  const bodyFile = requireFlagValue(process.argv, 'body-file')
+  let prBody = process.env.PR_BODY ?? ''
+  if (bodyFile !== null) {
+    const path = resolve(INVOCATION_CWD, bodyFile)
+    try {
+      prBody = readFileSync(path, 'utf8')
+    } catch {
+      console.error(`\n[verify-brief] FAILED — could not read --body-file: ${path}`)
+      process.exit(1)
+    }
+    console.log(`[verify-brief] reading brief from ${path}`)
+  }
+
+  // `||`, not `??`: an env var set to the empty string is *unset* for this
+  // purpose, and `??` treats `''` as a real value — so `BRANCH=""` (how a shell
+  // exports a var it has no value for, and how the test harness normalises the
+  // environment) silently won over Step 0 inference and left the branch empty.
+  const branch = requireFlagValue(process.argv, 'branch') || process.env.BRANCH || inferBranchFromBody(prBody)
 
   const planGuard = checkPlanPrNoCloses(branch, prBody)
   if (planGuard.status === 'fail') {
@@ -97,8 +170,10 @@ export function main(): void {
     process.exit(1)
   }
 
-  if (branch && !TASK_BRANCH_PATTERN.test(branch)) {
-    console.log(`[verify-brief] non-task branch (${branch}) — bypass.`)
+  const isTaskBranch = TASK_BRANCH_PATTERN.test(branch)
+
+  if (branch && !isTaskBranch && !isBriefShaped(prBody)) {
+    console.log(`[verify-brief] non-task branch (${branch}) and PR body is not brief-shaped — bypass.`)
     process.exit(0)
   }
 
@@ -111,9 +186,14 @@ export function main(): void {
   const base = process.env.BASE_SHA || 'origin/main'
   const touchesLock = deriveTouchesLock(base)
 
-  const { errors } = checkBriefSections(prBody, touchesLock, readTierFromPrBody)
+  const { errors } = checkBriefSections(prBody, touchesLock, readTierFromPrBody, { requireClosesN: isTaskBranch })
 
   if (touchesLock) console.log('[verify-brief] diff touches a Lock: YES decision — lock-ack is required.')
+  if (!isTaskBranch) {
+    console.log(
+      `[verify-brief] brief-shaped body on a non-task branch (${branch || 'none'}) — validating sections; \`Closes #N\` not required.`
+    )
+  }
 
   if (errors.length > 0) {
     console.error(`\n[verify-brief] FAILED — ${errors.length} section(s) malformed or missing:\n`)
