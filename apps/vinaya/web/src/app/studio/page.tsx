@@ -20,7 +20,8 @@ import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
-import { listIterations, readRegistry, type IterationSummary } from '@/lib/repo-state'
+import { listIterations, readRegistry } from '@/lib/repo-state'
+import { iterationHref, NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { ForgeBanners, ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
@@ -43,12 +44,6 @@ async function loadBacklog(token: string | null): Promise<{ issues: BacklogIssue
   const repo = await resolveRepo()
   if (!repo || !token) return { issues: [], forge: { kind: 'unreachable' } }
   return fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token)
-}
-
-/** An iteration's board href — its first project's detail route, or null. */
-function iterationHref(it: IterationSummary): string | null {
-  const project = it.projects[0]
-  return project ? `/studio/projects/${project}/iterations/${it.fileSlug}` : null
 }
 
 export default async function HomePage() {
@@ -138,7 +133,9 @@ export default async function HomePage() {
                   {row}
                 </NextLink>
               ) : (
-                <div key={it.fileSlug} className={rowClass}>
+                // No project → no board route exists. Say so instead of
+                // rendering a silently non-clickable row (D-087).
+                <div key={it.fileSlug} className={`${rowClass} cursor-help`} title={NO_BOARD_REASON}>
                   {row}
                 </div>
               )

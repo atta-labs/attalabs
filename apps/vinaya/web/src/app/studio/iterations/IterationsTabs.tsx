@@ -4,12 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
 import type { ForgeStatus, IterationSummary } from '@/lib/repo-state'
 import { ForgeBanners } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { IterationCard } from '@/app/studio/_components/IterationCard'
-
-function resolveDetailHref(it: IterationSummary): string | null {
-  const firstProject = it.projects[0]
-  if (!firstProject) return null
-  return `/studio/projects/${firstProject}/iterations/${it.fileSlug}`
-}
+import { iterationHref } from '@/app/studio/_lib/iteration-href'
 
 function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummary[]; emptyHint: string | null }) {
   if (iterations.length === 0) {
@@ -20,7 +15,7 @@ function IterationsGrid({ iterations, emptyHint }: { iterations: IterationSummar
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
       {iterations.map((it) => (
-        <IterationCard key={it.fileSlug} iteration={it} href={resolveDetailHref(it)} showProjects={true} />
+        <IterationCard key={it.fileSlug} iteration={it} href={iterationHref(it)} showProjects={true} />
       ))}
     </div>
   )
