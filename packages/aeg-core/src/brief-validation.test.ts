@@ -294,6 +294,33 @@ describe('checkClosesN', () => {
   it('resumes stripping after the list context closes at column 0', () => {
     expect(checkClosesN('- item\n\nBack to prose.\n\n    Closes #5\n').status).toBe('fail')
   })
+
+  // ---- fenced blocks: character + run length (PR #617 security pass, MEDIUM) ----
+  it('fails a Closes #N inside a tilde fence', () => {
+    expect(checkClosesN('~~~\nCloses #5\n~~~').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a tilde fence carrying an info string', () => {
+    expect(checkClosesN('~~~js\nCloses #5\n~~~').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a six-backtick fence (run-length leak)', () => {
+    expect(checkClosesN('``````\nCloses #5\n``````').status).toBe('fail')
+  })
+  it('fails a Closes #N inside a backtick fence with an info string', () => {
+    expect(checkClosesN('```js\nCloses #5\n```').status).toBe('fail')
+  })
+  it('fails a Closes #N after an unclosed fence — GitHub renders it as code too', () => {
+    expect(checkClosesN('Summary.\n\n```\nCloses #5\n').status).toBe('fail')
+  })
+  it('does not let a short closing run terminate a longer fence', () => {
+    // ``` cannot close ````` — the Closes stays inside the block.
+    expect(checkClosesN('`````\nCloses #5\n```\n').status).toBe('fail')
+  })
+  it('still treats a same-line triple-backtick as an inline span, not a fence', () => {
+    expect(checkClosesN('Ref ```Closes #5``` inline.').status).toBe('fail')
+  })
+  it('keeps a real bare Closes #5 that sits outside a tilde fence', () => {
+    expect(checkClosesN('Ships it. Closes #5\n\n~~~\nExample: Closes #99\n~~~\n').status).toBe('pass')
+  })
 })
 
 describe('headerRegion', () => {

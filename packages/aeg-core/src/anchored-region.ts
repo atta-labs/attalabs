@@ -77,13 +77,66 @@ function maskCode(body: string): string {
  * instead peeled the outer backticks as two empty spans and left the inner
  * `Closes #5` surviving as bare text (a false-green: passed the gate, but
  * GitHub, seeing a code span, refused to auto-close — PR #617 review). Fenced
- * blocks (```` ``` ````) are stripped first so a fence line is never mis-read as
- * an inline span; 4-space **indented** code blocks are stripped in between (see
- * `stripIndentedCode`).
+ * blocks are stripped first (see `stripFencedCode`) so a fence line is never
+ * mis-read as an inline span; 4-space **indented** code blocks are stripped in
+ * between (see `stripIndentedCode`).
  */
 export function stripCode(body: string): string {
-  const withoutFenced = body.replace(/```[\s\S]*?```/g, '')
-  return stripIndentedCode(withoutFenced).replace(/(`+)[^\n]*?\1/g, '')
+  return stripIndentedCode(stripFencedCode(body)).replace(/(`+)[^\n]*?\1/g, '')
+}
+
+/** An opening code fence: ≤3 leading spaces, then a run of ≥3 backticks or ≥3 tildes, then an info string. */
+const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/
+/** A candidate closing fence: ≤3 leading spaces, a bare run of fence chars, nothing but whitespace after. */
+const FENCE_CLOSE = /^ {0,3}(`+|~+)[ \t]*$/
+
+/**
+ * Blanks CommonMark **fenced code blocks**, matching a fence to its own closer
+ * by character *and* run length.
+ *
+ * Replaces an earlier `` /```[\s\S]*?```/g `` regex that got three cases wrong
+ * (PR #617 security pass):
+ *
+ *   - **Tilde fences** (`~~~`) were not recognised at all. GFM fences with `~`
+ *     exactly as with backticks.
+ *   - **Runs longer than three** leaked: against a six-backtick fence the old
+ *     regex matched the first three, treated the rest of the opening run as a
+ *     complete empty block, and let the body walk free — the same run-length
+ *     bug already fixed on the inline-span half, never carried over here.
+ *   - An **info string** (```` ```js ````) was only incidentally handled.
+ *
+ * Per CommonMark the closing fence must use the same character and be **at
+ * least as long** as the opening one; a backtick fence's info string may not
+ * itself contain a backtick (that ambiguity is what makes ```` ```x``` ```` an
+ * inline span, not a fence). An unclosed fence runs to end of body — as GitHub
+ * also renders it, so a `Closes #N` after a stray fence is genuinely inside
+ * code and must not count.
+ */
+function stripFencedCode(body: string): string {
+  let fenceChar: string | null = null
+  let fenceLen = 0
+
+  return body
+    .split('\n')
+    .map((line) => {
+      if (fenceChar === null) {
+        const open = line.match(FENCE_OPEN)
+        if (!open) return line
+        const marker = open[1] as string
+        // A backtick fence's info string cannot contain a backtick.
+        if (marker[0] === '`' && (open[2] as string).includes('`')) return line
+        fenceChar = marker[0] as string
+        fenceLen = marker.length
+        return ''
+      }
+      const close = line.match(FENCE_CLOSE)
+      if (close && (close[1] as string)[0] === fenceChar && (close[1] as string).length >= fenceLen) {
+        fenceChar = null
+        fenceLen = 0
+      }
+      return ''
+    })
+    .join('\n')
 }
 
 /** A list marker (`-`, `*`, `+`, `1.`, `1)`) indented 0–3 spaces — opens list context. */
