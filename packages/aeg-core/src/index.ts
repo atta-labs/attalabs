@@ -85,8 +85,16 @@ export { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdic
 export type { VerdictExtraction } from './verdict-extraction'
 export { checkReviewGate, isReviewGateExemptBranch } from './review-gate'
 export type { ReviewGateInput, ReviewGateResult, ReviewGateVerdict } from './review-gate'
-export { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
-export type { IssueSectionResult } from './issue-validation'
+export {
+  checkBlastRadiusScope,
+  checkConflictCompleteness,
+  checkIssueRationale,
+  checkNoBriefContent,
+  checkRationaleNamesDocs,
+  declaredProjects,
+  isTaskIssueLabelSet
+} from './issue-validation'
+export type { IssueSectionResult, ProjectPath, TaskIssueFacts } from './issue-validation'
 export { findHeadingLine, findTable, rowToRecord } from './markdown-table'
 export type { ParsedTable, TableRow } from './markdown-table'
 export { deriveDiagramModel } from './diagram-model'

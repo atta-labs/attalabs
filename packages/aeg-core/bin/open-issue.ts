@@ -11,6 +11,18 @@
  * reaches the forge. Non-task Issues (no iteration label) pass through
  * unvalidated: the rationale contract does not apply to them.
  *
+ * Content gate (D-130): past presence, three checks grade what those fields
+ * SAY against the surface the task touches, and refuse — `checkBlastRadiusScope`
+ * (a shared collision domain from `.aeg/packages` that no declared project
+ * owns, without a second project or a `blast-radius-ack:` line),
+ * `checkNoBriefContent` (brief-shaped sections belong in the brief, not here),
+ * `checkRationaleNamesDocs` (name a doc/skill path, or the `no-doc-surface`
+ * sentinel — the only read-obligation signal a forge write leaves, since the
+ * skill-check hook fires on file edits and this edits none).
+ * `checkConflictCompleteness` warns on an undeclared collision-domain overlap
+ * and never blocks. All four apply to task Issues only, same as the rationale
+ * gate.
+ *
  * Label detection is per-path: on `create`, labels come from this command's
  * own argv (`--label` flags are naturally present there). On `edit`, argv is
  * silent — nobody re-passes `--label` when changing a body — so the target
@@ -36,7 +48,17 @@ import {
   parseRationaleDeps
 } from '@atta/aeg-forge-state'
 import { checkForgeTitle } from '../src/brief-validation'
-import { checkIssueRationale, isTaskIssueLabelSet } from '../src/issue-validation'
+import {
+  checkBlastRadiusScope,
+  checkConflictCompleteness,
+  checkIssueRationale,
+  checkNoBriefContent,
+  checkRationaleNamesDocs,
+  isTaskIssueLabelSet,
+  type ProjectPath,
+  type TaskIssueFacts
+} from '../src/issue-validation'
+import { parseRegistry } from '../src/parse-registry'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -374,6 +396,75 @@ export function runAmendDeps(flags: AmendDepsFlags, deps: AmendDepsDeps): void {
   }
 }
 
+// ---------- content gate I/O (A/B/D block, C warns) --------------------------
+//
+// `issue-validation.ts` stays pure; every disk/forge read the content checks
+// need happens here.
+
+/**
+ * The static collision-domain list (`.aeg/packages`) — one path prefix per
+ * line, `#` comments and blanks ignored.
+ *
+ * **Absent file ⇒ empty list ⇒ check A dormant**, deliberately, and the same
+ * dormant-when-absent seam `doc-owners` uses. A is only deterministic with a
+ * source of truth; with none, the honest behavior is not to run rather than to
+ * invent a shared-package list inline and block on a guess.
+ */
+function readSharedPackages(): string[] {
+  try {
+    return readFileSync(join(REPO_ROOT, '.aeg/packages'), 'utf8')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('#'))
+  } catch {
+    return []
+  }
+}
+
+/** Registry rows (`projects.md`) — the authority for which project owns which path. Absent ⇒ nothing is owned. */
+function readProjectPaths(): ProjectPath[] {
+  try {
+    return parseRegistry(readFileSync(join(REPO_ROOT, 'packages/governance/projects.md'), 'utf8'))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The iteration's other open task Issues, for check C. Best-effort by design:
+ * C is warn-only, so a forge hiccup must degrade to "no warning", never to a
+ * refusal — the opposite of `fetchForgeLabels`, which fails closed because a
+ * missing label there would silently skip a *blocking* gate.
+ */
+function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssueFacts[] {
+  try {
+    // Labels are filtered CLIENT-side, deliberately. `gh issue list --label
+    // iteration:<slug>` returns an empty set against this repo's live labels
+    // even though the label exists and Issues carry it (reproduced on
+    // `iteration:vinaya-pages-v2`: 11 matching open Issues, `--label` yields
+    // 0). Server-side filtering would have shipped C permanently silent and
+    // indistinguishable from "no overlap" — the exact false-green shape this
+    // whole change exists to remove. Listing open Issues and matching here is
+    // one request either way.
+    const out = execFileSync(
+      'gh',
+      ['issue', 'list', '--state', 'open', '--limit', '200', '--json', 'number,body,labels'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }
+    )
+    return (JSON.parse(out) as Array<{ number: number; body: string; labels: Array<{ name: string }> }>)
+      .filter((i) => i.labels.some((l) => l.name === `iteration:${slug}`))
+      .filter((i) => String(i.number) !== String(selfRef ?? '').replace(/^#/, ''))
+      .map((i) => ({
+        ref: `#${i.number}`,
+        body: i.body ?? '',
+        conflictsWith: parseRationaleDeps(i.body ?? '').conflictsWith
+      }))
+  } catch {
+    console.warn('[open-issue] could not list sibling task Issues — skipping the conflict-completeness warning (C).')
+    return []
+  }
+}
+
 /** Fetches an Issue's current body from the forge — hard refusal on fetch/parse failure (#417 pattern). */
 function fetchForgeBody(issueRef: string): string {
   let out: string
@@ -460,6 +551,43 @@ export function main(): void {
       fail('the Issue body does not carry the full eight-field Planner rationale (planner-brief contract, D-055).')
     }
     console.log('[open-issue] rationale gate PASS.')
+
+    // ---- content gate: A/B/D block, C warns --------------------------------
+    // The rationale gate above proves the eight fields EXIST. These prove what
+    // they say is consistent with the surface the task touches — the three
+    // failure classes that passed the presence gate on #621/#622/#626.
+    const sharedPackages = readSharedPackages()
+    if (sharedPackages.length === 0) {
+      console.warn('[open-issue] no `.aeg/packages` collision-domain list — blast-radius check (A) is dormant.')
+    }
+    const contentErrors = [
+      ...checkBlastRadiusScope(body, labels, sharedPackages, readProjectPaths()).errors,
+      ...checkNoBriefContent(body).errors,
+      ...checkRationaleNamesDocs(body).errors
+    ]
+    if (contentErrors.length > 0) {
+      console.error(`\n[open-issue] FAILED — ${contentErrors.length} content check(s):\n`)
+      for (const e of contentErrors) console.error(`  ✗ ${e}`)
+      fail('the Issue body fails the blast-radius / brief-content / docs-read checks.')
+    }
+    console.log('[open-issue] content gate PASS (blast radius, brief content, docs read).')
+
+    // C — warn-only. Never blocks: an Issue declares no precise file surface,
+    // so an overlapping collision domain is a hint, not a fact.
+    const slug = iterationSlugFromLabels(labels)
+    if (slug) {
+      const selfRef = isEdit ? (ghArgs[0] as string) : null
+      const conflictWarnings = checkConflictCompleteness(
+        {
+          ref: selfRef ? `#${selfRef.replace(/^#/, '')}` : '(new)',
+          body,
+          conflictsWith: parseRationaleDeps(body).conflictsWith
+        },
+        fetchSiblingTaskIssues(slug, selfRef),
+        sharedPackages
+      )
+      for (const w of conflictWarnings) console.warn(`[open-issue] WARNING — ${w}`)
+    }
   } else {
     console.log('[open-issue] no iteration label — rationale gate does not apply, passing through.')
   }

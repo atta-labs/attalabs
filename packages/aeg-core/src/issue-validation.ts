@@ -16,6 +16,8 @@
  * applicability from the labels; this module only checks the body.
  */
 
+import { stripCode } from './anchored-region'
+
 export type IssueSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 
 /**
@@ -56,4 +58,324 @@ export function checkIssueRationale(body: string): IssueSectionResult {
 /** true when any label marks this as a task Issue (the rationale contract applies). */
 export function isTaskIssueLabelSet(labels: string[]): boolean {
   return labels.some((l) => l.startsWith('iteration:'))
+}
+
+// ---------------------------------------------------------------------------
+// Content checks (A/B/D block, C warns)
+//
+// `checkIssueRationale` above checks the eight fields are PRESENT and
+// well-formed. It never checks what they SAY against the surface the task
+// touches — and three task Issues in `vinaya-pages-v2` (#621/#622/#626) passed
+// it while being wrong in three distinct ways: a `packages/ui` edit declared
+// `Project: vinaya` only (blast radius under-declared, so the review fans out
+// through one product's lens instead of every consumer's); a `## References`
+// block copied brief-time content into the Issue, where it goes stale before
+// work starts; and nothing forced the rationale to name the docs/skills it
+// touches, because the skill-check hook fires on file edits and a forge write
+// edits no file. The checks below are those three failures turned into
+// deterministic functions on the surface they happened on.
+//
+// EVERY ONE OF THEM READS BLOCK-STRIPPED TEXT, via the single exported
+// `stripCode` — never a second regex (PR #617's rule). A rationale that quotes
+// `## References`, `Premise:`, or a `packages/ui` path inside a **fence** is
+// documenting, not leaking, and must not trip anything; GitHub's own parsers
+// ignore code the same way.
+//
+// They differ on **inline spans**, and the split is not cosmetic:
+//
+//   - B looks for brief-shaped *headings*, which never live in a span, so it
+//     takes the full default strip.
+//   - A/C/D look for *paths*, and prose writes paths in backticks by
+//     convention — #621 declares its own surface as "edits `packages/ui`". Run
+//     span-blind, A matches nothing on the very Issues it was built from and
+//     ships as a gate that always passes, which is worse than no gate. So they
+//     read `PATH_TEXT`: fences and indented blocks gone, spans intact.
+//
+// Accepted cost: brief content that leaks *entirely inside* a fence is
+// invisible to B. Same trade every code-aware gate here makes; the alternative
+// is the fence-blind false-positive machine #617 removed.
+// ---------------------------------------------------------------------------
+
+/**
+ * Block-stripped, span-preserving body text — the reading every path-shaped
+ * check uses. See the note above for why paths cannot be scanned span-blind.
+ */
+const PATH_TEXT = (body: string): string => stripCode(body, { inlineSpans: 'keep' })
+
+/** A registry row reduced to what the blast-radius check needs — `parseRegistry` output is assignable. */
+export type ProjectPath = { name: string; path: string }
+
+/**
+ * The projects a task Issue declares — the union of its `project:*` labels and
+ * its body's `**Project:**` field. Both, because either alone has been the
+ * only surviving copy: `@atta/aeg-forge-state` derives a task's project the
+ * same way precisely so derivation survives the labels being dropped.
+ */
+export function declaredProjects(body: string, labels: string[]): string[] {
+  const fromLabels = labels.filter((l) => l.startsWith('project:')).map((l) => l.slice('project:'.length).trim())
+  const field = /(?:\*\*)?Project(?:\(s\))?(?:\*\*)?\s*:\s*(?:\*\*)?\s*([^\n]+)/i.exec(PATH_TEXT(body))
+  const fromBody = (field?.[1] ?? '')
+    .split(/[,/]/)
+    // Trim the markup and sentence punctuation a field value carries in prose —
+    // the value is routinely written as "`Project: vinaya`." (backticked, with
+    // the sentence's full stop inside the span, which `PATH_TEXT` preserves).
+    .map((s) => s.replace(/\*\*/g, '').replace(/[`.;]/g, '').trim())
+    // The field's value may trail into prose ("vinaya. **BUT edits …**"); keep
+    // the bare-name shapes a registry row can actually carry.
+    .filter((s) => /^[a-z0-9][a-z0-9-]*$/i.test(s))
+  return [...new Set([...fromLabels, ...fromBody].filter((s) => s.length > 0))]
+}
+
+/**
+ * Does the text name a path that puts this task **inside** the collision
+ * domain `path`? Matches the domain as a whole path token — `packages/ui` hits
+ * `packages/ui/topbar/index.tsx` and a bare `packages/ui`, never
+ * `packages/ui-next`.
+ *
+ * **A cited document is not a touched domain.** Every rationale points at docs
+ * for provenance — "the registry row in `packages/governance/projects.md`",
+ * "per `packages/ui/README.md`" — and counting those as edits fails correct
+ * plans wholesale (it fired on all three of #621/#622/#626 for a projects.md
+ * citation none of them edits). So an occurrence whose full path token ends in
+ * a doc extension does not count; a bare domain reference, or any non-doc path
+ * under it, does. Citing `packages/ui/README.md` *and* editing
+ * `packages/ui/topbar/index.tsx` still counts — the check looks for any one
+ * qualifying occurrence, not the first.
+ */
+const DOC_EXTENSION_RE = /\.(?:md|mdx|txt)$/i
+
+function namesPath(text: string, path: string): boolean {
+  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const occurrences = new RegExp(`(?:^|[^\\w./-])(${escaped}(?:/[\\w.@-]+)*)(?![\\w-])`, 'gm')
+  for (const m of text.matchAll(occurrences)) {
+    if (!DOC_EXTENSION_RE.test(m[1] as string)) return true
+  }
+  return false
+}
+
+/** An explicit, deliberate acknowledgment that the task's reach crosses products. */
+const BLAST_RADIUS_ACK_RE = /(?:\*\*)?blast-radius-ack(?:\*\*)?\s*[:—–-]/i
+
+/**
+ * **A — blast radius under-declared.** If the rationale names a path under a
+ * collision domain that none of the declared projects owns, the task reaches
+ * further than its `Project:` set admits. `projects.md` makes that set the
+ * review fan-out ("more projects = more review lenses = proportionally more
+ * rigor"), so a shared-primitive change carrying one product's label is
+ * reviewed through one lens and under-governs the regression its own prose
+ * usually admits in the same breath (#621: "**BUT edits `packages/ui`** … any
+ * topbar change is seen by every product").
+ *
+ * Two ways to satisfy it, both deliberate: list the other consumers in
+ * `Project:` (the fan-out actually widens), or write a `blast-radius-ack:` line
+ * (the reach is acknowledged and the Planner has decided one lens is enough).
+ * Silence is the only failure.
+ *
+ * **Ownership, not mere listing.** A domain that IS a declared project's own
+ * registered path is owned by it — `Project: aeg-core` editing
+ * `packages/aeg-core` declares its blast radius exactly, and must not be
+ * failed. Without this, the check would block the legitimately single-project
+ * shared edit, which is a gate that blocks valid work.
+ *
+ * Dormant when `sharedPackages` is empty (no `.aeg/packages` on disk) — the
+ * same seam-is-dormant-when-absent shape `doc-owners` uses. The check cannot be
+ * deterministic without its source of truth, and inventing one inline is worse
+ * than not running.
+ */
+export function checkBlastRadiusScope(
+  body: string,
+  labels: string[],
+  sharedPackages: string[],
+  projectPaths: ProjectPath[]
+): IssueSectionResult {
+  if (sharedPackages.length === 0) return { status: 'pass', errors: [] }
+  // Scoped to the two fields that declare the task's OWN surface. Scanning the
+  // whole body fails correct plans in bulk: a rationale names packages for many
+  // reasons that are not edits — a dependency it imports unchanged (#591/#599
+  // name `packages/aeg-core` because Vinaya's CLI imports it), a trap to avoid,
+  // an Origin note. A full-body scan flagged 46 of 166 historical task Issues,
+  // nearly all of them correctly-scoped work. Boundary and Project(s) + blast
+  // radius are where a task states what it touches, so that is where a
+  // touch-claim is load-bearing enough to block on.
+  const text = [
+    rationaleFieldText(PATH_TEXT(body), 'Boundary'),
+    rationaleFieldText(PATH_TEXT(body), 'Project\\(s\\)|Project(?:s)?\\s*\\+|blast radius')
+  ].join('\n')
+  const named = sharedPackages.filter((d) => namesPath(text, d))
+  if (named.length === 0) return { status: 'pass', errors: [] }
+
+  const projects = declaredProjects(body, labels)
+  const ownedPaths = projectPaths.filter((p) => projects.includes(p.name)).map((p) => p.path.replace(/\/+$/, ''))
+  const unowned = named.filter((d) => !ownedPaths.some((owned) => d === owned || d.startsWith(`${owned}/`)))
+  if (unowned.length === 0) return { status: 'pass', errors: [] }
+  if (projects.length > 1) return { status: 'pass', errors: [] }
+  // The ack is looked for in the WHOLE body, not the scoped surface fields — it
+  // is a deliberate statement about the task, and a Planner may reasonably put
+  // it under Stop-and-escalate or Traps rather than inside Boundary.
+  if (BLAST_RADIUS_ACK_RE.test(PATH_TEXT(body))) return { status: 'pass', errors: [] }
+
+  return {
+    status: 'fail',
+    errors: [
+      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (packages/governance/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
+    ]
+  }
+}
+
+/**
+ * Headings/fields that belong to a **brief**, never to an Issue. Brief-authoring
+ * is explicit that a brief is never put in the task's forge Issue — it would go
+ * stale before work starts, and then two artifacts disagree about the same task
+ * with nothing to arbitrate them.
+ */
+const BRIEF_MARKERS: Array<{ name: string; pattern: RegExp }> = [
+  { name: '## References', pattern: /(?:^#{1,6}\s*|\*\*)\s*References\b/im },
+  { name: 'Technical surface map', pattern: /(?:^#{1,6}\s*|\*\*)\s*Technical surface map\b/im },
+  { name: 'Premise', pattern: /(?:^#{1,6}\s*|\*\*)\s*Premise(?:\*\*)?\s*[:—–]/im },
+  { name: 'Step 0', pattern: /(?:^#{1,6}\s*|\*\*)\s*Step 0\b/im },
+  { name: 'Test Plan', pattern: /(?:^#{1,6}\s*|\*\*)\s*Test Plan\b/im }
+]
+
+/**
+ * **B — brief content in the Issue.** Fails when the code-stripped body carries
+ * a brief-shaped heading. The Issue is the Planner's durable rationale; the
+ * brief is the Brief Author's just-in-time execution context, authored against
+ * the surface as it exists at dispatch. Copying the second into the first
+ * creates a stale copy nobody re-reads and nobody updates.
+ */
+export function checkNoBriefContent(body: string): IssueSectionResult {
+  const text = stripCode(body)
+  const errors = BRIEF_MARKERS.filter((m) => m.pattern.test(text)).map(
+    (m) =>
+      `issue-validation brief content: the Issue body carries a brief-shaped "${m.name}" section. Brief-time content (surface pointers, skills-to-read, premise, test plan) belongs in the brief, not the Issue — it goes stale before work starts (aeg-root/skills/brief-authoring/SKILL.md). Move it to the brief.`
+  )
+  return { status: errors.length > 0 ? 'fail' : 'pass', errors }
+}
+
+/**
+ * Slices one rationale field's prose: from its label to the next bold/heading
+ * field or the end. Tolerates both live styles, exactly like
+ * `hasRationaleField`.
+ */
+function rationaleFieldText(text: string, labelPattern: string): string {
+  // `labelPattern` is grouped. Ungrouped, its own `|` splits the WHOLE regex
+  // instead of just the label — `Docs to keep coherent|§7` compiled as
+  // "(**|#) Docs to keep coherent" OR "§7[^\n]*…", so the Docs branch matched
+  // the bare label and captured nothing, and D silently graded every Issue on
+  // its Traps field alone (#622 failed on exactly this).
+  // The terminator is `(?![\s\S])` — a real end-of-INPUT assertion — not `$`.
+  // The `m` flag is required for the `^#{1,4}` heading form, and under `m` a
+  // `$` matches end-of-LINE, so the lazy body satisfied the lookahead
+  // immediately and every heading-style field (`### §7`, #219) sliced to its
+  // own label with zero content. D then saw an empty field and failed Issues
+  // that name their docs perfectly well, one line further down.
+  const re = new RegExp(
+    `(?:\\*\\*|^#{1,4}\\s+)\\s*(?:${labelPattern})[^\\n]*\\n?([\\s\\S]*?)(?=\\n\\s*(?:\\*\\*[A-Z]|#{1,4}\\s)|(?![\\s\\S]))`,
+    'im'
+  )
+  const m = re.exec(text)
+  return m ? m[0] : ''
+}
+
+/**
+ * Concrete doc surfaces — the artifact of having actually read the surface, not
+ * a paraphrase of it.
+ *
+ * Deliberately generous about *shape*, strict about *concreteness*. A first,
+ * narrower version (only `aeg-root/…`, `.claude/skills/…`, `apps/<x>/CLAUDE.md`,
+ * `apps/<x>/specs/…`) failed 66 of 166 historical task Issues, and the samples
+ * were not agents skipping the read — they were real docs written in shapes the
+ * pattern did not enumerate: `.claude/rules/ui-patterns.md` (rules, not
+ * skills), a bare `docs-index.md`, `packages/<x>/README.md`. Each omission would
+ * have blocked a correct plan. So: any repo-rooted `.md`/`.mdx` path, any
+ * `.claude/**` doc, and the handful of bare filenames that are unambiguous
+ * repo-level documents. What it still refuses is the actual failure — a field
+ * that names no document at all.
+ */
+const DOC_PATH_RE =
+  /(?:(?:aeg-root|apps|packages|specs|docs|tools|\.claude|\.github)\/[\w./@-]*\.(?:md|mdx)|\.claude\/(?:skills|rules)\/[\w./-]+|\b(?:docs-index|decisions|projects|state-machine|enforcement|process|README|CLAUDE)\.md\b|\b[\w-]+-(?:spec|decisions|backlog)\.md\b)/i
+
+/**
+ * The doc-less-surface exemption, shaped after `brief-validation`'s
+ * `Test Plan: unit-tests-only` sentinel: an explicit, greppable opt-out a human
+ * chose, never an empty field that merely looks like one. "Docs to keep
+ * coherent: none" is what an agent writes when it did not look; the sentinel is
+ * what a Planner writes when it looked and there was nothing.
+ */
+const NO_DOC_SURFACE_RE = /(?:\*\*)?\s*no-doc-surface/i
+
+/**
+ * **D — no read-obligation signal.** The root cause of A and B both: nothing
+ * forced the Planner to read the docs and skills governing the surface it was
+ * planning, because the skill-check hook fires on file edits and cutting an
+ * Issue edits no file. Requiring a concrete doc path in `Docs to keep coherent`
+ * / `Traps to avoid` makes the read leave an artifact — you cannot name
+ * `.claude/skills/ui-library-system/SKILL.md` as the design anchor without
+ * having gone looking for it.
+ *
+ * Presence-only, like the rest of this module: whether the named doc is the
+ * *right* one stays a judgment call for review. That it exists at all does not.
+ */
+export function checkRationaleNamesDocs(body: string): IssueSectionResult {
+  const text = PATH_TEXT(body)
+  const scope = [rationaleFieldText(text, 'Docs to keep coherent|§7'), rationaleFieldText(text, 'Traps')].join('\n')
+  if (NO_DOC_SURFACE_RE.test(scope)) return { status: 'pass', errors: [] }
+  if (DOC_PATH_RE.test(scope)) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      'issue-validation docs read: neither "Docs to keep coherent" nor "Traps to avoid" names a concrete doc path (aeg-root/…, .claude/skills/…, apps/*/CLAUDE.md, apps/*/specs/…). Naming one is the artifact of having read the surface being planned — the forge write triggers no skill-check hook, so this field is the only read-obligation signal. For a genuinely doc-less surface, write the explicit `no-doc-surface` sentinel.'
+    ]
+  }
+}
+
+/** One open task Issue, reduced to what the conflict-completeness warning needs. */
+export type TaskIssueFacts = {
+  /** How the Issue is referred to in a `Conflicts-with` edge — its number, or its task id. */
+  ref: string
+  body: string
+  /** Already-parsed `Conflicts-with` ids (`parseRationaleDeps`) — never re-parsed here. */
+  conflictsWith: string[]
+}
+
+/** True when either side's declared edges name the other — `#621`, `621` and `8` all count. */
+function edgesNameEachOther(a: TaskIssueFacts, b: TaskIssueFacts): boolean {
+  const norm = (s: string) => s.replace(/^#/, '').trim()
+  return a.conflictsWith.map(norm).includes(norm(b.ref)) || b.conflictsWith.map(norm).includes(norm(a.ref))
+}
+
+/**
+ * **C — conflict completeness. WARN-ONLY, by construction.** Two open task
+ * Issues naming the same collision domain and declaring no mutual
+ * `Conflicts-with` edge are *probably* a missed serialization — but an Issue
+ * does not declare a precise file surface, so "names the same domain" is a
+ * hint, not a fact. Failing on a hint would make the gate refuse correct plans,
+ * so this prints and never blocks. It is also why AEG's conflict rule is
+ * declared-and-static in the first place: a real answer needs a live
+ * task→changed-files map, the mutable state the model eliminates
+ * (`iterations/README.md` §5).
+ */
+export function checkConflictCompleteness(
+  subject: TaskIssueFacts,
+  siblings: TaskIssueFacts[],
+  sharedPackages: string[]
+): string[] {
+  if (sharedPackages.length === 0) return []
+  const domainsOf = (facts: TaskIssueFacts) => {
+    const text = PATH_TEXT(facts.body)
+    return sharedPackages.filter((d) => namesPath(text, d))
+  }
+  const mine = domainsOf(subject)
+  if (mine.length === 0) return []
+  const warnings: string[] = []
+  for (const sibling of siblings) {
+    if (sibling.ref === subject.ref) continue
+    const shared = domainsOf(sibling).filter((d) => mine.includes(d))
+    if (shared.length === 0) continue
+    if (edgesNameEachOther(subject, sibling)) continue
+    warnings.push(
+      `issue-validation conflict completeness: this Issue and ${sibling.ref} both name ${shared.join(', ')} but neither declares the other in Conflicts-with. If they can run in parallel, say so; otherwise declare the edge (aeg-root/iterations/README.md §5).`
+    )
+  }
+  return warnings
 }
