@@ -3273,3 +3273,22 @@ Separately, retro's vendored `installed/button.tsx` references `hover:bg-primary
 
 **Consequences:** `apps/aeg` and `apps/cetana-ai` no longer exist; `@atta/aeg-studio` and the `@atta/cetana-*` workspaces leave the lockfile. Cetana's own decision log (D-001–D-026, five locks) is formally superseded by this entry, as D-095 anticipated. The stale AEG research (`specs/aeg-study/**`, `specs/aeg-improvement-findings.md`, `specs/ecosystem-backlog.md`) and the duplicate `aeg-project/decisions/D-043.md` go with them, removing the top-level `specs/` and `aeg-project/` folders entirely — the cross-cutting-backlog convention that pointed at `specs/ecosystem-backlog.md` is replaced by cutting backlog Issues, and the docs naming it are corrected. `apps/vinaya/web`'s `read-root.ts` sheds its dormant legacy-topology-file merge, now provably unreachable. The `aeg` row in `projects.md` is left orphaned pending the Principal's ruling.
 
+
+---
+
+## D-132 — D-072's sanctioned-crossings list drops the deleted Cetana crossing and retires its now-gone path references
+
+**Date:** 2026-07-20
+**Status:** PENDING
+**Type:** 1 (amends a `Lock: YES` entry — D-072)
+**Lock:** NO
+**Authored by:** Developer (dispatched, review-fix on PR #638) — text dictated in the brief, transcribed not composed
+**Ratified by:** Principal (directed this amendment, 2026-07-20 session)
+**Amends:** D-072 (`Lock: YES`) — supersedes its sanctioned-crossing #2 (Cetana) and corrects its homes enumeration + enforcement pointer for the paths deleted by `deprecation-v1` #573.
+**Conforms-to:** D-095 (Cetana retired), D-123 (AEG retired as a public name), D-131 (this PR's deletion authorization).
+
+**Context:** `deprecation-v1` #573 (PR #638) deletes `apps/cetana-ai`, `apps/aeg`, the `aeg-project/` folder, `specs/aeg-study/**`, `specs/ecosystem-backlog.md`, and `specs/aeg-improvement-findings.md`. D-072 (`Lock: YES`, ACTIVE) declares an *exhaustive* sanctioned-crossings list whose item #2 is "Cetana — the orchestrator is a sanctioned knower of AEG," whose Decision line enumerates AEG's homes as `aeg-root/`, `aeg-project/`, `apps/aeg/`, `packages/aeg-core/`, `specs/aeg*`, and whose enforcement note backlogs to `specs/ecosystem-backlog.md`. Deleting Cetana and those paths without amending D-072 leaves a live, `Lock: YES` governance entry naming a product and paths that no longer exist. This is a live enforcement input judged at review (doc-discipline), not a historical record, so D-006's append-only exemption does not cover it — this superseding entry is the sanctioned mechanism.
+
+**Decision:** (1) Sanctioned crossing #2 (Cetana) is **removed** — Cetana no longer exists (deleted by #573, retired by D-095), so it is no longer a sanctioned knower of AEG; the list remains exhaustive over the four surviving crossings (workflows, AEG-owned views, historical records, planning-seam backlogs). (2) D-072's homes enumeration is corrected to AEG's **surviving** homes: `aeg-root/`, `packages/aeg-core/`, and the Vinaya surface (`apps/vinaya`) — `apps/aeg/` and the `aeg-project/` folder are deleted, and `specs/aeg*` no longer holds AEG homes after `specs/aeg-study/**` removal. (3) The enforcement-backlog pointer to `specs/ecosystem-backlog.md` (deleted) is retired; the backlogged mechanical boundary check, if still wanted, is tracked on the forge, not in a deleted file. D-072's one-way knowledge law itself is **unchanged and still ACTIVE** — only its now-dangling enumerations are amended.
+
+**Lock:** NO.

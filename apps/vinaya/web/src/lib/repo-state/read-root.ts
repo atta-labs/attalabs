@@ -35,9 +35,10 @@
  * dependency edges resolve entirely from each closed Issue's own body.
  *
  * Reads are confined to this module. Parsing is delegated to
- * `@atta/aeg-core` (pure, no I/O) for the legacy file-merge path, and to
- * `@atta/aeg-forge-state` (pure I/O, no parsing logic re-implemented here)
- * for everything else. Consumers receive typed model objects.
+ * `@atta/aeg-core` (pure, no I/O) for the archived/completed topology files,
+ * the only files this module still parses, and to `@atta/aeg-forge-state`
+ * (pure I/O, no parsing logic re-implemented here) for everything else.
+ * Consumers receive typed model objects.
  */
 
 import 'server-only'

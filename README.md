@@ -14,7 +14,6 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 | [Atta](apps/atta-ai/) | `apps/atta-ai/` | TBD (target: `atta.ai`) | Deep-thinking AI. Composed of Vāda + Vitakka + Sati. | Not yet deployed |
 | [Vitakka](apps/vitakka-ai/) | `apps/vitakka-ai/` | `vitakka.attalabs.dev` | Situated cognition / focus layer. Standalone + inside Atta. | Scaffold |
 | [Herald](apps/herald-ai/) | `apps/herald-ai/` | `herald.attalabs.dev` | Forensic CV-to-job-description match tool. Standalone. | Active |
-| [Cetana](apps/cetana-ai/) | `apps/cetana-ai/` | (internal) → `cetana.attalabs.dev` if/when published | Local Mac orchestration for Atta team development. Internal today; conditional future public product. | V0/V0.5 in dev |
 
 **Atta** is the deep-thinking AI consumer product (composed of Vāda + Vitakka + Sati). It lives inside the AttaLabs lab today; when ready, it moves to its own domain (target: `atta.ai`).
 
@@ -72,8 +71,7 @@ attaai/   (repo name; rename TBD)
 │   ├── herald-ai/       # web/ + mobile/ + mcp/
 │   ├── atta-ai/         # web/ (serves attalabs.dev hub today)
 │   ├── vitakka-ai/      # scaffold
-│   ├── vada-ai/         # web/ + mcp/
-│   └── cetana-ai/       # cli/ + coordinator/ + specs/
+│   └── vada-ai/         # web/ + mcp/
 ├── packages/
 │   ├── engine/          # @atta/engine
 │   ├── adapter-langgraph/
@@ -83,4 +81,4 @@ attaai/   (repo name; rename TBD)
 └── turbo.json
 ```
 
-Each product has the surfaces it needs — not every product has web + mobile + MCP. Cetana is CLI + coordinator only. Vāda is web + MCP.
+Each product has the surfaces it needs — not every product has web + mobile + MCP. Vāda is web + MCP.
