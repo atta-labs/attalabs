@@ -23,9 +23,13 @@ If the color you want is not in the list, it does not exist. Pick the closest se
 
 ---
 
-## Token Role Doctrine
+## Token Roles — the canonical reference
 
-The token list is the *vocabulary*. This section is the *grammar*. Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
+**This is the single source of truth for what every token means.** Later sections
+(Decision Tree, Forbidden/Correct Patterns) are lookups and worked examples — when they
+disagree with these tables, these tables win, and the other section is the bug.
+
+Every token has exactly one role. Every token has exactly one role. Picking by role — not by "which color looks nicest in the current theme" — is what makes the system survive theme changes.
 
 ### Surface roles (where things sit)
 
@@ -66,51 +70,28 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
 | `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent` (D-131). |
 
-> ### `accent` is a SURFACE. `primary` is the HIGHLIGHT.
+> ### THE FILL/HIGHLIGHT SPLIT (D-131) — stated once, here
 >
-> The neobrutalist libraries use `bg-accent` as a **full-opacity hover fill** —
-> retro's `installed/table.tsx` row `hover:bg-accent`, Button's `ghost` variant,
-> dropdown items. retroui's own `--accent` is `#38342b`: a dark surface one step
-> above its card. A theme that instead defines `--accent` as a bright highlight
-> makes every one of those render light-on-light and swallow the label.
+> **`accent` paints backgrounds. `primary` colours text and borders.**
 >
-> On a dark background a fill must be *dark* and a text colour must be *light*.
-> **No single value satisfies both** — this is a role conflict, not a tuning problem.
-> So: `accent` = fills (`bg-accent`, `hover:bg-accent`). `primary` = highlights
-> (`text-primary`, `hover:text-primary`, `group-hover:border-primary`).
+> | You are styling | Token |
+> |---|---|
+> | a hover **fill** (row, ghost button, menu item) | `bg-accent` / `hover:bg-accent` + `text-accent-foreground` |
+> | a selected/active **fill** | `bg-primary` + `text-primary-foreground` |
+> | **text** emphasis or a link hover | `text-primary` / `hover:text-primary` |
+> | a **border** highlight | `hover:border-primary` / `group-hover:border-primary` |
 >
-> Do **not** paper over the mismatch with an opacity modifier (`bg-accent/15`).
-> That fakes a token that should exist, and the fill belongs to the component,
-> not the call site.
-
-**`primary` vs `accent` discipline:**
-
-- `primary` is for things the user **acts on or has selected**. It's a commitment. One or two `primary` elements per view, max.
-- `accent` is for things the UI **reacts to or wants to emphasize**. It's a touch. Use it more freely, but stay restrained — accent everywhere is accent nowhere.
-- If you're tempted to introduce a third brand color: don't. Use `accent` with an opacity modifier (`bg-accent/20`) or fall back to `muted` / `muted-foreground`.
-
-**Hover and active state patterns** (apply consistently across the codebase):
-
-```tsx
-// Interactive surface — a hover FILL is accent, with its paired foreground
-<button className='bg-card hover:bg-accent text-card-foreground hover:text-accent-foreground' />
-
-// Selected / active item
-<button className='bg-primary text-primary-foreground' />
-
-// Text-only link / inline action — a highlight is PRIMARY, never accent
-<a className='text-foreground hover:text-primary' />
-
-// Border emphasis on hover — also primary
-<div className='border border-border hover:border-primary' />
-
-// Ghost button on a card — a fill, so accent
-<button className='bg-transparent hover:bg-accent/10 text-card-foreground hover:text-accent-foreground' />
-```
-
-The principle (D-131): **a hover FILL reaches for `accent`; a text or border HIGHLIGHT reaches for `primary`.** Selected/active fills also reach for `primary`. Never a Tailwind palette color.
-
-The split exists because the neobrutalist libraries paint `bg-accent` at full opacity. On a dark background a fill must be *dark* and an ink must be *light* — measured, there is no overlap, so one token cannot serve both. Do not bridge the gap with an opacity modifier (`bg-accent/15`); that fakes a token that should exist.
+> **Why it cannot be one token.** The neobrutalist libraries paint `bg-accent` at full
+> opacity (retro's `installed/table.tsx` row hover, Button `ghost`, dropdown items);
+> retroui's own `--accent` is `#38342b`, a dark surface one step above its card. On a dark
+> background a fill must be *dark* and an ink must be *light* — measured, there is no
+> overlapping value. It is a role conflict, not a tuning problem.
+>
+> **Do not bridge it with opacity** (`bg-accent/15`). That fakes a token that should
+> exist, and the fill belongs to the component, not the call site.
+>
+> Discipline, unchanged: `primary` is a commitment — one or two per view. Wanting a third
+> brand colour means reaching for `muted` / `muted-foreground`, not inventing one.
 
 ### Status roles
 
@@ -147,8 +128,11 @@ Status tokens describe **outcome semantics**, not aesthetic mood. Don't use `suc
 |---|---|---|
 | `border` | **Default divider/outline** | All borders unless emphasized. Card outlines, input borders, dividers, list separators. |
 | `ring` | **Focus** | Keyboard focus rings (`focus-visible:ring-ring`). Never used decoratively. |
-| `primary` | **Emphasized border** | Hover/selected borders (`hover:border-primary`, `group-hover:border-primary`, `data-[selected=true]:border-primary`). Was `accent` before D-131; `accent` is now a fill only. |
+| `primary` | **Emphasized border** | Hover/selected borders — see Brand / Interactive above. |
 | status tokens | **State borders** | `border-success/40`, `border-destructive/40` for status-tagged containers. |
+| `shadow-color` | **Shadow colour** | The colour of the theme's offset/drop shadows, **deliberately separate from `border`**. The neobrutalist libraries draw a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow cannot express that if its shadow strings reference `var(--border)` — the shadow goes black and disappears. CMS shadow strings MUST use `var(--shadow-color)`. |
+| `primary-hover` | **Fill hover** | Hover fill for `primary`-filled controls. retro's vendored `installed/button.tsx` ships `hover:bg-primary-hover`; without the token *and* a `--color-primary-hover` mapping in `globals.css` that class emits **no CSS at all** and the hover silently never fires. |
+| `secondary-hover` | **Fill hover** | Same, for `secondary`-filled controls (`hover:bg-secondary-hover`). |
 
 ### Sidebar role family
 
@@ -164,65 +148,6 @@ Used **only** by the actual sidebar component. Do not pull these into other chro
 | `sidebar-ring` | Sidebar focus ring |
 
 ---
-
-## The Complete Token List
-
-All tokens below are exposed as Tailwind utilities. For any token `X`, you can use `bg-X`, `text-X`, `border-X`, `ring-X`, and opacity variants like `border-X/40`, `bg-X/10`.
-
-### Surfaces
-
-| Token | Use for |
-|-------|---------|
-| `background` | Page canvas |
-| `foreground` | Primary text on canvas |
-| `secondary` | Structural chrome (topbar, toolbar, footer, tab strip) |
-| `secondary-foreground` | Text on secondary chrome |
-| `card` | Card / panel surfaces |
-| `card-foreground` | Text on card surfaces |
-| `popover` | Popovers, menus, tooltips |
-| `popover-foreground` | Text inside popovers |
-| `muted` | Recessed fills (chips, inactive controls, table zebra) |
-| `muted-foreground` | Quiet ink (metadata, helpers, placeholders) |
-| `input` | Input field background |
-
-### Brand / Interactive
-
-| Token | Use for |
-|-------|---------|
-| `primary` | Action / selected / weighted info, **and every text or border highlight** (`text-primary`, `hover:text-primary`, `hover:border-primary`) |
-| `primary-foreground` | Text on `primary` fills |
-| `accent` | **Hover fill only** — `bg-accent`, `hover:bg-accent`. Never a text or border colour (D-131) |
-| `accent-foreground` | Text on `accent` fills |
-
-### Status
-
-| Token | Use for |
-|-------|---------|
-| `success` | Positive outcome |
-| `warning` | Needs attention |
-| `destructive` | Failure / destructive action |
-| `destructive-foreground` | Text on `destructive` fills |
-
-### Chrome
-
-| Token | Use for |
-|-------|---------|
-| `border` | Dividers, card outlines, input borders |
-| `ring` | Focus ring |
-| `shadow-color` | Colour of the theme's offset/drop shadows. **Deliberately separate from `border`.** The neobrutalist libraries draw a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow (retroui's own does exactly this) cannot express it if the shadow strings reference `var(--border)` — a black border would produce a black, invisible shadow. CMS shadow strings MUST use `var(--shadow-color)`, never `var(--border)`. |
-| `primary-hover` | Hover fill for `primary`-filled controls. retro's vendored `installed/button.tsx` uses `hover:bg-primary-hover`; with no token and no `--color-primary-hover` mapping in `globals.css`, that class emits **no CSS at all** and the hover silently never fires. |
-| `secondary-hover` | Same, for `secondary`-filled controls (`hover:bg-secondary-hover`). |
-
-### Sidebar
-
-| Token | Use for |
-|-------|---------|
-| `sidebar` | Sidebar background |
-| `sidebar-foreground` | Sidebar text |
-| `sidebar-primary` / `sidebar-primary-foreground` | Sidebar active item |
-| `sidebar-accent` / `sidebar-accent-foreground` | Sidebar hover / highlight |
-| `sidebar-border` | Sidebar dividers |
-| `sidebar-ring` | Sidebar focus ring |
 
 ### Chart / multi-series
 
@@ -307,9 +232,10 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 // ❌ Hover FILL reaching for primary
 <button className='hover:bg-primary' />                       // fills use hover:bg-accent
 
-// ❌ Text/border highlight reaching for accent (D-131 — accent is a fill)
+// ❌ accent used as an ink — it is a fill (see THE FILL/HIGHLIGHT SPLIT)
 <a className='hover:text-accent' />                           // use hover:text-primary
 <div className='hover:border-accent' />                       // use hover:border-primary
+<span className='text-accent' />                              // use text-primary
 
 // ❌ Sidebar tokens leaking into non-sidebar chrome
 <header className='bg-sidebar text-sidebar-foreground' />    // use bg-secondary text-secondary-foreground
@@ -330,7 +256,7 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 <Button className='bg-primary text-primary-foreground'>Deliberate</Button>
 <NavItem className='data-[active=true]:bg-primary data-[active=true]:text-primary-foreground' />
 
-// ✅ Accent for hover / highlight / inline emphasis
+// ✅ accent = the hover FILL; primary = the ink/border highlight
 <button className='bg-card hover:bg-accent text-card-foreground hover:text-accent-foreground' />
 <a className='text-foreground hover:text-primary'>Read more</a>
 <span className='text-primary font-serif'>deliberation</span>  // sparingly: 1–2 emphases per view
@@ -378,7 +304,7 @@ When unsure, walk this tree top-down. The first match wins.
 
 3. **Is this an interactive state?**
    - Default rest state → the surface's normal token
-   - Hover FILL → `accent`; hover TEXT/BORDER → `primary` (D-131)
+   - Hover → see **THE FILL/HIGHLIGHT SPLIT**: fill = `accent`, text/border = `primary`
    - Selected / active / current → `primary`
    - Focus ring → `ring`
    - Disabled → `muted` background + `muted-foreground` text
@@ -392,7 +318,7 @@ When unsure, walk this tree top-down. The first match wins.
 
 5. **Is this a border?**
    - Default → `border`
-   - Hover/selected emphasis → `primary` (D-131 — `accent` is a fill, not a border colour)
+   - Hover/selected emphasis → `primary` (see THE FILL/HIGHLIGHT SPLIT)
    - Status-tagged → `success/40` / `warning/40` / `destructive/40`
    - Focus → `ring`
 
