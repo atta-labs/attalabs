@@ -633,7 +633,14 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * a gate-disagreement bug, not a style difference. */
 export function extractClosesReferences(prBody: string): Set<number> {
   const closesPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s{0,8}:?\s{0,8}#(\d+)/gi
-  const searchIn = stripCode(anchoredRegion(prBody, 'CLOSES') ?? prBody)
+  // Strip the WHOLE body, then slice the anchor region out of the stripped
+  // text — never strip a sliced region. A region has lost the block context
+  // the strip's rules read (list vs indented-code, fence pairing), so an
+  // anchor indented inside a list item was blanked as if it were code, and
+  // this parser silently disagreed with the whole-body path in the same call
+  // (PR #617 review MAJOR). See `archive-task.ts`'s `extractIssue`.
+  const stripped = stripCode(prBody)
+  const searchIn = anchoredRegion(stripped, 'CLOSES') ?? stripped
   const referenced = new Set<number>()
   for (const hit of searchIn.matchAll(closesPattern)) {
     referenced.add(Number(hit[1]))

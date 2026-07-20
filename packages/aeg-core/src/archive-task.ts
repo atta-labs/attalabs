@@ -115,22 +115,35 @@ function closesRefs(text: string): number[] {
  * pair parse exactly as before.
  */
 export function extractIssue(body: string): { issue: number | null; extraIssues: number[]; outsideHeader: boolean } {
-  const bodyNums = closesRefs(stripCode(body))
-  const anchored = anchoredRegion(body, 'CLOSES')
+  // Strip ONCE over the whole body, then slice — never strip a slice. The
+  // strip's block rules read context a fragment no longer carries: an anchor
+  // indented inside a list item is list content in the full body (kept, and
+  // GitHub *does* auto-close it) but looks like a bare 4-space indented code
+  // block once sliced, so stripping the region blanked the reference and
+  // returned `issue: null` — the Issue then goes unclosed on merge, the exact
+  // stranding this PR exists to eliminate, reintroduced along the over-strip
+  // axis (PR #617 review MAJOR). Stripping first also subsumes the decoy
+  // protection rather than trading against it: `AEG:*` markers are HTML
+  // comments and survive the strip, while a decoy anchor inside code does not
+  // survive to be sliced in the first place.
+  const stripped = stripCode(body)
+  const bodyNums = closesRefs(stripped)
+  const anchored = anchoredRegion(stripped, 'CLOSES')
   if (anchored !== null) {
-    const anchorNums = closesRefs(stripCode(anchored))
+    const anchorNums = closesRefs(anchored)
     if (anchorNums.length === 0) return { issue: null, extraIssues: bodyNums, outsideHeader: false }
     const issue = anchorNums[0] as number
     return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: false }
   }
-  const headerNums = closesRefs(stripCode(headerRegion(body)))
+  const headerNums = closesRefs(headerRegion(stripped))
   if (bodyNums.length === 0) return { issue: null, extraIssues: [], outsideHeader: false }
   const issue = headerNums.length > 0 ? (headerNums[0] as number) : (bodyNums[0] as number)
   return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: headerNums.length === 0 }
 }
 
 function extractDecision(body: string, tier: 0 | 1 | 3 | null): { decision: string; danglingNote: string | null } {
-  const m = stripCode(headerRegion(body)).match(/Conforms-to(?:-lock)?\s*:\s*(D-\d+)/i)
+  // Strip whole, then slice — same rule as `extractIssue`; see the note there.
+  const m = headerRegion(stripCode(body)).match(/Conforms-to(?:-lock)?\s*:\s*(D-\d+)/i)
   if (m) return { decision: `${m[1]} (conforms to existing decision)`, danglingNote: null }
   if (tier === 3) {
     return {

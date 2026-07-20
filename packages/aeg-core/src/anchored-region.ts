@@ -103,6 +103,19 @@ function maskCode(body: string): string {
  * mis-read as an inline span; 4-space **indented** code blocks are stripped in
  * between (see `maskIndentedCode`).
  */
+/*
+ * **Call this on a WHOLE body, never on a slice of one.** Every rule here is
+ * block-structural — a fence pairs with its own closer, an indented run counts
+ * as code only after a blank line and outside list context — so the same text
+ * strips differently depending on what precedes it. Slicing first and stripping
+ * second silently changes the answer: an anchor indented inside a list item is
+ * list content in the full body (kept; GitHub auto-closes it) and a bare
+ * indented code block once sliced (blanked), which reintroduced a stranded
+ * Issue through `extractIssue` (PR #617 review MAJOR). Strip, then slice — the
+ * `AEG:*` markers are HTML comments and survive the strip, so region selection
+ * works on stripped text, and a decoy anchor inside code never survives to be
+ * sliced at all.
+ */
 export function stripCode(body: string): string {
   // Normalise line endings FIRST. The line scanners below anchor per line, and
   // JS's `.`/`[ \t]` never match `\r`, so a CRLF body would open no fence at all
