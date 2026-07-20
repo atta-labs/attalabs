@@ -67,25 +67,6 @@
   --color-border: var(--border);
   --color-shadow-color: var(--shadow-color);
 
-  /* neobrutalism.dev token vocabulary. brutal's vendored installed/* is a paste
-     from that design system, which names its tokens differently from shadcn:
-     `main` instead of `primary`, `secondary-background` instead of `card`,
-     `base` for radius/font. Our themes have no such fields, so without these
-     aliases the classes matched NO rule — brutal rendered with unset
-     backgrounds, no radius and dead hover offsets on every theme. Aliasing
-     onto the semantic tokens we already have means every theme works under
-     brutal with no new CMS fields and no brutal-specific theme documents. */
-  --color-main: var(--primary);
-  --color-main-foreground: var(--primary-foreground);
-  --color-secondary-background: var(--card);
-  --radius-base: var(--radius);
-  --font-base: var(--font-sans);
-  /* brutal translates a button by its shadow offset on press, so these must
-     match the ramp's own 4px offset (see `--shadow-md`). */
-  --spacing-boxShadowX: 4px;
-  --spacing-boxShadowY: 4px;
-  --spacing-reverseBoxShadowX: -4px;
-  --spacing-reverseBoxShadowY: -4px;
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
@@ -143,10 +124,6 @@
   .shadow-lg { box-shadow: var(--shadow-lg); }
   .shadow-xl { box-shadow: var(--shadow-xl); }
   .shadow-2xl { box-shadow: var(--shadow-2xl); }
-  /* neobrutalism.dev names its offset shadow `shadow`, so brutal's vendored
-     installed/button.tsx ships `shadow-shadow`. Without this the class matched
-     no rule and every brutal Button rendered flat on every theme. */
-  .shadow-shadow { box-shadow: var(--shadow); }
 }
 
 
