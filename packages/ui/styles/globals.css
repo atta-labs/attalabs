@@ -123,6 +123,10 @@
   .shadow-lg { box-shadow: var(--shadow-lg); }
   .shadow-xl { box-shadow: var(--shadow-xl); }
   .shadow-2xl { box-shadow: var(--shadow-2xl); }
+  /* neobrutalism.dev names its offset shadow `shadow`, so brutal's vendored
+     installed/button.tsx ships `shadow-shadow`. Without this the class matched
+     no rule and every brutal Button rendered flat on every theme. */
+  .shadow-shadow { box-shadow: var(--shadow); }
 }
 
 
