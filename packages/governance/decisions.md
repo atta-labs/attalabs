@@ -3216,3 +3216,40 @@ Supporting decisions, each load-bearing:
 - **Add a ring-1 (coherence-oracle) half now** so the checks also re-run continuously over the open Issue stock — rejected as out of this change's surface, and recorded as a known gap in `aeg-root/enforcement.md`: unlike R1, these checks are ring-0 only. Adding them to the oracle would fail a large body of pre-D-130 Issues at once and needs a grandfathering decision of its own.
 
 **Consequences:** Cutting or body-editing a task Issue now fails on an under-declared blast radius, leaked brief content, or a rationale naming no doc — each with a message naming its remedy. Measured against the 142 historical task Issues that pass the current rationale gate: B fires on exactly the 9 Issues cut this session (#621–#629) and nothing else; D fires on 20, essentially all genuine "no docs named" bodies that predate the sentinel; A fires on 34, and sampling confirms the class is real rather than noise (e.g. #383, a `vinaya-cli-v1` Tier-3 task editing `packages/aeg-core` under `Project: vinaya` alone). None of this touches existing Issues — the gate runs at write time — but a Planner *editing* an old Issue's body will meet the new checks, and the correct response is to fix the declaration, which is the point. `stripCode` (`anchored-region.ts`) gains a `{ inlineSpans: 'keep' }` option: block code is always stripped, but path-shaped checks must keep inline spans, because prose writes paths in backticks and a span-blind A matches nothing on the very Issues it was built from. The option lives on the single exported stripper rather than in a caller, so "one stripper, never a duplicated regex" (#617) stays literally true. Two latent bugs surfaced and were fixed while calibrating: the field slicer's `$` terminator matched end-of-*line* under the `m` flag, truncating every heading-style field to its own label, and an ungrouped alternation in the same pattern split the whole regex rather than the label.
+
+---
+
+## D-131 — `accent` is a surface, `primary` is the highlight; shadow colour is decoupled from `--border`; the retro/brutal border shim is removed
+
+**Date:** 2026-07-20
+**Status:** ACTIVE
+**Type:** 2 (reversible token-role refinement — a naming/role convention plus three additive CMS fields; revertible by restoring the shim and reverting the call-site sweep, TL-decidable)
+**Lock:** NO
+
+**Authored by:** Developer session on `refactor/ui-theme-token-roles`, 2026-07-20
+**Ratified by:** Type 2 — TL-decidable; recorded ACTIVE on merge.
+
+**Context:** "Borders too white in obsidian-retro dark mode" traced to five independent causes, only one of which was a colour value.
+
+`globals.css` carried `html[data-library="retro"|"brutal"][data-theme] { --border: var(--foreground) }`. It is live — `library-provider.tsx` sets `dataset.library` after hydration — and at specificity 0-2-1 it overrode whatever `--border` a theme defined, in **both** schemes. It existed as a compatibility shim: 13 of 20 themes ship borders at 0.14–0.20 alpha, tuned for soft libraries, and render near-borderless under retro.
+
+Two token-role collisions sat underneath it. First, obsidian-retro's shadow strings were `Npx Npx 0 0 var(--border)`, so a black border necessarily produced a black — invisible — shadow; retroui's own theme keeps `--border: #000000` and `--shadow-color: #4a443c` separate, and our schema had no `shadowColor` field at all. Second, `--accent` was doing two incompatible jobs: a **surface** (retro's `installed/table.tsx` row `hover:bg-accent`, Button `ghost`, dropdown items — retroui's own accent is `#38342b`, a dark surface) and a **highlight** (38 call sites across Vinaya and Vāda plus the shared `next-link.tsx` nav-hover and `logo.tsx` wordmark). On a dark background a fill must be dark and a text colour must be light; no single value satisfies both. Every attempt to tune it broke one side.
+
+Separately, retro's vendored `installed/button.tsx` references `hover:bg-primary-hover` / `hover:bg-secondary-hover` — retroui theme tokens we never defined, and with no `--color-*` mapping those classes emit no CSS at all, so those hovers had silently never fired.
+
+**Decision:**
+
+1. **`accent` is a surface; `primary` is the highlight.** `bg-accent`/`hover:bg-accent` are fills owned by components. `text-primary`/`hover:text-primary`/`group-hover:border-primary` are highlights. Opacity modifiers (`bg-accent/15`) are **not** an acceptable bridge — they fake a token that should exist.
+2. **Shadow colour is its own token.** `shadowColor` (per-scheme, in the colour group) surfaces as `--shadow-color`. Theme shadow strings must reference it, never `var(--border)`. The shadow *ramp* stays scheme-agnostic; only its colour is per-scheme.
+3. **`primaryHover` / `secondaryHover` become real tokens**, mapped in `@theme inline`, so already-vendored `installed/` classes function.
+4. **The retro/brutal border shim is removed.** Each theme owns its own border in both schemes.
+
+**The `globals.css` "untouchable" rule is explicitly excepted here, with sign-off.** Net −8/+3. The exception is recorded rather than assumed because the rule is otherwise absolute: the shim makes a black border *unrepresentable* while it exists (it overrides the theme unconditionally), and the three `@theme inline` mappings are the only way Tailwind emits CSS for classes the vendored components already ship. Neither is a styling preference expressed in global CSS — which is what the rule exists to prevent.
+
+**Alternatives rejected:**
+- **Tune `--accent` to a mid value serving both roles** — rejected: measured, there is no overlap. Readable as text on a 0.13 background needs ≈0.65+; readable *under* 0.95 text as a fill needs ≈0.45 or lower.
+- **Soften the fills in retro wrappers (`hover:bg-accent/15`) and keep accent bright** — rejected: 38 highlight uses vs 3 fill uses, and the fills live in vendored upstream components whose assumption (accent = surface) matches retroui. Wrapping to fight upstream is the inversion.
+- **Keep the shim and give obsidian-retro a lighter border** — rejected: it does not address the shadow coupling, and leaves every theme's border unrepresentable under retro/brutal.
+- **Scope the doctrine to retro/brutal only** — rejected as unimplementable: `next-link.tsx` and `logo.tsx` are shared and cannot branch on the active library from a class string.
+
+**Consequences:** Removing the shim means **each theme must now supply its own adequate border**. Only obsidian-retro has been migrated; the other 19 will render near-borderless if repointed at retro/brutal — a tracked follow-up, not a regression of this change. Vāda, Herald and Atta shift nav-hover and wordmark from accent to primary; in their themes (kpop-demon-hunter, ultraviolet, obsidian) both tokens are bright, so this is a hue shift, not a contrast change. `.claude/skills/ui-library-system/SKILL.md`'s `currentColor` premise for retro/animate sticky-header rules is **corrected in the same PR** — the premise was wrong (`@layer base { * { @apply border-border } }` gives every element `--border`), and it produced the very mismatch it was written to prevent. `apps/aeg` carries 20 unmigrated accent-highlight uses and is deliberately untouched: it is a deprecated duplicate of Vinaya Studio slated for deletion in `deprecation-v1`, and is outside this change's `Project:` scope.

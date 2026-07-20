@@ -66,6 +66,23 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
 | `accent` | **Hover / Highlight / Emphasis** | Hover surfaces on interactive elements, decorative highlights, soft emphasis on a small number of high-meaning inline tokens. The "this is reactive / this is special" color. |
 
+> ### `accent` is a SURFACE. `primary` is the HIGHLIGHT.
+>
+> The neobrutalist libraries use `bg-accent` as a **full-opacity hover fill** —
+> retro's `installed/table.tsx` row `hover:bg-accent`, Button's `ghost` variant,
+> dropdown items. retroui's own `--accent` is `#38342b`: a dark surface one step
+> above its card. A theme that instead defines `--accent` as a bright highlight
+> makes every one of those render light-on-light and swallow the label.
+>
+> On a dark background a fill must be *dark* and a text colour must be *light*.
+> **No single value satisfies both** — this is a role conflict, not a tuning problem.
+> So: `accent` = fills (`bg-accent`, `hover:bg-accent`). `primary` = highlights
+> (`text-primary`, `hover:text-primary`, `group-hover:border-primary`).
+>
+> Do **not** paper over the mismatch with an opacity modifier (`bg-accent/15`).
+> That fakes a token that should exist, and the fill belongs to the component,
+> not the call site.
+
 **`primary` vs `accent` discipline:**
 
 - `primary` is for things the user **acts on or has selected**. It's a commitment. One or two `primary` elements per view, max.
@@ -194,6 +211,9 @@ All tokens below are exposed as Tailwind utilities. For any token `X`, you can u
 |-------|---------|
 | `border` | Dividers, card outlines, input borders |
 | `ring` | Focus ring |
+| `shadow-color` | Colour of the theme's offset/drop shadows. **Deliberately separate from `border`.** The neobrutalist libraries draw a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow (retroui's own does exactly this) cannot express it if the shadow strings reference `var(--border)` — a black border would produce a black, invisible shadow. CMS shadow strings MUST use `var(--shadow-color)`, never `var(--border)`. |
+| `primary-hover` | Hover fill for `primary`-filled controls. retro's vendored `installed/button.tsx` uses `hover:bg-primary-hover`; with no token and no `--color-primary-hover` mapping in `globals.css`, that class emits **no CSS at all** and the hover silently never fires. |
+| `secondary-hover` | Same, for `secondary`-filled controls (`hover:bg-secondary-hover`). |
 
 ### Sidebar
 
