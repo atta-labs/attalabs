@@ -78,13 +78,74 @@ function maskCode(body: string): string {
  * `Closes #5` surviving as bare text (a false-green: passed the gate, but
  * GitHub, seeing a code span, refused to auto-close — PR #617 review). Fenced
  * blocks (```` ``` ````) are stripped first so a fence line is never mis-read as
- * an inline span. NOT covered: 4-space **indented** code blocks — distinguishing
- * a genuine indented block from list-continuation text needs a real CommonMark
- * parser, and a wrong guess would blank a legitimately bare `Closes` (the brief's
- * over-strip stop condition), so that rare form is left to prose recognition.
+ * an inline span; 4-space **indented** code blocks are stripped in between (see
+ * `stripIndentedCode`).
  */
 export function stripCode(body: string): string {
-  return body.replace(/```[\s\S]*?```/g, '').replace(/(`+)[^\n]*?\1/g, '')
+  const withoutFenced = body.replace(/```[\s\S]*?```/g, '')
+  return stripIndentedCode(withoutFenced).replace(/(`+)[^\n]*?\1/g, '')
+}
+
+/** A list marker (`-`, `*`, `+`, `1.`, `1)`) indented 0–3 spaces — opens list context. */
+const LIST_MARKER = /^ {0,3}(?:[-*+]|\d{1,9}[.)])(?:\s|$)/
+
+/** Leading-whitespace width, counting a tab as 4 columns (CommonMark tab stop). */
+function indentWidth(line: string): number {
+  let width = 0
+  for (const ch of line) {
+    if (ch === ' ') width += 1
+    else if (ch === '\t') width += 4
+    else break
+  }
+  return width
+}
+
+/**
+ * Blanks CommonMark **indented code blocks** (a run of ≥4-column-indented lines
+ * that begins after a blank line), so an indented `Closes #N` is ignored exactly
+ * as GitHub's auto-close parser ignores it.
+ *
+ * Deliberately conservative — it is far worse to blank a *legitimately bare*
+ * `Closes` (a false-red, and the brief's explicit over-strip stop condition)
+ * than to miss an unusual indented one. Two guards enforce that asymmetry:
+ *
+ *   - **Must follow a blank line.** An indented code block cannot interrupt a
+ *     paragraph, so an indented continuation line of running prose is never
+ *     touched.
+ *   - **Never inside a list.** Within a list item, 4-space indentation is the
+ *     item's own content indent, not code — `- item` + blank + `    Closes #5`
+ *     is a list paragraph GitHub *would* auto-close. List context opens on a
+ *     list marker and closes on the next column-0 non-blank line. The cost is
+ *     that a genuine indented code block nested inside a list is left unstripped
+ *     (a false-green in that rare shape) — the safe direction of the trade.
+ */
+function stripIndentedCode(body: string): string {
+  const lines = body.split('\n')
+  let inList = false
+  let inCode = false
+  let prevBlank = true // start-of-body behaves like "preceded by a blank line"
+
+  const out = lines.map((line) => {
+    if (line.trim() === '') {
+      prevBlank = true
+      return line // a blank line neither opens nor closes a code run
+    }
+    const indent = indentWidth(line)
+
+    if (indent >= 4 && (inCode || (prevBlank && !inList))) {
+      inCode = true
+      prevBlank = false
+      return '' // blank the code line, keeping line count stable
+    }
+
+    inCode = false
+    if (indent < 4 && LIST_MARKER.test(line)) inList = true
+    else if (indent === 0) inList = false
+    prevBlank = false
+    return line
+  })
+
+  return out.join('\n')
 }
 
 /**

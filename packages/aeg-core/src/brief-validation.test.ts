@@ -264,6 +264,36 @@ describe('checkClosesN', () => {
       expect(checkClosesN(phrase).status).toBe('pass')
     }
   })
+
+  // ---- indented code blocks (PR #617 review, MINOR) ----
+  it('fails a Closes #N that lives only in a 4-space indented code block', () => {
+    const result = checkClosesN('Summary of the change.\n\n    Closes #5\n')
+    expect(result.status).toBe('fail')
+    expect(result.errors[0]).toContain('only inside a code span')
+  })
+  it('fails a Closes #N in a tab-indented code block', () => {
+    expect(checkClosesN('Summary.\n\n\tCloses #5\n').status).toBe('fail')
+  })
+  it('fails only the indented copy — a real bare Closes #5 alongside it still passes', () => {
+    expect(checkClosesN('Ships it. Closes #5\n\n    Example: Closes #99\n').status).toBe('pass')
+  })
+  it('strips a multi-line indented block, not just its first line', () => {
+    expect(checkClosesN('Summary.\n\n    line one\n    Closes #5\n').status).toBe('fail')
+  })
+
+  // ---- over-strip guards: these must NOT be treated as code ----
+  it('does NOT strip an indented Closes #N that is list-item continuation', () => {
+    // 4-space indent under a list marker is list content, not code — GitHub
+    // auto-closes it, so the gate must too.
+    expect(checkClosesN('- item\n\n    Closes #5\n').status).toBe('pass')
+  })
+  it('does NOT strip an indented line that merely continues a paragraph', () => {
+    // No blank line before it => cannot be an indented code block.
+    expect(checkClosesN('Some running prose\n    Closes #5\n').status).toBe('pass')
+  })
+  it('resumes stripping after the list context closes at column 0', () => {
+    expect(checkClosesN('- item\n\nBack to prose.\n\n    Closes #5\n').status).toBe('fail')
+  })
 })
 
 describe('headerRegion', () => {
