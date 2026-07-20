@@ -30,7 +30,7 @@ export function Logo({ light, dark, alt = '', size = 'h-6', className, text }: L
     ) : (
       <div className='flex flex-col'>
         <span className='text-sm uppercase font-mono'>{text[0]}</span>
-        <span className='text-sm uppercase font-mono text-accent'>{text[1]}</span>
+        <span className='text-sm uppercase font-mono text-primary'>{text[1]}</span>
       </div>
     )
 

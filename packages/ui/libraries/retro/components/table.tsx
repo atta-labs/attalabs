@@ -7,13 +7,18 @@
 // class. Sticky `<th>` cells detach from the row border (border-collapse), so the
 // pinned header carries its own — `border-b-2` matches retro's `[&_tr]:border-b-2`
 // rows, so the pinned header keeps retro's thick separator (not a thin line).
+// Its COLOUR is var(--border), not currentColor: on a <th> currentColor is the
+// header's text colour (--foreground), while the rows beneath resolve to --border
+// via globals.css's `@layer base { * { @apply border-border } }`. Using
+// currentColor underlined the pinned header in the foreground colour on every
+// theme — the exact mismatch the rule was meant to prevent.
 import type { ComponentProps } from 'react'
 import { cn } from '../../../lib/utils'
 import { Table as InstalledTable, TableCell as InstalledTableCell } from '../installed/table'
 import { makeScrollableTable } from '../../../lib/scrollable-table'
 
 const STICKY_HEADER =
-  '@min-[780px]/tbl:[&_thead_th]:sticky @min-[780px]/tbl:[&_thead_th]:top-0 @min-[780px]/tbl:[&_thead_th]:z-10 @min-[780px]/tbl:[&_thead_th]:bg-muted @min-[780px]/tbl:[&_thead_th]:shadow-[inset_0_-2px_0_0_currentColor]'
+  '@min-[780px]/tbl:[&_thead_th]:sticky @min-[780px]/tbl:[&_thead_th]:top-0 @min-[780px]/tbl:[&_thead_th]:z-10 @min-[780px]/tbl:[&_thead_th]:bg-muted @min-[780px]/tbl:[&_thead_th]:shadow-[inset_0_-2px_0_0_var(--border)]'
 
 export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)
 export type { ScrollableTableProps as TableProps } from '../../../lib/scrollable-table'

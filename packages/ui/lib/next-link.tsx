@@ -17,8 +17,8 @@ const variants: Record<NextLinkVariant, string> = {
   // surrounding prose rather than calling attention to itself the way
   // `variant='prose'` does with `text-primary`.
   link: 'underline underline-offset-2 decoration-foreground/40 hover:decoration-foreground transition-colors',
-  nav: 'text-muted-foreground transition-colors hover:text-accent',
-  subtle: 'font-mono text-xs text-muted-foreground transition-colors hover:text-accent',
+  nav: 'text-muted-foreground transition-colors hover:text-primary',
+  subtle: 'font-mono text-xs text-muted-foreground transition-colors hover:text-primary',
   card: 'block transition-opacity hover:opacity-80',
   destructive: 'text-destructive/70 underline transition-opacity hover:opacity-70',
   unstyled: '',
