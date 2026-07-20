@@ -33,24 +33,28 @@ export function isNeobrutalistLibrary(libraryId: string | null | undefined): boo
 }
 
 /**
- * Themes offerable for a library. Neobrutalist libraries get only tuned themes;
- * every other library gets the full list — a neobrutalist theme has a solid
- * border and a shadow colour, which render perfectly well under basic/animate.
+ * Themes offerable for a library — a strict PARTITION, not a one-way filter.
+ *
+ * Neobrutalist libraries get only `neobrutalist` themes, and the soft libraries
+ * get only the rest. A neobrutalist theme is technically legible under
+ * basic/animate, but it is tuned for a hard border and a hard offset shadow that
+ * those libraries never draw — so it reads as a washed-out version of itself
+ * rather than as its own design. The two are distinct visual families, not a
+ * superset and a subset.
  */
 export function themesForLibrary<T extends Pick<CMSTheme, 'neobrutalist'>>(
   themes: T[],
   libraryId: string | null | undefined
 ): T[] {
-  if (!isNeobrutalistLibrary(libraryId)) return themes
-  return themes.filter((t) => t.neobrutalist === true)
+  const wantNeobrutalist = isNeobrutalistLibrary(libraryId)
+  return themes.filter((t) => (t.neobrutalist === true) === wantNeobrutalist)
 }
 
-/** Whether a specific theme may be paired with a library. */
+/** Whether a specific theme may be paired with a library. Both directions. */
 export function isThemeCompatible(
   theme: Pick<CMSTheme, 'neobrutalist'> | null | undefined,
   libraryId: string | null | undefined
 ): boolean {
   if (!theme) return false
-  if (!isNeobrutalistLibrary(libraryId)) return true
-  return theme.neobrutalist === true
+  return (theme.neobrutalist === true) === isNeobrutalistLibrary(libraryId)
 }

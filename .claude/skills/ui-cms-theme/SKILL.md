@@ -78,8 +78,12 @@ leaving a broken pairing in place.
 would let a theme drift into the neobrutalist list because someone set an unrelated
 field, and the real requirement — a border solid enough to contrast with that
 theme's own surfaces — is a judgement call that a boolean records honestly.
-A neobrutalist theme is NOT filtered out of the soft libraries: a solid border and
-a shadow colour render fine under `basic`/`animate`.
+The filter is a strict **partition**, both directions: neobrutalist libraries offer
+only flagged themes, and `basic`/`animate` offer only the unflagged ones. A
+neobrutalist theme is legible under a soft library but is tuned for a hard border
+and offset shadow that those libraries never draw, so it reads as a washed-out
+version of itself. The two are distinct visual families, not a superset and a
+subset.
 
 **The shadow ramp is scheme-agnostic; its colour is not.** `addShadowVars`
 (`utils/theme.ts`) applies one `shadows` map to both schemes by design — offsets and blur
