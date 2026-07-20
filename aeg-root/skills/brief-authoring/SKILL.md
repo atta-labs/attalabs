@@ -74,7 +74,13 @@ The Brief Author's stages — name them, and say which you're in:
 
 3. **Draft** — write the brief, every required section. Move in confirmable steps for a big brief; for a small one, draft it and reflect the shape back before finalizing.
 
-4. **Contract checklist** — run the seven-field conformance check (below) out loud, so the Principal sees every Planner field landed in its brief home. This is the briefing analogue of the Planner's readiness gate: a visible gate, not a silent one.
+4. **Contract checklist** — run the seven-field conformance check (below) out loud, so the Principal sees every Planner field landed in its brief home. This is the briefing analogue of the Planner's readiness gate: a visible gate, not a silent one. Then run it **mechanically** on the drafted brief file, before dispatch:
+
+   ```
+   bun packages/aeg-core/bin/verify-brief.ts --body-file <path-to-brief.md>
+   ```
+
+   Same validator CI runs at PR time, one stage earlier — a missing section costs a re-draft here instead of a red gate after the Developer has already done the work. Exits non-zero and names each missing section. The branch is read from the brief's own Step 0 `git worktree add … -b <branch>` line, so `Closes #N` is required only when that line declares a `task/<iter>/<n>` branch.
 
 5. **Clarifications** — if any `[NEEDS CLARIFICATION]` markers remain, present them as a numbered list and **wait** — never dispatch with unresolved markers.
 
@@ -128,6 +134,8 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Read obligation + §7 populated from reading (D-058)** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
+
+**The structural half of that paragraph is mechanical — run it, don't eyeball it:** `bun packages/aeg-core/bin/verify-brief.ts --body-file <brief.md>` (protocol step 4). The judgment items above it stay human; the presence items below it are exactly what the gate checks. Note the gate applies **whatever the branch is** — a standalone `fix/*` brief is graded identically to a `task/*` one, because it is equally a brief (the `fix/*` bypass that used to skip it let a fix brief ship with no §7 list; D-129).
 
 ---
 
@@ -243,6 +251,8 @@ Do not leave documentation as an implication of the tier checklist. **List the e
 - **Tier 3** — all Tier 1 items, plus: a decision anchor — either (a) the exact decision log file (`packages/governance/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append, or (b) a `Conforms-to: D-###` field in the brief's header (for work that implements an existing decision without introducing a new one — omit the decision log file from the doc-update list in this case). Also: which state changes (the per-project pinned state Issue, D-110; the iteration file; per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` or `now.md` — both retired (`roadmap.md` by D-029; `now.md` by D-057). Active-work state is derived from the forge, not written to a file.
 
 A Tier 1+ brief with an empty doc-update list is malformed.
+
+**Head this section `Documentation-update list`, literally.** The gate's heading pattern is `(?:documentation|doc)[- ]update(?:\s+list)?` — `## Documentation-update list`, `## 7. Documentation update`, `## Doc-update list` all match; the natural-sounding **`## Documentation to update` does not**, and a brief headed that way fails the gate with "no Documentation-update list section found" even though the list is right there. Two live fix briefs were written that way. Run the `--body-file` check above and the wording is caught before dispatch instead of at PR time.
 
 ### 8. Verification before claiming done
 
