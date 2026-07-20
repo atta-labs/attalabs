@@ -93,6 +93,24 @@ describe('extractCodeReviewVerdict', () => {
     ])
     expect(result).toEqual({ value: 'APPROVE', danglingNote: null })
   })
+
+  // ---- markdown-emphasis tolerance (PR #636: reviewer emitted the bolded form) ----
+
+  it('extracts APPROVE from a markdown-bolded VERDICT: line (the #636 exact shape)', () => {
+    const result = extractCodeReviewVerdict(['**VERDICT: APPROVE**'])
+    expect(result).toEqual({ value: 'APPROVE', danglingNote: null })
+  })
+
+  it('extracts REQUEST CHANGES from a blockquoted + bolded VERDICT: line', () => {
+    const result = extractCodeReviewVerdict(['> **VERDICT: REQUEST CHANGES**'])
+    expect(result).toEqual({ value: 'REQUEST CHANGES', danglingNote: null })
+  })
+
+  it('regression 5: bolded prose with no VERDICT: marker still does NOT produce a clean APPROVE', () => {
+    const result = extractCodeReviewVerdict(['**I do not approve of this**'])
+    expect(result.danglingNote).not.toBeNull()
+    expect(result.value).not.toBe('APPROVE')
+  })
 })
 
 describe('extractSecurityReviewVerdict', () => {
@@ -139,6 +157,13 @@ describe('extractSecurityReviewVerdict', () => {
       DANGLING_SECURITY_PLACEHOLDER, // an intervening comment that must not count as a "clear hit"
       'VERDICT: PASS'
     ])
+    expect(result).toEqual({ value: 'PASS', danglingNote: null })
+  })
+
+  // ---- markdown-emphasis tolerance (PR #636: reviewer emitted the bolded form) ----
+
+  it('extracts PASS from a markdown-bolded VERDICT: line', () => {
+    const result = extractSecurityReviewVerdict(['**VERDICT: PASS**'])
     expect(result).toEqual({ value: 'PASS', danglingNote: null })
   })
 })

@@ -74,7 +74,7 @@ This is why the review is a separate pass and not something the Developer does t
 
 ## Output format
 
-Report in this exact shape so the Principal and TL can act without re-reading the diff:
+Report in this exact shape so the Principal and TL can act without re-reading the diff. The `VERDICT:` line is bare — no bold, no heading, no blockquote — it is machine-read by the pre-merge review gate:
 
 ```
 VERDICT: APPROVE | REQUEST CHANGES

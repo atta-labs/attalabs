@@ -25,6 +25,15 @@
  * code-reviewer.md`/`security-reviewer.md` require verbatim) — tightening
  * to it closes the gap without inventing a new convention.
  *
+ * The anchor tolerates leading markdown emphasis/structure characters
+ * (`*`, `_`, `#`, `>`) before the literal token, so a bolded or quoted
+ * `**VERDICT: APPROVE**` line still matches (PR #636: the reviewer subagent
+ * emitted the bolded form and the gate read the PR as carrying no code-review
+ * verdict at all). The spec still mandates the bare line; this only stops an
+ * agent's markdown drift from silently DANGLING a real verdict. What is NOT
+ * loosened is the requirement that a literal `VERDICT:` token be present —
+ * ordinary prose and the Archivist's own DANGLING placeholder still miss.
+ *
  * No separate "marker present but value unclear" branch: a generic
  * `VERDICT:`-prefix-only marker would itself cross-contaminate the two
  * extractors (a security reviewer's own `VERDICT: PASS` line would loosely
@@ -53,10 +62,10 @@ function extractVerdict(comments: string[], valuePattern: RegExp, missingLabel: 
 
 /** `value` is `APPROVE`, `REQUEST CHANGES`, `LGTM`, or a DANGLING placeholder string. */
 export function extractCodeReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(comments, /^\s*VERDICT:\s*(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/im, 'code-reviewer')
+  return extractVerdict(comments, /^[\s>*_#]*VERDICT:\s*(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/im, 'code-reviewer')
 }
 
 /** `value` is `PASS`, `FAIL`, or a DANGLING placeholder string. */
 export function extractSecurityReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(comments, /^\s*VERDICT:\s*(PASS|FAIL)\b/im, 'security-review')
+  return extractVerdict(comments, /^[\s>*_#]*VERDICT:\s*(PASS|FAIL)\b/im, 'security-review')
 }

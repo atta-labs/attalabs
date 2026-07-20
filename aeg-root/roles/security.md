@@ -68,6 +68,8 @@ When the PR touches agent/skill/hook definitions, MCP configs, or anything under
 
 ## Output format
 
+The `VERDICT:` line is bare — no bold, no heading, no blockquote — it is machine-read by the pre-merge review gate.
+
 ```
 VERDICT: PASS | FAIL
 
