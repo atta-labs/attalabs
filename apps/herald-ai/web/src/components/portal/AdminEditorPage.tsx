@@ -1,7 +1,7 @@
 'use client'
 
 import type { CMSLibrary, CMSTheme } from '@atta/cms'
-import { Button, useToastContext } from '@atta/ui/components'
+import { Button, Card, useToastContext } from '@atta/ui/components'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { EnvoyPreview } from './EnvoyPreview'
 import { FontPicker } from './FontPicker'
@@ -143,7 +143,7 @@ export function AdminEditorPage({
                 const isSelected = themeId === theme._id
                 const hasBoth = !!(theme.dark?.primary && theme.light?.primary)
                 return (
-                  <div
+                  <Card
                     key={theme._id}
                     role='button'
                     tabIndex={0}
@@ -151,8 +151,10 @@ export function AdminEditorPage({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') handleThemeSelect(theme._id)
                     }}
-                    className={`flex cursor-pointer items-center gap-2 rounded border p-2 text-left transition-colors ${
-                      isSelected ? 'border-foreground/40 bg-foreground/5' : 'border-border hover:bg-foreground/5'
+                    // flex-row: retro/brutal Card bases are `flex flex-col`, which
+                    // `items-center` does not override in tailwind-merge.
+                    className={`flex cursor-pointer flex-row items-center gap-2 p-2 text-left transition-colors ${
+                      isSelected ? 'bg-foreground/5' : 'hover:bg-foreground/5'
                     }`}
                   >
                     <ThemeSwatch theme={theme} scheme={isSelected ? colorScheme : 'dark'} />
@@ -183,7 +185,7 @@ export function AdminEditorPage({
                         ))}
                       </div>
                     )}
-                  </div>
+                  </Card>
                 )
               })}
             </div>
