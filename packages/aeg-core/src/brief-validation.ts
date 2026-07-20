@@ -379,6 +379,80 @@ export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectio
 }
 
 /**
+ * The four markers that make a body *a brief* rather than an ordinary PR
+ * description. Each is an existing section detector, reused unchanged — so a
+ * body that trips this detector is, by construction, a body the section checks
+ * were written to grade.
+ *
+ * Test Plan is deliberately **not** a marker even though it is a required brief
+ * section: the canonical PR-body template gives every AEG PR a Test plan with
+ * `**[agent]**` tags, so it is the one section an ordinary non-brief PR
+ * plausibly carries. The four kept here are brief grammar and nothing else — a
+ * dependency bump has none of them, and needing *two* means one stray phrase
+ * can never force a brief onto a PR that was never meant to carry one.
+ */
+const BRIEF_SHAPE_MARKERS = [checkSurfaceMap, checkDocUpdateList, checkStopConditions, checkAutonomyClause] as const
+
+/**
+ * Is this PR body a brief? — the predicate that replaces the branch name as
+ * `verify-brief`'s trigger for running `checkBriefSections`.
+ *
+ * The old rule was "validate iff the branch is `task/<iter>/<n>`", which meant a
+ * standalone `fix/*` brief bypassed **every** section check. Confirmed live: a
+ * fix brief on `fix/studio-iteration-href` shipped with no §7
+ * documentation-update list, and `checkDocUpdateList` — the checker that exists
+ * for exactly that — never ran, because the branch wasn't a task branch. The
+ * exemption still has to exist (an ordinary one-line dependency-bump PR has no
+ * brief and must not be forced to grow one), so the rule becomes: *if a body is
+ * a brief, it must be a complete brief, whatever the branch is called.*
+ *
+ * Detection runs on `stripCode(prBody)` (the single shared stripper from
+ * `anchored-region`, per #617's "one stripper, never a duplicated regex"). A PR
+ * that *quotes* a brief inside a fence — "here's a sample brief: ``` …Technical
+ * surface map… ```" — is discussing a brief, not carrying one, and must stay
+ * exempt; matching on raw text would force-validate it. Note this also rules out
+ * the worktree `git worktree add … -b` line as a marker: Step 0 lives inside a
+ * fence in every real brief, so it never survives the strip.
+ *
+ * Threshold is ≥2 of four rather than any-one so that a brief missing one
+ * section is still detected as a brief — the failure mode this gate exists to
+ * catch. The `fix/studio-iteration-href` body trips three with §7 absent.
+ */
+export function isBriefShaped(prBody: string): boolean {
+  const stripped = stripCode(prBody)
+  return BRIEF_SHAPE_MARKERS.filter((check) => check(stripped).status === 'pass').length >= 2
+}
+
+/**
+ * The branch a brief declares for itself, read from its Step 0 command. At
+ * authoring time there is no `BRANCH` env var and no branch yet — but every
+ * brief carries `git worktree add <path> -b <branch> origin/main`, so the brief
+ * states what it is going to be, and `verify-brief --body-file` can grade it as
+ * that. Matched on the RAW body, not `stripCode`'s output: Step 0 lives inside a
+ * fence in every real brief, so the stripped text never contains it.
+ */
+export function inferBranchFromBody(prBody: string): string {
+  const m = prBody.match(/git worktree add\s+\S+\s+-b\s+(\S+)/)
+  return m?.[1] ?? ''
+}
+
+/** Composition knobs for `checkBriefSections` — see each field. */
+export type BriefSectionsOptions = {
+  /**
+   * Whether a `Closes #N` reference is required. Defaults to `true` (every
+   * existing caller keeps today's behavior).
+   *
+   * A task PR must close its Issue, so `verify-brief` leaves this on for
+   * `task/<iter>/<n>`. A brief-shaped body on a non-task branch must not: a
+   * standalone fix brief has no task Issue to close, and a `plan/*` PR is
+   * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` (D-077) — so
+   * requiring it there would make the two gates jointly unsatisfiable. Issue
+   * linkage is a task-branch obligation; brief completeness is not.
+   */
+  requireClosesN?: boolean
+}
+
+/**
  * Aggregates every section detector into one combined result — one error
  * line per failing section, mirroring `doc-owners.ts`'s `parseDocOwners`
  * error-message style.
@@ -386,8 +460,10 @@ export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectio
 export function checkBriefSections(
   prBody: string,
   touchesLock: boolean,
-  readTier: (body: string) => 0 | 1 | 3 | null
+  readTier: (body: string) => 0 | 1 | 3 | null,
+  options: BriefSectionsOptions = {}
 ): { errors: string[] } {
+  const { requireClosesN = true } = options
   const results = [
     checkTierField(prBody, readTier),
     checkTestPlan(prBody),
@@ -400,7 +476,7 @@ export function checkBriefSections(
     checkAutonomyClause(prBody),
     checkProjectField(prBody),
     checkForField(prBody),
-    checkClosesN(prBody),
+    ...(requireClosesN ? [checkClosesN(prBody)] : []),
     checkLockAck(prBody, touchesLock)
   ]
   return { errors: results.flatMap((r) => r.errors) }

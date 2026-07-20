@@ -46,9 +46,11 @@ export {
   checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
-  headerRegion
+  headerRegion,
+  inferBranchFromBody,
+  isBriefShaped
 } from './brief-validation'
-export type { BriefSectionResult } from './brief-validation'
+export type { BriefSectionResult, BriefSectionsOptions } from './brief-validation'
 export {
   checkA1,
   checkA2,
