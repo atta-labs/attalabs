@@ -158,9 +158,43 @@ describe('verify-brief --body-file (authoring-time gate)', () => {
   })
 
   it('infers the branch from the brief Step 0 when no BRANCH is set', () => {
-    // No env branch and no PR: `fix/x` comes from the brief's own worktree line,
-    // which is what makes `Closes #N` correctly optional here.
-    const { code } = runCli(['--body-file', briefFile('infer.md', FIX_BRIEF)])
+    // Discriminating case (PR #631 review MINOR): asserting only that the fix
+    // brief exits 0 proves nothing — an inference that silently returned '' also
+    // exits 0 (empty branch → no bypass → validated with `requireClosesN: false`
+    // → passes). A brief whose Step 0 declares a TASK branch and carries no
+    // `Closes #N` separates the two: it can only fail if inference actually read
+    // `task/iter/3` off the worktree line.
+    const taskBrief = FIX_BRIEF.replace(
+      'git worktree add .worktrees/fix/x -b fix/x origin/main',
+      'git worktree add .worktrees/task/iter/3 -b task/iter/3 origin/main'
+    )
+    const inferred = runCli(['--body-file', briefFile('infer-task.md', taskBrief)])
+    expect(inferred.code).toBe(1)
+    expect(inferred.output).toMatch(/Closes #N/)
+
+    // Same body, same absent `Closes #N`, but a fix/* Step 0 — passes.
+    const { code } = runCli(['--body-file', briefFile('infer-fix.md', FIX_BRIEF)])
     expect(code).toBe(0)
+  })
+
+  it('FAILS loudly when --body-file is passed with no value, instead of degrading to PR_BODY', () => {
+    // Silent-green path (PR #631 review MAJOR): a fumbled path used to leave
+    // `--body-file` ignored, fall through to an empty PR_BODY, and exit 0 —
+    // handing a Brief Author a green on a brief nobody graded.
+    const bare = runCli(['--body-file'])
+    expect(bare.code).toBe(1)
+    expect(bare.output).toMatch(/`--body-file` was passed with no value/)
+
+    const beforeAnotherFlag = runCli(['--body-file', '--branch', 'fix/x'])
+    expect(beforeAnotherFlag.code).toBe(1)
+
+    const emptyInline = runCli(['--body-file='])
+    expect(emptyInline.code).toBe(1)
+  })
+
+  it('FAILS loudly when --branch is passed with no value', () => {
+    const { code, output } = runCli(['--branch'], { PR_BODY: FIX_BRIEF })
+    expect(code).toBe(1)
+    expect(output).toMatch(/`--branch` was passed with no value/)
   })
 })

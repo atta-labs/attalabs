@@ -91,19 +91,42 @@ export function deriveTouchesLock(base: string): boolean {
 
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
-/** Reads `--flag value` or `--flag=value` from argv; `null` when absent or empty. */
-function readFlag(argv: string[], name: string): string | null {
+/**
+ * A flag's parse outcome. The three cases are kept distinct because collapsing
+ * "absent" and "present but unparseable" into one `null` is a silent-green path:
+ * `--body-file` with a fumbled path (shell glob, tab-completion miss, wrong arg
+ * order) would fall through to the empty-`PR_BODY` branch and exit 0, handing a
+ * Brief Author a green on a brief nobody graded — the exact failure class this
+ * gate exists to eliminate, reintroduced through its own new entry point
+ * (PR #631 review MAJOR).
+ */
+type FlagRead = { state: 'absent' } | { state: 'value'; value: string } | { state: 'missing-value' }
+
+/** Reads `--flag value` or `--flag=value` from argv. See `FlagRead` for why the empty case is not `null`. */
+function readFlag(argv: string[], name: string): FlagRead {
   const idx = argv.indexOf(`--${name}`)
   if (idx !== -1) {
     const next = argv[idx + 1]
-    if (next !== undefined && !next.startsWith('--')) return next
+    if (next !== undefined && !next.startsWith('--')) return { state: 'value', value: next }
+    return { state: 'missing-value' }
   }
   const inline = argv.find((a) => a.startsWith(`--${name}=`))
   if (inline !== undefined) {
     const value = inline.slice(name.length + 3)
-    if (value.length > 0) return value
+    return value.length > 0 ? { state: 'value', value } : { state: 'missing-value' }
   }
-  return null
+  return { state: 'absent' }
+}
+
+/** Exits non-zero on a flag that was passed with no usable value; returns `null` only when truly absent. */
+function requireFlagValue(argv: string[], name: string): string | null {
+  const read = readFlag(argv, name)
+  if (read.state === 'missing-value') {
+    console.error(`\n[verify-brief] FAILED — \`--${name}\` was passed with no value.`)
+    console.error(`[verify-brief] Usage: --${name} <value> (or --${name}=<value>).`)
+    process.exit(1)
+  }
+  return read.state === 'value' ? read.value : null
 }
 
 export function main(): void {
@@ -120,7 +143,7 @@ export function main(): void {
     }
   }
 
-  const bodyFile = readFlag(process.argv, 'body-file')
+  const bodyFile = requireFlagValue(process.argv, 'body-file')
   let prBody = process.env.PR_BODY ?? ''
   if (bodyFile !== null) {
     const path = resolve(INVOCATION_CWD, bodyFile)
@@ -133,7 +156,11 @@ export function main(): void {
     console.log(`[verify-brief] reading brief from ${path}`)
   }
 
-  const branch = readFlag(process.argv, 'branch') ?? process.env.BRANCH ?? inferBranchFromBody(prBody)
+  // `||`, not `??`: an env var set to the empty string is *unset* for this
+  // purpose, and `??` treats `''` as a real value — so `BRANCH=""` (how a shell
+  // exports a var it has no value for, and how the test harness normalises the
+  // environment) silently won over Step 0 inference and left the branch empty.
+  const branch = requireFlagValue(process.argv, 'branch') || process.env.BRANCH || inferBranchFromBody(prBody)
 
   const planGuard = checkPlanPrNoCloses(branch, prBody)
   if (planGuard.status === 'fail') {
