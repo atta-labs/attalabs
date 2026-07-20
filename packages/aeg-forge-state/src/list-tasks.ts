@@ -10,6 +10,30 @@ function parseProjectLabels(labels: Array<{ name: string }>): string[] {
   return labels.filter((l) => l.name.startsWith('project:')).map((l) => l.name.slice('project:'.length))
 }
 
+/** Reads the `**Project:**` field from a task Issue's rationale body (the D-078
+ * grammar). Project is a **field, not a label** (doctrine; `state-machine-v1`
+ * task 2 / #614 drops the `project:*` labels outright). Deriving from the field
+ * keeps project resolution working after those labels are removed, and gives a
+ * forge-native task Issue that carries only the field — never got a label — a
+ * resolvable project today (the `state-machine-v1` dead-board case). Matches the
+ * bold field line only; the prose `**Project(s) + blast radius**` heading and a
+ * backticked inline `Project: x` never match (no `:**` immediately after). */
+function parseProjectField(body: string): string[] {
+  const m = body.match(/^\s*\*\*Project(?:\(s\))?:\*\*\s*(.+)$/im)
+  if (!m) return []
+  return (m[1] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !s.startsWith('<'))
+}
+
+/** Union of label-derived and field-derived projects, de-duplicated, order
+ * stable (labels first). Transition-safe across #614: label-only bodies (today)
+ * and field-only bodies (post-#614, and `state-machine-v1` now) both resolve. */
+function mergeProjects(fromLabels: string[], fromField: string[]): string[] {
+  return [...new Set([...fromLabels, ...fromField])]
+}
+
 function taskFromIssue(issue: GhIssue): Task | null {
   const m = issue.title.match(TITLE_PATTERN)
   if (!m) return null
@@ -22,7 +46,7 @@ function taskFromIssue(issue: GhIssue): Task | null {
     id,
     title,
     issue: issue.number,
-    projects: parseProjectLabels(issue.labels),
+    projects: mergeProjects(parseProjectLabels(issue.labels), parseProjectField(body)),
     dependsOn,
     conflictsWith,
     rationaleMarkdown: body

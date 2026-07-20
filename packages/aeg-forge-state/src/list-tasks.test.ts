@@ -35,6 +35,40 @@ describe('listTasksForSlug', () => {
     ])
   })
 
+  it('derives projects from the **Project:** field when no project:* label exists (post-#614 / state-machine-v1)', () => {
+    vi.mocked(ghIssueListByLabel).mockReturnValue([
+      {
+        number: 614,
+        title: '[state-machine-v1] 2 — Migrate labels; drop project:* labels',
+        body: '**Boundary** — ...\n\n**Project(s) + blast radius** — `Project: aeg-core`.\n\n**Tier:** 3\n**Project:** aeg-core, vinaya',
+        state: 'OPEN',
+        milestone: null,
+        labels: [{ name: 'tier:3' }, { name: 'iteration:state-machine-v1' }]
+      }
+    ])
+
+    const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'state-machine-v1')
+
+    expect(task?.projects).toEqual(['aeg-core', 'vinaya'])
+  })
+
+  it('unions label- and field-derived projects, de-duplicated (transition window)', () => {
+    vi.mocked(ghIssueListByLabel).mockReturnValue([
+      {
+        number: 700,
+        title: '[iter] 1 — both sources present',
+        body: '**Project:** vinaya, herald',
+        state: 'OPEN',
+        milestone: null,
+        labels: [{ name: 'project:vinaya' }, { name: 'iteration:iter' }]
+      }
+    ])
+
+    const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'iter')
+
+    expect(task?.projects).toEqual(['vinaya', 'herald'])
+  })
+
   it('sorts numeric ids ahead of alpha suffix, e.g. 7 before 7a', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
