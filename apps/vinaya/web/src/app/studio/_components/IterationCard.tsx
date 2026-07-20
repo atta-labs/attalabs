@@ -60,7 +60,7 @@ export function IterationCard({ iteration: it, href, showProjects = false }: Ite
   const wrapperClassName = 'rounded-lg border border-border bg-card transition-colors hover:border-primary group block'
 
   const content = (
-    <Card className='transition-colors group-hover:border-primary'>
+    <Card>
       <CardHeader className='pb-2'>
         <CardTitle className='flex items-center justify-between font-serif text-xl text-card-foreground'>
           <span>{it.name}</span>
