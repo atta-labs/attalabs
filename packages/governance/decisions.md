@@ -3295,3 +3295,38 @@ Separately, retro's vendored `installed/button.tsx` references `hover:bg-primary
 **Decision:** (1) Sanctioned crossing #2 (Cetana) is removed — Cetana no longer exists (deleted by #573, retired by D-095), so it is no longer a sanctioned knower of AEG; the list stays exhaustive over the four surviving crossings (workflows, AEG-owned views, historical records, planning-seam backlogs). (2) D-072's homes enumeration is corrected to AEG's surviving homes: aeg-root/, packages/aeg-core/, and the Vinaya surface (apps/vinaya) — apps/aeg/ and the aeg-project/ folder are deleted, and specs/aeg* no longer holds AEG homes after specs/aeg-study/** removal. (3) The enforcement-backlog pointer to specs/ecosystem-backlog.md (deleted) is retired; the backlogged mechanical boundary check, if still wanted, is tracked on the forge, not in a deleted file. D-072's one-way knowledge law itself is unchanged and still ACTIVE — only its now-dangling enumerations are amended.
 
 **Lock:** NO.
+
+---
+
+## D-134 — Verdict extraction tolerates leading markdown *emphasis*, not markdown quotation
+
+**Date:** 2026-07-21
+**Status:** ACTIVE
+**Type:** 2 (reversible enforcement change — a char-class widening on two regexes; revertible by restoring the bare `^\s*` anchor, TL-decidable)
+**Lock:** NO
+
+**Authored by:** Developer session on `fix/verdict-marker-markdown-tolerant`, 2026-07-21
+**Ratified by:** Type 2 — TL-decidable; recorded ACTIVE on merge.
+
+**Context:** The pre-merge review gate reads a PR's code-review and security verdicts by line-anchored regex in `packages/aeg-core/src/verdict-extraction.ts`. Both extractors required `VERDICT:` at line start after only whitespace. On PR #636 the reviewer subagent emitted `**VERDICT: APPROVE**` — markdown-bolded — so the line never matched and the gate read the PR as carrying no code-review verdict at all (DANGLING), blocking a merge that should have proceeded.
+
+`aeg-root/roles/reviewer.md`, `roles/security.md` and both `.claude/agents/*` definitions already mandate the bare line. The agent deviated from its own contract; instances keep drifting, so re-mandating it a fourth time does not stop the next incident.
+
+The first cut of this fix used `[\s>*_#]*`. Review (#639) established by execution that this class was wrong in both directions: it did not deliver the `_` tolerance it claimed (`_` is a word character, so the trailing `\b` rejected `_VERDICT: APPROVE_`), and it widened the gate past emphasis into quotation — with most-recent-clear-hit-wins, a Developer quote-replying the reviewer's earlier text flipped a live REQUEST CHANGES to a passing gate with no reviewer action.
+
+**Decision:**
+
+1. **Emphasis is tolerated.** A leading run of one to three `*` or `_`, immediately abutting the token, is accepted before the literal `VERDICT:`. `**VERDICT: APPROVE**` and `_VERDICT: APPROVE_` match. The value-side boundary is `(?![A-Za-z0-9])`, not `\b`, so the closing `_` is accepted while `APPROVED`/`PASSED` are still rejected.
+2. **Quotation and structure are not.** Blockquote (`>`), heading (`#`), list item (`* ` / `-` / `1.`), code span and strikethrough are rejected. Each is a way for prose to *mention* a verdict rather than cast one. The space after `*` is what distinguishes a bullet from emphasis.
+3. **A literal `VERDICT:` token remains required.** Bare-word prose ("I do NOT approve of that design") and the Archivist's own DANGLING placeholder ("no security-review pass was run before merge") still miss — the invariant this file was hardened to hold.
+4. **The spec still says bare.** `roles/reviewer.md` and `roles/security.md` state the verdict line is bare — no bold, no heading, no blockquote — and note that it is machine-read. Bare is the instruction; emphasis is tolerated defensively, not blessed.
+
+**Trade accepted:** a loud fail-closed failure (#636: an emphasis-wrapped verdict read as DANGLING, blocking a good merge — noisy and self-announcing) for a narrow fail-open one (a literal `VERDICT: <value>` token appearing inside emphasized prose). The gate never checked comment authorship, so a deliberate forger could always type the bare line; this adds no new authority. What it must not add is an *accidental* path, which is why quote-reply — normal, high-frequency GitHub UX — is excluded.
+
+**Alternatives considered:**
+
+- **Fix the agent definitions instead, change no code** — rejected as the sole remedy: the contract is already written in four places and drift recurred anyway. The role-doc wording is strengthened in the same PR, so this is done *as well as*, not instead of.
+- **The original `[\s>*_#]*` class** — rejected on review: silently fail-open under quote-reply, and factually inconsistent with its own header comment on `_`.
+- **Tolerate code spans too** — rejected: a backticked marker is exactly how the role docs and the extractor's own header comment write *about* the contract, so tolerating it would match prose describing the rule. Recorded in the header comment as decided rather than overlooked.
+
+**Consequences:** `packages/aeg-core/src/verdict-extraction.ts` is the single implementation of this pattern (§11, one implementation per fact) and both extractors carry the identical prefix — they must continue to be edited together. Its header comment is the doc for this behavior and now enumerates the rejected forms with reasoning. `verdict-extraction.test.ts` pins 17 rejection cases, every one of which matched under the first-cut class; rejection coverage, not acceptance coverage, is what protects this file from its own history.

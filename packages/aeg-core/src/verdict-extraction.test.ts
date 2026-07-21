@@ -101,15 +101,56 @@ describe('extractCodeReviewVerdict', () => {
     expect(result).toEqual({ value: 'APPROVE', danglingNote: null })
   })
 
-  it('extracts REQUEST CHANGES from a blockquoted + bolded VERDICT: line', () => {
-    const result = extractCodeReviewVerdict(['> **VERDICT: REQUEST CHANGES**'])
+  it('extracts REQUEST CHANGES from a bolded VERDICT: line inside a full report', () => {
+    const result = extractCodeReviewVerdict(['**VERDICT: REQUEST CHANGES**\n\nthree blockers below.'])
     expect(result).toEqual({ value: 'REQUEST CHANGES', danglingNote: null })
+  })
+
+  it('extracts APPROVE from an underscore-emphasized VERDICT: line (both single and double)', () => {
+    // `_` is a word character, so a `\b` value-side boundary would reject the
+    // closing `_` and silently make the header comment's `_` claim false.
+    expect(extractCodeReviewVerdict(['_VERDICT: APPROVE_'])).toEqual({ value: 'APPROVE', danglingNote: null })
+    expect(extractCodeReviewVerdict(['__VERDICT: APPROVE__'])).toEqual({ value: 'APPROVE', danglingNote: null })
   })
 
   it('regression 5: bolded prose with no VERDICT: marker still does NOT produce a clean APPROVE', () => {
     const result = extractCodeReviewVerdict(['**I do not approve of this**'])
     expect(result.danglingNote).not.toBeNull()
     expect(result.value).not.toBe('APPROVE')
+  })
+
+  // ---- what the emphasis tolerance must still REJECT (#639 review, findings 1/3/4/5) ----
+  // Each of these is a way for prose to MENTION a verdict rather than cast one.
+  // Every case below matched under the `[\s>*_#]*` char class first proposed for
+  // this fix; they are the false-positive surface that class opened.
+
+  it.each([
+    ['> VERDICT: APPROVE', "blockquote — GitHub quote-reply, not the commenter's own verdict"],
+    ['> **VERDICT: APPROVE**', 'quoted + bolded — the quote-reply of a real earlier verdict'],
+    ['* VERDICT: APPROVE', 'unordered list item — `*` plus a space is a bullet, not emphasis'],
+    ['- VERDICT: APPROVE', 'unordered list item (never matched; pinned so `*` cannot diverge)'],
+    ['1. VERDICT: APPROVE', 'ordered list item (never matched; pinned for the same reason)'],
+    ['# VERDICT: APPROVE', 'heading — mention, not cast'],
+    ['`VERDICT: APPROVE`', 'code span — how the role docs WRITE about the contract'],
+    ['**`VERDICT: APPROVE`**', 'bolded code span — same'],
+    ['~~VERDICT: APPROVE~~', 'strikethrough — a retracted verdict must not count'],
+    ['VERDICT: APPROVED', 'a longer word — the value-side boundary still holds']
+  ])('rejects %j (%s)', (comment) => {
+    const result = extractCodeReviewVerdict([comment])
+    expect(result.value).not.toBe('APPROVE')
+    expect(result.danglingNote).not.toBeNull()
+  })
+
+  it('the quote-reply attack: quoting an earlier verdict does NOT override a live REQUEST CHANGES', () => {
+    // #639 review finding 1, executed end-to-end there against `checkReviewGate`:
+    // under `[\s>*_#]*` this comment sequence flipped the gate from FAIL to PASS
+    // with no reviewer action, because most-recent-clear-hit-wins let the quote
+    // beat the live verdict.
+    const result = extractCodeReviewVerdict([
+      'VERDICT: REQUEST CHANGES\n\nthree blockers.',
+      'Addressed. For reference the first pass said:\n\n> **VERDICT: APPROVE**\n\nsee thread.'
+    ])
+    expect(result).toEqual({ value: 'REQUEST CHANGES', danglingNote: null })
   })
 })
 
@@ -165,5 +206,33 @@ describe('extractSecurityReviewVerdict', () => {
   it('extracts PASS from a markdown-bolded VERDICT: line', () => {
     const result = extractSecurityReviewVerdict(['**VERDICT: PASS**'])
     expect(result).toEqual({ value: 'PASS', danglingNote: null })
+  })
+
+  it('extracts PASS from an underscore-emphasized VERDICT: line', () => {
+    expect(extractSecurityReviewVerdict(['_VERDICT: PASS_'])).toEqual({ value: 'PASS', danglingNote: null })
+  })
+
+  // ---- what the emphasis tolerance must still REJECT (#639 review, findings 1/3/4/5) ----
+
+  it.each([
+    ['> VERDICT: PASS', 'blockquote — GitHub quote-reply'],
+    ['> **VERDICT: PASS**', 'quoted + bolded'],
+    ['* VERDICT: PASS', 'unordered list item'],
+    ['# VERDICT: PASS', 'heading'],
+    ['`VERDICT: PASS`', 'code span'],
+    ['~~VERDICT: PASS~~', 'strikethrough'],
+    ['VERDICT: PASSED', 'a longer word — the value-side boundary still holds']
+  ])('rejects %j (%s)', (comment) => {
+    const result = extractSecurityReviewVerdict([comment])
+    expect(result.value).not.toBe('PASS')
+    expect(result.danglingNote).not.toBeNull()
+  })
+
+  it('the quote-reply attack: quoting an earlier PASS does NOT override a live FAIL', () => {
+    const result = extractSecurityReviewVerdict([
+      'VERDICT: FAIL\n\nleaked credential in the fixture.',
+      'Rotated. The earlier clean run said:\n\n> **VERDICT: PASS**\n\nfor reference.'
+    ])
+    expect(result).toEqual({ value: 'FAIL', danglingNote: null })
   })
 })

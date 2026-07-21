@@ -25,14 +25,41 @@
  * code-reviewer.md`/`security-reviewer.md` require verbatim) — tightening
  * to it closes the gap without inventing a new convention.
  *
- * The anchor tolerates leading markdown emphasis/structure characters
- * (`*`, `_`, `#`, `>`) before the literal token, so a bolded or quoted
- * `**VERDICT: APPROVE**` line still matches (PR #636: the reviewer subagent
- * emitted the bolded form and the gate read the PR as carrying no code-review
- * verdict at all). The spec still mandates the bare line; this only stops an
- * agent's markdown drift from silently DANGLING a real verdict. What is NOT
- * loosened is the requirement that a literal `VERDICT:` token be present —
- * ordinary prose and the Archivist's own DANGLING placeholder still miss.
+ * The anchor tolerates a leading markdown EMPHASIS run — one to three `*` or
+ * `_`, immediately abutting the token — so `**VERDICT: APPROVE**` and
+ * `_VERDICT: APPROVE_` match (PR #636: the reviewer subagent emitted the
+ * bolded form and the gate read the PR as carrying no code-review verdict at
+ * all). The spec still mandates the bare line; this only stops an agent's
+ * markdown drift from silently DANGLING a real verdict.
+ *
+ * Emphasis ONLY — the following are deliberately NOT tolerated, because each
+ * is a way for prose to *mention* a verdict rather than *cast* one, and this
+ * gate blocks merges (#639 review, findings 1/3/5):
+ *   `> VERDICT: APPROVE`   blockquote — GitHub's quote-reply syntax. A
+ *                          Developer quoting the reviewer's earlier text
+ *                          would otherwise become the PR's own verdict, and
+ *                          most-recent-hit-wins means the quote beats a live
+ *                          REQUEST CHANGES. Fail-open and silent.
+ *   `* VERDICT: APPROVE`   list item — the space is what distinguishes it
+ *                          from emphasis; a bullet is prose context. `-` and
+ *                          `1.` never matched, so `*` must not either.
+ *   `# VERDICT: APPROVE`   heading — same mention-not-cast reasoning.
+ *   `` `VERDICT: APPROVE` ``  code span — decided, not overlooked. A
+ *                          backticked marker is exactly how the role docs
+ *                          and this comment WRITE about the contract, so
+ *                          tolerating it would match prose describing the
+ *                          rule. If a real agent ever emits the backticked
+ *                          form, fix the agent: it fails loud (DANGLING),
+ *                          which is the safe direction.
+ *
+ * The value-side boundary is `(?![A-Za-z0-9])`, not `\b`: `_` is a word
+ * character, so `\b` after the captured value would reject the closing `_` of
+ * `_VERDICT: APPROVE_` while accepting the `*` of the bolded form — the class
+ * and the claim would disagree. It still rejects `APPROVED`/`PASSED`.
+ *
+ * What is NOT loosened is the requirement that a literal `VERDICT:` token be
+ * present — ordinary prose and the Archivist's own DANGLING placeholder still
+ * miss.
  *
  * No separate "marker present but value unclear" branch: a generic
  * `VERDICT:`-prefix-only marker would itself cross-contaminate the two
@@ -62,10 +89,18 @@ function extractVerdict(comments: string[], valuePattern: RegExp, missingLabel: 
 
 /** `value` is `APPROVE`, `REQUEST CHANGES`, `LGTM`, or a DANGLING placeholder string. */
 export function extractCodeReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(comments, /^[\s>*_#]*VERDICT:\s*(APPROVE|REQUEST[ _-]?CHANGES|LGTM)\b/im, 'code-reviewer')
+  return extractVerdict(
+    comments,
+    /^[ \t]*(?:\*{1,3}|_{1,3})?VERDICT:\s*(APPROVE|REQUEST[ _-]?CHANGES|LGTM)(?![A-Za-z0-9])/im,
+    'code-reviewer'
+  )
 }
 
 /** `value` is `PASS`, `FAIL`, or a DANGLING placeholder string. */
 export function extractSecurityReviewVerdict(comments: string[]): VerdictExtraction {
-  return extractVerdict(comments, /^[\s>*_#]*VERDICT:\s*(PASS|FAIL)\b/im, 'security-review')
+  return extractVerdict(
+    comments,
+    /^[ \t]*(?:\*{1,3}|_{1,3})?VERDICT:\s*(PASS|FAIL)(?![A-Za-z0-9])/im,
+    'security-review'
+  )
 }
