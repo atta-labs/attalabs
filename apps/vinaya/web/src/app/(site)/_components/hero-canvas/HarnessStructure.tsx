@@ -145,57 +145,55 @@ export function HarnessStructure({
         </filter>
       </defs>
 
-      {/* --- Ring segments: draw on one at a time, then rivet/greeble detail pops in --- */}
+      {/* --- Ring segments: each DEPLOYS from its center square module — the square pops
+          in first, then the band physically extends outward from it (both arms), rungs
+          building as the band passes them. Structure assembling, not a stroke drawn. --- */}
       {RING_AXIS_DEG.map((a, i) => {
-        const local = cl((ringProgress - i * 0.24) / 0.28)
+        const local = cl((ringProgress - i * 0.14) / 0.44)
         if (local <= 0) return null
-        const s0 = a - ARC_HALF
-        const s1 = a + ARC_HALF
-        const midArc = polar(c, c, rMid, a)
+        const sq = cl(local / 0.2) // center square scales in first (the deploy origin)
+        const span = ARC_HALF * cl((local - 0.18) / 0.82) // band grows outward after
+        const m = polar(c, c, rMid, a)
         return (
           <g key={a}>
-            <path
-              d={segPath(s0, s1)}
-              pathLength={1}
-              className='stroke-primary'
-              strokeWidth={2.5}
-              strokeLinejoin='round'
-              strokeLinecap='round'
-              style={{ strokeDasharray: 1, strokeDashoffset: 1 - local }}
-            />
-            {local > 0.55 && (
-              <g style={{ opacity: cl((local - 0.55) / 0.45) }}>
-                {/* interior rungs — segmented panel lines */}
-                {[-22, -11, 0, 11, 22].map((d) => {
-                  const u = polar(c, c, rIn + 2, a + d)
-                  const v = polar(c, c, rOut - 2, a + d)
-                  return (
-                    <line
-                      key={d}
-                      x1={u.x}
-                      y1={u.y}
-                      x2={v.x}
-                      y2={v.y}
-                      className='stroke-primary'
-                      strokeWidth={1}
-                      opacity={0.5}
-                    />
-                  )
-                })}
-                {/* a small module box at the segment center */}
-                <rect
-                  x={midArc.x - 5}
-                  y={midArc.y - 5}
-                  width={10}
-                  height={10}
-                  className='stroke-primary'
-                  strokeWidth={1.25}
-                  transform={`rotate(${a + 90} ${midArc.x} ${midArc.y})`}
+            {/* the center square module the segment deploys from */}
+            <g transform={`translate(${m.x} ${m.y}) rotate(${a + 90}) scale(${sq})`}>
+              <rect x={-6} y={-6} width={12} height={12} className='fill-secondary stroke-primary' strokeWidth={1.75} />
+              <rect x={-2.5} y={-2.5} width={5} height={5} className='fill-primary' />
+            </g>
+            {span > 0.5 && (
+              <g>
+                {/* band extends symmetrically from the square out to ±ARC_HALF */}
+                <path
+                  d={segPath(a - span, a + span)}
+                  className='fill-secondary stroke-primary'
+                  strokeWidth={2.5}
+                  strokeLinejoin='round'
+                  strokeLinecap='round'
                 />
-                {/* rivets near the two end caps */}
-                {[s0 + 4, s1 - 4].map((ang) => {
+                {/* interior rungs — revealed as the band reaches each */}
+                {[-22, -11, 11, 22]
+                  .filter((d) => Math.abs(d) <= span)
+                  .map((d) => {
+                    const u = polar(c, c, rIn + 2, a + d)
+                    const v = polar(c, c, rOut - 2, a + d)
+                    return (
+                      <line
+                        key={d}
+                        x1={u.x}
+                        y1={u.y}
+                        x2={v.x}
+                        y2={v.y}
+                        className='stroke-primary'
+                        strokeWidth={1}
+                        opacity={0.5}
+                      />
+                    )
+                  })}
+                {/* end rivets ride the growing ends */}
+                {[a - span, a + span].map((ang, k) => {
                   const q = polar(c, c, rMid, ang)
-                  return <circle key={ang} cx={q.x} cy={q.y} r={1.8} className='fill-primary' />
+                  return <circle key={k} cx={q.x} cy={q.y} r={1.8} className='fill-primary' />
                 })}
               </g>
             )}
@@ -240,8 +238,8 @@ export function HarnessStructure({
           }
           return (
             <g key={d}>
-              <path d={`${shaft} Z`} className='stroke-primary' strokeWidth={3} strokeLinejoin='round' />
-              <path d={grip} className='stroke-primary' strokeWidth={3} strokeLinejoin='round' />
+              <path d={`${shaft} Z`} className='fill-secondary stroke-primary' strokeWidth={3} strokeLinejoin='round' />
+              <path d={grip} className='fill-secondary stroke-primary' strokeWidth={3} strokeLinejoin='round' />
               {rung(rO2 - (rO2 - gripR) * 0.4)}
               {rung(rO2 - (rO2 - gripR) * 0.72)}
               <circle cx={pt(rO, footW).x} cy={pt(rO, footW).y} r={2} className='fill-primary' />

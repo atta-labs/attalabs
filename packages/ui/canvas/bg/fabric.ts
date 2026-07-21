@@ -272,6 +272,11 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const CX = W / 2
   const CY = H / 2
   const RING_R = rings.length > 0 ? rings[0]!.radius : Math.min(W, H) * 0.24
+  // Curvature center: the registered ring when present (so the gravity funnel + halo
+  // follow the ring/main wherever it sits), else screen center. Backward-compatible —
+  // a ring centered on screen (Vāda's home) resolves to CX/CY.
+  const GX = rings.length > 0 ? rings[0]!.centerX : CX
+  const GY = rings.length > 0 ? rings[0]!.centerY : CY
 
   // ── Accumulate events ─────────────────────────────────────────────────────
   for (const evt of recentEvents) {
@@ -420,7 +425,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
           if (r < 2 || r > ROWS - 2 || c < 2 || c > COLS - 2) continue
           const vb = vertBasePos(r, c)
           const distToSphere = Math.hypot(vb.x - targetSphere.x, vb.y - targetSphere.y)
-          const distToRing = Math.hypot(vb.x - CX, vb.y - CY)
+          const distToRing = Math.hypot(vb.x - GX, vb.y - GY)
           // Must be just outside the sphere, within reach, and outside the ring
           if (
             distToSphere > targetSphere.radius * 1.8 &&
@@ -628,7 +633,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       // base-position-safe vertices inward by up to ~0.33×RING_R at the ring edge.
       const outsideRing = ([nr, nc]: [number, number]) => {
         const vb = vertBasePos(p.r + nr, p.c + nc)
-        return Math.hypot(vb.x - CX, vb.y - CY) >= RING_R * 1.4
+        return Math.hypot(vb.x - GX, vb.y - GY) >= RING_R * 1.4
       }
 
       // Other active particles' positions — used for avoidance tiebreaker
@@ -701,8 +706,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const pos = BASE_VERTS.map((v) => {
     const x0 = v.bx * W
     const y0 = v.by * H
-    const dx = x0 - CX
-    const dy = y0 - CY
+    const dx = x0 - GX
+    const dy = y0 - GY
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
     const nx = dx / dist
     const ny = dy / dist
@@ -770,8 +775,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const pos2 = BASE_VERTS2.map((v) => {
     const x0 = v.bx * W
     const y0 = v.by * H
-    const dx = x0 - CX
-    const dy = y0 - CY
+    const dx = x0 - GX
+    const dy = y0 - GY
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
     const nx = dx / dist
     const ny = dy / dist
@@ -1202,7 +1207,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // Halo brightens near ring edge as fabric curves inward — only when gravity fold is active.
   // Without a ring or with gravityMultiplier=0 this would draw an unwanted phantom glow circle.
   if (rings.length > 0 && settleProgress > 0.05 && (config.gravityMultiplier ?? 1) > 0) {
-    const g = ctx.createRadialGradient(CX, CY, RING_R * 0.7, CX, CY, RING_R * 1.4)
+    const g = ctx.createRadialGradient(GX, GY, RING_R * 0.7, GX, GY, RING_R * 1.4)
     g.addColorStop(0, fgAt(0))
     g.addColorStop(0.5, fgAt(0.04 * settleProgress))
     g.addColorStop(1, fgAt(0))
