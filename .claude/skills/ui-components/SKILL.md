@@ -320,6 +320,36 @@ The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). A
 
 ---
 
+## Constraining a shared primitive at the call site (not in the primitive)
+
+A library's primitive can carry layout constraints that are right everywhere except in
+one container. The canonical case: `retro`'s `installed/badge.tsx` ships
+`whitespace-nowrap` + a fixed `h-5` + `overflow-hidden`, which is correct for a free-floating
+badge but clips inside a `table-fixed` column, where the column never grows to fit its
+content.
+
+**Relax the constraint on the container's children, not in the shared component.** A
+child-selector class on the cell wrapper is higher-specificity than the primitive's own
+utility class, so it wins without touching a component other consumers depend on:
+
+```tsx
+// ✅ The constraint belongs to THIS table's fixed layout, not to the badge
+const LABEL_CELL = 'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:break-words [&>*]:whitespace-normal'
+<TableCell><div className={LABEL_CELL}>{labels.map(l => <LabelBadge key={l} label={l} />)}</div></TableCell>
+
+// ❌ Editing the shared badge (or its consumers' wrapper) to fix one table
+```
+
+The reasoning test: *would every other consumer want this change?* If yes, it belongs in the
+`components/interactive/` wrapper (see RULE 1b). If it only holds inside your container, it
+belongs on your container. Either way it never goes in `installed/`.
+
+Live example: `apps/vinaya/web`'s `studio/backlog/_components/BacklogTable.tsx` (#624).
+Note that `table-fixed` `w-[..%]` widths are one 100% budget — widening one column means
+rebalancing the whole set, not just editing one value.
+
+---
+
 ## Layout Philosophy
 
 These rules apply to all products:
