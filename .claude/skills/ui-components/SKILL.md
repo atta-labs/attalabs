@@ -320,6 +320,47 @@ The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). A
 
 ---
 
+## Constraining a shared primitive at the call site (not in the primitive)
+
+A library's primitive can carry layout constraints that are right everywhere except in
+one container. The canonical case: `retro`'s `installed/badge.tsx` ships
+`whitespace-nowrap` + a fixed `h-5` + `overflow-hidden`, which is correct for a free-floating
+badge but clips inside a `table-fixed` column, where the column never grows to fit its
+content.
+
+**Relax the constraint on the container's children, not in the shared component.** A
+child-selector class on the cell wrapper overrides the primitive's own utility class without
+touching a component other consumers depend on:
+
+```tsx
+// ✅ The constraint belongs to THIS table's fixed layout, not to the badge
+const LABEL_CELL =
+  'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:overflow-visible [&>*]:break-words [&>*]:whitespace-normal'
+<TableCell><div className={LABEL_CELL}>{labels.map(l => <LabelBadge key={l} label={l} />)}</div></TableCell>
+
+// ❌ Editing the shared badge (or its consumers' wrapper) to fix one table
+```
+
+**Know why it wins — it is cascade order, not specificity.** `[&>*]:whitespace-normal>*` and
+the badge's own `.whitespace-nowrap` are **equal** specificity `(0,1,0)`: the `>*` is a
+universal selector and contributes nothing. The override lands only because Tailwind emits
+variant-modified utilities *after* bare ones, so the later rule wins on source order. Do not
+generalize this to "child selectors outrank utilities" — against a later-emitted utility,
+across cascade layers, or against a `tailwind-merge`d class on the *same* element, the same
+trick is a silent no-op. When you need to actually outrank rather than out-order, raise
+specificity deliberately (an extra class on the selector), or set the value on the element
+that owns it.
+
+The reasoning test: *would every other consumer want this change?* If yes, it belongs in the
+`components/interactive/` wrapper (see RULE 1b). If it only holds inside your container, it
+belongs on your container. Either way it never goes in `installed/`.
+
+Live example: `apps/vinaya/web`'s `studio/backlog/_components/BacklogTable.tsx` (#624).
+Note that `table-fixed` `w-[..%]` widths are one 100% budget — widening one column means
+rebalancing the whole set, not just editing one value.
+
+---
+
 ## Layout Philosophy
 
 These rules apply to all products:
