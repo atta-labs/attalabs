@@ -113,6 +113,19 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Toggle falls back to basic (neobrutalism ships no toggle in
+// its registry; verified 2026-07-21 — https://www.neobrutalism.dev/r/toggle.json 404)
+//
+// DEPRECATED SURFACE — brutal is no longer maintained and no CMS config selects
+// it. This re-export exists ONLY because `TEMPLATES` in component-contract.mjs
+// still lists brutal, so dropping it red-builds the repo (validate-ui-contract
+// runs before every build and dev). Delete this block with the rest of brutal
+// when the deprecation PR removes it from TEMPLATES.
+export {
+  Toggle,
+  toggleVariants,
+  type ToggleProps
+} from '../../basic/components/interactive/toggle'
 
 // Content — Card
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'

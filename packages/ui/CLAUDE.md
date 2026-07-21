@@ -165,7 +165,9 @@ import { cn } from '@atta/ui/lib/utils'
 
 ### `ColorSchemeToggle` — runtime light/dark switch
 
-Client component. Sun/moon icon button; flips `<html data-theme>` and writes the `atta-color-scheme` cookie so the next SSR render agrees. Drop into any topbar.
+Client component. Flips `<html data-theme>` and writes the `atta-color-scheme` cookie so the next SSR render agrees. Drop into any topbar.
+
+It renders as the **active library's `Toggle`** (`pressed` mirrors the scheme; `onPressedChange` runs the same flip), falling back to a Sun/moon `Button` while `useComponents()` is still `{}` during the library's dynamic-import window. Only the skin varies — the flip, the cookie write, and the theme style-tag swap are identical on both paths.
 
 ```tsx
 import { ColorSchemeToggle } from '@atta/ui/lib/color-scheme-toggle'
