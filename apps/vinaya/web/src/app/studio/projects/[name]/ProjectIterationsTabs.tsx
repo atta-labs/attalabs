@@ -69,7 +69,11 @@ export function ProjectIterationsTabs({
           />
         </TabsContent>
         <TabsContent value='archived'>
-          <IterationsGrid projectName={projectName} iterations={archived} emptyHint='No archived iterations yet.' />
+          <IterationsGrid
+            projectName={projectName}
+            iterations={archived}
+            emptyHint={forge.archived.kind === 'ok' ? 'No archived iterations yet.' : null}
+          />
         </TabsContent>
       </Tabs>
     </div>
