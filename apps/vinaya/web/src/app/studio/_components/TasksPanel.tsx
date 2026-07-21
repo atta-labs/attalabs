@@ -111,10 +111,12 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
         )}
       </div>
 
+      {/* `pt-2` on top of the wrapper's `space-y-3`: a small extra beat that
+          separates the controls from the results they act on. */}
       {filtered.length === 0 ? (
-        <p className='font-sans text-xs text-muted-foreground/70'>No tasks match these filters.</p>
+        <p className='pt-2 font-sans text-xs text-muted-foreground/70'>No tasks match these filters.</p>
       ) : (
-        <div className='space-y-2'>
+        <div className='space-y-2 pt-2'>
           {filtered.map((task) => {
             const key = `${task.iterationSlug ?? 'backlog'}-${task.taskId}`
             return (
