@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
-import { listIterations } from '@/lib/repo-state'
+import { listIterations, readRegistry } from '@/lib/repo-state'
 import { IterationsTabs } from './IterationsTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -14,7 +14,11 @@ export const metadata: Metadata = {
 export default async function IterationsPage() {
   if (isVercelDeploy()) notFound()
 
-  const { active, archived, forge } = await listIterations()
+  const [{ active, archived, forge }, registry] = await Promise.all([listIterations(), readRegistry()])
+  // Registered project names — a board link resolves only to one of these
+  // (`readProject` 404s on a retired name like `aeg`); passed to the client
+  // tabs so `iterationHref` skips unregistered projects (D-087).
+  const registeredProjects = registry.map((p) => p.name)
 
   return (
     <div className='space-y-8'>
@@ -26,7 +30,7 @@ export default async function IterationsPage() {
         </p>
       </header>
 
-      <IterationsTabs active={active} archived={archived} forge={forge} />
+      <IterationsTabs active={active} archived={archived} forge={forge} registeredProjects={registeredProjects} />
     </div>
   )
 }

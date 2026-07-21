@@ -70,6 +70,10 @@ export default async function HomePage() {
   ])
 
   const active = iterations.active
+  // Only a registered project has a board route (`readProject` 404s otherwise);
+  // pass the registered set so a retired-project iteration renders board-less
+  // instead of linking to a dead `/studio/projects/<retired>` page (D-087).
+  const registered = new Set(registry.map((p) => p.name))
   // The Tasks card is the single work surface: iteration tasks (Ready / active /
   // blocked) plus the backlog, filterable by status.
   const allTasks = [...tasks, ...backlogToTasks(backlog.issues)]
@@ -118,7 +122,7 @@ export default async function HomePage() {
             ) : null
           ) : (
             active.slice(0, PREVIEW).map((it) => {
-              const href = iterationHref(it)
+              const href = iterationHref(it, registered)
               const row = (
                 <>
                   <span className='truncate text-card-foreground group-hover:text-primary'>{it.name}</span>
