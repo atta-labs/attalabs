@@ -113,6 +113,8 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Toggle
+export { Toggle, toggleVariants, type ToggleProps } from './interactive/toggle'
 
 // Content — Card (native retro upstream ships CardAction)
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../installed/card'

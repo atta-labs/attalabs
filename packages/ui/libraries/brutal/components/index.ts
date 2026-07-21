@@ -113,6 +113,13 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Toggle falls back to basic (neobrutalism ships no toggle in
+// its registry; verified 2026-07-21 — https://www.neobrutalism.dev/r/toggle.json 404)
+export {
+  Toggle,
+  toggleVariants,
+  type ToggleProps
+} from '../../basic/components/interactive/toggle'
 
 // Content — Card
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './content/card'

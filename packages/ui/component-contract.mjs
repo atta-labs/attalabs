@@ -49,6 +49,10 @@ export const REQUIRED_COMPONENTS = [
   'TabsList',
   'TabsTrigger',
 
+  // Toggle
+  'Toggle',
+  'toggleVariants',
+
   // DropdownMenu
   'DropdownMenu',
   'DropdownMenuCheckboxItem',
@@ -196,6 +200,11 @@ export const REQUIRED_TYPES = [
   'TabsListProps',
   'TabsProps',
   'TabsTriggerProps',
+
+  // Toggle — like Button, each library derives ToggleProps from its OWN
+  // installed cva (variant/size enums diverge by design); only the NAME is
+  // contracted, so there is no shared types/interactive/toggle.ts.
+  'ToggleProps',
 
   // Badge
   'BadgeAnimation',

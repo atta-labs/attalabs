@@ -52,6 +52,8 @@ export { Textarea } from './form/textarea'
 // Shared
 export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Toggle
+export { Toggle, toggleVariants, type ToggleProps } from './interactive/toggle'
 // Display — falls back to basic for Toast
 export { Toast, ToastProvider, useToastContext } from '../../basic/components/display/toast'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger, useCollapsible } from '../installed/collapsible'
