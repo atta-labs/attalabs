@@ -2,7 +2,7 @@
 
 import { Badge, Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { X } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { DashboardTask, TaskCategory } from '@/app/studio/_lib/load-dashboard-tasks'
 import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
@@ -14,7 +14,16 @@ import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
  * labels or other detail. Badges are pre-resolved by the loader (from
  * `status-display.ts`, the one vocabulary), so this stays purely presentational;
  * it only filters, sorts, and lays out. Categories offered are the ones actually
- * present, mirroring the backlog table's "options from present" rule.
+ * present, mirroring the backlog table's "options from present" rule — and the
+ * chip row carries the same `Filter by` heading treatment the backlog table
+ * landed (task 11, #624) — icon, heading, and `role='group'` labelled by it —
+ * so both filter surfaces read, and are announced, as one control.
+ *
+ * A row is flex, not a table, but the issue cell is a fixed-width column
+ * (`min-w-12` + `tabular-nums`, rendered even when a task has no Issue) so
+ * `#38` and `#1852` leave the badge and title starting at the same x. The
+ * iteration is pushed to the far right (`ml-auto`) for the same reason: row
+ * alignment must not depend on how long the title or the issue number is.
  */
 
 const CATEGORY_LABEL: Record<TaskCategory, string> = {
@@ -29,6 +38,9 @@ const CATEGORY_LABEL: Record<TaskCategory, string> = {
 // Display order for the filter chips and rows — moving, pickable, stuck, then
 // unscheduled backlog.
 const CATEGORY_ORDER: TaskCategory[] = ['in-review', 'changes-requested', 'in-flight', 'ready', 'blocked', 'backlog']
+
+/** Ties the filter chip group to its heading (`aria-labelledby`). */
+const FILTER_HEADING_ID = 'tasks-filter-heading'
 
 export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
   const [selected, setSelected] = useState<Set<TaskCategory>>(new Set())
@@ -53,7 +65,20 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
 
   return (
     <div className='space-y-3'>
-      <div className='flex flex-wrap items-center gap-1.5'>
+      {/* Same heading treatment the backlog table landed (task 11, #624): icon
+          pinned far-left of its own row, and the chip block is a `group`
+          labelled BY the heading — visual labelling alone would leave these
+          controls with no accessible name. An `h2`, as on the backlog page: the
+          `/studio` home's only heading is its `h1` ("Vinaya Studio") — the card
+          titles are `CardTitle` divs, not headings — so this skips no level. */}
+      <div className='flex items-center gap-2'>
+        <Filter className='size-3.5 shrink-0 text-muted-foreground' aria-hidden />
+        <h2 id={FILTER_HEADING_ID} className='font-mono text-xs uppercase tracking-wider text-muted-foreground'>
+          Filter by
+        </h2>
+      </div>
+
+      <div role='group' aria-labelledby={FILTER_HEADING_ID} className='flex flex-wrap items-center gap-1.5'>
         {present.map((category) => {
           const active = selected.has(category)
           return (
@@ -94,19 +119,22 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
             const key = `${task.iterationSlug ?? 'backlog'}-${task.taskId}`
             return (
               <div key={key} className='flex flex-wrap items-center gap-2 font-mono text-xs'>
-                {task.issue != null &&
-                  (task.issueUrl ? (
-                    <a
-                      href={task.issueUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='shrink-0 text-muted-foreground hover:text-primary hover:underline'
-                    >
-                      #{task.issue}
-                    </a>
-                  ) : (
-                    <span className='shrink-0 text-muted-foreground'>#{task.issue}</span>
-                  ))}
+                {/* Always rendered, Issue or not — it is the row's first column. */}
+                <span className='min-w-12 shrink-0 text-muted-foreground tabular-nums'>
+                  {task.issue != null &&
+                    (task.issueUrl ? (
+                      <a
+                        href={task.issueUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='hover:text-primary hover:underline'
+                      >
+                        #{task.issue}
+                      </a>
+                    ) : (
+                      `#${task.issue}`
+                    ))}
+                </span>
                 <Badge
                   variant='outline'
                   className={`shrink-0 font-mono text-xs ${task.badge.badgeClass}`}
@@ -116,8 +144,7 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                 </Badge>
                 <span className='text-card-foreground'>{task.title}</span>
                 {task.iterationSlug && (
-                  <span className='text-muted-foreground/70'>
-                    ·{' '}
+                  <span className='ml-auto shrink-0 pl-2 text-muted-foreground/70'>
                     {task.iterationHref ? (
                       <NextLink
                         variant='unstyled'
