@@ -18,9 +18,23 @@ const LABEL = 'font-sans text-xs transition-colors'
  * stays in the async server component that renders this one, so a request that
  * is not authorized never ships this control to the browser at all.
  *
- * Trade-off worth knowing: unlike the anchors this replaced, a switch has no
- * `href`. Middle-click, cmd-click and "open in new tab" no longer work on it,
- * and there is no crawlable link between the two surfaces.
+ * FOUR known regressions against the two anchors this replaced. All are
+ * inherent to a switch rather than defects in this implementation, and the
+ * decision to accept them is the Principal's (#647 review, finding 1):
+ *
+ *  1. No `href` — no middle-click, cmd-click or "open in new tab", and no
+ *     crawlable link between Portal and Studio.
+ *  2. Requires JavaScript. Navigation happens in `onCheckedChange`, so the
+ *     control is inert without it; the anchors worked without JS. Radix's
+ *     hidden mirror input is `aria-hidden`/`tabindex="-1"` and belongs to no
+ *     form, so there is no no-JS fallback path.
+ *  3. `aria-current='page'` is gone. A switch's role means "setting on/off",
+ *     not "you are here". Partially mitigated below: the accessible name
+ *     states the current surface outright rather than leaving it to be
+ *     inferred from `aria-checked`.
+ *  4. The two visible labels are inert `<span>`s, not click targets, and are
+ *     not programmatically associated with the control — which is the other
+ *     reason the accessible name carries both surface names itself.
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
@@ -34,7 +48,7 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
       <Switch
         checked={isStudio}
         onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
-        aria-label='Switch between Portal and Studio'
+        aria-label={isStudio ? 'Currently on Studio. Switch to Portal.' : 'Currently on Portal. Switch to Studio.'}
       />
       <Text as='span' className={`${LABEL} ${isStudio ? 'text-foreground' : 'text-muted-foreground'}`}>
         Studio
