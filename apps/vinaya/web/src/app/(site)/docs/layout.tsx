@@ -13,9 +13,12 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
     // — and no longer nests a second `calc(100dvh-56px)` box inside the shell's
     // own `overflow-y-auto` region. `min-h-0` lets it shrink instead of forcing
     // that outer region to scroll.
-    <Flex className='h-full min-h-0 w-full overflow-hidden'>
+    // Below `lg` this stacks: `DocSidebarHost`'s drawer bar on top, content
+    // below. At `lg`+ it is the same two-column row it has always been (the
+    // bar is `lg:hidden`, the rail `hidden lg:flex`).
+    <Flex className='h-full min-h-0 w-full flex-col overflow-hidden lg:flex-row'>
       <DocSidebarHost nav={nav} />
-      <main className='flex-1 overflow-y-auto px-12 pb-10 bg-background'>
+      <main className='flex-1 min-h-0 overflow-y-auto px-6 pb-10 bg-background lg:px-12'>
         <div className='mx-auto max-w-4xl'>{children}</div>
       </main>
     </Flex>

@@ -27,44 +27,54 @@ const OVERVIEW_DOC: Doc = {
   filePath: ''
 }
 
+/** The fixed desktop rail. Hidden below `lg`, where the same nav body is
+ * reached through the drawer in `DocSidebarHost` instead. */
 export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
       style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
+      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex'
     >
-      <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
-        <Text
-          as='span'
-          className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
-        >
-          The Harness
-        </Text>
+      <DocSidebarNav nav={nav} pathname={pathname} />
+    </SidebarProvider>
+  )
+}
 
-        <SidebarGroup className='py-1.5'>
-          <SidebarGroupContent>
+/** The nav body itself — rendered inside both the desktop rail above and the
+ * mobile drawer in `DocSidebarHost`. Expects `SidebarProvider` context. */
+export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
+  return (
+    <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
+      <Text
+        as='span'
+        className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
+      >
+        The Harness
+      </Text>
+
+      <SidebarGroup className='py-1.5'>
+        <SidebarGroupContent>
+          <SidebarMenu className='gap-0.5'>
+            <FlatDocItem doc={OVERVIEW_DOC} pathname={pathname} />
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      {nav.sections.map((section) => (
+        <SidebarGroup key={section.id} className='py-1.5'>
+          <SidebarGroupLabel className='font-sans text-xs font-bold uppercase tracking-widest text-sidebar-foreground/60'>
+            {section.label}
+          </SidebarGroupLabel>
+          <SidebarGroupContent className='mt-1'>
             <SidebarMenu className='gap-0.5'>
-              <FlatDocItem doc={OVERVIEW_DOC} pathname={pathname} />
+              {section.docs.map((doc) => (
+                <FlatDocItem key={doc.slug} doc={doc} pathname={pathname} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {nav.sections.map((section) => (
-          <SidebarGroup key={section.id} className='py-1.5'>
-            <SidebarGroupLabel className='font-sans text-xs font-bold uppercase tracking-widest text-sidebar-foreground/60'>
-              {section.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent className='mt-1'>
-              <SidebarMenu className='gap-0.5'>
-                {section.docs.map((doc) => (
-                  <FlatDocItem key={doc.slug} doc={doc} pathname={pathname} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-    </SidebarProvider>
+      ))}
+    </SidebarContent>
   )
 }
 
