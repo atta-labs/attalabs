@@ -23,7 +23,9 @@ import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
  * (`min-w-12` + `tabular-nums`, rendered even when a task has no Issue) so
  * `#38` and `#1852` leave the badge and title starting at the same x. The
  * iteration is pushed to the far right (`ml-auto`) for the same reason: row
- * alignment must not depend on how long the title or the issue number is.
+ * alignment must not depend on how long the title or the issue number is —
+ * but only from `lg` up, since below it the row wraps and a right-pushed slug
+ * would sit alone against the right edge instead of reading as part of its row.
  */
 
 const CATEGORY_LABEL: Record<TaskCategory, string> = {
@@ -144,9 +146,18 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                 >
                   {task.badge.label}
                 </Badge>
-                <span className='text-card-foreground'>{task.title}</span>
+                {/* From `lg`, the title is the flexible cell: it takes the
+                    leftover width and wraps INSIDE itself, which is what keeps
+                    the slug on the first line. `ml-auto` alone cannot do that —
+                    a long title still pushes the slug past the edge and flex
+                    wrapping drops it to its own line. */}
+                <span className='text-card-foreground lg:min-w-0 lg:flex-1'>{task.title}</span>
                 {task.iterationSlug && (
-                  <span className='ml-auto shrink-0 pl-2 text-muted-foreground/70'>
+                  // Below `lg` the row wraps and the slug lands on its own
+                  // line, where right-aligning would strand it against the far
+                  // edge, away from the row it belongs to — so it flows left
+                  // there instead, under the issue number.
+                  <span className='shrink-0 text-muted-foreground/70 lg:pl-2'>
                     {task.iterationHref ? (
                       <NextLink
                         variant='unstyled'
