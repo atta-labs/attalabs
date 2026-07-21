@@ -32,7 +32,7 @@ import 'server-only'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
-import { loadActiveIterations } from '@/lib/repo-state'
+import { loadActiveIterations, readRegistry } from '@/lib/repo-state'
 import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
 import { boardHref } from '@/app/studio/_lib/iteration-href'
 
@@ -76,7 +76,10 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
 }
 
 export async function loadDashboardTasks(): Promise<DashboardTask[]> {
-  const active = await loadActiveIterations()
+  const [active, registry] = await Promise.all([loadActiveIterations(), readRegistry()])
+  // Board links resolve only to registered projects — a retired name (e.g. a
+  // task still carrying `Project: aeg`) has no project page (D-087).
+  const registered = new Set(registry.map((p) => p.name))
 
   // Fan the per-iteration forge reads out in parallel — each iteration's
   // snapshot + readiness are independent, and the underlying forge derivation
@@ -95,7 +98,7 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
           snapshot.repo && task.issue != null
             ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
             : null
-        const iterationHref = boardHref(task.projects, fileSlug)
+        const iterationHref = boardHref(task.projects, fileSlug, registered)
         const base = {
           iterationSlug: fileSlug,
           iterationHref,
