@@ -20,8 +20,8 @@ function IterationsGrid({
     // A null hint means the empty state is explained by the forge banner.
     if (!emptyHint) return null
     return (
-      <Card className='mt-6'>
-        <CardContent className='flex flex-col items-center gap-4 py-10 text-center'>
+      <Card>
+        <CardContent className='flex flex-col items-center gap-4 text-center'>
           <Inbox aria-hidden='true' className='h-8 w-8 text-muted-foreground' />
           <Text className='font-sans text-base text-muted-foreground'>{emptyHint}</Text>
         </CardContent>
