@@ -4,26 +4,26 @@ import { ArrowDown, Check, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
-import { LightSpeedEraCanvas } from './canvas/LightSpeedEraCanvas'
-import { NormalEraCanvas } from './canvas/NormalEraCanvas'
+// One canvas, two eras — same layout, `kind` picks humans-at-desks vs robot swarm.
+import { TwoErasCanvas } from './canvas/TwoErasCanvas'
 import { ScrollButton } from './ScrollButton'
 
 const HUMAN_POINTS = [
   'Opens a PR (40 files)',
-  'Reads the ticket',
+  'Reads the ticket, gets context',
   'Learns the codebase by writing it',
   'Occasional tech debt',
-  'Reviews a diff in 20 minutes',
-  'Code grows, spec grows with it'
+  'Reviews a diff in ~20 min',
+  'Code + specs grow together'
 ]
 
 const AGENT_POINTS = [
-  'Opens a PR (1,200 files)',
-  'Copy-pastes the ticket',
+  'Opens massive PRs (1,200+ files)',
+  'Copy-pastes the ticket, no context',
   'Ships code nobody has read',
-  'Invisible huge tech debt',
-  "Can't finish reading - next one lands",
-  'Code grows 100x, spec never catches up'
+  'Invisible, compounding tech debt',
+  'Reviewers give up — next PR lands',
+  'Code grows 100× faster than the spec'
 ]
 
 /** Green check for the humans column, red X for the agents column — a quick visual
@@ -38,17 +38,15 @@ function PointList({
   iconClassName: string
 }) {
   return (
-    <Flex direction='column' align='start' justify='start' gap={3}>
+    <Flex direction='column' align='start' justify='start' gap={2}>
       {points.map((point) => (
         // align='start' — when a line wraps to two rows, the icon sits on the FIRST
         // row (top-aligned with the text block), not centered between both rows.
-        <Flex key={point} align='start' gap={2}>
-          <Icon className={`mt-0.5 ${iconClassName}`} />
-          {/* max-w forces the longer lines to wrap onto a second row instead of
-              stretching the card wider to fit them on one line. */}
-          <Text size='sm' className='max-w-[190px] text-left'>
-            {point}
-          </Text>
+        <Flex key={point} align='center' gap={2}>
+          <Icon className={iconClassName} />
+          {/* One line each (copy trimmed to fit) — no wrap, so the rows stay compact and
+              the whole section fits one screen. */}
+          <Text className='whitespace-nowrap text-left'>{point}</Text>
         </Flex>
       ))}
     </Flex>
@@ -63,65 +61,56 @@ export function HeroSection() {
     // gap-6/py-8) claw back the vertical room the two era-canvas cards need — they're
     // taller than the random-question text block they replaced, and at gap-4/py-4 the
     // block still overflowed a typical ~900px viewport by ~20px.
-    <section className='flex min-h-[calc(100vh-64px)] w-full flex-col items-center justify-center gap-12 px-6 py-2 text-center'>
+    <section className='flex min-h-[calc(100vh-64px)] w-full flex-col items-center justify-center gap-6 px-6 py-2 text-center'>
+      {/* The cards' HUMANS/AGENTS labels + bullets already make the "context vs scale"
+          contrast — so the headline drops those setup sentences and leads with the thesis
+          alone. Less text, more space, bigger type. */}
       <Heading
         level={1}
-        className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text55xl lg:text-5xl'
+        className='max-w-[760px] text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
       >
-        Sustainable software development
-        <br />
-        for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
+        Without governance, scale wins — and quality loses.
       </Heading>
 
-      {/* The only place the HUMANS/AGENTS CODING era canvases render — the standalone
-          TwoErasSection this was cloned from is gone, absorbed here.
-          inline-grid + grid-cols-2 (both tracks 1fr) is the CSS trick for "both columns
-          equal width, sized to whichever content is wider" — NOT stretched to fill the
-          page, NOT independently shrink-wrapped (which let the two cards land at
-          different widths since the agent/human point lists are different lengths).
-          inline-grid gives the whole block a fit-content outer size, same as the
-          shrink-wrap look asked for before, but now the two 1fr columns are tied. */}
-      <div className='inline-grid grid-cols-1 items-start gap-y-6 sm:grid-cols-2 sm:gap-x-8'>
-        <Flex direction='column' align='stretch' gap={3}>
-          <Text as='p' className='text-center font-mono text-xl text-primary'>
-            HUMANS CODING
-          </Text>
-          <Card>
-            <CardContent>
-              {/* align='start' — the canvas and the list are direct row siblings (the
-                  label lives above the row now, not inside one side of it), so the list's
-                  first line lands at the same y as the canvas's own top edge, which is
-                  where the archers' heads sit (the canvas is trimmed tight to its content,
-                  "canvas ends where the painting ends" — see NormalEraCanvas). */}
-              <Flex align='center' gap={3}>
-                <NormalEraCanvas />
-                <PointList points={HUMAN_POINTS} icon={Check} iconClassName='size-3.5 shrink-0 text-success' />
-              </Flex>
-            </CardContent>
-          </Card>
-        </Flex>
+      {/* A DEFINITE-width grid (max-w + w-full) with two `minmax(0,1fr)` tracks — equal
+          columns regardless of content. `inline-grid` (fit-content) sized each track to its
+          own bullet widths, which is why the two cards landed different widths. Cards are
+          `w-full` so each fills its equal cell exactly. */}
+      <div className='grid w-full max-w-[880px] grid-cols-1 items-stretch gap-y-6 sm:grid-cols-2 sm:gap-x-8'>
+        <Card className='w-full'>
+          <CardContent>
+            {/* Label lives INSIDE the card now, on top, above the canvas+bullets row.
+                Both columns render the SAME TwoErasCanvas, `kind` apart — identical layout,
+                sphere, row baseline and cadence, so the two stay pixel-aligned side by side. */}
+            <Flex direction='column' align='center' gap={3}>
+              <Text as='p' className='text-center font-mono text-xl text-primary'>
+                HUMANS CODING
+              </Text>
+              <TwoErasCanvas kind='human' layout='landscape' />
+              <PointList points={HUMAN_POINTS} icon={Check} iconClassName='size-5 shrink-0 text-success' />
+            </Flex>
+          </CardContent>
+        </Card>
 
-        <Flex direction='column' align='stretch' gap={3}>
-          <Text as='p' className='text-center font-mono text-xl text-primary'>
-            AGENTS CODING
-          </Text>
-          <Card>
-            <CardContent>
-              <Flex align='center' gap={3}>
-                <LightSpeedEraCanvas />
-                <PointList points={AGENT_POINTS} icon={X} iconClassName='size-3.5 shrink-0 text-destructive' />
-              </Flex>
-            </CardContent>
-          </Card>
-        </Flex>
+        <Card className='w-full'>
+          <CardContent>
+            <Flex direction='column' align='center' gap={3}>
+              <Text as='p' className='text-center font-mono text-xl text-primary'>
+                AGENTS CODING
+              </Text>
+              <TwoErasCanvas kind='agent' layout='landscape' />
+              <PointList points={AGENT_POINTS} icon={X} iconClassName='size-5 shrink-0 text-destructive' />
+            </Flex>
+          </CardContent>
+        </Card>
       </div>
 
       {/* The canvases render immediately (no reveal animation to wait on, unlike the
           random-question text this replaced), so the button just fades in on a short
           fixed delay instead of an onAllRevealed callback. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 }}>
-        <ScrollButton targetId='eras'>
-          Show me more
+        <ScrollButton targetId='protected'>
+          Meet Vinaya
           <ArrowDown className='size-5' />
         </ScrollButton>
       </motion.div>
