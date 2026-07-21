@@ -17,8 +17,15 @@ export default async function ProjectsLayout({ children }: { children: ReactNode
       {/* max-w-4xl keeps prose pages (task-detail briefs) at a readable measure. A
           wide board table that doesn't fit this width scrolls inside its own
           container (the responsive Table wrapper), so the column width no longer
-          needs the page widened to accommodate it. */}
-      <div className='mx-auto max-w-4xl px-8 py-8'>{children}</div>
+          needs the page widened to accommodate it.
+
+          No `px-8`: StudioShell already applies it, and re-applying it here put
+          the gutter at 4rem and cut the measure to 52rem (vs 56rem elsewhere).
+          `pt-8` IS load-bearing and must stay — `ProjectsSubBar` cancels the
+          shell's top padding with `-mt-8` so it can pin flush, so without this
+          the first heading would butt against the sub-bar. It is the sub-bar's
+          counterweight, not a duplicate of the shell's padding. */}
+      <div className='mx-auto max-w-4xl pt-8'>{children}</div>
     </>
   )
 }
