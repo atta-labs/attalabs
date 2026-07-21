@@ -19,7 +19,7 @@ AEG "init" is not software — it is a **state the repo is in**. A repo is runni
 2. **The living-state layer** — `aeg-project/` (one at the repo root, one per project): `decisions.md`. State only — never the model (D-041). (`now.md` is retired — D-057; active/blocked/next is derived from the forge. Completed-work history, lessons, per-project operational state, and ratification items are forge-native — D-110: `git log`/PR history, pinned Issues, and the `needs:principal-input` label respectively.)
 3. **The enforcement layer (referenced by the model, so it must travel with it):**
    - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `iterations/README.md` §5).
-   - `.github/workflows/verify-docs.yml` + the `verify-docs` script — the doc-tier CI gate (D-027).
+   - the `verify-docs` script (`packages/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate (D-027). The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
    - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`iterations/README.md` §9.3).
    - the generated agent-surface skill view (e.g. `.claude/skills/`) — derived from `aeg-root/skills/` (D-039).
 4. At least one iteration file exists, and the role docs are reachable.

@@ -29,7 +29,7 @@ Hierarchical, file-level precedence:
 2. Global `~/.vinaya/config.json`
 3. `null` if neither exists
 
-Whichever file resolves first is used in full — there is no field-by-field merge across the two files, matching the pattern this loader was ported from (Cetana's `apps/cetana-ai/cli/src/lib/config.ts`).
+Whichever file resolves first is used in full — there is no field-by-field merge across the two files, matching the pattern this loader was ported from (Cetana's CLI config loader, since deleted — D-132).
 
 Today the schema carries one surface, added per D-117:
 

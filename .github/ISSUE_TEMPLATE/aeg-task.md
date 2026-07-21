@@ -1,7 +1,6 @@
 ---
 name: AEG Task
 about: An AEG-governed task. No planning metadata (priority, estimates, points, roadmap) — see iterations/README.md §9. The Planner's rationale goes in the body below the metadata fields.
-labels: cetana:task
 ---
 
 **Iteration:** <!-- e.g. vada-production-v1 -->

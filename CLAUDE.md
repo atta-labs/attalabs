@@ -19,7 +19,7 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 - **AttaLabs** is the dev/lab ecosystem. Domain: `attalabs.dev`. Multiple products live here.
 - **Atta** is one product within AttaLabs — the deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain: `atta.ai` (preferred, not owned).
 - **Vāda, Vitakka, Sati** are the layers inside Atta. Vāda and Vitakka also live as standalone products at AttaLabs.
-- **Herald** and **Cetana** are standalone products in AttaLabs, not part of Atta.
+- **Herald** and **Vinaya** are standalone products in AttaLabs, not part of Atta. (**Cetana** was retired — D-095, deleted by D-132.)
 - **The Atta Engine** is the execution substrate (`@atta/engine` + `@atta/adapter-langgraph`).
 - **No `-AI` suffix** on any product brand. Pāli naming is mandatory inside Atta, elective elsewhere.
 
@@ -34,7 +34,6 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 | Vitakka | [apps/vitakka-ai/](apps/vitakka-ai/) | [CLAUDE.md](apps/vitakka-ai/CLAUDE.md) | [README.md](apps/vitakka-ai/README.md) | `vitakka.attalabs.dev` | Scaffold, shelved — its Sanity CMS project now backs Vinaya's identity (D-124); borrows Atta's theme/branding to keep compiling |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
 | Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project (D-124) |
-| Cetana | [apps/cetana-ai/](apps/cetana-ai/) | (README only) | [README.md](apps/cetana-ai/README.md) | (internal) → `cetana.attalabs.dev` if/when published | V0/V0.5 in dev |
 
 ## App Structure Convention
 
@@ -45,14 +44,13 @@ apps/{product-ai}/
 ├── web/              # Next.js web app (Vāda, Atta, Vitakka, Herald)
 ├── mobile/           # React Native (Herald — iOS + Android)
 ├── mcp/              # MCP server (Vāda, Atta, Herald)
-├── cli/              # CLI binary (Cetana)
-├── coordinator/      # MCP server entry points (Cetana)
+├── cli/              # CLI binary (Vinaya)
 ├── specs/            # Product-internal specs
 ├── CLAUDE.md         # Product overview
 └── README.md
 ```
 
-Not every product needs every surface. Cetana is CLI + coordinator only. Vāda is web + mcp. Vitakka is scaffold only today.
+Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp. Vitakka is scaffold only today.
 
 ---
 
@@ -175,7 +173,6 @@ In-depth guides for specific domains. Reference when working in that area.
 | Atta Adapter | [.claude/skills/atta-adapter-langgraph/SKILL.md](.claude/skills/atta-adapter-langgraph/SKILL.md) | LangGraph execution + cognitive router |
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
-| Cetana Coordinator | [.claude/skills/cetana-coordinator/SKILL.md](.claude/skills/cetana-coordinator/SKILL.md) | MCP servers, worktree manager, JSONL events |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Brief Authoring | [aeg-root/skills/brief-authoring/SKILL.md](aeg-root/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |

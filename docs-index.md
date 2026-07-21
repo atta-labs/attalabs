@@ -6,7 +6,6 @@
 - [Atta engine internals — Flow → Plan compilation via compileFlow, the v2 universal round-based schema, validation rules, terminal states, and immutability invariants. Load when working inside packages/engine or debugging unexpected Plan graph structure. Do NOT load for adapter/router/provider runtime work.](./.claude/skills/atta-engine/SKILL.md)
 - [Vāda agent and team configurations. Load when adding/modifying agents, teams, reviewer profiles, or building a verticalized team for a specific domain. Covers the tools-on/tools-off invariant. Do NOT load for engine primitives or adapter runtime.](./.claude/skills/atta-teams/SKILL.md)
 - [Clerk authentication patterns across the Atta ecosystem — shared single Clerk app with subdomain SSO for Atta/Vāda; Herald is a standalone exception with its own Clerk app and DB](./.claude/skills/auth/SKILL.md)
-- [Cetana Coordinator internals — MCP servers, worktree manager, JSONL events, GitHub Octokit integration. Load when working in apps/cetana-ai/coordinator/. Do NOT load for high-level Cetana questions; read apps/cetana-ai/specs/cetana-spec.md instead.](./.claude/skills/cetana-coordinator/SKILL.md)
 - [Enforces TypeScript, export, import, and Biome code style rules across the Atta AI monorepo](./.claude/skills/code-style/SKILL.md)
 - [Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fields, migrations across Atta AI apps](./.claude/skills/database/SKILL.md)
 - [Executor Protocol — patterns for executing dispatched tasks from the Principal](./.claude/skills/executor-protocol/SKILL.md)
@@ -28,14 +27,6 @@
 
 ## Specification Documents
 
-### aeg
-
-- [AEG — app architecture](./apps/aeg/specs/aeg-app-architecture.md)
-- [AEG — product backlog](./apps/aeg/specs/aeg-backlog.md)
-- [AEG Consolidation — the next iteration (spec)](./apps/aeg/specs/aeg-consolidation-spec.md)
-- [AEG (product) — Decision Log](./apps/aeg/specs/aeg-decisions.md)
-- [AEG Observability — spec](./apps/aeg/specs/aeg-observability-spec.md)
-
 ### atta-ai
 
 - [Atta — Build Strategy](./apps/atta-ai/specs/atta-build-strategy.md)
@@ -53,13 +44,6 @@
 - [Atta — Market Research](./apps/attalabs/specs/atta-market-research.md)
 - [Atta Naming Decision](./apps/attalabs/specs/atta-naming-decision.md)
 - [Cetanā (Architect Layer) — Capability Reality Check](./apps/attalabs/specs/cetana-reality-check.md)
-
-### cetana-ai
-
-- [Cetana — product backlog](./apps/cetana-ai/specs/cetana-backlog.md)
-- [Cetana — Decision Log](./apps/cetana-ai/specs/cetana-decisions.md)
-- [Cetana — Experiment Log](./apps/cetana-ai/specs/cetana-experiment-log.md)
-- [Cetana — Locked Architecture Specification](./apps/cetana-ai/specs/cetana-spec.md)
 
 ### desktop
 
@@ -141,9 +125,9 @@
 
 ### vinaya
 
+- [Loop Engineering — proposal (NOT ratified)](./apps/vinaya/specs/loop-engineering.md)
 - [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
 - [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
-- [@atta/vinaya-sources — StateSource adapters (forge/file)](./apps/vinaya/sources/README.md)
 
 ### vitakka-ai
 

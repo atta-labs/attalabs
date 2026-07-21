@@ -32,11 +32,11 @@ describe('isNewDiskStateFile', () => {
   })
 
   it('flags a new .tokens.md file anywhere in the repo', () => {
-    expect(isNewDiskStateFile('apps/aeg/specs/fake-v1.tokens.md', 'added')).toBe(true)
+    expect(isNewDiskStateFile('apps/vinaya/specs/fake-v1.tokens.md', 'added')).toBe(true)
   })
 
   it('does not flag an existing .tokens.md file elsewhere being edited', () => {
-    expect(isNewDiskStateFile('apps/aeg/specs/fake-v1.tokens.md', 'modified')).toBe(false)
+    expect(isNewDiskStateFile('apps/vinaya/specs/fake-v1.tokens.md', 'modified')).toBe(false)
   })
 
   it('does not flag an unrelated file', () => {

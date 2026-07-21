@@ -24,9 +24,6 @@
 #     .env files, absent in CI); apps are type-checked by their Vercel
 #     production builds (ring 1) and by the full `turbo typecheck` in
 #     pre-commit (ring 0).
-#   - Tests exclude @atta/cetana-cli: its `init abort path` test fails
-#     PRE-EXISTING on main (verified 2026-07-02, unrelated to any gate work).
-#     Tracked for a follow-up fix; un-exclude when repaired.
 #   - Checkout uses fetch-depth: 0 (full history) so `--affected` can resolve
 #     a merge-base against `main` — a shallow clone breaks that ref
 #     resolution. `.turbo` and `~/.bun/install/cache` are cached between runs,
@@ -101,5 +98,5 @@ jobs:
       - name: Typecheck (packages affected by this PR's diff)
         run: bunx turbo typecheck --affected --filter='./packages/*'
 
-      - name: Unit tests (affected packages, except the pre-existing cetana-cli failure)
-        run: bunx turbo test --affected --filter='!@atta/cetana-cli'
+      - name: Unit tests (affected packages)
+        run: bunx turbo test --affected

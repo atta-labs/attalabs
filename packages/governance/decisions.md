@@ -3253,3 +3253,45 @@ Separately, retro's vendored `installed/button.tsx` references `hover:bg-primary
 - **Scope the doctrine to retro/brutal only** — rejected as unimplementable: `next-link.tsx` and `logo.tsx` are shared and cannot branch on the active library from a class string.
 
 **Consequences:** The two migrated themes are reproducible from `packages/cms/scripts/seed-neobrutalist-themes.ts` rather than existing only as published Sanity documents. Removing the shim means **each theme must now supply its own adequate border**, so the theme pickers partition on a new explicit `uiTheme.neobrutalist` flag rather than offering pairings that render wrong in either direction — neobrutalist libraries offer only flagged themes, soft libraries only the rest (shared `themesForLibrary()`/`isThemeCompatible()` in `@atta/cms`; Herald's `/[username]/ui` and `tools/admin`'s themes page both consume it, and switching library re-selects a compatible theme). Only obsidian-retro has been migrated; the other 19 will render near-borderless if repointed at retro/brutal — a tracked follow-up, not a regression of this change. Vāda, Herald and Atta shift nav-hover and wordmark from accent to primary; in their themes (kpop-demon-hunter, ultraviolet, obsidian) both tokens are bright, so this is a hue shift, not a contrast change. `.claude/skills/ui-library-system/SKILL.md`'s `currentColor` premise for retro/animate sticky-header rules is **corrected in the same PR**, and **animate's own sticky header was changed to `var(--border)` alongside retro's** — it had the identical defect, live on Vāda and Atta, — the premise was wrong (`@layer base { * { @apply border-border } }` gives every element `--border`), and it produced the very mismatch it was written to prevent. `apps/aeg` carries 20 unmigrated accent-highlight uses and is deliberately untouched: it is a deprecated duplicate of Vinaya Studio slated for deletion in `deprecation-v1`, and is outside this change's `Project:` scope.
+
+---
+
+## D-132 — D-095's cetana-deletion gate is met; Cetana and the old AEG Studio are deleted now
+
+**Date:** 2026-07-18
+**Status:** ACTIVE
+**Type:** 1
+**Lock:** NO
+**Authored by:** Principal (Daniel)
+**Ratified by:** Principal (Daniel), 2026-07-18
+
+**Context:** D-095 retired Cetana as a product decision but deferred execution, gating deletion of `apps/cetana-ai` on "Vinaya CLI + Studio work 100%." That gate has since been met in substance: `vinaya-cli-v1` harvested what D-095 named as harvestable (the `init` interactive skeleton and its abort-path regression tests, the hierarchical config pattern, the escalation severity taxonomy — the last already living on as AEG's `needs:*-input` labels), and Vinaya Studio is the live governance UI. Separately, the old AEG Studio app (`apps/aeg`) was superseded wholesale by the `apps/vinaya/web` port (#493) and has been dead code since. Both apps were therefore costing coherence — every stale `apps/aeg/` path citation, every dangling `apps/cetana-ai` doc-owners binding and skill, and a CI test-exclusion for a package nobody runs — with no offsetting value. Principal directive when reshaping `deprecation-v1`: *"I want all gone in once — all incoherence GONE at once."*
+
+**Decision:** D-095's deferral is discharged: `apps/cetana-ai` and `apps/aeg` are deleted now, in one change, together with the trail each leaves behind — their `doc-owners` bindings, the `cetana-coordinator` skill, the CI cetana-cli test exclusion, the `cetana:task` issue-template default label, and every stale `apps/aeg/` path citation in live code and doctrine. D-095's one preservation obligation is carried, not dropped: the Slice-1 cognitive-continuity finding recorded in `apps/cetana-ai/specs/cetana-experiment-log.md` is re-homed into the deleting PR's own body before the file is removed. Historical records are exempt and stay exactly as written — `aeg-root/iterations/completed/**`, every test fixture, and prior decision entries that cite these paths were true when written and are not rewritten. `packages/governance/projects.md`'s `aeg` row is likewise NOT edited here (D-110 keep-as-file); its disposition is escalated to the Principal separately.
+
+**Alternatives rejected:**
+- *Keep deferring until the Vinaya CLI's remaining commands ship* — rejected: the harvest D-095 actually gated on is complete, and the residual cost of holding two dead apps is paid continuously in stale references, dangling bindings, and doc claims that are simply untrue.
+- *Delete the apps but sweep their references in a follow-up task* — rejected: deleting `apps/aeg` breaks its live reference set in the same instant, so a split lands a red `main` between the two PRs. The deletions are verification-coupled to the sweep, which is what makes one PR correct rather than arbitrary.
+- *Archive the two apps somewhere rather than deleting them* — rejected: git history already is the archive, and an archived copy is a second thing to keep coherent.
+
+**Consequences:** `apps/aeg` and `apps/cetana-ai` no longer exist; `@atta/aeg-studio` and the `@atta/cetana-*` workspaces leave the lockfile. Cetana's own decision log (D-001–D-026, five locks) is formally superseded by this entry, as D-095 anticipated. The stale AEG research (`specs/aeg-study/**`, `specs/aeg-improvement-findings.md`, `specs/ecosystem-backlog.md`) and the duplicate `aeg-project/decisions/D-043.md` go with them, removing the top-level `specs/` and `aeg-project/` folders entirely — the cross-cutting-backlog convention that pointed at `specs/ecosystem-backlog.md` is replaced by cutting backlog Issues, and the docs naming it are corrected. `apps/vinaya/web`'s `read-root.ts` sheds its dormant legacy-topology-file merge, now provably unreachable. The `aeg` row in `projects.md` is left orphaned pending the Principal's ruling.
+
+
+---
+
+## D-133 — D-072's sanctioned-crossings list drops the deleted Cetana crossing and retires its now-gone path references
+
+**Date:** 2026-07-20
+**Status:** ACTIVE
+**Type:** 2 (reversible via a superseding D-entry — the same class as the D-072 it amends)
+**Lock:** NO
+**Authored by:** Developer (dispatched, review-fix on PR #638) — text dictated in the brief, transcribed not composed
+**Ratified by:** Principal (directed this amendment, 2026-07-20 session)
+**Amends:** D-072 — supersedes its sanctioned-crossing #2 (Cetana) and corrects its homes enumeration + enforcement pointer for the paths deleted by deprecation-v1 #573. D-072's own text is unchanged (D-006 append-only); this entry is the current truth for those enumerations. No back-pointer is added to D-072: it is not fully superseded — its one-way law stays ACTIVE — so a `Superseded by:` line would be false, and a partial-amendment back-pointer is undefined vocabulary whose introduction is a separate doctrine decision, not this fix. The forward `Amends:` here is the auditable link.
+**Conforms-to:** D-095 (Cetana retired), D-123 (AEG retired as a public name), D-132 (this PR's deletion authorization).
+
+**Context:** deprecation-v1 #573 (PR #638) deletes apps/cetana-ai, apps/aeg, the aeg-project/ folder, specs/aeg-study/**, specs/ecosystem-backlog.md, and specs/aeg-improvement-findings.md. D-072 (lock-protected, ACTIVE) declares an exhaustive sanctioned-crossings list whose item #2 is "Cetana — the orchestrator is a sanctioned knower of AEG," whose Decision line enumerates AEG's homes as aeg-root/, aeg-project/, apps/aeg/, packages/aeg-core/, specs/aeg*, and whose enforcement note backlogs to specs/ecosystem-backlog.md. Deleting Cetana and those paths without amending D-072 leaves a live, lock-protected governance entry naming a product and paths that no longer exist. This is a live enforcement input judged at review (doc-discipline), not a historical record, so D-006's append-only exemption does not cover it — this superseding entry is the sanctioned mechanism.
+
+**Decision:** (1) Sanctioned crossing #2 (Cetana) is removed — Cetana no longer exists (deleted by #573, retired by D-095), so it is no longer a sanctioned knower of AEG; the list stays exhaustive over the four surviving crossings (workflows, AEG-owned views, historical records, planning-seam backlogs). (2) D-072's homes enumeration is corrected to AEG's surviving homes: aeg-root/, packages/aeg-core/, and the Vinaya surface (apps/vinaya) — apps/aeg/ and the aeg-project/ folder are deleted, and specs/aeg* no longer holds AEG homes after specs/aeg-study/** removal. (3) The enforcement-backlog pointer to specs/ecosystem-backlog.md (deleted) is retired; the backlogged mechanical boundary check, if still wanted, is tracked on the forge, not in a deleted file. D-072's one-way knowledge law itself is unchanged and still ACTIVE — only its now-dangling enumerations are amended.
+
+**Lock:** NO.

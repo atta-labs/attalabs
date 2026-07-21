@@ -4,7 +4,7 @@ sidebar_title: Router (aeg-roles)
 description: The role router for AEG. Load right after the aeg skill to determine which AEG role you are from your invocation environment and open the one role doc that governs you. Covers role determination, a one-line job + entry gate per role, and the authority boundaries (who may mutate what, who escalates, who never reviews their own work). This is a ROUTER — it points to aeg-root/roles/*.md for the full spec of each role and never reproduces them. Load when you need to know "which role am I and which doc do I open."
 ---
 
-<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `aeg-roles` skill, inside the AEG unit (aeg-root/skills/). The copy at .claude/skills/aeg-roles/SKILL.md is a GENERATED VIEW produced by `aeg generate-skills` for the agent harness that loads from .claude/ — edit THIS file, then regenerate; never edit the generated view by hand. -->
+<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `aeg-roles` skill, inside the AEG unit (aeg-root/skills/). D-039 provides for an agent-specific GENERATED VIEW under .claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
 
 # AEG roles — the router
 
