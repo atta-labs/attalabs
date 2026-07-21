@@ -657,6 +657,44 @@ Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
 which is the drift D-065 exists to prevent, so it is deliberately not done here.
 
+**`Switch`** (`vinaya-pages-v2` task 9, #622) joined as `Switch` + `SwitchProps`, and is
+the first contracted component where **all four** libraries had their own upstream —
+no fallback anywhere. `basic` ← shadcn's `switch` (new-york style, matching the
+per-component `@radix-ui/react-*` import idiom the rest of basic's `installed/` uses —
+verified by diffing basic's `installed/toggle.tsx` against both registry styles, not
+assumed); `retro` ← `https://retroui.dev/r/radix/switch.json`; `brutal` ←
+`https://www.neobrutalism.dev/r/switch.json` (which, unlike its missing toggle, does
+exist); `animate` ← `@animate-ui/components-radix-switch` plus its registry dependency
+`@animate-ui/primitives-radix-switch` at
+`installed/animate-ui/primitives/radix/switch.tsx`, the same two-file shape as its Tabs
+and Toggle. `@radix-ui/react-switch` was added to `packages/ui/package.json` for basic
+and brutal. As with Button and Toggle, each library derives `SwitchProps` from its OWN
+installed component — the surfaces genuinely diverge (retro ships a `size`, animate
+ships `pressedWidth`/`startIcon`/`endIcon`/`thumbIcon`, basic ships neither) — so only
+the NAME is contracted and there is no `packages/ui/types/interactive/switch.ts`.
+
+**Check `cursor-pointer` per library, every time — the answer flips per component.**
+basic's, retro's and brutal's installed Switch pastes all carry it in their own base
+strings; **animate's does not**, so animate's wrapper bakes it in (merged LAST). This is
+the exact inverse of Toggle, where retro was the one that needed it. Read the installed
+base string; never infer parity from a sibling component.
+
+**retro's radix flavor ships a real state-attribute defect, adapted in its wrapper.**
+`retroui.dev/r/radix/switch.json` styles its checked state on **`data-checked:` /
+`data-unchecked:`** — those are **Base UI's** attribute names (presumably carried over
+from its `base` flavor). Radix emits `data-state="checked"` / `"unchecked"`, so upstream's
+paste renders a switch whose track never fills and whose thumb never slides. Verified on a
+real production render: the element carries `role="switch" aria-checked="true"
+data-state="checked"` and the page contains **zero** `data-checked=` attributes. The fix
+lives in `retro/components/interactive/switch.tsx`, which re-expresses upstream's own
+intended rules against the attribute Radix actually emits — including the thumb, reached
+by a descendant selector on its stable `data-slot` (`[&_[data-slot=switch-thumb]]:…`).
+A wrapper reaching into the primitive it wraps is the sanctioned place for that; a call
+site doing the same is not. It merges **before** `className` — it is a defect adapter a
+consumer may legitimately override, not a universal default like Button's `leading-none`,
+which merges last precisely so it always wins. If retroui fixes the flavor upstream,
+re-paste `installed/` and delete the adapter; do not hand-edit `installed/` either way.
+
 ### Governance — shared composites resolve NO library; consumers inject
 
 > **Rule:** A shared composite component MUST NOT import from any concrete

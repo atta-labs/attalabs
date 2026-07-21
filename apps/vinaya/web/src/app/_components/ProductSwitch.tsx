@@ -1,28 +1,8 @@
-import { NextLink } from '@atta/ui/lib/next-link'
-import { Text } from '@atta/ui/shared'
 import { isVercelDeploy } from '@/lib/env'
 import { hasForgeConnection } from '@/lib/forge-connection'
+import { ProductSwitchControl } from './ProductSwitchControl'
 
 type Segment = 'portal' | 'studio'
-
-function SwitchSegment({ label, href, active }: { label: string; href: string; active: boolean }) {
-  if (active) {
-    return (
-      <Text as='span' className='rounded-full bg-accent px-3 py-1 font-sans text-xs font-medium text-accent-foreground'>
-        {label}
-      </Text>
-    )
-  }
-  return (
-    <NextLink
-      href={href}
-      variant='unstyled'
-      className='rounded-full px-3 py-1 font-sans text-xs text-muted-foreground transition-colors hover:text-foreground'
-    >
-      {label}
-    </NextLink>
-  )
-}
 
 /**
  * Portal↔Studio switch. Reachable only where serving Studio is authorized
@@ -31,15 +11,15 @@ function SwitchSegment({ label, href, active }: { label: string; href: string; a
  * MUST run first so a deployed request never reaches the async forge check
  * at all (see D-126 — a GitHub token existing is not the same as this
  * visitor being authorized).
+ *
+ * This component stays a server component precisely so that gate runs on the
+ * server and an unauthorized request never ships the control at all; the
+ * rendered switch is `ProductSwitchControl`, a client component, because a
+ * switch navigates from an event handler rather than from an `href`.
  */
 export async function ProductSwitch({ current }: { current: Segment }) {
   if (isVercelDeploy()) return null
   if (!(await hasForgeConnection())) return null
 
-  return (
-    <div className='flex items-center gap-0.5 rounded-full border border-border bg-muted/50 p-0.5'>
-      <SwitchSegment label='Portal' href='/' active={current === 'portal'} />
-      <SwitchSegment label='Studio' href='/studio' active={current === 'studio'} />
-    </div>
-  )
+  return <ProductSwitchControl current={current} />
 }

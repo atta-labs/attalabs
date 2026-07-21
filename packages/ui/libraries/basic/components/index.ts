@@ -15,6 +15,9 @@ export { Input, InputBlock } from './form/input'
 export { Textarea } from './form/textarea'
 export { Checkbox } from './form/checkbox'
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Switch
+export { Switch, type SwitchProps } from './interactive/switch'
+
 // Interactive — Toggle
 export { Toggle, toggleVariants, type ToggleProps } from './interactive/toggle'
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from './interactive/collapsible'
