@@ -1,26 +1,31 @@
+import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Text } from '@atta/ui/shared'
 import { isVercelDeploy } from '@/lib/env'
 import { hasForgeConnection } from '@/lib/forge-connection'
 
 type Segment = 'portal' | 'studio'
 
+/**
+ * One segment of the switch. The active/inactive skin is the active library's
+ * own `Button` — `default` (its filled, committed state) vs `ghost` — rather
+ * than a hand-rolled pill, so the control reads as retro chrome under `retro`
+ * and as that library's own button under any other. No fill/border class is
+ * set here on purpose: the pill belongs to the library, not to this call site.
+ *
+ * `asChild` keeps the segment a real link. Navigation, not local pressed
+ * state, is what this control does, so the active segment announces itself
+ * with `aria-current='page'` — the reason this is a Button and not a Toggle,
+ * whose primitive stamps `type='button'` and `aria-pressed` onto whatever it
+ * renders, neither of which is valid on an anchor (and neither of which a
+ * child prop can override back off through Radix's Slot merge).
+ */
 function SwitchSegment({ label, href, active }: { label: string; href: string; active: boolean }) {
-  if (active) {
-    return (
-      <Text as='span' className='rounded-full bg-accent px-3 py-1 font-sans text-xs font-medium text-accent-foreground'>
-        {label}
-      </Text>
-    )
-  }
   return (
-    <NextLink
-      href={href}
-      variant='unstyled'
-      className='rounded-full px-3 py-1 font-sans text-xs text-muted-foreground transition-colors hover:text-foreground'
-    >
-      {label}
-    </NextLink>
+    <Button asChild variant={active ? 'default' : 'ghost'} size='sm'>
+      <NextLink href={href} variant='unstyled' aria-current={active ? 'page' : undefined}>
+        {label}
+      </NextLink>
+    </Button>
   )
 }
 
@@ -37,7 +42,7 @@ export async function ProductSwitch({ current }: { current: Segment }) {
   if (!(await hasForgeConnection())) return null
 
   return (
-    <div className='flex items-center gap-0.5 rounded-full border border-border bg-muted/50 p-0.5'>
+    <div className='flex items-center gap-1 rounded-lg bg-secondary p-1'>
       <SwitchSegment label='Portal' href='/' active={current === 'portal'} />
       <SwitchSegment label='Studio' href='/studio' active={current === 'studio'} />
     </div>
