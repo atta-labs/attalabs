@@ -1,6 +1,7 @@
 'use client'
 
 import { Button as BasicButton } from '../libraries/basic/components/interactive/button'
+import type { Toggle as BasicToggle } from '../libraries/basic/components/interactive/toggle'
 import { useComponents } from './library-provider'
 import { useTheme } from './theme-context'
 import { generateThemeCSSForScheme } from '@atta/cms'
@@ -14,6 +15,11 @@ export function ColorSchemeToggle() {
   const [scheme, setScheme] = useState<ColorScheme>(DEFAULT_SCHEME)
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
+  // The active library's Toggle, when it has resolved. Every library exports
+  // one (the contract requires it), but useComponents() returns {} until the
+  // dynamic import lands — the Button path below is the first-paint fallback,
+  // not a dead branch.
+  const Toggle = comps.Toggle as typeof BasicToggle | undefined
   const { theme, styleId } = useTheme()
 
   useEffect(() => {
@@ -38,6 +44,16 @@ export function ColorSchemeToggle() {
 
   const Icon = scheme === 'dark' ? Sun : Moon
   const label = scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+
+  // Only the skin changes: `pressed` mirrors the scheme the flip already
+  // derives, and onPressedChange calls the same flip() as the Button's onClick.
+  if (Toggle) {
+    return (
+      <Toggle pressed={scheme === 'dark'} onPressedChange={flip} aria-label={label} title={label}>
+        <Icon className='h-4 w-4' />
+      </Toggle>
+    )
+  }
 
   return (
     <Button variant='ghost' size='icon' onClick={flip} aria-label={label} title={label}>
