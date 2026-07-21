@@ -32,10 +32,11 @@ export function DocSidebarHost({ nav }: { nav: DocNav }) {
           </SheetTrigger>
           <SheetContent side='left' className='bg-sidebar text-sidebar-foreground p-0'>
             <SheetTitle className='sr-only'>Docs navigation</SheetTitle>
-            <SidebarProvider
-              style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-              className='h-full min-h-0 w-full'
-            >
+            {/* No `--sidebar-width` here: nothing inside reads it (the rail's
+             * width lives on the rail's own root) and `SheetContent`'s
+             * `w-3/4 sm:max-w-sm` is what sizes the drawer — viewport-relative,
+             * so it holds on a 320px phone where a fixed 16rem would not. */}
+            <SidebarProvider className='h-full min-h-0 w-full'>
               <DocSidebarNav nav={nav} pathname={pathname} />
             </SidebarProvider>
           </SheetContent>

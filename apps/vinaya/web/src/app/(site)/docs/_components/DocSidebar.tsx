@@ -44,7 +44,11 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
  * mobile drawer in `DocSidebarHost`. Expects `SidebarProvider` context. */
 export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
   return (
-    <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
+    // The landmark rides on the existing scroll container as attributes rather
+    // than a wrapping <nav>: `SidebarContent` carries the flex/overflow that
+    // makes the tree scroll, and an extra box between it and its parent breaks
+    // that. `role='navigation'` is landmark-equivalent to <nav> for AT.
+    <SidebarContent role='navigation' aria-label='The Harness' className='gap-0 overflow-y-auto px-2 py-4'>
       <Text
         as='span'
         className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
