@@ -45,11 +45,22 @@ export function ColorSchemeToggle() {
   const Icon = scheme === 'dark' ? Sun : Moon
   const label = scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
 
-  // Only the skin changes: `pressed` mirrors the scheme the flip already
-  // derives, and onPressedChange calls the same flip() as the Button's onClick.
+  // `pressed` mirrors the scheme the flip already derives, and onPressedChange
+  // calls the same flip() as the Button's onClick.
+  //
+  // The accessible name MUST differ between the two branches, and that is not a
+  // skin difference — it is what each role requires. A toggle button carries the
+  // state in `aria-pressed`, so per the WAI-ARIA APG its name must be static and
+  // name the THING toggled ('Dark mode'), never the action: pairing
+  // aria-pressed='true' with a name that itself flips ('Switch to light mode')
+  // announces as "Switch to light mode, toggle button, pressed" — i.e. it claims
+  // light mode is on at the moment dark mode is. The plain Button below has no
+  // pressed state, so an action-phrased name is the correct one there.
+  // `title` stays action-phrased on both: it is the sighted-user tooltip for what
+  // a click will do, and is not the accessible name.
   if (Toggle) {
     return (
-      <Toggle pressed={scheme === 'dark'} onPressedChange={flip} aria-label={label} title={label}>
+      <Toggle pressed={scheme === 'dark'} onPressedChange={flip} aria-label='Dark mode' title={label}>
         <Icon className='h-4 w-4' />
       </Toggle>
     )
