@@ -364,6 +364,17 @@ ripples.push({ cx: sphere.x, cy: sphere.y, startT: t, life: 1, amp: 55, mode: 'r
 - Gaussian envelope keeps distortion local (~90px wide ring); life decays to ~0.1 by the time it reaches the ring center
 - **Do NOT use `ClosingPulse` for particle joins** — it renders full-screen expanding glow rings identical to the ring-close event, confusing users. `ClosingPulse` is ring-close only.
 
+## Curvature center follows the ring (`GX/GY`)
+
+`fabric.ts`'s gravity funnel + curvature halo center on the **registered ring's** position
+(`GX = rings[0].centerX`, `GY = rings[0].centerY`) when a ring is present, falling back to
+screen center (`CX/CY`) when there is none. Backward-compatible: a ring centered on screen
+(Vāda's home) resolves to `CX/CY`, so nothing changes there. This is what lets a consumer
+put the curvature/fold anywhere on screen — e.g. driving `createFabricRenderer` from a
+**contained** (non-`fixed`) canvas by passing a ring at a local, off-center position, so the
+fabric can live inside a normal in-flow section instead of a `fixed inset-0` overlay. The
+`ring-closed` ClosingPulse already used the ring center; the gravity fold now matches it.
+
 ---
 
 ## `withAlpha` and friends — color helpers in `shared/color-math.ts`
