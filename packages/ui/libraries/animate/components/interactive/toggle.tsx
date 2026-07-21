@@ -16,8 +16,29 @@ import {
 // still reads correctly on hover. An `aria-label` likewise lands on that inner
 // div, and the button's accessible name is computed from its contents, so the
 // name still resolves; no adapter is needed for the contract.
+// `aria-pressed={undefined}` strips upstream's ARIA state from the inner
+// `toggle-item` div. animate-ui's primitive hardcodes `aria-pressed={isPressed}`
+// on that div, which is role-less — axe flags it `aria-allowed-attr` [critical],
+// since `aria-pressed` is only valid on a `button`/`role=button`. The outer
+// `motion.button` already carries the real pressed state from Radix's Root, so
+// removing it here loses nothing and leaves exactly one correct announcement
+// instead of a state duplicated onto a generic element. The primitive spreads
+// `{...props}` AFTER its own `aria-pressed`, which is what makes this override
+// work from the wrapper — `installed/` stays a verbatim CLI paste (D-065).
+// Spread rather than a literal `aria-pressed={undefined}` attribute: Biome's
+// a11y/useValidAriaValues rejects the literal (it only accepts true/false/mixed
+// and cannot see that the intent is removal), while the spread expresses the
+// same "omit this attribute" override.
+const OMIT_ARIA_PRESSED = { 'aria-pressed': undefined } as const
+
 function Toggle({ className, ...props }: InstalledToggleProps) {
-  return <InstalledToggle className={cn(className, 'cursor-pointer disabled:cursor-not-allowed')} {...props} />
+  return (
+    <InstalledToggle
+      className={cn(className, 'cursor-pointer disabled:cursor-not-allowed')}
+      {...OMIT_ARIA_PRESSED}
+      {...props}
+    />
+  )
 }
 
 // Derived from THIS library's own installed cva — per-library Props rule.

@@ -635,9 +635,27 @@ Its installed component renders an outer `motion.button` (fixed
 `motion.div` that receives `className` and the remaining `...props`. So a
 caller's `className` and `aria-label` land on that inner div. `cursor-pointer`
 still reads correctly (the div fills the button) and the button's accessible
-name still resolves (name-from-content picks up the descendant's `aria-label`),
-which is why no adapter is needed — but do not assume `...props` reaches a
-`<button>` in animate.
+name still resolves (name-from-content picks up the descendant's `aria-label`,
+verified with `dom-accessibility-api` and axe's `button-name` rule) — but do not
+assume `...props` reaches a `<button>` in animate.
+
+That shape carries an upstream a11y defect the wrapper **partially** adapts.
+animate-ui's primitive hardcodes `aria-pressed={isPressed}` on BOTH inner
+`motion.div`s (`toggle-highlight` and `toggle-item`), which are role-less, so
+axe flags `aria-allowed-attr` [critical] — `aria-pressed` is valid only on a
+`button`/`role=button`, and the outer button already carries the real state from
+Radix's Root. The wrapper passes `aria-pressed={undefined}` to strip it from
+`toggle-item`; this works only because the primitive spreads `{...props}` AFTER
+its own `aria-pressed`, and it keeps `installed/` verbatim (D-065).
+
+**`toggle-highlight` cannot be reached this way and still violates.**
+`installed/toggle.tsx` renders it as `<ToggleHighlightPrimitive className='…' />`
+with no props passthrough, so no wrapper-level override exists. It is a
+decorative empty div with no accessible name, and `AnimatePresence` only mounts
+it in the pressed state, so the violation appears in the pressed state only.
+Fixing it properly means either an upstream fix or composing the primitives
+directly in the wrapper — the latter would duplicate upstream's cva string,
+which is the drift D-065 exists to prevent, so it is deliberately not done here.
 
 ### Governance — shared composites resolve NO library; consumers inject
 
