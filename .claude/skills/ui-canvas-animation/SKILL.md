@@ -375,6 +375,14 @@ put the curvature/fold anywhere on screen — e.g. driving `createFabricRenderer
 fabric can live inside a normal in-flow section instead of a `fixed inset-0` overlay. The
 `ring-closed` ClosingPulse already used the ring center; the gravity fold now matches it.
 
+**`radialFold` config** — by default the gravity fold applies uniformly (whole grid folds
+as `settleProgress` rises). With `radialFold: true`, `settleProgress` instead drives an
+**expanding fold radius** (`foldStrength(dist)` gates the pull by `dist < settleProgress *
+foldReachMax`), so the curvature sets in from the ring center **outward**. Pair it with a
+slow `settleProgress` ramp fired at the same instant as the `ring-closed` ClosingPulse so the
+curve radiates out at the shock wave's pace — the wave *produces* the curve. Default false
+(Vāda's uniform fold unchanged).
+
 ---
 
 ## `withAlpha` and friends — color helpers in `shared/color-math.ts`

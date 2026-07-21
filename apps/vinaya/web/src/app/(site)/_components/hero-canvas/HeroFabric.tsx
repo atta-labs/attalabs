@@ -17,7 +17,10 @@ import { useEffect, useRef } from 'react'
 const renderFabric = createFabricRenderer({
   approachSpeedMultiplier: 0.8,
   forceCompleteAtSphereEdge: false,
-  shockWaveOnArrival: true
+  shockWaveOnArrival: true,
+  // Curvature radiates from main OUTWARD (in step with the shock wave) instead of the
+  // whole grid folding at once — driven by a slow settleProgress ramp synced to the pulse.
+  radialFold: true
 })
 
 export function HeroFabric({

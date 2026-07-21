@@ -13,6 +13,11 @@ export interface FabricConfig {
   /** Replace the default shimmer with a multi-plane water-surface wave.
    *  Also allows Tron particles to spawn as soon as phase=settled (no gravity ramp needed). */
   waterWave?: boolean
+  /** Fold RADIALLY: instead of the whole grid folding uniformly as settleProgress rises,
+   *  the fold sets in from the ring center OUTWARD — `settleProgress` drives an expanding
+   *  fold radius. Pair with a slow settleProgress ramp synced to the ring-close shock wave
+   *  so the curvature radiates out at the wave's pace. Default false (uniform, Vāda). */
+  radialFold?: boolean
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
@@ -20,7 +25,8 @@ const DEFAULT_FABRIC_CONFIG: FabricConfig = {
   forceCompleteAtSphereEdge: true,
   shockWaveOnArrival: false,
   gravityMultiplier: 1,
-  waterWave: false
+  waterWave: false,
+  radialFold: false
 }
 
 // ── Grid definition ───────────────────────────────────────────────────────────
@@ -277,6 +283,14 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // a ring centered on screen (Vāda's home) resolves to CX/CY.
   const GX = rings.length > 0 ? rings[0]!.centerX : CX
   const GY = rings.length > 0 ? rings[0]!.centerY : CY
+  // Fold strength at a given distance from the curvature center. Uniform (settleProgress
+  // everywhere) by default; radial mode turns settleProgress into an expanding fold radius
+  // so the curvature grows from the center outward (in step with the ring-close wave).
+  const radialFold = config.radialFold ?? false
+  const foldReachMax = Math.hypot(W, H) * 0.62
+  const foldBand = RING_R * 0.6
+  const foldStrength = (dist: number): number =>
+    radialFold ? Math.max(0, Math.min(1, (settleProgress * foldReachMax - dist) / foldBand)) : settleProgress
 
   // ── Accumulate events ─────────────────────────────────────────────────────
   for (const evt of recentEvents) {
@@ -718,7 +732,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     // gravityMultiplier=0 disables the pull entirely (fabric stays flat).
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * foldStrength(dist) * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     // ── Ripple displacement ───────────────────────────────────────────────
     let rippleX = 0
@@ -785,7 +799,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * foldStrength(dist) * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     let rippleX = 0
     let rippleY = 0

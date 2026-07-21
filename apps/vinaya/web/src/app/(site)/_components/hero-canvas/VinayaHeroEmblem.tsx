@@ -112,7 +112,10 @@ function EmblemInner() {
     //    the shock wave + curvature fire together — the wave is the immediate result of the
     //    harness biting main, so no gap, and the curvature snaps in fast (impact, not a slow fold).
     at(3500, () => {
-      ramp(420, setGravity)
+      // The curvature radiates from main outward at the shock wave's pace: a slow
+      // settleProgress ramp (radialFold expands the fold radius over this) fired at the
+      // same instant as the ClosingPulse, over ~the wave's lifetime.
+      ramp(1300, setGravity)
       setPulseKey((k) => k + 1)
     })
     at(3700, () => ramp(600, setContent)) // 6. text + CTA fade in
