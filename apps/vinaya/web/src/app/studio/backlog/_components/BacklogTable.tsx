@@ -48,6 +48,9 @@ function Dash() {
 const LABEL_CELL =
   'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:overflow-visible [&>*]:break-words [&>*]:whitespace-normal'
 
+/** Ties the filter chip group to its heading (`aria-labelledby`). */
+const FILTER_HEADING_ID = 'backlog-filter-heading'
+
 /** One toggle chip in a filter row — filled when active, outline when not. */
 function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
   return (
@@ -140,13 +143,19 @@ export function BacklogTable({
   return (
     <div className='space-y-3'>
       {/* Heading for the chip rows below — icon pinned far-left, so the filter
-          block reads as one labelled unit rather than loose chips. */}
+          block reads as one labelled unit rather than loose chips. A real `h2`
+          (the page's `h1` is "Backlog", and there is no other `h2`, so this
+          skips no level), and the chip block is a `group` labelled BY it — the
+          heading has to be programmatic, not just visual, or the five filter
+          controls carry no accessible name at all. */}
       <div className='flex items-center gap-2'>
         <Filter className='size-3.5 shrink-0 text-muted-foreground' aria-hidden />
-        <span className='font-mono text-xs uppercase tracking-wider text-muted-foreground'>Filter by</span>
+        <h2 id={FILTER_HEADING_ID} className='font-mono text-xs uppercase tracking-wider text-muted-foreground'>
+          Filter by
+        </h2>
       </div>
 
-      <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+      <div role='group' aria-labelledby={FILTER_HEADING_ID} className='flex flex-wrap items-center gap-x-4 gap-y-2'>
         <FilterGroup
           name='Project'
           options={projectOptions}
