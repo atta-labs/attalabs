@@ -45,23 +45,6 @@
 - [Atta Naming Decision](./apps/attalabs/specs/atta-naming-decision.md)
 - [Cetanā (Architect Layer) — Capability Reality Check](./apps/attalabs/specs/cetana-reality-check.md)
 
-### desktop
-
-- [00 — Overview & Vision](./apps/desktop/specs/00-overview.md)
-- [01 — Architecture](./apps/desktop/specs/01-architecture.md)
-- [02 — Runtime & Packaging](./apps/desktop/specs/02-runtime-and-packaging.md)
-- [03 — Authentication (Clerk on the desktop)](./apps/desktop/specs/03-auth.md)
-- [04 — The CLI Transport (`createCliLlmCall`)](./apps/desktop/specs/04-cli-transport.md)
-- [05 — Products in the Desktop](./apps/desktop/specs/05-products-in-desktop.md)
-- [06 — Pupila](./apps/desktop/specs/06-pupila.md)
-- [07 — Distribution, Signing & Auto-Update](./apps/desktop/specs/07-distribution-signing-updates.md)
-- [08 — Risk Register & Open Questions](./apps/desktop/specs/08-risks-and-open-questions.md)
-- [09 — Spike Plan (de-risking sequence)](./apps/desktop/specs/09-spike-plan.md)
-- [10 — Research Log (sources & findings)](./apps/desktop/specs/10-research-log.md)
-- [Desktop — Backlog (held / future, out of the active flow)](./apps/desktop/specs/desktop-backlog.md)
-- [AttaLabs Desktop — Decision Log (product-local)](./apps/desktop/specs/desktop-decisions.md)
-- [AttaLabs Desktop — Spec Index](./apps/desktop/specs/README.md)
-
 ### herald-ai
 
 - [Herald — app architecture](./apps/herald-ai/specs/herald-app-architecture.md)
