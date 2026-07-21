@@ -29,7 +29,7 @@ export type HarnessCardProps = {
 export function HarnessCard({ kindTag, title, badges, detail, guards, href }: HarnessCardProps) {
   return (
     <Card className='h-full bg-card'>
-      <CardContent className='flex h-full flex-col gap-2 p-4'>
+      <CardContent className='flex h-full flex-col gap-2 px-4 py-3'>
         <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-widest'>
           {kindTag}
         </Text>
