@@ -118,11 +118,15 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
       {filtered.length === 0 ? (
         <p className='pt-2 font-sans text-xs text-muted-foreground/70'>No tasks match these filters.</p>
       ) : (
-        <div className='space-y-2 pt-2'>
+        // Below `lg` a row spans several lines, so consecutive tasks run
+        // together — a rule between them restores the row boundary. From `lg`
+        // each task is one line and the rule is noise, so it goes away and the
+        // plain vertical rhythm comes back.
+        <div className='divide-y divide-border pt-2 lg:space-y-2 lg:divide-y-0'>
           {filtered.map((task) => {
             const key = `${task.iterationSlug ?? 'backlog'}-${task.taskId}`
             return (
-              <div key={key} className='flex flex-wrap items-center gap-2 font-mono text-xs'>
+              <div key={key} className='flex flex-wrap items-center gap-2 py-2 font-mono text-xs lg:py-0'>
                 {/* Always rendered, Issue or not — it is the row's first column. */}
                 <span className='min-w-12 shrink-0 text-muted-foreground tabular-nums'>
                   {task.issue != null &&
