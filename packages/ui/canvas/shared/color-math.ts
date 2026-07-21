@@ -77,6 +77,10 @@ export function parseColor(color: string): Hsl | null {
  * hsla/rgba string. Returns white if the input is unparseable.
  */
 export function withAlpha(color: string, alpha: number): string {
+  // oklch(...) — e.g. from fgAt() — isn't handled by parseColor; inject/replace the
+  // alpha directly so theme-ink colors don't collapse to the white fallback below.
+  const okl = color.match(/^oklch\(\s*([^/)]+?)\s*(?:\/\s*[\d.]+\s*)?\)$/i)
+  if (okl) return `oklch(${okl[1]} / ${alpha.toFixed(3)})`
   const hsl = parseColor(color)
   if (hsl) return `hsla(${hsl.h.toFixed(1)}, ${hsl.s.toFixed(1)}%, ${hsl.l.toFixed(1)}%, ${alpha.toFixed(3)})`
   return `rgba(255,255,255,${alpha.toFixed(3)})`
@@ -104,6 +108,16 @@ export function brightenForLight(color: string): string {
  * alpha. Used for theme-aware strokes (grid lines, halo overlays) that are
  * conceptually "ink" — white on dark bg, near-black on light bg.
  */
+/**
+ * Read an arbitrary theme CSS variable (e.g. '--muted-foreground', '--secondary')
+ * and return its raw color value. Compose with withAlpha() for transparency —
+ * withAlpha handles the oklch/hsl/hex the theme may emit. Falls back to black.
+ */
+export function cssVarColor(name: string): string {
+  if (typeof document === 'undefined') return 'oklch(0 0 0)'
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || 'oklch(0 0 0)'
+}
+
 export function fgAt(alpha: number): string {
   if (typeof document === 'undefined') return `rgba(0,0,0,${alpha})`
   const raw = getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim()

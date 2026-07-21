@@ -27,6 +27,15 @@ function useResponsiveRing() {
   return ringSize
 }
 
+// main's squeeze pulse (0→1): compresses under the clamp's pressure, then rebounds past 1
+// and settles — the physical "grab" whose rebound punches out the shock wave.
+function pulseScale(x: number): number {
+  if (x <= 0 || x >= 1) return 1
+  if (x < 0.22) return 1 - 0.17 * (x / 0.22) // compress 1 → 0.83
+  if (x < 0.5) return 0.83 + 0.28 * ((x - 0.22) / 0.28) // rebound 0.83 → 1.11
+  return 1.11 - 0.11 * ((x - 0.5) / 0.5) // settle 1.11 → 1.0
+}
+
 // The harness center — the protected `main` branch.
 function MainBranchNode({ size }: { size: number }) {
   return (
@@ -62,7 +71,7 @@ function EmblemInner() {
   const [content, setContent] = useState(0)
   const [gravity, setGravity] = useState(0)
   const [pulseKey, setPulseKey] = useState(0)
-  const started = useRef(false)
+  const [mainPulse, setMainPulse] = useState(0)
   const rafs = useRef<number[]>([])
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const ringBoxRef = useRef<HTMLDivElement>(null)
@@ -71,9 +80,6 @@ function EmblemInner() {
   // straight to the final settled state — no build, no shock wave — so a portal/studio
   // switch or any nav back doesn't replay it.
   useEffect(() => {
-    if (started.current) return
-    started.current = true
-
     let seen = false
     try {
       seen = window.localStorage.getItem(SEEN_KEY) === '1'
@@ -105,21 +111,21 @@ function EmblemInner() {
     }
 
     at(500, () => setCoreRevealed(true)) // 1. main scales in
-    at(800, () => ramp(1200, setRingProgress)) // 2. ring segments deploy from their center squares
-    at(2100, () => ramp(900, setSpark)) // 3. electricity draws across the gaps
-    at(2700, () => ramp(800, setClamp)) // 4. columns extend from the ring and clamp main
-    // 5. THE INSTANT the columns finish clamping main (clamp ramp ends at 2700+800=3500):
-    //    the shock wave + curvature fire together — the wave is the immediate result of the
-    //    harness biting main, so no gap, and the curvature snaps in fast (impact, not a slow fold).
-    at(3500, () => {
-      // The curvature radiates from main outward at the shock wave's pace: a slow
-      // settleProgress ramp (radialFold expands the fold radius over this) fired at the
-      // same instant as the ClosingPulse, over ~the wave's lifetime.
+    // 2. ring ramp — first ~60% is the slow screw emergence (grow + sparks), then bands deploy
+    at(800, () => ramp(3000, setRingProgress))
+    at(3900, () => ramp(900, setSpark)) // 3. electricity draws across the gaps
+    at(4500, () => ramp(800, setClamp)) // 4. columns extend + hook/screw latch onto main
+    // 5. As the hooks bite, main SQUEEZES under the pressure (compress → rebound).
+    at(5250, () => ramp(620, setMainPulse))
+    // 6. The rebound punches out the shock wave + curvature — the consequence of the grab.
+    //    Curvature radiates from main outward (radialFold) at the wave's pace, synced to the
+    //    ClosingPulse and to main's rebound.
+    at(5380, () => {
       ramp(1300, setGravity)
       setPulseKey((k) => k + 1)
     })
-    at(3700, () => ramp(600, setContent)) // 6. text + CTA fade in
-    at(4500, () => {
+    at(5600, () => ramp(600, setContent)) // 7. text + CTA fade in
+    at(6300, () => {
       // Remember it played — every later visit skips straight to the final state.
       try {
         window.localStorage.setItem(SEEN_KEY, '1')
@@ -155,7 +161,11 @@ function EmblemInner() {
             <div
               className={`transition-all duration-700 ease-out ${coreRevealed ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
             >
-              <MainBranchNode size={mainSize} />
+              {/* squeeze-pulse under the clamp pressure — inner wrapper so it composes with
+                  the reveal scale above without fighting it */}
+              <div style={{ transform: `scale(${pulseScale(mainPulse)})` }}>
+                <MainBranchNode size={mainSize} />
+              </div>
             </div>
           </div>
 

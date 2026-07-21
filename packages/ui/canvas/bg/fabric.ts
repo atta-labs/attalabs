@@ -1,7 +1,8 @@
 import type { BgState } from './types'
-import { fgAt, withAlpha } from '../shared/color-math'
+import { cssVarColor, fgAt, withAlpha } from '../shared/color-math'
 import { bloomStops, paintParticleHead } from '../shared/paint'
 import { resolveColor } from '../shared/colors'
+import { isLightTheme } from '../shared/theme'
 
 // ── Fabric configuration ───────────────────────────────────────────────────────
 export interface FabricConfig {
@@ -18,6 +19,9 @@ export interface FabricConfig {
    *  fold radius. Pair with a slow settleProgress ramp synced to the ring-close shock wave
    *  so the curvature radiates out at the wave's pace. Default false (uniform, Vāda). */
   radialFold?: boolean
+  /** Scale the closing-pulse (shock-wave) travel so it can reach the screen edges before
+   *  fading: multiplies both front speed and lifetime. Default 1 (Vāda's tuned reach). */
+  pulseReach?: number
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
@@ -26,7 +30,8 @@ const DEFAULT_FABRIC_CONFIG: FabricConfig = {
   shockWaveOnArrival: false,
   gravityMultiplier: 1,
   waterWave: false,
-  radialFold: false
+  radialFold: false,
+  pulseReach: 1
 }
 
 // ── Grid definition ───────────────────────────────────────────────────────────
@@ -301,9 +306,11 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     if (evt.type === 'ring-closed') {
       const cx = rings.length > 0 ? rings[0]!.centerX : CX
       const cy = rings.length > 0 ? rings[0]!.centerY : CY
-      // Pick 3 sphere colors spread across the palette for the 3 wave fronts
+      // Pick 3 sphere colors spread across the palette for the 3 wave fronts.
+      // No spheres (e.g. Vinaya's harness) → theme ink: white on dark (--foreground),
+      // but a softer muted gray on light so the wave isn't a harsh near-black slab.
       const sc = state.spheres
-      const white = fgAt(1)
+      const white = isLightTheme() ? cssVarColor('--muted-foreground') : fgAt(1)
       const frontColors: [string, string, string] = [
         sc[0]?.color ?? white,
         sc[Math.floor(sc.length / 2)]?.color ?? white,
@@ -389,8 +396,9 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     rp.life = Math.max(0, 1 - (t - rp.startT) * 0.012)
     return rp.life > 0.01
   })
+  const pulseReach = config.pulseReach ?? 1
   closingPulses = closingPulses.filter((cp) => {
-    cp.life = Math.max(0, 1 - (t - cp.startT) / 240)
+    cp.life = Math.max(0, 1 - (t - cp.startT) / (240 * pulseReach))
     return cp.life > 0.01
   })
 
@@ -770,7 +778,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
         { speed: 0.6, sigma: 150, amp: 12 }
       ]
       for (const f of fronts) {
-        const waveFront = age * f.speed
+        const waveFront = age * f.speed * pulseReach
         const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
         const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
         pulseX += pnx * osc - pny * osc * 0.15
@@ -834,7 +842,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
         { speed: 1.6, sigma: 150, amp: 12 }
       ]
       for (const f of fronts) {
-        const waveFront = age * f.speed
+        const waveFront = age * f.speed * pulseReach
         const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
         const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
         pulseX += pnx * osc - pny * osc * 0.15
@@ -851,7 +859,9 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
   // ── Draw grid lines ───────────────────────────────────────────────────────
   // Use --foreground via globalAlpha so it works on both dark and light themes.
-  const BASE_ALPHA = 0.08
+  // Dark ink on a light bg reads far fainter than white ink on dark at the same alpha,
+  // so light mode needs a higher base to stay legible.
+  const BASE_ALPHA = isLightTheme() ? 0.2 : 0.12
   ctx.save()
   ctx.strokeStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
   ctx.lineWidth = 0.7
@@ -1196,13 +1206,18 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     ctx.save()
     for (let fi = 0; fi < PULSE_FRONTS.length; fi++) {
       const f = PULSE_FRONTS[fi]!
-      const wf = age * f.speed
+      const wf = age * f.speed * pulseReach
       if (wf < 0 || wf - f.sigma > maxScreen) continue
 
       const innerR = Math.max(0, wf - f.sigma)
       const outerR = wf + f.sigma
       const color = cp.frontColors[fi]!
-      const alpha = cp.life * 0.14 * (1 - fi * 0.03) * (cp.intensity ?? 1)
+      // Light mode: the wave is dark ink on a light bg — needs more alpha to be seen.
+      const frontBase = isLightTheme() ? 0.2 : 0.14
+      // Dark: white ink blows out at full life, so cap the early (powerful) peak while
+      // leaving the lower-life tail — which reads fine — untouched. Light stays uncapped.
+      const lifeForAlpha = isLightTheme() ? cp.life : Math.min(cp.life, 0.6)
+      const alpha = lifeForAlpha * frontBase * (1 - fi * 0.03) * (cp.intensity ?? 1)
 
       const grad = ctx.createRadialGradient(cp.cx, cp.cy, innerR, cp.cx, cp.cy, outerR)
       grad.addColorStop(0, withAlpha(color, 0))
@@ -1222,8 +1237,9 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // Without a ring or with gravityMultiplier=0 this would draw an unwanted phantom glow circle.
   if (rings.length > 0 && settleProgress > 0.05 && (config.gravityMultiplier ?? 1) > 0) {
     const g = ctx.createRadialGradient(GX, GY, RING_R * 0.7, GX, GY, RING_R * 1.4)
+    const haloPeak = (isLightTheme() ? 0.18 : 0.06) * settleProgress
     g.addColorStop(0, fgAt(0))
-    g.addColorStop(0.5, fgAt(0.04 * settleProgress))
+    g.addColorStop(0.5, fgAt(haloPeak))
     g.addColorStop(1, fgAt(0))
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)

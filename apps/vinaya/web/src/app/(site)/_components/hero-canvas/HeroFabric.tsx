@@ -10,7 +10,7 @@
 // at main's local position (rect-minus-canvas) — keeping curvature + shock wave on main.
 
 import '@atta/ui/canvas.css'
-import { createFabricRenderer } from '@atta/ui/canvas'
+import { createFabricRenderer, refreshThemeCache } from '@atta/ui/canvas'
 import type { BgState } from '@atta/ui/canvas'
 import { useEffect, useRef } from 'react'
 
@@ -20,7 +20,9 @@ const renderFabric = createFabricRenderer({
   shockWaveOnArrival: true,
   // Curvature radiates from main OUTWARD (in step with the shock wave) instead of the
   // whole grid folding at once — driven by a slow settleProgress ramp synced to the pulse.
-  radialFold: true
+  radialFold: true,
+  // Push the shock wave all the way to the screen edges before it fades.
+  pulseReach: 2.4
 })
 
 export function HeroFabric({
@@ -52,6 +54,7 @@ export function HeroFabric({
     let raf = 0
     let t = 0
     const render = () => {
+      refreshThemeCache() // track html[data-theme] — we don't go through AIACanvas
       const dpr = window.devicePixelRatio || 1
       const w = canvas.clientWidth
       const h = canvas.clientHeight
@@ -67,7 +70,9 @@ export function HeroFabric({
       const mRect = centerRef.current?.getBoundingClientRect()
       const cx = mRect ? mRect.left + mRect.width / 2 - cRect.left : w / 2
       const cy = mRect ? mRect.top + mRect.height / 2 - cRect.top : h / 2
-      const R = Math.min(w, h) * 0.34
+      // Shadow hugs the harness: outer ring radius (ringBox/2 × 0.93, matching
+      // HarnessStructure's rOut) + 25px. Falls back to viewport-relative if no ring box.
+      const R = mRect ? (mRect.width / 2) * 0.93 + 25 : Math.min(w, h) * 0.44
 
       const recentEvents: BgState['recentEvents'] = []
       if (fire.current) {

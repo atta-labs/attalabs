@@ -13,12 +13,22 @@ const ARC_HALF = 33 // each ring segment spans 66°, leaving 24° gaps on the di
 const EASE = (t: number) => 1 - (1 - t) ** 3
 const cl = (x: number) => Math.max(0, Math.min(1, x))
 
+// A flat-topped hexagon of radius `r` centered at the origin, as an SVG points string.
+function hex(r: number): string {
+  const pts: string[] = []
+  for (let k = 0; k < 6; k++) {
+    const a = (Math.PI / 3) * k
+    pts.push(`${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`)
+  }
+  return pts.join(' ')
+}
+
 // Electricity — the exact layered wavy-arc tuning from Vāda's ring (aia-ring.tsx),
 // just re-colored to primary. Calm, not a wild band.
 const WAVE_VARIANTS = [
-  { samples: 80, amplitude: 2, freq: 7, width: 1, speed: 0.1, dir: 1, opacity: 0.4 },
-  { samples: 80, amplitude: 4, freq: 13, width: 2.5, speed: 0.05, dir: -1, opacity: 0.8 },
-  { samples: 80, amplitude: 3.8, freq: 0.22, width: 1, speed: 0.03, dir: -1, opacity: 1 }
+  { samples: 80, amplitude: 1.3, freq: 7, width: 1, speed: 0.1, dir: 1, opacity: 0.4 },
+  { samples: 80, amplitude: 2.6, freq: 13, width: 2.5, speed: 0.05, dir: -1, opacity: 0.8 },
+  { samples: 80, amplitude: 2.5, freq: 0.22, width: 1, speed: 0.03, dir: -1, opacity: 1 }
 ]
 
 function waveArc(
@@ -145,25 +155,28 @@ export function HarnessStructure({
         </filter>
       </defs>
 
-      {/* --- Ring segments: each DEPLOYS from its center square module — the square pops
-          in first, then the band physically extends outward from it (both arms), rungs
-          building as the band passes them. Structure assembling, not a stroke drawn. --- */}
+      {/* --- Ring segments: first the 4 hexagonal metal SCREWS rise from the fabric in
+          unison (no per-segment stagger), then each ring band DEPLOYS out of its screw —
+          the band extends both arms, rungs building as it passes them. --- */}
       {RING_AXIS_DEG.map((a, i) => {
-        const local = cl((ringProgress - i * 0.14) / 0.44)
-        if (local <= 0) return null
-        const sq = cl(local / 0.2) // center square scales in first (the deploy origin)
-        const span = ARC_HALF * cl((local - 0.18) / 0.82) // band grows outward after
+        // all 4 screws arise together, slowly, over the first 60% of the ring ramp —
+        // a long, visible grow-with-sparks emergence before anything deploys.
+        const screwIn = cl(ringProgress / 0.6)
+        if (screwIn <= 0) return null
+        // only once the screws are up does the band deploy, staggered per segment.
+        // the screws STAY — they anchor each ring segment's corner.
+        const deployProg = cl((ringProgress - 0.6) / 0.4)
+        const local = cl((deployProg - i * 0.14) / 0.5)
+        const span = ARC_HALF * local // band grows outward from the screw
+        const screwScale = EASE(screwIn) // ease the rise so it settles rather than snaps
+        const riseY = (1 - screwScale) * 24 // starts 24px below, rises up out of the fabric
+        const burst = Math.sin(screwIn * Math.PI) // energy 0→1→0, peaks mid-emergence
         const m = polar(c, c, rMid, a)
         return (
           <g key={a}>
-            {/* the center square module the segment deploys from */}
-            <g transform={`translate(${m.x} ${m.y}) rotate(${a + 90}) scale(${sq})`}>
-              <rect x={-6} y={-6} width={12} height={12} className='fill-secondary stroke-primary' strokeWidth={1.75} />
-              <rect x={-2.5} y={-2.5} width={5} height={5} className='fill-primary' />
-            </g>
             {span > 0.5 && (
               <g>
-                {/* band extends symmetrically from the square out to ±ARC_HALF */}
+                {/* band extends symmetrically from the screw out to ±ARC_HALF */}
                 <path
                   d={segPath(a - span, a + span)}
                   className='fill-secondary stroke-primary'
@@ -197,6 +210,55 @@ export function HarnessStructure({
                 })}
               </g>
             )}
+            {/* energy burst — the fabric sparks at each screw's spot as it emerges:
+                an expanding ring + flickering radial sparks, peaking mid-rise, gone once
+                settled. Drawn behind the screw so the metal rises out of its own energy. */}
+            {burst > 0.01 && (
+              <g transform={`translate(${m.x} ${m.y})`} filter='url(#harness-spark-glow)'>
+                <circle
+                  r={round(6 + screwIn * 22)}
+                  className='fill-none stroke-primary'
+                  strokeWidth={1.5}
+                  opacity={round(burst * 0.5)}
+                />
+                {[0, 1, 2, 3, 4, 5].map((k) => {
+                  const ang = ((a + k * 60) * Math.PI) / 180
+                  const inner = 5
+                  const outer = 9 + burst * 22
+                  const flick = 0.35 + 0.65 * Math.abs(Math.sin(screwIn * 17 + k * 1.7))
+                  return (
+                    <line
+                      key={k}
+                      x1={round(Math.cos(ang) * inner)}
+                      y1={round(Math.sin(ang) * inner)}
+                      x2={round(Math.cos(ang) * outer)}
+                      y2={round(Math.sin(ang) * outer)}
+                      className='stroke-primary'
+                      strokeWidth={1.5}
+                      strokeLinecap='round'
+                      opacity={round(burst * flick)}
+                    />
+                  )
+                })}
+              </g>
+            )}
+            {/* the hexagonal metal screw — rises from below the fabric and stays. Drawn
+                LAST so the deployed band never covers it: the screw is always visible,
+                anchoring the segment's corner. Screen-vertical rise sits OUTSIDE the
+                rotate() so it reads as coming up through the mesh. */}
+            <g transform={`translate(${m.x} ${m.y + riseY})`} style={{ opacity: screwIn }}>
+              <g transform={`rotate(${a}) scale(${screwScale})`}>
+                <polygon
+                  points={hex(20)}
+                  className='fill-secondary stroke-primary'
+                  strokeWidth={2.5}
+                  strokeLinejoin='round'
+                />
+                <polygon points={hex(9.6)} className='fill-none stroke-primary' strokeWidth={1.5} opacity={0.7} />
+                {/* screw slot */}
+                <line x1={-9.6} y1={0} x2={9.6} y2={0} className='stroke-primary' strokeWidth={2} />
+              </g>
+            </g>
           </g>
         )
       })}
@@ -236,6 +298,12 @@ export function HarnessStructure({
               <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className='stroke-primary' strokeWidth={1.25} opacity={0.6} />
             )
           }
+          // Hook/screw that snaps onto main in the last stretch of the clamp — the moment
+          // the harness LATCHES. `hookSnap` scales it in at the very end of the grip.
+          const hookSnap = cl((clamp - 0.82) / 0.18)
+          const bolt = polar(c, c, gripR - 1, d)
+          const slotA = offsetPoint(bolt, d, 2.6)
+          const slotB = offsetPoint(bolt, d, -2.6)
           return (
             <g key={d}>
               <path d={`${shaft} Z`} className='fill-secondary stroke-primary' strokeWidth={3} strokeLinejoin='round' />
@@ -244,6 +312,38 @@ export function HarnessStructure({
               {rung(rO2 - (rO2 - gripR) * 0.72)}
               <circle cx={pt(rO, footW).x} cy={pt(rO, footW).y} r={2} className='fill-primary' />
               <circle cx={pt(rO, -footW).x} cy={pt(rO, -footW).y} r={2} className='fill-primary' />
+              {hookSnap > 0 && (
+                <g style={{ opacity: hookSnap }}>
+                  {/* two claw hooks biting inward from the gripper ends toward main */}
+                  {[GRIP - 7, -(GRIP - 7)].map((off, k) => {
+                    const a = polar(c, c, gripR + 3, d + off)
+                    const b = polar(c, c, gripR - 9, d + off * 0.55)
+                    return (
+                      <line
+                        key={k}
+                        x1={a.x}
+                        y1={a.y}
+                        x2={b.x}
+                        y2={b.y}
+                        className='stroke-primary'
+                        strokeWidth={2.5}
+                        strokeLinecap='round'
+                      />
+                    )
+                  })}
+                  {/* a bolt/screw at the clamp center — the fastener */}
+                  <circle cx={bolt.x} cy={bolt.y} r={3.6} className='fill-primary stroke-primary' strokeWidth={1} />
+                  <line
+                    x1={slotA.x}
+                    y1={slotA.y}
+                    x2={slotB.x}
+                    y2={slotB.y}
+                    className='stroke-secondary'
+                    strokeWidth={1.25}
+                    strokeLinecap='round'
+                  />
+                </g>
+              )}
             </g>
           )
         })}
