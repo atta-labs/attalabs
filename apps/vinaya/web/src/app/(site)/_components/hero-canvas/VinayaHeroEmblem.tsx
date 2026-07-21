@@ -7,26 +7,9 @@ import { useEffect, useRef, useState } from 'react'
 import { HarnessStructure } from './HarnessStructure'
 import { HeroFabric } from './HeroFabric'
 
-// True while the hero is on screen. Drives replaying the build whenever the hero
-// re-enters view (scroll back, or navigate away and return).
-function useIsInView(ref: React.RefObject<HTMLElement | null>) {
-  // Start true so the hero shows + animates on mount even before the observer's first
-  // callback; the observer then only drives the scroll-away / re-enter transitions.
-  const [inView, setInView] = useState(true)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) setInView(entry.isIntersecting)
-      },
-      { threshold: 0 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [ref])
-  return inView
-}
+// Persisted "has the build already played" flag (Vāda pattern): first visit animates,
+// every visit after — this session or a later one — shows the final state instantly.
+const SEEN_KEY = 'vinaya-hero-seen'
 
 // Ring px scales with the viewport but caps so slogan + emblem fit one screen.
 function useResponsiveRing() {
@@ -64,7 +47,7 @@ function MainBranchNode({ size }: { size: number }) {
   )
 }
 
-function EmblemInner({ active }: { active: boolean }) {
+function EmblemInner() {
   const ringSize = useResponsiveRing()
   const c = ringSize / 2
   const rIn = Math.round(c * 0.82)
@@ -84,26 +67,29 @@ function EmblemInner({ active }: { active: boolean }) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const ringBoxRef = useRef<HTMLDivElement>(null)
 
-  // When the hero leaves view, reset everything so it replays on the next entry.
+  // Plays the build ONCE, ever. Returning visitors (flag persisted in localStorage) jump
+  // straight to the final settled state — no build, no shock wave — so a portal/studio
+  // switch or any nav back doesn't replay it.
   useEffect(() => {
-    if (active) return
-    started.current = false
-    for (const t of timers.current) clearTimeout(t)
-    for (const r of rafs.current) cancelAnimationFrame(r)
-    timers.current = []
-    rafs.current = []
-    setCoreRevealed(false)
-    setRingProgress(0)
-    setClamp(0)
-    setSpark(0)
-    setContent(0)
-    setGravity(0)
-  }, [active])
-
-  // Runs the build once, each time the hero (re-)enters view.
-  useEffect(() => {
-    if (!active || started.current) return
+    if (started.current) return
     started.current = true
+
+    let seen = false
+    try {
+      seen = window.localStorage.getItem(SEEN_KEY) === '1'
+    } catch {
+      // localStorage unavailable (private mode / SSR guard) — just play the animation.
+    }
+
+    if (seen) {
+      setCoreRevealed(true)
+      setRingProgress(1)
+      setClamp(1)
+      setSpark(1)
+      setContent(1)
+      setGravity(1)
+      return
+    }
 
     const ramp = (dur: number, set: (v: number) => void) => {
       const t0 = performance.now()
@@ -130,12 +116,20 @@ function EmblemInner({ active }: { active: boolean }) {
       setPulseKey((k) => k + 1)
     })
     at(3700, () => ramp(600, setContent)) // 6. text + CTA fade in
+    at(4500, () => {
+      // Remember it played — every later visit skips straight to the final state.
+      try {
+        window.localStorage.setItem(SEEN_KEY, '1')
+      } catch {
+        // ignore
+      }
+    })
 
     return () => {
       for (const t of timers.current) clearTimeout(t)
       for (const r of rafs.current) cancelAnimationFrame(r)
     }
-  }, [active])
+  }, [])
 
   return (
     <div className='relative h-full w-full'>
@@ -204,11 +198,9 @@ function EmblemInner({ active }: { active: boolean }) {
 // Outer — a normal in-flow section (NOT a fixed overlay), so it scrolls away like every
 // other section: the page is a flat stack.
 export function VinayaHeroEmblem() {
-  const heroRef = useRef<HTMLElement>(null)
-  const inView = useIsInView(heroRef)
   return (
-    <section ref={heroRef} id='hero' className='relative h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background'>
-      <EmblemInner active={inView} />
+    <section id='hero' className='relative h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background'>
+      <EmblemInner />
     </section>
   )
 }
