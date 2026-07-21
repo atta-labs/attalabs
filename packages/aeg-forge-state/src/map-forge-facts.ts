@@ -27,8 +27,14 @@
  */
 
 import type { ForgeFacts, RawTaskFacts } from '@atta/aeg-types'
+import { AEG_BLOCKED_LABEL } from './labels'
 
-export const AEG_BLOCKED_LABEL = 'aeg:blocked'
+// The constant's home is now `labels.ts` (the code-owned label vocabulary,
+// D-119) — re-exported here because this module is its original import path
+// and several call sites, including this package's own tests, still reach for
+// it at `./map-forge-facts`. Re-export rather than move-and-break: same value,
+// same export surface, no consumer edit.
+export { AEG_BLOCKED_LABEL }
 
 export function mapForgeFacts(raw: RawTaskFacts): ForgeFacts | null {
   if (!raw.issue) return null
