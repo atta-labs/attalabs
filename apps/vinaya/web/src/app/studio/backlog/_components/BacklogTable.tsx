@@ -1,7 +1,7 @@
 'use client'
 
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
-import { X } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { LabelBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
@@ -34,6 +34,19 @@ import { LabelBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
 function Dash() {
   return <span className='font-mono text-xs text-muted-foreground/60'>—</span>
 }
+
+/**
+ * The label cells' wrapper (task 11 #624). `table-fixed` means a column never
+ * grows to fit its content, so a long label like `needs:decomposition` has to
+ * wrap INSIDE its column or it clips/overlaps the neighbour. Some libraries'
+ * `Badge` ships `whitespace-nowrap` + a fixed `h-5` + `overflow-hidden` (retro),
+ * which does exactly that — so the wrapper relaxes those three on its children
+ * rather than editing `LabelBadge` (the badge is shared, and the constraint is
+ * this table's `table-fixed` layout, not the badge's). `break-words` lets a
+ * single unbreakable label split only when it genuinely cannot fit.
+ */
+const LABEL_CELL =
+  'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:overflow-visible [&>*]:break-words [&>*]:whitespace-normal'
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
 function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
@@ -126,6 +139,13 @@ export function BacklogTable({
 
   return (
     <div className='space-y-3'>
+      {/* Heading for the chip rows below — icon pinned far-left, so the filter
+          block reads as one labelled unit rather than loose chips. */}
+      <div className='flex items-center gap-2'>
+        <Filter className='size-3.5 shrink-0 text-muted-foreground' aria-hidden />
+        <span className='font-mono text-xs uppercase tracking-wider text-muted-foreground'>Filter by</span>
+      </div>
+
       <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
         <FilterGroup
           name='Project'
@@ -167,11 +187,14 @@ export function BacklogTable({
         <Table stickyHeader className='min-w-[720px] table-fixed'>
           <TableHeader>
             <TableRow>
+              {/* `table-fixed` widths are one budget — widening Flags (its labels
+                  are the longest, and they must wrap in-column) is paid for out
+                  of Title, which already wraps freely. Sums to 100%. */}
               <TableHead className='w-[6%] px-2 font-semibold text-foreground'>#</TableHead>
-              <TableHead className='w-[37%] font-semibold text-foreground'>Title</TableHead>
+              <TableHead className='w-[32%] font-semibold text-foreground'>Title</TableHead>
               <TableHead className='w-[20%] font-semibold text-foreground'>Project(s)</TableHead>
-              <TableHead className='w-[11%] font-semibold text-foreground'>Tier</TableHead>
-              <TableHead className='w-[26%] font-semibold text-foreground'>Flags</TableHead>
+              <TableHead className='w-[10%] font-semibold text-foreground'>Tier</TableHead>
+              <TableHead className='w-[32%] font-semibold text-foreground'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -207,7 +230,7 @@ export function BacklogTable({
                       </a>
                     </TableCell>
                     <TableCell className='align-top'>
-                      <div className='flex flex-wrap gap-1'>
+                      <div className={LABEL_CELL}>
                         {projects.length > 0 ? (
                           projects.map((label) => <LabelBadge key={label} label={label} />)
                         ) : (
@@ -216,10 +239,10 @@ export function BacklogTable({
                       </div>
                     </TableCell>
                     <TableCell className='align-top'>
-                      <div className='flex flex-wrap gap-1'>{tier ? <LabelBadge label={tier} /> : <Dash />}</div>
+                      <div className={LABEL_CELL}>{tier ? <LabelBadge label={tier} /> : <Dash />}</div>
                     </TableCell>
                     <TableCell className='align-top'>
-                      <div className='flex flex-wrap gap-1'>
+                      <div className={LABEL_CELL}>
                         {flags.length > 0 ? flags.map((label) => <LabelBadge key={label} label={label} />) : <Dash />}
                       </div>
                     </TableCell>
