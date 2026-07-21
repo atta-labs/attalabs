@@ -32,9 +32,12 @@ describe('boardHref', () => {
   })
 
   it('returns null when the iteration declares no project', () => {
-    // Live case at time of writing: `state-machine-v1`, whose Issues carry no
-    // `project:*` label — the row that must explain itself instead of dying.
-    expect(boardHref([], 'state-machine-v1', REGISTERED)).toBeNull()
+    // Live case at time of writing: `admin-ui-library-picker-v1`, whose one
+    // Issue carries neither a `project:*` label nor a `**Project:**` field — the
+    // row that must explain itself instead of dying. (A label-less iteration
+    // whose field DOES resolve, e.g. `state-machine-v1` → `aeg-core`, is not
+    // board-less — it is `IterationCard`'s counter-example, not this case.)
+    expect(boardHref([], 'admin-ui-library-picker-v1', REGISTERED)).toBeNull()
   })
 
   it('treats an empty project name as absent rather than building a broken route', () => {

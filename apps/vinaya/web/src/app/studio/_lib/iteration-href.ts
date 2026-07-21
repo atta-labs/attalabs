@@ -22,9 +22,12 @@
  * 404s. `boardHref` therefore takes the set of registered names and links only
  * to a project in it, picking the first *registered* project (an iteration may
  * touch both a live and a retired one). None registered ⇒ board-less, same
- * honest non-clickable render as none declared. `projects.md` itself is the
- * authority: a `Project:` naming an unregistered project is malformed by its
- * own rule, so refusing to link there is that rule, mechanized at the surface.
+ * honest non-clickable render as none declared. The test is "not in
+ * `projects.md`", of which "retired" is only the common case — a typo (`vda`)
+ * or a project registered later lands here too, rendering board-less rather
+ * than surfaced as malformed. `projects.md` itself is the authority: a
+ * `Project:` naming an unregistered project is malformed by its own rule, so
+ * refusing to link there is that rule, mechanized at the surface.
  *
  * Both halves live here because the href derivation was duplicated verbatim in
  * `studio/page.tsx` and `studio/iterations/IterationsTabs.tsx`, and the reason
