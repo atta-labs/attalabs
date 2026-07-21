@@ -113,6 +113,9 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Switch
+export { Switch, type SwitchProps } from './interactive/switch'
+
 // Interactive — Toggle
 export { Toggle, toggleVariants, type ToggleProps } from './interactive/toggle'
 

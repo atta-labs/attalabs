@@ -636,6 +636,7 @@
         "@radix-ui/react-separator": "^1.1.8",
         "@radix-ui/react-slider": "^1.2.3",
         "@radix-ui/react-slot": "^1.2.4",
+        "@radix-ui/react-switch": "^1.2.6",
         "@radix-ui/react-toggle": "^1.1.15",
         "@tailwindcss/postcss": "^4.0.0",
         "@xyflow/react": "^12.3.6",

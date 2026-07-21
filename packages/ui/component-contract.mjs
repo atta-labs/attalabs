@@ -49,6 +49,9 @@ export const REQUIRED_COMPONENTS = [
   'TabsList',
   'TabsTrigger',
 
+  // Switch
+  'Switch',
+
   // Toggle
   'Toggle',
   'toggleVariants',
@@ -200,6 +203,12 @@ export const REQUIRED_TYPES = [
   'TabsListProps',
   'TabsProps',
   'TabsTriggerProps',
+
+  // Switch — like Button/Toggle, each library derives SwitchProps from its
+  // OWN installed component; the size/icon surface genuinely diverges
+  // (retro ships a `size`, animate ships pressedWidth/startIcon/endIcon/
+  // thumbIcon, basic ships neither), so only the NAME is contracted.
+  'SwitchProps',
 
   // Toggle — like Button, each library derives ToggleProps from its OWN
   // installed cva (variant/size enums diverge by design); only the NAME is

@@ -113,6 +113,12 @@ export { AgentThinkingText, Flex, Heading, Text } from '../../shared'
 
 // Interactive — Button
 export { Button, buttonVariants } from './interactive/button'
+// Interactive — Switch (neobrutalism DOES ship one, unlike its toggle:
+// https://www.neobrutalism.dev/r/switch.json, verified 2026-07-21), so this
+// is brutal's own paste rather than a basic fallback. Same deprecation note
+// as the Toggle block below — delete with the rest of brutal.
+export { Switch, type SwitchProps } from './interactive/switch'
+
 // Interactive — Toggle falls back to basic (neobrutalism ships no toggle in
 // its registry; verified 2026-07-21 — https://www.neobrutalism.dev/r/toggle.json 404)
 //
