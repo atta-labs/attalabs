@@ -11,7 +11,8 @@ export { Code, CodeBlock } from '../../basic/components/display/code'
 
 // Chrome — falls back to basic's flush frame (animate wants no float).
 export { ChromeFrame } from '../../basic/components/chrome/chrome-frame'
-// Content — motion card
+// Content — motion card. CardContent is re-routed through the local wrapper (restores the top
+// padding old-shadcn's `p-6 pt-0` drops); every other part is the verbatim installed component.
 export {
   Card,
   CardAction,
@@ -20,7 +21,7 @@ export {
   CardFooter,
   CardHeader,
   CardTitle
-} from '../installed/card'
+} from './card'
 // Form — falls back to basic
 export { Input, InputBlock } from './form/input'
 export { Checkbox } from './form/checkbox'
