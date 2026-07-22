@@ -32,6 +32,15 @@ export function ChromeFrame({ variant, className, children, ...props }: ChromeFr
       </div>
     )
   }
+  if (variant === 'bar') {
+    return (
+      <div className='w-full px-2 pt-2'>
+        <Card className={cn('flex w-full flex-row items-center rounded bg-card py-0', className)} {...props}>
+          {children}
+        </Card>
+      </div>
+    )
+  }
   return (
     <div className='w-full px-2 pt-2'>
       <Card

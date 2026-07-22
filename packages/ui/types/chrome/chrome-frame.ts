@@ -6,7 +6,7 @@ import type * as React from 'react'
  * per-library EDGE treatment (float vs flush); the consumer supplies the shared
  * inner layout via `className` and the content via `children`.
  */
-export type ChromeFrameVariant = 'topbar' | 'rail' | 'panel'
+export type ChromeFrameVariant = 'topbar' | 'bar' | 'rail' | 'panel'
 
 /**
  * Library-resolved chrome frame contract. Every library exports a `ChromeFrame`;

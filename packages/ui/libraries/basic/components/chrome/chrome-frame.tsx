@@ -33,6 +33,13 @@ export function ChromeFrame({ variant, className, children, ...props }: ChromeFr
       </div>
     )
   }
+  if (variant === 'bar') {
+    return (
+      <div className={cn('flex w-full items-center border-border border-b bg-card', className)} {...props}>
+        {children}
+      </div>
+    )
+  }
   return (
     <div className={cn('relative flex h-14 w-full items-center border-border border-b px-6', className)} {...props}>
       {children}
