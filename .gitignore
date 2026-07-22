@@ -68,3 +68,8 @@ next-env.d.ts
 .claude/scheduled_tasks.lock
 
 .claude/launch.json
+
+# Codex CLI tooling (parallel to .claude/ — personal, not shared)
+.codex/
+.agents/
+AGENTS.md
