@@ -47,40 +47,47 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
     }
   }, [])
 
+  // Full-width sticky bar spanning the content column, restyled to match the
+  // page's carded chrome (opaque bg-card + border-b + subtle shadow) rather than
+  // the old translucent strip. Fixed `h-11` height so the sticky table header can
+  // offset below it by exactly that amount (`[&_thead_th]:top-11` in DocPage).
+  // Fades in once the reader scrolls past the doc title.
   return (
     <div
-      className={`sticky top-0 z-20 -mx-12 overflow-hidden bg-background/80 px-12 backdrop-blur-md transition-all duration-300 ${
-        isSticky ? 'max-h-20 border-b border-border/40 py-3 opacity-100' : 'max-h-0 py-0 opacity-0 pointer-events-none'
+      className={`sticky top-0 z-20 w-full transition-opacity duration-300 ${
+        isSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
-      <Flex align='center' justify='between' className='w-full'>
-        <Flex align='center' gap={2} className='text-xs font-mono select-none'>
-          {activeHeading ? (
-            <>
-              <Text as='span' className='text-muted-foreground/60'>
-                {title}
-              </Text>
-              <Text as='span' className='text-muted-foreground/30'>
-                /
-              </Text>
-              <Text as='span' className='text-foreground font-semibold truncate max-w-[400px]'>
-                {activeHeading}
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text as='span' className='text-muted-foreground/60 uppercase tracking-wider'>
-                {section}
-              </Text>
-              <Text as='span' className='text-muted-foreground/30'>
-                /
-              </Text>
-              <Text as='span' className='text-foreground font-semibold truncate max-w-[400px]'>
-                {title}
-              </Text>
-            </>
-          )}
-        </Flex>
+      <Flex
+        align='center'
+        gap={2}
+        className='h-11 w-full border-border border-b bg-card px-4 font-mono text-xs shadow-sm select-none'
+      >
+        {activeHeading ? (
+          <>
+            <Text as='span' className='max-w-[160px] truncate text-muted-foreground/70'>
+              {title}
+            </Text>
+            <Text as='span' className='text-muted-foreground/40'>
+              /
+            </Text>
+            <Text as='span' className='truncate font-semibold text-foreground'>
+              {activeHeading}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text as='span' className='shrink-0 uppercase tracking-wider text-muted-foreground/70'>
+              {section}
+            </Text>
+            <Text as='span' className='text-muted-foreground/40'>
+              /
+            </Text>
+            <Text as='span' className='truncate font-semibold text-foreground'>
+              {title}
+            </Text>
+          </>
+        )}
       </Flex>
     </div>
   )

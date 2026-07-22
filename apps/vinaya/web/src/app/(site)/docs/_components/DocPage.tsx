@@ -24,7 +24,6 @@ import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { stripLeadingH1 } from '@atta/aeg-core/docs'
 import type { Doc } from '@atta/aeg-core/docs'
-
 import { StickyDocHeader } from './StickyDocHeader'
 
 export type DocPageProps = {
@@ -127,13 +126,13 @@ const markdownComponents = {
   // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
   // table scrolls inside its own box instead of bleeding past the prose column.
   // `containerClassName` puts the block margin on that scroll wrapper.
-  // `@min-[780px]/tbl:[&_thead_th]:top-12` shifts the pinned header below the ~55px sticky doc
-  // breadcrumb (`StickyDocHeader`, `sticky top-0 z-20`) so it doesn't pin behind
-  // it — the `@min-[780px]/tbl:` container query because the pinned header only
-  // exists once the table's container is wide enough to fit the table (below
-  // that width the table scrolls in its own contained box instead).
+  // `@min-[780px]/tbl:[&_thead_th]:top-11` shifts the pinned header below the
+  // `h-11` sticky doc breadcrumb (`StickyDocHeader`, `sticky top-0`) so the two
+  // stack instead of overlapping — the `@min-[780px]/tbl:` container query
+  // because the header only pins once the table's container is wide enough to fit
+  // the table (below that width the table scrolls in its own contained box).
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-12' {...props} />
+    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-11' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
