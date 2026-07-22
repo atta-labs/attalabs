@@ -1,8 +1,10 @@
 import { Footer } from '@atta/ui/footer'
 import { CtaSection } from './_components/CtaSection'
+import { EnergyFieldBg } from './_components/EnergyFieldBg'
 import { HeroSection } from './_components/HeroSection'
 import { ProtectedSection } from './_components/ProtectedSection'
 import { WorkflowSection } from './_components/WorkflowSection'
+import { HeroFabric } from './_components/hero-canvas/HeroFabric'
 import { VinayaHeroEmblem } from './_components/hero-canvas/VinayaHeroEmblem'
 
 // A three-chapter, full-viewport story built around the visual work. Only the Hero,
@@ -35,13 +37,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. Final next-steps — the only conversion area after Solution; the Solution CTA
-          ("Get started") scrolls straight here. */}
+      {/* 5. Final next-steps — sized to its content + padding, full width. The fabric layer
+          is rendered at a FULL viewport height (same as the other sections) and clipped to
+          this shorter section, so its squares read at the exact same scale instead of being
+          squashed by the fixed grid into a short canvas. Footer stays plain (no fabric). */}
       <main
         id='next-steps'
-        className='mx-auto flex w-full max-w-[1120px] flex-col items-center justify-center px-6 py-20'
+        className='relative flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center overflow-hidden px-6 py-20'
       >
-        <CtaSection />
+        <div className='pointer-events-none absolute inset-x-0 top-1/2 h-[calc(100vh-4rem)] -translate-y-1/2'>
+          <HeroFabric />
+          <EnergyFieldBg showGrid={false} />
+        </div>
+        <div className='relative z-10 mx-auto flex w-full max-w-[1120px] flex-col items-center'>
+          <CtaSection />
+        </div>
       </main>
 
       <Footer

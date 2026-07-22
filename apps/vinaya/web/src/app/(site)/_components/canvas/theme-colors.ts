@@ -6,6 +6,8 @@ export interface ThemeColors {
   mutedForeground: string
   primary: string
   primaryForeground: string
+  accent: string
+  secondary: string
   warning: string
   destructive: string
   success: string
@@ -28,6 +30,8 @@ export function readThemeColors(el: HTMLElement): ThemeColors {
     mutedForeground: v('--muted-foreground'),
     primary: v('--primary'),
     primaryForeground: v('--primary-foreground'),
+    accent: v('--accent'),
+    secondary: v('--secondary'),
     warning: v('--warning'),
     destructive: v('--destructive'),
     success: v('--success'),

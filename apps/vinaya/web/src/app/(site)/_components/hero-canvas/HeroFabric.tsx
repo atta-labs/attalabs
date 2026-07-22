@@ -14,7 +14,7 @@ import { createFabricRenderer, refreshThemeCache } from '@atta/ui/canvas'
 import type { BgState } from '@atta/ui/canvas'
 import { useEffect, useRef } from 'react'
 
-const renderFabric = createFabricRenderer({
+const FABRIC_CONFIG = {
   approachSpeedMultiplier: 0.8,
   forceCompleteAtSphereEdge: false,
   shockWaveOnArrival: true,
@@ -22,23 +22,38 @@ const renderFabric = createFabricRenderer({
   // whole grid folding at once — driven by a slow settleProgress ramp synced to the pulse.
   radialFold: true,
   // Push the shock wave all the way to the screen edges before it fades.
-  pulseReach: 2.4
-})
+  pulseReach: 2.4,
+  // Grid-agent electrons handled in the harness SVG instead (branching lightning), so the
+  // fabric stays a clean texture with only the cursor-lighten + drifting dots.
+  gridAgents: false
+} as const
 
 export function HeroFabric({
   centerRef,
-  gravity,
-  pulseKey
+  gravity = 0,
+  pulseKey = 0,
+  emitAngles,
+  emitRadiusRatio = 0.875
 }: {
-  centerRef: React.RefObject<HTMLElement | null>
-  gravity: number // 0→1 curvature-fold intensity (settleProgress)
-  pulseKey: number // increment to fire a shock wave (ClosingPulse)
+  centerRef?: React.RefObject<HTMLElement | null> // omit → curvature centers on the viewport
+  gravity?: number // 0→1 curvature-fold intensity (settleProgress); 0 = flat mesh
+  pulseKey?: number // increment to fire a shock wave (ClosingPulse)
+  // Angles (radians) of the harness's electricity arcs — grid agents are BORN at these
+  // points on the ring so they emanate from the electricity, not a generic ring edge.
+  emitAngles?: number[]
+  // Fraction of the ring's half-width where the electricity sits (rMid ≈ 0.875·c).
+  emitRadiusRatio?: number
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Own renderer per instance → own gridAgent state (keyed by config), so the hero, Workflow
+  // and CTA fabric canvases never share/stomp each other's agents.
+  const renderFabricRef = useRef<((s: BgState) => void) | null>(null)
+  if (!renderFabricRef.current) renderFabricRef.current = createFabricRenderer({ ...FABRIC_CONFIG })
   const gravityRef = useRef(gravity)
   gravityRef.current = gravity
   const lastKey = useRef(0)
   const fire = useRef(false)
+  const mouse = useRef({ x: 0, y: 0, active: false })
 
   useEffect(() => {
     if (pulseKey > lastKey.current) {
@@ -53,6 +68,14 @@ export function HeroFabric({
     if (!canvas || !ctx) return
     let raf = 0
     let t = 0
+
+    const onMove = (e: MouseEvent) => {
+      const r = canvas.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      mouse.current = { x, y, active: x >= 0 && y >= 0 && x <= r.width && y <= r.height }
+    }
+    window.addEventListener('mousemove', onMove)
     const render = () => {
       refreshThemeCache() // track html[data-theme] — we don't go through AIACanvas
       const dpr = window.devicePixelRatio || 1
@@ -67,13 +90,23 @@ export function HeroFabric({
 
       // main's center in the canvas's own coords (scroll-safe — rect minus rect).
       const cRect = canvas.getBoundingClientRect()
-      const mRect = centerRef.current?.getBoundingClientRect()
+      const mRect = centerRef?.current?.getBoundingClientRect()
       const cx = mRect ? mRect.left + mRect.width / 2 - cRect.left : w / 2
       const cy = mRect ? mRect.top + mRect.height / 2 - cRect.top : h / 2
       // Shadow sits just INSIDE the harness: outer ring radius (ringBox/2 × 0.93, matching
       // HarnessStructure's rOut) − 20px, so it reads slightly smaller than the metal ring.
       // Falls back to viewport-relative if no ring box.
       const R = mRect ? (mRect.width / 2) * 0.93 - 20 : Math.min(w, h) * 0.44
+
+      // Electricity emitters — points on the ring at the harness's conduit angles, where the
+      // grid agents are born. Only when the harness (centerRef) and its angles are present.
+      const emitters =
+        mRect && emitAngles
+          ? emitAngles.map((a) => {
+              const er = (mRect.width / 2) * emitRadiusRatio
+              return { x: cx + Math.cos(a) * er, y: cy + Math.sin(a) * er }
+            })
+          : undefined
 
       const recentEvents: BgState['recentEvents'] = []
       if (fire.current) {
@@ -101,14 +134,19 @@ export function HeroFabric({
           }
         ],
         spheres: [],
-        recentEvents
+        recentEvents,
+        pointer: mouse.current,
+        emitters
       }
-      renderFabric(state)
+      renderFabricRef.current?.(state)
       t++
       raf = requestAnimationFrame(render)
     }
     raf = requestAnimationFrame(render)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('mousemove', onMove)
+    }
   }, [centerRef])
 
   return <canvas ref={canvasRef} className='pointer-events-none absolute inset-0 h-full w-full' />

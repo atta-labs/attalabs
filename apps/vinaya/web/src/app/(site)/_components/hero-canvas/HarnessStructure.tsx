@@ -9,9 +9,21 @@
 import { useEffect, useRef } from 'react'
 import { CONDUIT_ANGLES_DEG, offsetPoint, polar, RING_AXIS_DEG, round } from './harness-geometry'
 
+// Two bolts per conduit — both primary ink so both waves are clearly visible (an accent
+// companion could vanish depending on the theme). Two irregular lines read as lightning;
+// five parallel thin ones read as a fuzzy rope.
+const STROKE_BY_LAYER = ['stroke-primary', 'stroke-primary']
+
 const ARC_HALF = 33 // each ring segment spans 66°, leaving 24° gaps on the diagonals
 const EASE = (t: number) => 1 - (1 - t) ** 3
 const cl = (x: number) => Math.max(0, Math.min(1, x))
+
+// Deterministic pseudo-random 0..1 from an int — per-vertex seeds so each jag sits at its
+// own height/spacing (irregular bolt, not a clean sine).
+function hash01(n: number): number {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return s - Math.floor(s)
+}
 
 // A flat-topped hexagon of radius `r` centered at the origin, as an SVG points string.
 function hex(r: number): string {
@@ -23,13 +35,46 @@ function hex(r: number): string {
   return pts.join(' ')
 }
 
-// Electricity — the exact layered wavy-arc tuning from Vāda's ring (aia-ring.tsx),
-// just re-colored to primary. Calm, not a wild band.
+// Electricity — a jagged lightning arc, not a smooth band. Two bolts per conduit: a bold
+// primary core and a thinner accent companion (branch). Each is a low-vertex angular
+// polyline whose jags shimmer in place (fast, irregular) instead of a sine crawling around
+// the ring. `amplitude` is the fraction of the ring band's half-thickness the jags swing
+// across; `speed` is the shimmer rate; `seed` offsets the per-vertex randomness so the two
+// bolts never overlap.
+// `band` offsets each wave to its own depth in the ring channel (−1 inner, +1 outer) so the
+// two waves stay distinct instead of overlapping on the centerline.
 const WAVE_VARIANTS = [
-  { samples: 80, amplitude: 1.3, freq: 7, width: 1, speed: 0.1, dir: 1, opacity: 0.4 },
-  { samples: 80, amplitude: 2.6, freq: 13, width: 2.5, speed: 0.05, dir: -1, opacity: 0.8 },
-  { samples: 80, amplitude: 2.5, freq: 0.22, width: 1, speed: 0.03, dir: -1, opacity: 1 }
+  { samples: 22, amplitude: 0.6, width: 1.6, speed: 0.09, dir: 1, opacity: 0.9, seed: 0, band: -1 },
+  { samples: 20, amplitude: 0.55, width: 1.2, speed: 0.12, dir: -1, opacity: 0.68, seed: 40, band: 1 }
 ]
+
+// Cursor magnetic pull: EVERY conduit whose midpoint is within PULL_RANGE of the cursor
+// bulges toward the pointer, strength ∝ proximity (several pulled at once, not just one).
+// Endpoints stay anchored so a bolt never breaks.
+const MAX_PULL = 30
+const PULL_RANGE = 265
+
+// Catmull-Rom → cubic bezier: round the polyline's corners so the jags read as waves
+// instead of sharp triangles. Endpoints are duplicated so the anchors stay put.
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return ''
+  const first = pts[0]!
+  const d = [`M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`]
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i]!
+    const p1 = pts[i]!
+    const p2 = pts[i + 1]!
+    const p3 = pts[i + 2] ?? p2
+    const cp1x = p1.x + (p2.x - p0.x) / 6
+    const cp1y = p1.y + (p2.y - p0.y) / 6
+    const cp2x = p2.x - (p3.x - p1.x) / 6
+    const cp2y = p2.y - (p3.y - p1.y) / 6
+    d.push(
+      `C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
+    )
+  }
+  return d.join(' ')
+}
 
 function waveArc(
   center: number,
@@ -37,20 +82,62 @@ function waveArc(
   startAngle: number,
   endAngle: number,
   samples: number,
-  amplitude: number,
-  freq: number,
-  timeOffset: number
+  amplitudePx: number,
+  time: number,
+  seed: number,
+  pullX = 0,
+  pullY = 0
 ): string {
-  const points: string[] = []
+  const points: { x: number; y: number }[] = []
+  const span = endAngle - startAngle
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
-    const angle = startAngle + (endAngle - startAngle) * t
-    const r = radius + Math.sin(i * freq + timeOffset) * amplitude
-    const x = center + Math.cos(angle) * r
-    const y = center + Math.sin(angle) * r
-    points.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`)
+    // envelope: 0 at both ends, 1 at the middle — the bolt is anchored to the ring at each
+    // end and jags hardest across the gap.
+    const env = Math.sin(t * Math.PI)
+    // Two incommensurate terms with per-vertex random phase — an irregular waveform. Both
+    // time terms subtract (same direction) so the whole pattern GLIDES along the arc from
+    // one end to the other (a traveling wave), rather than shimmering in place.
+    const h1 = hash01(i + seed)
+    const h2 = hash01(i + seed + 97)
+    // Low-frequency crest rolls the whole wave along the arc; a higher-frequency term adds
+    // irregular electric texture. Both subtract `time` → one clear travel direction.
+    const off = Math.sin(i * 1.5 - time + h1 * 6.283) * 0.62 + Math.sin(i * 5.3 - time * 1.9 + h2 * 6.283) * 0.38
+    const r = radius + off * amplitudePx * env
+    // horizontal jitter — nudge each sample's angle so the jags aren't evenly spaced.
+    const angJit = (hash01(i + seed + 50) - 0.5) * span * 0.07
+    const angle = startAngle + span * t + angJit
+    // bump peaks mid-arc → the bolt leans toward the cursor without detaching from the ring.
+    const x = center + Math.cos(angle) * r + pullX * env
+    const y = center + Math.sin(angle) * r + pullY * env
+    points.push({ x, y })
   }
-  return points.join(' ')
+  return smoothPath(points)
+}
+
+// Forked branches the electricity throws toward the cursor, per active conduit: one from the
+// centre of the stream, two offset a few px along the stream in each direction.
+const BRANCHES_PER_CONDUIT = 3
+
+// A jagged lightning bolt from (sx,sy) to (ex,ey): angular segments with a random offset that
+// peaks mid-span and is 0 at both ends — so it stays welded to the arc and touches the cursor.
+// `seed` varies per frame to make it crackle.
+function boltPath(sx: number, sy: number, ex: number, ey: number, segs: number, jag: number, seed: number): string {
+  const dx = ex - sx
+  const dy = ey - sy
+  const len = Math.hypot(dx, dy) || 1
+  const nx = -dy / len // unit perpendicular
+  const ny = dx / len
+  const pts: string[] = []
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs
+    const env = Math.sin(t * Math.PI)
+    const off = (hash01(i * 2.3 + seed) - 0.5) * jag * env + (hash01(i * 7.1 + seed * 1.7) - 0.5) * jag * 0.4 * env
+    const x = sx + dx * t + nx * off
+    const y = sy + dy * t + ny * off
+    pts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+  }
+  return pts.join(' ')
 }
 
 export function HarnessStructure({
@@ -75,10 +162,32 @@ export function HarnessStructure({
   const strutOuter = rIn - 1
 
   // Electricity wave animation — updates path `d` directly via refs (no re-render).
+  const svgRef = useRef<SVGSVGElement | null>(null)
   const arcRefs = useRef<(SVGPathElement | null)[]>([])
   const timesRef = useRef<number[]>(WAVE_VARIANTS.map(() => 0))
   const rafRef = useRef(0)
+  const mouseRef = useRef({ x: 0, y: 0, active: false })
+  const branchRefs = useRef<(SVGPathElement | null)[]>([])
+  const frameRef = useRef(0)
   const live = spark > 0
+
+  // Track the cursor in the SVG's own coordinate space (viewBox = size).
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const svg = svgRef.current
+      if (!svg) return
+      const r = svg.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return
+      mouseRef.current = {
+        x: ((e.clientX - r.left) / r.width) * size,
+        y: ((e.clientY - r.top) / r.height) * size,
+        active: true
+      }
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [size])
+
   useEffect(() => {
     if (!live) return
     const half = (13 * Math.PI) / 180
@@ -87,33 +196,89 @@ export function HarnessStructure({
         const v = WAVE_VARIANTS[w]
         if (v) timesRef.current[w] = (timesRef.current[w] ?? 0) + v.speed * v.dir
       }
+
+      const mouse = mouseRef.current
+      frameRef.current += 1
+      const frame = frameRef.current
+      // Cursor inside the harness metal → attraction off; soft ramp back on just outside rOut,
+      // mirroring how it drops off past PULL_RANGE.
+      const distC = Math.hypot(mouse.x - c, mouse.y - c)
+      const innerFade = Math.max(0, Math.min(1, (distC - rOut) / 34))
+      // jags swing across the ring band's thickness; both bolts ride its centerline.
+      const halfBand = (rOut - rIn) / 2
       CONDUIT_ANGLES_DEG.forEach((deg, g) => {
         const mid = (deg * Math.PI) / 180
+        // radius pull: this conduit's midpoint vs the cursor — every conduit within
+        // PULL_RANGE bulges toward the pointer, strength ∝ proximity.
+        let px = 0
+        let py = 0
+        let strength = 0
+        if (mouse.active) {
+          const mx = c + Math.cos(mid) * rMid
+          const my = c + Math.sin(mid) * rMid
+          const dx = mouse.x - mx
+          const dy = mouse.y - my
+          const dist = Math.hypot(dx, dy) || 1
+          if (dist < PULL_RANGE) {
+            strength = (1 - dist / PULL_RANGE) * innerFade
+            px = (dx / dist) * strength * MAX_PULL
+            py = (dy / dist) * strength * MAX_PULL
+          }
+        }
         for (let w = 0; w < WAVE_VARIANTS.length; w++) {
           const v = WAVE_VARIANTS[w]
           const el = arcRefs.current[g * WAVE_VARIANTS.length + w]
           if (!v || !el) continue
-          const breathe = 1 + 0.35 * Math.sin((timesRef.current[w] ?? 0) * 0.4 + w * 1.2)
+          // each wave rides its own depth in the band so the two stay separate
+          const waveR = rMid + v.band * halfBand * 0.42
           el.setAttribute(
             'd',
             waveArc(
               c,
-              rMid,
+              waveR,
               mid - half,
               mid + half,
               v.samples,
-              v.amplitude * breathe,
-              v.freq,
-              (timesRef.current[w] ?? 0) + g
+              halfBand * v.amplitude,
+              (timesRef.current[w] ?? 0) + g,
+              v.seed + g * 13,
+              px,
+              py
             )
           )
         }
+
+        // Branching lightning: when this conduit is near the cursor, the electricity FORKS —
+        // jagged bolts peel off the arc apex and reach out to the pointer, crackling.
+        const apexX = c + Math.cos(mid) * rMid + px
+        const apexY = c + Math.sin(mid) * rMid + py
+        const tanX = -Math.sin(mid) // arc tangent = the direction the electricity stream runs
+        const tanY = Math.cos(mid)
+        const soft = strength * strength // squared → only really shows once the cursor is near
+        for (let b = 0; b < BRANCHES_PER_CONDUIT; b++) {
+          const bel = branchRefs.current[g * BRANCHES_PER_CONDUIT + b]
+          if (!bel) continue
+          if (strength <= 0.02 || !mouse.active) {
+            bel.setAttribute('opacity', '0')
+            continue
+          }
+          // b0 from the stream centre; b1/b2 offset along the stream either way
+          const offset = b === 0 ? 0 : b === 1 ? 18 : -18
+          const ox = apexX + tanX * offset
+          const oy = apexY + tanY * offset
+          const len = Math.hypot(mouse.x - ox, mouse.y - oy)
+          const segs = Math.max(6, Math.round(len / 20))
+          const jag = Math.min(len * 0.16, 34)
+          bel.setAttribute('d', boltPath(ox, oy, mouse.x, mouse.y, segs, jag, frame * 0.11 + g * 3 + b * 17))
+          bel.setAttribute('opacity', (soft * (b === 0 ? 0.5 : 0.3)).toFixed(2))
+        }
       })
+
       rafRef.current = requestAnimationFrame(animate)
     }
     rafRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [live, c, rMid])
+  }, [live, c, rMid, rIn, rOut])
 
   // One ring segment outline (outer arc + caps + inner arc), drawn on via a dash.
   const segPath = (s0: number, s1: number) => {
@@ -137,17 +302,18 @@ export function HarnessStructure({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${size} ${size}`}
       width={size}
       height={size}
       fill='none'
       aria-hidden='true'
-      className='pointer-events-none absolute inset-0'
+      className='pointer-events-none absolute inset-0 overflow-visible'
       style={{ opacity: 0.9 }}
     >
       <defs>
         <filter id='harness-spark-glow'>
-          <feGaussianBlur stdDeviation='0.7' result='b' />
+          <feGaussianBlur stdDeviation='1.1' result='b' />
           <feMerge>
             <feMergeNode in='b' />
             <feMergeNode in='SourceGraphic' />
@@ -361,7 +527,7 @@ export function HarnessStructure({
             fill='none'
             pathLength={1}
             strokeLinecap='round'
-            className='stroke-primary'
+            className={STROKE_BY_LAYER[w % STROKE_BY_LAYER.length]}
             style={{
               strokeWidth: v.width,
               filter: 'url(#harness-spark-glow)',
@@ -372,6 +538,25 @@ export function HarnessStructure({
           />
         ))
       })}
+
+      {/* --- Branching lightning to the cursor: `d`/opacity set per frame in the loop --- */}
+      {CONDUIT_ANGLES_DEG.map((deg, g) =>
+        Array.from({ length: BRANCHES_PER_CONDUIT }).map((_, b) => (
+          <path
+            key={`branch-${deg}-${b}`}
+            ref={(el) => {
+              branchRefs.current[g * BRANCHES_PER_CONDUIT + b] = el
+            }}
+            d=''
+            fill='none'
+            opacity={0}
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            className='stroke-primary'
+            style={{ strokeWidth: b === 0 ? 0.9 : 0.6, filter: 'url(#harness-spark-glow)' }}
+          />
+        ))
+      )}
     </svg>
   )
 }

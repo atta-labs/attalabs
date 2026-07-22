@@ -8,22 +8,23 @@ import { Flex, Heading, Text } from '@atta/ui/shared'
 import { TwoErasCanvas } from './canvas/TwoErasCanvas'
 import { ScrollButton } from './ScrollButton'
 
+// Matched pairs — each row reads straight across as a human→agent before/after.
 const HUMAN_POINTS = [
-  'Opens a PR (40 files)',
-  'Reads the ticket, gets context',
+  'Opens a 40-file PR',
+  'Reads the ticket for context',
   'Learns the codebase by writing it',
   'Occasional tech debt',
-  'Reviews a diff in ~20 min',
-  'Code + specs grow together'
+  'Diff reviewed in ~20 min',
+  'Code and specs grow together'
 ]
 
 const AGENT_POINTS = [
-  'Opens massive PRs (1,200+ files)',
-  'Copy-pastes the ticket, no context',
-  'Ships code nobody has read',
+  'Opens a 1,200-file PR',
+  'Skips the ticket, no context',
+  'Ships code no one has read',
   'Invisible, compounding tech debt',
-  'Reviewers give up — next PR lands',
-  'Code grows 100× faster than the spec'
+  'Reviewers give up; it merges anyway',
+  'Code outruns the spec 100×'
 ]
 
 /** Green check for the humans column, red X for the agents column — a quick visual
@@ -109,7 +110,7 @@ export function HeroSection() {
           random-question text this replaced), so the button just fades in on a short
           fixed delay instead of an onAllRevealed callback. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 }}>
-        <ScrollButton targetId='workflow'>
+        <ScrollButton targetId='workflow' variant='outline'>
           See what keeps work governed
           <ArrowDown className='size-5' />
         </ScrollButton>

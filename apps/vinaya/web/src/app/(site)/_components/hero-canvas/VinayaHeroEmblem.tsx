@@ -4,8 +4,14 @@ import { Button } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowDown, GitBranch } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { EnergyFieldBg } from '../EnergyFieldBg'
 import { HarnessStructure } from './HarnessStructure'
+import { CONDUIT_ANGLES_DEG } from './harness-geometry'
 import { HeroFabric } from './HeroFabric'
+
+// The harness's electricity-arc angles in radians — the grid agents in the fabric are born
+// at these points (the electricity), then walk the mesh toward the cursor.
+const EMIT_ANGLES = CONDUIT_ANGLES_DEG.map((d) => (d * Math.PI) / 180)
 
 // Persisted "has the build already played" flag (Vāda pattern): first visit animates,
 // every visit after — this session or a later one — shows the final state instantly.
@@ -18,7 +24,7 @@ function useResponsiveRing() {
     const compute = () => {
       const vw = window.innerWidth
       const vh = window.innerHeight
-      setRingSize(Math.round(Math.min(440, vw * 0.78, vh * 0.56)))
+      setRingSize(Math.round(Math.min(380, vw * 0.7, vh * 0.48)))
     }
     compute()
     window.addEventListener('resize', compute)
@@ -143,9 +149,13 @@ function EmblemInner() {
   return (
     <div className='relative h-full w-full'>
       {/* Self-contained fabric — warped grid + curvature + shock wave, centered on main. */}
-      <HeroFabric centerRef={ringBoxRef} gravity={gravity} pulseKey={pulseKey} />
+      <HeroFabric centerRef={ringBoxRef} gravity={gravity} pulseKey={pulseKey} emitAngles={EMIT_ANGLES} />
 
-      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-6 text-center'>
+      {/* Cursor-reactive energy over the fabric — same effect as the Workflow section, but
+          grid-less so it layers on HeroFabric's own mesh instead of doubling it. */}
+      <EnergyFieldBg showGrid={false} />
+
+      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center'>
         <div className='flex flex-col items-center justify-center gap-3'>
           <Heading
             level={1}
@@ -199,7 +209,6 @@ function EmblemInner() {
         <div style={{ opacity: content }}>
           <Button
             type='button'
-            variant='outline'
             size='lg'
             onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
           >

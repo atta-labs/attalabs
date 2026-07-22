@@ -5,11 +5,11 @@ import { ProtectedCanvasPortrait } from './canvas/ProtectedCanvasPortrait'
 import { ScrollButton } from './ScrollButton'
 
 const PROTECTION_POINTS = [
-  'Every change follows the same path: brief → build → review → verify → merge → archive.',
+  'One path for every change: brief → build → review → verify → merge → archive.',
   'Deterministic checks keep quality, context, and standards visible.',
-  'Role contracts define what each contributor may change.',
-  'A failed check returns a concrete recovery instruction.',
-  'Every merge is traceable: brief, checks, and reviewer on the record.'
+  'Role contracts bound what each contributor can touch.',
+  'Failed checks return a concrete fix, not just a red X.',
+  'Every merge is on the record: brief, checks, reviewer.'
 ]
 
 /** Mirrors HeroSection's PointList — a single always-green list (every point here is a
@@ -55,7 +55,7 @@ export function ProtectedSection() {
         </CardContent>
       </Card>
 
-      <ScrollButton targetId='next-steps'>
+      <ScrollButton targetId='next-steps' variant='outline'>
         Get started
         <ArrowDown className='size-5' />
       </ScrollButton>
