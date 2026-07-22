@@ -316,6 +316,8 @@ When a button has both icon and label (Sign out, Settings, Theme — the pattern
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 
+**The nav frame rides the `secondary` surface token** (`bg-secondary text-secondary-foreground`), per the frame-token doctrine in `.claude/skills/ui-theme-tokens/SKILL.md` (*"Topbars … use `secondary`"*). This is what lets the same shared TopBar read as chrome under every library/theme without a `library === '…'` branch: each theme defines its own `secondary`, so under a dark library (e.g. retro's `--background: oklch(0 0 0)`) the bar is a distinct frame band rather than flat-on-canvas, and under a light one it is a subtle tint. Do not reach for a palette color or a library-name conditional to differentiate the frame — the token already varies per theme (`vinaya-pages-v2` task 8, #621).
+
 The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). Adding a new slot (or changing where `extraActions` renders) requires updating every consumer's mental model — touch with care.
 
 ---
