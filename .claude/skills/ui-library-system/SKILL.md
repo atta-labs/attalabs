@@ -604,13 +604,15 @@ part of the contract.
 
 **`ChromeFrame`** (`vinaya-pages-v2` task 8, #621) is the same no-upstream ⇒
 wrapper-layer shape as `Code`, and it is the mechanism for **per-library app
-chrome**. It takes `variant: 'topbar' | 'rail' | 'panel'` + `className` +
+chrome**. It takes `variant: 'topbar' | 'bar' | 'rail' | 'panel'` + `className` +
 `children` and owns ONE thing: the per-library *edge* treatment of a chrome
 surface. The flush libraries (basic — and animate/brutal, which re-export basic's)
-render the chrome edge-to-edge: a `border-b` topbar bar, a `border-r` rail, a
-`bg-card` panel. **retro** overrides with a *floating* frame — it wraps the
-content in retro's own Card inside a small `px-2 pt-2` / `p-2` margin so retro's
-hard offset shadow has room to read (the "detached card" look). Lives at
+render the chrome edge-to-edge: a `border-b` `topbar` bar, a `border-b` `bar`
+(a generic horizontal chrome bar — the docs sticky breadcrumb uses it), a
+`border-r` `rail`, a `bg-card` `panel`. **retro** overrides with a *floating*
+frame — it wraps the content in retro's own Card inside a small `px-2 pt-2` /
+`p-2` margin so retro's hard offset shadow has room to read (the "detached card"
+look). Lives at
 `{basic,retro}/components/chrome/chrome-frame.tsx`; `ChromeFrameProps` /
 `ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
 
