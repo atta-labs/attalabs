@@ -60,6 +60,8 @@ packages/aeg-core/bin/verify-registry.ts         aeg-root/enforcement.md
 .claude/hooks/check-pr-green.sh                  aeg-root/enforcement.md
 .husky/pre-push                                  aeg-root/enforcement.md
 packages/aeg-core/src/waiver-label.ts            aeg-root/state-machine.md
+packages/aeg-core/src/state-machine-model.ts     aeg-root/state-machine.md
+packages/aeg-forge-state/src/labels.ts           aeg-root/state-machine.md
 packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md
 

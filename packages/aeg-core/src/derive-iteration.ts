@@ -1,3 +1,4 @@
+import { deriveStatusFromModel } from './state-machine-model'
 import type { DerivedIteration, DerivedStatus, DerivedTask, ForgeFacts, Iteration, Task, UnknownEdge } from './types'
 
 /**
@@ -80,21 +81,14 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
  *
  * A missing `forgeFacts` entry → `todo`. Iteration tasks are committed work;
  * `backlog` is a project-level concept only and is never emitted here (D-059).
+ *
+ * The rules themselves are no longer written here. They live as an ordered,
+ * pure-data list in `state-machine-model.ts` (D-119, the `actions.ts`
+ * discipline): one list, executed by this function and rendered by the docs,
+ * so the two cannot drift. Each rule carries the prose and the reason its
+ * position matters — change the order there, and this function's behavior
+ * changes with it.
  */
 function deriveStatus(facts: ForgeFacts | undefined): DerivedStatus {
-  if (!facts) return 'todo'
-  if (facts.blockedLabel) return 'blocked'
-  if (facts.issueState === 'open' && facts.prState === 'merged') {
-    return facts.branchExists ? 'in-flight' : 'todo'
-  }
-  if (facts.prState === 'merged') return 'merged'
-  if (facts.prState === 'open') {
-    return facts.reviewDecision === 'changes_requested' ? 'changes-requested' : 'in-review'
-  }
-  if (facts.branchExists) return 'in-flight'
-  if (facts.issueState === 'open') return 'todo'
-  // Issue closed, no merged PR (D-069): honest terminal status, never `todo`.
-  // NOT_PLANNED is a legitimate drop; COMPLETED-without-merge (or no reason)
-  // is incoherent — surfaced for a human to resolve, never auto-reopened.
-  return facts.stateReason === 'not_planned' ? 'dropped' : 'incoherent'
+  return deriveStatusFromModel(facts)
 }

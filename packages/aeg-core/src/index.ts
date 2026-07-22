@@ -113,6 +113,14 @@ export { checkG1, checkG2, checkG3, checkG4, checkG5 } from './registry-checks'
 export type { RegistryCheckResult, RegistryCheckStatus, RegistryFinding } from './registry-checks'
 export { ACTIONS, CROSSING_KEYWORDS } from './actions'
 export type { Action, ActionCrossing } from './actions'
+export {
+  DERIVABLE_STATUSES,
+  DERIVATION_RULES,
+  DERIVED_STATUSES,
+  deriveStatusFromModel,
+  FORGE_FACT_INPUTS
+} from './state-machine-model'
+export type { DerivationRule, ForgeFactInput } from './state-machine-model'
 export { checkPremises, parsePremiseBlock } from './premise-check'
 export type { PremiseAssertion, PremiseCheckResult } from './premise-check'
 export { classifyLeftover } from './leftover-detection'
