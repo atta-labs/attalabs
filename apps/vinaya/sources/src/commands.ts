@@ -43,12 +43,12 @@ export const COMMANDS: readonly Command[] = [
       "`vinaya.config.json` is seeded with a starter ruleset extracted from Vinaya's own battle-tested gates, not invented defaults. Issue and PR templates carrying the brief schema are added alongside your own; tier and `needs:*-input` labels are created only if they don't already exist — your existing labels are never modified.",
       'An adopter decision-log scaffold is added. The recommended branch-protection command is printed for you to run yourself — it is never applied, and your PATH is never touched. `eject` removes exactly the managed block it owns, or a whole file only if `init` created it.'
     ],
-    status: 'planned'
+    status: 'shipped'
   },
   {
     name: 'init product',
     description: 'Scaffold an additional governed product area in an already-initialized monorepo',
-    status: 'planned'
+    status: 'shipped'
   },
   {
     name: 'check',
@@ -137,7 +137,11 @@ export const COMMANDS: readonly Command[] = [
   {
     name: 'eject',
     description: 'Remove every Vinaya-installed artifact, restoring the repo to stock',
-    status: 'planned'
+    flags: [
+      { flag: '--dry-run', description: 'Print the full removal diff without removing anything' },
+      { flag: '--yes', description: 'Skip the confirmation prompt' }
+    ],
+    status: 'shipped'
   },
   {
     name: 'demo break',

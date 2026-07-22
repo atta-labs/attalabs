@@ -1,0 +1,272 @@
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, relative } from 'node:path'
+import {
+  buildInitOps,
+  CHECKS_WORKFLOW_PATH,
+  CONFIG_PATH,
+  REVIEW_WORKFLOW_PATH,
+  starterConfig
+} from '../src/lib/artifacts.js'
+import type { InitDeps } from '../src/commands/init.js'
+import { runInit, runInitProduct } from '../src/commands/init.js'
+import { runEject } from '../src/commands/eject.js'
+import type { EjectDeps } from '../src/commands/eject.js'
+import type { LabelGateway } from '../src/lib/ops.js'
+
+let root: string
+let createdLabels: string[]
+
+function makeDeps(overrides: Partial<InitDeps> = {}): InitDeps {
+  const labels: LabelGateway = {
+    async exists() {
+      return false
+    },
+    async create(name) {
+      createdLabels.push(name)
+    }
+  }
+  return {
+    detectRepo: async () => ({ repoRoot: root, owner: 'acme', repo: 'widget' }),
+    checkGhAuth: async () => true,
+    labelGateway: () => labels,
+    hookDirFor: () => '.husky',
+    customHooksPath: async () => null,
+    confirm: async () => true,
+    ...overrides
+  }
+}
+
+function ejectDeps(overrides: Partial<EjectDeps> = {}): EjectDeps {
+  return {
+    detectRepo: async () => ({ repoRoot: root, owner: 'acme', repo: 'widget' }),
+    confirm: async () => true,
+    ...overrides
+  }
+}
+
+/** Recursive snapshot of the fixture tree: relative path → content. */
+function snapshot(dir: string): Map<string, string> {
+  const out = new Map<string, string>()
+  const walk = (d: string) => {
+    for (const name of readdirSync(d)) {
+      const p = join(d, name)
+      if (statSync(p).isDirectory()) walk(p)
+      else out.set(relative(dir, p), readFileSync(p, 'utf-8'))
+    }
+  }
+  walk(dir)
+  return out
+}
+
+/** Capture process.stdout.write output during `fn`, returning the output. */
+async function captureStdout(fn: () => Promise<unknown>): Promise<string> {
+  const original = process.stdout.write.bind(process.stdout)
+  let buf = ''
+  process.stdout.write = ((chunk: string) => {
+    buf += chunk
+    return true
+  }) as typeof process.stdout.write
+  try {
+    await fn()
+  } finally {
+    process.stdout.write = original
+  }
+  return buf
+}
+
+beforeEach(() => {
+  root = join(tmpdir(), `vinaya-init-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  mkdirSync(root, { recursive: true })
+  // A pre-existing adopter file that must survive init and eject untouched.
+  writeFileSync(join(root, 'README.md'), '# widget\n')
+  createdLabels = []
+})
+
+afterEach(() => {
+  rmSync(root, { recursive: true, force: true })
+})
+
+describe('vinaya init', () => {
+  it('installs every manifest artifact on a clean repo', async () => {
+    let rc = -1
+    await captureStdout(async () => {
+      rc = await runInit(['--yes'], makeDeps())
+    })
+    expect(rc).toBe(0)
+
+    for (const p of [
+      CHECKS_WORKFLOW_PATH,
+      REVIEW_WORKFLOW_PATH,
+      CONFIG_PATH,
+      '.husky/pre-commit',
+      '.husky/pre-push',
+      '.github/ISSUE_TEMPLATE/vinaya-task.md',
+      '.github/pull_request_template.md',
+      'governance/decisions.md',
+      'governance/doctrine.md',
+      'governance/doc-owners',
+      'governance/projects.md'
+    ]) {
+      expect(existsSync(join(root, p))).toBe(true)
+    }
+    // labels created-if-absent
+    expect(createdLabels).toContain('tier:0')
+    expect(createdLabels).toContain('needs:principal-input')
+    // manifest recorded in config
+    const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
+    expect(cfg.managed.version).toBe(1)
+    expect(cfg.managed.files).toContain(CHECKS_WORKFLOW_PATH)
+    expect(cfg.managed.blocks.some((b: { path: string }) => b.path === '.husky/pre-commit')).toBe(true)
+    // hooks are executable
+    expect(statSync(join(root, '.husky/pre-commit')).mode & 0o111).not.toBe(0)
+  })
+
+  it('--dry-run writes nothing but shows the exact content install would write', async () => {
+    const before = snapshot(root)
+    const out = await captureStdout(() => runInit(['--dry-run'], makeDeps()))
+    const after = snapshot(root)
+    expect(after).toEqual(before) // nothing written
+    // dry-run diff shows the exact bytes a real install writes
+    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' })) {
+      if (op.kind === 'create-file') expect(out).toContain(op.content.trimEnd().split('\n')[0] ?? '')
+    }
+    expect(out).toContain('nothing was written')
+  })
+
+  it('dry-run output byte-matches what install then writes (content artifacts)', async () => {
+    await runInit(['--yes'], makeDeps())
+    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' })) {
+      // vinaya.config.json is the one file whose bytes legitimately differ: the
+      // ownership `managed` manifest is injected at apply time. Every other
+      // create-file artifact is byte-identical to what the diff showed.
+      if (op.kind === 'create-file' && op.path !== CONFIG_PATH) {
+        expect(readFileSync(join(root, op.path), 'utf-8')).toBe(op.content)
+      }
+    }
+    // config: seed portion is exactly the starter ruleset; only `managed` is added.
+    const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
+    const { managed, ...seed } = cfg
+    expect(managed).toBeDefined()
+    expect(seed).toEqual(starterConfig() as unknown as typeof seed)
+  })
+
+  it('aborting the confirmation writes nothing and exits clean', async () => {
+    const before = snapshot(root)
+    const rc = await runInit([], makeDeps({ confirm: async () => false }))
+    expect(rc).toBe(0)
+    expect(snapshot(root)).toEqual(before)
+  })
+
+  it('refuses without gh auth unless --dry-run', async () => {
+    const rc = await runInit(['--yes'], makeDeps({ checkGhAuth: async () => false }))
+    expect(rc).toBe(1)
+    expect(existsSync(join(root, CONFIG_PATH))).toBe(false)
+  })
+
+  it('stops on a custom core.hooksPath rather than guessing', async () => {
+    const rc = await runInit(['--yes'], makeDeps({ customHooksPath: async () => '.config/hooks' }))
+    expect(rc).toBe(1)
+    expect(existsSync(join(root, CONFIG_PATH))).toBe(false)
+  })
+})
+
+describe('never-clobber', () => {
+  it('appends to a pre-existing hook and REFUSES a foreign workflow', async () => {
+    mkdirSync(join(root, '.husky'), { recursive: true })
+    writeFileSync(join(root, '.husky/pre-commit'), '#!/usr/bin/env sh\nnpm run lint\n')
+    mkdirSync(join(root, '.github/workflows'), { recursive: true })
+    writeFileSync(join(root, CHECKS_WORKFLOW_PATH), 'name: not-ours\n')
+
+    const out = await captureStdout(() => runInit(['--yes'], makeDeps()))
+
+    // hook: adopter line kept, managed block appended
+    const hook = readFileSync(join(root, '.husky/pre-commit'), 'utf-8')
+    expect(hook).toContain('npm run lint')
+    expect(hook).toContain('vinaya:managed:pre-commit')
+    // foreign checks workflow: untouched, and REFUSE shown in the diff
+    expect(readFileSync(join(root, CHECKS_WORKFLOW_PATH), 'utf-8')).toBe('name: not-ours\n')
+    expect(out).toContain('REFUSE')
+    expect(out).toContain(CHECKS_WORKFLOW_PATH)
+    // the non-foreign review workflow still installs
+    expect(existsSync(join(root, REVIEW_WORKFLOW_PATH))).toBe(true)
+  })
+})
+
+describe('workflows', () => {
+  it('installs both workflows; review triggers on issue_comment, checks does not', async () => {
+    await runInit(['--yes'], makeDeps())
+    const checks = readFileSync(join(root, CHECKS_WORKFLOW_PATH), 'utf-8')
+    const review = readFileSync(join(root, REVIEW_WORKFLOW_PATH), 'utf-8')
+    expect(checks).toContain('pull_request')
+    expect(checks).not.toContain('issue_comment')
+    expect(review).toContain('pull_request')
+    expect(review).toContain('issue_comment')
+    expect(review).toContain('VERDICT') // cheap verdict guard before checkout
+    expect(checks).toContain('vinaya check --all --diff-only')
+  })
+})
+
+describe('round-trip: init then eject returns the repo to pre-init state', () => {
+  it('clean fixture: filesystem is identical before init and after eject', async () => {
+    const before = snapshot(root)
+    await runInit(['--yes'], makeDeps())
+    expect(snapshot(root)).not.toEqual(before) // init changed things
+    const out = await captureStdout(() => runEject(['--yes'], ejectDeps()))
+    expect(snapshot(root)).toEqual(before) // eject restored exactly
+    // labels reported for manual removal, never auto-deleted
+    expect(out).toContain('gh label delete tier:0')
+  })
+
+  it('fixture with adopter lines in a hook: eject strips only the vinaya block', async () => {
+    mkdirSync(join(root, '.husky'), { recursive: true })
+    writeFileSync(join(root, '.husky/pre-commit'), '#!/usr/bin/env sh\nnpm run lint\n')
+    const before = snapshot(root)
+
+    await runInit(['--yes'], makeDeps())
+    await runEject(['--yes'], ejectDeps())
+
+    // their hook + line survive; no vinaya block remains
+    const hook = readFileSync(join(root, '.husky/pre-commit'), 'utf-8')
+    expect(hook).toContain('npm run lint')
+    expect(hook).not.toContain('vinaya:managed')
+    // everything else restored
+    expect(snapshot(root)).toEqual(before)
+  })
+
+  it('eject is a no-op on an untouched repo', async () => {
+    const before = snapshot(root)
+    const rc = await runEject(['--yes'], ejectDeps())
+    expect(rc).toBe(0)
+    expect(snapshot(root)).toEqual(before)
+  })
+
+  it('eject refuses when the manifest is missing/corrupt (never a destructive guess)', async () => {
+    // vinaya.config.json present but no `managed` manifest
+    writeFileSync(
+      join(root, CONFIG_PATH),
+      JSON.stringify({ rings: { ring1_forgeWriteInterception: false, ring2_asyncAudits: false } })
+    )
+    const rc = await runEject(['--yes'], ejectDeps())
+    expect(rc).toBe(1)
+    // did not delete the file it could not prove ownership of
+    expect(existsSync(join(root, CONFIG_PATH))).toBe(true)
+  })
+})
+
+describe('vinaya init product', () => {
+  it('refuses before init, scaffolds a governed area after', async () => {
+    // before init
+    const rcBefore = await runInitProduct(['mobile'], makeDeps())
+    expect(rcBefore).toBe(1)
+
+    await runInit(['--yes'], makeDeps())
+    const rc = await runInitProduct(['mobile', '--yes'], makeDeps())
+    expect(rc).toBe(0)
+    expect(existsSync(join(root, 'governance/products/mobile/decisions.md'))).toBe(true)
+    const projects = readFileSync(join(root, 'governance/projects.md'), 'utf-8')
+    expect(projects).toContain('mobile')
+    expect(projects).toContain('vinaya:managed:product-mobile')
+  })
+})
