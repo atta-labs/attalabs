@@ -8,6 +8,9 @@ export { Badge, badgeVariants } from '../installed/badge'
 // hand-written in its wrapper layer, since shadcn ships no code component)
 export { Code, CodeBlock } from '../../basic/components/display/code'
 
+// Chrome — falls back to basic's flush frame (brutal is deprecated).
+export { ChromeFrame } from '../../basic/components/chrome/chrome-frame'
+
 // Interactive — Collapsible
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 

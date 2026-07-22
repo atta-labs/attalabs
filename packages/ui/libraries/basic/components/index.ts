@@ -9,6 +9,10 @@ export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 // Display
 export { Badge } from './display/badge'
 export { Code, CodeBlock } from './display/code'
+
+// Chrome — library-resolved app-chrome frame (topbar/rail edge treatment).
+// basic is the flush default; retro overrides with a floating Card frame.
+export { ChromeFrame } from './chrome/chrome-frame'
 export { Toast, ToastProvider, useToastContext } from './display/toast'
 // Form
 export { Input, InputBlock } from './form/input'

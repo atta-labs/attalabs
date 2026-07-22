@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ChromeFrame,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -33,9 +34,11 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
       style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex'
+      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 text-sidebar-foreground lg:flex'
     >
-      <DocSidebarNav nav={nav} pathname={pathname} />
+      <ChromeFrame variant='rail'>
+        <DocSidebarNav nav={nav} pathname={pathname} />
+      </ChromeFrame>
     </SidebarProvider>
   )
 }

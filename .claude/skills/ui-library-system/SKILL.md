@@ -602,6 +602,34 @@ merges last *because* it must always win). Both are hook-free and carry no
 button would force a client boundary on every consumer and is deliberately not
 part of the contract.
 
+**`ChromeFrame`** (`vinaya-pages-v2` task 8, #621) is the same no-upstream ⇒
+wrapper-layer shape as `Code`, and it is the mechanism for **per-library app
+chrome**. It takes `variant: 'topbar' | 'rail' | 'panel'` + `className` +
+`children` and owns ONE thing: the per-library *edge* treatment of a chrome
+surface. The flush libraries (basic — and animate/brutal, which re-export basic's)
+render the chrome edge-to-edge: a `border-b` topbar bar, a `border-r` rail, a
+`bg-card` panel. **retro** overrides with a *floating* frame — it wraps the
+content in retro's own Card inside a small `px-2 pt-2` / `p-2` margin so retro's
+hard offset shadow has room to read (the "detached card" look). Lives at
+`{basic,retro}/components/chrome/chrome-frame.tsx`; `ChromeFrameProps` /
+`ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
+
+**Why it exists — the float must not be uniform.** The consumer (the shared
+`@atta/ui/topbar`, and the Vinaya `/docs`, `/install` rails + the `/the-harness`
+panel) supplies only the *shared inner layout* via `className` (the topbar's
+`relative`/`h-14` row, a rail's scroll box) and the *content* via `children`; the
+frame supplies the *margin + surface*. So the float is retro's alone — it can
+never leak onto animate/basic the way a hardcoded `px-2 pt-2` on the shared
+topbar did (which detached Herald's animate topbar too, #621 review). No
+`library === '…'` branch anywhere: the shared topbar just calls
+`useComponents().ChromeFrame` (fallback: basic's flush frame during the runtime
+import window), and each build-time consumer imports it from `@atta/ui/components`.
+`className` merges LAST onto the surface (same rationale as `Code`) so a consumer
+tunes the content box, not the float. This **supersedes** the earlier
+`bg-secondary`-token topbar approach (#653's first cut) — a shared token gave
+every library the *same* frame, which is the exact per-library difference this
+restores.
+
 **`Toggle`** (`vinaya-pages-v2` task 13, #626) joined the contract as `Toggle` +
 `toggleVariants` + `ToggleProps`, and is the case where three of the four
 libraries each had their **own** upstream to paste. `basic` ← shadcn's

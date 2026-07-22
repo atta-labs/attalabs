@@ -38,6 +38,10 @@ export const REQUIRED_COMPONENTS = [
   'Code',
   'CodeBlock',
 
+  // ChromeFrame — library-resolved app-chrome edge (topbar/rail float vs flush).
+  // Hand-written in the wrapper layer (no upstream); basic flush, retro floats.
+  'ChromeFrame',
+
   // Collapsible
   'Collapsible',
   'CollapsibleContent',
@@ -234,6 +238,9 @@ export const REQUIRED_TYPES = [
   // Code
   'CodeProps',
   'CodeBlockProps',
+
+  // ChromeFrame
+  'ChromeFrameProps',
 
   // Form — Input
   'InputBlockProps',
