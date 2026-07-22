@@ -90,10 +90,12 @@ function FlatDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
         size='sm'
         isActive={isActive}
         render={<NextLink variant='unstyled' href={doc.href} />}
+        // The active look is owned by the library's SidebarMenuButton (driven by
+        // `isActive`), so it reads as whatever the active library specifies —
+        // under retro that's its `bg-primary` fill, not basic's sidebar-accent.
+        // The consumer only dims the resting/inactive items via sidebar tokens.
         className={`h-auto min-h-7 py-1 font-sans text-sm font-medium tracking-tight [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug ${
-          isActive
-            ? 'text-sidebar-accent-foreground font-semibold'
-            : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
+          isActive ? '' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
         }`}
       >
         <span className='line-clamp-2'>{doc.sidebarTitle ?? doc.title}</span>

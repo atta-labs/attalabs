@@ -79,10 +79,11 @@ export function InstallSidebar({ commands }: { commands: readonly Command[] }) {
                       size='sm'
                       isActive={isActive}
                       render={<NextLink variant='unstyled' href={`#${slug}`} onClick={scrollToSection(slug)} />}
+                      // Active look is owned by the library's SidebarMenuButton
+                      // (driven by `isActive`) — retro's `bg-primary` fill, not
+                      // basic's sidebar-accent. Consumer only dims inactive items.
                       className={`h-auto min-h-7 py-1 font-mono text-sm tracking-tight [&>span:last-child]:whitespace-normal ${
-                        isActive
-                          ? 'font-semibold text-sidebar-accent-foreground'
-                          : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
+                        isActive ? '' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
                       }`}
                     >
                       <span className='line-clamp-2'>{command.name}</span>
