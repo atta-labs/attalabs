@@ -105,7 +105,7 @@ function TopBarWithAuth({
   const defaultLogo = buildDefaultLogo(logoUrl, logoText, logoTagline)
 
   return (
-    <nav className='w-full border-b border-border'>
+    <nav className='w-full border-b border-border bg-secondary text-secondary-foreground'>
       <div className='relative flex h-14 w-full items-center px-6'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
@@ -248,7 +248,7 @@ function TopBarNoAuth({
   const defaultLogo = buildDefaultLogo(logoUrl, logoText, logoTagline)
 
   return (
-    <nav className='w-full border-b border-border'>
+    <nav className='w-full border-b border-border bg-secondary text-secondary-foreground'>
       <div className='relative flex h-14 w-full items-center px-6'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
