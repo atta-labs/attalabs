@@ -1,7 +1,8 @@
 'use client'
 
+import { ChromeFrame } from '@atta/ui/components'
+import { Text } from '@atta/ui/shared'
 import { useEffect, useState } from 'react'
-import { Flex, Text } from '@atta/ui/shared'
 
 export type StickyDocHeaderProps = {
   title: string
@@ -47,22 +48,21 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
     }
   }, [])
 
-  // Full-width sticky bar spanning the content column, restyled to match the
-  // page's carded chrome (opaque bg-card + border-b + subtle shadow) rather than
-  // the old translucent strip. Fixed `h-11` height so the sticky table header can
-  // offset below it by exactly that amount (`[&_thead_th]:top-11` in DocPage).
-  // Fades in once the reader scrolls past the doc title.
+  // Library-resolved sticky breadcrumb bar via `ChromeFrame variant='bar'`: under
+  // the flush libraries it's a `border-b bg-card` strip, under retro it's a
+  // floating Card (border-2 + shadow) with a top gap that matches the topbar's
+  // own float — so the bar reads as chrome in every library instead of a flat
+  // strip jammed under the topbar. The `h-11` content height is fixed; the
+  // markdown table's sticky header clears the retro-floated bar via
+  // `[&_thead_th]:top-13` in DocPage. Fades in once the reader scrolls past the
+  // doc title.
   return (
     <div
       className={`sticky top-0 z-20 w-full transition-opacity duration-300 ${
         isSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
-      <Flex
-        align='center'
-        gap={2}
-        className='h-11 w-full border-border border-b bg-card px-4 font-mono text-xs shadow-sm select-none'
-      >
+      <ChromeFrame variant='bar' className='h-11 gap-2 px-4 font-mono text-xs select-none'>
         {activeHeading ? (
           <>
             <Text as='span' className='max-w-[160px] truncate text-muted-foreground/70'>
@@ -88,7 +88,7 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
             </Text>
           </>
         )}
-      </Flex>
+      </ChromeFrame>
     </div>
   )
 }
