@@ -149,13 +149,13 @@ function EmblemInner() {
         <div className='flex flex-col items-center justify-center gap-3'>
           <Heading
             level={1}
-            className='text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl'
+            className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
           >
             Sustainable software development
             <br />
             for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
           </Heading>
-          <Text className='text-balance font-sans text-xl leading-tight font-extrabold tracking-tight text-foreground/70'>
+          <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
             Execution governance for software teams.
           </Text>
         </div>
@@ -199,11 +199,11 @@ function EmblemInner() {
         <div style={{ opacity: content }}>
           <Button
             type='button'
-            variant='default'
+            variant='outline'
             size='lg'
             onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            See More
+            See how it works
             <ArrowDown className='size-4' />
           </Button>
         </div>

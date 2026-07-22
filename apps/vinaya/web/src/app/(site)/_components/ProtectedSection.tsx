@@ -1,16 +1,15 @@
-import { Check } from 'lucide-react'
-import { Button, Card, CardContent } from '@atta/ui/components'
+import { ArrowDown, Check } from 'lucide-react'
+import { Card, CardContent } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
-import Link from 'next/link'
 import { ProtectedCanvasPortrait } from './canvas/ProtectedCanvasPortrait'
+import { ScrollButton } from './ScrollButton'
 
 const PROTECTION_POINTS = [
-  'A deterministic state machine: brief → build → review → merge. No step skipped.',
-  'Twelve checks gate every merge, enforced by CI. Green ships, red stops.',
-  'Role contracts bind each actor — Planner, Developer, Reviewer — to what it may touch.',
-  'One rulebook for humans and agents. Same gates, same standard, same main.',
-  'Force-push blocked, review mandatory, tech debt always visible.',
-  'Every merge is traceable — brief, checks, and reviewer on the record.'
+  'Every change follows the same path: brief → build → review → verify → merge → archive.',
+  'Deterministic checks keep quality, context, and standards visible.',
+  'Role contracts define what each contributor may change.',
+  'A failed check returns a concrete recovery instruction.',
+  'Every merge is traceable: brief, checks, and reviewer on the record.'
 ]
 
 /** Mirrors HeroSection's PointList — a single always-green list (every point here is a
@@ -38,9 +37,9 @@ export function ProtectedSection() {
           accent on the key phrase) so both sections match and the whole thing fits 100vh. */}
       <Heading
         level={2}
-        className='max-w-[760px] text-balance text-center font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
+        className='max-w-[820px] text-balance text-center font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
       >
-        Vinaya — Ship AI-generated code without giving up control
+        Governed execution, from <span className='rounded-lg bg-accent px-2'>brief to merge</span>.
       </Heading>
 
       {/* Card sized so the ANIMATION is the main character: a big canvas on the left, a
@@ -56,9 +55,10 @@ export function ProtectedSection() {
         </CardContent>
       </Card>
 
-      <Button asChild size='lg'>
-        <Link href='/the-harness'>The Harness</Link>
-      </Button>
+      <ScrollButton targetId='next-steps'>
+        Get started
+        <ArrowDown className='size-5' />
+      </ScrollButton>
     </section>
   )
 }

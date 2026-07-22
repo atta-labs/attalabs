@@ -17,6 +17,7 @@
     "@atta/cms": "workspace:*",
     "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
+    "@lobehub/icons": "^5.4.0",
     "@atta/vinaya-sources": "workspace:*",
     "@octokit/graphql": "^8.1.1",
     "@tailwindcss/postcss": "^4.0.0",
@@ -27,6 +28,7 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "simple-icons": "^14.0.0",
     "tailwindcss": "^4.0.0"
   },
   "devDependencies": {

@@ -157,7 +157,7 @@ export function ProtectedCanvasPortrait() {
     // much taller aspect ratio (380/500 vs the era canvases' near-square footprint) made
     // the point list beside it center against a much taller box, landing far from the
     // ring instead of level with it the way HeroSection's own canvas+list pairing does.
-    <div className='relative aspect-[380/500] w-[340px] max-w-full shrink-0'>
+    <div className='relative aspect-[380/500] w-[290px] max-w-full shrink-0'>
       <div aria-hidden='true' className='absolute inset-0'>
         <canvas ref={canvasRef} className='h-full w-full' />
       </div>

@@ -84,7 +84,7 @@ export function HeroSection() {
                 sphere, row baseline and cadence, so the two stay pixel-aligned side by side. */}
             <Flex direction='column' align='center' gap={3}>
               <Text as='p' className='text-center font-mono text-xl text-primary'>
-                HUMANS CODING
+                WORKING AT HUMAN SCALE
               </Text>
               <TwoErasCanvas kind='human' layout='landscape' />
               <PointList points={HUMAN_POINTS} icon={Check} iconClassName='size-5 shrink-0 text-success' />
@@ -96,7 +96,7 @@ export function HeroSection() {
           <CardContent>
             <Flex direction='column' align='center' gap={3}>
               <Text as='p' className='text-center font-mono text-xl text-primary'>
-                AGENTS CODING
+                WORKING AT AI SCALE
               </Text>
               <TwoErasCanvas kind='agent' layout='landscape' />
               <PointList points={AGENT_POINTS} icon={X} iconClassName='size-5 shrink-0 text-destructive' />
@@ -109,8 +109,8 @@ export function HeroSection() {
           random-question text this replaced), so the button just fades in on a short
           fixed delay instead of an onAllRevealed callback. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 }}>
-        <ScrollButton targetId='protected'>
-          Meet Vinaya
+        <ScrollButton targetId='workflow'>
+          See what keeps work governed
           <ArrowDown className='size-5' />
         </ScrollButton>
       </motion.div>

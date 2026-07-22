@@ -17,6 +17,7 @@ export function ScrollButton({ targetId, children }: ScrollButtonProps) {
     <Button
       type='button'
       size='lg'
+      variant='outline'
       onClick={() => document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' })}
     >
       {children}
