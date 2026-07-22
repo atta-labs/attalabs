@@ -25,16 +25,19 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   // drift a few pixels into a stray window scroll.
   return (
     <div className='flex h-dvh flex-col'>
-      <TopBar
-        logo={
-          <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-            <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Execution', 'Harnessing']} />
-          </NextLink>
-        }
-        links={links}
-        extraActions={<ProductSwitch current='portal' />}
-        withAuth={false}
-      />
+      {/* z-30 keeps the TopBar above the hero emblem's fixed canvas (z-0). */}
+      <div className='relative z-30'>
+        <TopBar
+          logo={
+            <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+            </NextLink>
+          }
+          links={links}
+          extraActions={<ProductSwitch current='portal' />}
+          withAuth={false}
+        />
+      </div>
       <div className='min-h-0 flex-1 overflow-y-auto'>{children}</div>
     </div>
   )

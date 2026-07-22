@@ -1,84 +1,68 @@
-import { ArrowDown } from 'lucide-react'
 import { Footer } from '@atta/ui/footer'
-import { Heading, Text } from '@atta/ui/shared'
-import { loadDoctrineQuestions } from '@/lib/doctrine-questions'
 import { CtaSection } from './_components/CtaSection'
-import { FeatureGrid } from './_components/FeatureGrid'
+import { EnergyFieldBg } from './_components/EnergyFieldBg'
 import { HeroSection } from './_components/HeroSection'
 import { ProtectedSection } from './_components/ProtectedSection'
-import { RandomQuestionText } from './_components/RandomQuestionText'
-import { ScrollButton } from './_components/ScrollButton'
+import { WorkflowSection } from './_components/WorkflowSection'
+import { HeroFabric } from './_components/hero-canvas/HeroFabric'
+import { VinayaHeroEmblem } from './_components/hero-canvas/VinayaHeroEmblem'
 
-export default async function HomePage() {
-  const questions = await loadDoctrineQuestions()
-
+// A three-chapter, full-viewport story built around the visual work. Only the Hero,
+// Problem, and Solution are full-screen narrative sections; the lower content below flows
+// normally.
+//   1. Hero     — Promise + the harness animation
+//   2. Problem  — ungoverned speed at human vs AI scale
+//   3. Solution — governed execution, brief → merge (harness-wrapped main)
+export default function HomePage() {
   return (
     <>
-      <HeroSection />
+      {/* 1. Hero — "See how it works" jumps to the Problem section. */}
+      <VinayaHeroEmblem />
 
-      {/* Every section past the hero is a full 100vh screen (no topbar to subtract —
-          by the time a user scrolls here it's off-screen) with its content vertically
-          centered, so "Show me more" / "What is Vinaya" always land on a fully-centered
-          next screen, never a partial peek of it. The subtitle + animated doctrine
-          questions used to live in the hero — moved here (not deleted) once the hero
-          switched to showing the era-canvas diagrams instead. */}
-      <section id='eras' className='flex min-h-screen w-full flex-col items-center justify-center gap-6 px-6 py-8'>
-        <div className='mx-auto flex w-full max-w-[1120px] flex-col items-center gap-6'>
-          <Heading
-            level={2}
-            className='mx-auto max-w-[900px] text-balance text-center font-sans text-2xl font-bold text-foreground sm:text-3xl md:text-4xl'
-          >
-            Code generation is free.
-            <br />
-            Engineering oversight is priceless.
-          </Heading>
+      {/* 2. Problem — ungoverned speed at human vs AI scale. */}
+      <div id='hero-classic'>
+        <HeroSection />
+      </div>
 
-          {/* displayCount=5 (not the default 2) — this section has real vertical room to
-              fill (min-h-screen, only a short subtitle above), so it reveals a longer
-              list once and stays, rather than cycling in small replacing pairs. The
-              button is passed as `action` (not a separate sibling here) so its fade-in
-              timing and its gap from the bullets are both owned by the component that
-              actually knows when the reveal finishes and how tall the bullets really
-              rendered. */}
-          <RandomQuestionText
-            questions={questions}
-            displayCount={5}
-            action={
-              <ScrollButton targetId='protected'>
-                Meet Vinaya
-                <ArrowDown className='size-5' />
-              </ScrollButton>
-            }
-          />
-        </div>
-      </section>
+      {/* 3. Workflow — calm static breather: where Vinaya fits, plan → merge. */}
+      <WorkflowSection />
 
-      <section id='protected' className='flex min-h-screen w-full flex-col items-center justify-center px-6 py-8'>
+      {/* 4. Solution — governed execution, brief → merge. */}
+      <section
+        id='protected'
+        className='flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center px-6 py-8'
+      >
         <div className='mx-auto w-full max-w-[1120px]'>
           <ProtectedSection />
         </div>
       </section>
 
-      <main className='mx-auto flex max-w-[1120px] flex-col gap-12 px-6 pb-16 sm:gap-14'>
-        <div className='flex flex-col gap-2'>
-          <Text as='p' size='xl' weight='bold' className='text-center font-mono text-foreground'>
-            Nothing reaches main without passing the same deterministic checks.
-            <br />
-            Human or Agent.
-          </Text>
-          <Text as='p' weight='bold' size='lg' className='text-center font-mono'>
-            <span className='text-success'>full speed &middot; zero damage</span>
-            <span className='text-muted-foreground'> &mdash; main is protected</span>
-          </Text>
+      {/* 5. Final next-steps — sized to its content + padding, full width. The fabric layer
+          is rendered at a FULL viewport height (same as the other sections) and clipped to
+          this shorter section, so its squares read at the exact same scale instead of being
+          squashed by the fixed grid into a short canvas. Footer stays plain (no fabric). */}
+      <main
+        id='next-steps'
+        className='relative flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center overflow-hidden px-6 py-20'
+      >
+        <div className='pointer-events-none absolute inset-x-0 top-1/2 h-[calc(100vh-4rem)] -translate-y-1/2'>
+          <HeroFabric />
+          <EnergyFieldBg showGrid={false} />
         </div>
-        <FeatureGrid />
-        <CtaSection />
+        <div className='relative z-10 mx-auto flex w-full max-w-[1120px] flex-col items-center'>
+          <CtaSection />
+        </div>
       </main>
 
       <Footer
         product='vinaya'
-        tagline='Discipline for the AI era'
-        links={[{ label: 'The Harness', href: '/the-harness' }]}
+        tagline='Execution governance for software teams'
+        links={[
+          { label: 'The Harness', href: '/the-harness' },
+          { label: 'Studio', href: '/the-studio' },
+          { label: 'Install', href: '/install' },
+          { label: 'Docs', href: '/docs' }
+        ]}
       />
     </>
   )

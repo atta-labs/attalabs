@@ -11,6 +11,14 @@ export interface BgState {
   rings: RingRegistration[] // registered rings this frame
   spheres: SphereRegistration[] // registered spheres this frame
   recentEvents: BgEvent[] // events that fired this frame, cleared next frame
+  // Optional pointer in canvas-local coords — when active, the ACTUAL fabric grid lines
+  // within a radius brighten (lighten) as the cursor passes. Renderers that don't receive
+  // it behave exactly as before.
+  pointer?: { x: number; y: number; active: boolean }
+  // Optional emitter points in canvas-local coords — the fabric's cursor-directed grid
+  // agents (config.gridAgents) are BORN at these points (e.g. the harness's electricity
+  // arcs) rather than a generic ring edge.
+  emitters?: { x: number; y: number }[]
   onSphereAbsorb?: (sphereId: string) => void // fired when a Tron particle joins a sphere
   onOriginComplete?: () => void // fired once when all origin particles have arrived
 }

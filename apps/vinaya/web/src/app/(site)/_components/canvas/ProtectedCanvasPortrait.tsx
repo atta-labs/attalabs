@@ -1,20 +1,18 @@
 'use client'
 
-import { Check } from 'lucide-react'
-import { Text } from '@atta/ui/shared'
 import {
   drawBomb,
   drawExplosion,
   drawLabel,
   drawMainSphere,
   drawMissile,
-  drawOrbitRing,
   drawRobot,
+  drawUniverseFabric,
   getRobotBodyCenter,
   LABEL_FONT_SIZE,
-  ROBOT_FIGURE_HEIGHT_UNITS,
-  TWO_ERAS_FIGURE_HEIGHT
+  ROBOT_FIGURE_HEIGHT_UNITS
 } from './primitives'
+import { HarnessStructure } from '../hero-canvas/HarnessStructure'
 import {
   angleOf,
   clamp01,
@@ -50,9 +48,9 @@ const LOGICAL_HEIGHT = 500
 const IMPACT_MAGNITUDE = 1.7
 const FLIGHT_ARC_BULGE = 22
 
-// Derived from the shared TWO_ERAS_FIGURE_HEIGHT, same as LightSpeedEraCanvas's own
-// robot row — this row reads as "the same agents" as the era canvas, not a re-scaled copy.
-const SWARM_ROBOT_SCALE = TWO_ERAS_FIGURE_HEIGHT / ROBOT_FIGURE_HEIGHT_UNITS
+// A touch smaller than the era canvas's robots — the harness (not the swarm) is the focus
+// here, so the attacking row reads as compact.
+const SWARM_ROBOT_SCALE = 66 / ROBOT_FIGURE_HEIGHT_UNITS
 const SWARM_COLS = 5
 const SWARM_COL_GAP = 14 * SWARM_ROBOT_SCALE * 1.05 + 4
 // Top margin for the row's own visual center (antenna reaches ~11*scale above this,
@@ -94,8 +92,11 @@ export function ProtectedCanvasPortrait() {
     logicalWidth: LOGICAL_WIDTH,
     logicalHeight: LOGICAL_HEIGHT,
     draw: (ctx, colors, elapsedMs, reducedMotion) => {
-      const dashOffset = reducedMotion ? 0 : -((elapsedMs / 40) % 1000)
-      drawOrbitRing(ctx, CENTER.x, CENTER.y, RING_RADIUS, dashOffset, colors)
+      // Warped universe fabric behind the scene (agents-side turbulence), same backdrop as
+      // the era canvases. The protective ring itself is the real hero harness, overlaid as
+      // SVG in the JSX below — so `drawOrbitRing` is gone; the robots still target RING_RADIUS,
+      // which the harness's own outer edge sits on.
+      drawUniverseFabric(ctx, colors, elapsedMs, LOGICAL_WIDTH, LOGICAL_HEIGHT, reducedMotion, 1.7)
       drawMainSphere(ctx, CENTER.x, CENTER.y, SPHERE_RADIUS, colors, 'protected', 0)
 
       const cyclePos = elapsedMs % TOTAL_CYCLE_MS
@@ -156,29 +157,23 @@ export function ProtectedCanvasPortrait() {
     // much taller aspect ratio (380/500 vs the era canvases' near-square footprint) made
     // the point list beside it center against a much taller box, landing far from the
     // ring instead of level with it the way HeroSection's own canvas+list pairing does.
-    <div className='relative mx-auto aspect-[380/500] w-[340px] max-w-full'>
+    <div className='relative aspect-[380/500] w-[290px] max-w-full shrink-0'>
       <div aria-hidden='true' className='absolute inset-0'>
         <canvas ref={canvasRef} className='h-full w-full' />
       </div>
 
-      {/* Same "vinaya" / "checks 12/12" band labels as the landscape variant, at the
-          ring's own 12 and 6 o'clock points — recomputed as fractions of THIS variant's
-          own LOGICAL_HEIGHT/CENTER, since the aspect ratio differs. Sized down from the
-          landscape variant's text-lg/h-3.5 — those were tuned for a 780px-wide canvas;
-          at this canvas's much smaller footprint the same absolute sizes read oversized. */}
-      <div className='absolute top-[33%] left-1/2 -translate-x-1/2 -translate-y-1/2'>
-        <Text as='span' weight='bold' className='font-mono text-sm text-foreground'>
-          vinaya
-        </Text>
-      </div>
-
-      <div className='absolute top-[95%] left-1/2 -translate-x-1/2 -translate-y-1/2'>
-        <div className='inline-flex items-center gap-1'>
-          <Check className='h-3 w-3 text-success' />
-          <Text as='span' size='xs' weight='bold' className='font-mono text-success'>
-            checks 12/12
-          </Text>
-        </div>
+      {/* The REAL hero harness, settled, wrapping main. Its own geometry is in the same
+          logical units as the canvas (size 333 → outer radius ≈ RING_RADIUS 155, coreRadius
+          ≈ SPHERE_RADIUS), and it scales via viewBox to a square 87.6%-wide box centered on
+          main — so the metal ring lands exactly where the bombs are aimed. */}
+      <div
+        aria-hidden='true'
+        className='pointer-events-none absolute left-1/2 top-[64%] aspect-square w-[87.6%] -translate-x-1/2 -translate-y-1/2 [&>svg]:h-full [&>svg]:w-full'
+      >
+        {/* [&>svg]:w/h-full forces the harness SVG to scale to THIS box via its viewBox —
+            without it the SVG renders at its intrinsic 333px anchored top-left, shifting the
+            whole ring down-right off main. */}
+        <HarnessStructure size={333} coreRadius={92} ringProgress={1} clamp={1} spark={1} />
       </div>
     </div>
   )

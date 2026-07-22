@@ -1,7 +1,8 @@
 import type { BgState } from './types'
-import { fgAt, withAlpha } from '../shared/color-math'
+import { cssVarColor, fgAt, withAlpha } from '../shared/color-math'
 import { bloomStops, paintParticleHead } from '../shared/paint'
 import { resolveColor } from '../shared/colors'
+import { isLightTheme } from '../shared/theme'
 
 // ── Fabric configuration ───────────────────────────────────────────────────────
 export interface FabricConfig {
@@ -13,6 +14,20 @@ export interface FabricConfig {
   /** Replace the default shimmer with a multi-plane water-surface wave.
    *  Also allows Tron particles to spawn as soon as phase=settled (no gravity ramp needed). */
   waterWave?: boolean
+  /** Fold RADIALLY: instead of the whole grid folding uniformly as settleProgress rises,
+   *  the fold sets in from the ring center OUTWARD — `settleProgress` drives an expanding
+   *  fold radius. Pair with a slow settleProgress ramp synced to the ring-close shock wave
+   *  so the curvature radiates out at the wave's pace. Default false (uniform, Vāda). */
+  radialFold?: boolean
+  /** Scale the closing-pulse (shock-wave) travel so it can reach the screen edges before
+   *  fading: multiplies both front speed and lifetime. Default 1 (Vāda's tuned reach). */
+  pulseReach?: number
+  /** Draw a small set of Tron-style "agents" that glide along the fabric's own grid lines,
+   *  each trailing a fading light streak, plus a soft pulse of light around the registered
+   *  ring. DETERMINISTIC (positions are a pure function of `t` + index) so it is safe to run
+   *  on several simultaneous canvases — unlike the sphere-homing particle system, which uses
+   *  shared module state. Default false. */
+  gridAgents?: boolean
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
@@ -20,7 +35,9 @@ const DEFAULT_FABRIC_CONFIG: FabricConfig = {
   forceCompleteAtSphereEdge: true,
   shockWaveOnArrival: false,
   gravityMultiplier: 1,
-  waterWave: false
+  waterWave: false,
+  radialFold: false,
+  pulseReach: 1
 }
 
 // ── Grid definition ───────────────────────────────────────────────────────────
@@ -212,6 +229,20 @@ interface TronBirth {
 }
 let tronBirths: TronBirth[] = []
 let firstParticleSpawned = false
+
+// Cursor-directed grid agents (config.gridAgents): particles born at the ring that WALK the
+// fabric grid toward the pointer, trailing light. State is keyed by config so each canvas
+// (its own config object) keeps an independent set — no shared-array collision.
+interface GridAgent {
+  r: number
+  c: number
+  nr: number
+  nc: number
+  tp: number // 0→1 progress along the current edge (cur → next)
+  life: number
+  trail: { r: number; c: number }[]
+}
+const gridAgentStates = new WeakMap<FabricConfig, GridAgent[]>()
 // Tracks convergence of origin particles so onOriginComplete fires at the right moment
 let originTotalCount = 0
 let originArrivedCount = 0
@@ -272,6 +303,19 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const CX = W / 2
   const CY = H / 2
   const RING_R = rings.length > 0 ? rings[0]!.radius : Math.min(W, H) * 0.24
+  // Curvature center: the registered ring when present (so the gravity funnel + halo
+  // follow the ring/main wherever it sits), else screen center. Backward-compatible —
+  // a ring centered on screen (Vāda's home) resolves to CX/CY.
+  const GX = rings.length > 0 ? rings[0]!.centerX : CX
+  const GY = rings.length > 0 ? rings[0]!.centerY : CY
+  // Fold strength at a given distance from the curvature center. Uniform (settleProgress
+  // everywhere) by default; radial mode turns settleProgress into an expanding fold radius
+  // so the curvature grows from the center outward (in step with the ring-close wave).
+  const radialFold = config.radialFold ?? false
+  const foldReachMax = Math.hypot(W, H) * 0.62
+  const foldBand = RING_R * 0.6
+  const foldStrength = (dist: number): number =>
+    radialFold ? Math.max(0, Math.min(1, (settleProgress * foldReachMax - dist) / foldBand)) : settleProgress
 
   // ── Accumulate events ─────────────────────────────────────────────────────
   for (const evt of recentEvents) {
@@ -282,9 +326,11 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     if (evt.type === 'ring-closed') {
       const cx = rings.length > 0 ? rings[0]!.centerX : CX
       const cy = rings.length > 0 ? rings[0]!.centerY : CY
-      // Pick 3 sphere colors spread across the palette for the 3 wave fronts
+      // Pick 3 sphere colors spread across the palette for the 3 wave fronts.
+      // No spheres (e.g. Vinaya's harness) → theme ink: white on dark (--foreground),
+      // but a softer muted gray on light so the wave isn't a harsh near-black slab.
       const sc = state.spheres
-      const white = fgAt(1)
+      const white = isLightTheme() ? cssVarColor('--muted-foreground') : fgAt(1)
       const frontColors: [string, string, string] = [
         sc[0]?.color ?? white,
         sc[Math.floor(sc.length / 2)]?.color ?? white,
@@ -370,8 +416,9 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     rp.life = Math.max(0, 1 - (t - rp.startT) * 0.012)
     return rp.life > 0.01
   })
+  const pulseReach = config.pulseReach ?? 1
   closingPulses = closingPulses.filter((cp) => {
-    cp.life = Math.max(0, 1 - (t - cp.startT) / 240)
+    cp.life = Math.max(0, 1 - (t - cp.startT) / (240 * pulseReach))
     return cp.life > 0.01
   })
 
@@ -420,7 +467,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
           if (r < 2 || r > ROWS - 2 || c < 2 || c > COLS - 2) continue
           const vb = vertBasePos(r, c)
           const distToSphere = Math.hypot(vb.x - targetSphere.x, vb.y - targetSphere.y)
-          const distToRing = Math.hypot(vb.x - CX, vb.y - CY)
+          const distToRing = Math.hypot(vb.x - GX, vb.y - GY)
           // Must be just outside the sphere, within reach, and outside the ring
           if (
             distToSphere > targetSphere.radius * 1.8 &&
@@ -628,7 +675,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
       // base-position-safe vertices inward by up to ~0.33×RING_R at the ring edge.
       const outsideRing = ([nr, nc]: [number, number]) => {
         const vb = vertBasePos(p.r + nr, p.c + nc)
-        return Math.hypot(vb.x - CX, vb.y - CY) >= RING_R * 1.4
+        return Math.hypot(vb.x - GX, vb.y - GY) >= RING_R * 1.4
       }
 
       // Other active particles' positions — used for avoidance tiebreaker
@@ -701,8 +748,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const pos = BASE_VERTS.map((v) => {
     const x0 = v.bx * W
     const y0 = v.by * H
-    const dx = x0 - CX
-    const dy = y0 - CY
+    const dx = x0 - GX
+    const dy = y0 - GY
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
     const nx = dx / dist
     const ny = dy / dist
@@ -713,7 +760,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     // gravityMultiplier=0 disables the pull entirely (fabric stays flat).
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * foldStrength(dist) * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     // ── Ripple displacement ───────────────────────────────────────────────
     let rippleX = 0
@@ -751,7 +798,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
         { speed: 0.6, sigma: 150, amp: 12 }
       ]
       for (const f of fronts) {
-        const waveFront = age * f.speed
+        const waveFront = age * f.speed * pulseReach
         const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
         const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
         pulseX += pnx * osc - pny * osc * 0.15
@@ -770,8 +817,8 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const pos2 = BASE_VERTS2.map((v) => {
     const x0 = v.bx * W
     const y0 = v.by * H
-    const dx = x0 - CX
-    const dy = y0 - CY
+    const dx = x0 - GX
+    const dy = y0 - GY
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
     const nx = dx / dist
     const ny = dy / dist
@@ -780,7 +827,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
     const PULL_MAX = RING_R * 0.55
     const u = dist / RING_R
-    const pull = (config.gravityMultiplier ?? 1) * settleProgress * PULL_MAX * u * Math.exp(-(u * u) / 2)
+    const pull = (config.gravityMultiplier ?? 1) * foldStrength(dist) * PULL_MAX * u * Math.exp(-(u * u) / 2)
 
     let rippleX = 0
     let rippleY = 0
@@ -815,7 +862,7 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
         { speed: 1.6, sigma: 150, amp: 12 }
       ]
       for (const f of fronts) {
-        const waveFront = age * f.speed
+        const waveFront = age * f.speed * pulseReach
         const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
         const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
         pulseX += pnx * osc - pny * osc * 0.15
@@ -832,7 +879,10 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
 
   // ── Draw grid lines ───────────────────────────────────────────────────────
   // Use --foreground via globalAlpha so it works on both dark and light themes.
-  const BASE_ALPHA = 0.08
+  // Dark ink on a light bg reads far fainter than white ink on dark at the same alpha,
+  // so light mode needs a higher base to stay legible.
+  // Light mode kept subtle — a faint texture you sense, not a painted-on grid.
+  const BASE_ALPHA = isLightTheme() ? 0.11 : 0.12
   ctx.save()
   ctx.strokeStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
   ctx.lineWidth = 0.7
@@ -878,6 +928,232 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     ctx.stroke()
   }
   ctx.restore()
+
+  // ── Cursor light: brighten the REAL fabric lines the cursor passes over ──
+  // Redraws each in-radius grid segment (coarse + fine) with extra foreground alpha on top
+  // of the base ink, proportional to proximity — the actual square texture lights up around
+  // the pointer. No new geometry, no color change: the fabric's own lines, just brighter.
+  const ptr = state.pointer
+  if (ptr?.active) {
+    const RADIUS = 150
+    // Softer added ink in light mode — foreground is dark there, so a strong add reads as a
+    // heavy painted patch rather than a subtle glow.
+    const LIT_MAX = isLightTheme() ? 0.32 : 0.7
+    ctx.save()
+    ctx.strokeStyle = fgAt(1)
+    ctx.lineCap = 'round'
+    const litSeg = (a: { x: number; y: number }, b: { x: number; y: number }, lw: number) => {
+      const mx = (a.x + b.x) / 2
+      const my = (a.y + b.y) / 2
+      const d = Math.hypot(mx - ptr.x, my - ptr.y)
+      if (d > RADIUS) return
+      const e = 1 - d / RADIUS // 1 at the cursor, 0 at the rim
+      ctx.globalAlpha = e * e * LIT_MAX // added brightness (base ink already drawn beneath)
+      ctx.lineWidth = lw
+      ctx.beginPath()
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
+      ctx.stroke()
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c < COLS; c++) litSeg(pos[r * STRIDE + c]!, pos[r * STRIDE + c + 1]!, 0.9)
+    }
+    for (let c = 0; c <= COLS; c++) {
+      for (let r = 0; r < ROWS; r++) litSeg(pos[r * STRIDE + c]!, pos[(r + 1) * STRIDE + c]!, 0.9)
+    }
+    // dots on the REAL grid corners near the cursor — same vertices whose lines lit above,
+    // so the cursor's dot cluster sits exactly on the fabric, not a floating overlay grid.
+    ctx.fillStyle = fgAt(1)
+    const dotMax = isLightTheme() ? 0.5 : 0.95
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c <= COLS; c++) {
+        const p = pos[r * STRIDE + c]!
+        const d = Math.hypot(p.x - ptr.x, p.y - ptr.y)
+        if (d > RADIUS) continue
+        const e = 1 - d / RADIUS
+        ctx.globalAlpha = e * e * dotMax
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 0.8 + e * 1.8, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+    ctx.restore()
+  }
+
+  // ── Tron agents + ring light: a few streaks glide along the real grid lines, and the
+  // fabric pulses brighter around the ring (the "electricity" source). DETERMINISTIC —
+  // positions are a pure function of `t` + index, so multiple canvases never collide. ──
+  if (config.gridAgents) {
+    const ink = fgAt(1)
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.globalAlpha = 1
+
+    // Soft light pulsing on the fabric within the ring — the harness energising the mesh.
+    if (rings.length > 0) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.045)
+      const glowR = RING_R * 1.15
+      const litRing = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const mx = (a.x + b.x) / 2
+        const my = (a.y + b.y) / 2
+        const d = Math.hypot(mx - GX, my - GY)
+        if (d > glowR) return
+        const e = 1 - d / glowR
+        ctx.globalAlpha = e * e * (0.1 + 0.22 * pulse) * (isLightTheme() ? 0.5 : 1)
+        ctx.strokeStyle = ink
+        ctx.lineWidth = 0.9
+        ctx.beginPath()
+        ctx.moveTo(a.x, a.y)
+        ctx.lineTo(b.x, b.y)
+        ctx.stroke()
+      }
+      for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c < COLS; c++) litRing(pos[r * STRIDE + c]!, pos[r * STRIDE + c + 1]!)
+      }
+      for (let c = 0; c <= COLS; c++) {
+        for (let r = 0; r < ROWS; r++) litRing(pos[r * STRIDE + c]!, pos[(r + 1) * STRIDE + c]!)
+      }
+    }
+
+    // Cursor-directed agents: born at the ring edge facing the cursor, they WALK the grid
+    // toward the pointer (each step picks the neighbour vertex nearest the cursor → a Tron
+    // staircase), trailing light, and fade near the pointer or when the cursor leaves.
+    const ptr = state.pointer
+    let agents = gridAgentStates.get(config)
+    if (!agents) {
+      agents = []
+      gridAgentStates.set(config, agents)
+    }
+    const clampR = (r: number) => Math.max(0, Math.min(ROWS, r))
+    const clampC = (c: number) => Math.max(0, Math.min(COLS, c))
+    const toVertex = (x: number, y: number) => ({
+      r: clampR(Math.round((y / H / (1 + 2 * MARGIN) + MARGIN / (1 + 2 * MARGIN)) * ROWS)),
+      c: clampC(Math.round((x / W / (1 + 2 * MARGIN) + MARGIN / (1 + 2 * MARGIN)) * COLS))
+    })
+    const disp = (r: number, c: number) => pos[clampR(r) * STRIDE + clampC(c)]!
+    const baseToCursor = (r: number, c: number) => {
+      if (!ptr) return Number.POSITIVE_INFINITY
+      const b = vertBasePos(r, c)
+      return Math.hypot(b.x - ptr.x, b.y - ptr.y)
+    }
+    const baseToCenter = (r: number, c: number) => {
+      const b = vertBasePos(r, c)
+      return Math.hypot(b.x - GX, b.y - GY)
+    }
+    const CELL = W / COLS
+
+    // spawn — an electron leaves the electricity arc FACING the cursor (so it flows outward
+    // toward the pointer, never across the harness interior). Only while the pointer is
+    // active and clear of the ring; few + slow.
+    const emitters = state.emitters
+    if (ptr?.active && agents.length < 7 && baseToCursor(toVertex(GX, GY).r, toVertex(GX, GY).c) > RING_R * 0.7) {
+      if (Math.random() < 0.15) {
+        let ox = GX
+        let oy = GY
+        const cAng = Math.atan2(ptr.y - GY, ptr.x - GX)
+        if (emitters && emitters.length > 0) {
+          // pick the emitter whose direction from the ring best faces the cursor
+          let best = emitters[0]!
+          let bd = Number.POSITIVE_INFINITY
+          for (const e of emitters) {
+            let diff = Math.abs(Math.atan2(e.y - GY, e.x - GX) - cAng) % (Math.PI * 2)
+            if (diff > Math.PI) diff = Math.PI * 2 - diff
+            if (diff < bd) {
+              bd = diff
+              best = e
+            }
+          }
+          ox = best.x
+          oy = best.y
+        } else {
+          ox = GX + Math.cos(cAng) * RING_R
+          oy = GY + Math.sin(cAng) * RING_R
+        }
+        const sv = toVertex(ox, oy)
+        agents.push({ r: sv.r, c: sv.c, nr: sv.r, nc: sv.c, tp: 1, life: 1, trail: [] })
+      }
+    }
+
+    ctx.lineCap = 'round'
+    for (let i = agents.length - 1; i >= 0; i--) {
+      const ag = agents[i]!
+      ag.tp += 0.07
+      if (ag.tp >= 1) {
+        ag.tp -= 1
+        ag.trail.push({ r: ag.r, c: ag.c })
+        if (ag.trail.length > 14) ag.trail.shift()
+        ag.r = ag.nr
+        ag.c = ag.nc
+        const back = ag.trail[ag.trail.length - 1]
+        const cands = [
+          { r: ag.r - 1, c: ag.c },
+          { r: ag.r + 1, c: ag.c },
+          { r: ag.r, c: ag.c - 1 },
+          { r: ag.r, c: ag.c + 1 }
+        ].filter(
+          (v) =>
+            v.r >= 0 &&
+            v.r <= ROWS &&
+            v.c >= 0 &&
+            v.c <= COLS &&
+            !(back && v.r === back.r && v.c === back.c) &&
+            // never step INSIDE the ring — electrons stay outside the harness metal
+            baseToCenter(v.r, v.c) >= RING_R * 0.98
+        )
+        let best = cands[0] ?? { r: ag.r, c: ag.c }
+        let bd = Number.POSITIVE_INFINITY
+        for (const v of cands) {
+          const d = baseToCursor(v.r, v.c)
+          if (d < bd) {
+            bd = d
+            best = v
+          }
+        }
+        ag.nr = best.r
+        ag.nc = best.c
+      }
+      // fade: steady decay, faster once it reaches the pointer or the cursor leaves
+      const reached = ptr ? baseToCursor(ag.r, ag.c) < CELL * 1.2 : true
+      ag.life -= reached || !ptr?.active ? 0.08 : 0.01
+      if (ag.life <= 0) {
+        agents.splice(i, 1)
+        continue
+      }
+      const a01 = Math.max(0, Math.min(1, ag.life))
+      const p0 = disp(ag.r, ag.c)
+      const p1 = disp(ag.nr, ag.nc)
+      const hx = p0.x + (p1.x - p0.x) * ag.tp
+      const hy = p0.y + (p1.y - p0.y) * ag.tp
+      // comet tail — smoothly fades and thins toward the end, brightest at the electron head
+      const trailPts = [{ r: ag.r, c: ag.c }, ...ag.trail.slice().reverse()]
+      let prevx = hx
+      let prevy = hy
+      for (let s2 = 0; s2 < trailPts.length; s2++) {
+        const tv = trailPts[s2]!
+        const dp = disp(tv.r, tv.c)
+        const frac = s2 / trailPts.length // 0 at head, →1 at tail
+        ctx.strokeStyle = withAlpha(ink, a01 * (1 - frac) * (1 - frac) * 0.7)
+        ctx.lineWidth = 1.8 * (1 - frac) + 0.2
+        ctx.beginPath()
+        ctx.moveTo(prevx, prevy)
+        ctx.lineTo(dp.x, dp.y)
+        ctx.stroke()
+        prevx = dp.x
+        prevy = dp.y
+      }
+      // the electron: bright core + soft halo
+      ctx.globalAlpha = 1
+      ctx.fillStyle = withAlpha(ink, a01 * 0.28)
+      ctx.beginPath()
+      ctx.arc(hx, hy, 3.4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = withAlpha(ink, a01)
+      ctx.beginPath()
+      ctx.arc(hx, hy, 1.6, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
 
   // ── Draw particle births (fabric emergence → thought → particle) ──────────
   // Each birth animates in 3 phases: illuminate (0–40%), matrix chars (30–100%),
@@ -1177,13 +1453,18 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     ctx.save()
     for (let fi = 0; fi < PULSE_FRONTS.length; fi++) {
       const f = PULSE_FRONTS[fi]!
-      const wf = age * f.speed
+      const wf = age * f.speed * pulseReach
       if (wf < 0 || wf - f.sigma > maxScreen) continue
 
       const innerR = Math.max(0, wf - f.sigma)
       const outerR = wf + f.sigma
       const color = cp.frontColors[fi]!
-      const alpha = cp.life * 0.14 * (1 - fi * 0.03) * (cp.intensity ?? 1)
+      // Light mode: the wave is dark ink on a light bg — needs more alpha to be seen.
+      const frontBase = isLightTheme() ? 0.2 : 0.14
+      // Dark: white ink blows out at full life, so cap the early (powerful) peak while
+      // leaving the lower-life tail — which reads fine — untouched. Light stays uncapped.
+      const lifeForAlpha = isLightTheme() ? cp.life : Math.min(cp.life, 0.6)
+      const alpha = lifeForAlpha * frontBase * (1 - fi * 0.03) * (cp.intensity ?? 1)
 
       const grad = ctx.createRadialGradient(cp.cx, cp.cy, innerR, cp.cx, cp.cy, outerR)
       grad.addColorStop(0, withAlpha(color, 0))
@@ -1202,9 +1483,10 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // Halo brightens near ring edge as fabric curves inward — only when gravity fold is active.
   // Without a ring or with gravityMultiplier=0 this would draw an unwanted phantom glow circle.
   if (rings.length > 0 && settleProgress > 0.05 && (config.gravityMultiplier ?? 1) > 0) {
-    const g = ctx.createRadialGradient(CX, CY, RING_R * 0.7, CX, CY, RING_R * 1.4)
+    const g = ctx.createRadialGradient(GX, GY, RING_R * 0.7, GX, GY, RING_R * 1.4)
+    const haloPeak = (isLightTheme() ? 0.18 : 0.06) * settleProgress
     g.addColorStop(0, fgAt(0))
-    g.addColorStop(0.5, fgAt(0.04 * settleProgress))
+    g.addColorStop(0.5, fgAt(haloPeak))
     g.addColorStop(1, fgAt(0))
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)

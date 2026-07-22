@@ -42,6 +42,58 @@ function drawGitBranchGlyph(ctx: CanvasRenderingContext2D, cx: number, cy: numbe
   ctx.restore()
 }
 
+/**
+ * "Fabric of the universe" backdrop: a gently warped space-grid mesh drawn behind the
+ * whole scene, always low-alpha so the figures and sphere read on top. `turbulence` scales
+ * the warp amplitude + speed — the agents' chaotic scene gets more than the humans' calm one.
+ */
+export function drawUniverseFabric(
+  ctx: CanvasRenderingContext2D,
+  colors: ThemeColors,
+  elapsedMs: number,
+  w: number,
+  h: number,
+  reducedMotion = false,
+  turbulence = 1
+) {
+  const t = reducedMotion ? 0 : (elapsedMs / 1000) * turbulence
+  const amp = 3 * turbulence
+  ctx.save()
+
+  const cols = 9
+  const rows = 11
+  const cw = w / cols
+  const ch = h / rows
+  const warp = (gx: number, gy: number): Point => ({
+    x: gx * cw + Math.sin(gy * 0.6 + t * 0.7) * amp,
+    y: gy * ch + Math.cos(gx * 0.5 + t * 0.5) * amp
+  })
+
+  // mutedForeground (not border) — border is near-black in the dark theme and vanishes on
+  // the dark card, leaving only the stars; mutedForeground reads faintly in both themes.
+  ctx.strokeStyle = colors.mutedForeground
+  ctx.lineWidth = 0.6
+  ctx.globalAlpha = 0.22
+  for (let r = 0; r <= rows; r++) {
+    ctx.beginPath()
+    for (let c = 0; c <= cols; c++) {
+      const p = warp(c, r)
+      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
+  for (let c = 0; c <= cols; c++) {
+    ctx.beginPath()
+    for (let r = 0; r <= rows; r++) {
+      const p = warp(c, r)
+      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
 export type MainSphereVariant = 'normal' | 'light-speed' | 'protected'
 
 /**
@@ -182,7 +234,7 @@ export function drawMainSphere(
     ctx.strokeStyle = colors.destructive
     ctx.lineWidth = Math.max(1.5, radius * 0.025)
     ctx.lineCap = 'round'
-    ctx.globalAlpha = 0.4 + crackPulse * 0.6
+    ctx.globalAlpha = 0.28 + crackPulse * 0.42
 
     for (const crack of SPHERE_CRACKS) {
       const growth = 0.35 + 0.65 * ((Math.sin((crackTime + crack.phase) * Math.PI * 2) + 1) / 2)
@@ -307,9 +359,12 @@ export const ROBOT_FIGURE_HEIGHT_UNITS = 32
 export const TWO_ERAS_FIGURE_HEIGHT = 96
 
 /**
- * Stick figure with an animated throwing arm: cocked elbow during windup straightens
- * into a full-extension whip at release, with a slight forward lunge as the arm
- * extends — reads as an actual throwing motion, not a hinge swinging on a fixed pivot.
+ * A fuller archer than a stick figure — filled body silhouette (tapered torso), a head
+ * with a hood crest, and jointed thigh→shin legs in a slight stance — with the SAME
+ * animated throwing arm as before. The arm geometry (shoulder→elbow→hand) is byte-for-byte
+ * the old math, so the arrow still tracks `getHandPosition` exactly; only the body around
+ * it got sophisticated. Head-top (y-26·s) and feet (y+10·s) are unchanged, so the figure's
+ * unit height (HUMAN_FIGURE_HEIGHT_UNITS) still holds.
  */
 export function drawHuman(
   ctx: CanvasRenderingContext2D,
@@ -319,42 +374,190 @@ export function drawHuman(
   colors: ThemeColors,
   pose: ThrowPose
 ) {
+  const s = scale
   ctx.save()
-  ctx.strokeStyle = colors.foreground
-  ctx.lineWidth = 2.4 * scale
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
+  const headY = y - 22 * s
+  const headR = 4.2 * s
+  const shoulderY = y - 15 * s
+  const hipY = y - 3 * s
+  const shoulderHalf = 4.6 * s
+  const hipHalf = 3 * s
+
+  // --- legs (behind torso): thigh → knee → foot, mirrored into a slight stance
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.6 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.moveTo(x + dir * hipHalf * 0.55, hipY)
+    ctx.lineTo(x + dir * (hipHalf + 1.4 * s), y + 3 * s) // knee
+    ctx.lineTo(x + dir * 6 * s, y + 10 * s) // foot
+    ctx.stroke()
+  }
+
+  // --- torso silhouette: tapered shoulders → waist, filled for body mass
   ctx.beginPath()
-  ctx.arc(x, y - 22 * scale, 4 * scale, 0, Math.PI * 2)
+  ctx.moveTo(x - shoulderHalf, shoulderY)
+  ctx.quadraticCurveTo(x - shoulderHalf * 1.05, (shoulderY + hipY) / 2, x - hipHalf, hipY)
+  ctx.lineTo(x + hipHalf, hipY)
+  ctx.quadraticCurveTo(x + shoulderHalf * 1.05, (shoulderY + hipY) / 2, x + shoulderHalf, shoulderY)
+  ctx.closePath()
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.2 * s
   ctx.stroke()
 
-  line(ctx, x, y - 18 * scale, x, y - 4 * scale)
+  // --- neck
+  line(ctx, x, headY + headR * 0.6, x, shoulderY)
 
-  // This is the draw arm — cocked back during windup (bowstring pulled to the cheek),
-  // whipping forward through release (string and arrow leaving the hand together).
-  const shoulder = throwShoulder(x, y, scale, pose.angle, pose.bend)
+  // --- head (filled) + a hood/hair crest across the crown
+  ctx.beginPath()
+  ctx.arc(x, headY, headR, 0, Math.PI * 2)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.lineWidth = 2.2 * s
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(x, headY, headR, Math.PI * 1.1, Math.PI * 1.9)
+  ctx.lineWidth = 2.8 * s
+  ctx.stroke()
+
+  // --- draw arm (animated) — UNCHANGED geometry so the arrow tracks getHandPosition.
+  const shoulder = throwShoulder(x, y, s, pose.angle, pose.bend)
   const elbowAngle = pose.angle - ELBOW_BEND_MAX * pose.bend
   const elbow = {
-    x: shoulder.x + Math.cos(elbowAngle) * ARM_LENGTH * 0.55 * scale,
-    y: shoulder.y + Math.sin(elbowAngle) * ARM_LENGTH * 0.55 * scale
+    x: shoulder.x + Math.cos(elbowAngle) * ARM_LENGTH * 0.55 * s,
+    y: shoulder.y + Math.sin(elbowAngle) * ARM_LENGTH * 0.55 * s
   }
   const hand = {
-    x: shoulder.x + Math.cos(pose.angle) * ARM_LENGTH * scale,
-    y: shoulder.y + Math.sin(pose.angle) * ARM_LENGTH * scale
+    x: shoulder.x + Math.cos(pose.angle) * ARM_LENGTH * s,
+    y: shoulder.y + Math.sin(pose.angle) * ARM_LENGTH * s
   }
-  // Shoulder->elbow->hand as ONE continuous path (not two separate `line()` calls) so
-  // the elbow renders as a single clean round join, not two overlapping round line-caps
-  // stacking into a blob — that double-cap overlap is what read as "undefined" at a
-  // sharply bent elbow during windup.
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.4 * s
   ctx.beginPath()
   ctx.moveTo(shoulder.x, shoulder.y)
   ctx.lineTo(elbow.x, elbow.y)
   ctx.lineTo(hand.x, hand.y)
   ctx.stroke()
+  // hand knob at the end of the draw arm
+  ctx.beginPath()
+  ctx.arc(hand.x, hand.y, 1.5 * s, 0, Math.PI * 2)
+  ctx.fillStyle = colors.foreground
+  ctx.fill()
 
-  line(ctx, x, y - 4 * scale, x - 6 * scale, y + 10 * scale)
-  line(ctx, x, y - 4 * scale, x + 6 * scale, y + 10 * scale)
+  ctx.restore()
+}
+
+/** A workstation's monitor-top point — where a "commit" leaves the desk toward main. */
+export function getWorkstationEmitPoint(x: number, y: number, scale: number): Point {
+  return { x, y: y - 2.5 * scale }
+}
+
+/**
+ * A seated human coding: only the HEAD is visible above a forward-facing monitor on a
+ * stand, code lines glowing on the screen, a blinking caret + a gentle typing bob when
+ * `active`. The alternative to `drawHuman`'s standing archer — same head language
+ * (filled circle + hood crest) so the two read as the same person, just sat down.
+ */
+export function drawWorkstation(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  phase: number,
+  active: boolean,
+  headphones = false
+) {
+  const s = scale
+  ctx.save()
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+
+  const mw = 22 * s
+  const mh = 13 * s
+  const mx = x - mw / 2
+  const my = y - 2.5 * s
+
+  // --- head (drawn first, behind the monitor) with a hood crest + neck, gently bobbing
+  const bob = active ? Math.sin(phase * 5) * 0.5 * s : 0
+  const hy = y - 8 * s + bob
+  const hr = 4.2 * s
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  line(ctx, x, hy + hr, x, my + 1 * s) // neck disappears behind the screen's top edge
+  ctx.beginPath()
+  ctx.arc(x, hy, hr, 0, Math.PI * 2)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.stroke()
+  // hood/hair hint — a thin arc across the crown, not a heavy cap
+  ctx.beginPath()
+  ctx.arc(x, hy, hr, Math.PI * 1.12, Math.PI * 1.88)
+  ctx.lineWidth = 1.5 * s
+  ctx.stroke()
+
+  // --- optional headphones: a band over the crown + a filled ear cup on each side
+  if (headphones) {
+    const bandR = hr + 1.3 * s
+    ctx.strokeStyle = colors.foreground
+    ctx.lineWidth = 1.9 * s
+    ctx.beginPath()
+    ctx.arc(x, hy, bandR, Math.PI, Math.PI * 2) // ear to ear, over the top
+    ctx.stroke()
+    ctx.fillStyle = colors.foreground
+    const cupR = 2 * s
+    ctx.beginPath()
+    ctx.arc(x - bandR, hy, cupR, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(x + bandR, hy, cupR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // --- monitor stand + base
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  line(ctx, x, my + mh, x, my + mh + 3 * s)
+  line(ctx, x - 4 * s, my + mh + 3 * s, x + 4 * s, my + mh + 3 * s)
+
+  // --- screen
+  ctx.beginPath()
+  ctx.roundRect(mx, my, mw, mh, 1.6 * s)
+  ctx.fillStyle = colors.card
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  ctx.stroke()
+
+  // --- code lines on the screen
+  ctx.strokeStyle = colors.mutedForeground
+  ctx.lineWidth = 1.1 * s
+  const codeLines: [number, number][] = [
+    [0.16, 0.62],
+    [0.22, 0.5],
+    [0.16, 0.74]
+  ]
+  for (let i = 0; i < codeLines.length; i++) {
+    const [a, b] = codeLines[i]!
+    const ly = my + mh * (0.28 + i * 0.22)
+    line(ctx, mx + mw * a, ly, mx + mw * b, ly)
+  }
+
+  // --- blinking caret while actively "coding"
+  if (active) {
+    ctx.save()
+    ctx.globalAlpha = (Math.sin(phase * 6) + 1) / 2
+    ctx.strokeStyle = colors.success
+    ctx.lineWidth = 1.4 * s
+    const cy0 = my + mh * 0.5
+    line(ctx, mx + mw * 0.78, cy0 - 1.6 * s, mx + mw * 0.78, cy0 + 1.6 * s)
+    ctx.restore()
+  }
 
   ctx.restore()
 }
@@ -499,45 +702,105 @@ export function drawRobot(
   colors: ThemeColors,
   hatchOpen = 0
 ) {
+  const s = scale
   ctx.save()
-  const w = 14 * scale
-  const h = 10 * scale
+  ctx.lineJoin = 'round'
+  const w = 14 * s
+  const h = 10 * s
+  const headTop = y - h / 2 - 1 * s
 
+  // --- antenna + glowing sensor tip (with a faint pulse ring)
   ctx.strokeStyle = colors.foreground
-  ctx.lineWidth = 1.4 * scale
-  line(ctx, x, y - h / 2 - 6 * scale, x, y - h / 2 - 1 * scale)
-  ctx.beginPath()
-  ctx.arc(x, y - h / 2 - 6 * scale, 1.2 * scale, 0, Math.PI * 2)
-  ctx.fillStyle = colors.foreground
-  ctx.fill()
-
-  ctx.beginPath()
-  ctx.roundRect(x - w / 2, y - h / 2 - 1 * scale, w, h, 2 * scale)
-  ctx.fillStyle = colors.background
-  ctx.fill()
-  ctx.stroke()
-
+  ctx.lineWidth = 1.4 * s
+  line(ctx, x, y - h / 2 - 6 * s, x, headTop)
   ctx.fillStyle = colors.destructive
   ctx.beginPath()
-  ctx.arc(x - w * 0.22, y - h * 0.02, 1.3 * scale, 0, Math.PI * 2)
+  ctx.arc(x, y - h / 2 - 6 * s, 1.6 * s, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.save()
+  ctx.globalAlpha = 0.4
+  ctx.strokeStyle = colors.destructive
+  ctx.lineWidth = 0.8 * s
+  ctx.beginPath()
+  ctx.arc(x, y - h / 2 - 6 * s, 2.8 * s, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  // --- side sensor pods (ears), drawn under the head so the head frame overlaps them
+  ctx.fillStyle = colors.background
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.roundRect(x + (dir * w) / 2 - (dir === 1 ? -0.4 * s : 1.2 * s), y - h * 0.18, 1.6 * s, h * 0.42, 0.5 * s)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // --- head chassis
+  ctx.beginPath()
+  ctx.roundRect(x - w / 2, headTop, w, h, 2.5 * s)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.4 * s
+  ctx.stroke()
+
+  // --- visor: a glowing bar across the eyes with two brighter cores
+  const visorY = y - h * 0.05
+  ctx.save()
+  ctx.globalAlpha = 0.9
+  ctx.fillStyle = colors.destructive
+  ctx.beginPath()
+  ctx.roundRect(x - w * 0.3, visorY - 1.4 * s, w * 0.6, 2.8 * s, 1.2 * s)
+  ctx.fill()
+  ctx.restore()
+  ctx.fillStyle = colors.background
+  ctx.beginPath()
+  ctx.arc(x - w * 0.15, visorY, 0.7 * s, 0, Math.PI * 2)
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(x + w * 0.22, y - h * 0.02, 1.3 * scale, 0, Math.PI * 2)
+  ctx.arc(x + w * 0.15, visorY, 0.7 * s, 0, Math.PI * 2)
   ctx.fill()
 
+  // --- neck
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.2 * s
+  line(ctx, x, headTop + h, x, y + h / 2)
+
+  // Body chassis — bodyY / bodyH UNCHANGED so getRobotBodyCenter (y + 13·s) still holds.
   const bodyW = w * 1.05
   const bodyH = h * 1.6
   const bodyY = y + h / 2
 
+  // --- shoulder pauldrons flanking the chassis top
+  ctx.fillStyle = colors.background
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.1 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.roundRect(
+      x + (dir * bodyW) / 2 - (dir === 1 ? -0.3 * s : 2.4 * s),
+      bodyY + 0.5 * s,
+      2.7 * s,
+      bodyH * 0.42,
+      1 * s
+    )
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // --- chassis fill
   ctx.beginPath()
-  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 1.5 * scale)
+  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
   ctx.fillStyle = colors.background
   ctx.fill()
 
+  // --- launch bay (unchanged behavior): glowing bay + door seams when hatch open
   if (hatchOpen > 0) {
     ctx.save()
     ctx.beginPath()
-    ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 1.5 * scale)
+    ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
     ctx.clip()
 
     ctx.globalAlpha = hatchOpen
@@ -549,16 +812,36 @@ export function drawRobot(
     const seamGap = hatchOpen * bodyW * 0.32
     ctx.globalAlpha = 1
     ctx.strokeStyle = colors.foreground
-    ctx.lineWidth = Math.max(1, scale * 0.6)
+    ctx.lineWidth = Math.max(1, s * 0.6)
     line(ctx, x - seamGap, bodyY, x - seamGap, bodyY + bodyH)
     line(ctx, x + seamGap, bodyY, x + seamGap, bodyY + bodyH)
     ctx.restore()
+  } else {
+    // Closed chassis: a panel seam + a glowing reactor core (skipped while the bay is lit)
+    ctx.save()
+    ctx.globalAlpha = 0.45
+    ctx.strokeStyle = colors.foreground
+    ctx.lineWidth = 0.8 * s
+    line(ctx, x - bodyW * 0.3, bodyY + bodyH * 0.3, x + bodyW * 0.3, bodyY + bodyH * 0.3)
+    ctx.restore()
+    ctx.fillStyle = colors.destructive
+    ctx.beginPath()
+    ctx.arc(x, bodyY + bodyH * 0.62, 1.6 * s, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.save()
+    ctx.globalAlpha = 0.35
+    ctx.fillStyle = colors.destructive
+    ctx.beginPath()
+    ctx.arc(x, bodyY + bodyH * 0.62, 3 * s, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
   }
 
+  // --- chassis outline (over everything)
   ctx.strokeStyle = colors.foreground
-  ctx.lineWidth = 1.4 * scale
+  ctx.lineWidth = 1.4 * s
   ctx.beginPath()
-  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 1.5 * scale)
+  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
   ctx.stroke()
 
   ctx.restore()
