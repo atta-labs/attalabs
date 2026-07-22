@@ -30,7 +30,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <TopBar
           logo={
             <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Agentic Engineering', 'Harness']} />
+              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
             </NextLink>
           }
           links={links}

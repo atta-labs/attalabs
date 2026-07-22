@@ -38,9 +38,9 @@ export function ProtectedSection() {
           accent on the key phrase) so both sections match and the whole thing fits 100vh. */}
       <Heading
         level={2}
-        className='max-w-[760px] text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
+        className='max-w-[760px] text-balance text-center font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
       >
-        Vinaya — the <span className='rounded-lg bg-accent px-2'>ultimate branch protection</span>.
+        Vinaya — Ship AI-generated code without giving up control
       </Heading>
 
       {/* Card sized so the ANIMATION is the main character: a big canvas on the left, a

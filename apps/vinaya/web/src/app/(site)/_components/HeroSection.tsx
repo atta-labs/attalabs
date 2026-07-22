@@ -69,7 +69,7 @@ export function HeroSection() {
         level={1}
         className='max-w-[760px] text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
       >
-        Without governance, scale wins — and quality loses.
+        AI agents move fast. Your standards should not disappear.
       </Heading>
 
       {/* A DEFINITE-width grid (max-w + w-full) with two `minmax(0,1fr)` tracks — equal

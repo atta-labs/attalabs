@@ -70,9 +70,10 @@ export function HeroFabric({
       const mRect = centerRef.current?.getBoundingClientRect()
       const cx = mRect ? mRect.left + mRect.width / 2 - cRect.left : w / 2
       const cy = mRect ? mRect.top + mRect.height / 2 - cRect.top : h / 2
-      // Shadow hugs the harness: outer ring radius (ringBox/2 × 0.93, matching
-      // HarnessStructure's rOut) + 25px. Falls back to viewport-relative if no ring box.
-      const R = mRect ? (mRect.width / 2) * 0.93 + 25 : Math.min(w, h) * 0.44
+      // Shadow sits just INSIDE the harness: outer ring radius (ringBox/2 × 0.93, matching
+      // HarnessStructure's rOut) − 20px, so it reads slightly smaller than the metal ring.
+      // Falls back to viewport-relative if no ring box.
+      const R = mRect ? (mRect.width / 2) * 0.93 - 20 : Math.min(w, h) * 0.44
 
       const recentEvents: BgState['recentEvents'] = []
       if (fire.current) {

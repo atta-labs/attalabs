@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@atta/ui/components'
-import { Heading } from '@atta/ui/shared'
+import { Heading, Text } from '@atta/ui/shared'
 import { ArrowDown, GitBranch } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { HarnessStructure } from './HarnessStructure'
@@ -146,15 +146,19 @@ function EmblemInner() {
       <HeroFabric centerRef={ringBoxRef} gravity={gravity} pulseKey={pulseKey} />
 
       <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-6 text-center'>
-        <Heading
-          level={1}
-          className='text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl'
-        >
-          Sustainable software development
-          <br />
-          for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
-        </Heading>
-
+        <div className='flex flex-col items-center justify-center gap-3'>
+          <Heading
+            level={1}
+            className='text-balance font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl'
+          >
+            Sustainable software development
+            <br />
+            for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
+          </Heading>
+          <Text className='text-balance font-sans text-xl leading-tight font-extrabold tracking-tight text-foreground/70'>
+            Execution governance for software teams.
+          </Text>
+        </div>
         <div ref={ringBoxRef} className='relative' style={{ width: ringSize, height: ringSize }}>
           {/* main — scales in at the center; the columns clamp onto it. */}
           <div className='absolute inset-0 flex items-center justify-center' style={{ opacity: 0.9 }}>
