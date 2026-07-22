@@ -1,44 +1,33 @@
-import { ArrowDown, ClipboardCheck, FlaskConical, GitBranch, type LucideIcon, Users } from 'lucide-react'
-import { Claude, Google, Grok, OpenAI } from '@lobehub/icons'
-import { siGithub, siJira, siLinear } from 'simple-icons'
-import type { ComponentType } from 'react'
+import { ArrowDown, ClipboardCheck, FlaskConical, GitBranch, type LucideIcon, Sparkles, Users } from 'lucide-react'
+import { siClaude, siGithub, siGoogle, siJira, siLinear, siOpenai } from 'simple-icons'
 import { Badge, Card, CardContent } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { EnergyFieldBg } from './EnergyFieldBg'
 import { HeroFabric } from './hero-canvas/HeroFabric'
 import { ScrollButton } from './ScrollButton'
 
-// AI coding agents: @lobehub/icons full-color logos — colored AND dark-mode-safe, and the
-// brand colors live inside that package (not our source), so the forbidden-colors gate stays
-// happy. Google's mark stands in for Google Antigravity.
-// Coloured where the brand actually has colour (Claude coral, Google multicolour). OpenAI
-// and Grok are monochrome black marks — their `.Color` is black and vanishes on the dark
-// card, so use the base (currentColor → foreground) to stay visible.
-const LOBE_ICON: Record<string, ComponentType<{ size?: number }>> = {
-  Codex: OpenAI,
-  'Claude Code': Claude.Color,
-  Grok,
-  Antigravity: Google.Color
-}
-
-// Project tools: simple-icons, monochrome (currentColor) — theme-correct in light + dark.
+// Brand marks — simple-icons path strings rendered monochrome (currentColor): theme-correct
+// in light + dark, and data-only (no icon-library runtime in the bundle). Antigravity uses
+// Google's mark. Grok has no simple-icon, so it falls back to a lucide glyph below.
 const BRAND_PATH: Record<string, string> = {
   Jira: siJira.path,
   Linear: siLinear.path,
-  'GitHub Issues': siGithub.path
+  'GitHub Issues': siGithub.path,
+  Codex: siOpenai.path,
+  'Claude Code': siClaude.path,
+  Antigravity: siGoogle.path
 }
 
-// Methods aren't brands → themed lucide glyph.
+// Methods (and Grok, which has no brand mark) → themed lucide glyph.
 const METHOD_ICON: Record<string, LucideIcon> = {
   TDD: FlaskConical,
   BDD: ClipboardCheck,
   'Trunk-based development': GitBranch,
-  'Pair programming': Users
+  'Pair programming': Users,
+  Grok: Sparkles
 }
 
 function ToolIcon({ tool }: { tool: string }) {
-  const Lobe = LOBE_ICON[tool]
-  if (Lobe) return <Lobe size={20} />
   const path = BRAND_PATH[tool]
   if (path) {
     return (

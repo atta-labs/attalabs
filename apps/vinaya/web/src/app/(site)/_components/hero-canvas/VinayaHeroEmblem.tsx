@@ -171,7 +171,7 @@ function EmblemInner() {
         </div>
         <div ref={ringBoxRef} className='relative' style={{ width: ringSize, height: ringSize }}>
           {/* main — scales in at the center; the columns clamp onto it. */}
-          <div className='absolute inset-0 flex items-center justify-center' style={{ opacity: 0.9 }}>
+          <div className='absolute inset-0 flex items-center justify-center opacity-90'>
             <div
               className={`transition-all duration-700 ease-out ${coreRevealed ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
             >

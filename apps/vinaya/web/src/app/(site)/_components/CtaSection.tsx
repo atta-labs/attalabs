@@ -7,10 +7,11 @@ import Link from 'next/link'
 // read as the closing summary before the "pick a door" cards.
 const STAGES = ['PLAN', 'BRIEF', 'BUILD', 'REVIEW', 'VERIFY', 'MERGE', 'ARCHIVE']
 
-// Final section — three destination cards, each with a reason to go there:
+// Final section — three destination cards, each with a reason to go there, each pointing at a
+// route that actually ships:
 //   • the Harness → understand the model
 //   • the docs    → evaluate the rules
-//   • the roadmap → follow the build (honest third route while install isn't available)
+//   • the Studio  → see the real build (live iterations/tasks) while install isn't available
 const DESTINATIONS = [
   {
     title: 'UNDERSTAND THE HARNESS',
@@ -26,9 +27,9 @@ const DESTINATIONS = [
   },
   {
     title: 'FOLLOW THE BUILD',
-    body: 'See the next milestone and what Vinaya is becoming.',
-    label: 'View the roadmap',
-    href: '/roadmap'
+    body: 'See how the work is governed, iteration by iteration.',
+    label: 'Open the Studio',
+    href: '/the-studio'
   }
 ]
 
