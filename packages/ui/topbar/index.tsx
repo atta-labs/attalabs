@@ -5,6 +5,7 @@ import { SignInButton, UserButton, useUser } from '@atta/auth'
 import { LogIn, Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Button as BasicButton } from '../libraries/basic/components/interactive/button'
+import { ChromeFrame as BasicChromeFrame } from '../libraries/basic/components/chrome/chrome-frame'
 import { useComponents } from '../lib/library-provider'
 import { Logo } from '../libraries/shared/components/display/logo'
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../libraries/basic/installed/sheet'
@@ -96,6 +97,10 @@ function TopBarWithAuth({
   const pathname = usePathname()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
+  // Library-resolved chrome edge: retro floats (Card + margin), the flush
+  // libraries render a full-width bar. Falls back to basic's flush frame while
+  // the runtime library import is still resolving.
+  const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -105,8 +110,8 @@ function TopBarWithAuth({
   const defaultLogo = buildDefaultLogo(logoUrl, logoText, logoTagline)
 
   return (
-    <nav className='w-full border-b border-border'>
-      <div className='relative flex h-14 w-full items-center px-6'>
+    <nav className='w-full'>
+      <ChromeFrame variant='topbar'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (
@@ -223,7 +228,7 @@ function TopBarWithAuth({
             </SheetContent>
           </Sheet>
         </div>
-      </div>
+      </ChromeFrame>
     </nav>
   )
 }
@@ -242,14 +247,18 @@ function TopBarNoAuth({
   const pathname = usePathname()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
+  // Library-resolved chrome edge: retro floats (Card + margin), the flush
+  // libraries render a full-width bar. Falls back to basic's flush frame while
+  // the runtime library import is still resolving.
+  const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
   const defaultLogo = buildDefaultLogo(logoUrl, logoText, logoTagline)
 
   return (
-    <nav className='w-full border-b border-border'>
-      <div className='relative flex h-14 w-full items-center px-6'>
+    <nav className='w-full'>
+      <ChromeFrame variant='topbar'>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (
@@ -335,7 +344,7 @@ function TopBarNoAuth({
             </Sheet>
           )}
         </div>
-      </div>
+      </ChromeFrame>
     </nav>
   )
 }

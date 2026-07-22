@@ -24,7 +24,6 @@ import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { stripLeadingH1 } from '@atta/aeg-core/docs'
 import type { Doc } from '@atta/aeg-core/docs'
-
 import { StickyDocHeader } from './StickyDocHeader'
 
 export type DocPageProps = {
@@ -127,13 +126,15 @@ const markdownComponents = {
   // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
   // table scrolls inside its own box instead of bleeding past the prose column.
   // `containerClassName` puts the block margin on that scroll wrapper.
-  // `@min-[780px]/tbl:[&_thead_th]:top-12` shifts the pinned header below the ~55px sticky doc
-  // breadcrumb (`StickyDocHeader`, `sticky top-0 z-20`) so it doesn't pin behind
-  // it — the `@min-[780px]/tbl:` container query because the pinned header only
-  // exists once the table's container is wide enough to fit the table (below
-  // that width the table scrolls in its own contained box instead).
+  // `@min-[780px]/tbl:[&_thead_th]:top-13` shifts the pinned header below the
+  // sticky doc breadcrumb (`StickyDocHeader`, `sticky top-0`). `top-13` (52px)
+  // clears the RETRO-floated bar (its `px-2 pt-2` gap + `h-11` content); under a
+  // flush library the bar is only 44px so the header pins ~8px lower than it
+  // strictly needs, but never overlaps — no-overlap in every library beats a
+  // per-library offset here. The `@min-[780px]/tbl:` container query because the
+  // header only pins once the table's container is wide enough to fit the table.
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-12' {...props} />
+    <Table stickyHeader containerClassName='my-6 @min-[780px]/tbl:[&_thead_th]:top-13' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,

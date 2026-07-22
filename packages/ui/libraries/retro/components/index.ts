@@ -8,6 +8,10 @@ export { Badge } from '../installed/badge'
 // hand-written in its wrapper layer, since shadcn ships no code component)
 export { Code, CodeBlock } from '../../basic/components/display/code'
 
+// Chrome — retro's own FLOATING frame (Card + margin); the "detached" look lives
+// here so it never leaks onto the flush libraries.
+export { ChromeFrame } from './chrome/chrome-frame'
+
 // Interactive — Collapsible
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 

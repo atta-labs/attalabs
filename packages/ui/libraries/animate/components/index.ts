@@ -8,6 +8,9 @@ export { Badge } from '../installed/badge'
 // Display — Code falls back to basic (animate-ui has no equivalent; basic's is
 // hand-written in its wrapper layer, since shadcn ships no code component)
 export { Code, CodeBlock } from '../../basic/components/display/code'
+
+// Chrome — falls back to basic's flush frame (animate wants no float).
+export { ChromeFrame } from '../../basic/components/chrome/chrome-frame'
 // Content — motion card
 export {
   Card,

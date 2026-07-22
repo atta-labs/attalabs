@@ -1,7 +1,8 @@
 'use client'
 
+import { ChromeFrame } from '@atta/ui/components'
+import { Text } from '@atta/ui/shared'
 import { useEffect, useState } from 'react'
-import { Flex, Text } from '@atta/ui/shared'
 
 export type StickyDocHeaderProps = {
   title: string
@@ -47,41 +48,47 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
     }
   }, [])
 
+  // Library-resolved sticky breadcrumb bar via `ChromeFrame variant='bar'`: under
+  // the flush libraries it's a `border-b bg-card` strip, under retro it's a
+  // floating Card (border-2 + shadow) with a top gap that matches the topbar's
+  // own float — so the bar reads as chrome in every library instead of a flat
+  // strip jammed under the topbar. The `h-11` content height is fixed; the
+  // markdown table's sticky header clears the retro-floated bar via
+  // `[&_thead_th]:top-13` in DocPage. Fades in once the reader scrolls past the
+  // doc title.
   return (
     <div
-      className={`sticky top-0 z-20 -mx-12 overflow-hidden bg-background/80 px-12 backdrop-blur-md transition-all duration-300 ${
-        isSticky ? 'max-h-20 border-b border-border/40 py-3 opacity-100' : 'max-h-0 py-0 opacity-0 pointer-events-none'
+      className={`sticky top-0 z-20 w-full transition-opacity duration-300 ${
+        isSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
-      <Flex align='center' justify='between' className='w-full'>
-        <Flex align='center' gap={2} className='text-xs font-mono select-none'>
-          {activeHeading ? (
-            <>
-              <Text as='span' className='text-muted-foreground/60'>
-                {title}
-              </Text>
-              <Text as='span' className='text-muted-foreground/30'>
-                /
-              </Text>
-              <Text as='span' className='text-foreground font-semibold truncate max-w-[400px]'>
-                {activeHeading}
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text as='span' className='text-muted-foreground/60 uppercase tracking-wider'>
-                {section}
-              </Text>
-              <Text as='span' className='text-muted-foreground/30'>
-                /
-              </Text>
-              <Text as='span' className='text-foreground font-semibold truncate max-w-[400px]'>
-                {title}
-              </Text>
-            </>
-          )}
-        </Flex>
-      </Flex>
+      <ChromeFrame variant='bar' className='h-11 gap-2 px-4 font-mono text-xs select-none'>
+        {activeHeading ? (
+          <>
+            <Text as='span' className='max-w-[160px] truncate text-muted-foreground/70'>
+              {title}
+            </Text>
+            <Text as='span' className='text-muted-foreground/40'>
+              /
+            </Text>
+            <Text as='span' className='truncate font-semibold text-foreground'>
+              {activeHeading}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text as='span' className='shrink-0 uppercase tracking-wider text-muted-foreground/70'>
+              {section}
+            </Text>
+            <Text as='span' className='text-muted-foreground/40'>
+              /
+            </Text>
+            <Text as='span' className='truncate font-semibold text-foreground'>
+              {title}
+            </Text>
+          </>
+        )}
+      </ChromeFrame>
     </div>
   )
 }

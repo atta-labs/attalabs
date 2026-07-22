@@ -7,7 +7,8 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator
+  BreadcrumbSeparator,
+  ChromeFrame
 } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
@@ -153,146 +154,135 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
     setSelectedLeaf(null)
   }
 
-  return (
-    <div className='flex h-full w-full flex-col overflow-hidden'>
-      <div className='flex shrink-0 items-center justify-between gap-4 border-border border-b px-6 py-3'>
-        {/* Dynamic breadcrumb — depth mirrors drill state (round-4 fix; used
-            to be a static "Home / How it works" string regardless of how
-            deep you'd drilled). Every segment before the last is a real
-            back-navigation control: "The Harness" resets to the overview,
-            the ring segment (when a leaf is selected) drops back to that
-            ring. This replaces the sidebar's old "← Back" button entirely —
-            one back-affordance, not two doing the same job. */}
-        <Breadcrumb>
-          <BreadcrumbList className='font-mono text-xs uppercase tracking-[0.1em]'>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href='/'>Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
+  // Dynamic drill breadcrumb — depth mirrors drill state. Every segment before
+  // the last is a real back-navigation control: "The Harness" resets to the
+  // overview, the ring segment (when a leaf is selected) drops back to that ring.
+  // Lives at the top of the sidebar panel now (was a full-width bar above it).
+  // The trail wraps across up to two rows; a long leaf name line-clamps to two.
+  const drillCrumb = (
+    <Breadcrumb>
+      <BreadcrumbList className='flex-wrap gap-y-0.5 font-mono text-[11px] uppercase tracking-[0.08em] [&_li]:min-w-0'>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href='/'>Home</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          {drilledGroup ? (
+            <BreadcrumbLink asChild className='uppercase'>
+              <button type='button' onClick={handleBack}>
+                The Harness
+              </button>
+            </BreadcrumbLink>
+          ) : (
+            <BreadcrumbPage className='font-bold text-foreground'>The Harness</BreadcrumbPage>
+          )}
+        </BreadcrumbItem>
+        {drilledGroup && (
+          <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              {drilledGroup ? (
-                // `uppercase` reapplied directly: Tailwind Preflight resets
-                // `text-transform` on `<button>` (form-control normalization),
-                // which breaks inheritance from `BreadcrumbList` — the `<a>`
-                // segment above isn't affected since anchors keep it.
+              {selectedLeaf ? (
                 <BreadcrumbLink asChild className='uppercase'>
-                  <button type='button' onClick={handleBack}>
-                    The Harness
+                  <button type='button' onClick={() => setSelectedLeaf(null)}>
+                    {drilledGroup.label}
                   </button>
                 </BreadcrumbLink>
               ) : (
-                <BreadcrumbPage className='font-bold text-foreground'>The Harness</BreadcrumbPage>
+                <BreadcrumbPage className='font-bold text-foreground'>{drilledGroup.label}</BreadcrumbPage>
               )}
             </BreadcrumbItem>
-            {drilledGroup && (
-              <>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  {selectedLeaf ? (
-                    <BreadcrumbLink asChild className='uppercase'>
-                      <button type='button' onClick={() => setSelectedLeaf(null)}>
-                        {drilledGroup.label}
-                      </button>
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage className='font-bold text-foreground'>{drilledGroup.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              </>
-            )}
-            {selectedLeaf && (
-              <>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  {/* The node's NAME, never its full `Action` cell — a
-                      breadcrumb is a trail marker, and ten doctrine rows
-                      carry a whole sentence here (see `shortLabel`). The
-                      untruncated string is one glance away in the panel
-                      title beside it. */}
-                  <BreadcrumbPage className='font-bold text-foreground'>
-                    {shortLabel(humanLabel(selectedLeaf.label))}
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-        <Text as='span' className='hidden font-mono text-muted-foreground text-xs sm:block'>
-          Click a ring to drill in. Click a node for its detail.
-        </Text>
-      </div>
+          </>
+        )}
+        {selectedLeaf && (
+          <>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem className='min-w-0'>
+              <BreadcrumbPage className='line-clamp-2 break-words font-bold text-foreground'>
+                {shortLabel(humanLabel(selectedLeaf.label))}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
+        )}
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
 
+  return (
+    <div className='flex h-full w-full flex-col overflow-hidden'>
       {/* Below `lg` there isn't room for a 340px sidebar next to a legible
           ring — stack instead: `flex-col-reverse` puts the diagram (second
           in DOM) on top and the sidebar (first in DOM) below it, matching
           `lg:flex-row`'s left-sidebar order once there's room. */}
       <div className='flex flex-col-reverse lg:min-h-0 lg:flex-1 lg:flex-row'>
-        <aside className='flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-border border-t bg-card p-6 text-card-foreground lg:w-[340px] lg:border-t-0 lg:border-r'>
-          {selectedLeaf && drilledGroup ? (
-            <LeafPanel
-              node={selectedLeaf}
-              groupKey={drilledGroup.key}
-              readMoreHref={readMoreHrefs[selectedLeaf.id]}
-              viewSourceHref={viewSourceHrefs[selectedLeaf.id]}
-            />
-          ) : (
-            <div className='flex flex-col gap-3'>
-              {/* Sidebar title/tagline — page framing (round-2 wrongly
+        <aside className='flex w-full shrink-0 flex-col text-card-foreground lg:w-[356px]'>
+          <ChromeFrame variant='panel' className='gap-5 p-6'>
+            <div className='border-border/50 border-b pb-4'>{drillCrumb}</div>
+            {selectedLeaf && drilledGroup ? (
+              <LeafPanel
+                node={selectedLeaf}
+                groupKey={drilledGroup.key}
+                readMoreHref={readMoreHrefs[selectedLeaf.id]}
+                viewSourceHref={viewSourceHrefs[selectedLeaf.id]}
+              />
+            ) : (
+              <div className='flex flex-col gap-3'>
+                {/* Sidebar title/tagline — page framing (round-2 wrongly
                   dropped this thinking the top-strip breadcrumb replaced it;
                   the breadcrumb is navigation, this is the page's own
                   title/description, a different element). Switches to the
                   drilled ring's own name once drilled, same as before. */}
-              <Heading level={2} className='font-serif text-card-foreground text-xl'>
-                {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
-              </Heading>
-              <Text size='sm' className={BODY_TEXT}>
-                {drilledGroup ? groupExplanation[drilledGroup.key] : HARNESS_INTRO}
-              </Text>
-              {/* Overview only: the ring legend, outer → center. Once a ring
+                <Heading level={2} className='font-serif text-card-foreground text-xl'>
+                  {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
+                </Heading>
+                <Text size='sm' className={BODY_TEXT}>
+                  {drilledGroup ? groupExplanation[drilledGroup.key] : HARNESS_INTRO}
+                </Text>
+                {/* Overview only: the ring legend, outer → center. Once a ring
                   is drilled the heading/intro above switch to that ring's own
                   name and framing, so the full legend gives way to the one. */}
-              {!drilledGroup && (
-                <div className='mt-1 flex flex-col gap-3.5'>
-                  {legend.map((entry) => (
-                    <div key={entry.name} className='flex flex-col gap-1'>
-                      <Text as='span' size='sm' className='font-sans font-bold text-card-foreground'>
-                        {entry.name}
-                      </Text>
-                      <Text size='sm' className={BODY_TEXT}>
-                        {entry.description}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {/* Drilled ring only: the ring's own members, by full name (the
+                {!drilledGroup && (
+                  <div className='mt-1 flex flex-col gap-3.5'>
+                    {legend.map((entry) => (
+                      <div key={entry.name} className='flex flex-col gap-1'>
+                        <Text as='span' size='sm' className='font-sans font-bold text-card-foreground'>
+                          {entry.name}
+                        </Text>
+                        <Text size='sm' className={BODY_TEXT}>
+                          {entry.description}
+                        </Text>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Drilled ring only: the ring's own members, by full name (the
                   wedges truncate; here they read whole). Derived from
                   `drilledGroup.children` — the same model-derived nodes the
                   diagram paints, never a hardcoded per-ring list, so a doctrine
                   row added or removed shows up here with no page change. Names
                   only, no per-node prose, per the drilled framing above. */}
-              {drilledGroup && (
-                <div className='mt-1 flex flex-col gap-2'>
-                  <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
-                    In this ring — {drilledGroup.children.length}
-                  </Text>
-                  <ol className='flex list-decimal flex-col gap-1 pl-5'>
-                    {drilledGroup.children.map((node) => (
-                      <li key={node.id} className='pl-1 marker:text-muted-foreground'>
-                        <Text as='span' size='sm' className={BODY_TEXT}>
-                          {capitalizeFirst(humanLabel(node.label))}
-                        </Text>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-            </div>
-          )}
+                {drilledGroup && (
+                  <div className='mt-1 flex flex-col gap-2'>
+                    <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
+                      In this ring — {drilledGroup.children.length}
+                    </Text>
+                    <ol className='flex list-decimal flex-col gap-1 pl-5'>
+                      {drilledGroup.children.map((node) => (
+                        <li key={node.id} className='pl-1 marker:text-muted-foreground'>
+                          <Text as='span' size='sm' className={BODY_TEXT}>
+                            {capitalizeFirst(humanLabel(node.label))}
+                          </Text>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <FindingsBanner findings={findings} />
+            <FindingsBanner findings={findings} />
+          </ChromeFrame>
         </aside>
 
         {/* Diagram column: a title row on top, then the ring filling whatever

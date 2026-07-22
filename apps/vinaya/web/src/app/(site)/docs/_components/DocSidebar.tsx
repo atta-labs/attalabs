@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ChromeFrame,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -33,9 +34,11 @@ export function DocSidebar({ nav, pathname }: DocSidebarProps) {
   return (
     <SidebarProvider
       style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex'
+      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 text-sidebar-foreground lg:flex'
     >
-      <DocSidebarNav nav={nav} pathname={pathname} />
+      <ChromeFrame variant='rail'>
+        <DocSidebarNav nav={nav} pathname={pathname} />
+      </ChromeFrame>
     </SidebarProvider>
   )
 }
@@ -90,10 +93,12 @@ function FlatDocItem({ doc, pathname }: { doc: Doc; pathname: string }) {
         size='sm'
         isActive={isActive}
         render={<NextLink variant='unstyled' href={doc.href} />}
+        // The active look is owned by the library's SidebarMenuButton (driven by
+        // `isActive`), so it reads as whatever the active library specifies —
+        // under retro that's its `bg-primary` fill, not basic's sidebar-accent.
+        // The consumer only dims the resting/inactive items via sidebar tokens.
         className={`h-auto min-h-7 py-1 font-sans text-sm font-medium tracking-tight [&>span:last-child]:whitespace-normal [&>span:last-child]:leading-snug ${
-          isActive
-            ? 'text-sidebar-accent-foreground font-semibold'
-            : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
+          isActive ? '' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
         }`}
       >
         <span className='line-clamp-2'>{doc.sidebarTitle ?? doc.title}</span>

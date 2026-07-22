@@ -41,7 +41,7 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
               <NextLink
                 variant='unstyled'
                 href={`/studio/projects/${p.name}`}
-                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1.5 ${
                   isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
