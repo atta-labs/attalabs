@@ -16,11 +16,10 @@
 
 [![Vāda](https://img.shields.io/badge/V%C4%81da-6366F1?style=for-the-badge)](apps/vada-ai/)
 [![Atta](https://img.shields.io/badge/Atta-C8980A?style=for-the-badge)](apps/atta-ai/)
-[![Vitakka](https://img.shields.io/badge/Vitakka-8B5CF6?style=for-the-badge)](apps/vitakka-ai/)
 [![Herald](https://img.shields.io/badge/Herald-E11D48?style=for-the-badge)](apps/herald-ai/)
 [![Vinaya](https://img.shields.io/badge/Vinaya-972E2A?style=for-the-badge)](apps/vinaya/)
 
-![products](https://img.shields.io/badge/products-5-C8980A?style=flat-square)
+![products](https://img.shields.io/badge/products-4-C8980A?style=flat-square)
 ![packages](https://img.shields.io/badge/packages-12-E8C050?style=flat-square)
 ![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&logoColor=white)
 ![Bun](https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white)
@@ -42,12 +41,11 @@ For the canonical naming and ecosystem framing, see
 | Product | Domain | What it is | Status |
 |---------|--------|------------|--------|
 | **[Vāda](apps/vada-ai/)** | `vada.attalabs.dev` | Multi-agent **deliberation engine** — structured debate between AI agents. Standalone product *and* the deliberation layer inside Atta. | 🟢 Live |
-| **[Atta](apps/atta-ai/)** | target `atta.ai` | The **deep-thinking AI** — composed of Vāda + Vitakka + Sati. The flagship consumer product. | 🟡 Not yet deployed |
-| **[Vitakka](apps/vitakka-ai/)** | `vitakka.attalabs.dev` | **Situated-cognition / focus layer.** Standalone *and* inside Atta. | ⚪ Scaffold |
+| **[Atta](apps/atta-ai/)** | target `atta.ai` | The **deep-thinking AI** — the flagship consumer product. | 🟡 Not yet deployed |
 | **[Herald](apps/herald-ai/)** | `herald.attalabs.dev` | **Forensic CV ↔ job-description match** — evidence-based audit reports, not vibes. | 🟢 Active |
 | **[Vinaya](apps/vinaya/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. | 🟠 Bootstrap |
 
-> **Atta** is the deep-thinking consumer product (Vāda + Vitakka + Sati). It lives inside the
+> **Atta** is the deep-thinking consumer product. It lives inside the
 > AttaLabs lab today; when ready it moves to its own domain (target: `atta.ai`).
 
 ---
@@ -56,7 +54,7 @@ For the canonical naming and ecosystem framing, see
 
 `@atta/engine` + `@atta/adapter-langgraph` — the agent-flow **execution substrate**. Compiles
 Agent / Workflow / Team plans and runs them on LangGraph with a multi-vendor cognitive router.
-Powers Vāda today; will power Vitakka and Atta. May be opened up later.
+Powers Vāda today; will power Atta. May be opened up later.
 
 ---
 
@@ -103,7 +101,7 @@ it without implying ownership by Atta-the-product.
 
 ```bash
 bun install                # install the whole workspace
-bun run dev:vada           # or dev:herald · dev:vitakka · dev:atta
+bun run dev:vada           # or dev:herald · dev:atta
 bun run check              # typecheck + lint + format across everything
 ```
 
@@ -120,7 +118,6 @@ attalabs/
 ├─ apps/
 │  ├─ vada-ai/       web · mcp
 │  ├─ atta-ai/       web · mcp
-│  ├─ vitakka-ai/    web (scaffold)
 │  ├─ herald-ai/     web · mobile · mcp
 │  └─ vinaya/        web · cli
 └─ packages/         engine · adapter-langgraph · ui · cms · db · auth · …
