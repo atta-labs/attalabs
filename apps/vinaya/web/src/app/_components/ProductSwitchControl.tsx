@@ -1,12 +1,9 @@
 'use client'
 
 import { Switch } from '@atta/ui/components'
-import { Text } from '@atta/ui/shared'
 import { useRouter } from 'next/navigation'
 
 type Segment = 'portal' | 'studio'
-
-const LABEL = 'font-sans text-xs transition-colors'
 
 /**
  * The switch itself — the active library's own `Switch` (retroui's Radix-flavor
@@ -32,27 +29,22 @@ const LABEL = 'font-sans text-xs transition-colors'
  *     not "you are here". Partially mitigated below: the accessible name
  *     states the current surface outright rather than leaving it to be
  *     inferred from `aria-checked`.
- *  4. The two visible labels are inert `<span>`s, not click targets, and are
- *     not programmatically associated with the control — which is the other
- *     reason the accessible name carries both surface names itself.
+ *  4. There are no visible text labels at all — the switch stands alone, so the
+ *     accessible name below is the ONLY surface-name carrier (it states the
+ *     current surface and the destination outright rather than leaving either
+ *     to be inferred from `aria-checked`).
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
   const isStudio = current === 'studio'
 
   return (
-    <div className='flex items-center gap-2'>
-      <Text as='span' className={`${LABEL} ${isStudio ? 'text-muted-foreground' : 'text-foreground'}`}>
-        Portal
-      </Text>
+    <div className='flex items-center'>
       <Switch
         checked={isStudio}
         onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
         aria-label={isStudio ? 'Currently on Studio. Switch to Portal.' : 'Currently on Portal. Switch to Studio.'}
       />
-      <Text as='span' className={`${LABEL} ${isStudio ? 'text-foreground' : 'text-muted-foreground'}`}>
-        Studio
-      </Text>
     </div>
   )
 }
