@@ -7,7 +7,8 @@ type Segment = 'portal' | 'studio'
 
 /**
  * The switch itself — the active library's own `Switch` (retroui's Radix-flavor
- * paste under `retro`), flanked by its two destination labels.
+ * paste under `retro`), standing alone with no visible text labels (the two
+ * inert `Portal`/`Studio` spans were removed; regression 4 below has the why).
  *
  * This is a client component ONLY because a switch commits by firing
  * `onCheckedChange` rather than by being a link, so navigation has to happen in
