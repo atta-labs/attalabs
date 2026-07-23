@@ -96,6 +96,20 @@ export async function runEject(args: string[], deps: EjectDeps): Promise<number>
 
   const plan = planEject(read.manifest, repo.repoRoot)
 
+  // A recorded path that resolves outside the repo means the manifest is
+  // corrupt or hostile — refuse the whole eject rather than run a partial
+  // destructive pass (Section 10: never a destructive guess). Belt-and-
+  // suspenders with the schema refinement (which already rejects `..` at parse)
+  // and applyEject's per-op containment recheck.
+  if (plan.escapes.length > 0) {
+    console.error('Error: the ownership manifest records paths that resolve OUTSIDE this repo:')
+    for (const p of plan.escapes) console.error(`  ${p}`)
+    console.error(
+      'Refusing to remove anything. This manifest is corrupt or hand-edited — fix vinaya.config.json, then re-run.'
+    )
+    return 1
+  }
+
   process.stdout.write('vinaya eject — the full diff of every removal:\n\n')
   process.stdout.write(`${renderEjectDiff(plan)}\n`)
 

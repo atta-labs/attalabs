@@ -269,4 +269,67 @@ describe('vinaya init product', () => {
     expect(projects).toContain('mobile')
     expect(projects).toContain('vinaya:managed:product-mobile')
   })
+
+  it('rejects a product name with path traversal, writing nothing (security finding 2)', async () => {
+    await runInit(['--yes'], makeDeps())
+    const before = snapshot(root)
+    for (const bad of ['../../evil', 'a/b', '..', 'Mobile', 'has space']) {
+      const rc = await runInitProduct([bad, '--yes'], makeDeps())
+      expect(rc).toBe(2)
+    }
+    expect(snapshot(root)).toEqual(before)
+    expect(existsSync(join(root, 'governance/products'))).toBe(false)
+  })
+})
+
+describe('eject path-traversal safety (security finding 1)', () => {
+  it('refuses a hostile manifest (`..` path) and deletes nothing outside the repo', async () => {
+    // OUTSIDE.txt lives one dir above the repo root; a hostile manifest tries to reach it.
+    const parent = join(tmpdir(), `vinaya-esc-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    mkdirSync(join(parent, 'repo'), { recursive: true })
+    const localRoot = join(parent, 'repo')
+    const outside = join(parent, 'OUTSIDE.txt')
+    writeFileSync(outside, 'must survive')
+    // A `..` path fails the schema refinement → readManifest sees it as corrupt → orphan refuse.
+    writeFileSync(
+      join(localRoot, 'vinaya.config.json'),
+      JSON.stringify({ managed: { version: 1, files: ['../OUTSIDE.txt'], blocks: [], labels: [] } })
+    )
+    const rc = await runEject(['--yes'], {
+      detectRepo: async () => ({ repoRoot: localRoot, owner: 'acme', repo: 'widget' }),
+      confirm: async () => true
+    })
+    expect(rc).toBe(1)
+    expect(existsSync(outside)).toBe(true) // never deleted
+    rmSync(parent, { recursive: true, force: true })
+  })
+})
+
+describe('partial-failure ownership recording (review finding 3)', () => {
+  it('persists the files+blocks manifest before labels, so a label-create throw cannot orphan files', async () => {
+    const throwing: LabelGateway = {
+      async exists() {
+        return false
+      },
+      async create() {
+        throw new Error('gh rate limit')
+      }
+    }
+    let threw = false
+    try {
+      await runInit(['--yes'], makeDeps({ labelGateway: () => throwing }))
+    } catch {
+      threw = true
+    }
+    expect(threw).toBe(true)
+    // files were written AND recorded despite the label failure
+    expect(existsSync(join(root, CHECKS_WORKFLOW_PATH))).toBe(true)
+    const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
+    expect(cfg.managed.files).toContain(CHECKS_WORKFLOW_PATH)
+    // → eject can now clean up (no orphan half-state)
+    const before = snapshot(root)
+    await runEject(['--yes'], ejectDeps())
+    expect(snapshot(root)).not.toEqual(before)
+    expect(existsSync(join(root, CHECKS_WORKFLOW_PATH))).toBe(false)
+  })
 })

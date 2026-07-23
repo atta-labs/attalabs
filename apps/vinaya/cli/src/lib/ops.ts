@@ -17,7 +17,7 @@
 // label is never modified, and no label is ever auto-deleted.
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import type { ManagedBlockRecord, ManagedManifest } from './config.js'
 import { MANAGED_MANIFEST_VERSION } from './config.js'
 
@@ -79,6 +79,21 @@ function renderBlock(op: ManagedBlockOp): string {
 
 function abs(repoRoot: string, relPath: string): string {
   return join(repoRoot, relPath)
+}
+
+/**
+ * Resolve `relPath` under `repoRoot` and return the absolute path ONLY if it
+ * stays inside the repo — never the repo root itself, never anything above it.
+ * Returns null for any escape (`..`, absolute path). This is the runtime half
+ * of the eject-safety guarantee (the schema refinement in config.ts is the
+ * parse-layer half): no fs mutation is ever performed on a path this rejects,
+ * so a malicious/hand-edited manifest can never drive a delete outside the repo.
+ */
+export function containedAbs(repoRoot: string, relPath: string): string | null {
+  const root = resolve(repoRoot)
+  const target = resolve(root, relPath)
+  if (target === root) return null
+  return target === root || target.startsWith(root + sep) ? target : null
 }
 
 function fileContains(repoRoot: string, relPath: string, needle: string): boolean {
@@ -248,16 +263,26 @@ function createHost(repoRoot: string, op: ManagedBlockOp): void {
  * Apply every non-refused entry and return the ownership manifest. Refused
  * (foreign) create-file entries are skipped — never overwritten. Callers that
  * want a hard stop on any refusal must check `plan.hasRefusals` first.
+ *
+ * `onFilesRecorded` is invoked with the files+blocks manifest AFTER every file
+ * and block is on disk but BEFORE any network-bound label creation. The caller
+ * persists it there, so a label-create failure (rate limit, transient gh
+ * error, a racing pre-existing label) can never leave written files with no
+ * manifest recording them — the "orphan half-state" a mid-apply throw would
+ * otherwise cause. Labels are report-only on eject, so a label created just
+ * before a throw being unrecorded is harmless (it is never auto-deleted).
  */
 export async function applyInstall(
   plan: InstallPlan,
   repoRoot: string,
-  labels: LabelGateway
+  labels: LabelGateway,
+  onFilesRecorded?: (m: ManagedManifest) => void
 ): Promise<ManagedManifest> {
   const files: string[] = []
   const blocks: ManagedBlockRecord[] = []
   const createdLabels: string[] = []
 
+  // Pass 1: all filesystem writes (create-file, managed-block) + prints.
   for (const e of plan.entries) {
     switch (e.kind) {
       case 'create-file':
@@ -276,24 +301,31 @@ export async function applyInstall(
         // it is ours, so eject must know to strip it.
         blocks.push({ path: e.op.path, marker: e.op.marker, comment: e.op.comment })
         break
-      case 'create-label':
-        if (!(await labels.exists(e.op.name))) {
-          await labels.create(e.op.name, e.op.color, e.op.description)
-          createdLabels.push(e.op.name)
-        }
-        break
       case 'print':
         process.stdout.write(`${e.op.message}\n`)
         break
     }
   }
 
-  return {
+  // Persist ownership of everything on disk BEFORE any network label call.
+  const base: ManagedManifest = {
     version: MANAGED_MANIFEST_VERSION,
     files: dedupe(files),
     blocks: dedupeBlocks(blocks),
-    labels: dedupe(createdLabels)
+    labels: []
   }
+  onFilesRecorded?.(base)
+
+  // Pass 2: labels (network-bound, create-if-absent).
+  for (const e of plan.entries) {
+    if (e.kind !== 'create-label') continue
+    if (!(await labels.exists(e.op.name))) {
+      await labels.create(e.op.name, e.op.color, e.op.description)
+      createdLabels.push(e.op.name)
+    }
+  }
+
+  return { ...base, labels: dedupe(createdLabels) }
 }
 
 function dedupe(xs: string[]): string[] {
@@ -321,7 +353,12 @@ export type EjectAction =
   | { kind: 'strip-block'; path: string; marker: string; comment: CommentStyle; present: boolean; removesHost: boolean }
   | { kind: 'report-label'; name: string }
 
-export type EjectPlan = { actions: EjectAction[] }
+export type EjectPlan = {
+  actions: EjectAction[]
+  /** recorded paths that resolve OUTSIDE the repo — a corrupt/hostile manifest;
+   *  their presence makes the whole eject refuse (never a partial destructive run) */
+  escapes: string[]
+}
 
 /** Does removing this managed block leave a file vinaya effectively created? */
 function blockStripLeavesEmpty(body: string): boolean {
@@ -354,9 +391,14 @@ function stripBlockFromContent(content: string, marker: string, comment: Comment
  */
 export function planEject(manifest: ManagedManifest, repoRoot: string): EjectPlan {
   const actions: EjectAction[] = []
+  const escapes: string[] = []
 
   for (const b of manifest.blocks) {
-    const p = abs(repoRoot, b.path)
+    const p = containedAbs(repoRoot, b.path)
+    if (p === null) {
+      escapes.push(b.path)
+      continue
+    }
     if (!existsSync(p)) {
       actions.push({
         kind: 'strip-block',
@@ -382,14 +424,19 @@ export function planEject(manifest: ManagedManifest, repoRoot: string): EjectPla
   }
 
   for (const f of manifest.files) {
-    actions.push({ kind: 'delete-file', path: f, present: existsSync(abs(repoRoot, f)) })
+    const p = containedAbs(repoRoot, f)
+    if (p === null) {
+      escapes.push(f)
+      continue
+    }
+    actions.push({ kind: 'delete-file', path: f, present: existsSync(p) })
   }
 
   for (const name of manifest.labels) {
     actions.push({ kind: 'report-label', name })
   }
 
-  return { actions }
+  return { actions, escapes }
 }
 
 export function renderEjectDiff(plan: EjectPlan): string {
@@ -410,19 +457,27 @@ export function renderEjectDiff(plan: EjectPlan): string {
   return lines.join('\n')
 }
 
-/** Apply the inverse plan. Labels are only reported (returned), never deleted. */
+/**
+ * Apply the inverse plan. Labels are only reported (returned), never deleted.
+ * Callers MUST refuse when `plan.escapes` is non-empty before calling this; as
+ * a second guard, every fs mutation re-checks containment and skips any path
+ * that resolves outside the repo — a delete outside `repoRoot` is impossible
+ * regardless of what the manifest claims.
+ */
 export function applyEject(plan: EjectPlan, repoRoot: string): { removedLabelsToReport: string[] } {
   for (const a of plan.actions) {
     if (a.kind === 'strip-block') {
       if (!a.present) continue
-      const p = abs(repoRoot, a.path)
+      const p = containedAbs(repoRoot, a.path)
+      if (p === null) continue
       const content = readFileSync(p, 'utf-8')
       const stripped = stripBlockFromContent(content, a.marker, a.comment)
       if (stripped === null) continue
       if (blockStripLeavesEmpty(stripped)) rmSync(p, { force: true })
       else writeFileSync(p, stripped.endsWith('\n') ? stripped : `${stripped}\n`, 'utf-8')
     } else if (a.kind === 'delete-file') {
-      if (a.present) rmSync(abs(repoRoot, a.path), { force: true })
+      const p = containedAbs(repoRoot, a.path)
+      if (a.present && p !== null) rmSync(p, { force: true })
     }
   }
   return {

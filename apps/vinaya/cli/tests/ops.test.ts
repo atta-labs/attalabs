@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LabelGateway, Op } from '../src/lib/ops.js'
-import { applyEject, applyInstall, planEject, planInstall, renderInstallDiff } from '../src/lib/ops.js'
+import { applyEject, applyInstall, containedAbs, planEject, planInstall, renderInstallDiff } from '../src/lib/ops.js'
 import type { ManagedManifest } from '../src/lib/config.js'
 
 function scratch(): string {
@@ -157,5 +157,40 @@ describe('planEject on a corrupt/missing manifest is caller-guarded', () => {
     const empty: ManagedManifest = { version: 1, files: [], blocks: [], labels: [] }
     const plan = planEject(empty, scratch())
     expect(plan.actions).toEqual([])
+    expect(plan.escapes).toEqual([])
+  })
+})
+
+describe('path-traversal containment (eject cannot delete outside the repo)', () => {
+  it('containedAbs rejects `..`, absolute paths, and the repo root itself', () => {
+    const root = scratch()
+    expect(containedAbs(root, 'a/b.txt')).toBe(join(root, 'a/b.txt'))
+    expect(containedAbs(root, '../OUTSIDE.txt')).toBeNull()
+    expect(containedAbs(root, 'a/../../OUTSIDE.txt')).toBeNull()
+    expect(containedAbs(root, '/etc/passwd')).toBeNull()
+    expect(containedAbs(root, '.')).toBeNull() // the root itself
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('planEject flags an escaping manifest path and emits no delete action for it', () => {
+    const root = scratch()
+    const hostile: ManagedManifest = { version: 1, files: ['../OUTSIDE.txt', 'inside.txt'], blocks: [], labels: [] }
+    const plan = planEject(hostile, root)
+    expect(plan.escapes).toContain('../OUTSIDE.txt')
+    expect(plan.actions.some((a) => a.kind === 'delete-file' && a.path === '../OUTSIDE.txt')).toBe(false)
+    expect(plan.actions.some((a) => a.kind === 'delete-file' && a.path === 'inside.txt')).toBe(true)
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('applyEject never deletes an escaping path even if one reaches the action list', () => {
+    const parent = scratch()
+    const root = join(parent, 'repo')
+    mkdirSync(root, { recursive: true })
+    const outside = join(parent, 'OUTSIDE.txt')
+    writeFileSync(outside, 'do not delete me')
+    // Hand-craft an action list with an escaping delete (belt-and-suspenders).
+    applyEject({ actions: [{ kind: 'delete-file', path: '../OUTSIDE.txt', present: true }], escapes: [] }, root)
+    expect(existsSync(outside)).toBe(true)
+    rmSync(parent, { recursive: true, force: true })
   })
 })

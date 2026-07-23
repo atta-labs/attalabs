@@ -58,6 +58,9 @@ function flags(args: string[]): Flags {
   return { dryRun: args.includes('--dry-run'), yes: args.includes('--yes') }
 }
 
+/** A product name must be a safe slug — it becomes a path segment + a manifest record. */
+const PRODUCT_NAME_RE = /^[a-z0-9][a-z0-9-]*$/
+
 /**
  * Read the manifest of a prior install directly from `<repoRoot>/
  * vinaya.config.json` — NOT via the cwd-walking loadConfig(), which would find
@@ -134,7 +137,12 @@ export async function runInit(args: string[], deps: InitDeps): Promise<number> {
     }
   }
 
-  const manifest = await applyInstall(plan, repo.repoRoot, deps.labelGateway(repo.repoRoot))
+  // Persist the files+blocks manifest as soon as they are on disk (before the
+  // network-bound label creation), so a label-create failure can never orphan
+  // the written files with no ownership record.
+  const manifest = await applyInstall(plan, repo.repoRoot, deps.labelGateway(repo.repoRoot), (m) =>
+    writeManifest(repo.repoRoot, m)
+  )
   writeManifest(repo.repoRoot, manifest)
 
   process.stdout.write('\nVinaya installed. Next: run `vinaya demo break` to see a refusal-then-fix in action.\n')
@@ -149,6 +157,15 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
   const name = args.filter((a) => !a.startsWith('--'))[0]
   if (!name) {
     console.error('Usage: vinaya init product <name>')
+    return 2
+  }
+  // Strict slug — the name becomes a filesystem path segment
+  // (governance/products/<name>/…) and a manifest record, so a `..` or path
+  // separator would let user input escape the intended directory.
+  if (!PRODUCT_NAME_RE.test(name)) {
+    console.error(
+      `Error: invalid product name '${name}'. Use a lower-case slug: letters, digits, and hyphens (e.g. mobile, web-app).`
+    )
     return 2
   }
 
