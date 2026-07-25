@@ -58,7 +58,12 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
   // doc title.
   return (
     <div
-      className={`sticky top-0 z-20 w-full transition-opacity duration-300 ${
+      // `-mx-2` cancels the retro ChromeFrame bar's own `px-2` float margin so the
+      // card's border lands exactly on the prose/table column's left+right bounds
+      // (not inset ~9px inside them). Under the flush libraries `ChromeFrame` has
+      // no `px-2`, so `-mx-2` there just bleeds the flush bar 9px into `main`'s
+      // `px-6`/`lg:px-12` gutter — still inside the scroll box, no overflow.
+      className={`sticky top-2 z-20 -mx-2 transition-opacity duration-300 ${
         isSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
