@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TheStudioPage() {
   return (
-    <main className='mx-auto flex max-w-3xl flex-col gap-10 px-6 py-24'>
+    <main className='mx-auto flex max-w-3xl flex-col gap-10 px-8 py-8'>
       <section className='flex flex-col gap-4'>
         <Heading level={1} className='font-serif text-3xl text-foreground sm:text-4xl'>
           The Studio
@@ -21,8 +21,8 @@ export default function TheStudioPage() {
         </Text>
       </section>
 
-      <Card className='border-border bg-card'>
-        <CardContent className='space-y-4 pt-6'>
+      <Card>
+        <CardContent className='space-y-4'>
           <div className='flex items-start gap-3'>
             <MonitorSmartphone className='size-5 shrink-0 translate-y-0.5 text-muted-foreground' aria-hidden />
             <Text as='p' className='font-sans text-sm text-foreground'>

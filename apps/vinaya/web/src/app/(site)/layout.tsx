@@ -10,7 +10,8 @@ const links = [
   { label: 'The Harness', href: '/the-harness' },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Install', href: '/install' },
-  { label: 'Docs', href: '/docs' }
+  { label: 'Docs', href: '/docs' },
+  { label: 'Roadmap', href: '/roadmap' }
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {

@@ -26,14 +26,17 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
   // The outer div owns placement; the frame owns the content box (`bg-card` +
   // `border-b` come from the frame, not from here). No full-bleed
   // `mx-[calc(50%-50vw)]`: the bar sits inset to StudioShell's centered
-  // `max-w-6xl` column, matching the float. `-mt-8` is KEPT — it cancels
-  // StudioShell's `py-8` top padding so the bar still pins flush under the
-  // topbar (coupled to that exact padding, and the counterweight to
-  // `projects/layout.tsx`'s `pt-8`; if the shell padding changes, revisit).
+  // `max-w-6xl` column, matching the float. `-mt-6` cancels most of
+  // StudioShell's `py-8` (32px) top padding but deliberately leaves an ~8px gap
+  // so the retro card's top border/shadow clears the topbar's own floating
+  // shadow instead of being sliced against it (the same clearance the docs
+  // breadcrumb gets from `top-2`). Coupled to that exact `py-8` and the
+  // counterweight to `projects/layout.tsx`'s `pt-8`; if the shell padding
+  // changes, revisit.
   // `h-10` is the bar's pinned height: sibling sticky headers in this same
   // scroll container (the iteration board's task table) offset by `top-10`.
   return (
-    <div className='sticky top-0 z-20 -mt-8 shrink-0'>
+    <div className='sticky top-0 z-20 -mt-6 shrink-0'>
       <ChromeFrame variant='bar' className='h-10 justify-center gap-4 px-6 font-mono text-[11px] select-none'>
         <Flex align='center' gap={2} className='overflow-x-auto no-scrollbar'>
           {projects.map((p, idx) => {

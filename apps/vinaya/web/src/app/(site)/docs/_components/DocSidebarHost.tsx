@@ -37,7 +37,7 @@ export function DocSidebarHost({ nav }: { nav: DocNav }) {
        * and a flush strip under the flush libraries, instead of a bespoke
        * `bg-sidebar` strip. The outer div owns placement/visibility; the frame
        * owns the content box. */}
-      <div className='shrink-0 lg:hidden'>
+      <div className='relative z-10 shrink-0 lg:hidden'>
         <ChromeFrame variant='bar' className='h-11 items-center gap-3 px-4'>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
