@@ -131,7 +131,7 @@ export type IterationSummary = {
   }
   /** Task identity refs for forge progress queries — `{ id, issue }` per task.
    *  `issue` is `null` when the topology carries `#TBD`; the forge loader
-   *  resolves real issue numbers via the `iteration:<slug>` label. */
+   *  resolves real issue numbers via the `vinaya/iteration:<slug>` label. */
   taskRefs: Array<{ id: string; issue: number | null }>
 }
 

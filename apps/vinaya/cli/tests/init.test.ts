@@ -134,8 +134,8 @@ describe('vinaya init', () => {
     }
 
     // labels created-if-absent
-    expect(createdLabels).toContain('tier:0')
-    expect(createdLabels).toContain('needs:principal-input')
+    expect(createdLabels).toContain('vinaya/tier:0')
+    expect(createdLabels).toContain('vinaya/needs:principal-input')
     // starter config ships no example checks (empty `checks`)
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
     expect(cfg.checks).toEqual({})

@@ -5,7 +5,7 @@
  * this repo (D-078). The `check-forge-gates.sh` PreToolUse hook denies raw
  * `gh issue create` / `gh issue edit --body*`, directing every agent here.
  *
- * Gate: a task Issue (any `iteration:<slug>` label) must carry the full
+ * Gate: a task Issue (any `vinaya/iteration:<slug>` label) must carry the full
  * eight-field Planner's rationale in its body (`checkIssueRationale`,
  * planner-brief contract, D-055) — refused locally otherwise, before anything
  * reaches the forge. Non-task Issues (no iteration label) pass through
@@ -43,7 +43,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   amendRationaleDeps,
+  findIterationSlug,
   findMilestoneForSlug,
+  iterationLabel,
+  iterationSlugLengthError,
   type MilestoneFacts,
   parseRationaleDeps
 } from '@atta/aeg-forge-state'
@@ -198,10 +201,9 @@ function fetchForgeLabels(issueRef: string): string[] {
   }
 }
 
-/** First `iteration:<slug>` label's slug, or `null` when the set carries none. */
+/** First `vinaya/iteration:<slug>` label's slug, or `null` when the set carries none. */
 function iterationSlugFromLabels(labels: string[]): string | null {
-  const label = labels.find((l) => l.startsWith('iteration:'))
-  return label ? label.slice('iteration:'.length) : null
+  return findIterationSlug(labels)
 }
 
 /** True when argv already carries an explicit `--milestone`/`-m` flag — the caller's choice always wins. */
@@ -213,7 +215,7 @@ function hasExplicitMilestoneFlag(args: string[]): boolean {
  * Milestone auto-attach on Issue CREATE (aeg-review-gate-v1 task 1 follow-up).
  * `deriveIterationFromForge`/`listActiveIterationSlugs` (`@atta/aeg-forge-state`)
  * never read an Issue's GitHub-native milestone field — only the
- * `iteration:<slug>` label — so this drift was never functionally
+ * `vinaya/iteration:<slug>` label — so this drift was never functionally
  * load-pathing; it is pure GitHub-view hygiene (a Milestone showing
  * `open_issues=0` while 3 real open task Issues carry its label). Creation-time
  * only, by design: `edit` never force-attaches retroactively (an unrelated
@@ -339,7 +341,7 @@ export function runAmendDeps(flags: AmendDepsFlags, deps: AmendDepsDeps): void {
 
   const labels = deps.fetchLabels(issue)
   if (!isTaskIssueLabelSet(labels)) {
-    deps.fail(`amend-deps targets task Issues only — Issue ${issue} carries no \`iteration:*\` label.`)
+    deps.fail(`amend-deps targets task Issues only — Issue ${issue} carries no \`vinaya/iteration:*\` label.`)
   }
 
   const body = deps.fetchBody(issue)
@@ -439,9 +441,9 @@ function readProjectPaths(): ProjectPath[] {
 function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssueFacts[] {
   try {
     // Labels are filtered CLIENT-side, deliberately. `gh issue list --label
-    // iteration:<slug>` returns an empty set against this repo's live labels
+    // vinaya/iteration:<slug>` returns an empty set against this repo's live labels
     // even though the label exists and Issues carry it (reproduced on
-    // `iteration:vinaya-pages-v2`: 11 matching open Issues, `--label` yields
+    // `vinaya/iteration:vinaya-pages-v2`: 11 matching open Issues, `--label` yields
     // 0). Server-side filtering would have shipped C permanently silent and
     // indistinguishable from "no overlap" — the exact false-green shape this
     // whole change exists to remove. Listing open Issues and matching here is
@@ -452,7 +454,7 @@ function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssue
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }
     )
     return (JSON.parse(out) as Array<{ number: number; body: string; labels: Array<{ name: string }> }>)
-      .filter((i) => i.labels.some((l) => l.name === `iteration:${slug}`))
+      .filter((i) => i.labels.some((l) => l.name === iterationLabel(slug)))
       .filter((i) => String(i.number) !== String(selfRef ?? '').replace(/^#/, ''))
       .map((i) => ({
         ref: `#${i.number}`,
@@ -535,13 +537,25 @@ export function main(): void {
   }
 
   if (isTaskIssueLabelSet(labels)) {
+    // GitHub caps a label name at 50 characters and `vinaya/iteration:` spends
+    // 17 of them, so a slug that reads fine in prose can be one the forge
+    // refuses to create. Caught here — the first place a new iteration's label
+    // reaches the forge — rather than as an opaque `gh` 422 later.
+    const labelSlug = iterationSlugFromLabels(labels)
+    if (labelSlug !== null) {
+      const lengthError = iterationSlugLengthError(labelSlug)
+      if (lengthError) fail(`open-issue label-length: ${lengthError}`)
+    }
+
     const title = extractTitle(bodyArgs)
     if (title !== null) {
       const t = checkForgeTitle(title)
       if (t.status === 'fail') fail(t.errors[0] as string)
     }
     if (body === null) {
-      fail('a task Issue (iteration:* label) requires a `--body-file <path>` so the rationale gate can validate it.')
+      fail(
+        'a task Issue (vinaya/iteration:* label) requires a `--body-file <path>` so the rationale gate can validate it.'
+      )
     }
     console.log('[open-issue] task Issue (iteration label) — validating the Planner rationale…')
     const { status, errors } = checkIssueRationale(body)

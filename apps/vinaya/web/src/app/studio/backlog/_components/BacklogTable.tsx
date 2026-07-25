@@ -1,34 +1,37 @@
 'use client'
 
+import { label } from '@atta/aeg-forge-state'
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
-import { LabelBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
+import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
 
 /**
  * The backlog as a filterable table (task 11 #571 follow-up). Replaces the
  * grouped-cards layout: one row per Issue, so a cross-project Issue (#513,
- * `project:aeg` + `project:aeg-core`) is a single row carrying BOTH project
- * badges instead of being duplicated under two headings — and the project
- * filter matches it under either (D-091: never drop the second project).
+ * `Project: aeg, aeg-core`) is a single row carrying BOTH project badges
+ * instead of being duplicated under two headings — and the project filter
+ * matches it under either (D-091: never drop the second project). Projects come
+ * from the Issue body's `**Project:**` field, not from a label (#614).
  *
- * Filters are project, tier, and flags — the label families that actually vary
- * across backlog rows. Iteration and state do NOT vary here: the backlog is
- * defined as open Issues carrying NO `iteration:*` label (`fetch-open-issues.ts`),
+ * Filters are project, tier, and flags — the families that actually vary across
+ * backlog rows. Iteration and state do NOT vary here: the backlog is defined as
+ * open Issues carrying NO `vinaya/iteration:*` label (`fetch-open-issues.ts`),
  * so every row is open and iteration-less. A row matches when it carries ANY
  * selected project (multi-project rows match either) AND its tier is selected
- * AND it carries any selected flag (`needs:*`/`status:*`); an empty family means
- * "all" for that family. Filters are inline toggle chips (not a dropdown) —
- * every option is visible at a glance, and they wrap on narrow screens.
+ * AND it carries any selected flag; an empty family means "all" for that
+ * family. Filters are inline toggle chips (not a dropdown) — every option is
+ * visible at a glance, and they wrap on narrow screens.
  *
  * The `#` and Title columns are split (like the iteration board's table). The
  * table sets a `min-w` so the library Table's own `overflow-auto` scroll
  * container kicks in on narrow screens instead of cramming the columns.
  *
- * Label styling is keyed to a label's CATEGORY (its prefix), never its value —
- * one flat semantic-token variant per family (the doctrine forbids a per-value
- * palette). `needs:*` reads `warning`; there is no `info`/blue token.
+ * Label styling is keyed to a label's CATEGORY (read from the code-owned
+ * vocabulary), never its value — one flat semantic-token variant per family
+ * (the doctrine forbids a per-value palette). `needs:*` reads `warning`; there
+ * is no `info`/blue token.
  */
 
 function Dash() {
@@ -50,6 +53,9 @@ const LABEL_CELL =
 
 /** Ties the filter chip group to its heading (`aria-labelledby`). */
 const FILTER_HEADING_ID = 'backlog-filter-heading'
+
+/** Chip display strips the namespace off a tier label — `vinaya/tier:1` reads `1`. */
+const TIER_STRIP = label('tier-0').replace(/0$/, '')
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
 function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
@@ -107,11 +113,11 @@ export function BacklogTable({
   flagOptions
 }: {
   issues: BacklogIssue[]
-  /** Distinct `project:*` labels present, in registry order. */
+  /** Distinct project names declared across the backlog, in registry order. */
   projectOptions: string[]
-  /** Distinct `tier:*` labels present, low tier first. */
+  /** Distinct tier labels present, low tier first. */
   tierOptions: string[]
-  /** Distinct `needs:*`/`status:*` labels present. */
+  /** Distinct flag labels present. */
   flagOptions: string[]
 }) {
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set())
@@ -129,8 +135,8 @@ export function BacklogTable({
   const filtered = useMemo(
     () =>
       issues.filter((issue) => {
-        const { projects, tier, flags } = splitLabels(issue.labels)
-        const projectOk = selectedProjects.size === 0 || projects.some((p) => selectedProjects.has(p))
+        const { tier, flags } = splitLabels(issue.labels)
+        const projectOk = selectedProjects.size === 0 || issue.projects.some((p) => selectedProjects.has(p))
         const tierOk = selectedTiers.size === 0 || (tier !== null && selectedTiers.has(tier))
         const flagOk = selectedFlags.size === 0 || flags.some((f) => selectedFlags.has(f))
         return projectOk && tierOk && flagOk
@@ -161,14 +167,13 @@ export function BacklogTable({
           options={projectOptions}
           selected={selectedProjects}
           onToggle={toggle(setSelectedProjects)}
-          strip='project:'
         />
         <FilterGroup
           name='Tier'
           options={tierOptions}
           selected={selectedTiers}
           onToggle={toggle(setSelectedTiers)}
-          strip='tier:'
+          strip={TIER_STRIP}
         />
         <FilterGroup name='Flags' options={flagOptions} selected={selectedFlags} onToggle={toggle(setSelectedFlags)} />
         {anyFilter && (
@@ -215,7 +220,7 @@ export function BacklogTable({
               </TableRow>
             ) : (
               filtered.map((issue) => {
-                const { projects, tier, flags } = splitLabels(issue.labels)
+                const { tier, flags } = splitLabels(issue.labels)
                 return (
                   <TableRow key={issue.number}>
                     <TableCell className='px-2 align-top'>
@@ -240,8 +245,8 @@ export function BacklogTable({
                     </TableCell>
                     <TableCell className='align-top'>
                       <div className={LABEL_CELL}>
-                        {projects.length > 0 ? (
-                          projects.map((label) => <LabelBadge key={label} label={label} />)
+                        {issue.projects.length > 0 ? (
+                          issue.projects.map((project) => <ProjectBadge key={project} project={project} />)
                         ) : (
                           <Dash />
                         )}

@@ -6,7 +6,7 @@
  *
  *   issueState     ← issue.state lowercased ('OPEN' | 'CLOSED' → 'open' | 'closed')
  *   assigned       ← issue.assigneesCount > 0
- *   blockedLabel   ← `aeg:blocked` present in issue.labels
+ *   blockedLabel   ← `vinaya/blocked` present in issue.labels
  *                    (Issue-scoped per state-machine.md §14)
  *   branchExists   ← refExists for `refs/heads/task/<iteration>/<id>`
  *   prState        ← pullRequest.state lowercased; `'closed'` (PR closed without
@@ -27,7 +27,7 @@
  */
 
 import type { ForgeFacts, RawTaskFacts } from '@atta/aeg-types'
-import { AEG_BLOCKED_LABEL } from './labels'
+import { AEG_BLOCKED_LABEL, hasLabel } from './labels'
 
 // The constant's home is now `labels.ts` (the code-owned label vocabulary,
 // D-119) — re-exported here because this module is its original import path
@@ -42,7 +42,7 @@ export function mapForgeFacts(raw: RawTaskFacts): ForgeFacts | null {
   return {
     issueState: raw.issue.state === 'OPEN' ? 'open' : 'closed',
     assigned: raw.issue.assigneesCount > 0,
-    blockedLabel: raw.issue.labels.includes(AEG_BLOCKED_LABEL),
+    blockedLabel: hasLabel('blocked', raw.issue.labels),
     branchExists: raw.refExists,
     prState: mapPrState(raw.pullRequest?.state),
     reviewDecision: mapReviewDecision(raw.pullRequest?.reviewDecision),

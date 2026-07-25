@@ -95,7 +95,7 @@ function main(): void {
         message,
         agent_recovery_prompt:
           'Read the doc pointer named in the finding above, apply the change your code edit implies, and commit both ' +
-          'files in this PR. If the doc genuinely does not need updating, ask a principal to apply the `waiver:docs` ' +
+          'files in this PR. If the doc genuinely does not need updating, ask a principal to apply the `vinaya/waiver:docs` ' +
           'label rather than editing around this finding — you cannot self-serve that waiver.'
       })
     }

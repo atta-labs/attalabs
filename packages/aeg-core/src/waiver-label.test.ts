@@ -6,7 +6,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
     expect(
       isWaiverLabelActorVerified({
         label: WAIVER_LABEL,
-        labels: ['tier:1'],
+        labels: ['vinaya/tier:1'],
         labelActor: 'daniboomerang',
         principalAllowlist: PRINCIPAL_ALLOWLIST
       })
@@ -50,7 +50,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
     expect(
       isWaiverLabelActorVerified({
         label: WAIVER_LABEL,
-        labels: ['waiver:review'],
+        labels: ['vinaya/waiver:review'],
         labelActor: 'daniboomerang',
         principalAllowlist: PRINCIPAL_ALLOWLIST
       })

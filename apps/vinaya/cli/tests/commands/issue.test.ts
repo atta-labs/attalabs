@@ -49,7 +49,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-no-rationale.md'),
         '--label',
-        'iteration:demo'
+        'vinaya/iteration:demo'
       ],
       cwd
     )
@@ -72,7 +72,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-valid.md'),
         '--label',
-        'iteration:demo'
+        'vinaya/iteration:demo'
       ],
       cwd
     )
@@ -99,7 +99,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-valid.md'),
         '--label',
-        'iteration:demo'
+        'vinaya/iteration:demo'
       ],
       cwd
     )

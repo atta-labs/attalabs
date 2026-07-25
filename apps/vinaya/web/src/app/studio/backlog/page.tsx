@@ -1,19 +1,20 @@
 /**
  * Backlog view (Studio task 2, #498; table redesign task 11, #571) — every
- * open Issue carrying no `iteration:*` label, as a filterable table. Closes the
+ * open Issue carrying no `vinaya/iteration:*` label, as a filterable table. Closes the
  * gap where unscoped Issues (e.g. #497) were invisible on every iteration-scoped
  * Studio page — `/studio/iterations` and `/studio/projects/[name]` both query
  * iteration-scoped data only.
  *
- * One row per Issue (task 11): a cross-project Issue like #513 (`project:aeg` +
- * `project:aeg-core`) is a single row carrying both project badges — the
- * project filter matches it under either — instead of the old first-label-wins
- * grouping that silently dropped its second project (D-091).
+ * One row per Issue (task 11): a cross-project Issue like #513 (`Project: aeg,
+ * aeg-core`) is a single row carrying both project badges — the project filter
+ * matches it under either — instead of the old first-label-wins grouping that
+ * silently dropped its second project (D-091). Projects are read from the Issue
+ * body's `**Project:**` field, never from a label (#614).
  *
  * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
  * server component only fetches, computes the distinct filter options, and
  * stays honest about forge failure. Iteration/state are NOT filters here: the
- * backlog is by definition the open, no-`iteration:*` set (`fetch-open-issues.ts`),
+ * backlog is by definition the open, no-`vinaya/iteration:*` set (`fetch-open-issues.ts`),
  * so every row is open and iteration-less — nothing to filter on.
  *
  * Forge honesty (task 11): the fetch carries a `ForgeStatus`; when the forge is
@@ -30,6 +31,7 @@ import { readRegistry } from '@/lib/repo-state'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
+import { labelKind } from '@/app/studio/_components/LabelBadge'
 import { BacklogTable } from './_components/BacklogTable'
 
 // Forge reads derive live Issue state from GitHub — never serve from cache.
@@ -39,35 +41,33 @@ export const metadata: Metadata = {
   title: 'Backlog · Vinaya Studio'
 }
 
-/** Distinct `project:*` labels present, registry order first then any extras. */
+/** Distinct projects declared across the backlog, registry order first then any extras. */
 function projectOptions(issues: BacklogIssue[], registry: Registry): string[] {
   const present = new Set<string>()
-  for (const issue of issues) {
-    for (const label of issue.labels) if (label.startsWith('project:')) present.add(label)
-  }
+  for (const issue of issues) for (const project of issue.projects) present.add(project)
   const ordered: string[] = []
-  for (const project of registry) {
-    const label = `project:${project.name}`
-    if (present.has(label)) ordered.push(label)
-  }
-  for (const label of present) if (!ordered.includes(label)) ordered.push(label)
+  for (const project of registry) if (present.has(project.name)) ordered.push(project.name)
+  for (const project of present) if (!ordered.includes(project)) ordered.push(project)
   return ordered
 }
 
-/** Distinct `tier:*` labels present, lowest tier first. */
+/** Distinct tier labels present, lowest tier first. */
 function tierOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
-    for (const label of issue.labels) if (label.startsWith('tier:')) present.add(label)
+    for (const name of issue.labels) if (labelKind(name) === 'tier') present.add(name)
   }
-  return [...present].sort((a, b) => Number(a.slice('tier:'.length)) - Number(b.slice('tier:'.length)))
+  return [...present].sort((a, b) => a.localeCompare(b))
 }
 
-/** Distinct `needs:*`/`status:*` labels present — the Flags family, `needs:*` first. */
+/** Distinct flag labels present — the `needs:*` / blocked family. */
 function flagOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
-    for (const label of issue.labels) if (label.startsWith('needs:') || label.startsWith('status:')) present.add(label)
+    for (const name of issue.labels) {
+      const kind = labelKind(name)
+      if (kind === 'needs' || kind === 'state') present.add(name)
+    }
   }
   return [...present].sort((a, b) => a.localeCompare(b))
 }
@@ -86,7 +86,8 @@ export default async function BacklogPage() {
       <header className='space-y-2'>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Backlog</h1>
         <p className='font-sans text-sm text-muted-foreground'>
-          Open issues with no <span className='font-mono'>iteration:*</span> label — tracked work outside any iteration.
+          Open issues with no <span className='font-mono'>vinaya/iteration:*</span> label — tracked work outside any
+          iteration.
         </p>
       </header>
 

@@ -203,11 +203,11 @@ export function checkT1(entries: TaskEntry[]): CheckResult {
 }
 
 /**
- * T2: Every open Issue labeled `iteration:X` appears in X's topology file.
+ * T2: Every open Issue labeled `vinaya/iteration:X` appears in X's topology file.
  * Fail class: `orphan-task`
  *
  * `openIssuesBySlug`: Map from active iteration slug → list of open issue
- * numbers fetched from the forge with that `iteration:` label.
+ * numbers fetched from the forge with that `vinaya/iteration:` label.
  * `topologyIssuesBySlug`: Map from slug → Set of issue numbers in the topology.
  *
  * `ciIterationSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
@@ -526,14 +526,14 @@ export function checkL3(files: IterationFile[]): CheckResult {
 
 /**
  * L4: Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
- * follow-up). An open task-Issue carrying `iteration:<slug>` for an ACTIVE
+ * follow-up). An open task-Issue carrying `vinaya/iteration:<slug>` for an ACTIVE
  * iteration (open Milestone titled the slug, D-110) whose GitHub-native
  * `milestone` field doesn't match that same Milestone.
  *
  * **Advisory (info-only)**, same framing as L1/L2 (`state-machine.md` §12):
  * confirmed NOT functionally load-bearing — `deriveIterationFromForge`/
  * `listActiveIterationSlugs` never read an Issue's milestone field, only the
- * `iteration:<slug>` label, which remains the sole, sufficient membership
+ * `vinaya/iteration:<slug>` label, which remains the sole, sufficient membership
  * signal. This is real drift between GitHub's own Milestone view (e.g.
  * `open_issues`/`closed_issues` counts) and reality — cosmetic, not a gate,
  * surfaced so it doesn't silently accumulate rather than because anything

@@ -525,7 +525,7 @@ const MISSING_TRAPS_BODY = `
 **Docs to keep coherent** — none
 `
 
-function makeForgeIssue(number: number, body: string, labels: string[] = ['iteration:iter-1']): ForgeIssue {
+function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/iteration:iter-1']): ForgeIssue {
   return { number, body, labels }
 }
 

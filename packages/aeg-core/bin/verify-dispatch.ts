@@ -72,6 +72,7 @@ import { join } from 'node:path'
 import {
   deriveIterationFromForge,
   fetchProvenance,
+  iterationLabel,
   listActiveIterationSlugs,
   resolveGithubToken,
   resolveRepo,
@@ -152,7 +153,7 @@ function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<stri
 /**
  * Forge-derived (task aeg-forge-state-v1 3a) — no longer reads
  * `aeg-root/iterations/<slug>.md` off `origin/main`; the forge (Milestone +
- * `iteration:<slug>`-labeled Issues) is inherently live, so there is no
+ * `vinaya/iteration:<slug>`-labeled Issues) is inherently live, so there is no
  * separate "freshly-fetched" version to read. `null` now means the forge
  * call itself failed (network/gh unreachable), not "file absent" — a real,
  * distinct failure mode this bin didn't have before the cutover.
@@ -294,7 +295,7 @@ async function resolvePriorIterationArchival(
 
       const openIssues =
         shJson<Array<{ number: number }>>(
-          `gh issue list -R ${repo.owner}/${repo.repo} --label "iteration:${slug}" --state open --json number --limit 100`
+          `gh issue list -R ${repo.owner}/${repo.repo} --label "${iterationLabel(slug)}" --state open --json number --limit 100`
         ) ?? []
       if (openIssues.length === 0) {
         found = { project, priorIterationSlug: slug, archived: false }
@@ -565,7 +566,7 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   const task = (iteration as Iteration).tasks.find((t) => t.id === taskId)
   if (!task) {
     console.error(
-      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`iteration:${iterationSlug}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
+      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`${iterationLabel(iterationSlug)}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
     )
     process.exit(1)
   }

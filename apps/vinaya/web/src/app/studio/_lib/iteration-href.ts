@@ -4,7 +4,7 @@
  * An iteration's board lives under a project (`/studio/projects/<project>/…`),
  * so an iteration whose projects don't resolve to a board has no route to point
  * at. That is a real state, not an error. `projects` is the union of TWO sources
- * on the iteration's `iteration:<slug>`-labelled Issues: the `project:<name>`
+ * on the iteration's `vinaya/iteration:<slug>`-labelled Issues: the `**Project:**`
  * labels AND each Issue body's `**Project:**` field (`@atta/aeg-forge-state`'s
  * `list-tasks.ts`). An iteration resolves to `[]` only when BOTH are absent —
  * a missing `project:*` label alone is not enough, since the field still

@@ -1,32 +1,40 @@
+import { LABELS, matchesLabel } from '@atta/aeg-forge-state'
 import { Badge } from '@atta/ui/components'
 
 /**
  * The one place the Studio's Issue-label vocabulary is styled (task 11 #571) —
  * shared by the backlog table and the dashboard's Backlog card so both read
- * identically. Colour is keyed to a label's CATEGORY (its prefix), never its
- * value — one flat semantic-token variant per family; the doctrine forbids a
- * per-value palette. `needs:*` reads `warning`; there is no `info`/blue token.
+ * identically. Colour is keyed to a label's CATEGORY, never its value — one
+ * flat semantic-token variant per family; the doctrine forbids a per-value
+ * palette. `needs:*` reads `warning`; there is no `info`/blue token.
+ *
+ * The category comes from the code-owned vocabulary (`@atta/aeg-forge-state`'s
+ * `labels.ts`), not from a prefix written here — that is what keeps this
+ * component correct across a namespace rename (#614). `project` is NOT a label
+ * kind: project is a body field, so the backlog renders project names from the
+ * Issue's `**Project:**` field rather than from any label.
  *
  * Server-safe (no client hooks) so it renders in both server and client trees.
  */
 
-export type LabelKind = 'project' | 'tier' | 'status' | 'needs' | 'other'
+export type LabelKind = 'project' | 'tier' | 'state' | 'needs' | 'other'
 
 const KIND_CLASS: Record<LabelKind, string> = {
   project: 'text-primary border-primary/40',
   tier: 'text-foreground border-border',
-  status: 'text-primary border-primary/40',
+  state: 'text-primary border-primary/40',
   needs: 'text-warning border-warning/40',
   other: 'text-muted-foreground border-border'
 }
 
-const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, status: 2, needs: 3, other: 4 }
+const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, state: 2, needs: 3, other: 4 }
 
 export function labelKind(label: string): LabelKind {
-  if (label.startsWith('project:')) return 'project'
-  if (label.startsWith('tier:')) return 'tier'
-  if (label.startsWith('status:')) return 'status'
-  if (label.startsWith('needs:')) return 'needs'
+  const entry = LABELS.find((l) => matchesLabel(l.key, label))
+  if (!entry) return 'other'
+  if (entry.category === 'tier') return 'tier'
+  if (entry.category === 'state') return 'state'
+  if (entry.category === 'needs') return 'needs'
   return 'other'
 }
 
@@ -35,14 +43,17 @@ export function rankedLabels(labels: string[]): string[] {
   return [...labels].sort((a, b) => KIND_RANK[labelKind(a)] - KIND_RANK[labelKind(b)])
 }
 
-export type SplitLabels = { projects: string[]; tier: string | null; flags: string[] }
+export type SplitLabels = { tier: string | null; flags: string[] }
 
-/** Partition an Issue's labels into the families the table's columns render. */
+/**
+ * Partition an Issue's labels into the families the table's columns render.
+ * Projects are absent by construction — they come from the Issue body, not
+ * from labels (#614).
+ */
 export function splitLabels(labels: string[]): SplitLabels {
   return {
-    projects: labels.filter((l) => l.startsWith('project:')),
-    tier: labels.find((l) => l.startsWith('tier:')) ?? null,
-    flags: labels.filter((l) => l.startsWith('needs:') || l.startsWith('status:'))
+    tier: labels.find((l) => labelKind(l) === 'tier') ?? null,
+    flags: labels.filter((l) => labelKind(l) === 'needs' || labelKind(l) === 'state')
   }
 }
 
@@ -50,6 +61,15 @@ export function LabelBadge({ label }: { label: string }) {
   return (
     <Badge variant='outline' className={`font-mono text-xs ${KIND_CLASS[labelKind(label)]}`}>
       {label}
+    </Badge>
+  )
+}
+
+/** A project name rendered in the same visual family as a label badge. */
+export function ProjectBadge({ project }: { project: string }) {
+  return (
+    <Badge variant='outline' className={`font-mono text-xs ${KIND_CLASS.project}`}>
+      {project}
     </Badge>
   )
 }

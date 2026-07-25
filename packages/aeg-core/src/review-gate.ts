@@ -6,7 +6,7 @@
  * (`verdict-extraction.ts`) the post-merge Archivist automation already runs,
  * now gated pre-merge and blocking instead of post-merge and advisory-only.
  *
- * A verified `waiver:review` label (D-097's exact actor-verification pattern,
+ * A verified `vinaya/waiver:review` label (D-097's exact actor-verification pattern,
  * `isWaiverLabelActorVerified` reused directly and parameterized by label —
  * see `waiver-label.ts`) lets a principal explicitly skip the requirement for
  * one PR. Label presence alone is never sufficient — only an actor-verified
@@ -33,7 +33,7 @@ export type ReviewGateInput = {
   comments: string[]
   /** Every label currently applied to the PR. */
   labels: string[]
-  /** Actor of the most recent `waiver:review` labeling timeline event, or `null` when none exists. */
+  /** Actor of the most recent `vinaya/waiver:review` labeling timeline event, or `null` when none exists. */
   waiverLabelActor: string | null
 }
 
@@ -54,7 +54,7 @@ export function isReviewGateExemptBranch(branch: string): boolean {
 }
 
 /**
- * `pass` when either (a) `waiver:review` is present and actor-verified against
+ * `pass` when either (a) `vinaya/waiver:review` is present and actor-verified against
  * `PRINCIPAL_ALLOWLIST`, or (b) both verdicts are clean — code-reviewer
  * `APPROVE` (not `REQUEST_CHANGES`, not missing, not unclear) and
  * security-review `PASS` (not `FAIL`, not missing, not unclear). `fail`

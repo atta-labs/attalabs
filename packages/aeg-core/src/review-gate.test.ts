@@ -59,9 +59,9 @@ describe('checkReviewGate', () => {
     expect(result.verdict).toBe('pass')
   })
 
-  describe('waiver:review actor verification (D-097 pattern)', () => {
+  describe('vinaya/waiver:review actor verification (D-097 pattern)', () => {
     it('label absent → gate still evaluates verdicts normally (fails on empty comments)', () => {
-      const result = checkReviewGate({ comments: [], labels: ['tier:1'], waiverLabelActor: 'daniboomerang' })
+      const result = checkReviewGate({ comments: [], labels: ['vinaya/tier:1'], waiverLabelActor: 'daniboomerang' })
       expect(result.verdict).toBe('fail')
       expect(result.waived).toBe(false)
     })
@@ -69,7 +69,7 @@ describe('checkReviewGate', () => {
     it('label present, actor not in allowlist → ignored, gate still fails on missing verdicts', () => {
       const result = checkReviewGate({
         comments: [],
-        labels: ['waiver:review'],
+        labels: ['vinaya/waiver:review'],
         waiverLabelActor: 'some-agent-bot'
       })
       expect(result.verdict).toBe('fail')
@@ -77,7 +77,7 @@ describe('checkReviewGate', () => {
     })
 
     it('label present, actor null (no labeling event found) → ignored, gate fails', () => {
-      const result = checkReviewGate({ comments: [], labels: ['waiver:review'], waiverLabelActor: null })
+      const result = checkReviewGate({ comments: [], labels: ['vinaya/waiver:review'], waiverLabelActor: null })
       expect(result.verdict).toBe('fail')
       expect(result.waived).toBe(false)
     })
@@ -85,7 +85,7 @@ describe('checkReviewGate', () => {
     it('label present, actor in allowlist → passes without any review comments', () => {
       const result = checkReviewGate({
         comments: [],
-        labels: ['waiver:review'],
+        labels: ['vinaya/waiver:review'],
         waiverLabelActor: 'daniboomerang'
       })
       expect(result.verdict).toBe('pass')
@@ -95,7 +95,7 @@ describe('checkReviewGate', () => {
     it('a different label (waiver:docs) applied by the principal does not waive the review gate', () => {
       const result = checkReviewGate({
         comments: [],
-        labels: ['waiver:docs'],
+        labels: ['vinaya/waiver:docs'],
         waiverLabelActor: 'daniboomerang'
       })
       expect(result.verdict).toBe('fail')

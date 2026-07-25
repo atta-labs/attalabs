@@ -72,7 +72,7 @@ describe('taskRefFromBranch', () => {
 // #524/#530 regression: a task PR can close an iteration-labeled Issue from a
 // non-task branch. `extractIssue` is the bin shim's second eligibility signal
 // (alongside `taskRefFromBranch`) — it must find the closing Issue number so
-// the shim can check that Issue's own `iteration:*` label.
+// the shim can check that Issue's own `vinaya/iteration:*` label.
 describe('extractIssue', () => {
   it('finds Closes #N on a non-task-branch PR body (the #530 shape)', () => {
     const body = '<!-- AEG:CLOSES:START -->\nCloses #524\n<!-- AEG:CLOSES:END -->\n\n## Summary\n\nCleanup fix.'
@@ -90,7 +90,7 @@ describe('extractIssue', () => {
 
 // #524/#530 regression, the actual shipped decision (not just its inputs):
 // a task-branch `ref` is sufficient on its own; a non-task branch needs the
-// closed Issue's own labels to carry `iteration:*`.
+// closed Issue's own labels to carry `vinaya/iteration:*`.
 describe('isEligibleForProvenance', () => {
   const ref = { iteration: 'aeg-governance-hardening', taskId: '5d' }
 
@@ -100,11 +100,11 @@ describe('isEligibleForProvenance', () => {
   })
 
   it('is eligible when ref is null but the Issue carries an iteration:* label (the #524/#530 shape)', () => {
-    expect(isEligibleForProvenance(null, ['iteration:herald-hardening-v1'])).toBe(true)
+    expect(isEligibleForProvenance(null, ['vinaya/iteration:herald-hardening-v1'])).toBe(true)
   })
 
   it('is NOT eligible when ref is null and no label starts with iteration:', () => {
-    expect(isEligibleForProvenance(null, ['bug', 'needs:principal-input'])).toBe(false)
+    expect(isEligibleForProvenance(null, ['bug', 'vinaya/needs:principal-input'])).toBe(false)
   })
 
   it('is NOT eligible when ref is null and there are no labels at all', () => {

@@ -4,25 +4,13 @@
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise43w",
-        "name": "tier:3",
+        "name": "vinaya/tier:3",
         "description": "Product/roadmap: new product, API break, cross-cutting",
         "color": "d93f0b"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
-        "id": "LA_kwDORyBaZM8AAAACoc1g6g",
-        "name": "project:aeg-core",
-        "description": "Project: @atta/aeg-core",
-        "color": "c5def5"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -36,19 +24,13 @@
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise4LQ",
-        "name": "tier:0",
+        "name": "vinaya/tier:0",
         "description": "Trivial: typo, dep bump, no behavior change",
         "color": "cccccc"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -62,19 +44,13 @@
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise4Xg",
-        "name": "tier:1",
+        "name": "vinaya/tier:1",
         "description": "Implementation: feature, refactor, config",
         "color": "fbca04"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -84,29 +60,17 @@
     "title": "[aeg-forge-state-v1] 5 — Update AEG Studio to render from forge-native sources"
   },
   {
-    "body": "Project: aeg, aeg-core\nIteration: aeg-forge-state-v1 · task 4\n\n**Boundary** — Migrate the remaining \"move\" bucket per D-110: token ledgers (`iterations/<name>.tokens.md`) → one PR/Issue comment per role-turn, summed at read time (partially already true — D-071's Archivist already posts token reports; this task removes the FILE, making the comment the only record and updating the Archivist's own close-out to stop appending to a `.tokens.md` file); lessons log (`aeg-project/lessons.md`) → one pinned Issue, new comment per lesson; per-project operational state (`aeg-project/state.md` + each `apps/*/aeg-project/state.md`) → one pinned Issue per project; the ratification queue (`aeg-project/ratification-queue.md`) → a `needs:principal-input` label query, no file. NOT: iteration topology (task 3) or the kept-file trio (task 2).\n\n**Sizing** — Passes: one verification story (every currently-tracked lesson/state-note/ratification-item is represented in its new pinned-Issue home, and the Archivist's close-out checklist + reporting code point at the new homes, not the deleted files), bounded surface (Archivist automation code + one pinned Issue per project + one pinned Issue for lessons), single failure mode (a lesson/state fact silently lost in translation).\n\n**Project(s) + blast radius** — aeg, aeg-core, plus every project with its own `aeg-project/state.md` (vada, herald, cetana, aeg — per the registry) — each needs its pinned Issue created and its Archivist automation repointed.\n\n**Dependency rationale** — `Depends-on: —` (independent of tasks 1/3 — this is forge-object creation + Archivist automation, not the topology-derivation mechanism). `Conflicts-with: —`.\n\n**Traps to avoid** — Do not lose content in the migration — every existing lessons.md entry and every project's current state.md content must be transcribed into the new pinned Issue's initial body/first comment, not summarized-and-dropped. The Archivist's automated close-out code (`packages/aeg-core/bin/archive-task.ts`, item 2-7 of close-out) currently references these file paths — update the actual automation, not just human habit.\n\n**Suggested agent-class** — mid: content migration + automation repointing, no novel design.\n\n**Stop-and-escalate** — If any project's `state.md` contains content that doesn't cleanly map to \"one pinned Issue\" (e.g., genuinely needs structured fields a comment thread can't express), stop and name the gap (`severity:execution`) rather than force a bad fit.\n\n**Docs to keep coherent** — `aeg-root/roles/archivist.md` (close-out checklist item locations), `coordination.md`'s \"what goes where\" table, `iterations/README.md` §12 (token ledger section). `docs-index.md` regenerated.\n",
+    "body": "Project: aeg, aeg-core\nIteration: aeg-forge-state-v1 · task 4\n\n**Boundary** — Migrate the remaining \"move\" bucket per D-110: token ledgers (`iterations/<name>.tokens.md`) → one PR/Issue comment per role-turn, summed at read time (partially already true — D-071's Archivist already posts token reports; this task removes the FILE, making the comment the only record and updating the Archivist's own close-out to stop appending to a `.tokens.md` file); lessons log (`aeg-project/lessons.md`) → one pinned Issue, new comment per lesson; per-project operational state (`aeg-project/state.md` + each `apps/*/aeg-project/state.md`) → one pinned Issue per project; the ratification queue (`aeg-project/ratification-queue.md`) → a `vinaya/needs:principal-input` label query, no file. NOT: iteration topology (task 3) or the kept-file trio (task 2).\n\n**Sizing** — Passes: one verification story (every currently-tracked lesson/state-note/ratification-item is represented in its new pinned-Issue home, and the Archivist's close-out checklist + reporting code point at the new homes, not the deleted files), bounded surface (Archivist automation code + one pinned Issue per project + one pinned Issue for lessons), single failure mode (a lesson/state fact silently lost in translation).\n\n**Project(s) + blast radius** — aeg, aeg-core, plus every project with its own `aeg-project/state.md` (vada, herald, cetana, aeg — per the registry) — each needs its pinned Issue created and its Archivist automation repointed.\n\n**Dependency rationale** — `Depends-on: —` (independent of tasks 1/3 — this is forge-object creation + Archivist automation, not the topology-derivation mechanism). `Conflicts-with: —`.\n\n**Traps to avoid** — Do not lose content in the migration — every existing lessons.md entry and every project's current state.md content must be transcribed into the new pinned Issue's initial body/first comment, not summarized-and-dropped. The Archivist's automated close-out code (`packages/aeg-core/bin/archive-task.ts`, item 2-7 of close-out) currently references these file paths — update the actual automation, not just human habit.\n\n**Suggested agent-class** — mid: content migration + automation repointing, no novel design.\n\n**Stop-and-escalate** — If any project's `state.md` contains content that doesn't cleanly map to \"one pinned Issue\" (e.g., genuinely needs structured fields a comment thread can't express), stop and name the gap (`severity:execution`) rather than force a bad fit.\n\n**Docs to keep coherent** — `aeg-root/roles/archivist.md` (close-out checklist item locations), `coordination.md`'s \"what goes where\" table, `iterations/README.md` §12 (token ledger section). `docs-index.md` regenerated.\n",
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise4Xg",
-        "name": "tier:1",
+        "name": "vinaya/tier:1",
         "description": "Implementation: feature, refactor, config",
         "color": "fbca04"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
-        "id": "LA_kwDORyBaZM8AAAACoc1g6g",
-        "name": "project:aeg-core",
-        "description": "Project: @atta/aeg-core",
-        "color": "c5def5"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -120,25 +84,13 @@
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise43w",
-        "name": "tier:3",
+        "name": "vinaya/tier:3",
         "description": "Product/roadmap: new product, API break, cross-cutting",
         "color": "d93f0b"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
-        "id": "LA_kwDORyBaZM8AAAACoc1g6g",
-        "name": "project:aeg-core",
-        "description": "Project: @atta/aeg-core",
-        "color": "c5def5"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -152,25 +104,13 @@
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise4Xg",
-        "name": "tier:1",
+        "name": "vinaya/tier:1",
         "description": "Implementation: feature, refactor, config",
         "color": "fbca04"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1giQ",
-        "name": "project:aeg",
-        "description": "Project: AEG docs/rules",
-        "color": "cccccc"
-      },
-      {
-        "id": "LA_kwDORyBaZM8AAAACoc1g6g",
-        "name": "project:aeg-core",
-        "description": "Project: @atta/aeg-core",
-        "color": "c5def5"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }
@@ -180,23 +120,17 @@
     "title": "[aeg-forge-state-v1] 2 — Relocate decisions/projects/doc-owners to packages/governance"
   },
   {
-    "body": "Project: aeg-core\nIteration: aeg-forge-state-v1 · task 1\n\n**Boundary** — Build the generic, repo-parameterized forge-reading adapter: a NEW package (`packages/forge-state`, name final at brief time) holding the only octokit/`gh`-calling code in this migration — reads a Milestone's title/description/state (Goal + Lifecycle), reads `iteration:<slug>`-labeled Issues for task membership (unchanged mechanism — already forge-native today), and parses `Depends-on`/`Conflicts-with` edges from Issue rationale bodies, HARDENED against the multi-value-as-separate-prose-spans gap the 2026-07-06 spike found (Issue #383's own body: `Depends-on: 1` (...), `2` (...) — two backtick spans, not one comma-joined value). Repo/owner are parameters, not hardcoded — every future consumer (this repo's own gates, later `vinaya-cli-v1`'s `apps/vinaya/sources`) passes them in. NOT: touching any existing `packages/aeg-core/bin/*` gate (task 3's job); NOT the file-backed side (nothing to build — the existing file readers already exist); NOT a `packages/aeg-core` change — this adapter's I/O disqualifies it from that package's post-#372 purity charter.\n\n**Sizing** — Passes: one verification story (given a repo+owner+iteration-slug, the adapter derives the identical task list + dependency graph a human reading the topology file would see — golden comparison against every currently active iteration, not a fixture), one agent holds it, bounded surface (one new package), single failure mode (adapter produces wrong/incomplete state).\n\n**Project(s) + blast radius** — aeg-core (registry entry only, if this package is later registered as a project — Planner note, not required for task 1 itself). No existing consumer touched; this is wholly new, additive code.\n\n**Dependency rationale** — `Depends-on: —`. First task; independently buildable and testable before any live gate is touched.\n\n**Traps to avoid** — Do NOT let this leak into `packages/aeg-core` — that package is zero-I/O by charter (task 28, #372); network/API calls belong only in this new package. Do NOT hardcode `daniboomerang/attalabs` anywhere in the adapter's core logic — every call site must pass repo/owner explicitly, even though every current CALLER happens to be this one repo (this is the exact reuse this whole resequencing is for — `vinaya-cli-v1` later imports or re-homes this package, not rewrites it). Parser must tolerate BOTH the topology file's `1, 2` comma-joined form AND Issue-rationale prose's multiple separate backtick-quoted numeric tokens for the same field — test both shapes explicitly, using #383's real body as a fixture. Milestone lookup must handle \"no Milestone yet for this iteration\" gracefully (early iterations may not have one) — this is a real transitional state during rollout, not an error.\n\n**Suggested agent-class** — high: the architectural keystone of the entire migration; gets reused by a second, different product later.\n\n**Stop-and-escalate** — If Milestone description length limits (GitHub caps description length) can't hold a realistic Goal text, stop (`severity:strategy`) — that's a real product constraint, not a detail to paper over. If the golden comparison diverges for any currently active iteration, stop — a divergence is a design finding, never something to silently reconcile.\n\n**Docs to keep coherent** — New package needs a README stating its scope (this repo's migration tool AND the future Vinaya CLI's reusable dependency — name both consumers explicitly so its generic-by-design requirement isn't lost). `docs-index.md` regenerated.\n",
+    "body": "Project: aeg-core\nIteration: aeg-forge-state-v1 · task 1\n\n**Boundary** — Build the generic, repo-parameterized forge-reading adapter: a NEW package (`packages/forge-state`, name final at brief time) holding the only octokit/`gh`-calling code in this migration — reads a Milestone's title/description/state (Goal + Lifecycle), reads `vinaya/iteration:<slug>`-labeled Issues for task membership (unchanged mechanism — already forge-native today), and parses `Depends-on`/`Conflicts-with` edges from Issue rationale bodies, HARDENED against the multi-value-as-separate-prose-spans gap the 2026-07-06 spike found (Issue #383's own body: `Depends-on: 1` (...), `2` (...) — two backtick spans, not one comma-joined value). Repo/owner are parameters, not hardcoded — every future consumer (this repo's own gates, later `vinaya-cli-v1`'s `apps/vinaya/sources`) passes them in. NOT: touching any existing `packages/aeg-core/bin/*` gate (task 3's job); NOT the file-backed side (nothing to build — the existing file readers already exist); NOT a `packages/aeg-core` change — this adapter's I/O disqualifies it from that package's post-#372 purity charter.\n\n**Sizing** — Passes: one verification story (given a repo+owner+iteration-slug, the adapter derives the identical task list + dependency graph a human reading the topology file would see — golden comparison against every currently active iteration, not a fixture), one agent holds it, bounded surface (one new package), single failure mode (adapter produces wrong/incomplete state).\n\n**Project(s) + blast radius** — aeg-core (registry entry only, if this package is later registered as a project — Planner note, not required for task 1 itself). No existing consumer touched; this is wholly new, additive code.\n\n**Dependency rationale** — `Depends-on: —`. First task; independently buildable and testable before any live gate is touched.\n\n**Traps to avoid** — Do NOT let this leak into `packages/aeg-core` — that package is zero-I/O by charter (task 28, #372); network/API calls belong only in this new package. Do NOT hardcode `daniboomerang/attalabs` anywhere in the adapter's core logic — every call site must pass repo/owner explicitly, even though every current CALLER happens to be this one repo (this is the exact reuse this whole resequencing is for — `vinaya-cli-v1` later imports or re-homes this package, not rewrites it). Parser must tolerate BOTH the topology file's `1, 2` comma-joined form AND Issue-rationale prose's multiple separate backtick-quoted numeric tokens for the same field — test both shapes explicitly, using #383's real body as a fixture. Milestone lookup must handle \"no Milestone yet for this iteration\" gracefully (early iterations may not have one) — this is a real transitional state during rollout, not an error.\n\n**Suggested agent-class** — high: the architectural keystone of the entire migration; gets reused by a second, different product later.\n\n**Stop-and-escalate** — If Milestone description length limits (GitHub caps description length) can't hold a realistic Goal text, stop (`severity:strategy`) — that's a real product constraint, not a detail to paper over. If the golden comparison diverges for any currently active iteration, stop — a divergence is a design finding, never something to silently reconcile.\n\n**Docs to keep coherent** — New package needs a README stating its scope (this repo's migration tool AND the future Vinaya CLI's reusable dependency — name both consumers explicitly so its generic-by-design requirement isn't lost). `docs-index.md` regenerated.\n",
     "labels": [
       {
         "id": "LA_kwDORyBaZM8AAAACise43w",
-        "name": "tier:3",
+        "name": "vinaya/tier:3",
         "description": "Product/roadmap: new product, API break, cross-cutting",
         "color": "d93f0b"
       },
       {
-        "id": "LA_kwDORyBaZM8AAAACoc1g6g",
-        "name": "project:aeg-core",
-        "description": "Project: @atta/aeg-core",
-        "color": "c5def5"
-      },
-      {
         "id": "LA_kwDORyBaZM8AAAACqYB7sA",
-        "name": "iteration:aeg-forge-state-v1",
+        "name": "vinaya/iteration:aeg-forge-state-v1",
         "description": "Iteration: aeg-forge-state-v1",
         "color": "1d76db"
       }

@@ -10,7 +10,7 @@
  *
  * Task-PR eligibility is an OR of two signals, not branch-name-only: a
  * `task/<iter>/<id>` branch, OR the closed Issue itself carrying an
- * `iteration:*` label (checked live via `gh issue view --json labels`).
+ * `vinaya/iteration:*` label (checked live via `gh issue view --json labels`).
  * Branch-name-only detection silently skipped a real task closure once
  * (#524/#530 — a tracked Issue closed by an ad-hoc `fix/*`-branch PR).
  *
@@ -69,7 +69,7 @@ export function main(): void {
   const pr = shJson<PrView>(`gh pr view ${prNumber} --json number,headRefName,body,mergedAt,comments`)
 
   // Branch-name-only detection silently skipped a real task closure (#524/#530:
-  // Issue tagged `iteration:herald-hardening-v1`, closed by a `fix/*`-branch PR).
+  // Issue tagged `vinaya/iteration:herald-hardening-v1`, closed by a `fix/*`-branch PR).
   // `isEligibleForProvenance` (pure, unit-tested) makes the actual decision;
   // this shim only fetches the two facts it needs — the branch ref, and the
   // closed Issue's live labels.

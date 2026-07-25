@@ -8,15 +8,15 @@ const { ghIssueListByLabel } = await import('./gh')
 const { listTasksForSlug } = await import('./list-tasks')
 
 describe('listTasksForSlug', () => {
-  it('parses id/title from the `[<slug>] <id> — <title>` convention and projects from labels', () => {
+  it('parses id/title from the `[<slug>] <id> — <title>` convention and projects from the body field', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
         number: 425,
         title: '[aeg-forge-state-v1] 1 — Generic forge-reading adapter (packages/forge-state)',
-        body: '**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.',
+        body: '**Project:** aeg-core\n\n**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'tier:3' }, { name: 'project:aeg-core' }, { name: 'iteration:aeg-forge-state-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:aeg-forge-state-v1' }]
       }
     ])
 
@@ -30,12 +30,13 @@ describe('listTasksForSlug', () => {
         projects: ['aeg-core'],
         dependsOn: [],
         conflictsWith: [],
-        rationaleMarkdown: '**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.'
+        rationaleMarkdown:
+          '**Project:** aeg-core\n\n**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.'
       }
     ])
   })
 
-  it('derives projects from the **Project:** field when no project:* label exists (post-#614 / state-machine-v1)', () => {
+  it('derives projects from the **Project:** field alone (post-#614 / state-machine-v1)', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
         number: 614,
@@ -43,7 +44,7 @@ describe('listTasksForSlug', () => {
         body: '**Boundary** — ...\n\n**Project(s) + blast radius** — `Project: aeg-core`.\n\n**Tier:** 3\n**Project:** aeg-core, vinaya',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'tier:3' }, { name: 'iteration:state-machine-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:state-machine-v1' }]
       }
     ])
 
@@ -52,21 +53,21 @@ describe('listTasksForSlug', () => {
     expect(task?.projects).toEqual(['aeg-core', 'vinaya'])
   })
 
-  it('unions label- and field-derived projects, de-duplicated (transition window)', () => {
+  it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
         number: 700,
-        title: '[iter] 1 — both sources present',
-        body: '**Project:** vinaya, herald',
+        title: '[iter] 1 — a stale project label lingers on the Issue',
+        body: '**Project:** herald',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'project:vinaya' }, { name: 'iteration:iter' }]
+        labels: [{ name: 'project:vinaya' }, { name: 'vinaya/iteration:iter' }]
       }
     ])
 
     const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'iter')
 
-    expect(task?.projects).toEqual(['vinaya', 'herald'])
+    expect(task?.projects).toEqual(['herald'])
   })
 
   it('ignores prose in the **Project:** field rather than deriving a garbage project (#554)', () => {
@@ -82,7 +83,7 @@ describe('listTasksForSlug', () => {
         body: '**Project:** (none — tools/admin is unregistered; see Project(s) + blast radius above)',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'iteration:admin-ui-library-picker-v1' }]
+        labels: [{ name: 'vinaya/iteration:admin-ui-library-picker-v1' }]
       }
     ])
 
@@ -99,7 +100,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'iteration:iter' }]
+        labels: [{ name: 'vinaya/iteration:iter' }]
       },
       {
         number: 1,
@@ -107,7 +108,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'iteration:iter' }]
+        labels: [{ name: 'vinaya/iteration:iter' }]
       },
       {
         number: 3,
@@ -115,7 +116,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'iteration:iter' }]
+        labels: [{ name: 'vinaya/iteration:iter' }]
       }
     ])
 
@@ -131,7 +132,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'iteration:iter' }]
+        labels: [{ name: 'vinaya/iteration:iter' }]
       }
     ])
 

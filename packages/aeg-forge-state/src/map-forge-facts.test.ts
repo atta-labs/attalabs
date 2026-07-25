@@ -80,7 +80,7 @@ describe('mapForgeFacts', () => {
   describe('blockedLabel', () => {
     it('is false when the label is absent', () => {
       const facts = mapForgeFacts(
-        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: ['tier:1'] } })
+        rawBase({ issue: { state: 'OPEN', stateReason: null, assigneesCount: 0, labels: ['vinaya/tier:1'] } })
       )
       expect(facts?.blockedLabel).toBe(false)
     })
@@ -88,7 +88,7 @@ describe('mapForgeFacts', () => {
     it('is true when aeg:blocked is present (Issue-scoped per state-machine §14)', () => {
       const facts = mapForgeFacts(
         rawBase({
-          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['tier:1', AEG_BLOCKED_LABEL] }
+          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['vinaya/tier:1', AEG_BLOCKED_LABEL] }
         })
       )
       expect(facts?.blockedLabel).toBe(true)
@@ -200,7 +200,7 @@ describe('mapForgeFacts', () => {
     it('open + assigned + branch + no PR → in-flight-ish facts', () => {
       const facts = mapForgeFacts(
         rawBase({
-          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['tier:3'] },
+          issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['vinaya/tier:3'] },
           refExists: true
         })
       )
@@ -219,7 +219,7 @@ describe('mapForgeFacts', () => {
       expect(facts?.branchExists).toBe(false)
     })
 
-    it('aeg:blocked + open PR → blockedLabel set (deriveIteration treats blocked as winner)', () => {
+    it('vinaya/blocked + open PR → blockedLabel set (deriveIteration treats blocked as winner)', () => {
       const facts = mapForgeFacts(
         rawBase({
           issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: [AEG_BLOCKED_LABEL] },

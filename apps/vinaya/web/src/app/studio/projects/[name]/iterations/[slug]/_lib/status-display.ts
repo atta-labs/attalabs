@@ -36,7 +36,7 @@
  * two lifecycle states separate by weight rather than by family.
  */
 
-import type { DerivedStatus, DispatchResult } from '@atta/aeg-core'
+import { type DerivedStatus, type DispatchResult, label } from '@atta/aeg-core'
 
 export const STATUS_ORDER: DerivedStatus[] = [
   'todo',
@@ -112,7 +112,7 @@ const STATUS_VISUALS: Record<DerivedStatus, StatusVisual> = {
     label: 'Blocked',
     badgeClass: 'bg-destructive/20 text-destructive',
     accentClass: 'border-destructive/60',
-    description: '`aeg:blocked` label set on the Issue.'
+    description: `\`${label('blocked')}\` label set on the Issue.`
   }
 }
 

@@ -58,7 +58,7 @@ describe('isGithubCrossingLine', () => {
   })
 
   it('does not flag `gh pr edit` with only --add-label (no body/title change)', () => {
-    expect(isGithubCrossingLine('gh pr edit 1 --add-label "aeg:stale-blocker"')).toBe(false)
+    expect(isGithubCrossingLine('gh pr edit 1 --add-label "vinaya/stale-blocker"')).toBe(false)
   })
 
   it('flags `gh api -X PATCH` targeting an exact /issues/<n>', () => {

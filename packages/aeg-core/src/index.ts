@@ -175,8 +175,20 @@ export {
   fetchForgeTasksByLabel,
   fetchOpenIssuesByLabel,
   fetchTaskIssueRefs,
-  mapForgeFacts
+  findIterationSlug,
+  hasLabel,
+  iterationLabel,
+  iterationSlugLengthError,
+  iterationSlugOf,
+  LABEL_MAX_LENGTH,
+  LABEL_NAMESPACE,
+  LABELS,
+  label,
+  mapForgeFacts,
+  matchesLabel,
+  projectsFromBody
 } from '@atta/aeg-forge-state'
+export type { Label, LabelCategory, LabelForm, LabelKey } from '@atta/aeg-forge-state'
 export type {
   FetchForgeFactsInput,
   ForgeFactsSnapshot,

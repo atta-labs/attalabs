@@ -12,7 +12,7 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
- *                     C5's waiver is, since D-097, a PR-wide `waiver:docs` label whose labeling
+ *                     C5's waiver is, since D-097, a PR-wide `vinaya/waiver:docs` label whose labeling
  *                     timeline event's actor is a configured principal — never a parseable
  *                     string. Label presence alone is never sufficient. CI resolves the actor
  *                     via GraphQL into WAIVER_LABEL_ACTOR; `runC5` verifies it with
@@ -26,7 +26,7 @@
  *                     coverage. Since D-097, an owned-doc violation on push is
  *                     warn-with-declared-intent, not a hard block: the push is always allowed,
  *                     and the printed message states plainly that ring 1 (the PR, once opened)
- *                     stays red until a principal applies the `waiver:docs` label or the bound
+ *                     stays red until a principal applies the `vinaya/waiver:docs` label or the bound
  *                     doc is updated. This replaces D-080's first-push commit-trailer
  *                     self-service — there is no first-push waiver self-service anymore, only an
  *                     informative warning; ring 1 is where the waiver is actually granted.
@@ -135,7 +135,7 @@ function resolvePrBody(): string {
 }
 
 /**
- * D-097: a waiver is honored only when the `waiver:docs` label is present AND
+ * D-097: a waiver is honored only when the `vinaya/waiver:docs` label is present AND
  * the actor of its labeling timeline event is a configured principal.
  * WAIVER_LABEL_ACTOR is resolved by CI (the GraphQL step ahead of this gate)
  * or is empty/unset locally — an empty/unset actor never verifies.

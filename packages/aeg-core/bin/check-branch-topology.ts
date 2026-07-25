@@ -4,7 +4,7 @@
  * check-branch-topology — thin CLI/I/O shim for the D-073 branch↔topology
  * gate wired into `.husky/pre-push` (aeg-governance-hardening task 32,
  * #399). Derives the iteration from the forge (`@atta/aeg-forge-state`,
- * task aeg-forge-state-v1 3a — a Milestone + `iteration:<slug>`-labeled
+ * task aeg-forge-state-v1 3a — a Milestone + `vinaya/iteration:<slug>`-labeled
  * Issues) and hands the result to the pure evaluator `checkBranchTopology`
  * (@atta/aeg-core), which answers row membership from `topology.tasks`. No
  * check logic lives here.

@@ -1,6 +1,6 @@
 /**
  * D-097 waiver-label actor verification. A doc-coverage waiver is honored
- * ONLY when the `waiver:docs` PR label is present AND the actor of that
+ * ONLY when the `vinaya/waiver:docs` PR label is present AND the actor of that
  * label's most recent labeling timeline event is a configured principal.
  * Label presence alone is never sufficient — that is exactly the
  * agent-emittable-string hole D-097 closes (supersedes D-080's
@@ -8,13 +8,19 @@
  * shim, same discipline as `pr-tier.ts`.
  *
  * `isWaiverLabelActorVerified` is parameterized by `label` (aeg-review-gate-v1
- * task 1, #474) so a second waiver label (`waiver:review`) can reuse the exact
+ * task 1, #474) so a second waiver label (`vinaya/waiver:review`) can reuse the exact
  * same actor-verification predicate rather than a copy-pasted duplicate that
  * could drift out of sync.
+ *
+ * The label strings themselves are read from the code-owned vocabulary in
+ * `@atta/aeg-forge-state`'s `labels.ts`, never written as literals here — a
+ * namespace change lands in one file (D-119 discipline).
  */
 
-export const WAIVER_LABEL = 'waiver:docs'
-export const WAIVER_LABEL_REVIEW = 'waiver:review'
+import { label as labelFor } from '@atta/aeg-forge-state'
+
+export const WAIVER_LABEL = labelFor('waiver-docs')
+export const WAIVER_LABEL_REVIEW = labelFor('waiver-review')
 export const PRINCIPAL_ALLOWLIST = ['daniboomerang']
 
 export function isWaiverLabelActorVerified(opts: {
