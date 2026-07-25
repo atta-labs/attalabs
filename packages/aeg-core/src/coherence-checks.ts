@@ -6,6 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
+import { iterationLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion, stripCode } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
@@ -231,7 +232,7 @@ export function checkT2(
         failures.push({
           issue: num,
           iteration: slug,
-          reason: `Issue #${num} is open and labeled iteration:${slug} but does not appear in the topology file`
+          reason: `Issue #${num} is open and labeled ${iterationLabel(slug)} but does not appear in the topology file`
         })
       }
     }
@@ -555,8 +556,8 @@ export function checkL4(
       iteration: f.iteration,
       reason:
         f.milestoneTitle === null
-          ? `Issue #${f.issue} carries iteration:${f.iteration} (active) but has no GitHub-native milestone attached`
-          : `Issue #${f.issue} carries iteration:${f.iteration} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
+          ? `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but has no GitHub-native milestone attached`
+          : `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
     })
   }
   return {
@@ -565,7 +566,7 @@ export function checkL4(
     failures,
     note:
       failures.length > 0
-        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their iteration:<slug> label (cosmetic drift, advisory)`
+        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their ${label('iteration')}<slug> label (cosmetic drift, advisory)`
         : undefined
   }
 }

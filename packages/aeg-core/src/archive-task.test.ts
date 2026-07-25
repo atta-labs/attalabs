@@ -99,11 +99,11 @@ describe('isEligibleForProvenance', () => {
     expect(isEligibleForProvenance(ref, ['unrelated'])).toBe(true)
   })
 
-  it('is eligible when ref is null but the Issue carries an iteration:* label (the #524/#530 shape)', () => {
+  it('is eligible when ref is null but the Issue carries a vinaya/iteration:* label (the #524/#530 shape)', () => {
     expect(isEligibleForProvenance(null, ['vinaya/iteration:herald-hardening-v1'])).toBe(true)
   })
 
-  it('is NOT eligible when ref is null and no label starts with iteration:', () => {
+  it('is NOT eligible when ref is null and no label starts with vinaya/iteration:', () => {
     expect(isEligibleForProvenance(null, ['bug', 'vinaya/needs:principal-input'])).toBe(false)
   })
 

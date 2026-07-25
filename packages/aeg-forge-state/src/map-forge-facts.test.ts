@@ -85,7 +85,7 @@ describe('mapForgeFacts', () => {
       expect(facts?.blockedLabel).toBe(false)
     })
 
-    it('is true when aeg:blocked is present (Issue-scoped per state-machine §14)', () => {
+    it('is true when vinaya/blocked is present (Issue-scoped per state-machine §14)', () => {
       const facts = mapForgeFacts(
         rawBase({
           issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: ['vinaya/tier:1', AEG_BLOCKED_LABEL] }

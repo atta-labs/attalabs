@@ -40,7 +40,7 @@ describe('listTasksForSlug', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
         number: 614,
-        title: '[state-machine-v1] 2 — Migrate labels; drop project:* labels',
+        title: '[state-machine-v1] 2 — Migrate labels to the vinaya/ namespace',
         body: '**Boundary** — ...\n\n**Project(s) + blast radius** — `Project: aeg-core`.\n\n**Tier:** 3\n**Project:** aeg-core, vinaya',
         state: 'OPEN',
         milestone: null,

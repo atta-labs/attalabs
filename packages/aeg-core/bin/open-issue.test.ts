@@ -238,7 +238,7 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
     expect(result).toBeNull()
   })
 
-  it('uses the first iteration:<slug> label when multiple are somehow present', () => {
+  it('uses the first vinaya/iteration:<slug> label when multiple are somehow present', () => {
     const result = resolveMilestoneToAttach(
       ['vinaya/iteration:aeg-review-gate-v1', 'vinaya/iteration:other-iteration'],
       ['--title', 't'],
@@ -344,7 +344,7 @@ function makeDeps(overrides: Partial<AmendDepsDeps> = {}): {
 }
 
 describe('runAmendDeps', () => {
-  it('refuses when the target is not a task Issue (no iteration:* label)', () => {
+  it('refuses when the target is not a task Issue (no vinaya/iteration:* label)', () => {
     const { deps, edited } = makeDeps({ fetchLabels: () => ['vinaya/tier:1'] })
     expect(() => runAmendDeps(parseAmendArgs(['429', '--depends-on', '2', '--note', 'x']), deps)).toThrow(
       /targets task Issues only/

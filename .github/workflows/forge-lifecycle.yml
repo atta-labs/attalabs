@@ -44,7 +44,7 @@ name: AEG Gate Suite
 #
 # Permissions are the union of what the 9 jobs individually held:
 #   contents: read (all), issues: write (coherence A1 labeling),
-#   pull-requests: write (brief-validation's needs:brief-correction label;
+#   pull-requests: write (brief-validation's vinaya/needs:brief-correction label;
 #   covers the coherence/single-plan-PR `gh pr view` reads).
 #
 # Original per-check rationale (D-069 forge-lifecycle gates, D-049 test-plan
@@ -133,7 +133,7 @@ jobs:
           bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Apply aeg:incoherent label to A1 failures
+      - name: Apply vinaya/incoherent label to A1 failures
         if: ${{ !cancelled() && steps.oracle.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

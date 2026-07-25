@@ -32,9 +32,9 @@
  * label" (#417).
  *
  * Usage:
- *   bun packages/aeg-core/bin/open-issue.ts --title t --body-file <path> --label iteration:x [gh args...]
+ *   bun packages/aeg-core/bin/open-issue.ts --title t --body-file <path> --label "vinaya/iteration:x" [gh args...]
  *   bun packages/aeg-core/bin/open-issue.ts edit <n> --body-file <path> [gh args...]
- *   bun packages/aeg-core/bin/open-issue.ts --validate-only --body-file <path> --label iteration:x
+ *   bun packages/aeg-core/bin/open-issue.ts --validate-only --body-file <path> --label "vinaya/iteration:x"
  */
 
 import { execFileSync } from 'node:child_process'

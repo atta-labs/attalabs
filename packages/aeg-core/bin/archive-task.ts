@@ -86,7 +86,7 @@ export function main(): void {
 
   if (!isEligibleForProvenance(ref, issueLabels)) {
     console.log(
-      `[archive-task] non-task branch (${pr.headRefName}) and closing Issue carries no iteration:* label — skip.`
+      `[archive-task] non-task branch (${pr.headRefName}) and closing Issue carries no vinaya/iteration:* label — skip.`
     )
     process.exit(0)
   }

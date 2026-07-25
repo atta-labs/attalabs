@@ -197,32 +197,6 @@ export const LABELS: Label[] = [
 
 const BY_KEY = new Map<LabelKey, Label>(LABELS.map((l) => [l.key, l]))
 
-/**
- * TRANSITION WINDOW — pre-`vinaya/` names, keyed by the entry they became.
- *
- * The code change and the forge rename cannot land in the same instant: for
- * the span between this branch's code shipping and `gh label rename` running
- * against the live forge, an Issue still carries the OLD name. Matchers read
- * both so neither ordering turns main red. Part 4 of the migration deletes
- * this map — once the forge is renamed, an old name is a bug, not a synonym.
- *
- * Construction (`label`, `iterationLabel`) never consults this map: new labels
- * are always written in the new vocabulary. Only *matching* is lenient.
- */
-const LEGACY_IDS: Record<LabelKey, string> = {
-  blocked: 'aeg:blocked',
-  'tier-0': 'tier:0',
-  'tier-1': 'tier:1',
-  'tier-3': 'tier:3',
-  iteration: 'iteration:',
-  'needs-execution-input': 'needs:execution-input',
-  'needs-strategy-input': 'needs:strategy-input',
-  'needs-principal-input': 'needs:principal-input',
-  'needs-brief-correction': 'needs:brief-correction',
-  'waiver-docs': 'waiver:docs',
-  'waiver-review': 'waiver:review'
-}
-
 function entry(key: LabelKey): Label {
   const found = BY_KEY.get(key)
   // Unreachable while `LabelKey` and `LABELS` agree — `labels.test.ts` asserts
@@ -248,14 +222,12 @@ export function iterationLabel(slug: string): string {
 
 /**
  * Whether `name` is this label — exact match for a literal, prefix match for a
- * prefix family. Accepts the pre-`vinaya/` name for the duration of the
- * transition window (see `LEGACY_IDS`).
+ * prefix family.
  */
 export function matchesLabel(key: LabelKey, name: string): boolean {
   const l = entry(key)
-  const legacy = LEGACY_IDS[key]
-  if (l.form === 'prefix') return name.startsWith(l.id) || name.startsWith(legacy)
-  return name === l.id || name === legacy
+  if (l.form === 'prefix') return name.startsWith(l.id)
+  return name === l.id
 }
 
 /** Whether any label in `names` matches `key`. */
@@ -265,15 +237,11 @@ export function hasLabel(key: LabelKey, names: readonly string[]): boolean {
 
 /**
  * The iteration slug carried by `name`, or `null` when it is not an iteration
- * label. Accepts the pre-`vinaya/` `iteration:<slug>` form during the
- * transition window.
+ * label.
  */
 export function iterationSlugOf(name: string): string | null {
   const prefix = label('iteration')
-  if (name.startsWith(prefix)) return name.slice(prefix.length)
-  const legacy = LEGACY_IDS.iteration
-  if (name.startsWith(legacy)) return name.slice(legacy.length)
-  return null
+  return name.startsWith(prefix) ? name.slice(prefix.length) : null
 }
 
 /** The first iteration slug in `names`, or `null` when none carries one. */
@@ -308,7 +276,7 @@ export function iterationSlugLengthError(slug: string): string | null {
  * The export name keeps its `AEG_` prefix on purpose: it is a code symbol, not
  * a label string, and renaming it is a consumer-wide churn this migration does
  * not need. What D-123 retires is the *label* — its value is `vinaya/blocked`.
- * Prefer `hasLabel('blocked', labels)` for matching, which also accepts the
- * legacy name for the transition window; this constant is construction-only.
+ * Prefer `hasLabel('blocked', labels)` for matching; this constant is for
+ * construction.
  */
 export const AEG_BLOCKED_LABEL = 'vinaya/blocked'

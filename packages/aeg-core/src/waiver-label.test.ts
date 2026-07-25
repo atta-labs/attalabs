@@ -46,7 +46,7 @@ describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () =>
     ).toBe(true)
   })
 
-  it('a different label present (e.g. waiver:review) never verifies waiver:docs', () => {
+  it('a different label present (e.g. vinaya/waiver:review) never verifies vinaya/waiver:docs', () => {
     expect(
       isWaiverLabelActorVerified({
         label: WAIVER_LABEL,

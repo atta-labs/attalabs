@@ -92,7 +92,7 @@ describe('checkReviewGate', () => {
       expect(result.waived).toBe(true)
     })
 
-    it('a different label (waiver:docs) applied by the principal does not waive the review gate', () => {
+    it('a different label (vinaya/waiver:docs) applied by the principal does not waive the review gate', () => {
       const result = checkReviewGate({
         comments: [],
         labels: ['vinaya/waiver:docs'],

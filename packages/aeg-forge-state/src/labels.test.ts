@@ -158,11 +158,11 @@ describe('matchesLabel() / hasLabel()', () => {
     expect(matchesLabel('iteration', 'vinaya/tier:1')).toBe(false)
   })
 
-  it('accepts the pre-vinaya/ name during the transition window', () => {
-    expect(matchesLabel('blocked', 'aeg:blocked')).toBe(true)
-    expect(matchesLabel('tier-1', 'tier:1')).toBe(true)
-    expect(matchesLabel('waiver-review', 'waiver:review')).toBe(true)
-    expect(matchesLabel('iteration', 'iteration:deprecation-v1')).toBe(true)
+  it('rejects the pre-vinaya/ name — the transition window is closed', () => {
+    expect(matchesLabel('blocked', 'aeg:blocked')).toBe(false)
+    expect(matchesLabel('tier-1', 'tier:1')).toBe(false)
+    expect(matchesLabel('waiver-review', 'waiver:review')).toBe(false)
+    expect(matchesLabel('iteration', 'iteration:deprecation-v1')).toBe(false)
   })
 
   it('hasLabel() scans a label set', () => {
@@ -177,8 +177,8 @@ describe('iterationSlugOf() / findIterationSlug()', () => {
     expect(iterationSlugOf('vinaya/iteration:state-machine-v1')).toBe('state-machine-v1')
   })
 
-  it('extracts the slug from the legacy form during the transition window', () => {
-    expect(iterationSlugOf('iteration:deprecation-v1')).toBe('deprecation-v1')
+  it('returns null for the pre-vinaya/ form — the transition window is closed', () => {
+    expect(iterationSlugOf('iteration:deprecation-v1')).toBeNull()
   })
 
   it('returns null for a non-iteration label', () => {
@@ -237,12 +237,12 @@ describe('AEG_BLOCKED_LABEL — tied to its LABELS entry', () => {
     expect(mapForgeFacts({ ...raw, issue: { ...issue, labels: [] } })?.blockedLabel).toBe(false)
   })
 
-  it('the mapper still reads the legacy name during the transition window', () => {
+  it('the mapper no longer reads the pre-vinaya/ name — the forge was renamed', () => {
     const raw: RawTaskFacts = {
       issue: { state: 'OPEN', stateReason: null, closedAt: null, assigneesCount: 0, labels: ['aeg:blocked'] },
       refExists: false,
       pullRequest: null
     }
-    expect(mapForgeFacts(raw)?.blockedLabel).toBe(true)
+    expect(mapForgeFacts(raw)?.blockedLabel).toBe(false)
   })
 })
