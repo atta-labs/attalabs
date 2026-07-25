@@ -22,6 +22,16 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
 
   return (
     <Switch
+      // `size` is a RETRO-ONLY prop, outside the cross-library contract — that
+      // contract covers the component NAME, not this prop: each library derives
+      // its own `SwitchProps` from its own installed component, and only retro
+      // ships a `size` (`.claude/skills/ui-library-system/SKILL.md` § Switch).
+      // This app's library is CMS-resolved and currently retro. It does NOT
+      // degrade harmlessly if that changes: basic/animate/brutal reject the prop
+      // at COMPILE time (verified — `TS2322: Type '{ size: string; }' is not
+      // assignable to …` against all three), so `typecheck` and `next build`
+      // fail rather than the prop being silently ignored at runtime. Drop this
+      // line if the library ever resolves to anything but retro.
       size='sm'
       checked={isStudio}
       onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
