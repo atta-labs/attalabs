@@ -1,0 +1,325 @@
+// The install manifest, made concrete (vinaya-cli-v1 task 4).
+//
+// Every artifact `vinaya init` writes into an adopter repo lives here as
+// content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
+// Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
+// what a shipped check consumes.** The manifest is exactly five items —
+// `vinaya.config.json` (starter ruleset, `checks: {}` empty), two `vinaya-`
+// workflows (D-115, D-085), git-hook managed blocks, a root `VINAYA.md`
+// doctrine pointer (D-111 reading-order convention), and labels. Everything
+// else the earlier amendment-4 manifest carried (GitHub templates, the
+// governance/ scaffold, example check scripts) was this monorepo's own
+// operational apparatus, not product surface — no shipped check consumes it,
+// so it is cut from the installer.
+//
+// The starter ruleset seeded into `vinaya.config.json` is EXTRACTED from this
+// repo's own battle-tested gates (D-105), not invented blanks — the failure it
+// kills is blank-config paralysis.
+
+import type { VinayaConfig } from './config.js'
+import type { CreateLabelOp, Op } from './ops.js'
+
+export type HookDir = '.husky' | '.git/hooks'
+
+export type InitContext = {
+  owner: string
+  repo: string
+  /** where the git-hook stubs are installed (husky if present, else raw) */
+  hookDir: HookDir
+}
+
+// --- neutral scaffold paths (never aeg-root / aeg-project) ------------------
+export const CONFIG_PATH = 'vinaya.config.json'
+// Root VINAYA.md — the doctrine pointer. Root placement is the whole point
+// (D-111 reading-order convention): an agent orienting in a fresh repo finds it
+// beside README, not buried inside a governance/ subfolder.
+export const DOCTRINE_POINTER_PATH = 'VINAYA.md'
+export const CHECKS_WORKFLOW_PATH = '.github/workflows/vinaya-checks.yml'
+export const REVIEW_WORKFLOW_PATH = '.github/workflows/vinaya-review.yml'
+
+const MANAGED_NOTE =
+  'Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.'
+
+// ---------------------------------------------------------------------------
+// D-105 starter ruleset — the seed for vinaya.config.json (no `managed`; the
+// installer injects the ownership manifest after applying every op).
+// ---------------------------------------------------------------------------
+export function starterConfig(): VinayaConfig {
+  return {
+    // Ring 1 (forge-write interception) and Ring 2 (async audits) are opt-in
+    // accelerators, off by default (D-090). Ring 0 (git hooks) and the CI
+    // guarantee are non-negotiable and deliberately absent from the schema.
+    rings: { ring1_forgeWriteInterception: false, ring2_asyncAudits: false },
+    // `checks` starts EMPTY (2026-07-23 minimal-manifest re-ruling). init
+    // ships no example checks and no example scripts: a starter config that
+    // registered example `checks` was the only thing those scripts backed, and
+    // init installs only what a shipped check consumes. `vinaya new check` is
+    // the add-path for an adopter's first custom check.
+    checks: {},
+    // Brief-schema defaults extracted from this repo's real PR/Issue gates: a
+    // PR body must carry Tier, a tagged Test Plan, and a Closes #N; a task
+    // Issue must carry the Planner rationale.
+    briefSchema: {
+      pr: {
+        sections: [
+          { builtin: 'tier' },
+          { builtin: 'testPlan' },
+          { builtin: 'testPlanExclusivity' },
+          { builtin: 'closesN' },
+          { builtin: 'project' }
+        ]
+      },
+      issue: {
+        sections: [{ builtin: 'issueRationale' }, { builtin: 'project' }]
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Workflow files (D-115: two, both refuse-if-foreign, both vinaya-prefixed)
+// ---------------------------------------------------------------------------
+function checksWorkflow(): string {
+  return `# ${MANAGED_NOTE}
+#
+# The deterministic gate suite. Runs every registered vinaya check over the
+# pull request's diff. This is the guarantee: a PR cannot merge red.
+name: Vinaya Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  vinaya-checks:
+    name: vinaya check --all --diff-only
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run checks
+        run: npx --yes vinaya check --all --diff-only
+`
+}
+
+function reviewWorkflow(): string {
+  return `# ${MANAGED_NOTE}
+#
+# The review gate — split from the checks suite (D-115) so a verdict *comment*
+# re-triggers it. GitHub fires \`issue_comment\` for a new PR comment, a
+# different event from \`pull_request\`; the checks workflow (pull_request only)
+# structurally cannot receive it. A cheap \`contains(..., 'VERDICT')\` guard
+# runs before any checkout cost, so ordinary PR chat spends no billed minute.
+name: Vinaya Review Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  vinaya-review:
+    name: vinaya review gate
+    if: >
+      github.event_name == 'pull_request' ||
+      (github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      # issue_comment payloads carry no PR head SHA/branch — resolve them
+      # before checkout, and check out that exact commit (the event's default
+      # ref is the repo's default branch, not the PR head).
+      - name: Resolve PR head
+        id: pr
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "\${{ github.event_name }}" = "pull_request" ]; then
+            NUMBER="\${{ github.event.pull_request.number }}"
+          else
+            NUMBER="\${{ github.event.issue.number }}"
+          fi
+          SHA=$(gh pr view "$NUMBER" --repo "\${{ github.repository }}" --json headRefOid -q .headRefOid)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ steps.pr.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Review gate
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes vinaya check --all
+`
+}
+
+// ---------------------------------------------------------------------------
+// Git-hook stubs — thin, marker-delimited, invoke the vinaya binary ONLY
+// (never inline check logic, never path into any repo-internal bin).
+// ---------------------------------------------------------------------------
+const HOOK_PREAMBLE = '#!/usr/bin/env sh\n'
+
+function preCommitBody(): string {
+  return `# Vinaya commit-time gate. Runs the deterministic checks over your staged
+# diff before the commit lands.
+npx --no-install vinaya check --all --diff-only || exit 1`
+}
+
+function prePushBody(): string {
+  return `# Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
+npx --no-install vinaya check --all || exit 1`
+}
+
+// ---------------------------------------------------------------------------
+// Doctrine pointer (D-111 — root VINAYA.md, the only orientation artifact)
+// ---------------------------------------------------------------------------
+function doctrinePointer(): string {
+  return `<!-- ${MANAGED_NOTE} -->
+# Vinaya doctrine — read this first
+
+This repo is governed by Vinaya. The full, canonical doctrine (roles,
+contracts, the state machine, the ring gates) ships inside the installed
+\`vinaya\` npm package as versioned reference content and is updated cleanly by
+\`vinaya upgrade\` — there is no in-repo copy to drift (D-111).
+
+An agent working in this repo follows the governed flow by reading two things:
+
+1. **This pointer** — the tool-agnostic entry point at the conventional
+   reading-order path (repo root). It names where the doctrine lives.
+2. **\`${CONFIG_PATH}\`** — the ruleset the gates enforce: rings, custom checks,
+   and the brief schema a PR/Issue body must satisfy.
+
+Live task status is derived from the forge (Issues, labels, comments) via
+\`vinaya check\` — it is never written into a file here.
+
+To view the doctrine text: \`vinaya doctor\` reports what is installed; the
+package's own reference content is the source of truth.
+`
+}
+
+// ---------------------------------------------------------------------------
+// Labels — create-if-absent, existing never modified (amendment-4 manifest).
+// Extracted from this repo's real gate vocabulary (D-105): tier tiers +
+// needs:*-input escalation labels. No tier:2 (vestigial). No status:*.
+// ---------------------------------------------------------------------------
+export function labelOps(): CreateLabelOp[] {
+  const g = 'Labels (create-if-absent; existing labels never modified)'
+  const mk = (name: string, color: string, description: string): CreateLabelOp => ({
+    kind: 'create-label',
+    name,
+    color,
+    description,
+    group: g
+  })
+  return [
+    mk('tier:0', 'ededed', 'Trivial / mechanical change'),
+    mk('tier:1', 'c5def5', 'Standard task — code + tests + docs'),
+    mk('tier:3', 'd93f0b', 'Records a decision; ratification-gated'),
+    mk('needs:execution-input', 'fbca04', 'Blocked on a missing execution detail'),
+    mk('needs:strategy-input', 'fbca04', 'Blocked on a strategy/approach decision'),
+    mk('needs:principal-input', 'b60205', 'Blocked on a Principal decision')
+  ]
+}
+
+const BRANCH_PROTECTION_NOTE = `Recommended (run yourself — vinaya never applies branch protection, D-091):
+
+  gh api -X PUT repos/{owner}/{repo}/branches/main/protection \\
+    -F required_pull_request_reviews.required_approving_review_count=1 \\
+    -F required_status_checks.strict=true \\
+    -F 'required_status_checks.contexts[]=vinaya-checks' \\
+    -F enforce_admins=true -F restrictions=`
+
+// ---------------------------------------------------------------------------
+// Op builders
+// ---------------------------------------------------------------------------
+
+/** The full forward change-set for `vinaya init`. */
+export function buildInitOps(ctx: InitContext): Op[] {
+  const ops: Op[] = []
+  const hookMode = 0o755
+
+  // Workflows (refuse-if-foreign create-file).
+  ops.push({ kind: 'create-file', path: CHECKS_WORKFLOW_PATH, content: checksWorkflow(), group: 'CI workflows' })
+  ops.push({ kind: 'create-file', path: REVIEW_WORKFLOW_PATH, content: reviewWorkflow(), group: 'CI workflows' })
+
+  // Git hooks (marker-delimited managed blocks; never clobber).
+  ops.push({
+    kind: 'managed-block',
+    path: `${ctx.hookDir}/pre-commit`,
+    marker: 'pre-commit',
+    body: preCommitBody(),
+    comment: 'hash',
+    hostPreamble: HOOK_PREAMBLE,
+    mode: hookMode,
+    group: 'Git hooks'
+  })
+  ops.push({
+    kind: 'managed-block',
+    path: `${ctx.hookDir}/pre-push`,
+    marker: 'pre-push',
+    body: prePushBody(),
+    comment: 'hash',
+    hostPreamble: HOOK_PREAMBLE,
+    mode: hookMode,
+    group: 'Git hooks'
+  })
+
+  // Config (refuse-if-foreign). Content is the seed WITHOUT `managed`; the
+  // installer rewrites it with the ownership manifest injected after apply.
+  ops.push({
+    kind: 'create-file',
+    path: CONFIG_PATH,
+    content: `${JSON.stringify(starterConfig(), null, 2)}\n`,
+    group: 'Config (starter ruleset)'
+  })
+
+  // Doctrine pointer (D-111) — root VINAYA.md, the only orientation artifact.
+  ops.push({
+    kind: 'create-file',
+    path: DOCTRINE_POINTER_PATH,
+    content: doctrinePointer(),
+    group: 'Doctrine pointer'
+  })
+
+  // Labels.
+  ops.push(...labelOps())
+
+  // Branch protection — printed only, never applied (D-091).
+  ops.push({ kind: 'print', message: BRANCH_PROTECTION_NOTE, group: 'Branch protection (printed, never applied)' })
+
+  return ops
+}
+
+/**
+ * The change-set for `vinaya init product <name>` — a new governed area.
+ * Per the 2026-07-23 minimal-manifest re-ruling this shrinks to a single
+ * `project:<name>` label (create-if-absent): the governance/ scaffold the old
+ * op-list wrote (a `projects.md` row + a per-product decision log) is cut with
+ * the rest of the governance folder — no shipped check consumes it.
+ */
+export function buildInitProductOps(name: string): Op[] {
+  const safe = name.trim()
+  return [
+    {
+      kind: 'create-label',
+      name: `project:${safe}`,
+      color: '0e8a16',
+      description: `Governed product area: ${safe}`,
+      group: `Governed product area: ${safe}`
+    }
+  ]
+}
+
+export { BRANCH_PROTECTION_NOTE }

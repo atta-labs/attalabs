@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkCommand } from './commands/check.js'
+import { ejectCommand } from './commands/eject.js'
+import { initCommand, initProductCommand } from './commands/init.js'
 import { issueCreateCommand, issueEditCommand } from './commands/issue.js'
 import { newCheckCommand } from './commands/new-check.js'
 import { prCreateCommand, prEditCommand } from './commands/pr.js'
@@ -39,6 +41,19 @@ try {
     case 'studio': {
       const code = await runStudio(process.cwd(), args)
       process.exit(code)
+      break
+    }
+    case 'init': {
+      const [subcommand, ...rest] = args
+      if (subcommand === 'product') {
+        await initProductCommand(rest)
+      } else {
+        await initCommand(args)
+      }
+      break
+    }
+    case 'eject': {
+      await ejectCommand(args)
       break
     }
     case 'check': {

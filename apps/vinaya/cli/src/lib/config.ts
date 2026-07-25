@@ -69,6 +69,47 @@ const BriefSchemaSchema = z.object({
 })
 export type BriefSchema = z.infer<typeof BriefSchemaSchema>
 
+// `managed` (vinaya-cli-v1 task 4, D-110/D-111): the ownership manifest
+// `vinaya init` writes and `vinaya eject` reads. It records exactly what the
+// installer created so eject reverses it precisely — deleting only files it
+// created, stripping only blocks it wrote (leaving adopter content), and
+// reporting created labels for manual removal (never auto-deleting a label
+// that may be in use elsewhere). `files` are whole-file paths vinaya owns;
+// `blocks` are marker-delimited managed regions inside adopter-owned files;
+// `labels` are the forge labels vinaya created-if-absent. Paths are
+// repo-root-relative, forward-slashed. If this manifest is absent or corrupt
+// at eject time, eject refuses rather than guessing at ownership.
+export const MANAGED_MANIFEST_VERSION = 1
+
+// A recorded ownership path must be a repo-root-relative path that cannot
+// escape the repo — no absolute path, no `..` segment. This is the parse-layer
+// half of the eject-safety guarantee: a hand-edited or malicious manifest
+// carrying `../OUTSIDE` fails validation here, so `eject`'s readManifest sees a
+// corrupt manifest and refuses rather than deleting outside the repo. The
+// runtime containment check in lib/ops.ts is the belt-and-suspenders half.
+export function isSafeRepoRelPath(p: string): boolean {
+  if (p.length === 0) return false
+  if (p.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(p)) return false // absolute
+  return p.split(/[\\/]/).every((seg) => seg !== '..' && seg !== '')
+}
+const SafeRepoRelPath = z.string().refine(isSafeRepoRelPath, {
+  message: 'must be a repo-root-relative path with no `..` segment or absolute root'
+})
+
+const ManagedBlockRecordSchema = z.object({
+  path: SafeRepoRelPath,
+  marker: z.string(),
+  comment: z.enum(['hash', 'html'])
+})
+export type ManagedBlockRecord = z.infer<typeof ManagedBlockRecordSchema>
+const ManagedManifestSchema = z.object({
+  version: z.literal(MANAGED_MANIFEST_VERSION),
+  files: z.array(SafeRepoRelPath),
+  blocks: z.array(ManagedBlockRecordSchema),
+  labels: z.array(z.string())
+})
+export type ManagedManifest = z.infer<typeof ManagedManifestSchema>
+
 export const VinayaConfigSchema = z.object({
   rings: z
     .object({
@@ -77,7 +118,8 @@ export const VinayaConfigSchema = z.object({
     })
     .optional(),
   checks: z.record(z.string(), CheckEntrySchema).optional(),
-  briefSchema: BriefSchemaSchema.optional()
+  briefSchema: BriefSchemaSchema.optional(),
+  managed: ManagedManifestSchema.optional()
 })
 
 export type VinayaConfig = z.infer<typeof VinayaConfigSchema>
