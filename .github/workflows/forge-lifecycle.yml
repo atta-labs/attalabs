@@ -106,7 +106,7 @@ jobs:
       # list) come from a freshly-fetched origin/main via PR_HEAD_SHA/
       # PR_TOUCHED_FILES, not the checkout's merge-ref, which GitHub
       # materializes lazily and can lag behind main. On A1 failures the
-      # script's issue numbers receive the `aeg:incoherent` label.
+      # script's issue numbers receive the `vinaya/incoherent` label.
       - name: Resolve this PR's touched files (item 5/T2 relocation — D-082)
         id: pr_files
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
@@ -140,7 +140,7 @@ jobs:
         run: |
           jq -r '[.checks[] | select(.check == "A1") | .failures[]?.issue | select(. != null)] | unique[]' \
             /tmp/coherence.json 2>/dev/null | while read -r num; do
-            gh issue edit "$num" --add-label "aeg:incoherent" || true
+            gh issue edit "$num" --add-label "vinaya/incoherent" || true
           done
 
       - name: Report oracle findings
@@ -190,11 +190,11 @@ jobs:
         run: bun packages/aeg-core/bin/verify-test-plan.ts
 
       # ── waiver-label actor (D-097) ───────────────────────────────────────
-      # A doc-coverage waiver is honored only when the `waiver:docs` label's
+      # A doc-coverage waiver is honored only when the `vinaya/waiver:docs` label's
       # OWN labeling timeline event was actored by a configured principal —
       # label presence alone (checked via PR_LABELS below) is never
       # sufficient. Resolves the actor of the most recent LABELED_EVENT
-      # naming `waiver:docs`, if any. Empty output when none exists — an
+      # naming `vinaya/waiver:docs`, if any. Empty output when none exists — an
       # empty/unset actor never verifies (isWaiverLabelActorVerified, task 29
       # #380, D-097). Same shape as "Resolve this PR's touched files" above:
       # structured output via $GITHUB_OUTPUT, guarded by !cancelled().
@@ -220,7 +220,7 @@ jobs:
               }
             }' -f owner="${{ github.repository_owner }}" -f repo="${{ github.event.repository.name }}" \
               -F number="${{ github.event.pull_request.number }}" \
-            | jq -r '[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == "waiver:docs")] | last | .actor.login // ""')
+            | jq -r '[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == "vinaya/waiver:docs")] | last | .actor.login // ""')
           echo "actor=$actor" >> "$GITHUB_OUTPUT"
 
       # ── 5/9 · Tier-appropriate documentation gate ───────────────────────
@@ -299,7 +299,7 @@ jobs:
       # Real, CI-enforced gate (D-069) — checks the PR body carries every
       # required brief section (Tier, For, Project, Test Plan, surface map,
       # doc-update list, worktree Step 0, stop conditions, autonomy clause,
-      # Closes #N, lock-ack). Applies `needs:brief-correction` on failure.
+      # Closes #N, lock-ack). Applies `vinaya/needs:brief-correction` on failure.
       # See packages/aeg-core/src/brief-validation.ts.
       - name: Brief Validation
         id: verify_brief
@@ -311,11 +311,11 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: bun packages/aeg-core/bin/verify-brief.ts
 
-      - name: Apply needs:brief-correction label on failure
+      - name: Apply vinaya/needs:brief-correction label on failure
         if: ${{ !cancelled() && steps.verify_brief.outcome == 'failure' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "needs:brief-correction"
+        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "vinaya/needs:brief-correction"
 
       # Review gate (code-reviewer + security-review verdicts) moved out to
       # its own workflow, `review-gate.yml` (D-115, 2026-07-08) — it needs an
