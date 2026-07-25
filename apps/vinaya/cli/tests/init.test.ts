@@ -6,6 +6,7 @@ import {
   buildInitOps,
   CHECKS_WORKFLOW_PATH,
   CONFIG_PATH,
+  DOCTRINE_POINTER_PATH,
   REVIEW_WORKFLOW_PATH,
   starterConfig
 } from '../src/lib/artifacts.js'
@@ -89,35 +90,59 @@ afterEach(() => {
 })
 
 describe('vinaya init', () => {
-  it('installs every manifest artifact on a clean repo', async () => {
+  it('installs exactly the 5-item minimal manifest on a clean repo', async () => {
     let rc = -1
     await captureStdout(async () => {
       rc = await runInit(['--yes'], makeDeps())
     })
     expect(rc).toBe(0)
 
+    // The minimal manifest (2026-07-23 re-ruling): config + root VINAYA.md +
+    // two workflows (tracked) + two hook stubs. Nothing else is written.
     for (const p of [
+      CONFIG_PATH,
+      DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
-      CONFIG_PATH,
       '.husky/pre-commit',
-      '.husky/pre-push',
-      '.github/ISSUE_TEMPLATE/vinaya-task.md',
-      '.github/pull_request_template.md',
-      'governance/decisions.md',
-      'governance/doctrine.md',
-      'governance/doc-owners',
-      'governance/projects.md'
+      '.husky/pre-push'
     ]) {
       expect(existsSync(join(root, p))).toBe(true)
     }
+    expect(DOCTRINE_POINTER_PATH).toBe('VINAYA.md') // root placement, not governance/
+
+    // Exhaustiveness: NOTHING outside the manifest lands. The cut artifacts
+    // (governance/, GitHub templates, example scripts) must be absent.
+    const tree = new Set(snapshot(root).keys())
+    const expected = new Set([
+      'README.md', // pre-existing adopter file
+      CONFIG_PATH,
+      DOCTRINE_POINTER_PATH,
+      CHECKS_WORKFLOW_PATH,
+      REVIEW_WORKFLOW_PATH,
+      '.husky/pre-commit',
+      '.husky/pre-push'
+    ])
+    expect(tree).toEqual(expected)
+    for (const gone of [
+      'governance',
+      'scripts/vinaya-checks',
+      '.github/ISSUE_TEMPLATE/vinaya-task.md',
+      '.github/pull_request_template.md'
+    ]) {
+      expect(existsSync(join(root, gone))).toBe(false)
+    }
+
     // labels created-if-absent
     expect(createdLabels).toContain('tier:0')
     expect(createdLabels).toContain('needs:principal-input')
-    // manifest recorded in config
+    // starter config ships no example checks (empty `checks`)
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
+    expect(cfg.checks).toEqual({})
+    // manifest recorded in config
     expect(cfg.managed.version).toBe(1)
     expect(cfg.managed.files).toContain(CHECKS_WORKFLOW_PATH)
+    expect(cfg.managed.files).toContain(DOCTRINE_POINTER_PATH)
     expect(cfg.managed.blocks.some((b: { path: string }) => b.path === '.husky/pre-commit')).toBe(true)
     // hooks are executable
     expect(statSync(join(root, '.husky/pre-commit')).mode & 0o111).not.toBe(0)
@@ -173,11 +198,14 @@ describe('vinaya init', () => {
 })
 
 describe('never-clobber', () => {
-  it('appends to a pre-existing hook and REFUSES a foreign workflow', async () => {
+  it('appends to a pre-existing hook and REFUSES a foreign workflow + root VINAYA.md', async () => {
     mkdirSync(join(root, '.husky'), { recursive: true })
     writeFileSync(join(root, '.husky/pre-commit'), '#!/usr/bin/env sh\nnpm run lint\n')
     mkdirSync(join(root, '.github/workflows'), { recursive: true })
     writeFileSync(join(root, CHECKS_WORKFLOW_PATH), 'name: not-ours\n')
+    // A pre-existing root VINAYA.md is the new refuse-if-foreign collision case
+    // (it replaces the PR-template collision the old manifest carried).
+    writeFileSync(join(root, DOCTRINE_POINTER_PATH), '# my own notes\n')
 
     const out = await captureStdout(() => runInit(['--yes'], makeDeps()))
 
@@ -189,6 +217,9 @@ describe('never-clobber', () => {
     expect(readFileSync(join(root, CHECKS_WORKFLOW_PATH), 'utf-8')).toBe('name: not-ours\n')
     expect(out).toContain('REFUSE')
     expect(out).toContain(CHECKS_WORKFLOW_PATH)
+    // foreign root VINAYA.md: untouched, and REFUSE shown in the diff
+    expect(readFileSync(join(root, DOCTRINE_POINTER_PATH), 'utf-8')).toBe('# my own notes\n')
+    expect(out).toContain(DOCTRINE_POINTER_PATH)
     // the non-foreign review workflow still installs
     expect(existsSync(join(root, REVIEW_WORKFLOW_PATH))).toBe(true)
   })
@@ -256,29 +287,38 @@ describe('round-trip: init then eject returns the repo to pre-init state', () =>
 })
 
 describe('vinaya init product', () => {
-  it('refuses before init, scaffolds a governed area after', async () => {
+  it('refuses before init, then creates only the project:<name> label after', async () => {
     // before init
     const rcBefore = await runInitProduct(['mobile'], makeDeps())
     expect(rcBefore).toBe(1)
 
     await runInit(['--yes'], makeDeps())
+    const treeAfterInit = snapshot(root)
+    createdLabels = [] // isolate what `init product` creates
+
     const rc = await runInitProduct(['mobile', '--yes'], makeDeps())
     expect(rc).toBe(0)
-    expect(existsSync(join(root, 'governance/products/mobile/decisions.md'))).toBe(true)
-    const projects = readFileSync(join(root, 'governance/projects.md'), 'utf-8')
-    expect(projects).toContain('mobile')
-    expect(projects).toContain('vinaya:managed:product-mobile')
+    // minimal manifest: init product shrinks to the project:<name> label only —
+    // no governance/ files are written.
+    expect(createdLabels).toEqual(['project:mobile'])
+    expect(existsSync(join(root, 'governance'))).toBe(false)
+    // the only filesystem change is the manifest recording the new label.
+    const treeAfterProduct = snapshot(root)
+    expect([...treeAfterProduct.keys()].sort()).toEqual([...treeAfterInit.keys()].sort())
+    const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
+    expect(cfg.managed.labels).toContain('project:mobile')
   })
 
-  it('rejects a product name with path traversal, writing nothing (security finding 2)', async () => {
+  it('rejects a product name with path traversal, creating nothing (security finding 2)', async () => {
     await runInit(['--yes'], makeDeps())
     const before = snapshot(root)
+    createdLabels = []
     for (const bad of ['../../evil', 'a/b', '..', 'Mobile', 'has space']) {
       const rc = await runInitProduct([bad, '--yes'], makeDeps())
       expect(rc).toBe(2)
     }
     expect(snapshot(root)).toEqual(before)
-    expect(existsSync(join(root, 'governance/products'))).toBe(false)
+    expect(createdLabels).toEqual([]) // no label leaked for a bad name
   })
 })
 

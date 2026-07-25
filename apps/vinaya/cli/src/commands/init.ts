@@ -9,14 +9,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  buildInitOps,
-  buildInitProductOps,
-  CONFIG_PATH,
-  type HookDir,
-  type InitContext,
-  PROJECTS_PATH
-} from '../lib/artifacts.js'
+import { buildInitOps, buildInitProductOps, CONFIG_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
 import { type ManagedManifest, VinayaConfigSchema } from '../lib/config.js'
 import {
   checkGhAuth,
@@ -175,10 +168,12 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
     return 1
   }
 
-  // `init product` extends an already-initialized repo (monorepo only). The
-  // projects registry is the marker that init has run.
+  // `init product` extends an already-initialized repo. `vinaya.config.json`
+  // in the ownership manifest is the marker that init has run (the governance/
+  // projects registry that used to serve as the marker is cut — minimal
+  // manifest re-ruling).
   const existing = readManifest(repo.repoRoot)
-  if (!existing?.files.includes(PROJECTS_PATH)) {
+  if (!existing?.files.includes(CONFIG_PATH)) {
     console.error('Error: this repo is not Vinaya-initialized yet. Run `vinaya init` first.')
     return 1
   }

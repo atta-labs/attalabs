@@ -2,9 +2,15 @@
 //
 // Every artifact `vinaya init` writes into an adopter repo lives here as
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
-// Issue #384's amendment-4 manifest, corrected for D-115 (TWO workflows) and
-// D-085 (adopter artifacts are neutral / `vinaya`-named, never `aeg-root` or
-// `aeg-project` — an adopter never encounters "AEG").
+// Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
+// what a shipped check consumes.** The manifest is exactly five items —
+// `vinaya.config.json` (starter ruleset, `checks: {}` empty), two `vinaya-`
+// workflows (D-115, D-085), git-hook managed blocks, a root `VINAYA.md`
+// doctrine pointer (D-111 reading-order convention), and labels. Everything
+// else the earlier amendment-4 manifest carried (GitHub templates, the
+// governance/ scaffold, example check scripts) was this monorepo's own
+// operational apparatus, not product surface — no shipped check consumes it,
+// so it is cut from the installer.
 //
 // The starter ruleset seeded into `vinaya.config.json` is EXTRACTED from this
 // repo's own battle-tested gates (D-105), not invented blanks — the failure it
@@ -24,17 +30,12 @@ export type InitContext = {
 
 // --- neutral scaffold paths (never aeg-root / aeg-project) ------------------
 export const CONFIG_PATH = 'vinaya.config.json'
-export const GOVERNANCE_DIR = 'governance'
-export const DECISIONS_PATH = `${GOVERNANCE_DIR}/decisions.md`
-export const DOC_OWNERS_PATH = `${GOVERNANCE_DIR}/doc-owners`
-export const PROJECTS_PATH = `${GOVERNANCE_DIR}/projects.md`
-export const DOCTRINE_POINTER_PATH = `${GOVERNANCE_DIR}/doctrine.md`
+// Root VINAYA.md — the doctrine pointer. Root placement is the whole point
+// (D-111 reading-order convention): an agent orienting in a fresh repo finds it
+// beside README, not buried inside a governance/ subfolder.
+export const DOCTRINE_POINTER_PATH = 'VINAYA.md'
 export const CHECKS_WORKFLOW_PATH = '.github/workflows/vinaya-checks.yml'
 export const REVIEW_WORKFLOW_PATH = '.github/workflows/vinaya-review.yml'
-export const ISSUE_TEMPLATE_PATH = '.github/ISSUE_TEMPLATE/vinaya-task.md'
-export const PR_TEMPLATE_PATH = '.github/pull_request_template.md'
-export const EXAMPLE_CHECK_TODO = 'scripts/vinaya-checks/example-no-stray-todo.sh'
-export const EXAMPLE_CHECK_BRANCH = 'scripts/vinaya-checks/example-branch-name.sh'
 
 const MANAGED_NOTE =
   'Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.'
@@ -49,19 +50,12 @@ export function starterConfig(): VinayaConfig {
     // accelerators, off by default (D-090). Ring 0 (git hooks) and the CI
     // guarantee are non-negotiable and deliberately absent from the schema.
     rings: { ring1_forgeWriteInterception: false, ring2_asyncAudits: false },
-    // Two real custom-check examples (D-105), each honoring the versioned
-    // CheckError contract. Their scripts are scaffolded alongside this config.
-    checks: {
-      'no-stray-todo': {
-        run: `./${EXAMPLE_CHECK_TODO}`,
-        scope: 'diff',
-        include: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx']
-      },
-      'branch-name': {
-        run: `./${EXAMPLE_CHECK_BRANCH}`,
-        scope: 'full'
-      }
-    },
+    // `checks` starts EMPTY (2026-07-23 minimal-manifest re-ruling). init
+    // ships no example checks and no example scripts: a starter config that
+    // registered example `checks` was the only thing those scripts backed, and
+    // init installs only what a shipped check consumes. `vinaya new check` is
+    // the add-path for an adopter's first custom check.
+    checks: {},
     // Brief-schema defaults extracted from this repo's real PR/Issue gates: a
     // PR body must carry Tier, a tagged Test Plan, and a Closes #N; a task
     // Issue must carry the Planner rationale.
@@ -189,108 +183,8 @@ npx --no-install vinaya check --all || exit 1`
 }
 
 // ---------------------------------------------------------------------------
-// Issue + PR templates
+// Doctrine pointer (D-111 — root VINAYA.md, the only orientation artifact)
 // ---------------------------------------------------------------------------
-function issueTemplate(): string {
-  return `<!-- ${MANAGED_NOTE} -->
----
-name: Vinaya task
-about: A governed task Issue carrying the Planner rationale the gates read
-labels: []
----
-
-Project: <project>
-Iteration: <iteration> · task <n>
-
-**Boundary** — <the single change this task makes; what is explicitly out of scope>
-
-**Sizing** — <why this is one task: one verification story, one agent, bounded surface>
-
-**Project(s) + blast radius** — <projects touched>
-
-**Dependency rationale** — \`Depends-on: —\` <or the task ids this serializes behind, and why>
-
-**Traps to avoid** — <the specific mistakes this task must not make>
-
-**Stop-and-escalate** — <the conditions under which the executor stops rather than guessing>
-`
-}
-
-function prTemplateBody(): string {
-  return `## Summary
-
-<one paragraph: what shipped, the validated mechanism, and the durable why. Closes #<N>.>
-
-## Test plan
-
-- [ ] **[agent]** <scriptable non-auth check — paste the actual command output>
-- [ ] **[principal]** <auth-gated / visual check — verified in a real session>
-
-## Scope
-
-<blast radius — projects touched, packages edited, non-goals.>
-
-**Tier:** <0 | 1 | 3>`
-}
-
-// ---------------------------------------------------------------------------
-// Governance scaffold (D-106 decision log, D-111 doctrine pointer, registries)
-// ---------------------------------------------------------------------------
-function decisionsScaffold(): string {
-  return `<!-- ${MANAGED_NOTE} -->
-# Decision log
-
-Every irreversible or contested choice is recorded here as a numbered entry so
-the decision-number-integrity gate has something real to validate from day one
-(D-106). Append-only: never rewrite a landed entry; supersede it with a new one.
-
-Entry shape:
-
-## D-001 — <one-line title>
-
-**Date:** YYYY-MM-DD
-**Status:** ACTIVE | PENDING
-**Type:** 1 (irreversible) | 2 (reversible)
-**Decision:** <what was decided>
-**Rationale:** <why>
-**Locked gates affected:** <none, or the gate/check this constrains>
-
----
-
-<!-- Add your first decision above this line. Keep the numbering contiguous. -->
-`
-}
-
-function docOwnersScaffold(): string {
-  return `# ${MANAGED_NOTE.replace('# ', '')}
-# doc-owners — code→doc coverage bindings (example set; edit for your repo).
-#
-# Each line binds a code surface (glob) to the doc that must be updated in the
-# same PR when that surface changes. The coverage gate reads this file; an
-# empty or absent file makes the gate dormant.
-#
-# format:  <glob>  ->  <doc path>
-#
-# src/**            ->  docs/architecture.md
-# packages/api/**   ->  docs/api.md
-`
-}
-
-function projectsScaffold(owner: string, repo: string): string {
-  return `<!-- ${MANAGED_NOTE} -->
-# Projects
-
-The registry of governed product areas in this repo. A task's \`Project:\` field
-must resolve against a row here. \`vinaya init product <name>\` appends a row.
-
-| Project | Path | Status |
-|---------|------|--------|
-| ${repo} | . | Active |
-
-<!-- owner/repo: ${owner}/${repo} -->
-`
-}
-
 function doctrinePointer(): string {
   return `<!-- ${MANAGED_NOTE} -->
 # Vinaya doctrine — read this first
@@ -300,57 +194,18 @@ contracts, the state machine, the ring gates) ships inside the installed
 \`vinaya\` npm package as versioned reference content and is updated cleanly by
 \`vinaya upgrade\` — there is no in-repo copy to drift (D-111).
 
-An agent working in this repo follows the governed flow by reading three
-things:
+An agent working in this repo follows the governed flow by reading two things:
 
 1. **This pointer** — the tool-agnostic entry point at the conventional
-   reading-order path. It names where the doctrine lives.
+   reading-order path (repo root). It names where the doctrine lives.
 2. **\`${CONFIG_PATH}\`** — the ruleset the gates enforce: rings, custom checks,
    and the brief schema a PR/Issue body must satisfy.
-3. **\`${DECISIONS_PATH}\`** — the decision log, the durable record of the
-   irreversible choices this repo has made.
 
 Live task status is derived from the forge (Issues, labels, comments) via
 \`vinaya check\` — it is never written into a file here.
 
 To view the doctrine text: \`vinaya doctor\` reports what is installed; the
 package's own reference content is the source of truth.
-`
-}
-
-// ---------------------------------------------------------------------------
-// Example custom-check scripts (real, executable, contract-honoring)
-// ---------------------------------------------------------------------------
-function exampleTodoCheck(): string {
-  return `#!/usr/bin/env sh
-# Example vinaya custom check (D-105). Fails if a staged file introduces a
-# stray "TODO: FIXME"-style marker. Emits one CheckError JSON line per finding
-# on stderr and exits 1 — the versioned check contract. Delete or edit freely.
-set -eu
-
-hits=$(git diff --cached -U0 | grep -nE '^\\+.*(FIXME|XXX)\\b' || true)
-if [ -n "$hits" ]; then
-  printf '%s\\n' '{"schema":1,"check":"no-stray-todo","severity":"error","message":"Staged diff introduces a FIXME/XXX marker.","agent_recovery_prompt":"Resolve or remove the FIXME/XXX marker before committing, then re-run vinaya check."}' >&2
-  exit 1
-fi
-exit 0
-`
-}
-
-function exampleBranchCheck(): string {
-  return `#!/usr/bin/env sh
-# Example vinaya custom check (D-105). Fails if the current branch is not a
-# task/<iteration>/<n> or fix/<slug> branch. Emits the CheckError contract.
-set -eu
-
-branch=$(git rev-parse --abbrev-ref HEAD)
-case "$branch" in
-  task/*/*|fix/*|main) exit 0 ;;
-  *)
-    printf '%s\\n' '{"schema":1,"check":"branch-name","severity":"error","message":"Branch does not match task/<iteration>/<n> or fix/<slug>.","agent_recovery_prompt":"Rename the branch to task/<iteration>/<n> or fix/<slug> before pushing."}' >&2
-    exit 1
-    ;;
-esac
 `
 }
 
@@ -430,47 +285,12 @@ export function buildInitOps(ctx: InitContext): Op[] {
     group: 'Config (starter ruleset)'
   })
 
-  // Example custom-check scripts (real, executable).
-  ops.push({
-    kind: 'create-file',
-    path: EXAMPLE_CHECK_TODO,
-    content: exampleTodoCheck(),
-    mode: hookMode,
-    group: 'Config (starter ruleset)'
-  })
-  ops.push({
-    kind: 'create-file',
-    path: EXAMPLE_CHECK_BRANCH,
-    content: exampleBranchCheck(),
-    mode: hookMode,
-    group: 'Config (starter ruleset)'
-  })
-
-  // Templates.
-  ops.push({ kind: 'create-file', path: ISSUE_TEMPLATE_PATH, content: issueTemplate(), group: 'Forge templates' })
-  ops.push({
-    kind: 'managed-block',
-    path: PR_TEMPLATE_PATH,
-    marker: 'pr-template',
-    body: prTemplateBody(),
-    comment: 'html',
-    group: 'Forge templates'
-  })
-
-  // Governance scaffold (D-106 / D-111).
+  // Doctrine pointer (D-111) — root VINAYA.md, the only orientation artifact.
   ops.push({
     kind: 'create-file',
     path: DOCTRINE_POINTER_PATH,
     content: doctrinePointer(),
-    group: 'Governance scaffold'
-  })
-  ops.push({ kind: 'create-file', path: DECISIONS_PATH, content: decisionsScaffold(), group: 'Governance scaffold' })
-  ops.push({ kind: 'create-file', path: DOC_OWNERS_PATH, content: docOwnersScaffold(), group: 'Governance scaffold' })
-  ops.push({
-    kind: 'create-file',
-    path: PROJECTS_PATH,
-    content: projectsScaffold(ctx.owner, ctx.repo),
-    group: 'Governance scaffold'
+    group: 'Doctrine pointer'
   })
 
   // Labels.
@@ -482,23 +302,21 @@ export function buildInitOps(ctx: InitContext): Op[] {
   return ops
 }
 
-/** The change-set for `vinaya init product <name>` — a new governed area. */
+/**
+ * The change-set for `vinaya init product <name>` — a new governed area.
+ * Per the 2026-07-23 minimal-manifest re-ruling this shrinks to a single
+ * `project:<name>` label (create-if-absent): the governance/ scaffold the old
+ * op-list wrote (a `projects.md` row + a per-product decision log) is cut with
+ * the rest of the governance folder — no shipped check consumes it.
+ */
 export function buildInitProductOps(name: string): Op[] {
   const safe = name.trim()
-  const projectRow = `| ${safe} | apps/${safe} | Active |`
   return [
     {
-      kind: 'managed-block',
-      path: PROJECTS_PATH,
-      marker: `product-${safe}`,
-      body: projectRow,
-      comment: 'html',
-      group: `Governed product area: ${safe}`
-    },
-    {
-      kind: 'create-file',
-      path: `${GOVERNANCE_DIR}/products/${safe}/decisions.md`,
-      content: `<!-- ${MANAGED_NOTE} -->\n# ${safe} — decision log\n\n<!-- Numbered decisions scoped to the ${safe} product area. -->\n`,
+      kind: 'create-label',
+      name: `project:${safe}`,
+      color: '0e8a16',
+      description: `Governed product area: ${safe}`,
       group: `Governed product area: ${safe}`
     }
   ]
