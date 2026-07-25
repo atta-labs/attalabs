@@ -8,11 +8,15 @@ export const metadata: Metadata = {
   title: 'Roadmap · Vinaya'
 }
 
-// Pure static product page — five hand-authored roadmap items. Deliberately
-// NOT derived from forge state (`listIterations()` / Milestones): that spawns
-// `gh` subprocesses which 500 in prod on Vercel, the same reason `studio/*`
-// pages `notFound()` there. This page must render statically everywhere, so the
-// content lives here as data, not as a forge query.
+// Hand-authored product page — five roadmap items. Deliberately NOT derived
+// from forge state (`listIterations()` / Milestones): that spawns `gh`
+// subprocesses which 500 in prod on Vercel, the same reason `studio/*` pages
+// `notFound()` there. The content lives here as data, not as a forge query, so
+// this route has NO forge dependency and cannot fail that way.
+//
+// That is a data-source property, not a rendering mode: like every route in
+// this app it still builds as `ƒ (Dynamic)`, because the root layout fetches
+// CMS config. "No forge dependency" — never "statically prerendered".
 // Each item carries its own concept mark (`_components/RoadmapMarks.tsx` — a
 // diagram of the feature, not a stock glyph): the cards are long-form prose, and
 // a mark per card gives the eye an anchor to scan by instead of five

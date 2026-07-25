@@ -22,6 +22,24 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
 
   return (
     <Switch
+      // `size` is a RETRO-ONLY prop, outside the cross-library contract — that
+      // contract covers the component NAME, not this prop: each library derives
+      // its own `SwitchProps` from its own installed component, and only retro
+      // ships a `size` (`.claude/skills/ui-library-system/SKILL.md`'s
+      // `## Cross-product composite components` section, the `**Switch**` entry).
+      // It does NOT degrade harmlessly if the resolved library changes:
+      // basic/animate/brutal reject the prop at COMPILE time (verified —
+      // `TS2322: Type '{ size: string; }' is not assignable to …` against all
+      // three), and `apps/vinaya/web` uses the BUILD-TIME generation pattern
+      // (`next.config.ts` → `generateUIIndex('vinaya')`, no
+      // `typescript.ignoreBuildErrors`), so `typecheck` and `next build` fail
+      // rather than the prop being silently ignored at runtime.
+      //
+      // The trigger is wider than a deliberate library change: `generate-ui.ts`
+      // resolves `config?.userInterface?.library?.id ?? 'basic'` and swallows a
+      // failed CMS fetch, so a build-time CMS outage alone is enough to fall
+      // back to `basic` and break the build here. Drop this line if the library
+      // ever resolves to anything but retro.
       size='sm'
       checked={isStudio}
       onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
