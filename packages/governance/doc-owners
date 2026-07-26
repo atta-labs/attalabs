@@ -21,7 +21,7 @@
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
 #     - dangling pointer → in-repo pointer that does not exist on disk: FAIL
 #   Escape (D-097):
-#     A PR-wide `waiver:docs` label whose labeling timeline event's actor is a
+#     A PR-wide `vinaya/waiver:docs` label whose labeling timeline event's actor is a
 #     configured principal suppresses every fired binding for that PR — a
 #     forge-authenticated human act, never a parseable string. There is no
 #     PR-body waiver field; label presence alone is never sufficient.

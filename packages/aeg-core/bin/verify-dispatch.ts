@@ -501,7 +501,7 @@ function runSurfacesMode(surfacesArg: string): void {
   }
 
   console.log(
-    `verify-dispatch --surfaces: ${pointers.length} doc-owners binding(s) will fire for this surface at PR-open (C5) — plan §7 (or a vinaya/waiver:docs/override:docs) for these now:\n`
+    `verify-dispatch --surfaces: ${pointers.length} doc-owners binding(s) will fire for this surface at PR-open (C5) — plan §7 (or a vinaya/waiver:docs/vinaya/override:docs) for these now:\n`
   )
   for (const m of matches) {
     console.log(`  ${m.surface} matches ${DOC_OWNERS_PATH}:${m.lineNum} (glob \`${m.glob}\`) → ${m.pointer}`)

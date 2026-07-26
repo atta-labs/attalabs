@@ -37,7 +37,7 @@
  *                     via `verify-dispatch --simulate`, before any commit exists at all,
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
  *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
- *                     `override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
+ *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
  *                     mode. C0-C4 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
@@ -55,7 +55,7 @@
  * whether tier-required docs are *present and well-formed*. Blunt-but-enforced beats
  * subtle-but-trusted; that distinction is the whole point of D-010.
  *
- * Escape hatch (state-machine.md Section 12): label `override:docs` on the PR, or set
+ * Escape hatch (state-machine.md Section 12): label `vinaya/override:docs` on the PR, or set
  * env OVERRIDE_DOCS=1, skips the gate. Visible in the check log.
  *
  * CWD-independent by design: chdir's to the repo root immediately below. Every
@@ -170,7 +170,7 @@ function runPrMode(): void {
       prBody: process.env.PR_BODY
     })
   ) {
-    console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
+    console.log('verify-docs: vinaya/override:docs active — gate skipped (logged for audit).')
     return
   }
 
@@ -272,7 +272,7 @@ function runPushMode(): void {
       prBody: resolvePrBody()
     })
   ) {
-    console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
+    console.log('verify-docs: vinaya/override:docs active — gate skipped (logged for audit).')
     return
   }
 
@@ -446,7 +446,9 @@ function finish(): void {
   if (errors.length) {
     console.error(`\nverify-docs FAILED (${mode} mode) — ${errors.length} issue(s):\n`)
     for (const e of errors) console.error(`  ✗ ${e}`)
-    console.error('\nFix the docs, or (Principal only) apply the override:docs label. See state-machine.md Section 12.')
+    console.error(
+      '\nFix the docs, or (Principal only) apply the vinaya/override:docs label. See state-machine.md Section 12.'
+    )
     process.exit(1)
   }
 

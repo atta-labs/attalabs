@@ -73,7 +73,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 **The provenance block (D-030) is a Class 2 object too — a close-out projection, not stored status.** At close-out the Archivist assembles a provenance record (task → intent → reviews → model → merge metadata) and posts it as a comment on the **merged** PR. It is *assembled from facts the merge already froze*, written once, append-only — a projection of frozen forge facts in exactly the way derived status is a projection of live forge facts. It is therefore explicitly **not** the forbidden "stored status" of `iterations/README.md` §9: it lives on the merged PR (never in the iteration file or the Issue), it records history (not current state), and nothing ever updates it. See `roles/archivist.md` and §13.
 
 **Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
-**Mutate:** Labels — the closed vocabulary in Section 14 (`vinaya/tier:*`, `vinaya/blocked`, `vinaya/needs:*-input`, `vinaya/needs:brief-correction`, `override:docs`), applied by the role and at the transition Section 14 specifies. **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
+**Mutate:** Labels — the closed vocabulary in Section 14 (`vinaya/tier:*`, `vinaya/blocked`, `vinaya/needs:*-input`, `vinaya/needs:brief-correction`, `vinaya/override:docs`), applied by the role and at the transition Section 14 specifies. **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
 **Read-only:** All roles always.
 
 ### Class 3: Orchestration-tool runtime (ephemeral, optional)
@@ -132,7 +132,7 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
 | **Per-project state / lessons log** (pinned Issues, D-110) | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — for the per-task Archivist; the **Iteration Archivist** updates it at Phase 13 close-out (`update-pinned-state-issue`, `roles/iteration-archivist.md`) |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
-| **Forge labels** (the Section 14 vocabulary) | Applies `override:docs` (Principal-only) | Applies `vinaya/tier:*` (Planner, at cut) + `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:brief-correction`; asserts `vinaya/tier:*` label == PR-body `Tier:` (drift cron) |
+| **Forge labels** (the Section 14 vocabulary) | Applies `vinaya/override:docs` (Principal-only) | Applies `vinaya/tier:*` (Planner, at cut) + `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:brief-correction`; asserts `vinaya/tier:*` label == PR-body `Tier:` (drift cron) |
 | **Task status** | — | — | — | — *(nobody writes it — derived from the forge)* |
 | **Provenance block** (on the merged PR) | Reads (audit) | Reads (audit) | — | Assembles + posts at close-out (append-only; from frozen facts) |
 | **Token ledger** (`iterations/<name>.tokens.md`) | Fills a previously-`—` claude.ai cell from the UI usage figure (forward-reference exception, §13); approves PR | Reports tokens at turn-end, does not append — Planner mode in the plan PR (or planning report if none), Brief Author mode in its report | Reports exact tokens in the PR body ("Token report" section) at PR open + one per re-push (terminal: `/cost`); does not append the row itself | **Sole writer** of the ledger (D-071) — collects every role's token report for the task and appends all rows at close-out; flags missing-row drift |
@@ -364,12 +364,12 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 ### Emergency override
 
 - `[skip-archivist]` in a commit message: suppresses Archivist advisory comments.
-- `override:docs` PR label (or `[override:docs]` in the body, or `OVERRIDE_DOCS=1`): suppresses the verify-docs gate for this PR.
+- `vinaya/override:docs` PR label (or `[vinaya/override:docs]` in the body, or `OVERRIDE_DOCS=1`): suppresses the verify-docs gate for this PR.
 - Author should be the Principal (verified by the forge commit author field).
 
 Every override is logged (verify-docs prints that the override was active; the Archivist records it). This is an audit mechanism, not a security one — the Principal can always override; the log keeps it visible.
 
-**Override truthfulness across modes (D-081).** The override applies identically in `verify-docs --pr` and `verify-docs --push` — before D-081, `runPushMode()` never called the override-check function, so `OVERRIDE_DOCS=1`/`override:docs` was silently dead code on a first push (no PR yet to carry the label/body). Confirmed live on task PR #314. Fixed by having `runPushMode()` call the identical override check `runPrMode()` already used; no gate was weakened — the escape hatch now honors what this section already documented, in the mode where it previously didn't.
+**Override truthfulness across modes (D-081).** The override applies identically in `verify-docs --pr` and `verify-docs --push` — before D-081, `runPushMode()` never called the override-check function, so `OVERRIDE_DOCS=1`/`vinaya/override:docs` was silently dead code on a first push (no PR yet to carry the label/body). Confirmed live on task PR #314. Fixed by having `runPushMode()` call the identical override check `runPrMode()` already used; no gate was weakened — the escape hatch now honors what this section already documented, in the mode where it previously didn't.
 
 ---
 
@@ -422,7 +422,7 @@ The same principle retired two label families outright in #614: the six `status:
 - **Always-mandatory** — present on every task, exactly once. (Only `vinaya/tier:*`.)
 - **Conditional-mandatory** — present **if and only if** the condition it signals is true. The obligation runs both ways: it MUST be added when the condition becomes true, and it MUST be removed when the condition becomes false. A stale `vinaya/needs:principal-input` on a resolved Issue is as much a violation as a missing one — a conditional label is a **live signal, not a sticker**.
 
-The only genuinely **optional** labels are `override:docs` and `vinaya/waiver:docs`, because both are escape hatches — forcing either would be a contradiction.
+The only genuinely **optional** labels are `vinaya/override:docs` and `vinaya/waiver:docs`, because both are escape hatches — forcing either would be a contradiction.
 
 ### The closed set
 
@@ -437,7 +437,7 @@ No label outside this table may be applied to a task Issue or its PR. (The Archi
 | `vinaya/needs:strategy-input` | Issue | Routes to the **TL (Strategist mode)**. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `vinaya/needs:principal-input` | Issue | Routes to the **Principal** — the surface the Principal scans to see what is waiting on them. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `vinaya/needs:brief-correction` | Issue/PR | The Archivist's "this brief is malformed" flag (§3, §12). | Archivist (automation); removed when the brief is fixed. | Conditional-mandatory |
-| `override:docs` | PR | Suppresses the verify-docs gate for one PR (§12) — honored identically in `--pr` and `--push` mode (D-081; previously dead code in push mode). | **Principal only**, deliberately. | **Optional** (escape hatch) |
+| `vinaya/override:docs` | PR | Suppresses the verify-docs gate for one PR (§12) — honored identically in `--pr` and `--push` mode (D-081; previously dead code in push mode). | **Principal only**, deliberately. | **Optional** (escape hatch) |
 | `vinaya/waiver:docs` | PR | Honors a C5 doc-coverage finding PR-wide (§15) — but ONLY when this label's own labeling timeline event was actored by a configured principal; the forge can say a label was added, but not by whom in a way CI trusts without a dedicated actor check, so this row exists to mark that the actor-verification layer, not the label add, is what carries the authority. | **Principal only**, applied outside any agent session — `.claude/hooks/check-forge-gates.sh` denies any agent-session command that mutates this specific label (D-097). | **Optional** (escape hatch) |
 
 ### Two rules that are easy to get wrong

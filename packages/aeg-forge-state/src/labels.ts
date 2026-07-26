@@ -69,7 +69,11 @@ export type LabelCategory =
   | 'iteration'
   /** What the task is waiting on, and from whom. */
   | 'needs'
-  /** A gate deliberately excused for this one PR, by a principal. */
+  /**
+   * A gate deliberately excused for this one PR, by a principal. Covers both
+   * the targeted waivers (one finding class) and the blunt `override:docs`
+   * (the whole gate) — same axis, different blast radius.
+   */
   | 'waiver'
   /**
    * An anomaly the mechanism DETECTED and is surfacing for a human. Never
@@ -109,6 +113,7 @@ export type LabelKey =
   | 'needs-brief-correction'
   | 'waiver-docs'
   | 'waiver-review'
+  | 'override-docs'
   | 'incoherent'
   | 'direct-main-push'
   | 'dead-branch-push'
@@ -208,6 +213,13 @@ export const LABELS: Label[] = [
     category: 'waiver',
     form: 'literal',
     carries: 'Review gate excused for this PR — honored only when a principal applied it (D-097).'
+  },
+  {
+    key: 'override-docs',
+    id: 'vinaya/override:docs',
+    category: 'waiver',
+    form: 'literal',
+    carries: 'The whole verify-docs gate suppressed for this PR — a Principal-only blunt override, wider than a waiver.'
   },
   {
     key: 'incoherent',

@@ -32,6 +32,7 @@ const KEYS: LabelKey[] = [
   'needs-brief-correction',
   'waiver-docs',
   'waiver-review',
+  'override-docs',
   'incoherent',
   'direct-main-push',
   'dead-branch-push',
@@ -123,9 +124,9 @@ describe('LABELS — shape', () => {
     ])
   })
 
-  it('covers both waiver labels', () => {
+  it('covers both waivers and the blunt override — the whole escape-hatch axis', () => {
     const waivers = LABELS.filter((l) => l.category === 'waiver').map((l) => l.id)
-    expect(waivers.sort()).toEqual(['vinaya/waiver:docs', 'vinaya/waiver:review'])
+    expect(waivers.sort()).toEqual(['vinaya/override:docs', 'vinaya/waiver:docs', 'vinaya/waiver:review'])
   })
 
   it('covers all three detection flags — the anomalies a human must resolve', () => {
@@ -161,6 +162,10 @@ describe('label() — the only sanctioned constructor', () => {
 
   it('names the storage-object kind the backlog excludes', () => {
     expect(label('state-object')).toBe('vinaya/state-object')
+  })
+
+  it('names the docs-gate override — the one §14 label the family-enumerated grep missed', () => {
+    expect(label('override-docs')).toBe('vinaya/override:docs')
   })
 
   it('returns the full string for a literal label', () => {

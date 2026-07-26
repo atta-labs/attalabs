@@ -82,7 +82,7 @@ while read -r _localref _localsha remoteref remotesha; do
   # D-078/D-097: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
   # origin/main. Ring 0 (here, pre-push) is warn-with-declared-intent, not a
   # hard block: a doc-coverage violation can only ever be waived by a
-  # forge-authenticated human act — a `waiver:docs` PR label applied by a
+  # forge-authenticated human act — a `vinaya/waiver:docs` PR label applied by a
   # principal, actor-verified at ring 1 (CI) — never by a parseable string.
   # No PR exists yet at this chokepoint, so no such label can exist here
   # either; `verify-docs.ts --push` always exits 0 now, printing a warning

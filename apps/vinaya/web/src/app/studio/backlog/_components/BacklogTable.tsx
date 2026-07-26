@@ -40,7 +40,7 @@ function Dash() {
 
 /**
  * The label cells' wrapper (task 11 #624). `table-fixed` means a column never
- * grows to fit its content, so a long label like `needs:decomposition` has to
+ * grows to fit its content, so a long label like `vinaya/needs:decomposition` has to
  * wrap INSIDE its column or it clips/overlaps the neighbour. Some libraries'
  * `Badge` ships `whitespace-nowrap` + a fixed `h-5` + `overflow-hidden` (retro),
  * which does exactly that — so the wrapper relaxes those three on its children
