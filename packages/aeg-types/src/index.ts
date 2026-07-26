@@ -85,7 +85,7 @@ export type ForgeFacts = {
    * merged state — `'changes_requested'` is the only one that flips status.
    */
   reviewDecision: 'none' | 'changes_requested' | 'approved'
-  /** `aeg:blocked` label present. Wins over every other status (§3). */
+  /** `vinaya/blocked` label present. Wins over every other status (§3). */
   blockedLabel: boolean
   /**
    * GitHub's native close reason (`stateReason`), projected to AEG's terms:
@@ -107,7 +107,7 @@ export type ForgeFacts = {
 export type ForgeIssue = { number: number; body: string; labels: string[] }
 
 /** A `Closes #N` Issue's resolved AEG task identity — the iteration slug and
- * task id derived from its title (`[<slug>] <id> — ...`) and `iteration:<slug>`
+ * task id derived from its title (`[<slug>] <id> — ...`) and `vinaya/iteration:<slug>`
  * label. Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1
  * reverse): a branch closing an Issue that resolves to one of these must be
  * named `task/<iterSlug>/<taskId>`. */

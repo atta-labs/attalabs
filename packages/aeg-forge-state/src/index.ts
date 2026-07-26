@@ -13,13 +13,30 @@ export { fetchProvenance } from './fetch-provenance'
 export { buildBranchName, fetchForgeFacts, fetchForgeTasksByLabel } from './fetch-forge-facts'
 export { fetchOpenIssuesByLabel } from './fetch-open-issues'
 export { fetchTaskIssueRefs } from './fetch-task-issue-refs'
-export { LABELS } from './labels'
-export type { Label, LabelCategory, LabelForm } from './labels'
+export {
+  findIterationSlug,
+  hasLabel,
+  iterationLabel,
+  iterationSlugLengthError,
+  iterationSlugOf,
+  LABEL_MAX_LENGTH,
+  LABEL_NAMESPACE,
+  LABELS,
+  label,
+  matchesLabel
+} from './labels'
+export type { Label, LabelCategory, LabelForm, LabelKey } from './labels'
 export { AEG_BLOCKED_LABEL, mapForgeFacts } from './map-forge-facts'
 export { resolveGithubToken } from './github-token'
 export { listIssueMilestonesForSlug } from './list-issue-milestones'
 export type { IssueMilestoneFact } from './list-issue-milestones'
-export { listTasksForSlug, listTasksForSlugAsync, resolveTaskIssueRef, TITLE_PATTERN } from './list-tasks'
+export {
+  listTasksForSlug,
+  listTasksForSlugAsync,
+  projectsFromBody,
+  resolveTaskIssueRef,
+  TITLE_PATTERN
+} from './list-tasks'
 export { parseRationaleDeps } from './parse-rationale-deps'
 export type { ParsedRationaleDeps } from './parse-rationale-deps'
 export { resolveRepo } from './resolve-repo'

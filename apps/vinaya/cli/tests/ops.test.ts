@@ -40,7 +40,7 @@ const ops: Op[] = [
     mode: 0o755,
     group: 'hooks'
   },
-  { kind: 'create-label', name: 'tier:0', color: 'ededed', description: 'trivial', group: 'labels' }
+  { kind: 'create-label', name: 'vinaya/tier:0', color: 'ededed', description: 'trivial', group: 'labels' }
 ]
 
 describe('planInstall', () => {
@@ -95,8 +95,8 @@ describe('applyInstall → dry-run equals install', () => {
     const created: string[] = []
     const plan = planInstall(ops, root)
     const manifest = await applyInstall(plan, root, recordingLabels(created))
-    expect(created).toEqual(['tier:0'])
-    expect(manifest.labels).toEqual(['tier:0'])
+    expect(created).toEqual(['vinaya/tier:0'])
+    expect(manifest.labels).toEqual(['vinaya/tier:0'])
     rmSync(root, { recursive: true, force: true })
   })
 })
@@ -106,13 +106,13 @@ describe('eject round-trip', () => {
     const root = scratch()
     const plan = planInstall(ops, root)
     const manifest = await applyInstall(plan, root, noLabels)
-    manifest.labels = ['tier:0'] // as if created
+    manifest.labels = ['vinaya/tier:0'] // as if created
 
     const ejectPlan = planEject(manifest, root)
     const { removedLabelsToReport } = applyEject(ejectPlan, root)
 
     expect(existsSync(join(root, '.github/workflows/vinaya-checks.yml'))).toBe(false)
-    expect(removedLabelsToReport).toEqual(['tier:0'])
+    expect(removedLabelsToReport).toEqual(['vinaya/tier:0'])
     rmSync(root, { recursive: true, force: true })
   })
 

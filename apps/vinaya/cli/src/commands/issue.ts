@@ -93,7 +93,7 @@ function validateTaskIssue(body: string | null, title: string | null, retryComma
     refuse([
       makeCheckError(
         'forge-args',
-        'A task Issue (an `iteration:*` label) requires a `--body-file <path>` so the rationale gate can validate it.',
+        'A task Issue (a `vinaya/iteration:*` label) requires a `--body-file <path>` so the rationale gate can validate it.',
         `Add \`--body-file <path>\`, then re-run \`${retryCommand}\`.`
       )
     ])

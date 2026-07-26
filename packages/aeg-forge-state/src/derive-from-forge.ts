@@ -8,7 +8,7 @@ import { listTasksForSlugAsync } from './list-tasks'
  *     Milestone exists yet for this iteration — a real transitional state,
  *     not an error; `goal`/`lifecycle` then degrade to `''`/`'active'`,
  *     mirroring `parseIteration`'s own no-marker default)
- *   - `iteration:<slug>`-labeled Issues → the task list, including
+ *   - `vinaya/iteration:<slug>`-labeled Issues → the task list, including
  *     `Depends-on`/`Conflicts-with` edges parsed from each Issue's
  *     "Dependency rationale" section
  *

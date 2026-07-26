@@ -3,7 +3,7 @@
  * detail). One server entry point that:
  *
  *   1. Resolves `{ owner, repo }` from the local git remote (`resolveRepo`).
- *   2. Resolves issue numbers for tasks: tries the `iteration:<slug>` label
+ *   2. Resolves issue numbers for tasks: tries the `vinaya/iteration:<slug>` label
  *      query first (canonical forge source per D-029); falls back to topology
  *      refs when the label returns nothing (e.g. archived iterations that
  *      pre-date the labeling convention).
@@ -189,7 +189,7 @@ export async function loadIterationProgress(
 
 /**
  * Resolve task refs for `loadIterationSnapshot`: augments topology null-issue
- * refs with forge-discovered issue numbers via the `iteration:<slug>` label.
+ * refs with forge-discovered issue numbers via the `vinaya/iteration:<slug>` label.
  */
 async function resolveIterationTaskRefs(
   repo: RepoRef,

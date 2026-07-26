@@ -12,7 +12,7 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
- *                     C5's waiver is, since D-097, a PR-wide `waiver:docs` label whose labeling
+ *                     C5's waiver is, since D-097, a PR-wide `vinaya/waiver:docs` label whose labeling
  *                     timeline event's actor is a configured principal — never a parseable
  *                     string. Label presence alone is never sufficient. CI resolves the actor
  *                     via GraphQL into WAIVER_LABEL_ACTOR; `runC5` verifies it with
@@ -26,7 +26,7 @@
  *                     coverage. Since D-097, an owned-doc violation on push is
  *                     warn-with-declared-intent, not a hard block: the push is always allowed,
  *                     and the printed message states plainly that ring 1 (the PR, once opened)
- *                     stays red until a principal applies the `waiver:docs` label or the bound
+ *                     stays red until a principal applies the `vinaya/waiver:docs` label or the bound
  *                     doc is updated. This replaces D-080's first-push commit-trailer
  *                     self-service — there is no first-push waiver self-service anymore, only an
  *                     informative warning; ring 1 is where the waiver is actually granted.
@@ -37,7 +37,7 @@
  *                     via `verify-dispatch --simulate`, before any commit exists at all,
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
  *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
- *                     `override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
+ *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
  *                     mode. C0-C4 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
@@ -55,7 +55,7 @@
  * whether tier-required docs are *present and well-formed*. Blunt-but-enforced beats
  * subtle-but-trusted; that distinction is the whole point of D-010.
  *
- * Escape hatch (state-machine.md Section 12): label `override:docs` on the PR, or set
+ * Escape hatch (state-machine.md Section 12): label `vinaya/override:docs` on the PR, or set
  * env OVERRIDE_DOCS=1, skips the gate. Visible in the check log.
  *
  * CWD-independent by design: chdir's to the repo root immediately below. Every
@@ -135,7 +135,7 @@ function resolvePrBody(): string {
 }
 
 /**
- * D-097: a waiver is honored only when the `waiver:docs` label is present AND
+ * D-097: a waiver is honored only when the `vinaya/waiver:docs` label is present AND
  * the actor of its labeling timeline event is a configured principal.
  * WAIVER_LABEL_ACTOR is resolved by CI (the GraphQL step ahead of this gate)
  * or is empty/unset locally — an empty/unset actor never verifies.
@@ -170,7 +170,7 @@ function runPrMode(): void {
       prBody: process.env.PR_BODY
     })
   ) {
-    console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
+    console.log('verify-docs: vinaya/override:docs active — gate skipped (logged for audit).')
     return
   }
 
@@ -272,7 +272,7 @@ function runPushMode(): void {
       prBody: resolvePrBody()
     })
   ) {
-    console.log('verify-docs: override:docs active — gate skipped (logged for audit).')
+    console.log('verify-docs: vinaya/override:docs active — gate skipped (logged for audit).')
     return
   }
 
@@ -446,7 +446,9 @@ function finish(): void {
   if (errors.length) {
     console.error(`\nverify-docs FAILED (${mode} mode) — ${errors.length} issue(s):\n`)
     for (const e of errors) console.error(`  ✗ ${e}`)
-    console.error('\nFix the docs, or (Principal only) apply the override:docs label. See state-machine.md Section 12.')
+    console.error(
+      '\nFix the docs, or (Principal only) apply the vinaya/override:docs label. See state-machine.md Section 12.'
+    )
     process.exit(1)
   }
 

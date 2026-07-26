@@ -525,7 +525,7 @@ const MISSING_TRAPS_BODY = `
 **Docs to keep coherent** — none
 `
 
-function makeForgeIssue(number: number, body: string, labels: string[] = ['iteration:iter-1']): ForgeIssue {
+function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/iteration:iter-1']): ForgeIssue {
   return { number, body, labels }
 }
 
@@ -552,7 +552,7 @@ describe('R1: missing-rationale-field', () => {
     expect(r.note).toMatch(/grandfathered/)
   })
 
-  it('non-task Issue (no iteration: label) is ignored', () => {
+  it('non-task Issue (no vinaya/iteration: label) is ignored', () => {
     const issuesBySlug = new Map([['iter-1', [makeForgeIssue(104, MISSING_TRAPS_BODY, ['bug'])]]])
     passesWithNoFailures(checkR1(issuesBySlug, new Set()))
   })

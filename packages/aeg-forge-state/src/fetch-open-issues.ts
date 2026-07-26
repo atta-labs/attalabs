@@ -1,6 +1,6 @@
 /**
  * Open-issues-by-iteration-label fetch — the single implementation of the
- * "which Issues are still open under `iteration:<slug>`?" fact.
+ * "which Issues are still open under `vinaya/iteration:<slug>`?" fact.
  *
  * One implementation per fact (D-081 discipline); do not re-implement.
  *
@@ -14,6 +14,7 @@
 
 import { graphql } from '@octokit/graphql'
 import type { ForgeIssue } from '@atta/aeg-types'
+import { iterationLabel } from './labels'
 
 type LabeledIssuesResponse = {
   repository: Record<
@@ -48,7 +49,7 @@ export async function fetchOpenIssuesByLabel(
   const perSlug = slugs
     .map(
       (slug) => `
-    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(`iteration:${slug}`)}], first: 100) {
+    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(iterationLabel(slug))}], first: 100) {
       nodes { number body labels(first: 20) { nodes { name } } }
     }`
     )

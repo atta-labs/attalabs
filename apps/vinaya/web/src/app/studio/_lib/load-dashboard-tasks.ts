@@ -12,7 +12,7 @@
  * A task's `category` is one of five, mapped from its derived status:
  *   - `ready`             — a `todo` task whose dispatch gate passes now
  *   - `blocked`           — a `todo` task whose gate FAILS (Blocked · needs #N),
- *                           OR the `blocked` DerivedStatus (an `aeg:blocked`
+ *                           OR the `blocked` DerivedStatus (a `vinaya/blocked`
  *                           label — D-069's anomaly holding-pen)
  *   - `in-flight`         — branch open, no PR
  *   - `in-review`         — PR open

@@ -12,10 +12,11 @@
  * exists to prevent. Presence-only, like `brief-validation.ts`: content
  * quality stays a judgment call; existence does not.
  *
- * Applies to task Issues only (label `iteration:<slug>`) — the caller decides
+ * Applies to task Issues only (label `vinaya/iteration:<slug>`) — the caller decides
  * applicability from the labels; this module only checks the body.
  */
 
+import { hasLabel } from '@atta/aeg-forge-state'
 import { stripCode } from './anchored-region'
 
 export type IssueSectionResult = { status: 'pass' | 'fail'; errors: string[] }
@@ -57,7 +58,7 @@ export function checkIssueRationale(body: string): IssueSectionResult {
 
 /** true when any label marks this as a task Issue (the rationale contract applies). */
 export function isTaskIssueLabelSet(labels: string[]): boolean {
-  return labels.some((l) => l.startsWith('iteration:'))
+  return hasLabel('iteration', labels)
 }
 
 // ---------------------------------------------------------------------------
@@ -106,13 +107,14 @@ const PATH_TEXT = (body: string): string => stripCode(body, { inlineSpans: 'keep
 export type ProjectPath = { name: string; path: string }
 
 /**
- * The projects a task Issue declares — the union of its `project:*` labels and
- * its body's `**Project:**` field. Both, because either alone has been the
- * only surviving copy: `@atta/aeg-forge-state` derives a task's project the
- * same way precisely so derivation survives the labels being dropped.
+ * The projects a task Issue declares — its body's `**Project:**` field, and
+ * only that. Project is a **field, not a label** (doctrine): #614 dropped the
+ * `project:*` labels outright, and `@atta/aeg-forge-state`'s `list-tasks.ts`
+ * derives a task's project from the same field, so the two agree by
+ * construction. `labels` stays in the signature because callers pass it and
+ * the applicability question (`isTaskIssueLabelSet`) is label-shaped.
  */
-export function declaredProjects(body: string, labels: string[]): string[] {
-  const fromLabels = labels.filter((l) => l.startsWith('project:')).map((l) => l.slice('project:'.length).trim())
+export function declaredProjects(body: string, _labels: string[]): string[] {
   const field = /(?:\*\*)?Project(?:\(s\))?(?:\*\*)?\s*:\s*(?:\*\*)?\s*([^\n]+)/i.exec(PATH_TEXT(body))
   const fromBody = (field?.[1] ?? '')
     .split(/[,/]/)
@@ -123,7 +125,7 @@ export function declaredProjects(body: string, labels: string[]): string[] {
     // The field's value may trail into prose ("vinaya. **BUT edits …**"); keep
     // the bare-name shapes a registry row can actually carry.
     .filter((s) => /^[a-z0-9][a-z0-9-]*$/i.test(s))
-  return [...new Set([...fromLabels, ...fromBody].filter((s) => s.length > 0))]
+  return [...new Set(fromBody.filter((s) => s.length > 0))]
 }
 
 /**

@@ -16,6 +16,7 @@
 // repo's own battle-tested gates (D-105), not invented blanks — the failure it
 // kills is blank-config paralysis.
 
+import { label } from '@atta/aeg-core'
 import type { VinayaConfig } from './config.js'
 import type { CreateLabelOp, Op } from './ops.js'
 
@@ -211,8 +212,11 @@ package's own reference content is the source of truth.
 
 // ---------------------------------------------------------------------------
 // Labels — create-if-absent, existing never modified (amendment-4 manifest).
-// Extracted from this repo's real gate vocabulary (D-105): tier tiers +
-// needs:*-input escalation labels. No tier:2 (vestigial). No status:*.
+// The names come from the code-owned vocabulary (`@atta/aeg-core`'s re-exported
+// `LABELS`), never written here as literals, so an adopter's repo is seeded
+// with exactly the namespaced set this repo runs on (D-105, D-123). Only the
+// tier + needs families are installed: no tier:2 (vestigial), no status:*
+// (status is derived), no project:* (project is a body field).
 // ---------------------------------------------------------------------------
 export function labelOps(): CreateLabelOp[] {
   const g = 'Labels (create-if-absent; existing labels never modified)'
@@ -224,12 +228,12 @@ export function labelOps(): CreateLabelOp[] {
     group: g
   })
   return [
-    mk('tier:0', 'ededed', 'Trivial / mechanical change'),
-    mk('tier:1', 'c5def5', 'Standard task — code + tests + docs'),
-    mk('tier:3', 'd93f0b', 'Records a decision; ratification-gated'),
-    mk('needs:execution-input', 'fbca04', 'Blocked on a missing execution detail'),
-    mk('needs:strategy-input', 'fbca04', 'Blocked on a strategy/approach decision'),
-    mk('needs:principal-input', 'b60205', 'Blocked on a Principal decision')
+    mk(label('tier-0'), 'ededed', 'Trivial / mechanical change'),
+    mk(label('tier-1'), 'c5def5', 'Standard task — code + tests + docs'),
+    mk(label('tier-3'), 'd93f0b', 'Records a decision; ratification-gated'),
+    mk(label('needs-execution-input'), 'fbca04', 'Blocked on a missing execution detail'),
+    mk(label('needs-strategy-input'), 'fbca04', 'Blocked on a strategy/approach decision'),
+    mk(label('needs-principal-input'), 'b60205', 'Blocked on a Principal decision')
   ]
 }
 

@@ -100,7 +100,7 @@ describe('checkIssueRationale', () => {
 
 describe('isTaskIssueLabelSet', () => {
   it('is true when an iteration label is present', () => {
-    expect(isTaskIssueLabelSet(['iteration:aeg-governance-hardening', 'tier:3'])).toBe(true)
+    expect(isTaskIssueLabelSet(['vinaya/iteration:aeg-governance-hardening', 'vinaya/tier:3'])).toBe(true)
   })
   it('is false for non-iteration labels', () => {
     expect(isTaskIssueLabelSet(['bug', 'help wanted'])).toBe(false)
@@ -125,7 +125,13 @@ const REGISTRY = [
 ]
 
 /** A minimally-valid rationale, parameterised on the two fields the content checks read. */
-function rationale(opts: { boundary: string; docs?: string; traps?: string; extra?: string }): string {
+function rationale(opts: {
+  boundary: string
+  docs?: string
+  traps?: string
+  extra?: string
+  projects?: string
+}): string {
   return `
 ## Planner's rationale
 
@@ -133,7 +139,7 @@ function rationale(opts: { boundary: string; docs?: string; traps?: string; extr
 
 **Sizing** — Passes the four.
 
-**Project(s) + blast radius** — \`Project: vinaya\`.
+**Project(s) + blast radius** — \`Project: ${opts.projects ?? 'vinaya'}\`.
 
 **Dependency rationale** — Depends-on: —.
 
@@ -149,27 +155,30 @@ ${opts.extra ?? ''}
 }
 
 describe('declaredProjects', () => {
-  it('unions the project:* labels with the body field', () => {
-    const body = rationale({ boundary: 'x' })
-    expect(declaredProjects(body, ['project:vada', 'iteration:x'])).toEqual(expect.arrayContaining(['vada', 'vinaya']))
+  it('reads every project the body field declares', () => {
+    const body = rationale({ boundary: 'x', projects: 'vada, vinaya' })
+    expect(declaredProjects(body, [])).toEqual(expect.arrayContaining(['vada', 'vinaya']))
   })
 
-  it('survives the labels being dropped — the body field alone still resolves', () => {
-    expect(declaredProjects(rationale({ boundary: 'x' }), [])).toEqual(['vinaya'])
+  it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
+    expect(declaredProjects(rationale({ boundary: 'x' }), ['project:vada', 'vinaya/iteration:x'])).toEqual(['vinaya'])
   })
 })
 
 describe('checkBlastRadiusScope (A)', () => {
   it('fails a single-project task whose Boundary edits a shared package it does not own', () => {
     const body = rationale({ boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).' })
-    const r = checkBlastRadiusScope(body, ['project:vinaya'], SHARED, REGISTRY)
+    const r = checkBlastRadiusScope(body, [], SHARED, REGISTRY)
     expect(r.status).toBe('fail')
     expect(r.errors[0]).toMatch(/packages\/ui/)
   })
 
   it('passes once a second project is declared — the review fan-out actually widens', () => {
-    const body = rationale({ boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).' })
-    expect(checkBlastRadiusScope(body, ['project:vinaya', 'project:vada'], SHARED, REGISTRY).status).toBe('pass')
+    const body = rationale({
+      boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).',
+      projects: 'vinaya, vada'
+    })
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 
   it('passes on an explicit blast-radius-ack: line', () => {
@@ -177,17 +186,20 @@ describe('checkBlastRadiusScope (A)', () => {
       boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).',
       extra: '\n**blast-radius-ack:** every consumer keeps the existing fallback path.\n'
     })
-    expect(checkBlastRadiusScope(body, ['project:vinaya'], SHARED, REGISTRY).status).toBe('pass')
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 
   it('passes a single-project task editing the package that IS its own project (no under-declaration)', () => {
-    const body = rationale({ boundary: 'Add a check to `packages/aeg-core/src/issue-validation.ts`.' })
-    expect(checkBlastRadiusScope(body, ['project:aeg-core'], SHARED, REGISTRY).status).toBe('pass')
+    const body = rationale({
+      boundary: 'Add a check to `packages/aeg-core/src/issue-validation.ts`.',
+      projects: 'aeg-core'
+    })
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 
   it('does not count a cited document as a touched domain', () => {
     const body = rationale({ boundary: 'Resolve the registry row in `packages/governance/projects.md`.' })
-    expect(checkBlastRadiusScope(body, ['project:vinaya'], SHARED, REGISTRY).status).toBe('pass')
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 
   it('does not count a shared path named outside Boundary / blast radius (an import, a trap)', () => {
@@ -195,12 +207,12 @@ describe('checkBlastRadiusScope (A)', () => {
       boundary: 'Add a CLI flag in `apps/vinaya/cli`.',
       traps: 'The CLI imports `packages/aeg-core` unchanged — do not edit it.'
     })
-    expect(checkBlastRadiusScope(body, ['project:vinaya'], SHARED, REGISTRY).status).toBe('pass')
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 
   it('is dormant when no collision-domain list is available', () => {
     const body = rationale({ boundary: 'Restyle `packages/ui/topbar/index.tsx`.' })
-    expect(checkBlastRadiusScope(body, ['project:vinaya'], [], REGISTRY).status).toBe('pass')
+    expect(checkBlastRadiusScope(body, [], [], REGISTRY).status).toBe('pass')
   })
 })
 
@@ -329,6 +341,6 @@ describe('code-blindness — every content check reuses the single stripCode (PR
     ].join(shape.eol)
     const body = `${rationale({ boundary: 'Add a CLI flag in `apps/vinaya/cli`.' })}\n${quoted}\n`
     expect(checkNoBriefContent(body).status).toBe('pass')
-    expect(checkBlastRadiusScope(body, ['project:vinaya'], SHARED, REGISTRY).status).toBe('pass')
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 })

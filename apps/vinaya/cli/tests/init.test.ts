@@ -134,8 +134,8 @@ describe('vinaya init', () => {
     }
 
     // labels created-if-absent
-    expect(createdLabels).toContain('tier:0')
-    expect(createdLabels).toContain('needs:principal-input')
+    expect(createdLabels).toContain('vinaya/tier:0')
+    expect(createdLabels).toContain('vinaya/needs:principal-input')
     // starter config ships no example checks (empty `checks`)
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
     expect(cfg.checks).toEqual({})
@@ -247,7 +247,7 @@ describe('round-trip: init then eject returns the repo to pre-init state', () =>
     const out = await captureStdout(() => runEject(['--yes'], ejectDeps()))
     expect(snapshot(root)).toEqual(before) // eject restored exactly
     // labels reported for manual removal, never auto-deleted
-    expect(out).toContain('gh label delete tier:0')
+    expect(out).toContain('gh label delete vinaya/tier:0')
   })
 
   it('fixture with adopter lines in a hook: eject strips only the vinaya block', async () => {

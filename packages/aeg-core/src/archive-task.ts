@@ -12,6 +12,7 @@
  * posted by hand on PRs #302/#305/#306.
  */
 
+import { hasLabel } from '@atta/aeg-forge-state'
 import { type AnchorField, anchoredRegion, stripCode } from './anchored-region'
 import { headerRegion } from './brief-validation'
 import { readTierFromPrBody } from './pr-tier'
@@ -37,12 +38,12 @@ const TASK_BRANCH_PATTERN = /^task\/([^/]+)\/([^/]+)$/
  * `fix/*` cleanup that finally attaches `Closes #N` to a task whose real
  * work already shipped elsewhere) is EQUALLY eligible: the CLI shim
  * (`bin/archive-task.ts`) additionally checks the closed Issue's own
- * `iteration:*` label via `gh issue view --json labels` and proceeds if
+ * `vinaya/iteration:*` label via `gh issue view --json labels` and proceeds if
  * either signal is present. `buildProvenanceBlock` already tolerates a
  * `null` ref (falls back to a branch-name task label), so this function's
  * only remaining job is the branch-name half of that OR — it is no longer
  * the sole gate. (Confirmed gap, #524/#530: a task whose Issue carried
- * `iteration:herald-hardening-v1` was closed by a `fix/*`-branch PR;
+ * `vinaya/iteration:herald-hardening-v1` was closed by a `fix/*`-branch PR;
  * branch-name-only detection silently skipped provenance forever.)
  */
 export function taskRefFromBranch(branch: string): { iteration: string; taskId: string } | null {
@@ -56,14 +57,14 @@ export function taskRefFromBranch(branch: string): { iteration: string; taskId: 
  * testable without mocking `gh` — the CLI shim (`bin/archive-task.ts`) does
  * only the I/O (resolve `ref`, fetch the closed Issue's labels) and hands
  * both facts here. True when EITHER signal holds: a real task-branch `ref`,
- * or the closed Issue's own labels carry an `iteration:*` tag.
+ * or the closed Issue's own labels carry an `vinaya/iteration:*` tag.
  */
 export function isEligibleForProvenance(
   ref: { iteration: string; taskId: string } | null,
   issueLabels: string[]
 ): boolean {
   if (ref !== null) return true
-  return issueLabels.some((name) => name.startsWith('iteration:'))
+  return hasLabel('iteration', issueLabels)
 }
 
 const PROVENANCE_HEADING = '### AEG provenance'

@@ -1,5 +1,5 @@
 /**
- * Open issues carrying no `iteration:*` label — the backlog view's data
+ * Open issues carrying no `vinaya/iteration:*` label — the backlog view's data
  * source (Studio task 2, #498). A different fact from `fetchOpenIssuesByLabel`
  * (`@atta/aeg-core` — "under iteration X" vs. "under no iteration"): GitHub's
  * GraphQL `labels:` filter argument has no pattern-exclusion capability, so
@@ -10,17 +10,24 @@
  * authoring time) is well within a single page; re-evaluate if it grows into
  * the hundreds.
  *
- * Also excludes `vinaya:state-object` (task 2 addendum, PR #499 review) —
+ * Also excludes `vinaya/state-object` (task 2 addendum, PR #499 review) —
  * D-110's pinned per-project/root-ecosystem state, ratification queue, and
  * lessons-log Issues (#447-#453) are permanent forge-native storage objects,
  * never meant to be closed and carrying no actionable work, so they don't
  * belong in a backlog-of-open-work view alongside real Issues like #497.
  */
 
+import { hasLabel, projectsFromBody } from '@atta/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 
-export type BacklogIssue = { number: number; title: string; url: string; labels: string[] }
+/**
+ * `projects` comes from the Issue body's `**Project:**` field, never from a
+ * label — project is a field, not a label (#614 dropped `project:*` outright),
+ * and `@atta/aeg-forge-state`'s `projectsFromBody` is the same parser the task
+ * surfaces use, so the backlog and the boards agree by construction.
+ */
+export type BacklogIssue = { number: number; title: string; url: string; labels: string[]; projects: string[] }
 
 /**
  * The backlog fetch result carries a `ForgeStatus` alongside the issues —
@@ -39,7 +46,13 @@ export type BacklogResult = { issues: BacklogIssue[]; forge: ForgeStatus }
 type OpenIssuesResponse = {
   repository: {
     issues: {
-      nodes: Array<{ number: number; title: string; url: string; labels: { nodes: Array<{ name: string }> } }>
+      nodes: Array<{
+        number: number
+        title: string
+        url: string
+        body: string | null
+        labels: { nodes: Array<{ name: string }> }
+      }>
     }
   } | null
 }
@@ -54,7 +67,7 @@ export async function fetchOpenIssuesWithoutIterationLabel(
   const query = `query OpenIssues($owner: String!, $repo: String!) {
   repository(owner: $owner, name: $repo) {
     issues(states: [OPEN], first: 100) {
-      nodes { number title url labels(first: 20) { nodes { name } } }
+      nodes { number title url body labels(first: 20) { nodes { name } } }
     }
   }
 }`
@@ -74,11 +87,9 @@ export async function fetchOpenIssuesWithoutIterationLabel(
       number: n.number,
       title: n.title,
       url: n.url,
-      labels: n.labels?.nodes?.map((l) => l.name) ?? []
+      labels: n.labels?.nodes?.map((l) => l.name) ?? [],
+      projects: projectsFromBody(n.body ?? '')
     }))
-    .filter(
-      (issue) =>
-        !issue.labels.some((label) => /^iteration:/.test(label)) && !issue.labels.includes('vinaya:state-object')
-    )
+    .filter((issue) => !hasLabel('iteration', issue.labels) && !hasLabel('state-object', issue.labels))
   return { issues, forge: { kind: 'ok' } }
 }

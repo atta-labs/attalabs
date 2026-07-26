@@ -1,23 +1,19 @@
 import type { Task, TaskIssueRef } from '@atta/aeg-types'
 import { type GhIssue, ghIssueListByLabel, ghIssueListByLabelAsync } from './gh'
+import { findIterationSlug, iterationLabel } from './labels'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
 /** Issue title convention: `[<iteration-slug>] <task-id> — <title>`, the same
- * shape every AEG Issue is opened with (`open-issue.ts`, brief-authoring). */
+ * shape every Vinaya Issue is opened with (`open-issue.ts`, brief-authoring). */
 export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
 
-function parseProjectLabels(labels: Array<{ name: string }>): string[] {
-  return labels.filter((l) => l.name.startsWith('project:')).map((l) => l.name.slice('project:'.length))
-}
-
 /** Reads the `**Project:**` field from a task Issue's rationale body (the D-078
- * grammar). Project is a **field, not a label** (doctrine; `state-machine-v1`
- * task 2 / #614 drops the `project:*` labels outright). Deriving from the field
- * keeps project resolution working after those labels are removed, and gives a
- * forge-native task Issue that carries only the field — never got a label — a
- * resolvable project today (the `state-machine-v1` dead-board case). Matches the
- * bold field line only; the prose `**Project(s) + blast radius**` heading and a
- * backticked inline `Project: x` never match (no `:**` immediately after).
+ * grammar). Project is a **field, not a label** (doctrine): `state-machine-v1`
+ * task 2 / #614 dropped the `project:*` labels outright, so the field is the
+ * only source. It also resolves a forge-native task Issue that carries only the
+ * field and never got a label (the `state-machine-v1` dead-board case). Matches
+ * the bold field line only; the prose `**Project(s) + blast radius**` heading
+ * and a backticked inline `Project: x` never match (no `:**` right after).
  *
  * Values are shape-guarded, not registry-checked: the field is free prose and
  * authors write real sentences in it (#554: `**Project:** (none — tools/admin
@@ -29,20 +25,28 @@ function parseProjectLabels(labels: Array<{ name: string }>): string[] {
  * here; that is the registry's problem to report, not this parser's. */
 const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]*$/i
 
-function parseProjectField(body: string): string[] {
-  const m = body.match(/^\s*\*\*Project(?:\(s\))?:\*\*\s*(.+)$/im)
+/**
+ * The field line, in either markup the corpus actually uses: the bold
+ * `**Project:** x` the templates emit, and the plain `Project: x` header line
+ * older Issues were authored with (the whole `vada-production-v1` cohort, and
+ * the `aeg-forge-state-v1` fixture). Accepting only the bold form made this
+ * parser disagree with `issue-validation.ts`'s `declaredProjects`, which has
+ * always been tolerant — and once #614 deleted the `project:*` labels, that
+ * disagreement silently dropped the project of every plain-form Issue.
+ *
+ * The optional `**` are matched independently on each side rather than as a
+ * required pair, which is what keeps the prose heading `**Project(s) + blast
+ * radius**` out: nothing there puts a `:` straight after the name.
+ */
+const PROJECT_FIELD = /^\s*(?:\*\*)?Project(?:\(s\))?(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.+)$/im
+
+export function projectsFromBody(body: string): string[] {
+  const m = body.match(PROJECT_FIELD)
   if (!m) return []
   return (m[1] ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter((s) => PROJECT_SLUG.test(s))
-}
-
-/** Union of label-derived and field-derived projects, de-duplicated, order
- * stable (labels first). Transition-safe across #614: label-only bodies (today)
- * and field-only bodies (post-#614, and `state-machine-v1` now) both resolve. */
-function mergeProjects(fromLabels: string[], fromField: string[]): string[] {
-  return [...new Set([...fromLabels, ...fromField])]
 }
 
 function taskFromIssue(issue: GhIssue): Task | null {
@@ -57,7 +61,7 @@ function taskFromIssue(issue: GhIssue): Task | null {
     id,
     title,
     issue: issue.number,
-    projects: mergeProjects(parseProjectLabels(issue.labels), parseProjectField(body)),
+    projects: projectsFromBody(body),
     dependsOn,
     conflictsWith,
     rationaleMarkdown: body
@@ -89,27 +93,27 @@ function tasksFromIssues(issues: GhIssue[]): Task[] {
   return tasks.sort((a, b) => compareTaskIds(a.id, b.id))
 }
 
-/** Lists `iteration:<slug>`-labeled Issues and builds the `Task[]` for that
- * iteration. Issue title's bracketed slug is not re-validated against
- * `slug` — the `iteration:<slug>` label is the authoritative membership
+/** Lists `vinaya/iteration:<slug>`-labeled Issues and builds the `Task[]` for
+ * that iteration. Issue title's bracketed slug is not re-validated against
+ * `slug` — the `vinaya/iteration:<slug>` label is the authoritative membership
  * signal; a title typo should not silently drop a real task. */
 export function listTasksForSlug(owner: string, repo: string, slug: string): Task[] {
-  return tasksFromIssues(ghIssueListByLabel(owner, repo, `iteration:${slug}`))
+  return tasksFromIssues(ghIssueListByLabel(owner, repo, iterationLabel(slug)))
 }
 
 /** Async twin of `listTasksForSlug` — non-blocking `gh` exec, same transform. */
 export async function listTasksForSlugAsync(owner: string, repo: string, slug: string): Promise<Task[]> {
-  return tasksFromIssues(await ghIssueListByLabelAsync(owner, repo, `iteration:${slug}`))
+  return tasksFromIssues(await ghIssueListByLabelAsync(owner, repo, iterationLabel(slug)))
 }
 
 /**
- * Resolves an arbitrary Issue's title + labels to its AEG task identity, if
+ * Resolves an arbitrary Issue's title + labels to its Vinaya task identity, if
  * it has one — the REVERSE of `taskFromIssue`/`listTasksForSlug` (those start
  * from a known iteration slug and list its tasks; this starts from an
  * unknown Issue and asks "is this a task Issue, and if so which task?").
  *
  * Same authoritative-signal discipline as `listTasksForSlug`'s doc comment:
- * the `iteration:<slug>` label — not the title's bracketed text — is the
+ * the `vinaya/iteration:<slug>` label — not the title's bracketed text — is the
  * slug source. The title only needs to match the `[<slug>] <id> — ...`
  * shape closely enough to yield a task id; a bracket/label slug mismatch
  * (title typo) doesn't invalidate the label's membership signal.
@@ -122,7 +126,7 @@ export function resolveTaskIssueRef(title: string, labels: string[]): TaskIssueR
   if (!m) return null
   const taskId = (m[2] ?? '').trim()
   if (!taskId) return null
-  const iterSlug = labels.find((l) => l.startsWith('iteration:'))?.slice('iteration:'.length)
+  const iterSlug = findIterationSlug(labels)
   if (!iterSlug) return null
   return { iterSlug, taskId }
 }

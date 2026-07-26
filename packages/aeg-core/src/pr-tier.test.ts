@@ -63,16 +63,21 @@ describe('overrideActive', () => {
     expect(overrideActive({ overrideDocsEnv: '1' })).toBe(true)
   })
 
-  it('override:docs label activates', () => {
-    expect(overrideActive({ prLabels: 'tier:3, override:docs' })).toBe(true)
+  it('vinaya/override:docs label activates', () => {
+    expect(overrideActive({ prLabels: 'vinaya/tier:3, vinaya/override:docs' })).toBe(true)
   })
 
-  it('[override:docs] in the PR body activates', () => {
-    expect(overrideActive({ prBody: 'some text [override:docs] more text' })).toBe(true)
+  it('[vinaya/override:docs] in the PR body activates', () => {
+    expect(overrideActive({ prBody: 'some text [vinaya/override:docs] more text' })).toBe(true)
+  })
+
+  it('the pre-vinaya/ name no longer activates — label and body alike (#614)', () => {
+    expect(overrideActive({ prLabels: 'vinaya/tier:3, override:docs' })).toBe(false)
+    expect(overrideActive({ prBody: 'some text [override:docs] more text' })).toBe(false)
   })
 
   it('none present → inactive', () => {
-    expect(overrideActive({ prLabels: 'tier:1', prBody: 'no override here' })).toBe(false)
+    expect(overrideActive({ prLabels: 'vinaya/tier:1', prBody: 'no override here' })).toBe(false)
   })
 
   it('all inputs absent → inactive', () => {

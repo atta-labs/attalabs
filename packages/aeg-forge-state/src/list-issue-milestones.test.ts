@@ -15,7 +15,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 1 — a',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'iteration:iter' }],
+        labels: [{ name: 'vinaya/iteration:iter' }],
         milestone: { title: 'iter' }
       },
       {
@@ -23,7 +23,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 2 — b',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'iteration:iter' }],
+        labels: [{ name: 'vinaya/iteration:iter' }],
         milestone: null
       }
     ])
@@ -41,7 +41,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 1 — a',
         body: '',
         state: 'CLOSED',
-        labels: [{ name: 'iteration:iter' }],
+        labels: [{ name: 'vinaya/iteration:iter' }],
         milestone: null
       }
     ])

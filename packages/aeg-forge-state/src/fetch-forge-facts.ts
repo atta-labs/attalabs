@@ -34,6 +34,7 @@ import type {
   TaskRef
 } from '@atta/aeg-types'
 import { resolveGithubToken } from './github-token'
+import { iterationLabel } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
 /** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
@@ -43,7 +44,7 @@ export function buildBranchName(iteration: string, taskId: string): string {
 
 /**
  * Discover iteration task refs from the forge by querying Issues labeled
- * `iteration:<slug>`. Returns an empty array when:
+ * `vinaya/iteration:<slug>`. Returns an empty array when:
  *   - No token is available.
  *   - The label has no issues (e.g. archived iterations that pre-date the label
  *     convention).
@@ -62,14 +63,14 @@ export async function fetchForgeTasksByLabel(input: {
   if (!token) return []
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
-  const label = `iteration:${input.iterationSlug}`
+  const iterationLabelName = iterationLabel(input.iterationSlug)
 
   let response: LabelIssuesResponse
   try {
     response = await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
       owner: input.owner,
       repo: input.repo,
-      label
+      label: iterationLabelName
     })
   } catch {
     return []

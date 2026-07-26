@@ -1,10 +1,12 @@
 /**
  * state-machine-model.ts — the canonical, code-owned model of AEG's execution
  * state machine: what it reads, what it can conclude, and the ordered rules
- * that get from one to the other. Pure data, zero I/O, zero imports beyond
- * types — the same discipline as `actions.ts` and `waiver-label.ts` (D-119:
- * one pure-data list, read by both the logic and the rendered docs, so the two
- * can never drift).
+ * that get from one to the other. Pure data, zero I/O — the same discipline as
+ * `actions.ts` and `waiver-label.ts` (D-119: one pure-data list, read by both
+ * the logic and the rendered docs, so the two can never drift). Its only
+ * non-type import is `label()` from the sibling pure-data label vocabulary
+ * (`@atta/aeg-forge-state`'s `labels.ts`), so the label names this model quotes
+ * cannot drift from the ones the mechanism actually matches.
  *
  * Three parts, in the order a reader needs them:
  *
@@ -31,6 +33,7 @@
  * `@atta/aeg-forge-state`'s `labels.ts`; this module names them only in prose.
  */
 
+import { label } from '@atta/aeg-forge-state'
 import type { ForgeFacts } from '@atta/aeg-types'
 import type { DerivedStatus } from './types'
 
@@ -78,7 +81,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   },
   {
     fact: 'blockedLabel',
-    readsFrom: "Issue.labels contains 'aeg:blocked'",
+    readsFrom: `Issue.labels contains '${label('blocked')}'`,
     meaning: 'Execution halted pending an external unblock. Wins over every other rule.'
   },
   {

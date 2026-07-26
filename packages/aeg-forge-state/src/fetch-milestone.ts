@@ -47,7 +47,7 @@ export function listActiveIterationSlugs(owner: string, repo: string): ActiveIte
  * Mirrors `listActiveIterationSlugs`'s shape and query, `state=closed`
  * instead of `open`. `deriveIterationFromForge`'s Issue lookup already queries
  * `--state all` (`gh.ts`'s `ghIssueListByLabel`), so a closed Milestone's
- * `iteration:<slug>`-labeled Issues (themselves closed, merged PRs) resolve
+ * `vinaya/iteration:<slug>`-labeled Issues (themselves closed, merged PRs) resolve
  * correctly through the same task-list derivation active iterations use.
  */
 export function listArchivedIterationSlugs(owner: string, repo: string): ActiveIterationRef[] {

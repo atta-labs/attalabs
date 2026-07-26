@@ -6,6 +6,7 @@
  * here — the caller (the CLI shim) reads env once and passes the values in.
  */
 
+import { hasLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion } from './anchored-region'
 import { isDecisionLog, isDocFile, isSpecFile } from './file-classify'
 
@@ -52,10 +53,19 @@ export function readTierFromPrBody(prBody: string): 0 | 1 | 3 | null {
   return t === 0 || t === 1 || t === 3 ? (t as 0 | 1 | 3) : null
 }
 
+/**
+ * The body token that activates the override — the label name in brackets, so
+ * the two spellings cannot drift. Built from the code-owned vocabulary rather
+ * than written as a literal (#614): `override:docs` was the one §14 system
+ * label the namespace migration missed, precisely because it lived here as a
+ * bare string that no label-family grep looked for.
+ */
+const OVERRIDE_BODY_TOKEN = `[${label('override-docs')}]`
+
 export function overrideActive(opts: { overrideDocsEnv?: string; prLabels?: string; prBody?: string }): boolean {
   if (opts.overrideDocsEnv === '1') return true
   const labels = (opts.prLabels || '').split(',').map((s) => s.trim())
-  if (labels.includes('override:docs')) return true
-  if ((opts.prBody || '').includes('[override:docs]')) return true
+  if (hasLabel('override-docs', labels)) return true
+  if ((opts.prBody || '').includes(OVERRIDE_BODY_TOKEN)) return true
   return false
 }

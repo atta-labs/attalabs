@@ -140,7 +140,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('incoherent')
   })
 
-  it('blocked: aeg:blocked label wins over every other status', () => {
+  it('blocked: vinaya/blocked label wins over every other status', () => {
     const d = deriveIteration(
       oneTask,
       new Map([
