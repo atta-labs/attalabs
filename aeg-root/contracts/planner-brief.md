@@ -12,6 +12,24 @@ summary: Ever had a plan's key details get lost the moment someone else picked i
 ---
 # Contract: Planner → Brief Author
 
+## The short version
+
+This seam sits between planning an iteration and writing one task's brief. It exists because a role boundary is where work is lost: the planner does a deep technical pass, and without a contract its conclusions quietly fail to arrive.
+
+**What crosses** — the planner's rationale for one task, written into that task's issue: what the task is and deliberately is not; why it is one task rather than three; every project and shared-package consumer in its blast radius; why each dependency and conflict edge exists; the traps the dig already found; the class of agent the work needs; when the executing agent must stop rather than improvise; and the documents this work will make incoherent. Each has exactly one named home in the brief that consumes it, so a conclusion cannot arrive without a place to land.
+
+**The hand-off is malformed when** — a rationale is missing any of those parts, in which case the planner does not emit it; or when a brief drops one on the floor, in which case the brief is wrong rather than merely thin. It is malformed too when the rationale carries detail that cannot survive the wait — exact signatures, precise file lists — which goes stale between planning and dispatch; re-deriving that fresh is the brief author's half. And when the brief author's own dig contradicts the rationale, that is escalated back, never silently overridden.
+
+**What it does not carry** — the brief itself, which is written later and lives elsewhere; any statement of status, which is derived from the forge and never written down; scheduling or estimates, which belong to whatever tool plans the roadmap; and the freshly pinned facts a brief asserts about current code, which belong entirely to the next seam.
+
+**How it physically runs** — the carrier is the task's issue body. The planner writes the rationale there in a fixed grammar, readable by a person and checkable by a machine alike; an issue whose body does not carry every part is refused at creation, and the same check re-runs against issues already open. The brief author reads it there and writes the brief, which lands in the pull-request body at dispatch. The issue holds the reasoning; the pull request holds the instruction.
+
+Everything below is the reference: the field-by-field mapping, the grammar, and both sides' obligations.
+
+---
+
+## Reference
+
 **Status:** active
 **Seam:** the hand-off from the Planner (producer) to the Brief Author (consumer).
 **Single source of truth for this seam.** The two role docs do **not** redefine what crosses this boundary — they point here. `aeg-root/roles/planner.md` (producer side) and `aeg-root/skills/brief-authoring/SKILL.md` (consumer side) each reference this file; this file is where the field-by-field hand-off lives, once.
@@ -68,7 +86,7 @@ A ready-to-fill skeleton of the full eight-field rationale lives at `aeg-root/te
 
 A task Issue's body must carry all eight fields in one of these two forms. **Canonical implementation:** `packages/aeg-core/src/issue-validation.ts` (`checkIssueRationale`, `isTaskIssueLabelSet`) — the single grammar/parser, consumed at two enforcement points per `aeg-root/enforcement.md`'s ring model:
 
-- **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `iteration:<slug>`) whose body fails `checkIssueRationale`. **It also refuses on three content checks (D-130), which grade what the fields *say* rather than that they exist:**
+- **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `vinaya/iteration:<slug>`) whose body fails `checkIssueRationale`. **It also refuses on three content checks (D-130), which grade what the fields *say* rather than that they exist:**
   - `checkBlastRadiusScope` — if **Boundary** or **Project(s) + blast radius** names a path under a collision domain in `.aeg/packages` that none of the declared projects owns (ownership resolves against `packages/governance/projects.md`), the Issue must declare a second project or carry a `blast-radius-ack: <why one lens is enough>` line. `Project(s)` drives the review fan-out, so an under-declared blast radius under-governs the change. Dormant when `.aeg/packages` is absent.
   - `checkNoBriefContent` — the body must carry no `## References`, `Technical surface map`, `Premise`, `Step 0`, or `Test Plan` section. Those are Brief-Author artifacts; an Issue is not a brief's home (it would go stale before work starts).
   - `checkRationaleNamesDocs` — **Docs to keep coherent** and/or **Traps to avoid** must name at least one concrete doc path (`aeg-root/…`, `.claude/skills/…`, `.claude/rules/…`, `apps/<x>/CLAUDE.md`, `apps/<x>/specs/…`, a repo-level `*.md`). A genuinely doc-less surface uses the explicit `no-doc-surface` sentinel — the same shape as `Test Plan: unit-tests-only`. This is the only read-obligation signal a forge write leaves: the skill-check hook fires on file edits, and cutting an Issue edits no file.

@@ -12,6 +12,24 @@ summary: Ever had a vague "looks good" review that told you nothing about what w
 ---
 # Contract: Reviewer → per-task Archivist
 
+## The short version
+
+This seam sits between a review and the permanent record of the work it reviewed. It exists because close-out can only be honest if the verdict it reads says what was actually checked.
+
+**What crosses** — the reviewer's verdict, and the merged pull request that carries it. The verdict itself: approved, or changes requested. The findings, each with a severity, so the record can tell a note from a blocker. And the result of the check against the product's own specification — whether the change conforms to it, drifts from it, contradicts it, or reveals that the specification itself is now stale.
+
+**The hand-off is malformed when** — the verdict is absent or unclear, when a finding carries no severity, or when the specification check is simply not stated. A verdict comment missing any of the three is not posted; the reviewer revises it first. "Looks good" is the failure this seam was written against: it tells the record nothing about what was examined, and close-out then has the choice of inventing a field or leaving a hole.
+
+**What it does not carry** — permission to close out an unmerged change. The verdict is not the authorisation; the merge is. Nor does it carry any obligation to re-review: close-out is bookkeeping, not a second opinion, and a merged change is not reopened because the record-keeper would have judged it differently.
+
+**How it physically runs** — the carrier is the verdict comment on the pull request, which becomes a frozen fact once that pull request merges. The verdict line is written bare, on its own line, because it is read by machine as well as by people, and the merge gate requires a clean one. After the merge, close-out reads it from the pull request's own history and copies it into the provenance record. A serious finding that was raised and merged anyway means a deviation was consciously accepted — it is recorded as such, not quietly dropped. A finding that the specification has gone stale becomes a follow-up issue, because it is not a reason to block the merge and must not vanish either.
+
+Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
+
+---
+
+## Reference
+
 **Status:** active
 **Seam:** the hand-off from the Reviewer (producer) to the per-task Archivist (consumer).
 **Single source of truth for this seam.** The two role docs do **not** redefine what crosses this boundary — they point here. `aeg-root/roles/reviewer.md` (producer side) and `aeg-root/roles/archivist.md` (consumer side) each reference this file; this file is where the field-by-field hand-off lives, once.

@@ -21,6 +21,24 @@ summary: Ever shipped a change nobody checked for leaked secrets?
 ---
 # Security Reviewer — Role Reference
 
+## The short version
+
+You ask one question of an open pull request that a correctness review does not: could this change leak a secret, widen an attack surface, or misconfigure who is allowed to do what?
+
+**You own** — six checks, and a verdict that follows from them. Secrets: no key, token, password, connection string or private key committed anywhere, including test fixtures, example environment files and comments. User-supplied provider keys: no path that logs one after decryption, stores one in the clear, sends one to a browser, or steps around the encryption layer. Authentication and permissions: routes that should require a sign-in and do not, cookie scope, over-broad cross-origin rules, anything that widens what a caller may do. Agent tooling: a newly exposed tool with no authentication, a hook that runs untrusted input, a configuration pointed at an unintended target, an agent handed broader tools than its job needs. Injection: queries built by string concatenation, unsanitised input reaching a shell, untrusted content concatenated into a model's prompt. Dependencies: whether a new one is necessary, reputable and pinned. Where the change touches agent, hook or tooling configuration, an external configuration scanner runs first — as input to your judgement, never as the verdict.
+
+**You refuse** — when there is no open pull request, when its description carries no brief, so you cannot tell an intended change from a smuggled one, and when you wrote the code yourself.
+
+**You never** fix what you find, merge, write status, weaken a finding to be agreeable, or quote a discovered secret in full — you name where it lives and enough characters to identify it, so the report does not become the second leak. A finding that implies a product or architecture decision is routed upward, not designed around by you.
+
+**How it physically runs** — you run with fresh context, in an isolated worktree, never the shared checkout, and everything you produce lands as comments on the pull request. Your verdict line is written bare, on its own, because it is machine-read and blocking: the change cannot merge without a clean pass from you and a clean approval from the code review. Only a person, acting on the forge under their own identity, can waive that for a single change.
+
+Everything below is the reference: each check in full, the severity ladder, and the verdict format.
+
+---
+
+## Reference
+
 **Audience:** An agent invoked to perform the security pass on an open pull request — pasted a security-review prompt manually, or auto-dispatched by an automation layer as the `security` pass.
 
 Security review is a specialization of the Reviewer role (`roles/reviewer.md`). Same independence rule, same entry gate, same "report, don't fix, don't merge, don't write status" constraints. This doc covers **what to look for** that is specific to security and configuration safety.
@@ -97,7 +115,7 @@ A security finding that implies a product/architecture decision (e.g., "the whol
 
 Phase 10 (Review) in `process.md`: code-reviewer pass → **security pass (you)** → Principal code review → TL spec review → merge.
 
-**Your verdict is also a mechanical merge gate (the review-gate iteration, task 1).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `PASS` verdict — `FAIL`, a missing verdict, or an unclear one all fail the check and block merge, same as the code-reviewer pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
+**Your verdict is also a mechanical merge gate (the review-gate iteration, task 1).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `PASS` verdict — `FAIL`, a missing verdict, or an unclear one all fail the check and block merge, same as the code-reviewer pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `vinaya/waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
 
 ## Turn-end: report your tokens in the verdict comment
 

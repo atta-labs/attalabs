@@ -23,6 +23,24 @@ summary: Who's actually accountable for what merges?
 ---
 # Principal — Role Reference
 
+## The short version
+
+You are the one seat in the harness a mechanism cannot fill: a person, accountable for what merges. Every agent here runs on authority delegated from this seat, and some of that authority is never delegated at all.
+
+**You own** — strategy and the roadmap: which work happens, in what order, at what scope. The final call on any decision that closes a design branch permanently — an agent may propose, pressure-test and recommend, but deciding is yours. The merge, which no agent performs even where it holds the access. Ratification: a decision waiting on your word stays pending until you give it, and never promotes itself by waiting. And the rhythm — you are absent while a task executes, and re-engage to review, to ratify, and when something escalates into a product question.
+
+**You refuse** — a direction, at any point in its life: an idea, a plan, a brief, an open pull request, or something already merged. A merge, when what is in front of you is not ready. A ratification, which is refused by not being granted. The harness takes all three without pushback: an agent may state a concern once, concretely, but it may not overrule you, and it may not manufacture your agreement by proceeding.
+
+**You never** write the code, author the briefs, decompose the iterations, execute the tasks, or keep the day-to-day records current — each has a role that does. The boundary binds the other way too: no agent may merge on your behalf, close a task's issue out of band, treat an unratified decision as final because you were absent, or widen the scope it was given. An agent that is unsure asks.
+
+**How it physically runs** — you work through the forge and through conversation, not through a tool this harness owns. You dispatch a task by handing its brief to a coding agent, and read the work as pull requests. The merge completes it: it closes the task's issue and, being a fact on the forge, is itself the record that the work is done. Nothing records status for you to read — the branches, the pull requests and the merges are the status. Work waiting on you is marked on the forge, so a review window is a list you open rather than a memory you keep.
+
+Everything below is the reference: what sits in this seat, for the agents that work with it.
+
+---
+
+## Reference
+
 **Audience:** AI agents (Team Leader, Developer) interacting WITH the Principal. Not the Principal themself. This document tells agents what lives in the Principal's seat so they don't try to do the Principal's job.
 
 ---
@@ -46,7 +64,7 @@ The Principal holds final authority over:
 - **Plan iterations.** The TL does this (Planner mode). The Principal approves the iteration but does not decompose it.
 - **Execute tasks.** The Developer executes. The Principal dispatches (by hand, or via an automation layer) but does not do the work.
 - **Manage day-to-day PM docs.** The TL maintains the iteration files, `thinking.md`, decision logs, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
-- **Monitor every blocked task.** The TL watches `needs:execution-input` and `needs:strategy-input`. The Principal monitors `needs:principal-input` only.
+- **Monitor every blocked task.** The TL watches `vinaya/needs:execution-input` and `vinaya/needs:strategy-input`. The Principal monitors `vinaya/needs:principal-input` only.
 
 ---
 
@@ -58,7 +76,7 @@ In a typical working period:
 2. TL reports status, surfaces decisions that need the Principal's call.
 3. Principal makes decisions, approves briefs and iterations, asks for spec review.
 4. Principal dispatches tasks — by hand (pasting a brief into the coding agent) or via an automation layer if one is connected.
-5. At ratification windows: reads the `needs:principal-input`-labeled Issues/PRs, resolves pending items.
+5. At ratification windows: reads the `vinaya/needs:principal-input`-labeled Issues/PRs, resolves pending items.
 6. Reviews PRs on the forge. Code review for correctness and scope compliance.
 7. Merges PRs after TL spec review and CI passes. (The merge auto-closes the linked Issue and is itself the `merged` status — derived, not written.)
 

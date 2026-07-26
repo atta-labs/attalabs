@@ -12,6 +12,24 @@ summary: Ever handed someone a task and they missed something you thought was ob
 ---
 # Contract: Brief Author → Developer
 
+## The short version
+
+This seam sits between the brief and the agent that executes it. It exists to close the gap where an author assumes something is obvious and an executor never sees it stated.
+
+**What crosses** — one brief, complete. The exact command that creates the isolated working copy and branch, to be run before anything else. The impact tier, which decides how much documentation and record-keeping the work owes. The projects it touches. The context: what the task is not, and the traps already found. What must exist and be merged before it can start. The bounded file surface it may touch. Pinned assertions about the current code, so a brief written yesterday cannot be executed against a surface that has moved. The documents it must update. The checklist it satisfies before opening a pull request. A test plan, each item marked as one an agent can run or one only a person can. The conditions that stop it. The constraints it may not weigh against convenience. And, where the work touches a locked decision, an acknowledgment of it.
+
+**The hand-off is malformed when** — any of those is missing. A brief without stop conditions is not a terse brief; it is one whose executor will invent them. A file surface described as "wherever else turns out to need it" is not bounded. A documentation list assembled from memory rather than reading is not a list. It is equally malformed to skim rather than read it, to treat a stop condition as advice, to execute past the file surface because nothing blocked it, or to paraphrase a verification result instead of pasting what the command printed.
+
+**What it does not carry** — status, which is derived from branches and pull requests and never written; the planner's durable reasoning, which crossed the previous seam and lives on the issue; and any authority to amend the brief. The brief is frozen at dispatch; a change to it is an escalation, not an edit.
+
+**How it physically runs** — the carrier is the pull-request body, which holds the brief verbatim. That is the brief's permanent home: the executing agent reads it there, the reviewer reads it there to judge intent against outcome, and the close-out reads it there as evidence. It is never committed into the repository and never stored in the issue, which holds task identity only — a brief kept anywhere durable goes stale before the work starts.
+
+Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
+
+---
+
+## Reference
+
 **Status:** active
 **Seam:** the hand-off from the Brief Author (producer) to the Developer (consumer).
 **Single source of truth for this seam.** The two role docs do **not** redefine what crosses this boundary — they point here. `aeg-root/skills/brief-authoring/SKILL.md` (producer side) and `aeg-root/roles/developer.md` (consumer side) each reference this file; this file is where the field-by-field hand-off lives, once.
@@ -39,7 +57,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | Brief Author emits | Developer consumes at | What the consumption means |
 |---|---|---|
 | **Worktree step 0** (verbatim `git worktree add` command) | First action before any other command | The Developer must execute this exact command first. No exceptions. Never assume the right branch exists. Before executing it, the Developer independently re-verifies the branch-name suffix literal-matches the topology's `#` column — the same check the Brief Author already ran before writing the command. |
-| **Tier:** field | PR-open checklist + `tier:*` label | The Developer sets the matching `tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
+| **Tier:** field | PR-open checklist + `vinaya/tier:*` label | The Developer sets the matching `vinaya/tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
 | **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `packages/governance/projects.md`. |
 | **Context** including boundary + traps | Mental model before any code | The Developer reads the boundary ("what this task is NOT") to know what to refuse to build, and the traps to know what not to do. |
 | **Technical Dependencies** | Verify all depends-on are merged | The Developer confirms every named dependency is on `main` before starting. A depends-on not yet merged is a hard stop. |
@@ -81,7 +99,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 
 **Scope of "prior task" — verify all three predicates for each:**
 - **Mid-iteration task:** every earlier task in the same iteration that this task depends on (direct `depends-on` edges).
-- **First task of an iteration:** the entire previous iteration of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, iteration file in `aeg-root/iterations/completed/`.
+- **First task of an vinaya/iteration:** the entire previous iteration of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, iteration file in `aeg-root/iterations/completed/`.
 - **ALL tasks:** every cross-iteration dependency declared in the topology (e.g. a vada task that depends on a herald task from another iteration) must also satisfy all three predicates.
 
 **Hard STOP language:** *"Prior task [Y] does not pass the coherence gate: Issue #N is [open/closed], PR #M is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out task [Y] before this task can proceed. Here is what is owed: [list]."*
