@@ -6,14 +6,11 @@
  * `brief-validation` stub in `.github/workflows/archivist.yml`.
  *
  * Thin CLI/Action shim: reads `PR_BODY` from env, derives whether the diff
- * touches a `Lock: YES` decision, and calls the pure `checkBriefSections`
  * homed in `@atta/aeg-core`. The grammar itself — including exact wording —
  * lives in `src/brief-validation.ts`, not here. Follows `bin/verify-docs.ts`'s
  * exact shape (chdir to repo root; read env; call pure function; print
  * failures; exit).
  *
- * Lock-touch derivation: scans `git diff <base>...HEAD` for changed decision-log
- * files (`isDecisionLog`) and checks whether the diff adds a `Lock: YES` line to
  * any of them. Chosen over a manual `TOUCHES_LOCK` env var because it can't be
  * forgotten by whoever wires the CI step — the signal is derived from the diff
  * itself, the same way `verify-docs.ts` derives tier from the diff when no

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateC5, globToRegex, isUrlPointer, parseDocOwners, pointerToPath } from './doc-owners'
+import { DOC_OWNERS_PATH, evaluateC5, globToRegex, isUrlPointer, parseDocOwners, pointerToPath } from './doc-owners'
 
 describe('globToRegex (doc-owners glob → regex)', () => {
   it('** matches across slashes; * does not', () => {
@@ -157,5 +157,19 @@ describe('evaluateC5 — six required paths', () => {
     )
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/aeg-root\/state-machine\.md/)
+  })
+})
+
+describe('the real manifest resolves at its configured path', () => {
+  // Review finding: a missing or misresolved `doc-owners` path returns silent
+  // success ("dormant — no bindings"), so a relocation that breaks it would
+  // pass every gate. This asserts the real file, at the real path, parses.
+  it('parses .vinaya/doc-owners with real bindings', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const raw = readFileSync(join(__dirname, '../../..', DOC_OWNERS_PATH), 'utf8')
+    const { bindings, errors } = parseDocOwners(raw)
+    expect(errors).toEqual([])
+    expect(bindings.length).toBeGreaterThan(0)
   })
 })

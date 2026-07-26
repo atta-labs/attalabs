@@ -73,10 +73,8 @@ const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
 /**
- * N1/N2/M1/M2/M3: Decision-number integrity + manifest validity.
  * Implemented by T2 (#217) per D-067; delegates to verify-docs.ts helpers.
  *
- * N1 (hard-fail): duplicate D-NNN within a log.
  * N2 (info/advisory): skipped D-NNN within a log (cross-log gaps expected — §6).
  * M1 (hard-fail): dangling in-repo pointer in doc-owners.
  * M2 (info/advisory): malformed glob syntax (extremely rare with our simple grammar).

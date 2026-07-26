@@ -9,8 +9,10 @@ export function isDocFile(p: string): boolean {
     (p.startsWith('aeg-project/') && p.endsWith('.md')) ||
     (p.includes('/aeg-project/') && p.endsWith('.md')) ||
     (p.startsWith('.vinaya/') && p.endsWith('.md')) ||
-    (p.startsWith('docs/') && p.endsWith('.md')) ||
-    (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')) ||
+    // The frozen decision archives are history, not documentation: touching one
+    // must never satisfy C3's code-requires-docs pairing.
+    (p.startsWith('docs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')) ||
+    (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')) ||
     (p.startsWith('.claude/skills/') && p.endsWith('.md')) ||
     p === 'docs-index.md' ||
     p === 'README.md' ||
@@ -24,5 +26,7 @@ export function isCodeFile(p: string): boolean {
 }
 
 export function isSpecFile(p: string): boolean {
-  return p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md')
+  // `-legacy.md` is a frozen archive living in a specs directory, not a spec:
+  // it carries no `Status:` block for C1 to check and no tier signal to derive.
+  return p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')
 }

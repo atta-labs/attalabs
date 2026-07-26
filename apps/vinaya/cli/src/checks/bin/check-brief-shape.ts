@@ -47,8 +47,6 @@ function main(): void {
   }
 
   const base = process.env.BASE_SHA || 'origin/main'
-  let changed = changedFiles(base)
-  if (changed.length === 0) changed = changedFiles('main')
   const { errors } = checkBriefSections(prBody, readTierFromPrBody)
 
   if (errors.length > 0) {

@@ -5,8 +5,9 @@ describe('deriveTierFromDiff', () => {
   it('a decision log is an ordinary doc — no auto-Tier-3 inference', () => {
     // The log is no longer a gated artifact, so touching one carries no
     // special tier meaning. A doc-only diff derives Tier 1 like any other.
-    expect(deriveTierFromDiff(['docs/decisions-legacy.md'])).toBe(1)
-    expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions-legacy.md'])).toBe(1)
+    // The archives are history, not docs — they carry no tier signal at all.
+    expect(deriveTierFromDiff(['docs/decisions-legacy.md'])).toBe(0)
+    expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions-legacy.md'])).toBe(0)
   })
 
   it('code-only diff → tier 0 (passes without Tier: field in PR body)', () => {

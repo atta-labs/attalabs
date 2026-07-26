@@ -24,8 +24,6 @@
  * fallback to the local branch.
  *
  * Gates (all must pass, in order):
- *   0. decision-numbers — every `## D-NNN` this branch adds must exceed the
- *                       highest number already on `origin/main` in that log.
  *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
  *                       iteration's topology file when another OPEN PR's
  *                       diff already touches that SAME iteration's topology

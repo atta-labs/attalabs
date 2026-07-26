@@ -151,7 +151,7 @@ Role is determined by environment and context — not by which agent you are. Re
 ### If you are the Planner / Brief Author (a chat/planning surface, talking strategy/planning)
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
-2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
+2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
 3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `iterations/<name>.md` for in-flight task topology.
 4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `iteration:<slug>`, open PRs, `aeg:blocked` labels.
 5. **Check `decisions.md` and the `needs:principal-input` label** — any PENDING decisions or labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open`; D-110 retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on pinned Issue #452.)
@@ -178,7 +178,6 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 1. **Read your role doc** — `roles/reviewer.md` (code) or `roles/security.md` (security). It is your full spec, including the entry-gate refusals.
 2. **Read the brief — in the PR body** (not the Issue; the Developer pastes the brief into the PR description). If there's no open PR, or no brief in the PR body, refuse per your role doc.
 3. **Read the PR diff** — `git diff main...HEAD` (stat first, then substantive files).
-4. **Check active locks** — scan `decisions.md` for `Lock: YES` entries touching the changed area.
 5. **Emit the VERDICT block** from your role doc. Do not edit code. Do not merge. Do not write status. Route `[ESCALATE]` findings to Planner/Principal.
 
 ### If you are the Archivist (closing out a merged PR)

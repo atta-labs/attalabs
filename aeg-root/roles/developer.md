@@ -197,10 +197,7 @@ All Tier 0 items, plus:
 
 All Tier 1 items, plus:
 
-- [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
 - [ ] State updated: the relevant per-project pinned state Issue if state changed (for every project the task lists — update operational facts, phase intent, resolved pending-manual-ops; do NOT write active-work status, which is derived from the forge) (`now.md` is retired)
-- [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
-- [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)
 
 **Hard rule:** If any tier-required item fails, the PR is not ready. Do not open it. Do not say "I'll fix the doc issues after merge." Fix them before.

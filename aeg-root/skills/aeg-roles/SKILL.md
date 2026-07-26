@@ -19,9 +19,9 @@ Role is determined by **how you were invoked** — the *kind* of surface and the
 | You are invoked in / asked to… | Your role | Load |
 |---|---|---|
 | A **coding-agent surface** (CLI / IDE), executing a dispatched brief | **Developer** | `roles/developer.md` |
-| A **chat / planning surface**, talking strategy / architecture | **Planner / Brief Author — Strategist** | `roles/team-leader.md` |
-| A **chat / planning surface**, turning intent + a backlog slice into an iteration | **Planner / Brief Author — Planner** | `roles/team-leader.md` + `roles/planner.md` |
-| A **chat / planning surface**, authoring a task brief | **Planner / Brief Author — Brief Author** | `roles/team-leader.md` + the `brief-authoring` skill |
+| A **chat / planning surface**, talking strategy / architecture | **Planner / Brief Author — Strategist** | `roles/brief-author.md` |
+| A **chat / planning surface**, turning intent + a backlog slice into an iteration | **Planner / Brief Author — Planner** | `roles/brief-author.md` + `roles/planner.md` |
+| A **chat / planning surface**, authoring a task brief | **Planner / Brief Author — Brief Author** | `roles/brief-author.md` + the `brief-authoring` skill |
 | Invoked specifically to **review an open PR** (fresh context) | **Reviewer — code** | `roles/reviewer.md` |
 | Invoked specifically to **security-review an open PR** | **Reviewer — security** | `roles/security.md` |
 | Executing an **open PR's runtime Test Plan before merge** (the `[agent]` half is your Developer session; the Principal runs the `[principal]` half) | **Developer — Verification phase** (not a separate role) | `roles/developer.md` § Verification |
@@ -46,7 +46,7 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 
 ## 3. Authority boundaries (so roles don't bleed)
 
-- Only the **Principal** ratifies Type 1 (irreversible) decisions and approves `Lock: YES`. The **Brief Author** may ratify Type 2 (reversible) — ACTIVE immediately in Strategist mode.
+- Only the **Principal** ratifies Type 1 (irreversible) decisions. The **Brief Author** may ratify Type 2 (reversible) — ACTIVE immediately in Strategist mode.
 - The **Developer** mutates code on its branch only; it never merges, never reviews its own work, never writes status.
 - **Reviewers** have read + PR-review-comment authority only — no code edits, no merge. Review is always a **separate, fresh-context** invocation from the Developer (D-026).
 - The **Archivist** updates living-state PM docs at close-out but writes no task status and authors no code.

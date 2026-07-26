@@ -14,11 +14,13 @@ import { isDocFile, isSpecFile } from './file-classify'
  * Derive a tier from the changed-file list when no `Tier:` field is in the PR body.
  *
  * Rules (in priority order):
- *   1. Decision log in diff       → Tier 3  (caller must still emit C0 — explicit declaration required)
- *   2. Spec or doc file in diff   → Tier 1
- *   3. Otherwise (code/config…)   → Tier 0
+ *   1. Spec or doc file in diff   → Tier 1
+ *   2. Otherwise (code/config…)   → Tier 0
+ *
+ * A decision log carries no tier signal: the log is a frozen archive that no
+ * gate reads, so touching one says nothing about a change's impact.
  */
-export function deriveTierFromDiff(changed: string[]): 0 | 1 | 3 {
+export function deriveTierFromDiff(changed: string[]): 0 | 1 {
   if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1
   return 0
 }

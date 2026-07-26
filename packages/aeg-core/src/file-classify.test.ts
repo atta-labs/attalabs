@@ -7,7 +7,7 @@ describe('isDocFile', () => {
     expect(isDocFile('aeg-project/state.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/aeg-project/state.md')).toBe(true)
     expect(isDocFile('.vinaya/projects.md')).toBe(true)
-    expect(isDocFile('docs/decisions-legacy.md')).toBe(true)
+    expect(isDocFile('docs/some-guide.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/specs/herald-spec.md')).toBe(true)
     expect(isDocFile('.claude/skills/brief-authoring/SKILL.md')).toBe(true)
     expect(isDocFile('docs-index.md')).toBe(true)
@@ -46,5 +46,21 @@ describe('isSpecFile', () => {
   it('rejects non-spec paths', () => {
     expect(isSpecFile('apps/vada-ai/web/src/lib/foo.ts')).toBe(false)
     expect(isSpecFile('packages/engine/specs/foo.md')).toBe(false)
+  })
+})
+
+describe('the frozen decision archives are not documentation', () => {
+  // Review finding: `isDocFile` was widened to `docs/**.md` when the archive
+  // moved there, which made C3's code-requires-docs pairing satisfiable by
+  // touching a file nobody reads. History is not a doc update.
+  it('excludes the legacy archives from the doc set', () => {
+    expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/herald-ai/specs/herald-decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/vada-ai/specs/vada-decisions-legacy.md')).toBe(false)
+  })
+
+  it('still counts real docs in the same directories', () => {
+    expect(isDocFile('docs/some-guide.md')).toBe(true)
+    expect(isDocFile('apps/vinaya/specs/vinaya-spec.md')).toBe(true)
   })
 })
