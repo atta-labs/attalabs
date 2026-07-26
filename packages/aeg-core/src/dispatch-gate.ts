@@ -89,7 +89,7 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
   // Issue-existence — the topology row itself has no Issue number.
   if (task.issue === null) {
     blockers.push(
-      `dispatch-gate issue-existence: ${taskLabel} has no Issue (#TBD or blank) in the topology — not dispatchable until the Planner cuts the Issue (D-054).`
+      `dispatch-gate issue-existence: ${taskLabel} has no Issue (#TBD or blank) in the topology — not dispatchable until the Planner cuts the Issue.`
     )
   } else if (input.issue === null) {
     // Row names an Issue number, but it doesn't resolve on the forge — phantom ref (T1's fail class).
@@ -101,7 +101,7 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
   // Planner-rationale completeness (, R1) — only evaluable when the Issue itself resolved.
   if (input.issue !== null && !input.issueRationalePass) {
     blockers.push(
-      `dispatch-gate rationale: Issue #${input.issue.number} for ${taskLabel} fails the D-078 rationale gate (checkIssueRationale) — the Planner must complete the eight-field rationale before this task is dispatchable.`
+      `dispatch-gate rationale: Issue #${input.issue.number} for ${taskLabel} fails the rationale gate (checkIssueRationale) — the Planner must complete the eight-field rationale before this task is dispatchable.`
     )
   }
 

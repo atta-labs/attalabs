@@ -62,7 +62,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   {
     fact: 'assigned',
     readsFrom: 'Issue.assignees (count > 0)',
-    meaning: 'An assignee exists. No longer affects derivation (D-059): assigned and unassigned are both todo.'
+    meaning: 'An assignee exists. No longer affects derivation: assigned and unassigned are both todo.'
   },
   {
     fact: 'branchExists',
@@ -87,7 +87,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   {
     fact: 'stateReason',
     readsFrom: 'Issue.stateReason (COMPLETED | NOT_PLANNED | REOPENED | null)',
-    meaning: 'Separates a legitimate drop from an incoherent close on a closed, never-merged Issue (D-069).'
+    meaning: 'Separates a legitimate drop from an incoherent close on a closed, never-merged Issue.'
   },
   {
     fact: 'closedAt',
@@ -161,7 +161,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'No forge facts for this task',
     matches: (facts) => !facts,
     status: 'todo',
-    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside an iteration (D-059).'
+    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside an iteration.'
   },
   {
     id: 'blocked-label',
@@ -225,7 +225,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'The Issue is open, with no branch and no PR',
     matches: (facts) => facts?.issueState === 'open',
     status: 'todo',
-    why: 'Not started. Assigned or not, both are todo inside an iteration (D-059).'
+    why: 'Not started. Assigned or not, both are todo inside an iteration.'
   },
   {
     id: 'closed-not-planned',
@@ -241,7 +241,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'Issue closed for any other reason, with no merged PR',
     matches: () => true,
     status: 'incoherent',
-    why: 'The honest terminal fallback (D-069): closed but unprovable must never read as todo. Total by design, so derivation always concludes.'
+    why: 'The honest terminal fallback: closed but unprovable must never read as todo. Total by design, so derivation always concludes.'
   }
 ]
 

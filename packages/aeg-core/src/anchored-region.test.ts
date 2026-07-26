@@ -153,7 +153,10 @@ describe('anchor recognition is additive — PR #407 freeform round-trip', () =>
       'no code-reviewer verdict comment found on this PR',
       'no security-review verdict comment found on this PR'
     ])
-    expect(sha256(block)).toBe('813b4f79e10d1c0f0f5630361c8adc5501bf23df2f4abe8c7dc146047b59aeb0')
+    // Re-pinned when the provenance block's `Decision:` line was removed with
+    // the decision-log machinery. The pin's job is to catch *accidental* drift
+    // in block assembly; this change was deliberate and is recorded here.
+    expect(sha256(block)).toBe('66b89fe7d0f6a8fc191bebc23e7824a9c630033d335bbaef90afc39fc828b111')
   })
 })
 

@@ -1,7 +1,7 @@
 ---
 name: brief-authoring
 sidebar_title: Brief Authoring
-description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the standing autonomy clause, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
+description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the standing autonomy clause, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
 <!-- CANONICAL SOURCE. This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). provides for an agent-specific GENERATED VIEW under.claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
@@ -387,7 +387,7 @@ Every brief includes the following metadata. These fields gate dispatch and rati
 Look at the surface map. Then:
 - Code only, no spec files, no decision log → **Tier 0** (unless it introduces a meaningful new capability)
 - Code + at least one spec file updated → **Tier 1**
-- Code + decision log entry → **Tier 3**
+- Code + a project-level change → **Tier 3**
 - If Tier 0: C3 does not apply. No doc file needed.
 
 Write the Tier **last**, after the surface map is fully defined. Never declare Tier before the surface map is complete.
@@ -420,7 +420,7 @@ Present only when the Principal explicitly delegates a decision. Without it, con
 ```
 **spike:** true
 ```
-Exploratory briefs only. Reduces to typecheck + lint + a decision log entry capturing what was tried and learned. Spike code does not merge.
+Exploratory briefs only. Reduces to typecheck + lint + a pull-request record capturing what was tried and learned. Spike code does not merge.
 
 ### Type 1/2 declaration
 

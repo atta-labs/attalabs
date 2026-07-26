@@ -468,7 +468,7 @@ describe('T2: orphan-task', () => {
 
 // ---------- T2 point-of-power relocation --------------------
 
-describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D-082)', () => {
+describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24)', () => {
   it('reproduces the #363 incident, then shows the fix: a failing T2 is demoted to info for a non-plan (task) PR', () => {
     const openIssues = new Map([['aeg-governance-hardening', [364, 365]]])
     const topology = new Map([['aeg-governance-hardening', new Set([19])]]) // #364/#365 not yet in topology
@@ -478,7 +478,7 @@ describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D
     const scoped = scopeT2ToPlanPr(raw, false) // task PR — cannot cause or cure this gap
     expect(scoped.status).toBe('info')
     expect(scoped.failures).toEqual(raw.failures) // findings stay visible, never omitted
-    expect(scoped.note).toMatch(/D-082/)
+    expect(scoped.note).toMatch(/non-blocking outside plan PRs/)
   })
 
   it('leaves a failing T2 blocking for a plan PR (the only PR kind that can fix the gap)', () => {

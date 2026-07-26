@@ -177,7 +177,7 @@ The task is marked `blocked` (an `aeg:blocked` label — the one status with no 
 Before opening the PR, the Developer runs the tier-appropriate Task Done checklist (`roles/developer.md`). The commands below are this repo's instances (Bun/JS) — substitute your repo's declared equivalents:
 - **Tier 0:** typecheck + lint, tests if applicable, PR description follows template (and will carry the brief)
 - **Tier 1:** Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes
-- **Tier 3:** Tier 1 + decision log entry (status, type, rationale), per-project PM updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated
+- **Tier 3:** Tier 1 + per-project PM updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated
 
 `verify-docs --pr` is a **real gate**, the same script CI runs. If any item fails, the Developer fixes or escalates — the PR does not open.
 
@@ -305,7 +305,7 @@ The Principal eventually removes the worktree (`git worktree remove …`) — de
 ## Variations and special cases
 
 ### Spike work
-`spike: true` → reduced Task Done (typecheck + lint, decision log entry capturing what was tried/learned). Spike code does not merge — it rebases away or converts to a full Tier 1+ task in a separate brief.
+`spike: true` → reduced Task Done (typecheck + lint, with what was tried and learned recorded in the pull request). Spike code does not merge — it rebases away or converts to a full Tier 1+ task in a separate brief.
 
 ### Tier 0 work (trivial)
 Skips Phase 2; short brief; minimal checklist; light Phase 10 (a code-reviewer pass is cheap insurance, but the security pass and Brief Author spec review can be skipped when there's no config/auth surface and no spec change). Declare `Tier: 0` in the PR body so verify-docs doesn't require doc updates.

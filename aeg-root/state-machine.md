@@ -263,25 +263,6 @@ If the brief itself is wrong in a way that blocks all paths, the Developer escal
 
 ---
 
-## Section 8: Lock Mechanism — REMOVED
-
-The `Lock: YES` marker and every mechanism that read it are gone.
-
-**Why.** The check fired only when a diff *added* a `Lock: YES` line to a
-decision log. It therefore could not fire when a locked entry was edited, when
-one was deleted, or when code contradicted it — every event a lock exists to
-catch happens outside the log file, which is the only place the trigger looked.
-It was structurally incapable of being the thing that stopped a violation, and
-across the twenty-seven locked entries no case was found where it was.
-
-**What replaces it.** Nothing, deliberately. Every invariant in this repo that
-genuinely holds is held by a purpose-built check — the no-disk-state guard, the
-forge tool-gates, the doc-coverage seam. A rule that must hold gets a check; a
-rule that does not deserve a check was never protected by a marker either.
-
-The historical entries keep their `Lock: YES` lines; the archive is not
-rewritten. They record what was decided, not what is enforced.
-
 ## Section 9: Tiered Documentation
 
 Every piece of work is assigned an impact tier; the tier determines required documentation before the PR is ready. The tier is declared two ways that must agree — the `Tier:` field in the PR body (the binding source of truth, read by verify-docs) and the `vinaya/tier:*` label on the Issue (the scannable projection). Section 14 defines the field-vs-label rule and the sync obligation.
@@ -365,7 +346,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 - **Provenance assembly at close-out — items 1/8 moved to Enforced**, see "Per-task Archivist close-out" above; items 2–7 of close-out (decision-log presence, docs coherence, per-project state, `docs-index.md`, token ledger) remain trusted, dispatched-Archivist judgment work — it records, it never gates.
 - **Decision logging during chat** — Brief Author announces and logs during the conversation; CI cannot verify.
 - **No execution metadata in the iteration file; no dynamic conflict scanner** — the two anti-regression rules (`iterations/README.md` §9); trusted discipline, flagged by the Archivist drift cron and the Planner's gates.
-- **`thinking.md` updates; ratification-window attendance; lock acknowledgment (advisory in V0); spec ratification passes** — all trusted.
+- **`thinking.md` updates; ratification-window attendance; spec ratification passes** — all trusted.
 
 ### Emergency override
 

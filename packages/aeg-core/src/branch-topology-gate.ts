@@ -63,7 +63,7 @@ export function checkBranchTopology(input: BranchTopologyInput): BranchTopologyR
       verdict: 'refuse',
       reason:
         `✖ pre-push: branch \`${branch}\` names iteration \`${iteration}\`, but ${topoPath} does not exist.\n` +
-        '  A task branch must belong to a real iteration (D-073/D-075).'
+        ' A task branch must belong to a real iteration ().'
     }
   }
 
@@ -73,8 +73,8 @@ export function checkBranchTopology(input: BranchTopologyInput): BranchTopologyR
       verdict: 'refuse',
       reason:
         `✖ pre-push: branch \`${branch}\` — no row with \`#\` = \`${taskId}\` in ${topoPath}.\n` +
-        "  The branch suffix must literal-match the topology's # column (D-073).\n" +
-        "  If the plan PR adding this row hasn't merged yet, merge it first (D-075)."
+        "  The branch suffix must literal-match the topology's # column.\n" +
+        "  If the plan PR adding this row hasn't merged yet, merge it first."
     }
   }
 

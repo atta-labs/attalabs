@@ -67,7 +67,7 @@ export function decideIssueAssignment(input: IssueAssignmentInput): IssueAssignm
   if (issue === null) {
     return {
       action: 'skip',
-      reason: `No Issue resolved for \`${branch}\` from its topology row — skipping self-assignment (the D-073 gate owns refusing an unplanned branch).`
+      reason: `No Issue resolved for \`${branch}\` from its topology row — skipping self-assignment (the gate owns refusing an unplanned branch).`
     }
   }
 

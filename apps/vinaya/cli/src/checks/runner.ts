@@ -119,7 +119,7 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
 
 /**
  * Runs every spec through exactly one spawn path — this IS the no-privileged-
- * API invariant (, `Lock: YES`). `runChecks` never branches on whether a
+ * API invariant. `runChecks` never branches on whether a
  * `CheckSpec` came from the built-in registry or from `vinaya.config.json`;
  * see `tests/checks/no-privileged-api.test.ts` for the mechanical proof.
  *

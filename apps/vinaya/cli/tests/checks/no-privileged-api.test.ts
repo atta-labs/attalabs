@@ -14,7 +14,7 @@ const FIXTURE = join(import.meta.dir, '..', 'fixtures', 'checks', 'passing-check
 
 const ALLOWED_KEYS = new Set<keyof CheckSpec>(['name', 'run', 'args', 'scope', 'include', 'timeoutMs'])
 
-describe('no-privileged-api (D-092)', () => {
+describe('no-privileged-api', () => {
   it('core registry CheckSpecs carry no field a config-derived CheckSpec cannot carry', () => {
     const coreSpecs = coreCheckRegistry()
     expect(coreSpecs.length).toBeGreaterThan(0)

@@ -112,7 +112,7 @@ jobs:
 function reviewWorkflow(): string {
   return `# ${MANAGED_NOTE}
 #
-# The review gate — split from the checks suite (D-115) so a verdict *comment*
+# The review gate — split from the checks suite so a verdict *comment*
 # re-triggers it. GitHub fires \`issue_comment\` for a new PR comment, a
 # different event from \`pull_request\`; the checks workflow (pull_request only)
 # structurally cannot receive it. A cheap \`contains(..., 'VERDICT')\` guard
@@ -193,7 +193,7 @@ function doctrinePointer(): string {
 This repo is governed by Vinaya. The full, canonical doctrine (roles,
 contracts, the state machine, the ring gates) ships inside the installed
 \`vinaya\` npm package as versioned reference content and is updated cleanly by
-\`vinaya upgrade\` — there is no in-repo copy to drift (D-111).
+\`vinaya upgrade\` — there is no in-repo copy to drift.
 
 An agent working in this repo follows the governed flow by reading two things:
 
@@ -237,7 +237,7 @@ export function labelOps(): CreateLabelOp[] {
   ]
 }
 
-const BRANCH_PROTECTION_NOTE = `Recommended (run yourself — vinaya never applies branch protection, D-091):
+const BRANCH_PROTECTION_NOTE = `Recommended (run yourself — vinaya never applies branch protection):
 
   gh api -X PUT repos/{owner}/{repo}/branches/main/protection \\
     -F required_pull_request_reviews.required_approving_review_count=1 \\

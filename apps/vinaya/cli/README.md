@@ -29,37 +29,35 @@ Hierarchical, file-level precedence:
 2. Global `~/.vinaya/config.json`
 3. `null` if neither exists
 
-Whichever file resolves first is used in full — there is no field-by-field merge across the two files, matching the pattern this loader was ported from (Cetana's CLI config loader, since deleted — D-132).
+Whichever file resolves first is used in full — there is no field-by-field merge across the two files, matching the pattern this loader was ported from (Cetana's CLI config loader, since deleted —).
 
-Today the schema carries one surface, added per D-117:
-
-```json
+Today the schema carries one surface, added ```json
 {
-  "rings": {
-    "ring1_forgeWriteInterception": true,
-    "ring2_asyncAudits": false
-  }
+ "rings": {
+ "ring1_forgeWriteInterception": true,
+ "ring2_asyncAudits": false
+ }
 }
 ```
 
-Both `rings` fields are plain booleans — no conditional logic (D-092/D-109). Ring 0 (git hooks) and the CI/branch-protection guarantee are never represented in this schema, by design — they are not configurable.
+Both `rings` fields are plain booleans — no conditional logic. Ring 0 (git hooks) and the CI/branch-protection guarantee are never represented in this schema, by design — they are not configurable.
 
 Custom checks register under `checks`, one entry per check:
 
 ```json
 {
-  "checks": {
-    "my-check": {
-      "run": "./scripts/my-check.ts",
-      "scope": "diff",
-      "include": ["src/**/*.ts"],
-      "timeoutMs": 30000
-    }
-  }
+ "checks": {
+ "my-check": {
+ "run": "./scripts/my-check.ts",
+ "scope": "diff",
+ "include": ["src/**/*.ts"],
+ "timeoutMs": 30000
+ }
+ }
 }
 ```
 
-Glob scoping (`include`) is permitted; conditional logic (`if`/`unless`/`except`) is **never** part of this grammar (D-092/D-109) — see the check-contract quick reference below for the full grammar and the error contract every registered `run` executable must honor.
+Glob scoping (`include`) is permitted; conditional logic (`if`/`unless`/`except`) is **never** part of this grammar — see the check-contract quick reference below for the full grammar and the error contract every registered `run` executable must honor.
 
 ## Check contract — quick reference
 
@@ -75,7 +73,7 @@ Full field-by-field reference: [`apps/vinaya/specs/vinaya-spec.md` § Check engi
 
 ## JSON output envelope
 
-Every machine-readable (`--json`) output goes through `src/lib/envelope.ts`, which wraps the payload in `{ schema: 1, data: ... }`. The `schema` field is a public-surface commitment (D-100/D-103) — there is no code path in this package that can emit unversioned machine output.
+Every machine-readable (`--json`) output goes through `src/lib/envelope.ts`, which wraps the payload in `{ schema: 1, data:... }`. The `schema` field is a public-surface commitment — there is no code path in this package that can emit unversioned machine output.
 
 ## Interactive commands (future)
 
@@ -83,6 +81,6 @@ None ship in this task. When a later task adds an interactive command with an ab
 
 ## Architecture
 
-Ported from Cetana's CLI: the config-loader pattern and its precedence regression tests only. No JSONL, no IPC, no coordinator, no state-sync code came across (D-095 — local parallel state is the disease Vinaya exists to kill). `@atta/aeg-core` and `@atta/vinaya-sources` are workspace dependencies as of the check engine (task 3, #383) — every core check consumes their public exports read-only; iteration state is read only through a `StateSource`, never a hardcoded path.
+Ported from Cetana's CLI: the config-loader pattern and its precedence regression tests only. No JSONL, no IPC, no coordinator, no state-sync code came across (local parallel state is the disease Vinaya exists to kill). `@atta/aeg-core` and `@atta/vinaya-sources` are workspace dependencies as of the check engine — every core check consumes their public exports read-only; iteration state is read only through a `StateSource`, never a hardcoded path.
 
 See `apps/vinaya/specs/vinaya-spec.md` for the full product spec and `apps/vinaya/specs/vinaya-backlog.md` for what's still ahead.

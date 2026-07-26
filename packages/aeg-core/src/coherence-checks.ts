@@ -260,7 +260,7 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
     status: 'info',
     note:
       result.note ??
-      'T2 findings are non-blocking outside plan PRs (D-082, point-of-power principle) — see aeg-root/enforcement.md.'
+      'T2 findings are non-blocking outside plan PRs (, point-of-power principle) — see aeg-root/enforcement.md.'
   }
 }
 
@@ -324,7 +324,7 @@ export function checkT3(
         issue: null,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — D-055 requires all active tasks to have Issue numbers`,
+        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — requires all active tasks to have Issue numbers`,
         grandfathered: preEnforcement.has(e.iterationSlug)
       })
     }
@@ -425,7 +425,7 @@ export function checkR1(
       failures.push({
         issue: issue.number,
         iteration: slug,
-        reason: `Issue #${issue.number} fails the D-078 rationale gate: ${errors.join(' | ')}`,
+        reason: `Issue #${issue.number} fails the rationale gate: ${errors.join(' | ')}`,
         grandfathered: grandfatheredIssues.has(issue.number)
       })
     }
@@ -436,10 +436,7 @@ export function checkR1(
     check: 'R1',
     status,
     failures,
-    note:
-      status === 'info'
-        ? `${failures.length} grandfathered task Issue(s) predate the D-078 rationale grammar`
-        : undefined
+    note: status === 'info' ? `${failures.length} grandfathered task Issue(s) predate the rationale grammar` : undefined
   }
 }
 

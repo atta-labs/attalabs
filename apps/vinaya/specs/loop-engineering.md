@@ -14,19 +14,19 @@ A **loop** is a small external driver that automates the dispatch-verify-merge g
 
 ## Why the loop is external (the "external ring")
 
-AEG is **deliberately orchestrator-independent** (D-029, D-038): *"a tool may know AEG; AEG does not know the tool."* AEG is a black box that must run by hand on any repo with zero orchestration tooling. The project has repeatedly refused to bake orchestration in:
+AEG is **deliberately orchestrator-independent**: *"a tool may know AEG; AEG does not know the tool."* AEG is a black box that must run by hand on any repo with zero orchestration tooling. The project has repeatedly refused to bake orchestration in:
 
-- Market-scan (D-030) explicitly **rejected** runner/orchestrator features (CI auto-fix loops, kanban, port allocation) *for the model* — tool-layer or invariant-violating.
-- `vinaya worktree` was **cut** from the CLI as "orchestration smell" (D-090).
-- **Cetana — the one orchestrator product — was retired** (D-095) and deleted (#576).
+- Market-scan explicitly **rejected** runner/orchestrator features (CI auto-fix loops, kanban, port allocation) *for the model* — tool-layer or invariant-violating.
+- `vinaya worktree` was **cut** from the CLI as "orchestration smell".
+- **Cetana — the one orchestrator product — was retired** and deleted.
 
-So a dispatch-loop engine inside AEG or the Vinaya checker would resurrect exactly what was just deleted. The loop must sit **on top**, reading AEG state, never contained by it. That preserves D-029: the loop is one optional tool that speaks AEG.
+So a dispatch-loop engine inside AEG or the Vinaya checker would resurrect exactly what was just deleted. The loop must sit **on top**, reading AEG state, never contained by it. That preserves the loop is one optional tool that speaks AEG.
 
 **AEG's role in loop engineering is not the runner — it's the sensors and setpoints.** Forge-derived typed state (`@atta/aeg-core` derivation) + structured recovery prompts are what make *any* outer loop safe to run. The actuator (the thing that dispatches agents) lives outside and is swappable: Claude Code's `/loop`, a CI job, a cron, a thin future runner.
 
 ## The loop primitive already ships
 
-Ring-0 **self-correction** (D-100) is live today: every `vinaya check` failure emits `agent_recovery_prompt` — a corrective instruction addressed to the model that will act on it, then re-run. That is a closed control loop at check granularity. Loop engineering is the outward extension of this primitive.
+Ring-0 **self-correction** is live today: every `vinaya check` failure emits `agent_recovery_prompt` — a corrective instruction addressed to the model that will act on it, then re-run. That is a closed control loop at check granularity. Loop engineering is the outward extension of this primitive.
 
 ## The ring model (graduation, not a big bang)
 
@@ -34,7 +34,7 @@ Vinaya config already reserves `ring1_forgeWriteInterception` and `ring2_asyncAu
 
 | Ring | What loops | Status | Human still owns |
 |------|-----------|--------|------------------|
-| **0** | One check: fail → `agent_recovery_prompt` → fix → re-check | **shipped** (D-100) | nothing — fully auto |
+| **0** | One check: fail → `agent_recovery_prompt` → fix → re-check | **shipped** | nothing — fully auto |
 | **1** | The task loop: read state → `vinaya check dispatch-readiness` → dispatch agent → gates → ring-0 recovery → merge → archive → next | proposed | tranche open/close |
 | **2** | Async audit loops (skeptical passes off the main dispatch thread) | proposed | audit disposition |
 | **meta** | The tranche loop: one tranche closes → next opens | proposed | open/close + **Type-1 ratification** |
@@ -91,4 +91,4 @@ You plan the cut, press start, supervise, approve the few human moments.
 
 ---
 
-*Captured 2026-07-19. Reference: D-029, D-030, D-038, D-090, D-095, D-100. Prerequisite: iteration→tranche rename tranche.*
+*Captured 2026-07-19. Reference:. Prerequisite: iteration→tranche rename tranche.*

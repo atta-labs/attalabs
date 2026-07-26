@@ -210,11 +210,11 @@ All Tier 1 items, plus:
 
 If the brief is tagged `spike: true`:
 
-- Reduced checklist: code passes typecheck + lint, decision log entry capturing what was tried and what was learned
+- Reduced checklist: code passes typecheck + lint, with what was tried and what was learned recorded in the pull request
 - Spike code does NOT merge to main
 - After the spike, the code either rebases away (if the approach is abandoned) or converts to a Tier 1+ task in a new brief
 
-A spike is exploratory, not a permanent excuse to skip documentation. The decision log entry is mandatory — it's the durable artifact of the spike.
+A spike is exploratory, not a permanent excuse to skip documentation. The pull request is the durable artifact of the spike.
 
 ---
 
