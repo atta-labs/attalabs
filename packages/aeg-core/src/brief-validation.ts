@@ -1,7 +1,7 @@
 /**
  * Brief→Developer brief-validation grammar (D-069, aeg-governance-hardening
  * task 2). Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
- * (`bin/verify-brief.ts`) reads `PR_BODY` and derives `touchesLock`, then
+ * (`bin/verify-brief.ts`) reads `PR_BODY`, then
  * calls `checkBriefSections`.
  *
  * Scope is presence-only (per the Planner's trap): this gate cannot judge
@@ -20,7 +20,7 @@ export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 /**
  * The PR body's header block: everything before the first h2+ heading. The
  * canonical PR-body form (`roles/developer.md`) puts the metadata fields
- * (Tier, For, Project, Closes, lock-ack) at the top, before `## Summary`.
+ * (Tier, For, Project, Closes) at the top, before `## Summary`.
  * Anchoring field extraction here — shared with `archive-task.ts` — is what
  * stops prose in later sections that merely *mentions* a field name (e.g. a
  * "Decisions made" paragraph discussing the `Ticket:` field) from being
@@ -302,38 +302,6 @@ export function checkClosesN(prBody: string): BriefSectionResult {
 }
 
 /**
- * Lock-ack — pass trivially when the diff doesn't touch a `Lock: YES` decision.
- * Otherwise require `Conforms to lock: D-###` or `Challenges lock: D-###`; the
- * challenge form additionally requires a `**Rationale:**` field. This is the
- * format this task defines (none existed before) — see `brief-developer.md`.
- */
-export function checkLockAck(prBody: string, touchesLock: boolean): BriefSectionResult {
-  if (!touchesLock) return { status: 'pass', errors: [] }
-
-  const conforms = /\*{0,2}\s*Conforms to lock\s*:\*{0,2}\s*D-\d+/i.test(prBody)
-  if (conforms) return { status: 'pass', errors: [] }
-
-  const challenges = /\*{0,2}\s*Challenges lock\s*:\*{0,2}\s*D-\d+/i.test(prBody)
-  if (challenges) {
-    const hasRationale = /\*{0,2}\s*Rationale\s*:\*{0,2}/i.test(prBody)
-    if (hasRationale) return { status: 'pass', errors: [] }
-    return {
-      status: 'fail',
-      errors: [
-        'brief-validation lock-ack: `Challenges lock: D-###` found but no `**Rationale:**` field accompanies it.'
-      ]
-    }
-  }
-
-  return {
-    status: 'fail',
-    errors: [
-      'brief-validation lock-ack: this PR touches a `Lock: YES` decision but has no `Conforms to lock: D-###` or `Challenges lock: D-###` field.'
-    ]
-  }
-}
-
-/**
  * Forge-title grammar (D-078) — the two title forms this repo actually uses:
  *   1. Commit-style: `Type: description` or `Type(scope): description`, with
  *      the commitlint type set plus `Plan` (plan PRs).
@@ -459,7 +427,6 @@ export type BriefSectionsOptions = {
  */
 export function checkBriefSections(
   prBody: string,
-  touchesLock: boolean,
   readTier: (body: string) => 0 | 1 | 3 | null,
   options: BriefSectionsOptions = {}
 ): { errors: string[] } {
@@ -476,8 +443,7 @@ export function checkBriefSections(
     checkAutonomyClause(prBody),
     checkProjectField(prBody),
     checkForField(prBody),
-    ...(requireClosesN ? [checkClosesN(prBody)] : []),
-    checkLockAck(prBody, touchesLock)
+    ...(requireClosesN ? [checkClosesN(prBody)] : [])
   ]
   return { errors: results.flatMap((r) => r.errors) }
 }

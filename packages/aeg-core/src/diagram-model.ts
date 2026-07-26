@@ -10,8 +10,7 @@
  *
  * What is NOT here: geometry. Radius, angle, colour, coordinates are the
  * renderer's job (a ring index and a render-state are structural facts; a
- * pixel is not). Render-state is DERIVED, never authored: `locked` when the
- * doctrine row carries a lock (config can never override it), `disabled` when
+ * pixel is not). Render-state is DERIVED, never authored: `disabled` when
  * config disables it, else `active`.
  */
 
@@ -23,7 +22,7 @@ import { parseEnforcementRegistry } from './registry-parse'
 import type { Iteration } from './types'
 
 export type DiagramNodeKind = 'ring' | 'gate' | 'check' | 'action' | 'role' | 'contract'
-export type RenderState = 'active' | 'disabled' | 'locked'
+export type RenderState = 'active' | 'disabled'
 
 export type DiagramNode = {
   id: string
@@ -31,7 +30,6 @@ export type DiagramNode = {
   label: string
   ringIndex?: 0 | 1 | 2
   renderState: RenderState
-  lock?: string | null
   sourceLine?: number
   summary?: string
   /** What this node actually does, in one plain sentence — every kind carries
@@ -233,12 +231,9 @@ export function deriveDiagramModel(
     usedSlugs.add(slug)
     gateCheckSlugs.add(slug)
     const id = `${kind}:${slug}`
-    const lock = row.lock.trim() === '' ? null : row.lock.trim()
 
     let renderState: RenderState
-    if (lock !== null) {
-      renderState = 'locked' // config can never override a lock
-    } else if (config?.gates?.[slug] === false) {
+    if (config?.gates?.[slug] === false) {
       renderState = 'disabled'
     } else if (ringIndex === 1 && ring1Disabled) {
       renderState = 'disabled'
@@ -254,7 +249,6 @@ export function deriveDiagramModel(
       label: row.action,
       ringIndex,
       renderState,
-      lock,
       sourceLine: row.line,
       summary: row.summary,
       detail: row.description,

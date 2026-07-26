@@ -6,7 +6,6 @@ import {
   checkDocUpdateList,
   checkForField,
   checkForgeTitle,
-  checkLockAck,
   checkPlanPrNoCloses,
   checkPremiseCoverage,
   checkPrincipalPlaceholder,
@@ -478,32 +477,9 @@ describe('checkForField', () => {
   })
 })
 
-describe('checkLockAck', () => {
-  it('passes trivially when the diff does not touch a lock', () => {
-    expect(checkLockAck('no lock-ack anywhere', false).status).toBe('pass')
-  })
-  it('fails when a lock is touched but no ack is present', () => {
-    const r = checkLockAck('no lock-ack anywhere', true)
-    expect(r.status).toBe('fail')
-    expect(r.errors[0]).toMatch(/lock-ack/)
-  })
-  it('passes on a well-formed Conforms to lock line', () => {
-    const body = '**Conforms to lock:** D-069 — implements the role-seam contract gates.'
-    expect(checkLockAck(body, true).status).toBe('pass')
-  })
-  it('passes on a well-formed Challenges lock line with Rationale', () => {
-    const body = '**Challenges lock:** D-069 — needs revision.\n\n**Rationale:** the lock is stale.'
-    expect(checkLockAck(body, true).status).toBe('pass')
-  })
-  it('fails on a Challenges lock line with no Rationale', () => {
-    const body = '**Challenges lock:** D-069 — needs revision.'
-    expect(checkLockAck(body, true).status).toBe('fail')
-  })
-})
-
 describe('checkBriefSections', () => {
-  it('passes every section on a well-formed brief with no lock touched', () => {
-    const { errors } = checkBriefSections(WELL_FORMED, false, readTierFromPrBody)
+  it('passes every section on a well-formed brief when nothing is missing', () => {
+    const { errors } = checkBriefSections(WELL_FORMED, readTierFromPrBody)
     expect(errors).toEqual([])
   })
 
@@ -512,21 +488,9 @@ describe('checkBriefSections', () => {
       /## Test plan[\s\S]*?(?=## Scope)/,
       '## Test plan removed for this test\n\n'
     )
-    const { errors } = checkBriefSections(withoutTestPlan, false, readTierFromPrBody)
+    const { errors } = checkBriefSections(withoutTestPlan, readTierFromPrBody)
     expect(errors).toHaveLength(1)
     expect(errors[0]).toMatch(/Test Plan/)
-  })
-
-  it('fails lock-ack when the PR touches a lock with no ack, on top of an otherwise well-formed body', () => {
-    const { errors } = checkBriefSections(WELL_FORMED, true, readTierFromPrBody)
-    expect(errors).toHaveLength(1)
-    expect(errors[0]).toMatch(/lock-ack/)
-  })
-
-  it('passes lock-ack alongside everything else when a Conforms to lock line is added', () => {
-    const withLockAck = `${WELL_FORMED}\n\n**Conforms to lock:** D-069 — implements the charter.`
-    const { errors } = checkBriefSections(withLockAck, true, readTierFromPrBody)
-    expect(errors).toEqual([])
   })
 
   it('fails Project and For when a body carries every gated section but drops the header fields (#311 regression)', () => {
@@ -534,7 +498,7 @@ describe('checkBriefSections', () => {
     // gate checked and omitted the two it didn't. Gate-contract parity means
     // this body must now fail on exactly those two.
     const gamedBody = WELL_FORMED.replace(/\*\*For:\*\*[^\n]*\n/, '').replace(/\*\*Project:\*\*[^\n]*\n/, '')
-    const { errors } = checkBriefSections(gamedBody, false, readTierFromPrBody)
+    const { errors } = checkBriefSections(gamedBody, readTierFromPrBody)
     expect(errors).toHaveLength(2)
     expect(errors[0]).toMatch(/Project/)
     expect(errors[1]).toMatch(/For/)
@@ -553,7 +517,7 @@ describe('isBriefShaped', () => {
     const withoutDocList = WELL_FORMED.replace(/### 7\. Documentation-update list[\s\S]*?(?=### 10\.)/, '')
     expect(withoutDocList).not.toMatch(/Documentation-update list/)
     expect(isBriefShaped(withoutDocList)).toBe(true)
-    expect(checkBriefSections(withoutDocList, false, readTierFromPrBody).errors).toEqual([
+    expect(checkBriefSections(withoutDocList, readTierFromPrBody).errors).toEqual([
       expect.stringMatching(/Documentation-update list/)
     ])
   })
@@ -612,18 +576,18 @@ describe('checkBriefSections — requireClosesN', () => {
   const withoutCloses = WELL_FORMED.replace('Closes #252', 'Ships it.')
 
   it('requires Closes #N by default (every existing caller is unchanged)', () => {
-    const { errors } = checkBriefSections(withoutCloses, false, readTierFromPrBody)
+    const { errors } = checkBriefSections(withoutCloses, readTierFromPrBody)
     expect(errors).toEqual([expect.stringMatching(/Closes #N/)])
   })
 
   it('skips Closes #N when requireClosesN is false — a standalone fix brief has no Issue to close', () => {
-    const { errors } = checkBriefSections(withoutCloses, false, readTierFromPrBody, { requireClosesN: false })
+    const { errors } = checkBriefSections(withoutCloses, readTierFromPrBody, { requireClosesN: false })
     expect(errors).toEqual([])
   })
 
   it('still grades every other section when requireClosesN is false', () => {
     const withoutDocList = withoutCloses.replace(/### 7\. Documentation-update list[\s\S]*?(?=### 10\.)/, '')
-    const { errors } = checkBriefSections(withoutDocList, false, readTierFromPrBody, { requireClosesN: false })
+    const { errors } = checkBriefSections(withoutDocList, readTierFromPrBody, { requireClosesN: false })
     expect(errors).toEqual([expect.stringMatching(/Documentation-update list/)])
   })
 })

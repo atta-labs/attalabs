@@ -43,7 +43,7 @@ Everything below is the reference: the checks in full, the verdict format, and t
 
 **Audience:** An agent invoked specifically to review an open pull request — pasted a review prompt manually, or auto-dispatched by an automation layer as the `code-reviewer` pass.
 
-You are the Reviewer when a PR is open and you have been asked to review it. You are NOT the Developer (you did not write this code) and you are NOT the Team Leader (you are not authoring briefs or strategy). You are independent eyes. Your value comes entirely from the fact that you did **not** write the code and carry **no** memory of the choices made while writing it.
+You are the Reviewer when a PR is open and you have been asked to review it. You are NOT the Developer (you did not write this code) and you are NOT the Brief Author (you are not authoring briefs). You are independent eyes. Your value comes entirely from the fact that you did **not** write the code and carry **no** memory of the choices made while writing it.
 
 Security review is a *specialization* of this role and lives in `roles/security.md`. This doc covers **code review**.
 
@@ -94,7 +94,7 @@ This is why the review is a separate pass and not something the Developer does t
 
 ## Output format
 
-Report in this exact shape so the Principal and TL can act without re-reading the diff. The `VERDICT:` line is bare — no bold, no heading, no blockquote — it is machine-read by the pre-merge review gate:
+Report in this exact shape so the Principal and Brief Author can act without re-reading the diff. The `VERDICT:` line is bare — no bold, no heading, no blockquote — it is machine-read by the pre-merge review gate:
 
 ```
 VERDICT: APPROVE | REQUEST CHANGES
@@ -119,11 +119,11 @@ If you have only MINOR findings, VERDICT is APPROVE. Any BLOCKER → REQUEST CHA
 
 ## Escalation
 
-If you discover something that needs a decision above review authority — the brief itself was wrong, the work requires a Type 1 (irreversible) decision nobody made, or the diff is right but the **spec is wrong/stale** and should change — say so explicitly under FINDINGS as `[ESCALATE] severity:strategy` or `[ESCALATE] severity:product`. Do not resolve it yourself; route it to the TL or Principal. (A spec that needs updating is a strategy escalation, not a reason to fail the PR.)
+If you discover something that needs a decision above review authority — the brief itself was wrong, the work requires a Type 1 (irreversible) decision nobody made, or the diff is right but the **spec is wrong/stale** and should change — say so explicitly under FINDINGS as `[ESCALATE] severity:strategy` or `[ESCALATE] severity:product`. Do not resolve it yourself; route it to the Planner or Principal. (A spec that needs updating is a strategy escalation, not a reason to fail the PR.)
 
 ## Where you sit in the process
 
-Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → TL spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
+Phase 10 (Review) in `process.md`. The order is: **code-reviewer pass (you) → security pass (`roles/security.md`) → Principal code review → Brief Author spec review → merge.** Your verdict feeds the human reviews; it does not replace them.
 
 **Your verdict is also a mechanical merge gate (the review-gate iteration, task 1).** A required, blocking CI check (`packages/aeg-core/bin/verify-review-gate.ts`) reads every PR comment for a clean `APPROVE` verdict — `REQUEST CHANGES`, a missing verdict, or an unclear one all fail the check and block merge, same as this repo's own security pass. This is not advisory: it is the same enforcement class as typecheck or lint. A principal can waive it for one PR with an actor-verified `vinaya/waiver:review` label (`aeg-root/enforcement.md`) — label presence alone is never sufficient.
 

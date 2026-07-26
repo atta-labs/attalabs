@@ -25,7 +25,6 @@ const FULL_PR_CONFIG = {
         { builtin: 'project' },
         { builtin: 'for' },
         { builtin: 'closesN' },
-        { builtin: 'lockAck' },
         { builtin: 'premiseCoverage' }
       ]
     }

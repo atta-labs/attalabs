@@ -104,7 +104,6 @@ function validateTaskIssue(body: string | null, title: string | null, retryComma
     title,
     sections,
     changedFiles: [],
-    touchesLock: false,
     retryCommand
   })
   if (errors.length > 0) refuse(errors)

@@ -32,7 +32,6 @@ import {
   checkForField,
   checkForgeTitle,
   checkIssueRationale,
-  checkLockAck,
   checkPremiseCoverage,
   checkPrincipalPlaceholder,
   checkProjectField,
@@ -198,8 +197,6 @@ export type ForgeValidationInput = {
   sections: BriefSection[]
   /** The write's changed-file list — drives `premiseCoverage`. Empty for issues. */
   changedFiles: string[]
-  /** Whether the write's diff adds a `Lock: YES` decision — drives `lockAck`. */
-  touchesLock: boolean
   /** The exact command the agent should re-run after fixing (named in every recovery prompt). */
   retryCommand: string
 }
@@ -213,7 +210,7 @@ const CHECK_FORGE_TITLE = 'forge-title'
  * to `BRIEF_BUILTINS` without wiring it here is a compile error.
  */
 function runBuiltin(name: BriefBuiltin, input: ForgeValidationInput): string[] {
-  const { body, changedFiles, touchesLock } = input
+  const { body, changedFiles } = input
   const table: Record<BriefBuiltin, () => { errors: string[] }> = {
     tier: () => checkTierField(body, readTierFromPrBody),
     testPlan: () => checkTestPlan(body),
@@ -227,7 +224,6 @@ function runBuiltin(name: BriefBuiltin, input: ForgeValidationInput): string[] {
     project: () => checkProjectField(body),
     for: () => checkForField(body),
     closesN: () => checkBriefClosesN(body),
-    lockAck: () => checkLockAck(body, touchesLock),
     premiseCoverage: () => checkPremiseCoverage(body, changedFiles),
     issueRationale: () => checkIssueRationale(body)
   }
@@ -253,8 +249,6 @@ const BUILTIN_RECOVERY: Record<BriefBuiltin, string> = {
     'Add a `Project: <name>` field to the body header block (before the first `##` heading), then re-run `{cmd}`.',
   for: 'Add a `For: <model + environment>` field to the body header block (before the first `##` heading), then re-run `{cmd}`.',
   closesN: 'Add a `Closes #<N>` reference naming the task Issue to the body, then re-run `{cmd}`.',
-  lockAck:
-    'This change touches a `Lock: YES` decision — add a `Conforms to lock: D-###` (or `Challenges lock: D-###` + `Rationale:`) block to the body, then re-run `{cmd}`.',
   premiseCoverage: 'Add a `Premise:` assertion whose path matches a file this change touches, then re-run `{cmd}`.',
   issueRationale:
     'Add the missing Planner-rationale field named above (every task Issue carries all eight fields), then re-run `{cmd}`.'

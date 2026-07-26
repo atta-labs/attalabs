@@ -5,7 +5,7 @@ order: 2
 contract_id: brief-developer
 description: Carries a brief to the agent that executes it, so nothing the author knew is left implicit.
 status: active
-producer: team-leader
+producer: brief-author
 consumer: developer
 carrier: pr-body
 summary: Ever handed someone a task and they missed something you thought was obvious?

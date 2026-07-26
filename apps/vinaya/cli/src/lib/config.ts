@@ -43,7 +43,6 @@ export const BRIEF_BUILTINS = [
   'project',
   'for',
   'closesN',
-  'lockAck',
   'premiseCoverage',
   'issueRationale'
 ] as const

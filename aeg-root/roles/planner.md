@@ -40,7 +40,7 @@ Everything below is the reference: the gates in full, the sizing tests, and the 
 
 ## Reference
 
-**A mode of the Team Leader.** Same intelligence as the Brief Author, one altitude up. The Brief Author turns one intent into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a GitHub Milestone plus a set of labeled forge Issues.
+**One altitude above the Brief Author.** The Brief Author turns one planned task into one brief; the Planner turns an intent plus a slice of tickets into a whole **iteration** — a GitHub Milestone plus a set of labeled forge Issues.
 
 **Forge-native by default (`aeg-forge-state-v1`) — no topology file, no plan PR, no commit.** Create a Milestone titled `<slug>` (its description is the iteration goal), then cut task Issues labeled `vinaya/iteration:<slug>` with the full Planner's rationale (see "The Planner's rationale" below) in each body. `@atta/aeg-forge-state` derives topology, dependencies, and lifecycle purely from those forge objects — nothing to write to `main`, nothing for `verify-coherence` to fall back to a file for. This cutover is now complete for every active iteration, including the one holdout (`vada-production-v1`) that briefly kept a thin `.md` file while 9 Issues predating the dependency-rationale grammar were backfilled. Do not create a new topology file for a new iteration; if you find yourself about to write one, stop — the forge-native path below is the whole job.
 

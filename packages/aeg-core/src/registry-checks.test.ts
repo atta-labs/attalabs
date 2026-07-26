@@ -9,7 +9,6 @@ function makeRow(overrides: Partial<GateRow> = {}): GateRow {
     summary: 'Some summary?',
     category: 'hook',
     implementation: '',
-    lock: '',
     line: 1,
     ...overrides
   }

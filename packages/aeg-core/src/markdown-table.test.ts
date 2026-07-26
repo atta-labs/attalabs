@@ -9,11 +9,11 @@ const ENFORCEMENT_PATH = join(REPO_ROOT, 'aeg-root/enforcement.md')
 /**
  * Round-trip proof that `enforcement.md`'s Ring 0/1/2 gate tables still
  * parse correctly through the same `findTable`/`rowToRecord` path the live
- * `/aeg` page uses, now that every row carries trailing `implementation` and
- * `lock` columns. The parser is header-ordered — this guards against the
- * columns having been inserted mid-row or the tables having been reshaped.
+ * `/aeg` page uses. Every row ends with an `implementation` column, resolved
+ * by header name — this guards against the column having been inserted
+ * mid-row or the tables having been reshaped.
  */
-describe('enforcement.md Ring 0/1/2 tables (implementation + lock columns)', () => {
+describe('enforcement.md Ring 0/1/2 tables (implementation column)', () => {
   async function loadRingTables() {
     const raw = await fs.readFile(ENFORCEMENT_PATH, 'utf8')
     const lines = raw.split('\n')
@@ -34,21 +34,11 @@ describe('enforcement.md Ring 0/1/2 tables (implementation + lock columns)', () 
     return { ring0, ring1, ring2 }
   }
 
-  it('every ring table header ends with implementation, lock', async () => {
+  it('every ring table header ends with implementation, and carries no lock column', async () => {
     const { ring0, ring1, ring2 } = await loadRingTables()
     for (const table of [ring0, ring1, ring2]) {
-      expect(table.headers.slice(-2)).toEqual(['implementation', 'lock'])
-    }
-  })
-
-  it('every gate row has a lock key that is present and empty', async () => {
-    const { ring0, ring1, ring2 } = await loadRingTables()
-    for (const table of [ring0, ring1, ring2]) {
-      for (const row of table.rows) {
-        const record = rowToRecord(table.headers, row)
-        expect(record).toHaveProperty('lock')
-        expect(record.lock).toBe('')
-      }
+      expect(table.headers[table.headers.length - 1]).toBe('implementation')
+      expect(table.headers).not.toContain('lock')
     }
   })
 

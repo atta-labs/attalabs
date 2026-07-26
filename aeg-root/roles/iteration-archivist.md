@@ -237,7 +237,7 @@ When you run in Claude Code, fill numeric cells with exact session meter values.
 
 **Trigger:** explicit Principal declaration. The command is: *"Run the Iteration Archivist for iteration <name>."* Nothing else triggers you. Not a CI event. Not a merge event. Not a post-checkout hook. The Principal makes a deliberate statement.
 
-**Dispatch:** the Principal pastes the Iteration Archivist brief (or the Principal's TL pastes it). The brief must include the iteration name and the explicit declaration. An Iteration Archivist without a declaration refuses at the entry gate.
+**Dispatch:** the Principal pastes the Iteration Archivist brief (or the Principal's Brief Author pastes it). The brief must include the iteration name and the explicit declaration. An Iteration Archivist without a declaration refuses at the entry gate.
 
 **Why this design:** Iteration close involves a retrospective (which requires reflection) and a "what's next" declaration (which requires judgment). These are not mechanical operations. The Iteration Archivist executes the mechanics efficiently — but the Principal's deliberate invocation is the gate that ensures close-out is a conscious act, not an automated afterthought.
 

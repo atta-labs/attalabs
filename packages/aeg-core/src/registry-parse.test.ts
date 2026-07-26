@@ -11,22 +11,22 @@ describe('parseEnforcementRegistry', () => {
     const fixture = `
 ## Ring 0 — Prevention (nothing invalid leaves the machine)
 
-| Action | Summary | Category | Gate | What must be true | implementation | lock |
-|---|---|---|---|---|---|---|
-| Editing a file | Ever edited code you never read the docs for? | hook | Edit gate | Something | \`.claude/hooks/check-skill.sh\` |  |
+| Action | Summary | Category | Gate | What must be true | implementation |
+|---|---|---|---|---|---|
+| Editing a file | Ever edited code you never read the docs for? | hook | Edit gate | Something | \`.claude/hooks/check-skill.sh\` |
 
 ## Ring 1 — Detection (what turns the forge red)
 
-| CI check | Summary | Category | Re-verifies | implementation | lock |
-|---|---|---|---|---|---|
-| Coherence oracle | Ever found a task marked done that never merged? | ci | Plan/forge drift | \`packages/aeg-core/bin/verify-coherence.ts\` | D-100 |
+| CI check | Summary | Category | Re-verifies | implementation |
+|---|---|---|---|---|
+| Coherence oracle | Ever found a task marked done that never merged? | ci | Plan/forge drift | \`packages/aeg-core/bin/verify-coherence.ts\` |
 
 ## Ring 2 — Audit (drift from any writer, any era)
 
-| Mechanism | Summary | Category | Runs | Catches | implementation | lock |
-|---|---|---|---|---|---|---|
-| Post-merge archivist | Ever wanted a permanent record of what shipped? | event | On merge | Audit record | \`packages/aeg-core/bin/archive-task.ts\` |  |
-| Staleness audits | Ever had docs contradict a decision? | event | Dispatched periodically | Doc drift |  |  |
+| Mechanism | Summary | Category | Runs | Catches | implementation |
+|---|---|---|---|---|---|
+| Post-merge archivist | Ever wanted a permanent record of what shipped? | event | On merge | Audit record | \`packages/aeg-core/bin/archive-task.ts\` |
+| Staleness audits | Ever had docs contradict a decision? | event | Dispatched periodically | Doc drift |  |
 `
     const rows = parseEnforcementRegistry(fixture)
     expect(rows).toHaveLength(4)
@@ -45,7 +45,6 @@ describe('parseEnforcementRegistry', () => {
       description: undefined,
       spec: 'Something',
       implementation: '.claude/hooks/check-skill.sh',
-      lock: '',
       line: ring0!.line
     })
 
@@ -54,7 +53,6 @@ describe('parseEnforcementRegistry', () => {
     expect(ring1?.summary).toBe('Ever found a task marked done that never merged?')
     expect(ring1?.category).toBe('ci')
     expect(ring1?.implementation).toBe('packages/aeg-core/bin/verify-coherence.ts')
-    expect(ring1?.lock).toBe('D-100')
 
     const ring2Rows = rows.filter((r) => r.ring === 'ring2')
     expect(ring2Rows).toHaveLength(2)

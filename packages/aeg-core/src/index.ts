@@ -35,7 +35,6 @@ export {
   checkDocUpdateList,
   checkForField,
   checkForgeTitle,
-  checkLockAck,
   checkPlanPrNoCloses,
   checkPremiseCoverage,
   checkPrincipalPlaceholder,

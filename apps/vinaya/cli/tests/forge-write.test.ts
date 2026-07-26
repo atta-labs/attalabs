@@ -30,14 +30,12 @@ const PR_SECTIONS: BriefSection[] = [
   { builtin: 'project' },
   { builtin: 'for' },
   { builtin: 'closesN' },
-  { builtin: 'lockAck' },
   { builtin: 'premiseCoverage' }
 ]
 
 const base = {
   title: null,
   changedFiles: [] as string[],
-  touchesLock: false,
   retryCommand: 'vinaya pr create --validate-only …'
 }
 

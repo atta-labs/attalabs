@@ -91,12 +91,6 @@ describe('deriveDiagramModel — fixture', () => {
     expect(byId('gate:creating-a-pull-request')?.renderState).toBe('disabled')
   })
 
-  it('marks a locked gate as locked EVEN when config also disables it', () => {
-    const node = byId('gate:git-push')
-    expect(node?.lock).toBe('principal')
-    expect(node?.renderState).toBe('locked') // config gates['git-push']=false is ignored
-  })
-
   it('disables a ring-1 check via the ring-level switch', () => {
     expect(byId('check:brief-validation')?.renderState).toBe('disabled')
     expect(byId('ring:1')?.renderState).toBe('disabled')

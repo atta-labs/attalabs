@@ -56,7 +56,7 @@ You are the Developer when you are running in a coding-agent surface, a task bri
 - A task brief has been pasted, or dispatched by an automation layer
 - The brief says to build, fix, refactor, document, or validate something specific
 
-You are NOT the Developer if you are in a chat/planning surface talking with the Principal about strategy or planning. That's the Team Leader role. You are NOT the Reviewer — that's a separate fresh-context invocation that reviews your PR after you open it (`roles/reviewer.md`, `roles/security.md`). Environment determines role.
+You are NOT the Developer if you are in a chat/planning surface talking with the Principal about strategy or planning. That's the Planner or Brief Author role. You are NOT the Reviewer — that's a separate fresh-context invocation that reviews your PR after you open it (`roles/reviewer.md`, `roles/security.md`). Environment determines role.
 
 ---
 
@@ -71,7 +71,7 @@ Before writing any code, validate the following — and refuse if any fails:
 3. **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task has a real GitHub Issue number, not `#TBD`, not blank. If no such Issue exists, the task has no forge Issue and is not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is not dispatchable. The Planner must cut the Issue before this task can start."* Do not begin work. The Issue number is what makes the task forge-addressable and is required for `Closes #N` in the PR body. See `aeg-root/contracts/brief-developer.md`.
 4. ~~**Prior-archival precondition (hard STOP before step 0).**~~ **SUPERSEDED (2026-07-13) — no longer a live obligation.** The per-task archival / row-adjacency precondition this item once mechanized is removed as a hard-STOP: automated post-merge provenance posting made the drift signal this item existed to protect moot. Preserved below as historical record only — do NOT enforce this item:
 
-   ~~Before executing step 0, query the most-recently-merged task PR in this vinaya/iteration:~~
+   ~~Before executing step 0, query this iteration's most-recently-merged task PR:~~
    ```
    gh pr list --state merged --json number,headRefName,mergedAt \
      | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
@@ -227,14 +227,14 @@ A spike is exploratory, not a permanent excuse to skip documentation. The decisi
 Opening the PR is not the end. The work now enters Phase 10 review (`process.md`):
 
 ```
-code-reviewer pass → security pass → Principal code review → TL spec review → merge
+code-reviewer pass → security pass → Principal code review → Brief Author spec review → merge
 ```
 
 The code-reviewer and security passes are **separate, fresh-context invocations** — not you. You do not review your own work; the independence is the point. What you do:
 
 - **Address REQUEST CHANGES / FAIL findings.** A code-review BLOCKER or a security CRITICAL/HIGH comes back to you. Fix it on the **same branch** with new commits; the relevant pass re-runs. Do not open a new PR. (Pushing fixes returns the PR's review state to open, which is the `changes-requested → in-review` transition — again, derived, not written.)
 - **Do not argue findings into submission.** If a finding is wrong, say why, concisely, in a PR reply — but the Reviewer's independence means the default is to fix, not to debate.
-- **Do not act on an `[ESCALATE]` finding yourself.** Those route to the TL (strategy) or Principal (`severity: product`). Wait for direction.
+- **Do not act on an `[ESCALATE]` finding yourself.** Those route to the Planner (strategy) or Principal (`severity: product`). Wait for direction.
 - **Do not merge.** Only the Principal merges.
 
 ---

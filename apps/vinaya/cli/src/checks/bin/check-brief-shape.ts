@@ -39,11 +39,6 @@ function changedFiles(base: string): string[] {
     .filter(Boolean)
 }
 
-function diffAddsLockYes(base: string, file: string): boolean {
-  const diff = git(['diff', `${base}...HEAD`, '--', file])
-  return diff.split('\n').some((line) => line.startsWith('+') && !line.startsWith('+++') && /Lock:\s*YES/.test(line))
-}
-
 function main(): void {
   const prBody = process.env.PR_BODY ?? ''
   if (!prBody) {
@@ -54,9 +49,7 @@ function main(): void {
   const base = process.env.BASE_SHA || 'origin/main'
   let changed = changedFiles(base)
   if (changed.length === 0) changed = changedFiles('main')
-  const touchesLock = changed.filter(isDecisionLog).some((f) => diffAddsLockYes(base, f))
-
-  const { errors } = checkBriefSections(prBody, touchesLock, readTierFromPrBody)
+  const { errors } = checkBriefSections(prBody, readTierFromPrBody)
 
   if (errors.length > 0) {
     for (const message of errors) {

@@ -77,18 +77,6 @@ function changedFiles(base: string): string[] {
     .filter(Boolean)
 }
 
-function diffAddsLockYes(base: string, file: string): boolean {
-  const diff = sh(`git diff ${base}...HEAD -- ${file}`)
-  return diff.split('\n').some((line) => line.startsWith('+') && !line.startsWith('+++') && /Lock:\s*YES/.test(line))
-}
-
-export function deriveTouchesLock(base: string): boolean {
-  let changed = changedFiles(base)
-  if (changed.length === 0) changed = changedFiles('main')
-  const decisionLogs = changed.filter(isDecisionLog)
-  return decisionLogs.some((f) => diffAddsLockYes(base, f))
-}
-
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
 /**
@@ -184,11 +172,9 @@ export function main(): void {
   }
 
   const base = process.env.BASE_SHA || 'origin/main'
-  const touchesLock = deriveTouchesLock(base)
 
-  const { errors } = checkBriefSections(prBody, touchesLock, readTierFromPrBody, { requireClosesN: isTaskBranch })
+  const { errors } = checkBriefSections(prBody, readTierFromPrBody, { requireClosesN: isTaskBranch })
 
-  if (touchesLock) console.log('[verify-brief] diff touches a Lock: YES decision — lock-ack is required.')
   if (!isTaskBranch) {
     console.log(
       `[verify-brief] brief-shaped body on a non-task branch (${branch || 'none'}) — validating sections; \`Closes #N\` not required.`

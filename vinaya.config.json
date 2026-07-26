@@ -14,7 +14,6 @@
         { "builtin": "project" },
         { "builtin": "for" },
         { "builtin": "closesN" },
-        { "builtin": "lockAck" },
         { "builtin": "premiseCoverage" }
       ]
     },
