@@ -3332,3 +3332,34 @@ The first cut of this fix used `[\s>*_#]*`. Review (#639) established by executi
 - **Tolerate code spans too** — rejected: a backticked marker is exactly how the role docs and the extractor's own header comment write *about* the contract, so tolerating it would match prose describing the rule. Recorded in the header comment as decided rather than overlooked.
 
 **Consequences:** `packages/aeg-core/src/verdict-extraction.ts` is the single implementation of this pattern (§11, one implementation per fact) and both extractors carry the identical prefix — they must continue to be edited together. Its header comment is the doc for this behavior and now enumerates the rejected forms with reasoning. `verdict-extraction.test.ts` pins 17 rejection cases, every one of which matched under the first-cut class; rejection coverage, not acceptance coverage, is what protects this file from its own history.
+
+---
+
+## D-135 — Role and contract docs publish a binding short version, gated by C7
+
+**Date:** 2026-07-26
+**Status:** ACTIVE
+**Type:** 2 (reversible — a doc shape plus one additive check; revertible by publishing the full body again and dropping C7)
+**Lock:** NO
+
+**Authored by:** Developer session on `fix/published-doctrine`, 2026-07-26
+**Ratified by:** Type 2 — TL-decidable; recorded ACTIVE on merge.
+
+**Context:** A role doc has two audiences with opposite needs. An agent taking the role reads it end to end as its operating instruction; a person opening `/docs/roles/<id>` reads the same file cold. `roles/developer.md` was 6,368 words and `roles/planner.md` 7,053 — a person cannot learn a role from that, and, more seriously, an agent under context pressure obeys what is salient. In `developer.md` the entry gate sat at section 3, the stop conditions at 12, "what the Developer does NOT do" at 13 and the pre-merge gate at 17. Refusal conditions competing with incident essays five thousand words in are not salient. This is a correctness problem before it is a readability one.
+
+**Decision:**
+
+1. **Every role and contract opens with `## The short version`, and it is binding.** It is normative text, not a summary of normative text: where it and the reference below it disagree, the short version is the rule and the reference is the bug. One shape for all fourteen — a one-line opener, then exactly four bold-led blocks in order (what it owns or carries; when it refuses; what it never does; how it physically runs), then one line pointing at the reference. Roles answer in the second person, contracts in the third. A block with nothing to say says so in one honest sentence rather than being omitted, because an absent block is indistinguishable from an oversight.
+2. **No threshold appears twice.** A number, count or deadline lives in the short version or in the reference, never both — two copies drift. `developer.md` shipped with "three real attempts" in both; the short version now states the obligation and the reference keeps the count.
+3. **Protocol facts are published; this repo's internals are not.** The isolated-worktree path, the task branch convention as the addressing scheme, the brief living in the pull-request body, and status being derived rather than written are the method an adopter must learn from the page. Script paths, decision ids, section numbers, forge numbers, iteration slugs and the retired public name are this repo's own and belong in the reference or in frontmatter `provenance:`.
+4. **The page publishes the short version, not the body.** `/docs/roles/<id>` and `/docs/contracts/<id>` render the model frame plus the short version; everything under `## Reference` stops being published and is linked on GitHub instead, so nothing is hidden — it is simply not the page. A contract additionally renders its seam as words (producer → consumer), derived from the model's own edges.
+5. **C7 gates both properties.** A new pure check (`packages/aeg-core/src/docs/published-prose.ts`) asserts structure (all four blocks, in order, 150–450 words) and readability (no decision id, section sign, forge number, retired public name, iteration slug, repo-internal path, or label vocabulary — namespaced and retired forms alike) over the published set only, which is the same model-backed allowlist C6 uses. It runs blocking in `--pr` mode over the doctrine files a diff touches, and repo-wide in full mode. The allowed protocol mechanics are an explicit, tested exemption.
+
+**Alternatives considered:**
+
+- **Per-file templates for `principal.md` and `team-leader.md`** — rejected. The Principal is a human seat with no entry gate and the Team Leader is three modes rather than one job, and both looked like exemptions. Both write cleanly under the one shape: a Principal refuses directions, merges and ratifications, and constrains what agents may do on the seat's behalf; a Team Leader's blocks state what all three modes share while the opener names the split. A second template would have made the shape advisory.
+- **HTML comments as the escape hatch for internal references** — rejected on evidence: the docs renderer runs without raw-HTML support and prints them as visible text. Frontmatter `provenance:` is stripped before render and is the sanctioned home.
+- **Rewriting the fourteen bodies in place** — rejected. The reference is where the exact predicates, commands and incident history live, and an agent needs all of it. The split gives each audience the whole of what it needs; compressing the body would have cost the agent its operating detail.
+- **A second, path-based rule for what publishes** — rejected. The model-backed allowlist stays the single source of truth for the published set; C7 consumes it rather than competing with it.
+
+**Consequences:** The fourteen docs each carry a short version of 333–428 words above a `## Reference` heading; the reference text itself is unchanged, only relocated under that heading. `/docs` role and contract pages are now short pages with a source link rather than long raw-markdown dumps. C7 is a blocking gate, so a new role or contract cannot be added without one, and a leak into published prose fails the pull request rather than waiting for a reviewer to notice. The same fourteen files were also migrated onto the current `vinaya/` label vocabulary, which the earlier namespace migration had left untouched — a short version naming a deleted label would have been born wrong. `performs:` frontmatter is deliberately still unrendered: its ids do not resolve against the action registry, and publishing a broken index is worse than publishing none; reconciling them is a separate task.
