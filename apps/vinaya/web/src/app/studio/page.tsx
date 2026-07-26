@@ -8,9 +8,9 @@
  * Rows are minimal: `#issue` (→ GitHub), a status badge, the plain title, and
  * the iteration slug (→ its board; backlog rows carry no iteration).
  *
- * The `isVercelDeploy()` redirect stays (D-101: Studio is local-only for v1.0;
+ * The `isVercelDeploy()` redirect stays (Studio is local-only for v1.0;
  * production/preview send the visitor to the `/the-studio` Portal page). Forge
- * honesty (D-087): a page-level banner renders when the forge is unreachable,
+ * honesty: a page-level banner renders when the forge is unreachable,
  * and no card renders an empty list produced by that failure — the Projects
  * card, local registry only, still renders.
  */
@@ -55,9 +55,9 @@ export default async function HomePage() {
   // loaders below fan out. Without this, each concurrent loader spawns its own
   // `gh auth token`; a burst of 5s-timeout subprocesses starved the sibling
   // backlog query's token resolution past its timeout, rendering a reachable
-  // backlog as a false "unavailable" (D-087). `resolveGithubToken` reads
+  // backlog as a false "unavailable". `resolveGithubToken` reads
   // `process.env.GITHUB_TOKEN` on every call, so priming collapses every
-  // downstream resolution to this one. Local-only Studio (D-101): one machine,
+  // downstream resolution to this one. Local-only Studio: one machine,
   // one token — priming is safe, and we never overwrite an explicit token.
   const primedToken = await resolveGithubToken()
   if (primedToken && !process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = primedToken
@@ -72,7 +72,7 @@ export default async function HomePage() {
   const active = iterations.active
   // Only a registered project has a board route (`readProject` 404s otherwise);
   // pass the registered set so a retired-project iteration renders board-less
-  // instead of linking to a dead `/studio/projects/<retired>` page (D-087).
+  // instead of linking to a dead `/studio/projects/<retired>` page.
   const registered = new Set(registry.map((p) => p.name))
   // The Tasks card is the single work surface: iteration tasks (Ready / active /
   // blocked) plus the backlog, filterable by status.
@@ -138,7 +138,7 @@ export default async function HomePage() {
                 </NextLink>
               ) : (
                 // No project → no board route exists. Say so instead of
-                // rendering a silently non-clickable row (D-087).
+                // rendering a silently non-clickable row.
                 <div key={it.fileSlug} className={`${rowClass} cursor-help`} title={NO_BOARD_REASON}>
                   {row}
                 </div>

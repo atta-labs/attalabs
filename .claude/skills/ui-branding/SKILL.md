@@ -15,33 +15,33 @@ Each product has a `branding` singleton document in Sanity that stores logo SVG 
 
 ```
 Sanity CMS — branding document (one per product)
-├── identity         productId, productName, paliRoot, paliMeaning, tagline
-├── shape            bladeDirection, interiorElement, interiorMeaning, shapeNotes
-├── variants         outlineDescription, outlineMinSizePx, solidDescription, solidMinSizePx, useCases
-├── usage            clearSpace, forbidden[] (list of rules)
-├── logos            logoOutlineLight/Dark, logoSolidLight/Dark,
-│                   logoLockupOutlineLight/Dark, logoLockupSolidLight/Dark  (SVG file assets)
-├── appleTouchIcon   Shared iOS home-screen icon (single PNG, not per-scheme)
+├── identity productId, productName, paliRoot, paliMeaning, tagline
+├── shape bladeDirection, interiorElement, interiorMeaning, shapeNotes
+├── variants outlineDescription, outlineMinSizePx, solidDescription, solidMinSizePx, useCases
+├── usage clearSpace, forbidden[] (list of rules)
+├── logos logoOutlineLight/Dark, logoSolidLight/Dark,
+│ logoLockupOutlineLight/Dark, logoLockupSolidLight/Dark (SVG file assets)
+├── appleTouchIcon Shared iOS home-screen icon (single PNG, not per-scheme)
 └── favicons
-    ├── faviconLight  ico, png16, png32, png48, png64, png128, png256, png512
-    └── faviconDark   (same fields)
+ ├── faviconLight ico, png16, png32, png48, png64, png128, png256, png512
+ └── faviconDark (same fields)
 
 @atta/cms package
-├── schemas/branding.ts              # Sanity schema
-├── src/queries/branding.ts          # getProductBranding(productKey)
-└── src/types.ts                     # CMSBranding, CMSBrandingFaviconSet, CMSBrandingFile, CMSBrandingImage
+├── schemas/branding.ts # Sanity schema
+├── src/queries/branding.ts # getProductBranding(productKey)
+└── src/types.ts # CMSBranding, CMSBrandingFaviconSet, CMSBrandingFile, CMSBrandingImage
 ```
 
 ### Document IDs (fixed, predictable)
 
-| Product  | Document `_id`       | Sanity Project |
+| Product | Document `_id` | Sanity Project |
 |----------|----------------------|----------------|
-| Herald   | `branding-herald`    | `e9gbd2d1`     |
-| Attā     | `branding-atta`      | `892o2m9f`     |
-| Vādā     | `branding-vada`      | `ofnj2ojb`     |
-| Vinaya   | `branding-vinaya`    | `o56nzgrr`     |
+| Herald | `branding-herald` | `e9gbd2d1` |
+| Attā | `branding-atta` | `892o2m9f` |
+| Vādā | `branding-vada` | `ofnj2ojb` |
+| Vinaya | `branding-vinaya` | `o56nzgrr` |
 
-The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs (D-125).
+The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs.
 
 ### Asset Storage
 
@@ -71,9 +71,9 @@ There is nothing special to do. Every read resolves its project from the product
 import { getProductBranding } from '@atta/cms'
 
 const [atta, vada, vinaya] = await Promise.all([
-  getProductBranding('atta').catch(() => null),
-  getProductBranding('vada').catch(() => null),
-  getProductBranding('vinaya').catch(() => null)
+ getProductBranding('atta').catch(() => null),
+ getProductBranding('vada').catch(() => null),
+ getProductBranding('vinaya').catch(() => null)
 ])
 ```
 
@@ -83,53 +83,53 @@ Returned shape — all asset fields include a resolved `url` string:
 
 ```ts
 interface CMSBranding {
-  _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vinaya'
-  productName: string
-  paliRoot?: string
-  paliMeaning?: string
-  tagline?: string
-  // Logo shape documentation
-  bladeDirection?: 'apex-up' | 'apex-down'
-  interiorElement?: string
-  interiorMeaning?: string
-  shapeNotes?: string
-  // Variant documentation
-  outlineDescription?: string
-  outlineUseCases?: string
-  outlineMinSizePx?: number   // default 48
-  solidDescription?: string
-  solidUseCases?: string
-  solidMinSizePx?: number     // default 16
-  // Usage rules
-  clearSpace?: string
-  forbidden?: string[]
-  // SVG logo files — mark variants
-  logoOutlineLight?: CMSBrandingFile    // { _type: 'file', url?: string }
-  logoOutlineDark?: CMSBrandingFile
-  logoSolidLight?: CMSBrandingFile
-  logoSolidDark?: CMSBrandingFile
-  // SVG logo files — lockup (Logo Full): mark + wordmark + tagline
-  logoLockupOutlineLight?: CMSBrandingFile
-  logoLockupOutlineDark?: CMSBrandingFile
-  logoLockupSolidLight?: CMSBrandingFile
-  logoLockupSolidDark?: CMSBrandingFile
-  // iOS home screen — single asset shared across schemes
-  appleTouchIcon?: CMSBrandingImage    // apple-touch-icon.png (180×180)
-  // Favicon sets
-  faviconLight?: CMSBrandingFaviconSet
-  faviconDark?: CMSBrandingFaviconSet
+ _id: string
+ productId: 'herald' | 'atta' | 'vada' | 'vinaya'
+ productName: string
+ paliRoot?: string
+ paliMeaning?: string
+ tagline?: string
+ // Logo shape documentation
+ bladeDirection?: 'apex-up' | 'apex-down'
+ interiorElement?: string
+ interiorMeaning?: string
+ shapeNotes?: string
+ // Variant documentation
+ outlineDescription?: string
+ outlineUseCases?: string
+ outlineMinSizePx?: number // default 48
+ solidDescription?: string
+ solidUseCases?: string
+ solidMinSizePx?: number // default 16
+ // Usage rules
+ clearSpace?: string
+ forbidden?: string[]
+ // SVG logo files — mark variants
+ logoOutlineLight?: CMSBrandingFile // { _type: 'file', url?: string }
+ logoOutlineDark?: CMSBrandingFile
+ logoSolidLight?: CMSBrandingFile
+ logoSolidDark?: CMSBrandingFile
+ // SVG logo files — lockup (Logo Full): mark + wordmark + tagline
+ logoLockupOutlineLight?: CMSBrandingFile
+ logoLockupOutlineDark?: CMSBrandingFile
+ logoLockupSolidLight?: CMSBrandingFile
+ logoLockupSolidDark?: CMSBrandingFile
+ // iOS home screen — single asset shared across schemes
+ appleTouchIcon?: CMSBrandingImage // apple-touch-icon.png (180×180)
+ // Favicon sets
+ faviconLight?: CMSBrandingFaviconSet
+ faviconDark?: CMSBrandingFaviconSet
 }
 
 interface CMSBrandingFaviconSet {
-  ico?: CMSBrandingFile           // favicon.ico (multi-res)
-  png16?: CMSBrandingImage        // favicon-16
-  png32?: CMSBrandingImage        // favicon-32
-  png48?: CMSBrandingImage        // favicon-48
-  png64?: CMSBrandingImage        // favicon-64
-  png128?: CMSBrandingImage       // favicon-128 (Chrome Web Store)
-  png256?: CMSBrandingImage       // favicon-256 (Retina / PWA manifest)
-  png512?: CMSBrandingImage       // favicon-512 (PWA splash / large)
+ ico?: CMSBrandingFile // favicon.ico (multi-res)
+ png16?: CMSBrandingImage // favicon-16
+ png32?: CMSBrandingImage // favicon-32
+ png48?: CMSBrandingImage // favicon-48
+ png64?: CMSBrandingImage // favicon-64
+ png128?: CMSBrandingImage // favicon-128 (Chrome Web Store)
+ png256?: CMSBrandingImage // favicon-256 (Retina / PWA manifest)
+ png512?: CMSBrandingImage // favicon-512 (PWA splash / large)
 }
 ```
 
@@ -140,13 +140,13 @@ const branding = await getProductBranding('atta').catch(() => null)
 
 // Pick the right variant based on active color scheme and render size
 const logoUrl = isDark
-  ? branding?.logoSolidDark?.url    // below 48px
-  : branding?.logoSolidLight?.url
+ ? branding?.logoSolidDark?.url // below 48px
+: branding?.logoSolidLight?.url
 
 // Or outline for hero contexts (48px+)
 const logoUrl = isDark
-  ? branding?.logoOutlineDark?.url
-  : branding?.logoOutlineLight?.url
+ ? branding?.logoOutlineDark?.url
+: branding?.logoOutlineLight?.url
 
 // Always guard — branding may be null if CMS is unreachable
 {logoUrl && <img src={logoUrl} alt={branding.productName} />}
@@ -156,12 +156,12 @@ const logoUrl = isDark
 
 ## Per-Product Logo Geometry
 
-| Product  | Blade Direction | Interior Element | Meaning |
+| Product | Blade Direction | Interior Element | Meaning |
 |----------|----------------|-----------------|---------|
-| Attā     | Λ — apex up    | Eye — almond ellipse with pupil | The self looking inward, awareness observing itself |
-| Vinaya   | V — apex down  | Target — concentric rings with crosshairs | Focus, thought applied to its object (reused from Vitakka, D-124 — its V initial fits Vinaya's) |
-| Vādā     | V — apex down  | Two circles connected by exchange arcs | Conversation, dialogue between two minds |
-| Herald   | TBD            | TBD | TBD — logos not yet designed |
+| Attā | Λ — apex up | Eye — almond ellipse with pupil | The self looking inward, awareness observing itself |
+| Vinaya | V — apex down | Target — concentric rings with crosshairs | Focus, thought applied to its object (reused from Vitakka, its V initial fits Vinaya's) |
+| Vādā | V — apex down | Two circles connected by exchange arcs | Conversation, dialogue between two minds |
+| Herald | TBD | TBD | TBD — logos not yet designed |
 
 **Blade curves are organic and intentional across all products.** Never straighten them, never separate the interior element from the blades.
 
@@ -171,8 +171,8 @@ const logoUrl = isDark
 
 | Variant | Min Size | Use For |
 |---------|----------|---------|
-| Outline | 48 px    | Landing pages, hero sections, marketing materials, OG images, about pages, documentation headers |
-| Solid   | 16 px    | Favicons, browser tabs, app icons, nav bars, loading screens, watermarks, email, PDF, print |
+| Outline | 48 px | Landing pages, hero sections, marketing materials, OG images, about pages, documentation headers |
+| Solid | 16 px | Favicons, browser tabs, app icons, nav bars, loading screens, watermarks, email, PDF, print |
 
 These are not two different logos — they are one logo at two levels of detail. The geometry (blade curves, proportions, element positions) is identical.
 
@@ -187,7 +187,7 @@ The seed script uploads all SVG/PNG assets from `~/Downloads/logos/{product}/` a
 SANITY_API_TOKEN=<token> bun run seed:branding:atta
 SANITY_API_TOKEN=<token> bun run seed:branding:vada
 SANITY_API_TOKEN=<token> bun run seed:branding:vinaya
-SANITY_API_TOKEN=<token> bun run seed:branding:herald   # document shell only, no assets
+SANITY_API_TOKEN=<token> bun run seed:branding:herald # document shell only, no assets
 ```
 
 Tokens live in each product's `apps/{product}-ai/web/.env.local`. Project IDs are baked into the npm scripts.
@@ -196,15 +196,15 @@ Tokens live in each product's `apps/{product}-ai/web/.env.local`. Project IDs ar
 ```
 ~/Downloads/logos/
 └── {product}/
-    ├── outline/{product}-outline-{light|dark}.svg
-    ├── solid/{product}-solid-{light|dark}.svg
-    ├── lockup/{product}-lockup-{outline|solid}-{light|dark}.svg   (4 files — Logo Full)
-    └── favicon/
-        ├── {product}-light.ico
-        ├── {product}-dark.ico
-        ├── {product}-apple-touch-180.png       (shared across schemes)
-        ├── light/{product}-{16|32|48|64|128|256|512}.png
-        └── dark/{product}-{16|32|48|64|128|256|512}.png
+ ├── outline/{product}-outline-{light|dark}.svg
+ ├── solid/{product}-solid-{light|dark}.svg
+ ├── lockup/{product}-lockup-{outline|solid}-{light|dark}.svg (4 files — Logo Full)
+ └── favicon/
+ ├── {product}-light.ico
+ ├── {product}-dark.ico
+ ├── {product}-apple-touch-180.png (shared across schemes)
+ ├── light/{product}-{16|32|48|64|128|256|512}.png
+ └── dark/{product}-{16|32|48|64|128|256|512}.png
 ```
 
 The script uses `client.createOrReplace()` — safe to re-run if assets are updated.
@@ -227,5 +227,5 @@ The script uses `client.createOrReplace()` — safe to re-run if assets are upda
 
 - ❌ Importing SVG files directly from the repo — logos live in Sanity, not in source code
 - ❌ Hardcoding which logo variant to use — derive from render size and active color scheme
-- ❌ Using `image` type for SVG uploads in scripts — use `client.assets.upload('file', ...)` instead
+- ❌ Using `image` type for SVG uploads in scripts — use `client.assets.upload('file',...)` instead
 - ❌ Reusing the same branding document across products — each product has its own `_id`

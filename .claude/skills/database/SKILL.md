@@ -7,7 +7,7 @@ description: Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fi
 
 ## Context
 
-Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP (D-029) and the shared keys UI extraction (D-030) — see `vada-decisions.md` for rationale.
+Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP and the shared keys UI extraction — see `vada-decisions.md` for rationale.
 
 ---
 
@@ -18,22 +18,22 @@ Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecos
 - **MUST** store JSON fields as `text` — serialize/deserialize manually
 - **MUST** use `clerk_id` as primary key (or FK) for user-scoped tables
 - The `users` table is shared across products in `packages/db/src/schema/users.ts`. Per-product profile tables (e.g., `apps/vada-ai/web/src/db/schema.ts` `userSettings`) reference `users.clerk_id` as a FK.
-- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) live in `packages/db/src/schema/keys.ts` (per D-030). These are read by any product that exposes hosted MCP or BYOK Settings.
+- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) live in `packages/db/src/schema/keys.ts`. These are read by any product that exposes hosted MCP or BYOK Settings.
 
 ```ts
 import { boolean, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
-  clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
-  username: varchar('username', { length: 50 }).unique().notNull(),
-  githubHandle: varchar('github_handle', { length: 100 }),
+ clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
+ username: varchar('username', { length: 50 }).unique().notNull(),
+ githubHandle: varchar('github_handle', { length: 100 }),
 
-  // JSON stored as text
-  stack: text('stack').notNull().default('[]'),
-  projects: text('projects').notNull().default('[]'),
+ // JSON stored as text
+ stack: text('stack').notNull().default('[]'),
+ projects: text('projects').notNull().default('[]'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+ createdAt: timestamp('created_at').defaultNow().notNull(),
+ updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 ```
 
@@ -41,7 +41,7 @@ export const users = pgTable('users', {
 
 `packages/db/src/schema/`:
 - `users.ts` — identity (`users`)
-- `keys.ts` — `api_keys`, `user_provider_keys`, `mcp_sessions` (per D-030)
+- `keys.ts` — `api_keys`, `user_provider_keys`, `mcp_sessions`
 
 `apps/{product}/web/src/db/schema.ts`:
 - product-specific tables (deliberation transcripts, benchmarks, per-product preferences like `userSettings`, etc.)
@@ -64,7 +64,7 @@ If you're adding a column that holds a user-provided secret, follow the `user_pr
 ```ts
 // Writing
 await db.insert(schema.users).values({
-  stack: JSON.stringify(stackArray),
+ stack: JSON.stringify(stackArray),
 })
 
 // Reading
@@ -82,27 +82,27 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '.'
 
 export async function getUserByClerkId(clerkId: string) {
-  const rows = await db
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.clerkId, clerkId))
-    .limit(1)
-  return rows[0] ?? null
+ const rows = await db
+.select()
+.from(schema.users)
+.where(eq(schema.users.clerkId, clerkId))
+.limit(1)
+ return rows[0] ?? null
 }
 ```
 
 ### Upsert Pattern
 ```ts
 export async function upsertUser(data: NewUser) {
-  const existing = await getUserByClerkId(data.clerkId)
-  if (existing) {
-    await db
-      .update(schema.users)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(schema.users.clerkId, data.clerkId))
-  } else {
-    await db.insert(schema.users).values(data)
-  }
+ const existing = await getUserByClerkId(data.clerkId)
+ if (existing) {
+ await db
+.update(schema.users)
+.set({...data, updatedAt: new Date() })
+.where(eq(schema.users.clerkId, data.clerkId))
+ } else {
+ await db.insert(schema.users).values(data)
+ }
 }
 ```
 
@@ -118,9 +118,9 @@ export async function upsertUser(data: NewUser) {
 
 ```
 src/db/
-├── schema.ts      # Table definitions (Drizzle pgTable)
-├── queries.ts     # All query functions (exported named functions)
-└── index.ts       # DB client factory + schema re-export
+├── schema.ts # Table definitions (Drizzle pgTable)
+├── queries.ts # All query functions (exported named functions)
+└── index.ts # DB client factory + schema re-export
 ```
 
 ---

@@ -14,7 +14,7 @@
  * (b) Any `.md` file anywhere under `aeg-root/iterations/` (any depth,
  *     including `completed/**`), other than `README.md` — but ONLY when
  *     `added`. `completed/**`'s existing files are legacy archive
- *     (D-117 explicitly excludes them, per `iterations/README.md` §4/§11 —
+ * ( explicitly excludes them, per `iterations/README.md` §4/§11 —
  *     they're never deleted or migrated, and editing one to fix a typo
  *     must stay legal); this rule instead closes the gap a path-shape-only
  *     exemption would leave open — a BRAND NEW file smuggled directly into
@@ -24,7 +24,7 @@
  *     forge-native-cutover-pending) Archivist move-to-completed flow, never
  *     via this gate's own exemption logic.
  *
- * (c) Any `*.tokens.md` file, anywhere in the repo — the pre-D-071 ledger
+ * (c) Any `*.tokens.md` file, anywhere in the repo — the pre- ledger
  *     shape `Tokens-in-PR-body` superseded — but ONLY when `added` (an
  *     edit to one of the 4 existing legacy `completed/*.tokens.md` files
  *     must stay legal, same reasoning as (b)).

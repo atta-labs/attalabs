@@ -280,7 +280,7 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
         mergedAt: null
       }
     ]
-    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (D-059: no forge facts = minimum todo).
+    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (no forge facts = minimum todo).
   ])
 
   const derived = deriveIteration(iter, snapshot)

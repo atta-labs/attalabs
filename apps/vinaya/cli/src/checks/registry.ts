@@ -8,7 +8,7 @@ const BIN_DIR = join(CLI_ROOT, 'src', 'checks', 'bin')
 /**
  * The four core AEG gates, expressed as ordinary `CheckSpec`s — the exact
  * shape a `vinaya.config.json` entry produces. No extra field, no privileged
- * flag: this IS the D-092 no-privileged-API proof, not a stylistic choice.
+ * flag: this IS the no-privileged-API proof, not a stylistic choice.
  * See `tests/checks/no-privileged-api.test.ts`.
  */
 export function coreCheckRegistry(): CheckSpec[] {

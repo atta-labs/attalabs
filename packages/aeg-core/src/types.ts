@@ -55,14 +55,14 @@ export type { ForgeFacts }
 /**
  * The statuses derivation can conclude. The *rules* that produce them are not
  * written here or in `derive-iteration.ts` — they live as an ordered,
- * pure-data list in `state-machine-model.ts` (D-119, the `actions.ts`
+ * pure-data list in `state-machine-model.ts` (, the `actions.ts`
  * discipline), which `deriveStatus` executes and the docs render from the
  * same list.
  *
  * `backlog` remains a member because it is a project-level concept consumers
- * still render; derivation never emits it inside an iteration (D-059).
+ * still render; derivation never emits it inside an iteration.
  *
- * `dropped` and `incoherent` are the two **honest terminal** statuses (D-069).
+ * `dropped` and `incoherent` are the two **honest terminal** statuses.
  * A closed Issue with no merged PR must never resolve to `todo` (which implies
  * not-started). `dropped` = closed `NOT_PLANNED` (legitimately abandoned);
  * `incoherent` = closed `COMPLETED` but with no merged-PR link (genuinely done

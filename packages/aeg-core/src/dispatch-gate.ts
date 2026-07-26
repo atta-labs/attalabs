@@ -35,8 +35,8 @@ export type DispatchDependsOnFact = DispatchEdgeFact & { merged: boolean }
 export type DispatchConflictsWithFact = DispatchEdgeFact & { openOrInFlight: boolean }
 
 /**
- * D-120 (2026-07-13) removed the predicate that consumed this fact
- * (`checkDispatchReadiness` no longer blocks on it) — D-077 automated the
+ * removed the predicate that consumed this fact
+ * (`checkDispatchReadiness` no longer blocks on it) — automated the
  * signal (per-task provenance posting) this predicate existed to protect,
  * making the row-adjacency gate itself the stale part, not the automation.
  * Kept, dormant, rather than deleted: several callers (`bin/verify-dispatch.ts`,
@@ -71,7 +71,7 @@ export type DispatchGateInput = {
   conflictsWith: DispatchConflictsWithFact[]
   /**
    * The immediately-prior task in this same iteration's topology, or null
-   * when this is the first task. D-120: no longer read by
+   * when this is the first task. no longer read by
    * `checkDispatchReadiness` — dormant field, kept for caller compatibility.
    */
   priorTask: DispatchPriorTaskFact | null
@@ -86,7 +86,7 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
   const taskLabel = `task ${task.id} (iteration ${iterationSlug})`
   const blockers: string[] = []
 
-  // Issue-existence (D-054) — the topology row itself has no Issue number.
+  // Issue-existence — the topology row itself has no Issue number.
   if (task.issue === null) {
     blockers.push(
       `dispatch-gate issue-existence: ${taskLabel} has no Issue (#TBD or blank) in the topology — not dispatchable until the Planner cuts the Issue (D-054).`
@@ -98,7 +98,7 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
     )
   }
 
-  // Planner-rationale completeness (D-078, R1) — only evaluable when the Issue itself resolved.
+  // Planner-rationale completeness (, R1) — only evaluable when the Issue itself resolved.
   if (input.issue !== null && !input.issueRationalePass) {
     blockers.push(
       `dispatch-gate rationale: Issue #${input.issue.number} for ${taskLabel} fails the D-078 rationale gate (checkIssueRationale) — the Planner must complete the eight-field rationale before this task is dispatchable.`
@@ -125,10 +125,10 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
     }
   }
 
-  // Prior-task archival / row-adjacency predicate REMOVED (D-120, 2026-07-13).
-  // D-052 item 1 required every earlier table row's full archival (Issue
+  // Prior-task archival / row-adjacency predicate REMOVED.
+  // item 1 required every earlier table row's full archival (Issue
   // closed, PR merged, provenance posted) regardless of whether that row was
-  // a declared dependency — D-077 automated the provenance-posting signal
+  // a declared dependency — automated the provenance-posting signal
   // this existed to protect, so the blanket row-order block outlived its
   // justification. `input.priorTask` is still accepted (dormant) for caller
   // compatibility; see the type's doc comment above.

@@ -1,7 +1,7 @@
 /**
- * The canonical "surfaced doc" manifest for `aeg-root/` (D-079). Defines, as
+ * The canonical "surfaced doc" manifest for `aeg-root/`. Defines, as
  * data, which docs a public AEG page shows. The rule is **model-backed**: a
- * doc is surfaced if and only if a `DiagramModel` node points at it (D-087).
+ * doc is surfaced if and only if a `DiagramModel` node points at it.
  * The same `DiagramModel` that `/the-harness` renders is the allowlist for
  * `/docs` — the two surfaces are two renderers of one model, and the doc that
  * backs no reachable node stops being public, every build.
@@ -25,7 +25,7 @@
  * Purity: this module imports only the `DiagramModel` **type** from the
  * diagram layer — no runtime coupling, no I/O. The doctrine is read (and the
  * model derived) by the caller, which passes the derived path set in; aeg-core
- * stays zero-I/O (D-111, #372/#382/#506).
+ * stays zero-I/O (, #372/#382/#506).
  *
  * Paths are relative to `aeg-root/` (e.g. `roles/developer.md`), matching
  * `DocFrontmatter`'s existing convention.

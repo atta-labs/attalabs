@@ -1,4 +1,4 @@
-// D-100/D-103: every machine output ships a `schema` version field — a
+// every machine output ships a `schema` version field — a
 // public-surface commitment. Bump ENVELOPE_SCHEMA_VERSION on any
 // breaking change to the envelope shape itself (not to payload contents).
 export const ENVELOPE_SCHEMA_VERSION = 1

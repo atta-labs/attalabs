@@ -52,7 +52,7 @@ describe('ACTIONS — shape', () => {
 
 describe('ACTIONS — real-file cross-check', () => {
   // CROSSING_KEYWORDS now lives in ./actions (exported), shared with
-  // diagram-model.ts's guards edges so the map can never drift (D-119).
+  // diagram-model.ts's guards edges so the map can never drift.
   const ring0Rows: GateRow[] = parseEnforcementRegistry(readFileSync(ENFORCEMENT_PATH, 'utf8')).filter(
     (r) => r.ring === 'ring0'
   )

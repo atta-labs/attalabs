@@ -6,18 +6,18 @@ role_id: planner
 description: Turns an intent and a slice of tickets into a whole iteration — the milestone, its tasks, and the dependencies between them.
 actor: agent
 performs:
-  - create-the-milestone
-  - cut-labeled-issues
-  - size-tasks-via-deep-dig
-  - write-planners-rationale
-  - declare-dependency-and-conflict-edges
-  - move-tasks-across-iterations
+ - create-the-milestone
+ - cut-labeled-issues
+ - size-tasks-via-deep-dig
+ - write-planners-rationale
+ - declare-dependency-and-conflict-edges
+ - move-tasks-across-iterations
 refuses_when: >
-  The readiness gate hasn't passed (a missing/unreachable input, unread
-  specs/skills/docs, unreadable code, an unenumerable shared-package blast
-  radius, an unregistered project, or an
-  in-scope product's previous iteration not yet archived); or asked to size
-  or emit a task without first reading the relevant code and docs.
+ The readiness gate hasn't passed (a missing/unreachable input, unread
+ specs/skills/docs, unreadable code, an unenumerable shared-package blast
+ radius, an unregistered project, or an
+ in-scope product's previous iteration not yet archived); or asked to size
+ or emit a task without first reading the relevant code and docs.
 summary: Ever had a project start with no real plan, just vibes?
 ---
 # Role: Planner
@@ -151,7 +151,7 @@ Decide by **verification-coupling** (not by project boundaries):
 - The reason is the Reviewer: the `Project(s)` list is what tells the Reviewer whose behavior to verify. If a shared-engine change lists only the driving consumer, the Reviewer will not check the *other* consumers, and a regression ships.
 - In the rationale, state explicitly: which shared package changes, which consumers are therefore in the blast radius, and whether each consumer is expected to need **re-verification only** (the change is additive — new code paths that existing consumers don't hit) or **actual edits** (the change alters a shared contract the consumer depends on). Prefer additive; if only a contract change works, that is a bigger, escalation-worthy task.
 
-**Mechanized (D-130).** This rule is no longer prose you have to remember. `checkBlastRadiusScope` reads the collision-domain list in `.aeg/packages` and refuses a task Issue whose **Boundary** or **Project(s) + blast radius** names a path under a domain none of its declared projects owns (ownership resolves against `.vinaya/projects.md` — a task on `Project: aeg-core` editing `packages/aeg-core` owns its surface and passes). Satisfy it by listing the consumers, which is what this rule asks for anyway; or, when one review lens genuinely suffices, by an explicit `blast-radius-ack: <why>` line, which makes the judgment reviewable instead of silent. Live example of the failure it closes: #621/#626 edit `packages/ui` — read by every product — under `Project: vinaya` alone, each admitting the cross-product reach in its own prose.
+**Mechanized.** This rule is no longer prose you have to remember. `checkBlastRadiusScope` reads the collision-domain list in `.aeg/packages` and refuses a task Issue whose **Boundary** or **Project(s) + blast radius** names a path under a domain none of its declared projects owns (ownership resolves against `.vinaya/projects.md` — a task on `Project: aeg-core` editing `packages/aeg-core` owns its surface and passes). Satisfy it by listing the consumers, which is what this rule asks for anyway; or, when one review lens genuinely suffices, by an explicit `blast-radius-ack: <why>` line, which makes the judgment reviewable instead of silent. Live example of the failure it closes: #621/#626 edit `packages/ui` — read by every product — under `Project: vinaya` alone, each admitting the cross-product reach in its own prose.
 
 **Worked example (do this):** a task adds multi-vendor structured output to `@atta/adapter-langgraph/llm.ts`. That file is shared. Vāda runs on it. Therefore the task is `Project: engine, vada, herald` — *not* `engine, herald` — even though no Vāda app file is edited, because Vāda must be re-verified. Missing Vāda off that list is a sizing error.
 
@@ -175,7 +175,7 @@ This rationale is the **producer side of the `aeg-root/contracts/planner-brief.m
 - **Durable** (goes in the rationale): why this is one task and not three; the dependency rationale; the sizing conclusion; which shared packages and consumers are in the blast radius; known traps to avoid; the suggested agent-class; stop-and-escalate conditions. These do not change before the task runs.
 - **Perishable** (do NOT put in the rationale — it belongs in the just-in-time brief): exact function signatures, precise file lists, line-level specifics. These go stale as earlier tasks merge, so the Brief Author re-derives them at dispatch.
 
-**Required fields in every Planner's rationale block** (these are the contract's producer fields — emit all eight). **Start from the template file:** copy `aeg-root/templates/issue-rationale-template.md` into the Issue body and fill each placeholder — it packages all eight fields in the rationale grammar, so you never reconstruct the shape from prose; the field definitions below remain the source of truth for content. **Write them in the rationale grammar** — either `**<Field>** — …` bold-inline or `### <Field>` heading, one of the two, so the field is machine-detectable. See `aeg-root/contracts/planner-brief.md`'s "Rationale grammar" section for the full format spec; `verify-coherence`'s R1 check re-runs the same grammar continuously against the live Issue stock, and the ring-0 gate (`bin/open-issue.ts`) refuses a task Issue whose body fails it at creation time. **Beyond presence, the same gate grades three things about the content (D-130) and refuses on each:** the declared surface may not reach a shared collision domain (`.aeg/packages`) that no declared project owns without a second project or a `blast-radius-ack:` line — this is the shared-package blast-radius rule below, mechanized; the body may carry no brief-shaped section (`## References`, `Technical surface map`, `Premise`, `Step 0`, `Test Plan`) — brief content belongs in the brief; and **Docs to keep coherent** / **Traps to avoid** must name a concrete doc or skill path, or the explicit `no-doc-surface` sentinel. That last one exists because nothing else makes you read the surface you are planning: the skill-check hook fires on file edits, and cutting an Issue edits no file. A fourth check warns only — an undeclared collision-domain overlap with a sibling open Issue:
+**Required fields in every Planner's rationale block** (these are the contract's producer fields — emit all eight). **Start from the template file:** copy `aeg-root/templates/issue-rationale-template.md` into the Issue body and fill each placeholder — it packages all eight fields in the rationale grammar, so you never reconstruct the shape from prose; the field definitions below remain the source of truth for content. **Write them in the rationale grammar** — either `**<Field>** — …` bold-inline or `### <Field>` heading, one of the two, so the field is machine-detectable. See `aeg-root/contracts/planner-brief.md`'s "Rationale grammar" section for the full format spec; `verify-coherence`'s R1 check re-runs the same grammar continuously against the live Issue stock, and the ring-0 gate (`bin/open-issue.ts`) refuses a task Issue whose body fails it at creation time. **Beyond presence, the same gate grades three things about the content and refuses on each:** the declared surface may not reach a shared collision domain (`.aeg/packages`) that no declared project owns without a second project or a `blast-radius-ack:` line — this is the shared-package blast-radius rule below, mechanized; the body may carry no brief-shaped section (`## References`, `Technical surface map`, `Premise`, `Step 0`, `Test Plan`) — brief content belongs in the brief; and **Docs to keep coherent** / **Traps to avoid** must name a concrete doc or skill path, or the explicit `no-doc-surface` sentinel. That last one exists because nothing else makes you read the surface you are planning: the skill-check hook fires on file edits, and cutting an Issue edits no file. A fourth check warns only — an undeclared collision-domain overlap with a sibling open Issue:
 - **Boundary** — what this task is and, crucially, what it is *not* (what was deliberately split out).
 - **Sizing** — that it passed the four "too big?" tests (or how a larger candidate was split).
 - **Project(s) + blast radius** — every project touched, and for shared-package changes, which consumers are in the blast radius and whether each needs re-verification or edits.
@@ -265,12 +265,12 @@ Once an Issue is assigned (`todo`), a Developer picks it up: reads the rationale
 When a plan **does** need a decision-log entry, open it the same way any doc change does — a worktree off `origin/main`, commit, PR:
 
 ```
-git worktree add .worktrees/plan/<iteration> -b plan/<iteration> origin/main && cd .worktrees/plan/<iteration> && bun install --frozen-lockfile --silent
+git worktree add.worktrees/plan/<iteration> -b plan/<iteration> origin/main && cd.worktrees/plan/<iteration> && bun install --frozen-lockfile --silent
 ```
 
 The `.husky/pre-commit` / `pre-push` guards refuse a direct commit or push to `main`, and the merge-gate hook (`.claude/hooks/check-pr-green.sh`) refuses a red merge — so this is enforced, not merely asked, for the cases where a file is actually being written.
 
-**Only one open plan PR per iteration, at a time — mechanically enforced (task 19), for the case where a plan PR exists at all.** Two concurrent plan PRs for the same iteration, each cut from `origin/main` before the other merged, is the race that produced two competing plan PRs for the same iteration. `packages/aeg-core/bin/open-pr.ts`'s single-plan-PR guard (`checkSinglePlanPr`) still refuses outright to open or edit a plan PR whose diff touches an iteration's topology file while another OPEN PR's diff already touches it — relevant now mainly to the historical `completed/*.md` files, since new iterations no longer have a live topology file to race on.
+**Only one open plan PR per iteration, at a time — mechanically enforced, for the case where a plan PR exists at all.** Two concurrent plan PRs for the same iteration, each cut from `origin/main` before the other merged, is the race that produced two competing plan PRs for the same iteration. `packages/aeg-core/bin/open-pr.ts`'s single-plan-PR guard (`checkSinglePlanPr`) still refuses outright to open or edit a plan PR whose diff touches an iteration's topology file while another OPEN PR's diff already touches it — relevant now mainly to the historical `completed/*.md` files, since new iterations no longer have a live topology file to race on.
 
 ---
 

@@ -4,7 +4,7 @@ sidebar_title: Brief Authoring
 description: Rules for authoring task briefs dispatched to Developer agents. Load when writing or reviewing a brief. Covers the Brief Author's conversational protocol, required sections, inheriting the Planner's rationale via the planner-brief contract, the contract-conformance checklist, the mandatory technical-dependency / tech-surface-map / agent-selection-with-reasoning sections, the optional Ticket/Project fields, model selection, the model integration (tier field, principal_delegate, Type 1/2 declaration, lock acknowledgment), the mandatory worktree-first step, the brief-lands-in-the-PR-body rule, the standing autonomy clause, the explicit documentation-update list, the post-PR review passes, and anti-patterns.
 ---
 
-<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). D-039 provides for an agent-specific GENERATED VIEW under .claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
+<!-- CANONICAL SOURCE. This file is the canonical home of the `brief-authoring` skill, inside the AEG unit (aeg-root/skills/). provides for an agent-specific GENERATED VIEW under.claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
 
 # Brief Authoring Rules
 
@@ -30,57 +30,57 @@ The Brief Author's stages — name them, and say which you're in:
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
-   **Mechanized pre-authoring gate (D-081).** Before beginning the rest of the Dig, run `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`. It mechanically re-derives the precondition checks below — row-existence, Issue-existence, prior-iteration archival — directly from a freshly-fetched `origin/main` and the live forge, and prints the exact failing predicate by name (plus a leftover-branch verdict and an informational finding-count baseline). A `NOT READY` result is the same STOP this section describes below — read the printed blocker and act on it; do not re-derive the fact by hand. The manual `gh`/`jq` procedures that follow remain as the **why** (what each precondition means, and how to verify it by hand if `verify-dispatch` is ever unavailable) — they are no longer the primary workflow. This exists because four Developer agents independently re-derived, and stopped on, the exact same archival fact from scratch during the 2026-07-02/03 dispatch wave, at real token cost, hours after it first became true — a fact any of these checks answers deterministically in seconds. **This gate now also runs mechanically** (aeg-governance-hardening task 25, #365) — `.husky/pre-push` invokes it on a task branch's first push — but running it yourself here, before the Dig, remains the cheaper, earlier catch: it stops you before any work is spent, not after. (D-120, 2026-07-13: prior-task archival — the row-adjacency check formerly listed here — was removed from this composed gate; see check (c) below, now superseded.)
+ **Mechanized pre-authoring gate.** Before beginning the rest of the Dig, run `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`. It mechanically re-derives the precondition checks below — row-existence, Issue-existence, prior-iteration archival — directly from a freshly-fetched `origin/main` and the live forge, and prints the exact failing predicate by name (plus a leftover-branch verdict and an informational finding-count baseline). A `NOT READY` result is the same STOP this section describes below — read the printed blocker and act on it; do not re-derive the fact by hand. The manual `gh`/`jq` procedures that follow remain as the **why** (what each precondition means, and how to verify it by hand if `verify-dispatch` is ever unavailable) — they are no longer the primary workflow. This exists because four Developer agents independently re-derived, and stopped on, the exact same archival fact from scratch during the 2026-07-02/03 dispatch wave, at real token cost, hours after it first became true — a fact any of these checks answers deterministically in seconds. **This gate now also runs mechanically** (aeg-governance-hardening task 25, #365) — `.husky/pre-push` invokes it on a task branch's first push — but running it yourself here, before the Dig, remains the cheaper, earlier catch: it stops you before any work is spent, not after. (2026-07-13: prior-task archival — the row-adjacency check formerly listed here — was removed from this composed gate; see check (c) below, now superseded.)
 
-   **Read obligation (D-058) — complete during Dig, before Draft:** As part of the Dig, identify any specs/skills/docs relevant to this task's code surface and read them. This obligation is conditional — if no docs exist for this surface, it is trivially satisfied. The Planner's "Docs to keep coherent" rationale field is the starting point; your own reading may surface additional docs the Planner missed. Then:
-   - (a) Surface in **Context (§2)** what the Developer must know from those docs — explicitly, not by reference ("read X for context" is not surfacing knowledge).
-   - (b) Populate **§7 doc-update list** from this reading — name every doc this task will make incoherent. The §7 list is the DoD obligation (parallel to tests); a §7 populated from memory rather than reading is the failure D-058 exists to close. If genuinely no documented surface is touched, state "No doc updates required (Tier 0)" in §7 explicitly.
+ **Read obligation — complete during Dig, before Draft:** As part of the Dig, identify any specs/skills/docs relevant to this task's code surface and read them. This obligation is conditional — if no docs exist for this surface, it is trivially satisfied. The Planner's "Docs to keep coherent" rationale field is the starting point; your own reading may surface additional docs the Planner missed. Then:
+ - (a) Surface in **Context (§2)** what the Developer must know from those docs — explicitly, not by reference ("read X for context" is not surfacing knowledge).
+ - (b) Populate **§7 doc-update list** from this reading — name every doc this task will make incoherent. The §7 list is the DoD obligation (parallel to tests); a §7 populated from memory rather than reading is the failure exists to close. If genuinely no documented surface is touched, state "No doc updates required (Tier 0)" in §7 explicitly.
 
-   **Task-status coherence precondition (D-056) — SUPERSEDED by D-120 (2026-07-13).** This precondition (D-052 item 1, the per-task archival / row-adjacency gate) is no longer a hard-STOP for the Brief Author — D-077's automated post-merge provenance posting made the drift signal it protected moot. See `docs/decisions-legacy.md` D-120. Preserved below as historical record — do NOT enforce it:
+ **Task-status coherence precondition — SUPERSEDED.** This precondition ( item 1, the per-task archival / row-adjacency gate) is no longer a hard-STOP for the Brief Author — automated post-merge provenance posting made the drift signal it protected moot. See `docs/decisions-legacy.md`. Preserved below as historical record — do NOT enforce it:
 
-   ~~Before authoring any brief, apply the full coherence precondition from `aeg-root/contracts/brief-developer.md`. The archival bar for any prior task is all three of: (1) Issue closed, (2) PR merged to main, (3) provenance block present on the merged PR. "PR merged" alone is NOT sufficient. **STOP — do NOT author the brief** if any predicate fails for any in-scope prior task; report to the Principal what is owed.~~
+ ~~Before authoring any brief, apply the full coherence precondition from `aeg-root/contracts/brief-developer.md`. The archival bar for any prior task is all three of: (1) Issue closed, (2) PR merged to main, (3) provenance block present on the merged PR. "PR merged" alone is NOT sufficient. **STOP — do NOT author the brief** if any predicate fails for any in-scope prior task; report to the Principal what is owed.~~
 
-   ~~**Accepted-backfill never bypasses this precondition.** Deferring provenance backfill on already-closed historical iterations is a permitted debt record. But that acceptance clause is strictly limited to closed historical iterations. Proceeding with a new brief on an unarchived active prior — citing "we accepted the backfill gap" — is not permitted. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.~~
+ ~~**Accepted-backfill never bypasses this precondition.** Deferring provenance backfill on already-closed historical iterations is a permitted debt record. But that acceptance clause is strictly limited to closed historical iterations. Proceeding with a new brief on an unarchived active prior — citing "we accepted the backfill gap" — is not permitted. An accepted historical backlog is a debt record, not a gate bypass. The coherence precondition applies to active prior tasks; it cannot be waived by citing accepted historical gaps.~~
 
-   ~~**Scope of "prior task" (state all three explicitly in your STOP report):**~~
-   - ~~**Mid-iteration task:** every earlier task in the same iteration that this task depends on.~~
-   - ~~**First task of an iteration:** the entire previous iteration of that product must be archived (all Issues closed, all PRs in main, all provenance blocks present, iteration file in `completed/`).~~
-   - ~~**ALL tasks:** every cross-iteration dependency declared in the topology must satisfy all three predicates.~~
+ ~~**Scope of "prior task" (state all three explicitly in your STOP report):**~~
+ - ~~**Mid-iteration task:** every earlier task in the same iteration that this task depends on.~~
+ - ~~**First task of an iteration:** the entire previous iteration of that product must be archived (all Issues closed, all PRs in main, all provenance blocks present, iteration file in `completed/`).~~
+ - ~~**ALL tasks:** every cross-iteration dependency declared in the topology must satisfy all three predicates.~~
 
-   **Precondition checks — three checks, in order (D-120: check (c), prior-task coherence, is superseded — see below):**
+ **Precondition checks — three checks, in order (check (c), prior-task coherence, is superseded — see below):**
 
-   - **(a) Row-existence (D-054, D-075).** Confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task's row exists **at all** (`findMilestoneForSlug` + `listTasksForSlug`, `@atta/aeg-forge-state`). This is distinct from and prior to check (b)'s `#TBD`/blank check: a missing row means the plan/Issue for this task has not merged/opened yet, and there is nothing to inspect — no Issue, no dependencies, no `Project(s)` value. If the row is absent: **STOP — do NOT author the brief:** *"Task <id> is not present in iteration `<name>`'s forge-derived task list (no `iteration:<name>`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not authorable until it does."*
+ - **(a) Row-existence.** Confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task's row exists **at all** (`findMilestoneForSlug` + `listTasksForSlug`, `@atta/aeg-forge-state`). This is distinct from and prior to check (b)'s `#TBD`/blank check: a missing row means the plan/Issue for this task has not merged/opened yet, and there is nothing to inspect — no Issue, no dependencies, no `Project(s)` value. If the row is absent: **STOP — do NOT author the brief:** *"Task <id> is not present in iteration `<name>`'s forge-derived task list (no `iteration:<name>`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not authorable until it does."*
 
-   - **(b) Issue-existence (D-054).** Confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the Issue carries a real GitHub Issue number, not `#TBD`, not blank. If none exists, the task has no forge Issue. **STOP — do NOT author the brief:** *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue first."* First task ever in a brand-new iteration may lack Issues if the Planner has not finished cutting them; stop and surface the gap regardless. A brief cannot carry a `Closes #N` reference if there is no N.
+ - **(b) Issue-existence.** Confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the Issue carries a real GitHub Issue number, not `#TBD`, not blank. If none exists, the task has no forge Issue. **STOP — do NOT author the brief:** *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is backlog, not dispatchable. The Planner must cut the Issue first."* First task ever in a brand-new iteration may lack Issues if the Planner has not finished cutting them; stop and surface the gap regardless. A brief cannot carry a `Closes #N` reference if there is no N.
 
-   - ~~**(c) Prior-task coherence (D-052, D-056).**~~ **SUPERSEDED by D-120 (2026-07-13)** — no longer a Brief Author check. Preserved as historical record: ~~For every in-scope prior task, verify all three archival predicates. First: query the most-recently-merged task PR in this iteration:~~
-     ```
-     gh pr list --state merged --json number,headRefName,mergedAt \
-       | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
-     ```
-     ~~Then check all three predicates on that PR:~~
-     - ~~**Issue closed:** `gh issue view <issue-N> --json state | jq '.state'` — must be `"CLOSED"`~~
-     - ~~**PR in main:** confirmed by the merged status of the PR above~~
-     - ~~**Provenance block present:**~~
-       ```
-       gh pr view <N> --json comments \
-         | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
-       ```
-     ~~If any predicate fails, **STOP — do NOT author the brief.** Report the exact status of all three predicates: *"Prior task PR #N (Issue #M) does not pass the coherence gate: Issue #M is [open/closed], PR #N is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out the prior task before this brief can be authored."* First task in an iteration (no prior merged task PR) passes trivially.~~
+ - ~~**(c) Prior-task coherence.**~~ **SUPERSEDED ** — no longer a Brief Author check. Preserved as historical record: ~~For every in-scope prior task, verify all three archival predicates. First: query the most-recently-merged task PR in this iteration:~~
+ ```
+ gh pr list --state merged --json number,headRefName,mergedAt \
+ | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
+ ```
+ ~~Then check all three predicates on that PR:~~
+ - ~~**Issue closed:** `gh issue view <issue-N> --json state | jq '.state'` — must be `"CLOSED"`~~
+ - ~~**PR in main:** confirmed by the merged status of the PR above~~
+ - ~~**Provenance block present:**~~
+ ```
+ gh pr view <N> --json comments \
+ | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
+ ```
+ ~~If any predicate fails, **STOP — do NOT author the brief.** Report the exact status of all three predicates: *"Prior task PR #N (Issue #M) does not pass the coherence gate: Issue #M is [open/closed], PR #N is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out the prior task before this brief can be authored."* First task in an iteration (no prior merged task PR) passes trivially.~~
 
-   - **(d) Iteration archival (D-052).** For each product named in the brief's `Project:` field, check whether a prior iteration for that product exists in `aeg-root/iterations/` but is absent from `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. **STOP — do NOT author the brief:** *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before this task can be briefed. Dispatch it first."* First iteration on a product passes trivially.
+ - **(d) Iteration archival.** For each product named in the brief's `Project:` field, check whether a prior iteration for that product exists in `aeg-root/iterations/` but is absent from `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. **STOP — do NOT author the brief:** *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before this task can be briefed. Dispatch it first."* First iteration on a product passes trivially.
 
-   A brief authored for an unauthorable task is a wasted dispatch round-trip: the Developer's gates (`developer.md` entry gate items 3, 5, and 7) will refuse it at execution. Catch it here, one stage earlier.
+ A brief authored for an unauthorable task is a wasted dispatch round-trip: the Developer's gates (`developer.md` entry gate items 3, 5, and 7) will refuse it at execution. Catch it here, one stage earlier.
 
 3. **Draft** — write the brief, every required section. Move in confirmable steps for a big brief; for a small one, draft it and reflect the shape back before finalizing.
 
 4. **Contract checklist** — run the seven-field conformance check (below) out loud, so the Principal sees every Planner field landed in its brief home. This is the briefing analogue of the Planner's readiness gate: a visible gate, not a silent one. Then run it **mechanically** on the drafted brief file, before dispatch:
 
-   ```
-   bun packages/aeg-core/bin/verify-brief.ts --body-file <path-to-brief.md>
-   ```
+ ```
+ bun packages/aeg-core/bin/verify-brief.ts --body-file <path-to-brief.md>
+ ```
 
-   Same validator CI runs at PR time, one stage earlier — a missing section costs a re-draft here instead of a red gate after the Developer has already done the work. Exits non-zero and names each missing section. The branch is read from the brief's own Step 0 `git worktree add … -b <branch>` line, so `Closes #N` is required only when that line declares a `task/<iter>/<n>` branch.
+ Same validator CI runs at PR time, one stage earlier — a missing section costs a re-draft here instead of a red gate after the Developer has already done the work. Exits non-zero and names each missing section. The branch is read from the brief's own Step 0 `git worktree add … -b <branch>` line, so `Closes #N` is required only when that line declares a `task/<iter>/<n>` branch.
 
 5. **Clarifications** — if any `[NEEDS CLARIFICATION]` markers remain, present them as a numbered list and **wait** — never dispatch with unresolved markers.
 
@@ -96,7 +96,7 @@ Keep it light — a sentence per seam. Terse remains the house style; this adds 
 
 Every task you author a brief for arrives with a **Planner's rationale** (in the Issue body and the iteration file — see `roles/planner.md`). You are the **consumer side** of the **`aeg-root/contracts/planner-brief.md`** contract — the single source of truth for what crosses the Planner→Brief Author seam. That contract maps every field the Planner emits to the exact brief section that consumes it. **Read the contract; consume every right-column mapping — drop no field.**
 
-The rationale arrives in the **D-078 grammar** (bold-inline `**<Field>** — …` or `### <Field>` heading) — the same format `verify-coherence`'s R1 check and the `bin/open-issue.ts` creation gate parse. You don't need to parse it yourself; by the time a task reaches you it has already passed the gate. See the contract's "Rationale grammar (D-078)" section if a field is ambiguous.
+The rationale arrives in the ** grammar** (bold-inline `**<Field>** — …` or `### <Field>` heading) — the same format `verify-coherence`'s R1 check and the `bin/open-issue.ts` creation gate parse. You don't need to parse it yourself; by the time a task reaches you it has already passed the gate. See the contract's "Rationale grammar" section if a field is ambiguous.
 
 The contract's field-by-field mapping (authoritative version lives in the contract; reproduced here for convenience — if they ever differ, the contract wins):
 
@@ -109,7 +109,7 @@ The contract's field-by-field mapping (authoritative version lives in the contra
 | Traps to avoid | Context (§2) + Constraints (§11) |
 | Suggested agent-class | `For:` + `Reason:` header (confirm/deviate; you make the final pick) |
 | Stop-and-escalate | Stop conditions (§10) |
-| Docs to keep coherent | §7 documentation-update list — starting point, supplemented by your own Dig reading (D-058) |
+| Docs to keep coherent | §7 documentation-update list — starting point, supplemented by your own Dig reading |
 
 **Read it first and build on it. Do not start from a blank page.** The division of labor is deliberate:
 - The **Planner** did a deep technical pass to find the seams and persisted the *durable* conclusions (which don't decay) — that's the contract's producer side.
@@ -129,13 +129,13 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Suggested agent-class** → did you confirm or deviate (with reason) and make the final pick in the **`For:` + `Reason:`** header?
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
-- [ ] **Row-existence and Issue-existence preconditions (D-054, D-075)** → does the task's row exist at all in the iteration topology file, read from a freshly-fetched `origin/main`? If not, the plan PR hasn't merged — **STOP** and do not author the brief. If the row exists, does its Issue column carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate items 3 and 7; catches it one stage earlier, during Dig.)
-- [ ] ~~**Task-status coherence precondition (D-052, D-056)** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED by D-120 (2026-07-13)** — no longer a checklist item; D-052 item 1 is removed as a hard-STOP. See `docs/decisions-legacy.md` D-120. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
-- [ ] **Read obligation + §7 populated from reading (D-058)** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
+- [ ] **Row-existence and Issue-existence preconditions** → does the task's row exist at all in the iteration topology file, read from a freshly-fetched `origin/main`? If not, the plan PR hasn't merged — **STOP** and do not author the brief. If the row exists, does its Issue column carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate items 3 and 7; catches it one stage earlier, during Dig.)
+- [ ] ~~**Task-status coherence precondition** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED ** — no longer a checklist item item 1 is removed as a hard-STOP. See `docs/decisions-legacy.md`. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
+- [ ] **Read obligation + §7 populated from reading** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
 
-**The structural half of that paragraph is mechanical — run it, don't eyeball it:** `bun packages/aeg-core/bin/verify-brief.ts --body-file <brief.md>` (protocol step 4). The judgment items above it stay human; the presence items below it are exactly what the gate checks. Note the gate applies **whatever the branch is** — a standalone `fix/*` brief is graded identically to a `task/*` one, because it is equally a brief (the `fix/*` bypass that used to skip it let a fix brief ship with no §7 list; D-129).
+**The structural half of that paragraph is mechanical — run it, don't eyeball it:** `bun packages/aeg-core/bin/verify-brief.ts --body-file <brief.md>` (protocol step 4). The judgment items above it stay human; the presence items below it are exactly what the gate checks. Note the gate applies **whatever the branch is** — a standalone `fix/*` brief is graded identically to a `task/*` one, because it is equally a brief (the `fix/*` bypass that used to skip it let a fix brief ship with no §7 list).
 
 ---
 
@@ -152,7 +152,7 @@ Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared
 **Goal:** [one sentence: what ships]
 ```
 
-**Role-chain preamble (mandatory, every brief):** every brief opens by naming the executor's role and its reading chain: *"You are the AEG Developer. Read `aeg-root/roles/developer.md` first"* — plus the host repo's own execution-discipline skill if one exists (this repo: `.claude/skills/executor-protocol/SKILL.md`). The chain lives **in the brief** (an AEG artifact) because the host repo must never point into AEG (D-072); a bare "read the repo's executor skill" dispatch without this preamble is malformed.
+**Role-chain preamble (mandatory, every brief):** every brief opens by naming the executor's role and its reading chain: *"You are the AEG Developer. Read `aeg-root/roles/developer.md` first"* — plus the host repo's own execution-discipline skill if one exists (this repo: `.claude/skills/executor-protocol/SKILL.md`). The chain lives **in the brief** (an AEG artifact) because the host repo must never point into AEG; a bare "read the repo's executor skill" dispatch without this preamble is malformed.
 
 ### 2. Context — read before doing anything
 
@@ -194,7 +194,7 @@ Before the brief instructs the executor to **delete, rename, or change the signa
 
 A brief that says "delete a shared symbol" **and** "don't touch one of its importers" is **malformed** — it forces the executor to either break out-of-surface code or violate the delete instruction. The importer check is what stops the Brief Author writing two individually-sensible instructions that are jointly impossible. (This is the brief-time analogue of the dig discipline: verify the actual importer set against the codebase before asserting a delete is safe, rather than assuming the symbol is used only where you expect.)
 
-#### Premise pins (mandatory when §4 names a real code surface, D-081)
+#### Premise pins (mandatory when §4 names a real code surface)
 
 Every brief whose Technical Surface Map (§4) includes a real code file carries a **`Premise:`** block — one or more pinned, checkable facts about that surface as it stood at authoring time:
 
@@ -223,7 +223,7 @@ Numbered checklist. **The first pre-flight step is always creating a worktree �
 Every brief's pre-flight begins with the worktree command. Never write a brief that assumes the executor is already in the right place, and never tell it to "create a branch" without first creating a worktree:
 
 ```
-git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n> && bun install --frozen-lockfile --silent
+git worktree add.worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd.worktrees/task/<iteration>/<n> && bun install --frozen-lockfile --silent
 ```
 
 The branch convention is `task/<iteration>/<n>` — this is what lets any role derive the task's status from the forge (branch exists, PR open, merged). When dispatched by an automation layer, the layer creates this worktree for you; the brief still states the command explicitly so a manual paste behaves identically.
@@ -234,7 +234,7 @@ This is non-negotiable because work done on the wrong branch or in a dirty main 
 
 After the worktree exists, verify: working dir clean (`git status`); branch correct (`git log --oneline -3` shows `origin/main` as parent); target dir does/doesn't exist as required; required tools present at the right version; external services authenticated; reference material accessible; **every technical dependency from Section 3 is actually present** (the new export exists, the migration ran, the capability is live). **Also verify the dispatch gates against the forge:** every `depends-on` task's PR is merged, and no `conflicts-with` sibling's PR is open. Each check has a clear pass/fail; on failure the executor STOPs and reports.
 
-**Branch-ID verification (mandatory, before writing Step 0 into the brief).** Before writing the Step 0 `git worktree add` command into the brief, confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the branch-name suffix you are about to write (`<n>`) literal-matches this task's forge-derived id — character for character: no added prefix (no `T` in front of a bare number), no case change, no truncation. If it doesn't match, do NOT author the brief with the wrong branch name — use the forge-derived id instead. A brief whose Step 0 branch name doesn't literal-match its forge-derived task id is malformed; refuse to dispatch it and fix the branch name before handing it over. (D-073 — closes a confirmed gap where every numbered task branch in `vada-production-v1` used a `T`-prefix, e.g. `T1`, against a topology `#` column of bare `1`, undetected for over a week until a CI gate first checked it.)
+**Branch-ID verification (mandatory, before writing Step 0 into the brief).** Before writing the Step 0 `git worktree add` command into the brief, confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the branch-name suffix you are about to write (`<n>`) literal-matches this task's forge-derived id — character for character: no added prefix (no `T` in front of a bare number), no case change, no truncation. If it doesn't match, do NOT author the brief with the wrong branch name — use the forge-derived id instead. A brief whose Step 0 branch name doesn't literal-match its forge-derived task id is malformed; refuse to dispatch it and fix the branch name before handing it over. (closes a confirmed gap where every numbered task branch in `vada-production-v1` used a `T`-prefix, e.g. `T1`, against a topology `#` column of bare `1`, undetected for over a week until a CI gate first checked it.)
 
 ### 6. Numbered parts with numbered tasks
 
@@ -245,10 +245,10 @@ Break work into Parts (major areas) and numbered tasks within each. Each task sp
 Do not leave documentation as an implication of the tier checklist. **List the exact doc artifacts this brief must touch, by name.** This is what `verify-docs` (a real gate — Section 10) and the code-reviewer check against.
 
 - **Spec files in the surface map must carry a `Status:` field** — any spec file listed in §4 that lacks one must have `Status: draft|target|ratified|retired` added as part of this task. The `verify-docs` C1 gate (accepted values: draft, target, ratified, retired) will fail the PR otherwise.
-- **Never list a new file for a one-off report, audit finding, coverage summary, or working brief (D-074).** If the task's deliverable is a finding, an audit result, or a coverage report, its home is the PR body (task-scoped) or an Issue/PR comment (not task-scoped) — never a new file under `aeg-root/` or a product's `aeg-project/`. A committed scratch file has already broken AEG Studio once (a coverage report committed as `aeg-root/iterations/<name>.audit.md` was silently parsed as a broken iteration by the Studio loader) and produced a stale permanent brief once (`aeg-project/briefs/<name>-brief.md`, contradicting this skill's own "pasted, not committed" rule above). See `iterations/README.md` §9 rule 4.
+- **Never list a new file for a one-off report, audit finding, coverage summary, or working brief.** If the task's deliverable is a finding, an audit result, or a coverage report, its home is the PR body (task-scoped) or an Issue/PR comment (not task-scoped) — never a new file under `aeg-root/` or a product's `aeg-project/`. A committed scratch file has already broken AEG Studio once (a coverage report committed as `aeg-root/iterations/<name>.audit.md` was silently parsed as a broken iteration by the Studio loader) and produced a stale permanent brief once (`aeg-project/briefs/<name>-brief.md`, contradicting this skill's own "pasted, not committed" rule above). See `iterations/README.md` §9 rule 4.
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
-- **Tier 3** — all Tier 1 items, plus: which state changes (the per-project pinned state Issue, D-110; the iteration file; per-project backlogs). **Never** list `roadmap.md` or `now.md` — both retired (`roadmap.md` by D-029; `now.md` by D-057). Active-work state is derived from the forge, not written to a file.
+- **Tier 3** — all Tier 1 items, plus: which state changes (the per-project pinned state Issue; the iteration file; per-project backlogs). **Never** list `roadmap.md` or `now.md` — both retired (`roadmap.md`; `now.md`). Active-work state is derived from the forge, not written to a file.
 
 A Tier 1+ brief with an empty doc-update list is malformed.
 
@@ -256,7 +256,7 @@ A Tier 1+ brief with an empty doc-update list is malformed.
 
 ### 8. Verification before claiming done
 
-Typecheck passes; lint passes; tests pass; production build passes (catches stricter resolution typecheck misses); manual smoke tests; **every consumer named in the blast radius (Section 4) re-verified** (a shared-package change must prove it didn't regress the other consumers — that's what putting them in `Project(s)` was for); the repo's `verify-docs --pr` gate passes (real gate — D-027); `git diff main --stat` confirms only expected files (the Section 4 surface) were touched. *(The exact commands are this repo's toolchain — substitute the repo's declared equivalents; the obligations are universal.)*
+Typecheck passes; lint passes; tests pass; production build passes (catches stricter resolution typecheck misses); manual smoke tests; **every consumer named in the blast radius (Section 4) re-verified** (a shared-package change must prove it didn't regress the other consumers — that's what putting them in `Project(s)` was for); the repo's `verify-docs --pr` gate passes (real gate —); `git diff main --stat` confirms only expected files (the Section 4 surface) were touched. *(The exact commands are this repo's toolchain — substitute the repo's declared equivalents; the obligations are universal.)*
 
 These are the **static** gates — they prove the code compiles, lints, types, tests, and matches the declared surface. They do not prove the feature works. Runtime verification is its own section (§9), separately required, separately gated.
 
@@ -281,7 +281,7 @@ A well-formed Test Plan looks like:
 
 ```
 **Test Plan:**
-- [ ] **[agent]** SSRF: `curl -X POST .../api/resolve-input -d '{"url":"http://10.0.0.1"}'` → 400 "URL rejected"
+- [ ] **[agent]** SSRF: `curl -X POST.../api/resolve-input -d '{"url":"http://10.0.0.1"}'` → 400 "URL rejected"
 - [ ] **[agent]** Malformed upload: `.md` with binary bytes → 400 "Parse error: …"
 - [ ] **[agent]** Route smoke: `GET /api/audit/health` → 200 `{"ok":true}`
 - [ ] **[principal]** Sign in → upload a CV (PDF) → run audit → CLEAN report with grade A/B/C/D
@@ -296,7 +296,7 @@ The unchecked boxes are the merge gate: an unticked `[agent]` box means the Deve
 - **A Test Plan is `unit-tests-only` if and only if the §4 Technical Surface Map has no runtime surface in it** — no API route, no page, no server action, no `runtime`-marked file. (If §4 lists, say, `apps/herald-ai/web/src/app/api/foo/route.ts`, you cannot declare `unit-tests-only`.) The two fields are coupled; Brief Validation mechanically rejects a body that declares `Test Plan: unit-tests-only` while also carrying a tagged `- [ ]`/`- [x]` checkbox item (`checkTestPlanExclusivity`, `packages/aeg-core/src/brief-validation.ts`) — not just cross-checked in prose.
 - **Items name concrete observables, not properties.** "The audit works" is not a test plan item. "Sign in → upload `tests/fixtures/cv-anna.pdf` → audit returns a `MatchReport` with `grade` in `A|B|C|D` and `signals.length > 0`" is.
 - **`[agent]` items must be scriptable from the dispatched-agent surface** — they need no human auth, no Principal-stored BYOK keys, no human eyes on a render. If an item needs any of those, it is `[principal]`. Mis-tagging an `[agent]` item that actually requires auth is the failure mode the Verification phase exists to remove (`roles/developer.md` § Verification); the Brief Author owns the tagging.
-- **The Principal cannot tick `[agent]` boxes and the agent cannot tick `[principal]` boxes.** This asymmetry is the whole shape of the gate (mirror of D-048's chat-vs-terminal token capture). A brief that pretends one actor can satisfy the other's half is malformed.
+- **The Principal cannot tick `[agent]` boxes and the agent cannot tick `[principal]` boxes.** This asymmetry is the whole shape of the gate (mirror of chat-vs-terminal token capture). A brief that pretends one actor can satisfy the other's half is malformed.
 - **If there is no principal-runnable surface, omit the `[principal]` item entirely — never write a placeholder like `**[principal]** None`.** An untickable placeholder box blocks the merge gate forever; Brief Validation mechanically rejects it (`checkPrincipalPlaceholder`, `packages/aeg-core/src/brief-validation.ts`).
 
 #### Where the Test Plan lives in the brief
@@ -305,7 +305,7 @@ A discrete top-level section between §8 (Verification before claiming done) and
 
 #### Why it is its own gate, not just part of §8
 
-Across the `aeg-ui-v1` iteration, four features merged CI-green and were broken at runtime — missing DB migration, missing env var, missing IdentityProvider, an unexecuted polymorphic-input test plan. The structural cause: §8's static gates ran (and passed), and the test plan in the brief was *read* by the code-reviewer but never *executed* against the booted app. A separate, named, mandatory Test Plan section + the Verification phase that consumes it is what closes the gap. (See D-049.)
+Across the `aeg-ui-v1` iteration, four features merged CI-green and were broken at runtime — missing DB migration, missing env var, missing IdentityProvider, an unexecuted polymorphic-input test plan. The structural cause: §8's static gates ran (and passed), and the test plan in the brief was *read* by the code-reviewer but never *executed* against the booted app. A separate, named, mandatory Test Plan section + the Verification phase that consumes it is what closes the gap. (.)
 
 ### 10. Stop conditions
 
@@ -450,7 +450,7 @@ Use **`[NEEDS CLARIFICATION]`** inline markers to surface gaps rather than guess
 
 **Use it when:** two reasonable interpretations exist and the wrong one means a re-do; the brief references a decision not yet logged; a constraint (auth, timeout, error behavior) is implied but unstated; you're unsure an existing pattern applies. **Do not use it for:** stylistic preferences (pick one, note it); things resolvable by reading the codebase (read first); pure implementation details (the Developer decides).
 
-**Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES: ...]` so the executor knows it's intentional. (This is conversational-protocol stage 5 — surfaced, numbered, waited on.)
+**Resolution protocol:** before dispatching, collect all markers, present them to the Principal as a numbered list, wait for resolution on each (don't dispatch with unresolved markers), replace each with the answer inline. If the Principal defers one, replace with `[DEVELOPER DECIDES:...]` so the executor knows it's intentional. (This is conversational-protocol stage 5 — surfaced, numbered, waited on.)
 
 These markers are resolved **before dispatch**, by the Principal — they are the Brief Author's pre-flight ambiguity check, not a license for the agent to stop mid-run. They are distinct from the standing autonomy clause (§11), which governs ambiguity the agent meets *during* execution: a dispatched brief has **no** open `[NEEDS CLARIFICATION]` markers (they were all resolved or turned into `[DEVELOPER DECIDES: …]`), so at run time the agent resolves-and-records rather than pausing. A pre-flight `[NEEDS CLARIFICATION]` should be resolved in the brief; if an ambiguity surfaces mid-execution instead, the Developer follows the autonomy clause (resolve, record, continue) unless it rises to a §10 stop condition — but a well-authored brief anticipates most of these.
 
@@ -460,7 +460,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 
 ## Anti-patterns
 
-- ❌ **Skipping the read-obligation Dig step (D-058)** — authoring a brief without identifying and reading the relevant specs/skills/docs means §2 carries stale or absent doc-knowledge, and §7 is populated from memory rather than reading; both lead to a Developer who either over-updates or under-updates docs, defeating the DoD gate
+- ❌ **Skipping the read-obligation Dig step** — authoring a brief without identifying and reading the relevant specs/skills/docs means §2 carries stale or absent doc-knowledge, and §7 is populated from memory rather than reading; both lead to a Developer who either over-updates or under-updates docs, defeating the DoD gate
 - ❌ Running the whole briefing silently and dumping the brief at the end — violating the conversational protocol; the Principal couldn't see the rationale-inherit, the dig, or the contract checklist, so couldn't govern them
 - ❌ Starting from a blank page instead of the Planner's rationale — re-deriving (often differently) what the planner already concluded, and losing the traps the planner flagged
 - ❌ Dropping any field of the planner-brief contract — every rationale field has a named home in the brief; a dropped field is a lost conclusion (run the contract-conformance checklist)
@@ -479,7 +479,7 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Listing `roadmap.md` in a doc-update list — it's retired
 - ❌ Instructing the executor to write status anywhere — status is derived from the forge
 - ❌ Omitting the standing autonomy clause (§11) — the agent pauses for input it could resolve itself, defeating unattended dispatch; or, the inverse, writing a clause so broad it tells the agent to push past the §10 stop conditions (those must still halt it)
-- ❌ **Omitting the Test Plan (§9)** — Verification has nothing to run; runtime verification falls through the gap between agent and Principal exactly the way it did across `aeg-ui-v1` (the regression D-049 was created to remove)
+- ❌ **Omitting the Test Plan (§9)** — Verification has nothing to run; runtime verification falls through the gap between agent and Principal exactly the way it did across `aeg-ui-v1` (the regression was created to remove)
 - ❌ **Test Plan items with no tag** — `[agent]` vs `[principal]` is the whole shape of the gate; an untagged item cannot be routed to the actor who can run it
 - ❌ **`Test Plan: unit-tests-only` on a brief whose §4 surface includes a runtime path** — the two fields are coupled; declaring `unit-tests-only` while listing API routes or pages in §4 is malformed (Brief Validation rejects it)
 - ❌ **Mis-tagging a `[principal]` item as `[agent]` to make the agent half complete** — the asymmetry is structural (auth, BYOK keys, eyes-on-a-render); reclassifying loses the gate's whole point
@@ -492,10 +492,10 @@ Source: GitHub Spec Kit evaluation, May 12, 2026. Adopted as inline convention o
 - ❌ Assuming the executor has read prior session context — it hasn't
 - ❌ A `Project:` value that doesn't resolve against the registry, or that omits a blast-radius consumer the Planner listed — malformed; fix or `aeg add-project` first
 - ❌ Closing out without signaling completion + whose move is next — the Principal is left unsure whether the brief is dispatchable
-- ❌ **Authoring a brief for a task whose Issue column is `#TBD` or blank** — the task is backlog, not dispatchable; there is no `#N` for `Closes #N`; the Developer's D-054 gate (entry gate item 3) will refuse it at execution. Catch it during Dig and surface the owed Planner action (cut the Issue) rather than handing the Principal a brief the Developer will immediately refuse.
-- ~~❌ **Authoring a brief for a task whose prior task doesn't pass the coherence gate**~~ — **SUPERSEDED by D-120 (2026-07-13).** This is no longer an anti-pattern; a prior task's archival state (Issue/PR/provenance) no longer blocks authoring or dispatching a brief. Preserved as historical record only.
-- ❌ **A brief with a real §4 code surface and no `Premise:` block, or a `Premise:` block whose assertions all pin unrelated paths** — `checkPremiseCoverage` rejects it; the whole point of the pin is that it covers the surface the brief's reasoning depends on (D-081)
-- ❌ **Instructing the executor (or a §7 doc-update list) to commit a new file for a one-off report, audit finding, coverage summary, or working brief** — that content's permanent home is the PR body or an Issue/PR comment, never a new repo file (D-074, `iterations/README.md` §9 rule 4). A brief that tells the Developer "write your findings to `aeg-root/iterations/<name>-audit.md`" is malformed in exactly the way a brief that puts itself in the Issue instead of the PR body is malformed — it invents an unsanctioned new home for content the model already gave a home to (PR body, or an Issue/PR comment).
+- ❌ **Authoring a brief for a task whose Issue column is `#TBD` or blank** — the task is backlog, not dispatchable; there is no `#N` for `Closes #N`; the Developer's gate (entry gate item 3) will refuse it at execution. Catch it during Dig and surface the owed Planner action (cut the Issue) rather than handing the Principal a brief the Developer will immediately refuse.
+- ~~❌ **Authoring a brief for a task whose prior task doesn't pass the coherence gate**~~ — **SUPERSEDED.** This is no longer an anti-pattern; a prior task's archival state (Issue/PR/provenance) no longer blocks authoring or dispatching a brief. Preserved as historical record only.
+- ❌ **A brief with a real §4 code surface and no `Premise:` block, or a `Premise:` block whose assertions all pin unrelated paths** — `checkPremiseCoverage` rejects it; the whole point of the pin is that it covers the surface the brief's reasoning depends on
+- ❌ **Instructing the executor (or a §7 doc-update list) to commit a new file for a one-off report, audit finding, coverage summary, or working brief** — that content's permanent home is the PR body or an Issue/PR comment, never a new repo file (`iterations/README.md` §9 rule 4). A brief that tells the Developer "write your findings to `aeg-root/iterations/<name>-audit.md`" is malformed in exactly the way a brief that puts itself in the Issue instead of the PR body is malformed — it invents an unsanctioned new home for content the model already gave a home to (PR body, or an Issue/PR comment).
 
 ---
 

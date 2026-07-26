@@ -2,7 +2,7 @@
  * state-machine-model.ts — the canonical, code-owned model of AEG's execution
  * state machine: what it reads, what it can conclude, and the ordered rules
  * that get from one to the other. Pure data, zero I/O — the same discipline as
- * `actions.ts` and `waiver-label.ts` (D-119: one pure-data list, read by both
+ * `actions.ts` and `waiver-label.ts` (one pure-data list, read by both
  * the logic and the rendered docs, so the two can never drift). Its only
  * non-type import is `label()` from the sibling pure-data label vocabulary
  * (`@atta/aeg-forge-state`'s `labels.ts`), so the label names this model quotes
@@ -12,7 +12,7 @@
  *
  *   1. `FORGE_FACT_INPUTS` — every `ForgeFacts` field and the GitHub object it
  *      is read from. The inputs are the whole source of truth: status is
- *      *derived* from forge objects, never written down (D-059). Descriptive
+ * *derived* from forge objects, never written down. Descriptive
  *      only — the mapping itself is performed by `map-forge-facts.ts`.
  *   2. `DERIVED_STATUSES` — the statuses derivation can conclude.
  *   3. `DERIVATION_RULES` — the ordered rule list, first match wins.
@@ -105,7 +105,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
 
 /**
  * Every value `DerivedStatus` admits. `backlog` is a project-level concept and
- * is never emitted by derivation inside an iteration (D-059) — iteration tasks
+ * is never emitted by derivation inside an iteration — iteration tasks
  * are committed work, so their floor is `todo`. It stays in the set because
  * the type still admits it and consumers still render it.
  */
@@ -249,7 +249,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
  * Execute the model: the first rule whose predicate matches decides the
  * status. `deriveStatus` in `derive-iteration.ts` delegates here, so the
  * rendered rules and the real derivation are the same list — the whole point
- * of the D-119 discipline.
+ * of the discipline.
  *
  * The trailing return is unreachable by construction (the final rule matches
  * unconditionally) and exists only to satisfy the type checker;

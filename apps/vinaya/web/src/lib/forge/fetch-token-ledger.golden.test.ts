@@ -13,7 +13,7 @@ import { fetchIterationTokenLedger } from './fetch-token-ledger'
  * history currently has both** (a) a `.tokens.md` file recording it AND (b)
  * a real "Token report" PR body to recover it from.
  *   - Every iteration that HAS a `.tokens.md` file today (the 4 completed
- *     ones + `vada-production-v1`) predates D-071's PR-body/verdict-comment
+ * ones + `vada-production-v1`) predates's PR-body/verdict-comment
  *     reporting convention entirely — their ledger rows were hand-typed
  *     directly into the file by the old self-append protocol, so their PRs
  *     carry no "Token report" section for this aggregator to find at all.

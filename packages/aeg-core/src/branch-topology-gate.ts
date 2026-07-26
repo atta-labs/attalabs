@@ -7,7 +7,7 @@ import type { Iteration } from './types'
  * aeg-forge-state-v1 3a) and passes the result (or `null` when no iteration
  * data could be derived) in here.
  *
- * Closes the D-073 logic fork: `.husky/pre-push` used to answer "does this
+ * Closes the logic fork: `.husky/pre-push` used to answer "does this
  * branch's task-id suffix have a topology row?" with a hand-rolled
  * `grep -qE "^\|[[:space:]]*${id}[[:space:]]*\|"` against the iteration
  * file — a bash reimplementation of the table-parsing that `parseIteration`
@@ -51,8 +51,8 @@ export function taskBranchTopologyFields(branch: string): { iteration: string; t
 /**
  * `allow`  — the topology file exists and `parseIteration` finds a Tasks-table
  *            row whose `#` column literal-equals the branch's task-id suffix.
- * `refuse` — the iteration file is missing (D-073/D-075), or no row matches
- *            (D-073). Reasons are byte-identical to the hook's pre-task-32
+ * `refuse` — the iteration file is missing (), or no row matches
+ *. Reasons are byte-identical to the hook's pre-task-32
  *            inline messages, so a refused push reads exactly as before.
  */
 export function checkBranchTopology(input: BranchTopologyInput): BranchTopologyResult {

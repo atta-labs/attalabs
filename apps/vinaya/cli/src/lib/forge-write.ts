@@ -18,7 +18,7 @@
  *     human text (the same move `src/checks/bin/check-brief-shape.ts` makes for
  *     the check runner). WHICH sections a body must carry comes from
  *     `vinaya.config.json`'s `briefSchema` key, never hardcoded here — this
- *     repo's required-section set is just one config instance (D-087).
+ * repo's required-section set is just one config instance.
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'

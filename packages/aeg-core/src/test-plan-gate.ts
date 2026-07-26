@@ -1,5 +1,5 @@
 /**
- * Test Plan checkbox-state gate evaluator (D-049; aeg-governance-hardening
+ * Test Plan checkbox-state gate evaluator (; aeg-governance-hardening
  * task 25, #365). Pure — no `fs`, no `gh`/`git`. The CLI shim
  * (`bin/verify-test-plan.ts`) reads `PR_BODY`/`BRANCH` from env and prints
  * this function's messages.
@@ -8,7 +8,7 @@
  * inline `**Test Plan:**` marker and the `## N. Test Plan` heading form).
  * This module owns the checkbox tick-state decision built on top of it:
  *
- *   - No section found, task branch → `fail` (D-049: a task PR without a
+ * - No section found, task branch → `fail` (a task PR without a
  *     Test Plan is malformed, not exempt — the exact #377 live-fire gap).
  *   - No section found, non-task branch (or no BRANCH) → `pass` (advisory).
  *   - `Test Plan: unit-tests-only` sentinel → `pass`.

@@ -7,7 +7,7 @@
  * the forge (GitHub Issue state / PR merge events). Zero LLM calls. Stateless
  * — every run is a fresh read; no persistent store.
  *
- * Per D-067. Sibling to verify-docs.ts.
+ * Per. Sibling to verify-docs.ts.
  *
  * This is a thin I/O shim — forge fetches, filesystem reads, and CLI arg/
  * format/exit handling only. The pure check evaluators (A1/A2/A3, T1/T2/T3,
@@ -73,7 +73,7 @@ const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
 /**
- * Implemented by T2 (#217) per D-067; delegates to verify-docs.ts helpers.
+ * Implemented by T2 per; delegates to verify-docs.ts helpers.
  *
  * N2 (info/advisory): skipped D-NNN within a log (cross-log gaps expected — §6).
  * M1 (hard-fail): dangling in-repo pointer in doc-owners.
@@ -128,7 +128,7 @@ function isIterationFile(name: string): boolean {
 
 /**
  * PR context for item 5 (aeg-governance-hardening task 24, #364, Part 2;
- * D-082): when set, iteration files THIS PR's own diff touches are read
+ *): when set, iteration files THIS PR's own diff touches are read
  * from the PR's head ref (its own proposed content, e.g. a plan PR adding a
  * topology row); every other iteration file — the "repo state" side of
  * every coherence comparison — is read from a freshly-fetched
@@ -183,7 +183,7 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * itself (`parseIteration`) and merged in, NOT forge-derived — a deliberate,
  * TEMPORARY narrowing (Planner triage, Issue #437) of the original swap: at
  * least 9 grandfathered `vada-production-v1` Issues (#183 #184 #185 #186
- * #187 #188 #240 #241 #244) predate the D-078 "Dependency rationale" grammar
+ * #187 #188 #240 #241 #244) predate the "Dependency rationale" grammar
  * and carry no forge-parseable dependency data at all, and
  * `parse-rationale-deps.ts`'s cross-iteration-qualified-ref handling has its
  * own real gaps independent of that (fixed one instance on Issue #388, but
@@ -205,7 +205,7 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * own "never let one signal's unavailability crash the whole oracle"
  * discipline, already applied to every forge-dependent check below. This is
  * the ONLY place either fallback/merge applies — the PR-head-SHA path
- * (D-082's plan-PR scoping, below) always reads the PR's own uncommitted
+ * ('s plan-PR scoping, below) always reads the PR's own uncommitted
  * diff via `readFileAtRef` + `parseIteration`, never the forge, since a plan
  * PR's own in-progress topology edit has no forge equivalent to derive from.
  */
@@ -291,7 +291,7 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
   await loadDir(ITERATIONS_RELDIR, false)
   await loadDir(COMPLETED_RELDIR, true)
 
-  // Forge-native iterations with no topology file at all (D-113 cutover:
+  // Forge-native iterations with no topology file at all ( cutover:
   // vinaya-studio-v1, vinaya-cli-v1, herald-hardening-v1 all had their
   // aeg-root/iterations/*.md deleted once their Milestone-derived replacement
   // was proven safe) are structurally invisible to the directory-listing
@@ -345,7 +345,7 @@ export type RunCoherenceChecksOptions = {
   /** See `PrReadContext` — repo-state reads move to fetched origin/main; the PR's own topology diff still reads from its head ref. */
   prContext?: PrReadContext
   /**
-   * T2 relocation (D-082): `true` ONLY for a CI run against a plan PR whose
+   * T2 relocation: `true` ONLY for a CI run against a plan PR whose
    * own diff touches an iteration topology file — the only PR kind that can
    * cause or cure a T2 gap. Defaults to `false` (info-only, never blocking)
    * for every other context: task-PR CI, local dev, `--json` audit mode,
@@ -414,7 +414,7 @@ export async function runCoherenceChecks(
 
   const { owner, repo: repoName } = repo
 
-  // Fetch forge facts for all iterations (A1/A2/A3 share this fetch — D-067)
+  // Fetch forge facts for all iterations (A1/A2/A3 share this fetch —)
   const snapshotsBySlug = new Map<string, Map<string, ForgeFacts>>()
   let anyForgeUnavailable = false
 
@@ -533,7 +533,7 @@ export async function runCoherenceChecks(
   results.push(checkL2(files, entriesBySlug))
 
   // L4 — Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
-  // follow-up). Active = forge Milestone open (D-110), the same authority
+  // follow-up). Active = forge Milestone open, the same authority
   // `verify-dispatch.ts`'s Milestone-aware discovery uses — not `!f.archived`
   // (file location), so this never flags an iteration whose file predates
   // the Milestone birth rule but has no live Milestone yet.
@@ -596,7 +596,7 @@ function printHuman(results: CheckResult[], forgeUnavailable: boolean): void {
 if (import.meta.main) {
   const args = process.argv.slice(2)
 
-  // --closes-n: Closes #N gate for task branches (CI Layer 1 — D-069).
+  // --closes-n: Closes #N gate for task branches (CI Layer 1 —).
   // Reads BRANCH and PR_BODY from env. Exits 0 on pass/bypass, 1 on fail.
   if (args.includes('--closes-n')) {
     const branch = process.env.BRANCH ?? ''
@@ -633,7 +633,7 @@ if (import.meta.main) {
   const jsonOnly = args.includes('--json')
   const humanOnly = args.includes('--human')
 
-  // PR context for item 5/T2-relocation (D-082) — set only by the
+  // PR context for item 5/T2-relocation — set only by the
   // coherence-gate CI job (forge-lifecycle.yml). Absent everywhere else
   // (local dev, daily-drift, manual --json audit runs): every iteration
   // file reads from origin/main and T2 stays info-only (never blocking).

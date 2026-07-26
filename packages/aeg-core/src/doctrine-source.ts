@@ -6,7 +6,7 @@
  * adopters tomorrow) perform I/O and therefore live outside `aeg-core`
  * (`apps/vinaya/sources`) — this package only defines the contract, so the
  * library can be packaged for repos that have no `aeg-root/` of their own
- * (D-111). Same discipline as `state-source.ts`: zero I/O here, async on the
+ *. Same discipline as `state-source.ts`: zero I/O here, async on the
  * adapter so callers get one uniform type regardless of the backing store.
  */
 export type DoctrineContent = {

@@ -4,7 +4,7 @@ sidebar_title: Router (aeg-roles)
 description: The role router for AEG. Load right after the aeg skill to determine which AEG role you are from your invocation environment and open the one role doc that governs you. Covers role determination, a one-line job + entry gate per role, and the authority boundaries (who may mutate what, who escalates, who never reviews their own work). This is a ROUTER — it points to aeg-root/roles/*.md for the full spec of each role and never reproduces them. Load when you need to know "which role am I and which doc do I open."
 ---
 
-<!-- CANONICAL SOURCE (D-039). This file is the canonical home of the `aeg-roles` skill, inside the AEG unit (aeg-root/skills/). D-039 provides for an agent-specific GENERATED VIEW under .claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
+<!-- CANONICAL SOURCE. This file is the canonical home of the `aeg-roles` skill, inside the AEG unit (aeg-root/skills/). provides for an agent-specific GENERATED VIEW under.claude/skills/ (or another agent's equivalent), rebuilt from this file rather than authored by hand — but no such generator exists yet, and this repo has no generated view of this skill: agents are pointed at aeg-root/ directly (root CLAUDE.md). Edit THIS file; if a generator is ever built, regenerate rather than hand-editing its output. -->
 
 # AEG roles — the router
 
@@ -39,8 +39,8 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 - **Planner / Brief Author** — three modes. *Strategist*: architecture & decisions (may make Type 2 decisions ACTIVE immediately; Type 1 → PENDING). *Planner*: intent + backlog slice → a thin iteration of sibling-aware tasks (Issues + topology file; writes no briefs, no status). *Brief Author*: the just-in-time brief (→ `brief-authoring`). **Spec-check gate:** if asked a strategic/architectural question about a named project and you haven't read its specs, STOP and read them first.
 - **Developer** — executes ONE dispatched brief. **Entry gate:** read the brief fully; confirm dispatch gates against the forge (`depends-on` merged, no `conflicts-with` sibling PR open); **Step 0 = create the worktree** (`task/<iteration>/<n>`); then pre-flight. Opens the PR and stops — does not merge, does not review itself, never writes status.
 - **Reviewer (code)** — invoked fresh on an open PR. **Entry gate:** an open PR with the brief in its body, else refuse. Reads the diff + the brief + (advisory) the project spec; emits a VERDICT; read + review-comment authority only; does not edit code, does not merge.
-- **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed (D-028).
-- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status. (`now.md` is retired — D-057.)
+- **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed.
+- **Archivist** — **entry gate:** the PR is merged, else refuse. Works the close-out checklist (Issue closed, decision logged if Tier 3, changelog appended, per-unit `state.md` updated, provenance block posted, orphan branch/worktree flagged). Writes **no** task status — the merge *is* the status. (`now.md` is retired —.)
 - **Verification** — a **phase**, not a role: nobody is dispatched as a Verifier. It runs on an open PR after the code-review and security passes and before merge. **Entry gate:** an open PR whose brief carries a tagged Test Plan; refuse if there is no open PR, no brief, no Test Plan section, or the plan is declared `unit-tests-only` while the diff touches a runtime surface. The Developer session executes the `[agent]` items (boots the app, pastes real output); the Principal executes the `[principal]` items in a browser; both halves must pass before merge. Writes no status. Documented in `roles/developer.md` § Verification, because the Developer is the actor that runs its agent half.
 - **Iteration Archivist** — closes out a finished iteration (Phase 13), on explicit Principal declaration only. **Entry gate:** every task terminal (merged / dropped / moved out), the Principal has declared the iteration done, and the Milestone is still open (not already archived), else refuse. Assembles the retrospective, closes the Milestone, refreshes each project's pinned state Issue, surfaces pending Type 1 ratifications, posts the iteration provenance block. Forge-read only; ratifies nothing; writes no status. Distinct from the per-task Archivist (`roles/archivist.md`).
 
@@ -48,9 +48,9 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 
 - Only the **Principal** ratifies Type 1 (irreversible) decisions. The **Brief Author** may ratify Type 2 (reversible) — ACTIVE immediately in Strategist mode.
 - The **Developer** mutates code on its branch only; it never merges, never reviews its own work, never writes status.
-- **Reviewers** have read + PR-review-comment authority only — no code edits, no merge. Review is always a **separate, fresh-context** invocation from the Developer (D-026).
+- **Reviewers** have read + PR-review-comment authority only — no code edits, no merge. Review is always a **separate, fresh-context** invocation from the Developer.
 - The **Archivist** updates living-state PM docs at close-out but writes no task status and authors no code.
-- **Escalation severity** routes the ask: `execution` → Brief Author (Brief Author), `strategy` → Brief Author (Strategist), `product` → Principal. Labels `needs:execution-input` / `needs:strategy-input` / `needs:principal-input` (D-008).
+- **Escalation severity** routes the ask: `execution` → Brief Author (Brief Author), `strategy` → Brief Author (Strategist), `product` → Principal. Labels `needs:execution-input` / `needs:strategy-input` / `needs:principal-input`.
 
 ## 4. Reminder
 

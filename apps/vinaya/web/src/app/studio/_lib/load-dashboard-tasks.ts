@@ -13,7 +13,7 @@
  *   - `ready`             — a `todo` task whose dispatch gate passes now
  *   - `blocked`           — a `todo` task whose gate FAILS (Blocked · needs #N),
  *                           OR the `blocked` DerivedStatus (a `vinaya/blocked`
- *                           label — D-069's anomaly holding-pen)
+ * label —'s anomaly holding-pen)
  *   - `in-flight`         — branch open, no PR
  *   - `in-review`         — PR open
  *   - `changes-requested` — reviewer asked for changes
@@ -23,7 +23,7 @@
  * Forge honesty: `loadActiveIterations` returns `[]` when the forge is
  * unreachable, so this returns `[]` too — the dashboard reads the forge status
  * separately (from `listIterations().forge`) and renders a banner instead of a
- * truth-shaped empty card (D-087).
+ * truth-shaped empty card.
  *
  * SERVER-ONLY.
  */
@@ -78,7 +78,7 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
 export async function loadDashboardTasks(): Promise<DashboardTask[]> {
   const [active, registry] = await Promise.all([loadActiveIterations(), readRegistry()])
   // Board links resolve only to registered projects — a retired name (e.g. a
-  // task still carrying `Project: aeg`) has no project page (D-087).
+  // task still carrying `Project: aeg`) has no project page.
   const registered = new Set(registry.map((p) => p.name))
 
   // Fan the per-iteration forge reads out in parallel — each iteration's

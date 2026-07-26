@@ -1,11 +1,11 @@
 // `vinaya init` + `vinaya init product` — the non-destructive installer.
 //
-// Contract (D-084/D-089): detect (git repo + gh auth) → build the typed op set
+// Contract (): detect (git repo + gh auth) → build the typed op set
 // → render the COMPLETE diff → confirm (unless --yes) → apply forward, and
 // record ownership into the `managed` manifest so `vinaya eject` can reverse
 // it exactly. `--dry-run` prints that same diff and writes nothing. Nothing
 // runs on package install (no postinstall); PATH is never touched; branch
-// protection is printed, never applied (D-091).
+// protection is printed, never applied.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

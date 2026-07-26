@@ -6,20 +6,20 @@ role_id: developer
 description: The coding agent that executes a brief — writes the change, opens the pull request, and answers for it.
 actor: agent
 performs:
-  - write-the-code
-  - write-the-tests
-  - pass-typecheck-lint-hooks
-  - open-the-pull-request
-  - run-agent-test-plan-items
-  - address-review-findings
+ - write-the-code
+ - write-the-tests
+ - pass-typecheck-lint-hooks
+ - open-the-pull-request
+ - run-agent-test-plan-items
+ - address-review-findings
 refuses_when: >
-  Input isn't a well-formed brief (missing tier/scope/stop-conditions);
-  a dispatch gate is unmet (unmerged depends-on, an open conflicts-with PR);
-  the task Issue is #TBD or blank; a named product's previous iteration is
-  complete but not archived; the task's row doesn't exist yet in the
-  iteration's forge-derived task list; or the Step 0 branch name doesn't
-  literal-match the topology row. (D-120, 2026-07-13: the prior task's
-  provenance block is NO LONGER a refusal condition — superseded.)
+ Input isn't a well-formed brief (missing tier/scope/stop-conditions);
+ a dispatch gate is unmet (unmerged depends-on, an open conflicts-with PR);
+ the task Issue is #TBD or blank; a named product's previous iteration is
+ complete but not archived; the task's row doesn't exist yet in the
+ iteration's forge-derived task list; or the Step 0 branch name doesn't
+ literal-match the topology row. (2026-07-13: the prior task's
+ provenance block is NO LONGER a refusal condition — superseded.)
 summary: Ever had someone review their own work?
 ---
 # Developer — Role Reference
@@ -66,27 +66,27 @@ Before writing any code, validate the following — and refuse if any fails:
 
 1. **Is my input a well-formed brief?** It must carry tier, scope, stop conditions, and a deliverable. If you were handed a loose prompt instead → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author; I don't infer scope from a prompt."* If a multi-project repo and `Project:` doesn't resolve against `.vinaya/projects.md` → *"Project 'x' isn't registered."*
 2. **Are my dispatch gates satisfied?** Check the forge (not a status file — status is derived):
-   - Every `depends-on` task's **PR is merged**. If not → *"Task N depends on <dep>, whose PR isn't merged yet. Not starting — it serializes behind it."*
-   - No `conflicts-with` sibling has an **open PR** (or is otherwise in-flight). If one does → *"Task N conflicts with <sibling>, whose PR is open. Not starting until it merges."*
+ - Every `depends-on` task's **PR is merged**. If not → *"Task N depends on <dep>, whose PR isn't merged yet. Not starting — it serializes behind it."*
+ - No `conflicts-with` sibling has an **open PR** (or is otherwise in-flight). If one does → *"Task N conflicts with <sibling>, whose PR is open. Not starting until it merges."*
 3. **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task has a real GitHub Issue number, not `#TBD`, not blank. If no such Issue exists, the task has no forge Issue and is not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is not dispatchable. The Planner must cut the Issue before this task can start."* Do not begin work. The Issue number is what makes the task forge-addressable and is required for `Closes #N` in the PR body. See `aeg-root/contracts/brief-developer.md`.
-4. ~~**Prior-archival precondition (hard STOP before step 0).**~~ **SUPERSEDED (2026-07-13) — no longer a live obligation.** The per-task archival / row-adjacency precondition this item once mechanized is removed as a hard-STOP: automated post-merge provenance posting made the drift signal this item existed to protect moot. Preserved below as historical record only — do NOT enforce this item:
+4. ~~**Prior-archival precondition (hard STOP before step 0).**~~ **SUPERSEDED — no longer a live obligation.** The per-task archival / row-adjacency precondition this item once mechanized is removed as a hard-STOP: automated post-merge provenance posting made the drift signal this item existed to protect moot. Preserved below as historical record only — do NOT enforce this item:
 
-   ~~Before executing step 0, query this iteration's most-recently-merged task PR:~~
-   ```
-   gh pr list --state merged --json number,headRefName,mergedAt \
-     | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
-   ```
-   ~~Then check whether that PR carries a provenance block comment:~~
-   ```
-   gh pr view <N> --json comments \
-     | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
-   ```
-   ~~If the result is empty, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. The contract governing this signal is `aeg-root/contracts/reviewer-archivist.md`; the full obligation is in `aeg-root/contracts/brief-developer.md`.~~
+ ~~Before executing step 0, query this iteration's most-recently-merged task PR:~~
+ ```
+ gh pr list --state merged --json number,headRefName,mergedAt \
+ | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
+ ```
+ ~~Then check whether that PR carries a provenance block comment:~~
+ ```
+ gh pr view <N> --json comments \
+ | jq '.comments[].body | select(test("AEG.*provenance|provenance.*task"; "i"))'
+ ```
+ ~~If the result is empty, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. The contract governing this signal is `aeg-root/contracts/reviewer-archivist.md`; the full obligation is in `aeg-root/contracts/brief-developer.md`.~~
 5. **Prior-iteration-archival precondition.** Before opening a PR against any product, confirm each product named in the brief's `Project:` field has its previous iteration archived. For each product, check whether a prior iteration for that product exists in `aeg-root/iterations/` but NOT in `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. STOP: *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before new work on this product. Dispatch it first."* If there is no prior iteration on a product, this gate passes trivially. The contract governing this gate is `aeg-root/contracts/iteration-archivist-planner.md`.
 6. **Branch-ID verification (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the branch-name suffix in the Step 0 command you were just handed literal-matches this task's forge-derived id `<n>` — character for character: no added prefix, no case change, no truncation. If it doesn't: *"The Step 0 branch name `task/<iteration>/<X>` doesn't match this task's topology ID `<Y>` — STOP, do not create the worktree/branch; report the mismatch to the Brief Author/Principal rather than silently using either name."* Do not begin work.
 7. **Row-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task's row exists **at all**. This is distinct from and prior to item 3's `#TBD`/blank check: a missing row means the plan/Issue for this task has not merged/opened yet, and there is nothing to inspect — no Issue, no dependencies, no `Project(s)` value. If the row is absent: STOP: *"Task <id> is not present in iteration `<name>`'s forge-derived task list (no `vinaya/iteration:<name>`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does."* Do not begin work.
 
-**Mechanized version of items 3, 5, and 7.** Items 3, 5, and 7 above (Issue-existence, prior-iteration-archival, row-existence) are all re-derivable in one command: `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`, run against a freshly-fetched `origin/main` and the live forge. Run it before step 0. A `NOT READY` result names the exact failing predicate and is the same STOP each item above describes — read the printed blocker rather than re-deriving the fact by hand. The prose above remains the *why* (what each precondition means, and the manual `gh`/`jq` fallback if the tool is ever unavailable); item 6 (branch-ID verification) is a static check against the brief's own Step 0 text, not a mechanized command, and stays manual. Item 4 is superseded and no longer part of this composed check — `checkDispatchReadiness` no longer evaluates it. **This gate now also runs mechanically** (task 25) — `.husky/pre-push` invokes it on a task branch's first push, before its PR exists — but running it yourself before step 0 remains the cheaper, earlier catch: the hook fires only at push time, after you've already done the work.
+**Mechanized version of items 3, 5, and 7.** Items 3, 5, and 7 above (Issue-existence, prior-iteration-archival, row-existence) are all re-derivable in one command: `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`, run against a freshly-fetched `origin/main` and the live forge. Run it before step 0. A `NOT READY` result names the exact failing predicate and is the same STOP each item above describes — read the printed blocker rather than re-deriving the fact by hand. The prose above remains the *why* (what each precondition means, and the manual `gh`/`jq` fallback if the tool is ever unavailable); item 6 (branch-ID verification) is a static check against the brief's own Step 0 text, not a mechanized command, and stays manual. Item 4 is superseded and no longer part of this composed check — `checkDispatchReadiness` no longer evaluates it. **This gate now also runs mechanically** — `.husky/pre-push` invokes it on a task branch's first push, before its PR exists — but running it yourself before step 0 remains the cheaper, earlier catch: the hook fires only at push time, after you've already done the work.
 
 If the brief carries a `Premise:` block, also re-assert it before step 0: `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --premise <body-file>` (the body-file being the dispatched brief text). A failed premise means the surface moved since the brief was authored — STOP and re-dig; see `aeg-root/contracts/brief-developer.md`.
 
@@ -133,11 +133,11 @@ tasks use the explicit `Test Plan: unit-tests-only` sentinel instead of an
 empty list.>
 
 - [ ] **[agent]** <scriptable / non-auth / no-vendor-key check — e.g. a unit
-      test, a typecheck, a curl against a booted route. The agent runs this
-      and pastes the actual command output as evidence.>
+ test, a typecheck, a curl against a booted route. The agent runs this
+ and pastes the actual command output as evidence.>
 - [ ] **[principal]** <auth-gated / vendor-key-dependent / visual / browser
-      check — e.g. signing in with Clerk and running a real BYOK audit. The
-      Principal runs this in a browser and ticks the box.>
+ check — e.g. signing in with Clerk and running a real BYOK audit. The
+ Principal runs this in a browser and ticks the box.>
 
 ## Scope
 
@@ -150,16 +150,16 @@ field on its own line:>
 
 **Field rules (read once, follow forever):**
 
-| Field            | Requirement                                                                                                                                                                       |
+| Field | Requirement |
 |------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Summary          | One paragraph. Closes the Issue with `Closes #<N>` somewhere in the body.                                                                                                         |
-| Test plan        | Every runtime check tagged `[agent]` or `[principal]`. The brief-authoring skill makes this a **required** field — empty plans use `Test Plan: unit-tests-only` as the sentinel.   |
-| `[agent]` items  | Items the Developer-agent can run end-to-end before opening the PR. Paste the **actual command output**, not a paraphrase. (This is the `[agent]` half of the Verification phase, see `state-machine.md` § Verification.) |
-| `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser.            |
-| Scope            | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line.                                                                                                |
-| **Tier syntax**  | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
-| `Conforms-to:`   | Optional. `Conforms-to: D-###` or `Conforms-to-lock: D-###` — satisfies the Tier-3 decision-log requirement (C4) when the work implements an already-recorded decision rather than introducing a new one. |
-| `Doc-ack:`       | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `.vinaya/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. Separator is flexible — em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted, so `Doc-ack: <pointer> - <note>` parses identically. **Body field, not a label.** (state-machine.md Section 15) |
+| Summary | One paragraph. Closes the Issue with `Closes #<N>` somewhere in the body. |
+| Test plan | Every runtime check tagged `[agent]` or `[principal]`. The brief-authoring skill makes this a **required** field — empty plans use `Test Plan: unit-tests-only` as the sentinel. |
+| `[agent]` items | Items the Developer-agent can run end-to-end before opening the PR. Paste the **actual command output**, not a paraphrase. (This is the `[agent]` half of the Verification phase, see `state-machine.md` § Verification.) |
+| `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser. |
+| Scope | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line. |
+| **Tier syntax** | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
+| `Conforms-to:` | Optional. `Conforms-to: D-###` or `Conforms-to-lock: D-###` — satisfies the Tier-3 decision-log requirement (C4) when the work implements an already-recorded decision rather than introducing a new one. |
+| `Doc-ack:` | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `.vinaya/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. Separator is flexible — em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted, so `Doc-ack: <pointer> - <note>` parses identically. **Body field, not a label.** (state-machine.md Section 15) |
 | `vinaya/waiver:docs` (label, not a field) | Optional. A doc-coverage waiver is honored PR-wide ONLY when this label is applied AND the actor of its labeling timeline event is a configured principal — there is no body-field waiver grammar anymore; a parseable string is never sufficient. **Principal only**, applied outside any agent session. |
 
 **What this section is NOT:** not a style guide, not exhaustive PR etiquette. It is the **contract** for the shapes `verify-docs` (C0–C5), Brief Validation, the Verification phase, and the Pre-merge gate all read. Add anything you want beneath the four sections; don't omit or reshape any of them.
@@ -283,7 +283,7 @@ Every brief includes stop conditions. Honor them unconditionally. Common reasons
 When dispatched by an automation layer, you work in the worktree it created at `.worktrees/task/<iteration>/<n>/` on branch `task/<iteration>/<n>` — your isolated workspace, branched from `origin/main`.
 
 When working manually, the brief's pre-flight Step 0 gives you the worktree command. Run it first:
-- `git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n>`
+- `git worktree add.worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd.worktrees/task/<iteration>/<n>`
 - Then `git worktree list` to confirm you're not accidentally working in another task's worktree
 - Branch from `origin/main`, never from `HEAD` of the current local checkout (which may be behind)
 - Confirm the branch was created correctly: `git log --oneline -3` should show the expected parent
@@ -340,7 +340,7 @@ Before you say you are done or open a PR, run all of the following (substitute y
 
 If any of these fail: fix the failure, then re-verify. Do not report done until all pass. Do not say "tests pass" without running the test command and seeing the output.
 
-Items 1–4 are also composed into one command, `bun packages/aeg-core/bin/verify-task.ts` (plus a build step and the premise coverage/recheck pair) — **`open-pr.ts` now runs this composite itself** for task branches (task 25), so it also runs mechanically at PR-open time. Running it yourself first remains the cheaper, earlier catch.
+Items 1–4 are also composed into one command, `bun packages/aeg-core/bin/verify-task.ts` (plus a build step and the premise coverage/recheck pair) — **`open-pr.ts` now runs this composite itself** for task branches, so it also runs mechanically at PR-open time. Running it yourself first remains the cheaper, earlier catch.
 
 ---
 

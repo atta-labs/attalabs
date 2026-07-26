@@ -5,7 +5,7 @@ import { coreCheckRegistry } from '../../src/checks/registry'
 import { runChecks } from '../../src/checks/runner'
 
 /**
- * D-092's no-privileged-API proof. This test must fail if someone later adds
+ *'s no-privileged-API proof. This test must fail if someone later adds
  * a fast path — core checks are ordinary subprocesses, exactly like a
  * custom check, with no extra field and no branch in the runner.
  */

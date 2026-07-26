@@ -4,7 +4,7 @@ import { AlertTriangle } from 'lucide-react'
 
 /**
  * `DiagramModel.findings` are config keys referencing no real gate/check —
- * drift between `vinaya.config.json` and doctrine. D-087's "cannot lie by
+ * drift between `vinaya.config.json` and doctrine.'s "cannot lie by
  * omission": these render visibly on the page itself, never console-only.
  * Empty in v1 (config is always `null`, see `load-diagram.ts`) — this stays
  * ready for whenever a real config lands.

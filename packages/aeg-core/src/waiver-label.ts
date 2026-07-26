@@ -1,9 +1,9 @@
 /**
- * D-097 waiver-label actor verification. A doc-coverage waiver is honored
+ * waiver-label actor verification. A doc-coverage waiver is honored
  * ONLY when the `vinaya/waiver:docs` PR label is present AND the actor of that
  * label's most recent labeling timeline event is a configured principal.
  * Label presence alone is never sufficient — that is exactly the
- * agent-emittable-string hole D-097 closes (supersedes D-080's
+ * agent-emittable-string hole closes (supersedes's
  * `Doc-waiver:` grammar). Pure — no env reads here; I/O stays in the CLI
  * shim, same discipline as `pr-tier.ts`.
  *
@@ -14,7 +14,7 @@
  *
  * The label strings themselves are read from the code-owned vocabulary in
  * `@atta/aeg-forge-state`'s `labels.ts`, never written as literals here — a
- * namespace change lands in one file (D-119 discipline).
+ * namespace change lands in one file ( discipline).
  */
 
 import { label as labelFor } from '@atta/aeg-forge-state'

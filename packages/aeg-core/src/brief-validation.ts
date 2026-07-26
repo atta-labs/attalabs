@@ -1,5 +1,5 @@
 /**
- * Brief→Developer brief-validation grammar (D-069, aeg-governance-hardening
+ * Brief→Developer brief-validation grammar (, aeg-governance-hardening
  * task 2). Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
  * (`bin/verify-brief.ts`) reads `PR_BODY`, then
  * calls `checkBriefSections`.
@@ -302,7 +302,7 @@ export function checkClosesN(prBody: string): BriefSectionResult {
 }
 
 /**
- * Forge-title grammar (D-078) — the two title forms this repo actually uses:
+ * Forge-title grammar — the two title forms this repo actually uses:
  *   1. Commit-style: `Type: description` or `Type(scope): description`, with
  *      the commitlint type set plus `Plan` (plan PRs).
  *   2. Task-style: `[iteration] id — description` (task Issues and task PRs).
@@ -323,7 +323,7 @@ export function checkForgeTitle(title: string): BriefSectionResult {
 }
 
 /**
- * Plan-PR Closes guard (D-077) — a `plan/*` PR body must never carry a
+ * Plan-PR Closes guard — a `plan/*` PR body must never carry a
  * `Closes #N` reference. Three confirmed live incidents (#294→#293,
  * #298→#297, #288→#287) show a plan PR's `Closes #N` prematurely closing
  * the task Issue when the *plan* merged — before the task itself ever ran.
@@ -413,7 +413,7 @@ export type BriefSectionsOptions = {
    * A task PR must close its Issue, so `verify-brief` leaves this on for
    * `task/<iter>/<n>`. A brief-shaped body on a non-task branch must not: a
    * standalone fix brief has no task Issue to close, and a `plan/*` PR is
-   * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` (D-077) — so
+   * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` — so
    * requiring it there would make the two gates jointly unsatisfiable. Issue
    * linkage is a task-branch obligation; brief completeness is not.
    */

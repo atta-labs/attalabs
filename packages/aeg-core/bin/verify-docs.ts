@@ -3,8 +3,8 @@
 /**
  * verify-docs — tier-appropriate documentation gate.
  *
- * Per D-010, this is the HARD enforcement mechanism (the Archivist is advisory).
- * Per D-027, this is the first real implementation; it replaces the V0.7 stub.
+ * Per, this is the HARD enforcement mechanism (the Archivist is advisory).
+ * Per, this is the first real implementation; it replaces the V0.7 stub.
  * Per aeg-consolidation task 1, the check logic below is a thin CLI shim: it
  * resolves args/env, reads the filesystem/git, and calls the pure, tested
  * functions homed in `@atta/aeg-core`. The checks themselves — including their
@@ -12,31 +12,31 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
- *                     C5's waiver is, since D-097, a PR-wide `vinaya/waiver:docs` label whose labeling
+ * C5's waiver is, since, a PR-wide `vinaya/waiver:docs` label whose labeling
  *                     timeline event's actor is a configured principal — never a parseable
  *                     string. Label presence alone is never sufficient. CI resolves the actor
  *                     via GraphQL into WAIVER_LABEL_ACTOR; `runC5` verifies it with
  *                     `isWaiverLabelActorVerified` before calling `evaluateC5`. The prior
- *                     `Doc-waiver:` PR-body/commit-trailer grammar (D-080) is gone — it is no
+ * `Doc-waiver:` PR-body/commit-trailer grammar is gone — it is no
  *                     longer parsed anywhere. `Doc-ack:` (URL-pointer acknowledgment) is
- *                     unaffected by D-097 — still a PR-body field, still an acknowledgment, not
+ * unaffected by still a PR-body field, still an acknowledgment, not
  *                     a bypass.
- *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
+ * --push Diff-based, C5 only. Ring-0 gate for `.husky/pre-push`: the
  *                     branch's cumulative diff vs origin/main is checked against doc-owners
- *                     coverage. Since D-097, an owned-doc violation on push is
+ * coverage. Since, an owned-doc violation on push is
  *                     warn-with-declared-intent, not a hard block: the push is always allowed,
  *                     and the printed message states plainly that ring 1 (the PR, once opened)
  *                     stays red until a principal applies the `vinaya/waiver:docs` label or the bound
- *                     doc is updated. This replaces D-080's first-push commit-trailer
+ * doc is updated. This replaces's first-push commit-trailer
  *                     self-service — there is no first-push waiver self-service anymore, only an
  *                     informative warning; ring 1 is where the waiver is actually granted.
  *                     PR_BODY (when the branch already has an open PR) still supplies `Doc-ack:`
  *                     lines; on a first push (no PR yet), the hook still falls back to this
- *                     branch's own commit-message trailers as PR_BODY, since `Doc-ack:` (D-097
+ * branch's own commit-message trailers as PR_BODY, since `Doc-ack:` (
  *                     does not touch it) still needs that source. For a pre-authoring dry run
  *                     via `verify-dispatch --simulate`, before any commit exists at all,
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
- *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
+ * is an equally valid source for the same `Doc-ack:` lines.
  *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
  *                     mode. C0/C1/C3 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
@@ -52,7 +52,7 @@
  * The checks are deliberately MECHANICAL and slightly blunt. They cannot judge whether
  * a doc is *correct* — that is the Reviewer's job (roles/reviewer.md). They only judge
  * whether tier-required docs are *present and well-formed*. Blunt-but-enforced beats
- * subtle-but-trusted; that distinction is the whole point of D-010.
+ * subtle-but-trusted; that distinction is the whole point of.
  *
  * Escape hatch (state-machine.md Section 12): label `vinaya/override:docs` on the PR, or set
  * env OVERRIDE_DOCS=1, skips the gate. Visible in the check log.
@@ -120,9 +120,9 @@ function sh(cmd: string): string {
 /**
  * PR_BODY takes precedence when set (the PR-mode caller always sets it).
  * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
- * local path to the drafted PR body, so `Doc-ack:` lines (D-097 does not
+ * local path to the drafted PR body, so `Doc-ack:` lines ( does not
  * touch that grammar) are available deterministically before the PR exists
- * (D-324/task 11).
+ * (/task 11).
  */
 function resolvePrBody(): string {
   if (process.env.PR_BODY) return process.env.PR_BODY
@@ -137,7 +137,7 @@ function resolvePrBody(): string {
 }
 
 /**
- * D-097: a waiver is honored only when the `vinaya/waiver:docs` label is present AND
+ * a waiver is honored only when the `vinaya/waiver:docs` label is present AND
  * the actor of its labeling timeline event is a configured principal.
  * WAIVER_LABEL_ACTOR is resolved by CI (the GraphQL step ahead of this gate)
  * or is empty/unset locally — an empty/unset actor never verifies.
@@ -235,7 +235,7 @@ function runPrMode(): void {
   runC7(new Set(changed.filter((p) => p.startsWith(AEG_ROOT_PREFIX) && p.endsWith('.md'))))
 }
 
-// ---- push mode (C5 only — D-078 ring-0 pre-push gate) -----------------------
+// ---- push mode (C5 only — ring-0 pre-push gate) -----------------------
 
 function runPushMode(): void {
   if (
@@ -262,7 +262,7 @@ function runPushMode(): void {
 
   for (const n of notes) console.log(`verify-docs note: ${n}`)
 
-  // D-097 ring 0: warn-with-declared-intent, never a hard block. The push always
+  // ring 0: warn-with-declared-intent, never a hard block. The push always
   // succeeds; ring 1 (the PR, once opened) is where a waiver is actually granted.
   if (errors.length) {
     console.error(
@@ -283,7 +283,7 @@ const AEG_ROOT_PREFIX = 'aeg-root/'
  * The doctrine the `DiagramModel` derives from — raw `enforcement.md` + the
  * `roles/*.md` and `contracts/*.md` files, read here (a bin script does I/O)
  * and handed to the pure `deriveDiagramModel`. The surfaced-doc allowlist C6
- * checks against is model-backed (D-079/D-087), so C6 needs the same model
+ * checks against is model-backed (), so C6 needs the same model
  * `/docs` and `/the-harness` render.
  */
 function loadDoctrine(): DoctrineContent {

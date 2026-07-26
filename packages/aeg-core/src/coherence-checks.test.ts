@@ -79,7 +79,7 @@ function passesWithNoFailures(r: CheckResult) {
   expect(r.failures).toHaveLength(0)
 }
 
-// ---------- closes-N: Closes #N gate (D-069 Layer 1) -------------------------
+// ---------- closes-N: Closes #N gate ( Layer 1) -------------------------
 
 describe('checkClosesN', () => {
   it('ok — non-task branch bypasses entirely', () => {
@@ -466,7 +466,7 @@ describe('T2: orphan-task', () => {
   })
 })
 
-// ---------- T2 point-of-power relocation (task 24, D-082) --------------------
+// ---------- T2 point-of-power relocation --------------------
 
 describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D-082)', () => {
   it('reproduces the #363 incident, then shows the fix: a failing T2 is demoted to info for a non-plan (task) PR', () => {
@@ -502,7 +502,7 @@ describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D
   })
 })
 
-// ---------- R1: missing-rationale-field (D-078 planner→brief gate) -----------
+// ---------- R1: missing-rationale-field ( planner→brief gate) -----------
 
 const FULL_RATIONALE_BODY = `
 **Boundary** — test boundary

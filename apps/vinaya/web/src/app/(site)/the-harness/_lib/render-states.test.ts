@@ -7,7 +7,7 @@ const ring1: DiagramNode = { id: 'ring:1', kind: 'ring', label: 'Ring 1', ringIn
 const ring2: DiagramNode = { id: 'ring:2', kind: 'ring', label: 'Ring 2', ringIndex: 2, renderState: 'active' }
 
 /**
- * D-087's "cannot lie by omission," proven at the render layer: a fixture
+ *'s "cannot lie by omission," proven at the render layer: a fixture
  * with one `disabled` gate (config turned it off) and one `locked` gate
  * (doctrine pins a lock — config tried to disable it too, and lost, exactly
  * mirroring `deriveDiagramModel`'s own precedence: lock is checked before

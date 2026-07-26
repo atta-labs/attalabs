@@ -1,5 +1,5 @@
 /**
- * Post-merge Archivist provenance assembly (D-077, aeg-governance-hardening
+ * Post-merge Archivist provenance assembly (, aeg-governance-hardening
  * task 5d, #309). Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
  * (`bin/archive-task.ts`) resolves the merged PR via `gh`, gathers
  * `MergedPrFacts`, and calls these functions.

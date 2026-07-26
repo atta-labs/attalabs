@@ -8,7 +8,7 @@
  * One row per Issue (task 11): a cross-project Issue like #513 (`Project: aeg,
  * aeg-core`) is a single row carrying both project badges — the project filter
  * matches it under either — instead of the old first-label-wins grouping that
- * silently dropped its second project (D-091). Projects are read from the Issue
+ * silently dropped its second project. Projects are read from the Issue
  * body's `**Project:**` field, never from a label (#614).
  *
  * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
@@ -19,7 +19,7 @@
  *
  * Forge honesty (task 11): the fetch carries a `ForgeStatus`; when the forge is
  * unreachable the page renders a banner, never a truth-shaped "everything is
- * tracked" empty state (D-087).
+ * tracked" empty state.
  */
 
 import type { Registry } from '@atta/aeg-core'
@@ -95,7 +95,7 @@ export default async function BacklogPage() {
 
       {issues.length === 0 ? (
         // A forge failure already showed the banner above — only claim an empty
-        // backlog when the forge was actually reachable (D-087).
+        // backlog when the forge was actually reachable.
         forge.kind === 'ok' ? (
           <p className='font-sans text-sm text-muted-foreground'>
             No backlog issues — everything is tracked under an iteration.

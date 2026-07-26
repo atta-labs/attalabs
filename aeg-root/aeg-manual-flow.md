@@ -15,25 +15,25 @@ Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (th
 
 AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when **everything the flow references is present**:
 
-1. **The model layer** — `aeg-root/` scaffold (exists ONCE, at the repo root only): `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `iterations/README.md`, `roles/`, `skills/` (the AEG skills — canonical home per D-039); plus `projects.md` only once multi-project (D-041).
-2. **The living-state layer** — `aeg-project/` (one at the repo root, one per project): `decisions.md`. State only — never the model (D-041). (`now.md` is retired — D-057; active/blocked/next is derived from the forge. Completed-work history, lessons, per-project operational state, and ratification items are forge-native — D-110: `git log`/PR history, pinned Issues, and the `needs:principal-input` label respectively.)
+1. **The model layer** — `aeg-root/` scaffold (exists ONCE, at the repo root only): `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `iterations/README.md`, `roles/`, `skills/` (the AEG skills — canonical home); plus `projects.md` only once multi-project.
+2. **The living-state layer** — `aeg-project/` (one at the repo root, one per project): `decisions.md`. State only — never the model. (`now.md` is retired —; active/blocked/next is derived from the forge. Completed-work history, lessons, per-project operational state, and ratification items are forge-native — `git log`/PR history, pinned Issues, and the `needs:principal-input` label respectively.)
 3. **The enforcement layer (referenced by the model, so it must travel with it):**
-   - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `iterations/README.md` §5).
-   - the `verify-docs` script (`packages/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate (D-027). The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
-   - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`iterations/README.md` §9.3).
-   - the generated agent-surface skill view (e.g. `.claude/skills/`) — derived from `aeg-root/skills/` (D-039).
+ - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `iterations/README.md` §5).
+ - the `verify-docs` script (`packages/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate. The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
+ - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`iterations/README.md` §9.3).
+ - the generated agent-surface skill view (e.g. `.claude/skills/`) — derived from `aeg-root/skills/`.
 4. At least one iteration file exists, and the role docs are reachable.
 
 You can create that by hand, or use **`aeg.sh`** — one self-contained, downloadable shell script (from the AEG site). It is a **dumb scaffolder**: it writes files, nothing else. It does not dispatch agents, query the forge, or reason — that's a tool's or a human's job. Self-contained (scaffold embedded, no network) so you can read every byte first. It lays down **all four layers above** — not just `aeg-root/` + `aeg-project/` — so the unit it produces is complete: nothing the model references is missing. Subcommands:
 
 ```
-aeg init [folder]                       # scaffold the repo (once): model + state + enforcement + skills
-aeg add-project <name> --path <folder>  # register a project (creates/appends projects.md + stubs)
-aeg new-iteration <name>                # create a thin iteration topology file
-aeg generate-skills                     # regenerate the agent-surface skill view from aeg-root/skills/
+aeg init [folder] # scaffold the repo (once): model + state + enforcement + skills
+aeg add-project <name> --path <folder> # register a project (creates/appends projects.md + stubs)
+aeg new-iteration <name> # create a thin iteration topology file
+aeg generate-skills # regenerate the agent-surface skill view from aeg-root/skills/
 ```
 
-`init` scaffolds the enforcement layer (`.aeg/packages`, the verify-docs workflow + script, the Issue template/CI check) and the skills alongside `aeg-root/` + `aeg-project/`, because the model docs reference all of them — a unit missing any of them references a gate that isn't there. `add-project` stores the `--path` verbatim (never derives it), refuses to overwrite an existing folder or re-register a name, and on first use promotes a single-project repo to multi-project. `generate-skills` writes the agent-specific skill view (Claude Code's `.claude/skills/`, or another agent's equivalent) from the canonical skills in `aeg-root/skills/` (D-039) — so the canonical skills travel with the unit and the loadable view is rebuilt, never authored by hand. See `projects.md`. Tasks themselves are **forge Issues**, created by the Planner on the forge — not by `aeg.sh`.
+`init` scaffolds the enforcement layer (`.aeg/packages`, the verify-docs workflow + script, the Issue template/CI check) and the skills alongside `aeg-root/` + `aeg-project/`, because the model docs reference all of them — a unit missing any of them references a gate that isn't there. `add-project` stores the `--path` verbatim (never derives it), refuses to overwrite an existing folder or re-register a name, and on first use promotes a single-project repo to multi-project. `generate-skills` writes the agent-specific skill view (Claude Code's `.claude/skills/`, or another agent's equivalent) from the canonical skills in `aeg-root/skills/` — so the canonical skills travel with the unit and the loadable view is rebuilt, never authored by hand. See `projects.md`. Tasks themselves are **forge Issues**, created by the Planner on the forge — not by `aeg.sh`.
 
 ---
 
@@ -51,7 +51,7 @@ A **task is a forge Issue.** Its status is never written anywhere — it is **de
 
 | Status | Forge fact |
 |--------|-----------|
-| `todo` | Issue open (assigned or unassigned), no branch — D-059: all open iteration tasks are minimum `todo`; `backlog` is project-level only |
+| `todo` | Issue open (assigned or unassigned), no branch — all open iteration tasks are minimum `todo`; `backlog` is project-level only |
 | `in-flight` | branch `task/<iteration>/<n>` exists, no PR |
 | `in-review` | PR open |
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
@@ -122,7 +122,7 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
-> **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verification phase** (`roles/developer.md` § Verification), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of D-048's chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
+> **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verification phase** (`roles/developer.md` § Verification), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
 
 ### Iteration-close trigger
 
@@ -146,7 +146,7 @@ Before the Principal merges (Step 8), any Developer helping merge or pushing a "
 
 If any fails: post a comment listing the exact items missing. The Principal decides whether to proceed.
 
-> **At the end of every role's turn: report your tokens — you do not append your own row** to the iteration's token/cost ledger (`aeg-root/iterations/<name>.tokens.md`). No role writes its own row on a task branch (D-071): terminal roles (Developer; Archivist when automated) report exact figures from `/cost` in the PR body; chat roles (Planner, Brief Author, Reviewer, Security) report in their verdict comment or planning report, numeric cells `—` if unknown. The per-task **Archivist** collects every report and appends the rows — Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — post-merge at close-out; never edits a row; re-entry appends. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
+> **At the end of every role's turn: report your tokens — you do not append your own row** to the iteration's token/cost ledger (`aeg-root/iterations/<name>.tokens.md`). No role writes its own row on a task branch: terminal roles (Developer; Archivist when automated) report exact figures from `/cost` in the PR body; chat roles (Planner, Brief Author, Reviewer, Security) report in their verdict comment or planning report, numeric cells `—` if unknown. The per-task **Archivist** collects every report and appends the rows — Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — post-merge at close-out; never edits a row; re-entry appends. See `iterations/README.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
 
 ---
 
@@ -160,7 +160,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 - Requires a well-formed brief. If handed a loose prompt → *"This isn't a brief — missing tier / scope / stop-conditions. Get one from the Brief Author."*
 - Checks the gates against the forge before starting: dependency's PR merged? conflicting sibling's PR closed? If not → *"Task N serializes behind <dep/sibling>; not starting."*
 - If `Project:` doesn't resolve against the registry → *"Project 'x' isn't registered."*
-- Worktree Step 0: `git worktree add .worktrees/task/<it>/<n> -b task/<it>/<n> origin/main && cd .worktrees/task/<it>/<n>`, do the work, open the PR.
+- Worktree Step 0: `git worktree add.worktrees/task/<it>/<n> -b task/<it>/<n> origin/main && cd.worktrees/task/<it>/<n>`, do the work, open the PR.
 - Done-checklist: **the brief (and `Ticket:`/`Project:` lines) is pasted into the PR body.** That's it for state — opening the PR *is* the status transition. The Developer writes no status anywhere.
 
 **Reviewer (code)** — requires an open PR with the brief in its body. Refuses: no PR → *"Nothing to review."* No brief → *"This PR has no brief; I can't judge scope against intent."* Authored it → *"I can't review my own work."* Checks brief-conformance **and** spec-conformance (the `Project:` spec in the unit's `specs/`). Produces APPROVE | REQUEST CHANGES (per `roles/reviewer.md`).
@@ -176,7 +176,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
-- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, docs updated, per-project pinned state Issue updated for every project the task listed (D-110). Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11). (`now.md` no longer exists — D-057.)
+- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, docs updated, per-project pinned state Issue updated for every project the task listed. Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11). (`now.md` no longer exists —.)
 - Assembles the **provenance block** from frozen facts (brief, PR reviews, decision log, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.
