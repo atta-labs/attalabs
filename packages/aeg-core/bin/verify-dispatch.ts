@@ -51,7 +51,7 @@
  *   --surfaces <globs>  Mechanically derive the §7 doc-update-list floor
  *                      (D-076) for a comma-separated list of intended surface
  *                      globs, by matching them against
- *                      `packages/governance/doc-owners`. Prints every fired
+ *                      `.vinaya/doc-owners`. Prints every fired
  *                      binding so a Planner/Brief Author sees, DURING Dig,
  *                      which doc pointers this task's surface will require at
  *                      PR-open (C5) — instead of discovering it for the first

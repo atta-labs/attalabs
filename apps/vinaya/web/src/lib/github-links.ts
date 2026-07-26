@@ -6,8 +6,14 @@ import path from 'node:path'
  * Walks up from process.cwd() to find the monorepo root — the same marker
  * `lib/repo-state/read-root.ts` uses, so both agree on what "the repo root"
  * means regardless of which surface is running.
+ *
+ * The marker is the Vinaya config, not a governance file: `vinaya.config.json`
+ * is what `vinaya init` installs and `eject` removes, so it exists in every
+ * repo this code can legitimately run in. The registry it used to key on
+ * (`projects.md`) is optional per-repo and would make root detection fail in a
+ * repo that simply has no projects registered.
  */
-const GOVERNANCE_MARKER = 'packages/governance/projects.md'
+const ROOT_MARKER = 'vinaya.config.json'
 
 let cachedRepoRoot: string | null = null
 
@@ -15,7 +21,7 @@ export function findRepoRoot(): string {
   if (cachedRepoRoot) return cachedRepoRoot
   let dir = process.cwd()
   for (let i = 0; i < 8; i++) {
-    if (existsSync(path.join(dir, GOVERNANCE_MARKER))) {
+    if (existsSync(path.join(dir, ROOT_MARKER))) {
       cachedRepoRoot = dir
       return dir
     }
@@ -23,7 +29,7 @@ export function findRepoRoot(): string {
     if (parent === dir) break
     dir = parent
   }
-  throw new Error('Could not locate repo root (packages/governance/projects.md) above process.cwd()')
+  throw new Error('Could not locate repo root (vinaya.config.json) above process.cwd()')
 }
 
 export function findAegRoot(): string {

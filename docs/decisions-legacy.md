@@ -1,3 +1,19 @@
+# Decisions — legacy archive (frozen 2026-07-26)
+
+**History, not machinery.** No check reads this file. No gate requires an entry.
+It is kept because thousands of `D-###` citations across code, specs, skills and
+doctrine resolve here.
+
+Do not add entries. A decision that still binds belongs in the spec for the
+surface it governs, where a `doc-owners` binding keeps it current. A decision
+about one change belongs in that change's pull request.
+
+The `Lock: YES` markers below enforced nothing — the mechanism that read them
+fired only when a diff *added* such a line, never when one was edited, deleted
+or contradicted in code. They are left as written; this file is not rewritten.
+
+---
+
 # Atta — Global Decision Log
 
 Cross-product architectural decisions that affect the Atta ecosystem as a whole. Product-specific decisions live in per-product decision logs (`apps/*/specs/*-decisions.md`).

@@ -8,7 +8,7 @@
 
 import { hasLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion } from './anchored-region'
-import { isDecisionLog, isDocFile, isSpecFile } from './file-classify'
+import { isDocFile, isSpecFile } from './file-classify'
 
 /**
  * Derive a tier from the changed-file list when no `Tier:` field is in the PR body.
@@ -19,7 +19,6 @@ import { isDecisionLog, isDocFile, isSpecFile } from './file-classify'
  *   3. Otherwise (code/config…)   → Tier 0
  */
 export function deriveTierFromDiff(changed: string[]): 0 | 1 | 3 {
-  if (changed.some(isDecisionLog)) return 3
   if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1
   return 0
 }

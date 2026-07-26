@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isCodeFile, isDecisionLog, isDocFile, isSpecFile } from './file-classify'
+import { isCodeFile, isDocFile, isSpecFile } from './file-classify'
 
 describe('isDocFile', () => {
   it('matches aeg-root, aeg-project, spec, and skill markdown', () => {
     expect(isDocFile('aeg-root/roles/developer.md')).toBe(true)
     expect(isDocFile('aeg-project/state.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/aeg-project/state.md')).toBe(true)
-    expect(isDocFile('packages/governance/projects.md')).toBe(true)
+    expect(isDocFile('.vinaya/projects.md')).toBe(true)
+    expect(isDocFile('docs/decisions-legacy.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/specs/herald-spec.md')).toBe(true)
     expect(isDocFile('.claude/skills/brief-authoring/SKILL.md')).toBe(true)
     expect(isDocFile('docs-index.md')).toBe(true)
@@ -45,16 +46,5 @@ describe('isSpecFile', () => {
   it('rejects non-spec paths', () => {
     expect(isSpecFile('apps/vada-ai/web/src/lib/foo.ts')).toBe(false)
     expect(isSpecFile('packages/engine/specs/foo.md')).toBe(false)
-  })
-})
-
-describe('isDecisionLog', () => {
-  it('matches the global log and per-project *-decisions.md', () => {
-    expect(isDecisionLog('packages/governance/decisions.md')).toBe(true)
-    expect(isDecisionLog('apps/vada-ai/specs/vada-decisions.md')).toBe(true)
-  })
-
-  it('rejects other markdown', () => {
-    expect(isDecisionLog('aeg-project/state.md')).toBe(false)
   })
 })

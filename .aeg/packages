@@ -1,7 +1,7 @@
 # .aeg/packages — the static collision-domain list.
 #
 # Named as canonical by three governance docs that never had a file to point
-# at: `packages/governance/projects.md` ("Routing vs. conflicts"),
+# at: `.vinaya/projects.md` ("Routing vs. conflicts"),
 # `aeg-root/iterations/README.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
 # This file is that missing artifact.
 #
@@ -39,7 +39,6 @@ packages/cms
 packages/crypto
 packages/db
 packages/engine
-packages/governance
 packages/identity
 packages/instrumentation
 packages/models

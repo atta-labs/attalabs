@@ -38,14 +38,13 @@
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
  *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
  *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
- *                     mode. C0-C4 are PR-body contracts and stay at the PR gates.
+ *                     mode. C0/C1/C3 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
- *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
- *                     decision-log entries, manifest validity, the completeness scoreboard,
+ *   (full)            Repo-wide structural checks. Catches unstatused specs, manifest
+ *                     validity, the completeness scoreboard,
  *                     and the surfaced-doc manifest coherence check (C6 — state-machine.md
  *                     Section 15c): every surfaced doc under `aeg-root/` must be reachable
  *                     in the doc-nav tree, with no orphans and no dangling cross-references.
- *   --next-decision   Helper: print the next free D-NNN for packages/governance/decisions.md and exit.
  *
  * Runs in AUDIT mode (state-machine.md Section 4): it asks "is what shipped consistent
  * with what the docs say?", not "is the design good?".
@@ -80,7 +79,6 @@ import {
 import {
   type DoctrineContent,
   deriveDiagramModel,
-  checkDecisionNumbers,
   checkManifestValidity,
   DOC_OWNERS_PATH,
   deriveTierFromDiff,
@@ -89,11 +87,9 @@ import {
   globToRegex,
   hasStatusBlock,
   isCodeFile,
-  isDecisionLog,
   isDocFile,
   isSpecFile,
   isWaiverLabelActorVerified,
-  malformedDecisionEntries,
   type NoDocRule,
   overrideActive,
   parseDocOwners,
@@ -106,7 +102,6 @@ const REPO_ROOT = join(import.meta.dir, '../../..')
 process.chdir(REPO_ROOT)
 
 const args = process.argv.slice(2)
-const isNextDecision = args.includes('--next-decision')
 const mode: 'pr' | 'push' | 'full' = args.includes('--pr') ? 'pr' : args.includes('--push') ? 'push' : 'full'
 
 const errors: string[] = []
@@ -206,15 +201,6 @@ function runPrMode(): void {
     effectiveTier = tierFromBody
   } else {
     const derived = deriveTierFromDiff(changed)
-    if (derived === 3) {
-      // Decision-log in diff — Tier 3 has lock/irreversibility implications.
-      // Auto-derive is blocked; the author must confirm with an explicit declaration.
-      errors.push(
-        'C0 tier-required: No `Tier:` field found in the PR body, and the diff includes a decision log — Tier 3 work requires an explicit `Tier: 3` declaration (lock/irreversibility implications a human must confirm). The canonical PR-body form lives in `aeg-root/roles/developer.md` § PR body — canonical form. (state-machine.md Section 9)'
-      )
-      finish()
-      return
-    }
     notes.push(`no Tier field in PR body; derived Tier ${derived} from diff`)
     effectiveTier = derived
   }
@@ -222,7 +208,6 @@ function runPrMode(): void {
   const codeFiles = changed.filter(isCodeFile)
   const docFiles = changed.filter(isDocFile)
   const specFiles = changed.filter(isSpecFile)
-  const decisionLogs = changed.filter(isDecisionLog)
 
   // C1 — changed spec files must carry a Status block.
   for (const p of specFiles) {
@@ -234,17 +219,6 @@ function runPrMode(): void {
     }
   }
 
-  // C2 — changed decision logs must have well-formed entries.
-  for (const p of decisionLogs) {
-    if (!existsSync(p)) continue
-    const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
-    if (bad.length) {
-      errors.push(
-        `C2 decision-shape: ${p} has entries missing Status/Type: ${bad.join(', ')}. See state-machine.md Section 6.`
-      )
-    }
-  }
-
   // C3 — code changes (tier 1+) must be accompanied by at least one doc change.
   if (effectiveTier !== 0 && codeFiles.length > 0 && docFiles.length === 0) {
     errors.push(
@@ -252,20 +226,7 @@ function runPrMode(): void {
     )
   }
 
-  // C4 — Tier 3 must carry either a new decision log entry OR a reference to an
-  // existing decision this work conforms to. The conformance path exists for PRs
-  // that implement work under an already-recorded decision without introducing a
-  // new architectural choice (e.g. adding contracts under the decision that
-  // established the contract system). A `Conforms-to: D-###` or
-  // `Conforms-to-lock: D-###` field in the PR body satisfies this path.
-  const conformsToDecision = /Conforms-to(?:-lock)?\s*:\s*\*{0,2}\s*D-\d+/i.test(process.env.PR_BODY || '')
-  if (effectiveTier === 3 && decisionLogs.length === 0 && !conformsToDecision) {
-    errors.push(
-      'C4 tier3-decision-log: Tier 3 work requires either (a) a decision log entry (global decisions.md or a per-project *-decisions.md), or (b) a `Conforms-to: D-###` or `Conforms-to-lock: D-###` field in the PR body for conforming work. Neither found. (state-machine.md Section 9)'
-    )
-  }
-
-  // C5 — code→doc coverage via packages/governance/doc-owners (dormant when absent).
+  // C5 — code→doc coverage via .vinaya/doc-owners (dormant when absent).
   runC5(changed)
 
   // C7 — published prose, scoped to the doctrine files this PR actually
@@ -315,13 +276,6 @@ function runPushMode(): void {
 }
 
 // ---- full mode -------------------------------------------------------------
-
-function findDecisionLogs(): string[] {
-  return sh("git ls-files 'packages/governance/decisions.md' 'apps/**/*-decisions.md'")
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
 
 const AEG_ROOT_PREFIX = 'aeg-root/'
 
@@ -413,24 +367,6 @@ function runFullMode(): void {
     }
   }
 
-  // F2 — decision-log entries well-formed.
-  const logPaths = findDecisionLogs()
-  for (const p of logPaths) {
-    if (!existsSync(p)) continue
-    const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
-    if (bad.length) {
-      errors.push(`F2 decision-shape: ${p} entries missing Status/Type: ${bad.join(', ')}.`)
-    }
-  }
-
-  // N1/N2 — decision-number integrity within each log.
-  for (const p of logPaths) {
-    if (!existsSync(p)) continue
-    const { n1Errors, n2Notes } = checkDecisionNumbers(readFileSync(p, 'utf8'), p)
-    for (const e of n1Errors) errors.push(e)
-    for (const n of n2Notes) notes.push(n)
-  }
-
   // M1/M2/M3 — doc-owners manifest validity.
   const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
   const { m1Errors, m2Notes, m3Errors, noDocRules } = checkManifestValidity(docOwnersContent, existsSync)
@@ -505,19 +441,6 @@ function finish(): void {
 // ---- run -------------------------------------------------------------------
 
 if (import.meta.main) {
-  if (isNextDecision) {
-    // --next-decision: print the next free D-NNN for packages/governance/decisions.md and exit.
-    const logPath = 'packages/governance/decisions.md'
-    if (!existsSync(logPath)) {
-      console.log(`${logPath} not found; next free number: D-001`)
-      process.exit(0)
-    }
-    const { numbers } = checkDecisionNumbers(readFileSync(logPath, 'utf8'), logPath)
-    const next = numbers.length === 0 ? 1 : ((numbers[numbers.length - 1] ?? 0) as number) + 1
-    console.log(`Next free D-number in ${logPath}: D-${String(next).padStart(3, '0')}`)
-    process.exit(0)
-  }
-
   if (mode === 'pr') runPrMode()
   else if (mode === 'push') runPushMode()
   else runFullMode()

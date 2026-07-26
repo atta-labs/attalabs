@@ -1,6 +1,6 @@
 /**
  * Derive the floor of a task's §7 doc-update list by matching its intended
- * surface globs against `packages/governance/doc-owners` bindings (state-machine.md
+ * surface globs against `.vinaya/doc-owners` bindings (state-machine.md
  * Section 15). Pure — parses doc-owners content via `parseDocOwners` (no
  * second parser) and does segment-wise glob overlap between each intended
  * surface and each binding's code glob. A Planner/Brief-Author aid only —

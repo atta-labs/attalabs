@@ -13,11 +13,11 @@
  *
  * Vinaya's Studio runs from `apps/vinaya/web/src/app/studio`; `aeg-root/`
  * lives at the repo root. `findAegRoot` walks up from `process.cwd()` until
- * it finds a directory containing `packages/governance/projects.md` (the
- * project registry — relocated from `aeg-root/projects.md`,
- * `aeg-forge-state-v1` task 2), then returns that directory's `aeg-root/`.
+ * it finds a directory containing `.vinaya/projects.md` (the project
+ * registry — configuration since the governance package was removed), then
+ * returns that directory's `aeg-root/`.
  * Worktrees work the same way — each worktree carries its own checkout of
- * `aeg-root/` and `packages/governance/`.
+ * `aeg-root/` and `.vinaya/`.
  *
  * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, per D-110):
  * both derive purely from the forge — a GitHub Milestone
@@ -103,7 +103,7 @@ const cachedDeriveIterationFromForgeKnown = cache(
 
 const ITERATIONS_DIR = 'iterations'
 const REGISTRY_FILE = 'projects.md'
-const GOVERNANCE_DIR = 'packages/governance'
+const CONFIG_DIR = '.vinaya'
 
 export type IterationSummary = {
   /** Slug from the Milestone title. */
@@ -141,7 +141,7 @@ export function findAegRoot(): string {
   if (cachedRoot) return cachedRoot
   let dir = process.cwd()
   for (let i = 0; i < 8; i++) {
-    const candidate = path.join(dir, GOVERNANCE_DIR, REGISTRY_FILE)
+    const candidate = path.join(dir, CONFIG_DIR, REGISTRY_FILE)
     if (existsSync(candidate)) {
       cachedRoot = path.join(dir, 'aeg-root')
       return cachedRoot
@@ -156,7 +156,7 @@ export function findAegRoot(): string {
 export async function readRegistry(): Promise<Registry> {
   const root = findAegRoot()
   const repoRoot = path.dirname(root)
-  const raw = await fs.readFile(path.join(repoRoot, GOVERNANCE_DIR, REGISTRY_FILE), 'utf8')
+  const raw = await fs.readFile(path.join(repoRoot, CONFIG_DIR, REGISTRY_FILE), 'utf8')
   return parseRegistry(raw)
 }
 

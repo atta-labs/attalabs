@@ -198,7 +198,7 @@ describe('checkBlastRadiusScope (A)', () => {
   })
 
   it('does not count a cited document as a touched domain', () => {
-    const body = rationale({ boundary: 'Resolve the registry row in `packages/governance/projects.md`.' })
+    const body = rationale({ boundary: 'Resolve the registry row in `.vinaya/projects.md`.' })
     expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 

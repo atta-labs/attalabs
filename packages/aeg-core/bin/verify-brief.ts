@@ -52,7 +52,6 @@ import {
   checkPlanPrNoCloses,
   inferBranchFromBody,
   isBriefShaped,
-  isDecisionLog,
   readTierFromPrBody
 } from '../src/index'
 
@@ -68,13 +67,6 @@ function sh(cmd: string): string {
   } catch {
     return ''
   }
-}
-
-function changedFiles(base: string): string[] {
-  return sh(`git diff --name-only ${base}...HEAD`)
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
 }
 
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
@@ -170,8 +162,6 @@ export function main(): void {
     console.log('[verify-brief] PASS (no body — likely a local invocation; CI sets PR_BODY automatically).')
     process.exit(0)
   }
-
-  const base = process.env.BASE_SHA || 'origin/main'
 
   const { errors } = checkBriefSections(prBody, readTierFromPrBody, { requireClosesN: isTaskBranch })
 

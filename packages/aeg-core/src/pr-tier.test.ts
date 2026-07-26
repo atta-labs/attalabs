@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tier'
 
 describe('deriveTierFromDiff', () => {
-  it('decision-log in diff → tier 3 (C0 error still emitted; explicit declaration required)', () => {
-    expect(deriveTierFromDiff(['packages/governance/decisions.md'])).toBe(3)
-    expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions.md'])).toBe(3)
-    // decision log wins over any other file in the same diff
-    expect(deriveTierFromDiff(['apps/foo/web/src/lib/foo.ts', 'packages/governance/decisions.md'])).toBe(3)
+  it('a decision log is an ordinary doc — no auto-Tier-3 inference', () => {
+    // The log is no longer a gated artifact, so touching one carries no
+    // special tier meaning. A doc-only diff derives Tier 1 like any other.
+    expect(deriveTierFromDiff(['docs/decisions-legacy.md'])).toBe(1)
+    expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions-legacy.md'])).toBe(1)
   })
 
   it('code-only diff → tier 0 (passes without Tier: field in PR body)', () => {

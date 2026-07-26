@@ -1,4 +1,4 @@
-# packages/governance/doc-owners — code → doc bindings for the coherence seam (D-062).
+# .vinaya/doc-owners — code → doc bindings for the coherence seam.
 #
 # Format: one binding per line, CODEOWNERS-shaped.
 #     <code-glob>  <doc-pointer>

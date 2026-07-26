@@ -1,5 +1,5 @@
 /**
- * The `packages/governance/doc-owners` manifest parser and the C5 code→doc
+ * The `.vinaya/doc-owners` manifest parser and the C5 code→doc
  * coverage evaluator (state-machine.md Section 15). Pure — I/O (reading the
  * manifest off disk, checking pointer existence) is injected by the caller.
  */
@@ -7,7 +7,7 @@
 import { isCodeFile } from './file-classify'
 import { WAIVER_LABEL } from './waiver-label'
 
-export const DOC_OWNERS_PATH = 'packages/governance/doc-owners'
+export const DOC_OWNERS_PATH = '.vinaya/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
 
@@ -103,7 +103,7 @@ export function readDocAcks(body: string): DocAck[] {
 
 /**
  * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
- * `packages/governance/doc-owners` from disk and `PR_BODY` from env; this
+ * `.vinaya/doc-owners` from disk and `PR_BODY` from env; this
  * function takes both as inputs and an injectable file-exists for unit tests.
  *
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any

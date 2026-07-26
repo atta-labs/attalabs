@@ -426,7 +426,7 @@ function readSharedPackages(): string[] {
 /** Registry rows (`projects.md`) — the authority for which project owns which path. Absent ⇒ nothing is owned. */
 function readProjectPaths(): ProjectPath[] {
   try {
-    return parseRegistry(readFileSync(join(REPO_ROOT, 'packages/governance/projects.md'), 'utf8'))
+    return parseRegistry(readFileSync(join(REPO_ROOT, '.vinaya/projects.md'), 'utf8'))
   } catch {
     return []
   }

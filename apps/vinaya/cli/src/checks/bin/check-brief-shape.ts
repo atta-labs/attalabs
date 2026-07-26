@@ -4,7 +4,7 @@
  * Core check: brief-shape. Thin adapter over `@atta/aeg-core`'s
  * `checkBriefSections` — mirrors `packages/aeg-core/bin/verify-brief.ts`'s
  * input assembly (PR_BODY env, lock-touch derived from the diff via
- * `isDecisionLog`, tier via `readTierFromPrBody`), but emits the check
+ * tier via `readTierFromPrBody`), but emits the check
  * contract (JSON lines on stderr, exit 0/1) instead of human text — the
  * reason this is a new executable rather than a wrapper around `bin/*`
  * (`packages/aeg-core/bin/*` is out of this task's boundary to edit).
@@ -13,7 +13,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { checkBriefSections, isDecisionLog, readTierFromPrBody } from '@atta/aeg-core'
+import { checkBriefSections, readTierFromPrBody } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
 
 const CHECK_NAME = 'brief-shape'

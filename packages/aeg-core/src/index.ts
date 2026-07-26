@@ -10,8 +10,8 @@ export { parseLedger, rowFromCells } from './parse-ledger'
 export { sumLedger } from './sum-ledger'
 export { aggregateTaskTokenRows, parseTokenReportEntries, parseTokensLines } from './parse-token-report'
 export type { TokenSourcePr } from './parse-token-report'
-export { isCodeFile, isDecisionLog, isDocFile, isSpecFile } from './file-classify'
-export { checkDecisionNumbers, hasStatusBlock, malformedDecisionEntries } from './decision-log'
+export { isCodeFile, isDocFile, isSpecFile } from './file-classify'
+export { hasStatusBlock } from './decision-log'
 export {
   DOC_OWNERS_PATH,
   evaluateC5,

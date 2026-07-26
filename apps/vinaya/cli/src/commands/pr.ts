@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { isDecisionLog } from '@atta/aeg-core'
 import { printJson } from '../lib/envelope'
 import {
   type BodyResult,

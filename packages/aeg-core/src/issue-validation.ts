@@ -135,7 +135,7 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
  * `packages/ui-next`.
  *
  * **A cited document is not a touched domain.** Every rationale points at docs
- * for provenance — "the registry row in `packages/governance/projects.md`",
+ * for provenance — "the registry row in `.vinaya/projects.md`",
  * "per `packages/ui/README.md`" — and counting those as edits fails correct
  * plans wholesale (it fired on all three of #621/#622/#626 for a projects.md
  * citation none of them edits). So an occurrence whose full path token ends in
@@ -219,7 +219,7 @@ export function checkBlastRadiusScope(
   return {
     status: 'fail',
     errors: [
-      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (packages/governance/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
+      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (.vinaya/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
     ]
   }
 }

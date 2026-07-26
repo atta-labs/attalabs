@@ -49,7 +49,7 @@
 
 - [Herald — app architecture](./apps/herald-ai/specs/herald-app-architecture.md)
 - [Herald — product backlog](./apps/herald-ai/specs/herald-backlog.md)
-- [Herald Decisions](./apps/herald-ai/specs/herald-decisions.md)
+- [Herald Decisions](./apps/herald-ai/specs/herald-decisions-legacy.md)
 
 ### vada-ai
 
@@ -69,7 +69,7 @@
 - [Vāda · BYOK Gap Report](./apps/vada-ai/specs/vada-byok-gap-report.md)
 - [Vāda · BYOK Architecture (Current State)](./apps/vada-ai/specs/vada-byok-principles.md)
 - [Vāda YAML Cost Calculator — Concept Document](./apps/vada-ai/specs/vada-calculator-concept.md)
-- [Vāda — Architectural Decision Log](./apps/vada-ai/specs/vada-decisions.md)
+- [Vāda — Architectural Decision Log](./apps/vada-ai/specs/vada-decisions-legacy.md)
 - [Vāda](./apps/vada-ai/specs/vada-human.md)
 - [Vāda — Product Recognitions](./apps/vada-ai/specs/vada-product-recognitions.md)
 - [Vāda — Product Specification](./apps/vada-ai/specs/vada-product-spec.md)

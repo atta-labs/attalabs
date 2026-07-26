@@ -48,7 +48,6 @@ import {
   checkA3,
   checkClosesN,
   checkD1,
-  checkDecisionNumbers,
   checkL1,
   checkL2,
   checkL3,
@@ -83,48 +82,8 @@ process.chdir(REPO_ROOT)
  * M2 (info/advisory): malformed glob syntax (extremely rare with our simple grammar).
  * M3 (hard-fail): duplicate glob in doc-owners.
  */
-function checkN1N2M1M2M3(): CheckResult[] {
+function checkM1M2M3(): CheckResult[] {
   const results: CheckResult[] = []
-
-  // Find all decision log files
-  const logFiles: string[] = []
-  const globalLog = join(REPO_ROOT, 'packages/governance/decisions.md')
-  if (existsSync(globalLog)) logFiles.push('packages/governance/decisions.md')
-  const appsDir = join(REPO_ROOT, 'apps')
-  if (existsSync(appsDir)) {
-    for (const app of readdirSync(appsDir)) {
-      const specsDir = join(appsDir, app, 'specs')
-      if (!existsSync(specsDir)) continue
-      for (const file of readdirSync(specsDir)) {
-        if (file.endsWith('-decisions.md')) {
-          logFiles.push(join('apps', app, 'specs', file))
-        }
-      }
-    }
-  }
-
-  // N1 / N2 — decision-number integrity
-  const allN1Failures: CheckResult['failures'] = []
-  const allN2Notes: string[] = []
-  for (const p of logFiles) {
-    const abs = join(REPO_ROOT, p)
-    if (!existsSync(abs)) continue
-    const { n1Errors, n2Notes } = checkDecisionNumbers(readFileSync(abs, 'utf8'), p)
-    for (const reason of n1Errors) allN1Failures.push({ iteration: 'decisions', reason })
-    allN2Notes.push(...n2Notes)
-  }
-
-  results.push({
-    check: 'N1',
-    status: allN1Failures.length > 0 ? 'fail' : 'pass',
-    failures: allN1Failures
-  })
-  results.push({
-    check: 'N2',
-    status: 'info',
-    failures: [],
-    note: allN2Notes.length > 0 ? allN2Notes.join(' | ') : 'No skipped decision numbers detected within any log.'
-  })
 
   // M1 / M2 / M3 — manifest validity
   const docOwnersAbs = join(REPO_ROOT, DOC_OWNERS_PATH)
@@ -437,7 +396,7 @@ export async function runCoherenceChecks(
       failures: [],
       note: 'severity:infra — No GitHub token found (set GITHUB_TOKEN or run `gh auth login`). All forge-dependent checks skipped.'
     })
-    results.push(...checkN1N2M1M2M3())
+    results.push(...checkM1M2M3())
     return { results, forgeUnavailable: true }
   }
 
@@ -451,7 +410,7 @@ export async function runCoherenceChecks(
       failures: [],
       note: 'severity:infra — Could not resolve GitHub repository (set AEG_REPO=owner/repo). All forge-dependent checks skipped.'
     })
-    results.push(...checkN1N2M1M2M3())
+    results.push(...checkM1M2M3())
     return { results, forgeUnavailable: true }
   }
 
@@ -592,7 +551,7 @@ export async function runCoherenceChecks(
   results.push(checkL5(milestoneActiveSlugs, entriesBySlug))
 
   // N/M stubs
-  results.push(...checkN1N2M1M2M3())
+  results.push(...checkM1M2M3())
 
   return { results, forgeUnavailable: anyForgeUnavailable }
 }
