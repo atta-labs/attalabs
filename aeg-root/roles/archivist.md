@@ -1,5 +1,7 @@
 ---
 sidebar_title: Archivist
+title: Archivist
+order: 7
 role_id: archivist
 description: Closes out a merged pull request, recording what shipped and the intent it came from.
 actor: either

@@ -115,14 +115,14 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 | 4 | **Reviewer (code)** | "review the PR for task N" | VERDICT (APPROVE / REQUEST CHANGES) | no open PR, no brief in the PR body, or it authored the code |
 | 5 | **Security** | "security-review the PR for task N" | VERDICT (PASS / FAIL) | no open PR, or no brief in the PR body |
 | 6 | **Principal + TL** (you) | the verdicts | merge decision (review side) | review passes not done |
-| 7a | **Verifier — agent half** (the Developer-agent re-runs) | the brief's §9 Test Plan | every `[agent]` item executed with the actual output posted to the PR | no open PR; no brief in the PR body; no Test Plan; or all items are `[principal]`-only |
-| 7b | **Verifier — Principal half** (you, in a browser) | the brief's §9 Test Plan | every `[principal]` checkbox ticked on the PR | no open PR; no brief in the PR body; no `[principal]` items in the Test Plan |
+| 7a | **Verification — agent half** (the Developer-agent re-runs) | the brief's §9 Test Plan | every `[agent]` item executed with the actual output posted to the PR | no open PR; no brief in the PR body; no Test Plan; or all items are `[principal]`-only |
+| 7b | **Verification — Principal half** (you, in a browser) | the brief's §9 Test Plan | every `[principal]` checkbox ticked on the PR | no open PR; no brief in the PR body; no `[principal]` items in the Test Plan |
 | 8 | **Principal** (you) | a PR with all Test Plan checkboxes ticked AND review verdicts clean | the merge | any Test Plan checkbox unticked, or review/security verdict unresolved |
 | 9 | **Archivist** | "close out the PR for task N" | a close-out report + provenance block | **PR is not merged** |
 
 Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
-> **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verifier phase** (`roles/verifier.md`), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of D-048's chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
+> **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verification phase** (`roles/developer.md` § Verification), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of D-048's chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
 
 ### Iteration-close trigger
 
@@ -134,7 +134,7 @@ See `process.md` Phase 13 for the full close-out steps: verify all tasks merged,
 
 ### Pre-merge gate (Step 8 prerequisite)
 
-Before the Principal merges (Step 8), any Developer helping merge or pushing a "fix CI" commit after review must run this gate — it is the mechanical check that the Verifier phase (Steps 7a + 7b) is actually complete. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with merge.
+Before the Principal merges (Step 8), any Developer helping merge or pushing a "fix CI" commit after review must run this gate — it is the mechanical check that Verification (Steps 7a + 7b) is actually complete. If any item fails, post a comment on the PR listing exactly what's missing, and **block and report** — do not proceed with merge.
 
 **Tool:** `gh pr view <n> --json reviews,statusCheckRollup,body`
 
@@ -167,7 +167,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 **Security** — same gate as Reviewer; produces PASS | FAIL (per `roles/security.md`).
 
-**Verifier** (the phase, two halves, `roles/verifier.md`)
+**Verification** (the phase, two halves, `roles/developer.md` § Verification)
 - Requires an open PR with the brief in its body AND a §9 Test Plan in that brief. Refuses if either is missing — *"This PR has no Test Plan; without one I cannot judge what 'verified' means. Flag the brief malformed (`needs:brief-correction`)."*
 - **Agent half:** the Developer-agent boots the relevant dev server(s) from the PR's branch, runs each `[agent]` item in the Test Plan, and posts the actual command output as evidence on the PR (paraphrase is not evidence). Re-runs after a fix append a new comment; they do not edit the previous one.
 - **Principal half:** the Principal runs each `[principal]` item in a real signed-in browser and ticks the checkbox on the PR. The agent does not tick `[principal]` boxes; the Principal does not tick `[agent]` boxes — the asymmetry is the gate's whole shape.

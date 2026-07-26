@@ -7,7 +7,7 @@
  * Scope is presence-only (per the Planner's trap): this gate cannot judge
  * whether a Test Plan item is truly scriptable, whether `unit-tests-only` is
  * justified by the surface map, or whether a doc-update entry is factually
- * correct — those remain Reviewer + Verifier judgment. It only confirms each
+ * correct — those remain Reviewer + Verification judgment. It only confirms each
  * required brief section exists in the PR body, in the shape the
  * `brief-authoring` skill and `brief-developer` contract define.
  */

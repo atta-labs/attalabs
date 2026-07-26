@@ -85,12 +85,19 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
  * the two `/docs/actions#reaches-github` / `#stays-local` sidebar entries. The
  * crossing is the group heading, so no redundant per-action badge.
  */
-function actionGroups(): HarnessSectionGroup[] {
+function actionGroups(model: DiagramModel): HarnessSectionGroup[] {
+  // `ACTIONS.performedBy` carries role IDS (`team-leader`), which are identity,
+  // not names. Resolve each through the model's own role node so this line
+  // reads as words — the same `displayLabel` the map cards use, so the two
+  // surfaces can never name the same role differently.
+  const roleName = new Map(
+    model.nodes.filter((n) => n.kind === 'role').map((n) => [n.label, n.displayLabel ?? n.label])
+  )
   const toSection = (a: (typeof ACTIONS)[number]): HarnessSection => ({
     slug: a.id,
     heading: humanLabel(a.label),
     badges: [],
-    performedBy: a.performedBy,
+    performedBy: a.performedBy.map((id) => roleName.get(id) ?? id),
     summary: a.summary,
     detail: a.description,
     viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts')
@@ -139,7 +146,7 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
     )
   }
   if (joined === 'actions') {
-    return <HarnessSectionsPage doc={doc} groups={actionGroups()} next={next} prev={prev} basePath={basePath} />
+    return <HarnessSectionsPage doc={doc} groups={actionGroups(model)} next={next} prev={prev} basePath={basePath} />
   }
 
   // --- File-sized pages (roles / contracts): raw markdown under the frame ---

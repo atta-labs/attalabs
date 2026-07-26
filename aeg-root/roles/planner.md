@@ -1,5 +1,7 @@
 ---
 sidebar_title: Planner
+title: Planner
+order: 1
 role_id: planner
 description: Turns an intent and a slice of tickets into a whole iteration — the milestone, its tasks, and the dependencies between them.
 actor: agent

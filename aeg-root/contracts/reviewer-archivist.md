@@ -1,5 +1,7 @@
 ---
 sidebar_title: Reviewer → Archivist
+title: Reviewer → Archivist
+order: 4
 contract_id: reviewer-archivist
 description: Carries a review’s actual findings into the permanent record, so a verdict says what was checked, not just that it passed.
 status: active

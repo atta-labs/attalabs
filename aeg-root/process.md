@@ -39,7 +39,7 @@ Every piece of work moves through some subset of these. Trivial work (Tier 0) sk
 13. Iteration Close
 ```
 
-> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/verifier.md` and D-049).
+> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/developer.md` § Verification and D-049).
 
 After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the final step of the flow.
 
@@ -238,7 +238,7 @@ If both pass (and agent verdicts are APPROVE/PASS or their findings resolved) �
 
 ## Phase 11: Verification (runtime test plan)
 
-**Who:** the Developer-agent (for `[agent]` items) and the Principal (for `[principal]` items). Verification is a *phase*, not a new actor — see `roles/verifier.md`.
+**Who:** the Developer-agent (for `[agent]` items) and the Principal (for `[principal]` items). Verification is a *phase*, not a new actor — see `roles/developer.md` § Verification.
 
 A PR that has passed code review and security review still has not been run. The reviews read the diff; the static gates of Phase 8 prove the code compiles and types and tests; CI does not boot the app. Phase 11 boots it, executes the brief's **Test Plan** (a required brief field, `brief-authoring/SKILL.md` §9), and posts the results onto the PR. Doctrine: **CI green ≠ app boots ≠ feature works** — runtime verification is its own gate.
 

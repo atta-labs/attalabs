@@ -1,5 +1,7 @@
 ---
 sidebar_title: Planner → Brief
+title: Planner → Brief
+order: 1
 contract_id: planner-brief
 description: Carries an iteration’s plan down to a single task’s brief, so a task keeps the reasoning that shaped it.
 status: active

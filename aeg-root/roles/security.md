@@ -1,5 +1,7 @@
 ---
 sidebar_title: Security Reviewer
+title: Security Reviewer
+order: 5
 role_id: security
 description: Checks an open pull request for what a correctness review misses — leaked secrets, unsafe configuration, exposed surfaces.
 actor: agent

@@ -1,5 +1,7 @@
 ---
 sidebar_title: Brief → Developer
+title: Brief → Developer
+order: 2
 contract_id: brief-developer
 description: Carries a brief to the agent that executes it, so nothing the author knew is left implicit.
 status: active

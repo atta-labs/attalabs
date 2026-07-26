@@ -57,6 +57,28 @@ export type DiagramNode = {
    * G3 exists to prove there is no unguarded one — so it must survive to the
    * render rather than being implied by which ring a node was filed under. */
   crosses?: 'into-github' | 'none'
+  /** The node's name **for a reader**, when its `label` is an identifier rather
+   * than words. `role`/`contract` nodes label themselves with their doctrine id
+   * (`team-leader`, `archivist-iteration-archivist`) because that id is the
+   * node's identity — routes, doc paths and edge endpoints all key off it, so
+   * it cannot be prettified in place. This carries the doc's own `title:`
+   * frontmatter instead, and every renderer showing a name to a person prefers
+   * it, falling back to `label` when absent.
+   *
+   * Deliberately NOT `sidebar_title`: that field is the docs nav's own caption,
+   * and sourcing a doctrine node's name from a nav hint would let a caption
+   * edit silently rename the node. `title:` is the document's own name, which
+   * is what a display name should be. */
+  displayLabel?: string
+  /** Where this node sits in the process, from its doc's `order:` frontmatter
+   * — `role`/`contract` nodes only. Doctrine files are read in filename order,
+   * which is alphabetical and therefore meaningless to a reader; the process
+   * runs plan → brief → build → review → verify → merge → archive, and that is
+   * the order every surface listing these nodes should present them in. Kept on
+   * the node rather than re-derived per renderer so the docs nav and the map
+   * cannot disagree about the sequence. Absent means unordered — a renderer
+   * sorting by it must treat that as "last", never as zero. */
+  order?: number
 }
 
 export type DiagramEdge = {
@@ -116,6 +138,8 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
 
 type RoleFrontmatter = {
   roleId: string
+  title?: string
+  order?: number
   description?: string
   summary?: string
   actorType?: 'agent' | 'human' | 'either'
@@ -126,6 +150,8 @@ function extractRole(content: string): RoleFrontmatter | null {
   if (typeof data.role_id !== 'string') return null
   return {
     roleId: data.role_id,
+    title: typeof data.title === 'string' ? data.title : undefined,
+    order: typeof data.order === 'number' ? data.order : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined,
     actorType: data.actor === 'agent' || data.actor === 'human' || data.actor === 'either' ? data.actor : undefined
@@ -134,6 +160,8 @@ function extractRole(content: string): RoleFrontmatter | null {
 
 type ContractFrontmatter = {
   contractId: string
+  title?: string
+  order?: number
   description?: string
   producer?: string
   consumer?: string
@@ -145,6 +173,8 @@ function extractContract(content: string): ContractFrontmatter | null {
   if (typeof data.contract_id !== 'string') return null
   return {
     contractId: data.contract_id,
+    title: typeof data.title === 'string' ? data.title : undefined,
+    order: typeof data.order === 'number' ? data.order : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     producer: typeof data.producer === 'string' ? data.producer : undefined,
     consumer: typeof data.consumer === 'string' ? data.consumer : undefined,
@@ -257,6 +287,8 @@ export function deriveDiagramModel(
       id: `role:${role.roleId}`,
       kind: 'role',
       label: role.roleId,
+      displayLabel: role.title,
+      order: role.order,
       renderState: 'active',
       summary: role.summary,
       detail: role.description,
@@ -274,6 +306,8 @@ export function deriveDiagramModel(
       id: `contract:${contract.contractId}`,
       kind: 'contract',
       label: contract.contractId,
+      displayLabel: contract.title,
+      order: contract.order,
       renderState: 'active',
       summary: contract.summary,
       detail: contract.description

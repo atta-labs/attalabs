@@ -45,8 +45,8 @@ describe('createFileDoctrineSource — real aeg-root/', () => {
   it('reads this repo real doctrine files', async () => {
     const doctrine = await createFileDoctrineSource({ root: join(REPO_ROOT, 'aeg-root') }).getDoctrine()
     expect(doctrine.enforcement).toContain('Ring 0')
-    // 9 role files, per aeg-core actions.test.ts's own invariant.
-    expect(doctrine.roles).toHaveLength(9)
+    // 8 role files, per aeg-core actions.test.ts's own invariant.
+    expect(doctrine.roles).toHaveLength(8)
     expect(doctrine.contracts.length).toBeGreaterThan(0)
     expect(doctrine.roles.every((r) => r.path.startsWith('roles/'))).toBe(true)
   })

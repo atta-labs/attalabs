@@ -75,7 +75,7 @@ export default async function DocsReferencePage() {
               <HarnessCard
                 key={node.id}
                 kindTag={GROUP_TAG_LABEL[group.key]}
-                title={shortLabel(humanLabel(node.label), 72)}
+                title={shortLabel(humanLabel(node.displayLabel ?? node.label), 72)}
                 badges={badgeLabels(node)}
                 detail={node.detail}
                 guards={guardsByNodeId.get(node.id)}

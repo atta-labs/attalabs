@@ -64,18 +64,31 @@ export function deriveGroups(model: DiagramModel): DiagramGroup[] {
   const gateCheckChildren = (index: 0 | 1 | 2): DiagramNode[] =>
     model.nodes.filter((n) => (n.kind === 'gate' || n.kind === 'check') && n.ringIndex === index)
 
+  /** Roles and contracts in PROCESS order (`order:` on the doctrine doc), not
+   * the filename order the model was built in. Alphabetical is an accident of
+   * how the files are named; the reader is looking at a sequence — plan, brief,
+   * build, review, verify, merge, archive — and it should read as one. A node
+   * with no `order` sorts last rather than first, so an unordered addition is
+   * visibly unplaced instead of silently jumping to the front. Gates, checks
+   * and actions keep their doctrine order, which is already meaningful (they
+   * are listed in the registry in the sequence they fire). */
+  const inProcessOrder = (kind: 'role' | 'contract'): DiagramNode[] =>
+    model.nodes
+      .filter((n) => n.kind === kind)
+      .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+
   const groups: Record<GroupKey, DiagramGroup> = {
     actors: {
       key: 'actors',
       label: STATIC_GROUP_LABELS.actors,
       renderState: 'active',
-      children: model.nodes.filter((n) => n.kind === 'role')
+      children: inProcessOrder('role')
     },
     contracts: {
       key: 'contracts',
       label: STATIC_GROUP_LABELS.contracts,
       renderState: 'active',
-      children: model.nodes.filter((n) => n.kind === 'contract')
+      children: inProcessOrder('contract')
     },
     ring0: {
       key: 'ring0',

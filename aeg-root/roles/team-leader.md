@@ -1,5 +1,7 @@
 ---
 sidebar_title: Team Leader
+title: Team Leader
+order: 2
 role_id: team-leader
 description: Turns one intent into one brief — the context, the boundary, and the definition of done a task needs before it starts.
 actor: agent

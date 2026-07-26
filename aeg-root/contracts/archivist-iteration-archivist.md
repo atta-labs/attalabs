@@ -1,5 +1,7 @@
 ---
 sidebar_title: Archivist → Iteration Archivist
+title: Archivist → Iteration Archivist
+order: 5
 contract_id: archivist-iteration-archivist
 description: Carries each task’s close-out record up to the iteration close-out, so a phase can only be called finished once its parts genuinely are.
 status: active

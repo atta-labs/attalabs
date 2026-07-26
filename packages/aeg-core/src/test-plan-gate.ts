@@ -51,7 +51,7 @@ export function evaluateTestPlanGate(body: string, branch: string): TestPlanGate
       verdict: 'pass',
       messages: [
         'No Test Plan section in PR body.',
-        'PASS (advisory) — see aeg-root/roles/verifier.md and aeg-root/skills/brief-authoring/SKILL.md §9.',
+        'PASS (advisory) — see aeg-root/roles/developer.md (Verification) and aeg-root/skills/brief-authoring/SKILL.md §9.',
         'Non-task branch (or BRANCH unset) — a brief that touches a runtime surface and has no Test Plan is malformed on a task branch; Brief Validation catches that case pre-dispatch.'
       ]
     }
@@ -91,7 +91,7 @@ export function evaluateTestPlanGate(body: string, branch: string): TestPlanGate
     for (const line of unchecked) messages.push(`  ${line}`)
     messages.push(
       '',
-      'Per D-049 and aeg-root/roles/verifier.md, a PR is not mergeable while any Test Plan box is unticked.',
+      'Per D-049 and aeg-root/roles/developer.md (Verification), a PR is not mergeable while any Test Plan box is unticked.',
       '- [agent] items: the Developer-agent posts the actual command output as evidence and ticks the box.',
       '- [principal] items: the Principal runs the item in a real signed-in browser and ticks the box.',
       'Note: editing the PR body does not retrigger most workflows. If your PR body changes do not surface here, push an empty commit to re-run.'

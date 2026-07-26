@@ -1,5 +1,7 @@
 ---
 sidebar_title: Reviewer
+title: Reviewer
+order: 4
 role_id: reviewer
 description: Judges an open pull request against the brief it came from, and says plainly whether it satisfies it.
 actor: agent
