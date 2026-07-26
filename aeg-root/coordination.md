@@ -10,7 +10,7 @@ This is the coordination contract for the Atta ecosystem — **this repo's insta
 
 Dani works with multiple agents across a chat/planning surface and a coding-agent surface. This file tells each agent who it is, how to orient, and what the rules are.
 
-**The model described here is Agentic Execution Governance (AEG)** — the v3 operational model. AEG is a small set of accountable roles (Principal, Team Leader, Developer, Reviewer, Archivist) coordinating AI agents through briefs, blocking escalation, independent review, and append-only decision logs. It is *not* "project management" (there is no product plan, timeline, or resource tracking here — that stays in the company's tool) — it is governance plus orchestration of delegated AI execution.
+**The model described here is Agentic Execution Governance (AEG)** — the v3 operational model. AEG is a small set of accountable roles (Principal, Planner / Brief Author, Developer, Reviewer, Archivist) coordinating AI agents through briefs, blocking escalation, independent review, and append-only decision logs. It is *not* "project management" (there is no product plan, timeline, or resource tracking here — that stays in the company's tool) — it is governance plus orchestration of delegated AI execution.
 
 **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub) as its source of truth for execution state — task status is *derived* from Issue/branch/PR/merge state, never stored. It does **not** depend on any orchestration tool. In this repo, Cetana is the tool that automates AEG's orchestration slice (dispatch + escalation); Cetana knows AEG, AEG does not know Cetana. The governance half (authority, ratification, review, decision logs) lives in this repo, not in any tool.
 
@@ -22,7 +22,7 @@ If you are starting a fresh session and need to orient:
 
 1. `aeg-root/coordination.md` — this file (start here)
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
-3. `aeg-root/roles/{your-role}.md` — Team Leader (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
+3. `aeg-root/roles/{your-role}.md` — Planner / Brief Author (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
 5. **Per-project state (pinned Issues, D-110)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
@@ -35,7 +35,7 @@ The AEG model front door is the **`aeg`** skill (the model in one read) → the 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
-Living **state** is split between `aeg-project/` folders (decisions — files) and pinned forge Issues (lessons, per-project operational state — D-110, since `aeg-forge-state-v1` task 4): one root ecosystem-wide pinned Issue (#451, covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450). A task updates the root `packages/governance/decisions.md` (governance is global) **plus** the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `packages/governance/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041, D-110.)
+Living **state** is split between `aeg-project/` folders (decisions — files) and pinned forge Issues (lessons, per-project operational state — D-110, since `aeg-forge-state-v1` task 4): one root ecosystem-wide pinned Issue (#451, covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450). A task updates the root `docs/decisions-legacy.md` (governance is global) **plus** the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041, D-110.)
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
@@ -92,7 +92,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | Per-project state (pinned Issue, D-110) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
 | `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | Lessons log (pinned Issue #453, D-110) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
-| `packages/governance/decisions.md` | Global cross-project decision log. | When decisions are made |
+| `docs/decisions-legacy.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
 > **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
@@ -148,7 +148,7 @@ Locked May 12, 2026 (D-025). Inside Atta, Pāli names are mandatory (Atta, Vāda
 
 Role is determined by environment and context — not by which agent you are. Read `state-machine.md` Section 1 for the role determination rules.
 
-### If you are the Team Leader (a chat/planning surface, talking strategy/planning)
+### If you are the Planner / Brief Author (a chat/planning surface, talking strategy/planning)
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
 2. **Read `roles/team-leader.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
@@ -179,7 +179,7 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 2. **Read the brief — in the PR body** (not the Issue; the Developer pastes the brief into the PR description). If there's no open PR, or no brief in the PR body, refuse per your role doc.
 3. **Read the PR diff** — `git diff main...HEAD` (stat first, then substantive files).
 4. **Check active locks** — scan `decisions.md` for `Lock: YES` entries touching the changed area.
-5. **Emit the VERDICT block** from your role doc. Do not edit code. Do not merge. Do not write status. Route `[ESCALATE]` findings to TL/Principal.
+5. **Emit the VERDICT block** from your role doc. Do not edit code. Do not merge. Do not write status. Route `[ESCALATE]` findings to Planner/Principal.
 
 ### If you are the Archivist (closing out a merged PR)
 
@@ -206,13 +206,13 @@ If Dani asks a strategic, architectural, or product-shape question about a named
 
 ## Ratification windows
 
-1-2 daily sessions where the Principal resolves items requiring his final authority. Per D-110, there is no queue file — the TL applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on pinned Issue #452.
+1-2 daily sessions where the Principal resolves items requiring his final authority. Per D-110, there is no queue file — the Brief Author applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on pinned Issue #452.
 
 **Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
 
-**Does NOT wait:** Type 2 decisions the TL makes in Strategist mode (ACTIVE immediately); Tier 0/1 PR merges (after CI + TL spec review); `severity: execution`/`strategy` escalations (TL handles); already-ratified items.
+**Does NOT wait:** Type 2 decisions the Brief Author makes in Strategist mode (ACTIVE immediately); Tier 0/1 PR merges (after CI + Brief Author spec review); `severity: execution`/`strategy` escalations (Brief Author handles); already-ratified items.
 
-**TL responsibility:** before each window, surface PENDING items; after, mark RESOLVED with the Principal's action and date.
+**Brief Author responsibility:** before each window, surface PENDING items; after, mark RESOLVED with the Principal's action and date.
 
 ---
 
@@ -238,7 +238,7 @@ The only thing a non-Developer role does *not* route through a worktree is a pur
 
 ### When state changes, update the pinned state Issue
 
-State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The TL updates the relevant project's pinned state Issue (D-110 — `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide #451) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
+State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The Brief Author updates the relevant project's pinned state Issue (D-110 — `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide #451) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
 
 Active work, next candidates, and blocked tasks are **derived from the forge** — they are never written to a file. (D-057 — `now.md` is retired.)
 
@@ -264,7 +264,7 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 |----------------------|-------|
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/` — D-039) |
 | A project spec, ecosystem vision, naming decision | Repo only |
-| Global decision log | `packages/governance/decisions.md` |
+| Global decision log | `docs/decisions-legacy.md` |
 | Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue (D-110): `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
@@ -297,7 +297,7 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 - ❌ Letting the Developer review its own work — review/security passes are separate fresh-context invocations (D-026)
 - ❌ Generating strategy or planning an iteration before reading the specs (spec-check gate)
 - ❌ Adding version suffixes to spec filenames (D-013 locked)
-- ❌ Making a Type 1 decision in the TL's absence without flagging PENDING
+- ❌ Making a Type 1 decision in the Brief Author's absence without flagging PENDING
 - ❌ Logging decisions at session end instead of at the moment of decision
 - ❌ Letting PENDING items accumulate without surfacing them at the next window
 
@@ -323,6 +323,6 @@ Dani works with multiple AI collaborators simultaneously: Claude (multiple sessi
 
 When other AI outputs are pasted in, Claude responds as the adversarial reviewer / Critic. Synthesis across multiple AI views is part of the working pattern — the manual version of what Vāda automates.
 
-The AEG model formalizes this: Principal → Team Leader (Strategist / Planner / Brief Author) → Developer → Reviewer + Security → merge → Archivist. The TL routes escalations by severity. Agents do not make final calls.
+The AEG model formalizes this: Principal → Planner / Brief Author (Strategist / Planner / Brief Author) → Developer → Reviewer + Security → merge → Archivist. The Brief Author routes escalations by severity. Agents do not make final calls.
 
 **Tooling note (this repo, May 2026):** GitHub MCP may be available via OAuth in fresh conversations — prefer it over paste-back for reading repo content and creating Issues/PRs. The coding-agent surface has direct filesystem access to the worktree. Self-hosted MCP servers with bearer-token auth (e.g. Vāda's hosted MCP) work via a coding-agent CLI, not via the chat connector broker. In this repo, Cetana provides the orchestration-tool strategist binding (list active tasks, reply to a blocked task) when connected — a convenience of the tool in use, not part of AEG.

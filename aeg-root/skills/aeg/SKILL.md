@@ -65,12 +65,12 @@ The brief is the task's full execution context: **just-in-time, pasted not commi
 
 ## 8. Roles (one line each — load the role doc for detail)
 
-Principal → Team Leader → Developer → Reviewer (code + security) → merge, plus the non-conversational Archivist. The TL has three modes: Strategist (architecture/decisions), Planner (intent + backlog slice → an iteration), Brief Author (writes the brief). **Do not operate from this list — load your role doc.** The **aeg-roles** skill routes you to the right one.
+Principal → Planner / Brief Author → Developer → Reviewer (code + security) → merge, plus the non-conversational Archivist. The Brief Author has three modes: Strategist (architecture/decisions), Planner (intent + backlog slice → an iteration), Brief Author (writes the brief). **Do not operate from this list — load your role doc.** The **aeg-roles** skill routes you to the right one.
 
 ## 9. Tiers, decisions, ratification (the governance layer)
 
 - **Tiers** (D-003): Tier 0 trivial · Tier 1 implementation · Tier 3 project/roadmap. No Tier 2. When in doubt, Tier 3.
-- **Decisions** are append-only `D-###` entries in `decisions.md` (repo-level) or `<unit>/specs/<unit>-decisions.md` (per unit). **Type 1** = irreversible (Principal ratifies; PENDING until a window). **Type 2** = reversible (TL may ratify). `Lock: YES` = a closed branch a brief must acknowledge or formally challenge. Never edit an entry in place — supersede with a new one.
+- **Decisions** are append-only `D-###` entries in `decisions.md` (repo-level) or `<unit>/specs/<unit>-decisions.md` (per unit). **Type 1** = irreversible (Principal ratifies; PENDING until a window). **Type 2** = reversible (Brief Author may ratify). `Lock: YES` = a closed branch a brief must acknowledge or formally challenge. Never edit an entry in place — supersede with a new one.
 - **Ratification windows**: 1–2 daily; the Principal resolves Type 1s, Tier 3 merges, lock approvals, `severity:product` escalations.
 - **verify-docs** (`packages/aeg-core/bin/verify-docs.ts`, run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the standalone `verify-docs.yml` workflow was consolidated away) is a real blocking CI gate (D-027): changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 needs a decision entry.
 

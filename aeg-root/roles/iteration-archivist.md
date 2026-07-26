@@ -102,7 +102,7 @@ Post a new comment on the pinned lessons Issue — never edit an existing commen
 - Tasks completed: count merged PRs matching `task/<iteration>/*`
 - Dropped/deferred: `gh issue list --label "vinaya/iteration:<slug>" --milestone <slug>` (all task Issues, forge-native) — check which have no merged PR. Legacy file-based iterations: check the topology file (`iterations/<name>.md`) instead.
 - What went well / What stalled: from merged PR summaries (briefs in PR bodies), the merged code's patterns, and calibration entries on the pinned lessons Issue. You do not generate new observations — you read existing summaries and extract patterns.
-- Decisions: query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries created during this iteration
+- Decisions: query `docs/decisions-legacy.md` (and per-project decision files if relevant) for entries created during this iteration
 - Unbuilt tasks: task Issues (or, for a legacy iteration, topology entries) with no merged PR
 
 If you don't have the information to fill a field, write "unknown — Principal to fill" and move on. The retrospective is a structured *assembly* of facts, not a generated essay.
@@ -126,7 +126,7 @@ Per-project state is a pinned GitHub Issue, not a `state.md` file — update the
 
 ### 6. Ratify pending Type 1 decisions
 
-Query `packages/governance/decisions.md` (and per-project decision files if relevant) for entries from this iteration with `Status: PENDING`.
+Query `docs/decisions-legacy.md` (and per-project decision files if relevant) for entries from this iteration with `Status: PENDING`.
 
 For each: list it explicitly in your output as `PENDING RATIFICATION — requires Principal action at next ratification window.` Do NOT mark them ratified yourself — ratification is a Principal act. You surface; they decide.
 

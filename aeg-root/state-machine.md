@@ -28,9 +28,9 @@ Artifact class
   → escalation path (what happens when a decision exceeds role authority)
 ```
 
-Roles exist because different decisions require different accountability levels. The Principal is accountable for irreversible (Type 1) decisions. The Team Leader is accountable for reversible (Type 2) decisions within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist closes out.
+Roles exist because different decisions require different accountability levels. The Principal is accountable for irreversible (Type 1) decisions. The Planner / Brief Author is accountable for reversible (Type 2) decisions within a ratification window. The Developer executes. The Reviewer (code and security specializations) judges shipped code with fresh context but cannot mutate it. The Archivist closes out.
 
-The conversational role set is: **Principal, Team Leader, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026 (superseding the original three-role D-001 to add the Reviewer). The **Team Leader has three modes** — Strategist, Planner, Brief Author (`roles/team-leader.md`, `roles/planner.md`) — but they are modes of one role, not new roles; the role count is unchanged. Security is a specialization of Reviewer, not a separate role. **Verification (`roles/developer.md` § Verification) is a *phase*, not a fifth role:** it is jointly satisfied by the Developer-agent (the `[agent]` half of the brief's Test Plan) and the Principal (the `[principal]` half), so the role count remains unchanged (D-049, June 2026). The per-task **Archivist** named above closes out a single task at merge; a distinct non-conversational role, the **Iteration Archivist** (`roles/iteration-archivist.md`), closes out a whole iteration at Phase 13 — neither is conversational, so both sit outside the conversational role set without changing its count.
+The conversational role set is: **Principal, Planner / Brief Author, Developer, Reviewer** (plus the non-conversational Archivist). This four-role model was established by D-026 (superseding the original three-role D-001 to add the Reviewer). The **Planner / Brief Author has three modes** — Strategist, Planner, Brief Author (`roles/team-leader.md`, `roles/planner.md`) — but they are modes of one role, not new roles; the role count is unchanged. Security is a specialization of Reviewer, not a separate role. **Verification (`roles/developer.md` § Verification) is a *phase*, not a fifth role:** it is jointly satisfied by the Developer-agent (the `[agent]` half of the brief's Test Plan) and the Principal (the `[principal]` half), so the role count remains unchanged (D-049, June 2026). The per-task **Archivist** named above closes out a single task at merge; a distinct non-conversational role, the **Iteration Archivist** (`roles/iteration-archivist.md`), closes out a whole iteration at Phase 13 — neither is conversational, so both sit outside the conversational role set without changing its count.
 
 **Role seams are governed by contracts.** Where one role hands work to the next (Planner → Brief Author, Brief Author → Developer, Developer → Reviewer, …), what crosses the boundary is defined **once**, in a contract file under `aeg-root/contracts/`, not described twice in two role docs (which drift). A contract is the single source of truth for its seam: the producing role fills it, the consuming role drains it, and the two role docs *point at* the contract rather than redefining it. The first is `contracts/planner-brief.md`; others are added as each seam is modeled. See Section 2 (Class 1) and Section 3.
 
@@ -42,7 +42,7 @@ The conversational role set is: **Principal, Team Leader, Developer, Reviewer** 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, contracts, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, the active iteration, and the decision log there. It never expects a per-project copy of the model.
 
-Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `packages/governance/decisions.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `packages/governance/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
+Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `docs/decisions-legacy.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `.vinaya/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (D-041.)
 
 ---
 
@@ -57,7 +57,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 **Persistence:** Survives anything short of repo deletion. Git history preserves every mutation with authorship and timestamp.
 
 **Create:** PR merged to main by Principal (or delegated merge for Tier 0/1).
-**Mutate:** PR opened by Developer, reviewed by Reviewer (code + security) and TL (specs) and Principal (code), merged by Principal.
+**Mutate:** PR opened by Developer, reviewed by Reviewer (code + security) and Brief Author (specs) and Principal (code), merged by Principal.
 **Read-only:** All roles always.
 
 **Contracts change as a unit.** A role-seam contract (`contracts/*.md`) is the single source of truth for what crosses a role boundary. Editing it is a **Tier 3** change requiring a `D-###`, because it alters a cross-role interface; and the producer and consumer sides change **together** — you cannot change what one role emits without, in the same PR, updating what the next role consumes. The two role docs on either side reference the contract; they never redefine the seam, so they need no field-level edit when the contract's *prose* changes, but the same PR must confirm both still point at it and match. (The first contract is `contracts/planner-brief.md`: Planner produces, Brief Author consumes.)
@@ -72,7 +72,7 @@ Every artifact falls into one of five persistence classes. Persistence class det
 
 **The provenance block (D-030) is a Class 2 object too — a close-out projection, not stored status.** At close-out the Archivist assembles a provenance record (task → intent → reviews → model → merge metadata) and posts it as a comment on the **merged** PR. It is *assembled from facts the merge already froze*, written once, append-only — a projection of frozen forge facts in exactly the way derived status is a projection of live forge facts. It is therefore explicitly **not** the forbidden "stored status" of `iterations/README.md` §9: it lives on the merged PR (never in the iteration file or the Issue), it records history (not current state), and nothing ever updates it. See `roles/archivist.md` and §13.
 
-**Create:** TL (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
+**Create:** Brief Author (Issues, in Planner mode); Developer (PRs); Reviewer (review verdicts/comments); Archivist (advisory PR comments + the provenance block); any role (Issue comments with appropriate authority).
 **Mutate:** Labels — the closed vocabulary in Section 14 (`vinaya/tier:*`, `vinaya/blocked`, `vinaya/needs:*-input`, `vinaya/needs:brief-correction`, `vinaya/override:docs`), applied by the role and at the transition Section 14 specifies. **No `status:*` labels** — status is derived. Issue/PR body — the brief lives in the **PR body** (frozen after open — Section 7); the Issue body holds metadata only, never the brief, never planning fields (priority/estimates), which a required template + CI reject.
 **Read-only:** All roles always.
 
@@ -105,7 +105,7 @@ This is a tool detail, not part of the AEG model. Nothing canonical depends on i
 **Persistence:** Ephemeral; not reliably retrievable across sessions.
 
 **Create:** Any conversational agent.
-**Promote:** TL promotes decisions made during conversation to decision log entries (Section 6); Principal ratifies Type 1 promotions.
+**Promote:** Brief Author promotes decisions made during conversation to decision log entries (Section 6); Principal ratifies Type 1 promotions.
 **Cannot mutate:** No role retroactively edits conversation logs.
 
 ---
@@ -114,7 +114,7 @@ This is a tool detail, not part of the AEG model. Nothing canonical depends on i
 
 Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer is absent as a mutation authority (it has read + PR-review-comment authority only — see the subsection after the table).
 
-| Artifact | Principal | Team Leader | Developer | Archivist |
+| Artifact | Principal | Planner / Brief Author | Developer | Archivist |
 |----------|-----------|-------------|-----------|-----------|
 | **Conversation logs** | Promotes decisions to log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only | Cannot mutate |
 | **Iteration topology files** (`iterations/*.md`) | Approves PR | Writes (Planner mode) at plan time — task→issue map + edges + grouping; **no status, no PR numbers, no dates** | — | Flags execution-metadata creep in drift cron |
@@ -129,7 +129,7 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 | **`state.md`** | Approves PR | Writes in PR | Flags state changes needed in PR description | Updates per-project state at close-out, for every project the task listed |
 | **Per-project backlogs** (`apps/*/specs/*-backlog.md`) | Approves PR | Writes (held/future items — out of the flow) | — | — |
 | **`coordination.md`**, **`state-machine.md`** | Approves PR; final authority on system-level rule changes | Proposes changes via PR | — | Flags inconsistencies in drift cron |
-| **`thinking.md`** | Reads | Writes freely in any TL session (best-effort, optional) | Reads | Flags if untouched >7 days |
+| **`thinking.md`** | Reads | Writes freely in any Brief Author session (best-effort, optional) | Reads | Flags if untouched >7 days |
 | **Per-project state / lessons log** (pinned Issues, D-110) | Approves/rejects/defers items at windows | Appends items; marks resolved after Principal action | Appends via escalation (`severity: product`) | — for the per-task Archivist; the **Iteration Archivist** updates it at Phase 13 close-out (`update-pinned-state-issue`, `roles/iteration-archivist.md`) |
 | **Source code** | Merges PR | — | Writes in PR per brief scope; opens PR | — |
 | **Forge labels** (the Section 14 vocabulary) | Applies `vinaya/override:docs` (Principal-only) | Applies `vinaya/tier:*` (Planner, at cut) + `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:*-input` / `vinaya/blocked` (by hand or via automation) | Applies `vinaya/needs:brief-correction`; asserts `vinaya/tier:*` label == PR-body `Tier:` (drift cron) |
@@ -151,9 +151,9 @@ The Reviewer role has two specializations — code review (`roles/reviewer.md`) 
 - **Write:** PR review verdicts and review comments only (a Class 2 object) — **nothing to disk** (D-071). The verdict is the structured block in the role doc (`APPROVE | REQUEST CHANGES` for code, with a `SPEC CONFORMANCE` line; `PASS | FAIL` for security). A REQUEST CHANGES sets the PR's review decision, which is the derived `changes-requested` status — the Reviewer writes no status field. **Plus a one-line token report** in the same verdict comment — numeric cells `—` (the claude.ai surface can't self-see its own count). The per-task Archivist reads this report and appends the ledger row (`iterations/<name>.tokens.md`) at close-out (§13 append-only artifacts; `iterations/README.md` §12).
 - **Cannot:** edit code, specs, skills, decision logs, PM docs; mutate labels; or merge. The Reviewer reports; the Developer remediates; the Principal merges.
 - **Independence:** fresh context (a separate invocation), never reviewing work it authored. This is the whole point.
-- **Escalation:** a finding that exceeds review authority is marked `[ESCALATE] severity:strategy|product` and routed to the TL or Principal.
+- **Escalation:** a finding that exceeds review authority is marked `[ESCALATE] severity:strategy|product` and routed to the Planner or Principal.
 
-Because the Reviewer never mutates a canonical artifact, it has no column. Its position is Phase 10 (`process.md`): code-reviewer pass → security pass → Principal code review → TL spec review → **Phase 11 Verification (`roles/developer.md` § Verification)** → merge.
+Because the Reviewer never mutates a canonical artifact, it has no column. Its position is Phase 10 (`process.md`): code-reviewer pass → security pass → Principal code review → Brief Author spec review → **Phase 11 Verification (`roles/developer.md` § Verification)** → merge.
 
 ---
 
@@ -219,20 +219,20 @@ Most specs are `draft` — no deliberate ratification pass has been done. Future
 
 **Date:** YYYY-MM-DD
 **Status:** ACTIVE | SUPERSEDED | RETIRED | EXPIRED | PENDING
-**Type:** 1 (irreversible — Principal must ratify) | 2 (reversible — TL can ratify)
+**Type:** 1 (irreversible — Principal must ratify) | 2 (reversible — Brief Author can ratify)
 **Supersedes:** D-NNN (if applicable)
 **Superseded by:** D-NNN (if applicable)
 **Lock:** YES | NO
 **Ratifies:** <path to spec> (if this decision ratified a spec)
-**Authored by:** Principal | TL
-**Ratified by:** Principal | TL (delegated, if Type 2)
+**Authored by:** Principal | Brief Author
+**Ratified by:** Principal | Brief Author (delegated, if Type 2)
 **Context:** 1-3 sentences.
 **Decision:** 1-3 sentences.
 **Alternatives rejected:** bullet list.
 **Consequences:** what this implies.
 ```
 
-**Status semantics:** ACTIVE (current canonical), SUPERSEDED (replaced — fill `Superseded by:`), RETIRED (retired without replacement), EXPIRED (context-bound assumptions no longer apply), PENDING (Type 2 made in a solo TL session, in effect but awaiting Principal ratification — cannot be acted on as ACTIVE for Type 1 matters).
+**Status semantics:** ACTIVE (current canonical), SUPERSEDED (replaced — fill `Superseded by:`), RETIRED (retired without replacement), EXPIRED (context-bound assumptions no longer apply), PENDING (Type 2 made in a solo Brief Author session, in effect but awaiting Principal ratification — cannot be acted on as ACTIVE for Type 1 matters).
 
 **Append-only invariant:** logs are never edited in place. Status changes are new entries referencing the old via `Supersedes:`; the original gets `Superseded by:` filled and its `Status:` flipped to SUPERSEDED, body otherwise unchanged.
 
@@ -246,9 +246,9 @@ When a Developer reaches a decision not covered by the brief, it escalates throu
 
 ### Three severity levels
 
-**`severity: execution`** — routine, answerable by the TL in Brief Author mode. ("Library X is deprecated"; "null or throw?"; "I need an unanticipated flag.") Adds label `vinaya/needs:execution-input`; the TL replies; the Developer resumes.
+**`severity: execution`** — routine, answerable by the Brief Author in Brief Author mode. ("Library X is deprecated"; "null or throw?"; "I need an unanticipated flag.") Adds label `vinaya/needs:execution-input`; the Brief Author replies; the Developer resumes.
 
-**`severity: strategy`** — which design path to take; TL Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area"; "the diff is right but the spec is stale.") Adds `vinaya/needs:strategy-input`; same path, different cognitive mode.
+**`severity: strategy`** — which design path to take; Brief Author Strategist mode. ("The brief's approach A has a structural issue — switch to B?"; "this touches an undiscussed area"; "the diff is right but the spec is stale.") Adds `vinaya/needs:strategy-input`; same path, different cognitive mode.
 
 **`severity: product`** — requires a Principal decision. Rare; reserved for Type 1 decisions discovered during execution. Adds `vinaya/needs:principal-input`. If the Principal is present, they decide and reply; if not, the item stays labeled `vinaya/needs:principal-input` (D-110) and the Developer terminates, resuming via a follow-up dispatch after the window.
 
@@ -256,25 +256,32 @@ While blocked, the task carries a `vinaya/blocked` label (the one status with no
 
 ### Type 1 decisions during execution
 
-Type 1 (irreversible) decisions cannot be self-ratified by the TL in a solo session. They ALWAYS get the `vinaya/needs:principal-input` label (D-110) unless the Principal is actively present (has replied to an escalation in this session). For labeled items, the Developer terminates after acknowledgment and resumes after the window.
+Type 1 (irreversible) decisions cannot be self-ratified by the Brief Author in a solo session. They ALWAYS get the `vinaya/needs:principal-input` label (D-110) unless the Principal is actively present (has replied to an escalation in this session). For labeled items, the Developer terminates after acknowledgment and resumes after the window.
 
 ### Emergency override
 
-If the brief itself is wrong in a way that blocks all paths, the Developer escalates with `severity: execution` and a `brief_amendment_needed` flag. The TL issues an amendment (logged as an event, not a brief edit — briefs are frozen) or kills the task. The original brief is preserved as the audit record.
+If the brief itself is wrong in a way that blocks all paths, the Developer escalates with `severity: execution` and a `brief_amendment_needed` flag. The Brief Author issues an amendment (logged as an event, not a brief edit — briefs are frozen) or kills the task. The original brief is preserved as the audit record.
 
 ---
 
-## Section 8: Lock Mechanism
+## Section 8: Lock Mechanism — REMOVED
 
-A decision entry with `Lock: YES` signals a closed design branch.
+The `Lock: YES` marker and every mechanism that read it are gone.
 
-**A lock means:** future briefs touching the locked area MUST include `Conforms to lock: D-NNN` or `Challenges lock: D-NNN` + reason. A brief touching a locked area without either is malformed (advisory Archivist comment in V0; Brief Validation gate rejects it in V1).
+**Why.** The check fired only when a diff *added* a `Lock: YES` line to a
+decision log. It therefore could not fire when a locked entry was edited, when
+one was deleted, or when code contradicted it — every event a lock exists to
+catch happens outside the log file, which is the only place the trigger looked.
+It was structurally incapable of being the thing that stopped a violation, and
+across the twenty-seven locked entries no case was found where it was.
 
-**A lock does NOT mean permanence:** if new information changes the calculus, the TL proposes a D-### that SUPERSEDES the locked decision; the Principal ratifies if the original was Type 1.
+**What replaces it.** Nothing, deliberately. Every invariant in this repo that
+genuinely holds is held by a purpose-built check — the no-disk-state guard, the
+forge tool-gates, the doc-coverage seam. A rule that must hold gets a check; a
+rule that does not deserve a check was never protected by a marker either.
 
-**Current enforcement:** advisory only — the Archivist comments if a lock acknowledgment is missing. V0 discipline.
-
----
+The historical entries keep their `Lock: YES` lines; the archive is not
+rewritten. They record what was decided, not what is enforced.
 
 ## Section 9: Tiered Documentation
 
@@ -292,7 +299,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Canonical PR-body form (including the exact `Tier:` syntax).** The verbatim, copy-pasteable PR-body template — Summary / Test plan / Scope with `**Tier:** N` — lives in [`roles/developer.md` § PR body — canonical form](roles/developer.md#pr-body--canonical-form). That section is the single source of truth for the field shape `verify-docs` accepts; do not freestyle the PR body or maintain a parallel template elsewhere (not in `.github/PULL_REQUEST_TEMPLATE.md`, not in an agent-runtime skill).
 
-**Tier orthogonality with the coherence seam (Section 15).** The tier system above asks *"how much documentation does this class of work require?"* — a class-level question. The coherence seam asks the orthogonal *"which specific docs does **this** code change make incoherent?"* — a per-change question, answered from `packages/governance/doc-owners`. A Tier-0 PR with no bound code surface need not touch any doc; a Tier-0 PR that edits a code surface bound in `doc-owners` MUST update that doc, acknowledge it via `Doc-ack:` (URL pointers only), or (D-097) have a principal apply the actor-verified `vinaya/waiver:docs` label. They are different axes; both gates run; both must pass.
+**Tier orthogonality with the coherence seam (Section 15).** The tier system above asks *"how much documentation does this class of work require?"* — a class-level question. The coherence seam asks the orthogonal *"which specific docs does **this** code change make incoherent?"* — a per-change question, answered from `.vinaya/doc-owners`. A Tier-0 PR with no bound code surface need not touch any doc; a Tier-0 PR that edits a code surface bound in `doc-owners` MUST update that doc, acknowledge it via `Doc-ack:` (URL pointers only), or (D-097) have a principal apply the actor-verified `vinaya/waiver:docs` label. They are different axes; both gates run; both must pass.
 
 ---
 
@@ -302,9 +309,9 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Batches at a window:** Type 1 decisions; Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
 
-**Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (TL resolves); Type 2 decisions made with the Principal present.
+**Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (Brief Author resolves); Type 2 decisions made with the Principal present.
 
-**Cadence:** the Principal sets the times; the queue assumes no specific schedule. Items are labeled `vinaya/needs:principal-input` (D-110), not appended to a file. **TL responsibility:** before the window, ensure labeled items carry enough context to decide without follow-up; after, remove the label and update artifacts to reflect what was ratified.
+**Cadence:** the Principal sets the times; the queue assumes no specific schedule. Items are labeled `vinaya/needs:principal-input` (D-110), not appended to a file. **Brief Author responsibility:** before the window, ensure labeled items carry enough context to decide without follow-up; after, remove the label and update artifacts to reflect what was ratified.
 
 ---
 
@@ -314,7 +321,7 @@ The Archivist monitors for contradictions — shipped code, a ratified spec, and
 
 **Triggers:** the drift cron (spec dates vs referenced code dates); post-merge semantic-relatedness checks; or a direct report by any role.
 
-**Entry format:** a `## CONTRADICTION — <topic>` entry in the relevant log listing the conflicting artifacts, `Escalation: Severity:Strategy`, `Status: unresolved`, `Owner: TL`. It auto-escalates as `severity: strategy` and blocks new Tier 3 work on the affected subsystem until resolved (`Status: resolved — see D-NNN`).
+**Entry format:** a `## CONTRADICTION — <topic>` entry in the relevant log listing the conflicting artifacts, `Escalation: Severity:Strategy`, `Status: unresolved`, `Owner: Brief Author`. It auto-escalates as `severity: strategy` and blocks new Tier 3 work on the affected subsystem until resolved (`Status: resolved — see D-NNN`).
 
 ---
 
@@ -329,13 +336,13 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 ### Enforced (CI blocks merge)
 
 - **Tier-appropriate documentation** — the `verify-docs` script checks the PR's tier has the corresponding artifact changes; fails CI if missing. **Real (D-027)**, not a stub. The blocking gate now runs as the `Tier-appropriate documentation gate` step of the consolidated **AEG gate suite** job in `.github/workflows/forge-lifecycle.yml` (`verify-docs.yml` deleted — consolidated by task 31, #395). The gate also runs locally (this repo: `bun run verify-docs --pr`). (In observe mode this runs report-only.)
-- **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `packages/governance/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch (D-097) is a single PR-wide `vinaya/waiver:docs` label whose labeling timeline event's actor is a configured principal — a forge-authenticated human act, never a parseable string, and never per-binding. At the `.husky/pre-push` ring-0 gate specifically, where a branch's first push has no PR yet for such a label to exist on, an owned-doc violation is **warn-with-declared-intent, not a hard block**: the push always succeeds, and the printed message states plainly that ring 1 stays red until a principal applies the label or the doc is updated. `Doc-ack:` (unaffected by D-097) is still read from the branch's own commit messages at that same chokepoint before a PR exists (D-080's trailer-fallback mechanism, kept for this one grammar). For a pre-authoring dry run via `verify-dispatch --simulate`, before any commit exists at all, `verify-docs --push` also accepts a `PR_BODY_FILE` env var — a local path to the drafted PR body — as an equally valid source for the same `Doc-ack:` lines (D-081). **Dormant when `packages/governance/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
+- **Coherence seam — code→doc coverage (C5)** — the same `verify-docs` script reads `.vinaya/doc-owners`, glob-matches changed code files, and fails CI if a matched binding's doc is not in the diff (or, for URL pointers, not acknowledged via `Doc-ack:` in the PR body). The escape hatch (D-097) is a single PR-wide `vinaya/waiver:docs` label whose labeling timeline event's actor is a configured principal — a forge-authenticated human act, never a parseable string, and never per-binding. At the `.husky/pre-push` ring-0 gate specifically, where a branch's first push has no PR yet for such a label to exist on, an owned-doc violation is **warn-with-declared-intent, not a hard block**: the push always succeeds, and the printed message states plainly that ring 1 stays red until a principal applies the label or the doc is updated. `Doc-ack:` (unaffected by D-097) is still read from the branch's own commit messages at that same chokepoint before a PR exists (D-080's trailer-fallback mechanism, kept for this one grammar). For a pre-authoring dry run via `verify-dispatch --simulate`, before any commit exists at all, `verify-docs --push` also accepts a `PR_BODY_FILE` env var — a local path to the drafted PR body — as an equally valid source for the same `Doc-ack:` lines (D-081). **Dormant when `.vinaya/doc-owners` is absent or no glob matches** — the gate has no opinion until the repo teaches it one. **Real (D-062)**, no stub period. Full seam defined in Section 15.
 - **Commit-message format** — `commitlint` (reusing the same `commitlint.config.js` Husky runs locally) runs against every commit in the PR range. Real (D-046), installed at `.github/workflows/conventions.yml::commit-lint`. Closes the gap where API/MCP writes, direct pushes, and hand-merges bypass Husky entirely (evidence: pre-D-046 main contains several non-conforming commit headers authored via the API). **Enforcement substrate (this repo — private/free plan, branch protection unavailable):** CI shows red/green; the T9 merge-gate hook (merged in #255) blocks agent merges of red-CI PRs; local Husky/commitlint hooks enforce for agent writes running locally.
 - **Biome lint/format** — `bun run format-and-lint` (i.e. `biome check .`) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::biome`. Same Biome config as lint-staged enforces locally — local and CI cannot diverge. Same enforcement substrate as above (CI red/green + T9 hook + local lint-staged).
 - **Forbidden colors in UI** — `scripts/check-forbidden-colors.ts` (diff-scoped) runs on every PR. Real (D-046), installed at `.github/workflows/conventions.yml::no-hardcoded-colors`. Encodes the four pattern groups in `.claude/skills/ui-theme-tokens/SKILL.md`: Tailwind palette classes, arbitrary color brackets (`bg-[#…]`, `text-[oklch(…)]`), absolute colors (`text-white`, `bg-black`), and inline-style color literals. Scans only added lines, so it blocks new violations without forcing a "boil the ocean" legacy cleanup. Same enforcement substrate as above (CI red/green + T9 hook + local hooks).
 - **Typecheck, tests** — standard CI gates; always blocking.
 - **Issue template / no forbidden fields** — a required Issue template + a CI check reject planning metadata (priority/estimates/points) on task Issues, keeping them execution-only.
-- **Brief validation** — the Archivist's `brief-validation` job runs `packages/aeg-core/bin/verify-brief.ts` against the PR body and checks presence of every required brief section (Tier, `For:` model attribution, `Project:` — both read from the PR body's header block, before the first `##` heading, the same region the post-merge Archivist's provenance assembly reads — tagged Test Plan, surface map, doc-update list, worktree Step 0, stop conditions, autonomy clause, `Closes #N`, lock-ack when a `Lock: YES` decision is touched); flags malformed briefs (`vinaya/needs:brief-correction`) and fails CI. **The trigger is the body, not the branch (D-129, `fix/brief-gate-nontask`):** the gate runs when the branch is `task/<iter>/<n>` **or** the body is brief-shaped (`isBriefShaped` — ≥2 of surface map / doc-update list / stop conditions / autonomy clause, matched on `stripCode`'d text so a brief *quoted inside a fence* stays exempt). Bodies that are neither still bypass — that exemption is for an ordinary non-AEG PR (a one-line dependency bump) which carries no brief and must not be forced to grow one. The old branch-only bypass was the wrong proxy for it: a standalone `fix/*` brief **is** a brief, and it skipped every section check — confirmed live on `fix/studio-iteration-href`, which shipped with no §7 documentation-update list because `checkDocUpdateList`, the checker that exists for exactly that, never ran. `Closes #N` remains **task-branch-only** (`BriefSectionsOptions.requireClosesN`): a standalone fix brief has no task Issue to close, and a `plan/*` PR is *forbidden* to carry one by the plan-PR guard below — requiring it there would make the two gates jointly unsatisfiable. The same validator also runs at **authoring time** via `bun packages/aeg-core/bin/verify-brief.ts --body-file <brief.md>`, before a PR or even a branch exists, so a Brief Author gates a brief before dispatch rather than after the Developer has done the work (`skills/brief-authoring/SKILL.md` protocol step 4); with no `BRANCH`, the branch is read from the brief's own Step 0 `git worktree add … -b` line. **Includes the plan-PR Closes guard (D-077)**: a `plan/*` branch whose PR body carries `Closes #N` fails CI before the non-task bypass even runs — a plan PR creates Issues, it does not resolve one (`roles/planner.md`); this closed a confirmed pattern of plan PRs prematurely closing task Issues on merge (#294→#293, #298→#297, #288→#287). **Real (D-069)**, now the `Brief Validation` step (9/9) of the AEG gate suite job in `.github/workflows/forge-lifecycle.yml` (moved out of `archivist.yml` — task 31, #395). Presence-only — it cannot judge whether a Test Plan item is truly scriptable or whether a declared `unit-tests-only` is justified by the surface map; those remain Reviewer + Verification judgment. Same enforcement substrate as above.
+- **Brief validation** — the Archivist's `brief-validation` job runs `packages/aeg-core/bin/verify-brief.ts` against the PR body and checks presence of every required brief section (Tier, `For:` model attribution, `Project:` — both read from the PR body's header block, before the first `##` heading, the same region the post-merge Archivist's provenance assembly reads — tagged Test Plan, surface map, doc-update list, worktree Step 0, stop conditions, autonomy clause, `Closes #N`); flags malformed briefs (`vinaya/needs:brief-correction`) and fails CI. **The trigger is the body, not the branch (D-129, `fix/brief-gate-nontask`):** the gate runs when the branch is `task/<iter>/<n>` **or** the body is brief-shaped (`isBriefShaped` — ≥2 of surface map / doc-update list / stop conditions / autonomy clause, matched on `stripCode`'d text so a brief *quoted inside a fence* stays exempt). Bodies that are neither still bypass — that exemption is for an ordinary non-AEG PR (a one-line dependency bump) which carries no brief and must not be forced to grow one. The old branch-only bypass was the wrong proxy for it: a standalone `fix/*` brief **is** a brief, and it skipped every section check — confirmed live on `fix/studio-iteration-href`, which shipped with no §7 documentation-update list because `checkDocUpdateList`, the checker that exists for exactly that, never ran. `Closes #N` remains **task-branch-only** (`BriefSectionsOptions.requireClosesN`): a standalone fix brief has no task Issue to close, and a `plan/*` PR is *forbidden* to carry one by the plan-PR guard below — requiring it there would make the two gates jointly unsatisfiable. The same validator also runs at **authoring time** via `bun packages/aeg-core/bin/verify-brief.ts --body-file <brief.md>`, before a PR or even a branch exists, so a Brief Author gates a brief before dispatch rather than after the Developer has done the work (`skills/brief-authoring/SKILL.md` protocol step 4); with no `BRANCH`, the branch is read from the brief's own Step 0 `git worktree add … -b` line. **Includes the plan-PR Closes guard (D-077)**: a `plan/*` branch whose PR body carries `Closes #N` fails CI before the non-task bypass even runs — a plan PR creates Issues, it does not resolve one (`roles/planner.md`); this closed a confirmed pattern of plan PRs prematurely closing task Issues on merge (#294→#293, #298→#297, #288→#287). **Real (D-069)**, now the `Brief Validation` step (9/9) of the AEG gate suite job in `.github/workflows/forge-lifecycle.yml` (moved out of `archivist.yml` — task 31, #395). Presence-only — it cannot judge whether a Test Plan item is truly scriptable or whether a declared `unit-tests-only` is justified by the surface map; those remain Reviewer + Verification judgment. Same enforcement substrate as above.
 - **Per-task Archivist close-out (D-077)** — `.github/workflows/archivist.yml::post-merge` (`packages/aeg-core/bin/archive-task.ts`) runs on every push to `main`, resolves the merge commit's PR via `gh api repos/{owner}/{repo}/commits/{sha}/pulls`, and — for task-branch PRs only — assembles and posts the Archivist provenance block (`roles/archivist.md` item 8) and explicitly closes the task's Issue (item 1, D-056), confirming the closed state before exiting. Idempotent **per PR**, not per Issue (an Issue can legitimately accrue multiple merged PRs over its life; idempotency never spans PRs): skips silently if the PR already carries a provenance comment. Skips silently on non-task branches (`plan/*`, `fix/*`, …). Fails loud (non-zero exit) on any `gh`/permission error — never a silent no-op. Real (D-077), installed with `contents: read`, `issues: write`, `pull-requests: write` permissions. Does not automate the Iteration Archivist (D-050) or items 2–7 of per-task close-out (decision-log presence, docs coherence, per-project state, `docs-index.md`, token ledger) — those remain dispatched-Archivist judgment work.
 - **D-### sequencing and manifest integrity** — `verify-docs --full` and the coherence oracle validate within-log D-NNN sequencing (N1: duplicates = error; N2: skips = advisory), manifest pointer existence (M1), glob syntax (M2 advisory), and duplicate globs (M3). Real (D-069 / T2 #217). Same enforcement substrate as above.
 - **Closes #N gate** — task-branch PRs must declare `Closes #<its-issue>` in the PR body; absence fails CI. Non-task branches bypass this forward direction automatically. Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::closes-n-gate`. Same enforcement substrate as above. **Forge-native-iteration fix (`fix/closes-n-forge-native`):** the gate's scoped `loadIterationFiles(null, onlySlug)` call discovers which iterations exist by listing `aeg-root/iterations/*.md` filenames — an iteration with zero file (any of task 7/#431's forge-native cutovers: `vinaya-studio-v1`, `vinaya-cli-v1`, `herald-hardening-v1`) never entered that enumeration, so `deriveOrFallback` was never invoked for it despite already being fully Milestone-capable, and the gate failed every such PR with a misleading "no topology file found." Fixed by falling back to a direct forge derivation (`findMilestoneForSlug` + `deriveOrFallback`) when the requested `onlySlug` isn't found via files, gated on an actual open Milestone existing so an unrecognized branch slug still fails honestly — the scoped-path counterpart to `verify-dispatch.ts`'s `otherActiveIterationSlugs` fix (PR #476). **Reverse direction (`fix/closes-n-reverse`):** a `Closes #N` that resolves to a real AEG task Issue (title matches the `[<iter-slug>] <task-id> — ...` convention and carries a `vinaya/iteration:<slug>` label) now requires the branch to actually be named `task/<iter-slug>/<task-id>`, regardless of what the branch itself is called — closing the blind spot that let `feat/vinaya-landing-v3` implement a real task Issue with zero forge-visible status. One batched forge query (`fetchTaskIssueRefs`) resolves each referenced Issue's task identity before `checkClosesN` runs. **Code-span hardening (`fix/closes-gate-hardening`, #616):** both the pre-merge gate (`checkClosesN` in `brief-validation.ts`) and the coherence-side parse (`extractClosesReferences` in `coherence-checks.ts`) now `stripCode` the body before matching the closing keyword, as GitHub's own auto-close parser ignores `Closes #N` inside a code span or fenced block. Inline spans of **any backtick-run length** are covered (`` `x` ``, `` ``x`` ``, …) via CommonMark's `(`+)…\1` matched-run rule — the double-backtick form was a false-green in the first cut (peeled as two empty spans, PR #617 review). Fenced blocks are matched by a line scanner that pairs a fence with its own closer by **character and run length**: `~~~` tilde fences, info strings (```` ```js ````), and runs longer than three (```` `````` ````) all strip correctly, and an unclosed fence runs to end of body as GitHub renders it — the earlier `` /```[\s\S]*?```/g `` regex missed all three (PR #617 security pass). The keyword set matches GitHub's own: `close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`. Before this, a body whose only `Closes #N` was backticked passed the gate **green** yet merged **without** closing its Issue (stranded #600/PR #608 and #601/PR #611, then red every open PR via A3 `auto-close-misfire`); "verify-docs green" now implies "GitHub will auto-close" for fenced + inline-code forms. 4-space **indented** code blocks are stripped too, conservatively: a ≥4-column-indented run counts as code only when it follows a blank line *and* is not inside a list — since within a list item that indentation is the item's own content indent, which GitHub *does* auto-close (blanking it would be a false-red, the brief's over-strip stop condition). The strip runs on the **whole body, before any region is sliced out of it** — never on a slice. Every rule in it is block-structural (a fence pairs with its own closer; an indented run is code only after a blank line and outside list context), so a fragment strips differently from the same text in place: stripping the sliced `AEG:CLOSES` region blanked an anchor indented inside a list item — list content GitHub *does* auto-close — and the Archivist's `extractIssue` returned no Issue, stranding it on merge exactly as before. Markers are HTML comments and survive the strip, so selecting the region from stripped text loses nothing and subsumes the decoy protection: a decoy anchor inside code never survives to be sliced. The same grammar governs `maskCode`, the index-preserving variant `anchoredRegion` runs to find the `AEG:*` markers themselves — it is **upstream** of every `stripCode` call, so while it stayed on the naive fence/inline regexes a decoy `AEG:CLOSES` anchor inside a tilde fence, a ≥4-backtick fence, a double-backtick span, or an indented block won the region outright and the gate resolved a **wrong** Issue number (worse than the strandings above: the post-merge Archivist's `extractIssue` would explicitly close an unrelated Issue). Both now delegate to one pair of scanners, differing only in what they emit per code line — nothing for `stripCode`, same-length filler for `maskCode` — so a divergence is a compile-level impossibility rather than a convention. This hardens all five anchored fields (`CLOSES`, `PROJECT`, `TIER`, `PREMISE`, `TEST-PLAN`) at once, not just the closing reference. `stripCode` normalises `\r\n`/`\r` to `\n` before any of these scanners run: the fence scanners anchor per line, and JS's `.`/`$` never match `\r`, so a CRLF body opened no fence at all and let a fenced `Closes #N` walk free — the same false-green along a new axis, and it hit exactly the web-UI-authored bodies this CI backstop exists for (HTML normalises textarea newlines to CRLF on submit). The closing-keyword separator is **bounded** (`\s{0,8}:?\s{0,8}`, identical in both parsers): two adjacent unbounded `\s*` groups backtrack quadratically on `closes` + long whitespace + no `#` — ~2.0 s at GitHub's 65,536-char body cap, run twice on the fail path — where the bound is 0.1 ms. **Known residual:** a genuine indented code block *nested inside a list* is therefore left unstripped — the deliberately safe direction of that trade. A `Closes #N` surviving only inside code fails with an actionable message pointing at a bare reference in the `AEG:CLOSES` anchor. `stripCode` is the one shared stripper, exported from `anchored-region.ts` (no duplicated regex).
@@ -357,7 +364,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 - **Label discipline** (Section 14) — `vinaya/tier:*` present on every task Issue and kept in sync with the PR-body `Tier:`; `vinaya/needs:*-input` / `vinaya/blocked` present-when-true *and removed when false*; no `status:*` labels; no `project:*` labels; no label outside the closed set. Trusted discipline; the Archivist drift cron asserts the tier label/field match and flags stale `vinaya/needs:*` labels.
 - **Contract conformance** (a role doc matches its `contracts/*.md` seam) — trusted discipline; the Archivist drift cron flags a role doc that contradicts its contract. The contract is the source of truth; a divergent role doc is the bug. (The Planner→Brief contract's *rationale field-completeness* — every task Issue body carries all eight fields — moved to Enforced via R1 above; only the "role doc text matches contract prose" half remains trusted here.)
 - **Provenance assembly at close-out — items 1/8 moved to Enforced (D-077)**, see "Per-task Archivist close-out" above; items 2–7 of close-out (decision-log presence, docs coherence, per-project state, `docs-index.md`, token ledger) remain trusted, dispatched-Archivist judgment work — it records, it never gates.
-- **Decision logging during chat** — TL announces and logs during the conversation; CI cannot verify.
+- **Decision logging during chat** — Brief Author announces and logs during the conversation; CI cannot verify.
 - **No execution metadata in the iteration file; no dynamic conflict scanner** — the two anti-regression rules (`iterations/README.md` §9); trusted discipline, flagged by the Archivist drift cron and the Planner's gates.
 - **`thinking.md` updates; ratification-window attendance; lock acknowledgment (advisory in V0); spec ratification passes** — all trusted.
 
@@ -431,10 +438,10 @@ No label outside this table may be applied to a task Issue or its PR. (The Archi
 | Label | On | Marks (what the forge can't say) | Who applies / when | Mandatory? |
 |---|---|---|---|---|
 | `vinaya/tier:0` / `vinaya/tier:1` / `vinaya/tier:3` | Issue (+ mirrors the PR-body `Tier:`) | Impact tier — drives required docs (§9) and whether it merges at a ratification window. The forge has no concept of "impact." | **Planner** sets it at Issue cut (plan-time estimate). The **PR-body `Tier:`** is the binding value at merge; the Developer corrects the field if execution reveals a different tier, and re-syncs the label. | **Always-mandatory** — exactly one per task |
-| `vinaya/blocked` | Issue | A block that has **no forge fact** behind it ("waiting on an answer" isn't visible from branch/PR state). | Developer/TL when a task is blocked on an escalation; **removed** the moment it unblocks. | Conditional-mandatory |
+| `vinaya/blocked` | Issue | A block that has **no forge fact** behind it ("waiting on an answer" isn't visible from branch/PR state). | Developer/Brief Author when a task is blocked on an escalation; **removed** the moment it unblocks. | Conditional-mandatory |
 | `vinaya/incoherent` | Issue | A `COMPLETED` close with **no merged-PR link** — the forge shows "closed" but cannot show *whether the one law was honored* (done iff a merged `Closes #N`). Marks the anomaly for a human to resolve; AEG never auto-reopens (D-069). | Detected by `verify-coherence` (A1) / surfaced in Studio; applied when the incoherence is found, **removed** when a human clears it (link the merge, or re-close `NOT_PLANNED`). | Conditional-mandatory |
-| `vinaya/needs:execution-input` | Issue | Routes an open escalation to the **TL (Brief Author mode)** (§7). | Developer at escalation; removed when answered. | Conditional-mandatory |
-| `vinaya/needs:strategy-input` | Issue | Routes to the **TL (Strategist mode)**. | Developer at escalation; removed when answered. | Conditional-mandatory |
+| `vinaya/needs:execution-input` | Issue | Routes an open escalation to the **Brief Author** (§7). | Developer at escalation; removed when answered. | Conditional-mandatory |
+| `vinaya/needs:strategy-input` | Issue | Routes to the **Brief Author (Strategist mode)**. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `vinaya/needs:principal-input` | Issue | Routes to the **Principal** — the surface the Principal scans to see what is waiting on them. | Developer at escalation; removed when answered. | Conditional-mandatory |
 | `vinaya/needs:brief-correction` | Issue/PR | The Archivist's "this brief is malformed" flag (§3, §12). | Archivist (automation); removed when the brief is fixed. | Conditional-mandatory |
 | `vinaya/override:docs` | PR | Suppresses the verify-docs gate for one PR (§12) — honored identically in `--pr` and `--push` mode (D-081; previously dead code in push mode). | **Principal only**, deliberately. | **Optional** (escape hatch) |
@@ -442,7 +449,7 @@ No label outside this table may be applied to a task Issue or its PR. (The Archi
 
 ### Two rules that are easy to get wrong
 
-1. **Project is a field, not a label.** A task's project(s) live in the `Project:` field (Issue body + PR body), resolved against `packages/governance/projects.md` — **never** as a label. (Multi-valued, registry-validated; a label can't carry that cleanly, and it would collide with the "no planning metadata on Issues" rule.) If you reach for a "project label," stop — set the `Project:` field. The thirteen `project:*` labels that predated this rule were **deleted** from the forge in #614, and every reader — `list-tasks.ts`, `issue-validation.ts`'s `declaredProjects`, the Studio backlog — now derives project from the body field alone.
+1. **Project is a field, not a label.** A task's project(s) live in the `Project:` field (Issue body + PR body), resolved against `.vinaya/projects.md` — **never** as a label. (Multi-valued, registry-validated; a label can't carry that cleanly, and it would collide with the "no planning metadata on Issues" rule.) If you reach for a "project label," stop — set the `Project:` field. The thirteen `project:*` labels that predated this rule were **deleted** from the forge in #614, and every reader — `list-tasks.ts`, `issue-validation.ts`'s `declaredProjects`, the Studio backlog — now derives project from the body field alone.
 
 2. **Tier is a field *and* a synced label, and the field wins.** The PR-body `Tier:` is the **source of truth** (it's what `verify-docs` reads, it lives in the reviewed PR body, it has history). The `vinaya/tier:*` label is a **mandatory projection** of it onto the Issue so the board is scannable (filter `vinaya/tier:3` to see what needs a ratification window). They MUST agree; the Archivist asserts `label == field` and flags a mismatch. Ordering: the **Planner sets the label at cut** as a plan-time estimate; the **field is the execution-time truth at merge**. If they disagree, the field is right and the label is corrected — never the reverse.
 
@@ -452,11 +459,11 @@ Everything teams commonly reach for is already covered without a label: *status*
 
 ---
 
-## Section 15: Coherence Seam — Doc Coverage (`packages/governance/doc-owners`)
+## Section 15: Coherence Seam — Doc Coverage (`.vinaya/doc-owners`)
 
 The seam between **code change** and **the doc that explains the surface that just moved**. D-058 made bidirectional doc coherence an obligation (read before planning, update as DoD); D-062 makes the **output side mechanically verifiable** so the Reviewer judges *correctness of the covered doc*, not its presence. The Developer↔Reviewer seam for coverage is enforced by `verify-docs`; the seam for correctness remains the Reviewer's job (Section 3 + `contracts/developer-reviewer.md`).
 
-### The single source of truth: `packages/governance/doc-owners`
+### The single source of truth: `.vinaya/doc-owners`
 
 One CODEOWNERS-shaped file at the repo root of the AEG model:
 
@@ -466,7 +473,7 @@ One CODEOWNERS-shaped file at the repo root of the AEG model:
 - **Pointer forms:** in-repo path; in-repo `path#anchor`; or a `https://…` URL.
 - **The file is optional.** Its absence is dormancy, not failure — see below.
 
-The file is a Class 1 artifact (repo file, git-tracked) and changes via the normal PR flow. Edits to `packages/governance/doc-owners` are themselves Tier 3 when they reshape the seam (e.g. broadening enforcement to a new package); routine additions of a single binding for an already-bound family follow the surrounding work's tier.
+The file is a Class 1 artifact (repo file, git-tracked) and changes via the normal PR flow. Edits to `.vinaya/doc-owners` are themselves Tier 3 when they reshape the seam (e.g. broadening enforcement to a new package); routine additions of a single binding for an already-bound family follow the surrounding work's tier.
 
 ### The bind-or-waive rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`)
 
@@ -484,7 +491,7 @@ If none of the above hold, C5 fails the PR. A binding whose in-repo pointer **do
 
 Two cases produce **no output and no error** — not a "pass" message, nothing at all:
 
-1. `packages/governance/doc-owners` is absent.
+1. `.vinaya/doc-owners` is absent.
 2. The file exists but no binding's glob matches any changed code file.
 
 The seam has no opinion until the repo teaches it one. This is what makes the gate safe to ship to repos that have not yet adopted the seam, and what lets a repo grow coverage incrementally one binding at a time.
@@ -501,7 +508,7 @@ The tier system (Section 9) is class-level — "what kind of work is this, and w
 
 The waiver itself is **not** a PR-body field. D-097 removed `Doc-waiver:` entirely — the escape hatch is the `vinaya/waiver:docs` label instead (Section 14), added to the closed label set specifically because a waiver must be a forge-authenticated act (an actor-verified labeling timeline event), and a body field can never carry that verification — anyone who can edit the body can type any string.
 
-The separator between `<pointer>` and `<note>` in `Doc-ack:` is **flexible**: em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted by `verify-docs`. The em-dash form remains canonical in templates and prose, but a human typing `Doc-ack: <pointer> - <note>` on a US keyboard parses identically. Required whitespace around the ASCII hyphen disambiguates it from hyphens that legitimately appear inside pointers (e.g. `packages/governance/doc-owners`, `.claude/skills/ui-components/SKILL.md`); writers do not need to think about it as long as they put a space on each side.
+The separator between `<pointer>` and `<note>` in `Doc-ack:` is **flexible**: em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted by `verify-docs`. The em-dash form remains canonical in templates and prose, but a human typing `Doc-ack: <pointer> - <note>` on a US keyboard parses identically. Required whitespace around the ASCII hyphen disambiguates it from hyphens that legitimately appear inside pointers (e.g. `.vinaya/doc-owners`, `.claude/skills/ui-components/SKILL.md`); writers do not need to think about it as long as they put a space on each side.
 
 ### Where this leaves the Reviewer
 

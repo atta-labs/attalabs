@@ -80,7 +80,7 @@ When invoked, an agent does not trust that you called it correctly. It checks tw
 
 ## 4.5. The conversational protocol — how every role talks to the Principal
 
-Self-location (§4) is *what* an agent verifies before acting. The **conversational protocol** is *how* it speaks while it works. It applies to **every conversational role** (Principal-facing TL modes — Strategist, Planner, Brief Author — and the Developer, Reviewer, Security passes), so that across the whole flow the human always knows **who is speaking, what stage they're in, what just happened, and what comes next.** A governed flow that runs silently is illegible; legibility is itself a governance property (it is the same "make the invisible visible" that §1 calls the point of manual mode).
+Self-location (§4) is *what* an agent verifies before acting. The **conversational protocol** is *how* it speaks while it works. It applies to **every conversational role** (Principal-facing Brief Author modes — Strategist, Planner, Brief Author — and the Developer, Reviewer, Security passes), so that across the whole flow the human always knows **who is speaking, what stage they're in, what just happened, and what comes next.** A governed flow that runs silently is illegible; legibility is itself a governance property (it is the same "make the invisible visible" that §1 calls the point of manual mode).
 
 This is a **shared, model-level protocol**. Each role specializes it in its own role doc (the Planner's specialization is in `roles/planner.md` — the first written; Brief Author, Developer, and Reviewer specializations follow as each is modeled). The shared spine, which no role overrides:
 
@@ -108,13 +108,13 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 | Step | Role | You hand it | It produces | Entry gate (refuses if…) |
 |------|------|-------------|-------------|--------------------------|
-| 0 | **Planner** (TL mode) | intent + a ticket slice | an iteration: Issues + thin topology file | asked to write one brief / to implement |
+| 0 | **Planner** (Brief Author mode) | intent + a ticket slice | an iteration: Issues + thin topology file | asked to write one brief / to implement |
 | 1 | **Principal** (you) | an intent / goal | a decision to proceed, a tier | — |
-| 2 | **Brief Author** (TL mode) | the intent + the task's Issue | a brief, all sections | asked to write code instead of a brief |
+| 2 | **Brief Author** (Brief Author mode) | the intent + the task's Issue | a brief, all sections | asked to write code instead of a brief |
 | 3 | **Developer** | the brief | a worktree, the work, an open PR (brief in body) | input isn't a well-formed brief; a `depends-on` isn't merged; a `conflicts-with` sibling's PR is open |
 | 4 | **Reviewer (code)** | "review the PR for task N" | VERDICT (APPROVE / REQUEST CHANGES) | no open PR, no brief in the PR body, or it authored the code |
 | 5 | **Security** | "security-review the PR for task N" | VERDICT (PASS / FAIL) | no open PR, or no brief in the PR body |
-| 6 | **Principal + TL** (you) | the verdicts | merge decision (review side) | review passes not done |
+| 6 | **Principal + Brief Author** (you) | the verdicts | merge decision (review side) | review passes not done |
 | 7a | **Verification — agent half** (the Developer-agent re-runs) | the brief's §9 Test Plan | every `[agent]` item executed with the actual output posted to the PR | no open PR; no brief in the PR body; no Test Plan; or all items are `[principal]`-only |
 | 7b | **Verification — Principal half** (you, in a browser) | the brief's §9 Test Plan | every `[principal]` checkbox ticked on the PR | no open PR; no brief in the PR body; no `[principal]` items in the Test Plan |
 | 8 | **Principal** (you) | a PR with all Test Plan checkboxes ticked AND review verdicts clean | the merge | any Test Plan checkbox unticked, or review/security verdict unresolved |
@@ -128,7 +128,7 @@ Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` 
 
 **When the last open task branch for an iteration is merged, the iteration enters Iteration Close** (Phase 13 in `process.md`). Detect this by querying the forge: `gh pr list --state open --json number,headRefName` filtered to branches matching `task/<iteration>/*` — if nothing returns, the iteration's last task has merged.
 
-The Principal **initiates** iteration close explicitly (declares "we're closing this iteration" and hands off to the Team Leader). The Archivist **may detect** it automatically in future versions — when all task PRs merged and no open branches remain for the iteration. Until then, the Principal's explicit call is the gate.
+The Principal **initiates** iteration close explicitly (declares "we're closing this iteration" and hands off to the Planner / Brief Author). The Archivist **may detect** it automatically in future versions — when all task PRs merged and no open branches remain for the iteration. Until then, the Principal's explicit call is the gate.
 
 See `process.md` Phase 13 for the full close-out steps: verify all tasks merged, run a brief retrospective, archive the iteration file, update state docs, ratify pending Type 1 decisions, declare what's next.
 

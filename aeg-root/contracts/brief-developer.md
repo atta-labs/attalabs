@@ -58,7 +58,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 |---|---|---|
 | **Worktree step 0** (verbatim `git worktree add` command) | First action before any other command | The Developer must execute this exact command first. No exceptions. Never assume the right branch exists. Before executing it, the Developer independently re-verifies the branch-name suffix literal-matches the topology's `#` column — the same check the Brief Author already ran before writing the command. |
 | **Tier:** field | PR-open checklist + `vinaya/tier:*` label | The Developer sets the matching `vinaya/tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
-| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `packages/governance/projects.md`. |
+| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `.vinaya/projects.md`. |
 | **Context** including boundary + traps | Mental model before any code | The Developer reads the boundary ("what this task is NOT") to know what to refuse to build, and the traps to know what not to do. |
 | **Technical Dependencies** | Verify all depends-on are merged | The Developer confirms every named dependency is on `main` before starting. A depends-on not yet merged is a hard stop. |
 | **Technical Surface Map** | Bounds the diff | The Developer touches only files in the surface map. Files outside it are a stop-and-escalate. |
@@ -68,7 +68,6 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | **Test Plan** tagged `[agent]` / `[principal]` | Runs `[agent]` items; leaves `[principal]` for Principal | The Developer runs every `[agent]` item and posts evidence. Does not tick `[principal]` boxes. |
 | **Stop conditions** | Halt triggers | The Developer stops and posts a blocker comment on the Issue when any condition is met. Never improvises past a stop condition. |
 | **Constraints** | Hard rules during execution | The Developer treats these as absolute — not "guidelines." A violated constraint is a PR that must not merge. |
-| **Lock acknowledgment** (when the brief touches a `decisions.md`/`*-decisions.md` entry marked `Lock: YES`) | PR body, as `**Conforms to lock:** D-### — <description>` or `**Challenges lock:** D-### — <description>` + `**Rationale:** <text>` | The Developer includes the acknowledgment block verbatim in the PR body. `brief-validation` (the Brief→Developer gate) fails the PR if the diff touches a locked decision and neither form is present, or if the challenge form lacks a `Rationale:` field. |
 
 **Reading the table:** left is the producer obligation (Brief Author enforces it by refusing to dispatch a malformed brief), right is the consumer obligation (Developer role doc and executor protocol enforce it). The two role docs must not contradict this table.
 

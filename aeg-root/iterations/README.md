@@ -38,11 +38,11 @@ The cardinal rule, stated once and enforced everywhere below: **the forge holds 
 
 The roadmap — what to build, why, in what priority — belongs to the company and lives in the company's tool (Jira, Linear, a doc they own). **AEG never holds it.** The moment AEG stores a roadmap it competes with Jira, loses, and creates a second rotting source of truth.
 
-What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Team Leader translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
+What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Planner / Brief Author translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
 
 ```
 Company roadmap / Jira / project backlog   ← NOT in AEG. Reference only. The human reads it.
-        │  (human translation — Team Leader / Planner)
+        │  (human translation — Planner / Brief Author / Planner)
         ▼
 Iteration  =  a set of forge Issues  +  a thin topology file        ← TOP of AEG.
    ├─ Task (Issue) ── brief written just-in-time → lands in its PR body
@@ -101,7 +101,7 @@ Template:
 Lifecycle: active            ← active | complete (§12). Set to complete by the Archivist when every task is merged.
 
 Goal (execution, not roadmap-why): <what ships, end to end>
-Repo: <repo>   ·   Team Leader: <name>
+Repo: <repo>   ·   Planner / Brief Author: <name>
 
 ## Tasks (topology)
 | # | Task                          | Issue | Project(s)      | Depends-on | Conflicts-with |
@@ -145,7 +145,7 @@ Two tasks conflict if they touch the same **collision domain** and therefore mus
 
 ## 6. The Planner
 
-The **Planner** is a mode of the Team Leader — same intelligence as Brief Author, one altitude up. Brief Author: intent → one brief. Planner: intent + a slice of tickets → a whole iteration (a set of Issues + the thin topology file).
+The **Planner** is a mode of the Planner / Brief Author — same intelligence as Brief Author, one altitude up. Brief Author: intent → one brief. Planner: intent + a slice of tickets → a whole iteration (a set of Issues + the thin topology file).
 
 The Planner's job — the reason the iteration exists — is the relationships a brief-in-isolation can't see: decompose the ticket slice into agent-sized tasks (Issues), declare `depends-on` and `conflicts-with` edges, and decide **split vs. combine** by the **verification-coupling** test:
 

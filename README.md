@@ -73,7 +73,7 @@ Powers Vāda today; will power Atta. May be opened up later.
 | [`@atta/identity`](packages/identity/) | BYOK key probing, Ollama discovery, migration utilities |
 | [`@atta/models`](packages/models/) | AI model catalog — models.dev fetch + curated overlay |
 | [`@atta/storage`](packages/storage/) | Cloudflare R2 client + image transforms |
-| [`@atta/governance`](packages/governance/) | Repo governance state as files (decisions, projects, doc-owners) |
+| [`@atta/governance`](.vinaya/) | Repo governance state as files (decisions, projects, doc-owners) |
 
 The `@atta/*` namespace is the monorepo's name, not a brand — any AttaLabs product can live under
 it without implying ownership by Atta-the-product.

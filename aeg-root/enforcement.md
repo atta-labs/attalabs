@@ -7,7 +7,7 @@ sidebar_title: Enforcement Map
 # surfaces them as literal text on the page — verified live.
 provenance: >
   The architectural reasoning behind each gate lives in
-  packages/governance/decisions.md; the normative registry of every gate lives
+  docs/decisions-legacy.md; the normative registry of every gate lives
   in aeg-root/state-machine.md. Both are unpublished, so neither is named in
   this file's reader-facing prose.
 ---

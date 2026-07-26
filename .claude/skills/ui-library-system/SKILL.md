@@ -320,7 +320,7 @@ The two base patterns are not exclusive. An app can run **both** on **disjoint r
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
-**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant (D-035)", which `packages/governance/doc-owners` binds as the owner of those routes, and [`packages/governance/decisions.md`](../../../packages/governance/decisions.md) D-035 (`Lock: YES`).
+**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant (D-035)", which `.vinaya/doc-owners` binds as the owner of those routes, and [`docs/decisions-legacy.md`](../../../docs/decisions-legacy.md) D-035 (`Lock: YES`).
 
 ---
 

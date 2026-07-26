@@ -43,7 +43,6 @@
  * a brief-shape check at all. See `checkPlanPrNoCloses` in `src/brief-validation.ts`.
  */
 
-import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
@@ -60,14 +59,6 @@ const REPO_ROOT = join(import.meta.dir, '../../..')
 // where the author ran the command, not to the repo root this script moves to.
 const INVOCATION_CWD = process.cwd()
 process.chdir(REPO_ROOT)
-
-function sh(cmd: string): string {
-  try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
-  } catch {
-    return ''
-  }
-}
 
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 

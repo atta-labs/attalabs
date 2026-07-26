@@ -8,9 +8,9 @@ description: Rules for authoring task briefs dispatched to Developer agents. Loa
 
 # Brief Authoring Rules
 
-Every task brief the Team Leader writes or dispatches must follow these rules. They exist because vague briefs produce vague work, and well-structured briefs can be handed to any Developer agent — a coding agent dispatched by an automation layer, or a direct paste — with no additional context.
+Every task brief the Planner / Brief Author writes or dispatches must follow these rules. They exist because vague briefs produce vague work, and well-structured briefs can be handed to any Developer agent — a coding agent dispatched by an automation layer, or a direct paste — with no additional context.
 
-**This skill is Brief Author mode.** Load it when the Team Leader is authoring or reviewing a brief. Do not load for strategy/architecture (Strategist mode) or for planning a whole iteration (Planner mode — see `aeg-root/roles/planner.md`).
+**This skill is Brief Author mode.** Load it when the Planner / Brief Author is authoring or reviewing a brief. Do not load for strategy/architecture (Strategist mode) or for planning a whole iteration (Planner mode — see `aeg-root/roles/planner.md`).
 
 **Where the brief lives.** The brief is the task's full execution context. It is **pasted to the Developer, not committed**, and it **lands in the PR body** when the Developer opens the PR — that is its permanent, durable home, read by the Reviewer and Archivist. A brief is **never** put in the task's forge Issue (the Issue holds identity + metadata + the Planner's rationale, not the brief; a brief there would go stale before work starts). Context lives entirely in the brief: if it isn't in the brief, it doesn't exist.
 
@@ -36,7 +36,7 @@ The Brief Author's stages — name them, and say which you're in:
    - (a) Surface in **Context (§2)** what the Developer must know from those docs — explicitly, not by reference ("read X for context" is not surfacing knowledge).
    - (b) Populate **§7 doc-update list** from this reading — name every doc this task will make incoherent. The §7 list is the DoD obligation (parallel to tests); a §7 populated from memory rather than reading is the failure D-058 exists to close. If genuinely no documented surface is touched, state "No doc updates required (Tier 0)" in §7 explicitly.
 
-   **Task-status coherence precondition (D-056) — SUPERSEDED by D-120 (2026-07-13).** This precondition (D-052 item 1, the per-task archival / row-adjacency gate) is no longer a hard-STOP for the Brief Author — D-077's automated post-merge provenance posting made the drift signal it protected moot. See `packages/governance/decisions.md` D-120. Preserved below as historical record — do NOT enforce it:
+   **Task-status coherence precondition (D-056) — SUPERSEDED by D-120 (2026-07-13).** This precondition (D-052 item 1, the per-task archival / row-adjacency gate) is no longer a hard-STOP for the Brief Author — D-077's automated post-merge provenance posting made the drift signal it protected moot. See `docs/decisions-legacy.md` D-120. Preserved below as historical record — do NOT enforce it:
 
    ~~Before authoring any brief, apply the full coherence precondition from `aeg-root/contracts/brief-developer.md`. The archival bar for any prior task is all three of: (1) Issue closed, (2) PR merged to main, (3) provenance block present on the merged PR. "PR merged" alone is NOT sufficient. **STOP — do NOT author the brief** if any predicate fails for any in-scope prior task; report to the Principal what is owed.~~
 
@@ -130,7 +130,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 - [ ] **Row-existence and Issue-existence preconditions (D-054, D-075)** → does the task's row exist at all in the iteration topology file, read from a freshly-fetched `origin/main`? If not, the plan PR hasn't merged — **STOP** and do not author the brief. If the row exists, does its Issue column carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate items 3 and 7; catches it one stage earlier, during Dig.)
-- [ ] ~~**Task-status coherence precondition (D-052, D-056)** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED by D-120 (2026-07-13)** — no longer a checklist item; D-052 item 1 is removed as a hard-STOP. See `packages/governance/decisions.md` D-120. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
+- [ ] ~~**Task-status coherence precondition (D-052, D-056)** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED by D-120 (2026-07-13)** — no longer a checklist item; D-052 item 1 is removed as a hard-STOP. See `docs/decisions-legacy.md` D-120. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
 - [ ] **Read obligation + §7 populated from reading (D-058)** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
@@ -248,7 +248,7 @@ Do not leave documentation as an implication of the tier checklist. **List the e
 - **Never list a new file for a one-off report, audit finding, coverage summary, or working brief (D-074).** If the task's deliverable is a finding, an audit result, or a coverage report, its home is the PR body (task-scoped) or an Issue/PR comment (not task-scoped) — never a new file under `aeg-root/` or a product's `aeg-project/`. A committed scratch file has already broken AEG Studio once (a coverage report committed as `aeg-root/iterations/<name>.audit.md` was silently parsed as a broken iteration by the Studio loader) and produced a stale permanent brief once (`aeg-project/briefs/<name>-brief.md`, contradicting this skill's own "pasted, not committed" rule above). See `iterations/README.md` §9 rule 4.
 - **Tier 0** — usually none. State "No doc updates required (Tier 0)."
 - **Tier 1** — name each: which spec(s) reflect the new behavior, which skill(s) if a convention shifted, `docs-index.md` if files were added/removed/renamed.
-- **Tier 3** — all Tier 1 items, plus: a decision anchor — either (a) the exact decision log file (`packages/governance/decisions.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append, or (b) a `Conforms-to: D-###` field in the brief's header (for work that implements an existing decision without introducing a new one — omit the decision log file from the doc-update list in this case). Also: which state changes (the per-project pinned state Issue, D-110; the iteration file; per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` or `now.md` — both retired (`roadmap.md` by D-029; `now.md` by D-057). Active-work state is derived from the forge, not written to a file.
+- **Tier 3** — all Tier 1 items, plus: a decision anchor — either (a) the exact decision log file (`docs/decisions-legacy.md` or which `apps/*/specs/*-decisions.md`) and the D-### to append, or (b) a `Conforms-to: D-###` field in the brief's header (for work that implements an existing decision without introducing a new one — omit the decision log file from the doc-update list in this case). Also: which state changes (the per-project pinned state Issue, D-110; the iteration file; per-project backlogs); whether a `Lock: YES` entry is created. **Never** list `roadmap.md` or `now.md` — both retired (`roadmap.md` by D-029; `now.md` by D-057). Active-work state is derived from the forge, not written to a file.
 
 A Tier 1+ brief with an empty doc-update list is malformed.
 
@@ -339,7 +339,7 @@ What the executor opens/commits/creates at the end:
 
 **Pre-PR gate (inherited by every brief):** The Deliverable section must instruct the executor to run `bun packages/aeg-core/bin/verify-docs.ts --pr` locally with `PR_BODY` set to the intended PR body before opening — and fix any failure. Never dispatch a brief that would produce a red verify-docs build on open.
 
-**The PR is not "done" when opened — it is done when it has passed review AND verification.** After the PR opens (`process.md`): **Phase 10 — Review:** code-reviewer pass (independent, fresh context, `roles/reviewer.md`) → security pass (`roles/security.md`, runs the config-security scan if agent/MCP config changed) → Principal code review → TL spec review. **Phase 11 — Verification (`roles/developer.md` § Verification):** the brief's §9 Test Plan is executed — the Developer-agent runs every `[agent]` item and posts the actual output as evidence; the Principal ticks every `[principal]` box in a real browser. **Phase 12 — Merge:** the Principal merges once both halves are ticked. The brief ends by telling the Developer to open the PR and stop — the review passes and the Verification phase are separate invocations; the Developer addresses REQUEST CHANGES / FAIL findings and re-runs `[agent]` items in follow-up commits on the same branch.
+**The PR is not "done" when opened — it is done when it has passed review AND verification.** After the PR opens (`process.md`): **Phase 10 — Review:** code-reviewer pass (independent, fresh context, `roles/reviewer.md`) → security pass (`roles/security.md`, runs the config-security scan if agent/MCP config changed) → Principal code review → Brief Author spec review. **Phase 11 — Verification (`roles/developer.md` § Verification):** the brief's §9 Test Plan is executed — the Developer-agent runs every `[agent]` item and posts the actual output as evidence; the Principal ticks every `[principal]` box in a real browser. **Phase 12 — Merge:** the Principal merges once both halves are ticked. The brief ends by telling the Developer to open the PR and stop — the review passes and the Verification phase are separate invocations; the Developer addresses REQUEST CHANGES / FAIL findings and re-runs `[agent]` items in follow-up commits on the same branch.
 
 ---
 
@@ -370,7 +370,7 @@ These two qualify a task and ride into the PR body. Both are reference-only — 
 ```
 **Project:** [project(s) this task touches — e.g. "vada" or "engine, herald"]
 ```
-Multi-valued. Resolves against `packages/governance/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md` and the planner-brief contract.
+Multi-valued. Resolves against `.vinaya/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md` and the planner-brief contract.
 
 ```
 **Ticket:** [external ticket link(s) — e.g. "SAT-412 — https://…"]
@@ -432,21 +432,6 @@ If the brief executes a Type 1 (irreversible) decision:
 ```
 
 A brief executing a PENDING Type 1 decision is not dispatchable.
-
-### Lock acknowledgment
-
-If the brief touches a locked area (`decisions.md` entries with `Lock: YES`):
-
-```
-**Conforms to lock:** D-### — [description]
-```
-or
-```
-**Challenges lock:** D-### — [description]
-**Rationale:** [why the lock should be revised]
-```
-
-A lock challenge is a Type 1 decision requiring Principal ratification before dispatch.
 
 ### Briefs are frozen after dispatch
 
