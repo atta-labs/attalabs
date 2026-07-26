@@ -1,4 +1,4 @@
-import { LABELS, matchesLabel } from '@atta/aeg-forge-state/labels'
+import { LABEL_NAMESPACE, LABELS, matchesLabel } from '@atta/aeg-forge-state/labels'
 import { Badge } from '@atta/ui/components'
 
 /**
@@ -70,10 +70,27 @@ export function splitLabels(labels: string[]): SplitLabels {
   }
 }
 
+/**
+ * The label as a reader should see it — the `vinaya/` product prefix dropped.
+ * Every label in this repo carries it, so rendering it is pure noise; #614
+ * added the namespace for the forge's benefit (one filterable group in a repo
+ * shared with an adopter's own labels), not the reader's.
+ *
+ * DISPLAY ONLY. `labelKind`, `splitLabels`, `matchesLabel` and every filter
+ * key off the FULL label — strip before any of those and the badge loses its
+ * category colour, because `matchesLabel` would no longer match `LABELS`.
+ * Derived from `LABEL_NAMESPACE` rather than a hardcoded regex so it tracks
+ * the vocabulary.
+ */
+export function displayLabel(label: string): string {
+  return label.startsWith(LABEL_NAMESPACE) ? label.slice(LABEL_NAMESPACE.length) : label
+}
+
 export function LabelBadge({ label }: { label: string }) {
+  // `labelKind` gets the full label; only the rendered text is stripped.
   return (
     <Badge variant='outline' className={`font-mono text-xs ${KIND_CLASS[labelKind(label)]}`}>
-      {label}
+      {displayLabel(label)}
     </Badge>
   )
 }

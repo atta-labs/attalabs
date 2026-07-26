@@ -7,7 +7,7 @@
 // support external modules"). Same hazard `display-label.ts` and
 // `DiagramExplorer.tsx` already document; `bun run check` does not catch it
 // because it never runs `next build`.
-import { label } from '@atta/aeg-forge-state/labels'
+import { label, LABEL_NAMESPACE } from '@atta/aeg-forge-state/labels'
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -61,7 +61,7 @@ const LABEL_CELL =
 /** Ties the filter chip group to its heading (`aria-labelledby`). */
 const FILTER_HEADING_ID = 'backlog-filter-heading'
 
-/** Chip display strips the namespace off a tier label — `vinaya/tier:1` reads `1`. */
+/** Tier chips drop the whole family prefix, not just the product one — `vinaya/tier:1` reads `1`. */
 const TIER_STRIP = label('tier-0').replace(/0$/, '')
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
@@ -94,7 +94,12 @@ function FilterGroup({
   options: string[]
   selected: Set<string>
   onToggle: (value: string) => void
-  /** Prefix to strip for the chip's display text (the full label still filters). */
+  /**
+   * Prefix dropped from the chip's DISPLAY text only — the full option string
+   * is what filters. Guarded, not a blind slice: an option that does not carry
+   * the prefix renders whole rather than losing its first `strip.length`
+   * characters.
+   */
   strip?: string
 }) {
   if (options.length === 0) return null
@@ -104,7 +109,7 @@ function FilterGroup({
       {options.map((option) => (
         <FilterChip
           key={option}
-          label={option.slice(strip.length)}
+          label={option.startsWith(strip) ? option.slice(strip.length) : option}
           active={selected.has(option)}
           onToggle={() => onToggle(option)}
         />
@@ -182,7 +187,15 @@ export function BacklogTable({
           onToggle={toggle(setSelectedTiers)}
           strip={TIER_STRIP}
         />
-        <FilterGroup name='Flags' options={flagOptions} selected={selectedFlags} onToggle={toggle(setSelectedFlags)} />
+        {/* Flags mixes families (needs / blocked / detection flags), so only the
+            `vinaya/` product prefix comes off — never a family prefix. */}
+        <FilterGroup
+          name='Flags'
+          options={flagOptions}
+          selected={selectedFlags}
+          onToggle={toggle(setSelectedFlags)}
+          strip={LABEL_NAMESPACE}
+        />
         {anyFilter && (
           <Button
             type='button'
