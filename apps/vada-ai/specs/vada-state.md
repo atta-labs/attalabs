@@ -793,7 +793,7 @@ PR #194. `@atta/adapter-langgraph` now supports tool forwarding across all three
 
 **Deferred (Option C):** External MCP server support requires a new `mcp_servers` field in `@atta/engine` `FlowAgentSchema` — a contract change with blast radius across Vāda + Herald. Deferred to a separate task per D-053.
 
-See D-053 in `packages/governance/decisions.md` for the A+B/C boundary rationale.
+See D-053 in `docs/decisions-legacy.md` for the A+B/C boundary rationale.
 
 ---
 

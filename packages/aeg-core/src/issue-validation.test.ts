@@ -115,7 +115,7 @@ describe('isTaskIssueLabelSet', () => {
 // ---------------------------------------------------------------------------
 
 /** The real collision-domain shape; the live list is read from `.aeg/packages` by `open-issue.ts`. */
-const SHARED = ['packages/ui', 'packages/aeg-core', 'packages/governance']
+const SHARED = ['packages/ui', 'packages/aeg-core', '.vinaya']
 
 /** Registry rows as `parseRegistry` returns them — `vinaya` is an app, `aeg-core` IS a shared package. */
 const REGISTRY = [

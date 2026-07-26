@@ -21,7 +21,7 @@ export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
  * a 404 board link — strictly worse than the board-less row it replaces. The
  * guard stays a slug shape rather than a registry lookup on purpose: this
  * package is pure, repo-parameterized forge derivation and must not couple to
- * `packages/governance`. An unregistered-but-slug-shaped value still resolves
+ * `.vinaya`. An unregistered-but-slug-shaped value still resolves
  * here; that is the registry's problem to report, not this parser's. */
 const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]*$/i
 

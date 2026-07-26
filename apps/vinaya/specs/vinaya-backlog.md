@@ -25,7 +25,7 @@ First mention of this file — created by `vinaya-cli-v1` task 1 (#381), per the
 
 ## Unscoped (needs a brief before dispatch)
 
-- **D-117 decision-log back-fill — Resolved as D-118.** See [D-118](../../../packages/governance/decisions.md) in `packages/governance/decisions.md`, backfilled by the `fix/d-117-decision-backfill` PR. The Issue #381 comment's provisional "D-117" label was superseded by a numbering collision with PR #517 (a different, unrelated decision that merged first and claimed D-117) — ratified as D-118 instead.
+- **D-117 decision-log back-fill — Resolved as D-118.** See [D-118](../../../docs/decisions-legacy.md) in `docs/decisions-legacy.md`, backfilled by the `fix/d-117-decision-backfill` PR. The Issue #381 comment's provisional "D-117" label was superseded by a numbering collision with PR #517 (a different, unrelated decision that merged first and claimed D-117) — ratified as D-118 instead.
 
 ---
 
