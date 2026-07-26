@@ -23,14 +23,20 @@
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { checkDirectMainPush } from '../src/index'
-import { resolveRepo } from '@atta/aeg-forge-state'
+import { label, resolveRepo } from '@atta/aeg-forge-state'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
-const LABEL = 'aeg:direct-main-push'
+// The label name comes from the code-owned vocabulary — never a literal here.
+// This bin MINTS the label on first fire (`ensureLabelExists`), so a literal
+// would have silently created a retired `aeg:`-named label the first time a
+// direct push ever happened (D-123). No forge object exists yet: it has never
+// fired, which is also why renaming the idempotency marker below is safe —
+// there is no already-posted comment carrying the old one to miss.
+const LABEL = label('direct-main-push')
 const LABEL_DESCRIPTION = 'A commit landed on main with no associated merged PR (ring-2 detection)'
-const MARKER = '<!-- aeg:direct-main-push -->'
+const MARKER = `<!-- ${LABEL} -->`
 
 function sh(args: string[]): string {
   return execFileSync(args[0] as string, args.slice(1), {

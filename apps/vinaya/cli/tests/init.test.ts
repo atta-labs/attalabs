@@ -247,7 +247,7 @@ describe('round-trip: init then eject returns the repo to pre-init state', () =>
     const out = await captureStdout(() => runEject(['--yes'], ejectDeps()))
     expect(snapshot(root)).toEqual(before) // eject restored exactly
     // labels reported for manual removal, never auto-deleted
-    expect(out).toContain('gh label delete tier:0')
+    expect(out).toContain('gh label delete vinaya/tier:0')
   })
 
   it('fixture with adopter lines in a hook: eject strips only the vinaya block', async () => {

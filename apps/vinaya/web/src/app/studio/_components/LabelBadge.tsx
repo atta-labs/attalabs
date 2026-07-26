@@ -17,17 +17,20 @@ import { Badge } from '@atta/ui/components'
  * Server-safe (no client hooks) so it renders in both server and client trees.
  */
 
-export type LabelKind = 'project' | 'tier' | 'state' | 'needs' | 'other'
+export type LabelKind = 'project' | 'tier' | 'state' | 'needs' | 'flag' | 'other'
 
 const KIND_CLASS: Record<LabelKind, string> = {
   project: 'text-primary border-primary/40',
   tier: 'text-foreground border-border',
   state: 'text-primary border-primary/40',
   needs: 'text-warning border-warning/40',
+  // A detected anomaly awaiting a human — the one family that reads as wrong,
+  // not merely as pending.
+  flag: 'text-destructive border-destructive/40',
   other: 'text-muted-foreground border-border'
 }
 
-const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, state: 2, needs: 3, other: 4 }
+const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, state: 2, flag: 3, needs: 4, other: 5 }
 
 export function labelKind(label: string): LabelKind {
   const entry = LABELS.find((l) => matchesLabel(l.key, label))
@@ -35,6 +38,9 @@ export function labelKind(label: string): LabelKind {
   if (entry.category === 'tier') return 'tier'
   if (entry.category === 'state') return 'state'
   if (entry.category === 'needs') return 'needs'
+  if (entry.category === 'flag') return 'flag'
+  // `kind` (a storage object) never reaches a work-shaped view — the backlog
+  // fetch filters it out — so it needs no styling of its own.
   return 'other'
 }
 
@@ -53,7 +59,10 @@ export type SplitLabels = { tier: string | null; flags: string[] }
 export function splitLabels(labels: string[]): SplitLabels {
   return {
     tier: labels.find((l) => labelKind(l) === 'tier') ?? null,
-    flags: labels.filter((l) => labelKind(l) === 'needs' || labelKind(l) === 'state')
+    flags: labels.filter((l) => {
+      const kind = labelKind(l)
+      return kind === 'needs' || kind === 'state' || kind === 'flag'
+    })
   }
 }
 

@@ -61,6 +61,14 @@ export type PrintOp = { kind: 'print'; message: string; group: string }
 
 export type Op = CreateFileOp | ManagedBlockOp | CreateLabelOp | PrintOp
 
+/**
+ * The managed-block marker namespace — **not a forge label**, so the `vinaya/`
+ * label grammar (#614) deliberately does not apply. These bytes are written
+ * into an adopter's git-hook and workflow files and are matched literally by
+ * `eject` to strip the block again, so changing them would orphan every block
+ * already installed in the field. A label-namespace audit will match this line;
+ * it is a false positive by construction.
+ */
 const MARKER_NS = 'vinaya:managed'
 
 function markerLines(marker: string, comment: CommentStyle): { begin: string; end: string } {

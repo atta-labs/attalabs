@@ -71,6 +71,18 @@ export type LabelCategory =
   | 'needs'
   /** A gate deliberately excused for this one PR, by a principal. */
   | 'waiver'
+  /**
+   * An anomaly the mechanism DETECTED and is surfacing for a human. Never
+   * auto-resolved and never a status: the forge shows what happened, not
+   * whether it was legitimate, so a flag marks "a human must look at this".
+   */
+  | 'flag'
+  /**
+   * What an Issue *is*, rather than what state it is in — the one axis that
+   * says "this object is not a unit of work at all", so every work-shaped
+   * view must exclude it.
+   */
+  | 'kind'
 
 /**
  * Whether `id` is the complete label string or the stable prefix of a family
@@ -97,6 +109,10 @@ export type LabelKey =
   | 'needs-brief-correction'
   | 'waiver-docs'
   | 'waiver-review'
+  | 'incoherent'
+  | 'direct-main-push'
+  | 'dead-branch-push'
+  | 'state-object'
 
 export type Label = {
   /** Stable code-side handle — what call sites pass to `label()`. */
@@ -192,6 +208,34 @@ export const LABELS: Label[] = [
     category: 'waiver',
     form: 'literal',
     carries: 'Review gate excused for this PR — honored only when a principal applied it (D-097).'
+  },
+  {
+    key: 'incoherent',
+    id: 'vinaya/incoherent',
+    category: 'flag',
+    form: 'literal',
+    carries: 'Closed COMPLETED with no merged-PR link — done-but-unprovable, surfaced for a human (D-069).'
+  },
+  {
+    key: 'direct-main-push',
+    id: 'vinaya/direct-main-push',
+    category: 'flag',
+    form: 'literal',
+    carries: 'A commit reached main with no associated merged PR — ring-2 detection, never a mutation.'
+  },
+  {
+    key: 'dead-branch-push',
+    id: 'vinaya/dead-branch-push',
+    category: 'flag',
+    form: 'literal',
+    carries: 'Commits landed on a branch after its PR had already resolved — daily-drift detection.'
+  },
+  {
+    key: 'state-object',
+    id: 'vinaya/state-object',
+    category: 'kind',
+    form: 'literal',
+    carries: 'A permanent forge-native storage object (D-110), never actionable work — excluded from every backlog.'
   }
 ]
 

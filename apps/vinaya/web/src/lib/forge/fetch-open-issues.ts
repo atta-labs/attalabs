@@ -10,7 +10,7 @@
  * authoring time) is well within a single page; re-evaluate if it grows into
  * the hundreds.
  *
- * Also excludes `vinaya:state-object` (task 2 addendum, PR #499 review) —
+ * Also excludes `vinaya/state-object` (task 2 addendum, PR #499 review) —
  * D-110's pinned per-project/root-ecosystem state, ratification queue, and
  * lessons-log Issues (#447-#453) are permanent forge-native storage objects,
  * never meant to be closed and carrying no actionable work, so they don't
@@ -90,6 +90,6 @@ export async function fetchOpenIssuesWithoutIterationLabel(
       labels: n.labels?.nodes?.map((l) => l.name) ?? [],
       projects: projectsFromBody(n.body ?? '')
     }))
-    .filter((issue) => !hasLabel('iteration', issue.labels) && !issue.labels.includes('vinaya:state-object'))
+    .filter((issue) => !hasLabel('iteration', issue.labels) && !hasLabel('state-object', issue.labels))
   return { issues, forge: { kind: 'ok' } }
 }

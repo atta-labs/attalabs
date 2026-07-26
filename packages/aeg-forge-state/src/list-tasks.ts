@@ -25,8 +25,23 @@ export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
  * here; that is the registry's problem to report, not this parser's. */
 const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]*$/i
 
+/**
+ * The field line, in either markup the corpus actually uses: the bold
+ * `**Project:** x` the templates emit, and the plain `Project: x` header line
+ * older Issues were authored with (the whole `vada-production-v1` cohort, and
+ * the `aeg-forge-state-v1` fixture). Accepting only the bold form made this
+ * parser disagree with `issue-validation.ts`'s `declaredProjects`, which has
+ * always been tolerant — and once #614 deleted the `project:*` labels, that
+ * disagreement silently dropped the project of every plain-form Issue.
+ *
+ * The optional `**` are matched independently on each side rather than as a
+ * required pair, which is what keeps the prose heading `**Project(s) + blast
+ * radius**` out: nothing there puts a `:` straight after the name.
+ */
+const PROJECT_FIELD = /^\s*(?:\*\*)?Project(?:\(s\))?(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.+)$/im
+
 export function projectsFromBody(body: string): string[] {
-  const m = body.match(/^\s*\*\*Project(?:\(s\))?:\*\*\s*(.+)$/im)
+  const m = body.match(PROJECT_FIELD)
   if (!m) return []
   return (m[1] ?? '')
     .split(',')

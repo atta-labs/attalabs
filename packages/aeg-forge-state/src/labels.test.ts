@@ -18,7 +18,7 @@ import {
 } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
-const CATEGORIES: LabelCategory[] = ['state', 'tier', 'iteration', 'needs', 'waiver']
+const CATEGORIES: LabelCategory[] = ['state', 'tier', 'iteration', 'needs', 'waiver', 'flag', 'kind']
 
 const KEYS: LabelKey[] = [
   'blocked',
@@ -31,7 +31,11 @@ const KEYS: LabelKey[] = [
   'needs-principal-input',
   'needs-brief-correction',
   'waiver-docs',
-  'waiver-review'
+  'waiver-review',
+  'incoherent',
+  'direct-main-push',
+  'dead-branch-push',
+  'state-object'
 ]
 
 describe('LABELS — shape', () => {
@@ -124,6 +128,23 @@ describe('LABELS — shape', () => {
     expect(waivers.sort()).toEqual(['vinaya/waiver:docs', 'vinaya/waiver:review'])
   })
 
+  it('covers all three detection flags — the anomalies a human must resolve', () => {
+    const flags = LABELS.filter((l) => l.category === 'flag').map((l) => l.id)
+    expect(flags.sort()).toEqual(['vinaya/dead-branch-push', 'vinaya/direct-main-push', 'vinaya/incoherent'])
+  })
+
+  it('covers the one non-work kind — a storage object is not a task', () => {
+    const kinds = LABELS.filter((l) => l.category === 'kind').map((l) => l.id)
+    expect(kinds).toEqual(['vinaya/state-object'])
+  })
+
+  it('carries no foreign-grammar id — the namespace separator is / , never : (#614 addendum)', () => {
+    for (const l of LABELS) {
+      expect(l.id.startsWith('vinaya/'), `'${l.id}' uses the old vinaya: grammar`).toBe(true)
+      expect(l.id.slice('vinaya/'.length).includes('/'), `'${l.id}' has a second /`).toBe(false)
+    }
+  })
+
   it('LabelKey and LABELS stay in lockstep — every key resolves, and none is orphaned', () => {
     for (const k of KEYS) expect(label(k)).toBeTruthy()
     expect(LABELS.map((l) => l.key).sort()).toEqual([...KEYS].sort())
@@ -131,6 +152,17 @@ describe('LABELS — shape', () => {
 })
 
 describe('label() — the only sanctioned constructor', () => {
+  it('names the labels the detection bins MINT on first fire — never a literal in the bin', () => {
+    // Both bins create their own label the first time they fire. A literal
+    // there would have minted a retired `aeg:`-named label (D-123).
+    expect(label('direct-main-push')).toBe('vinaya/direct-main-push')
+    expect(label('dead-branch-push')).toBe('vinaya/dead-branch-push')
+  })
+
+  it('names the storage-object kind the backlog excludes', () => {
+    expect(label('state-object')).toBe('vinaya/state-object')
+  })
+
   it('returns the full string for a literal label', () => {
     expect(label('tier-1')).toBe('vinaya/tier:1')
     expect(label('waiver-docs')).toBe('vinaya/waiver:docs')
@@ -163,6 +195,14 @@ describe('matchesLabel() / hasLabel()', () => {
     expect(matchesLabel('tier-1', 'tier:1')).toBe(false)
     expect(matchesLabel('waiver-review', 'waiver:review')).toBe(false)
     expect(matchesLabel('iteration', 'iteration:deprecation-v1')).toBe(false)
+  })
+
+  it('rejects the old colon grammar on the labels that used it (#614 addendum)', () => {
+    expect(matchesLabel('state-object', 'vinaya:state-object')).toBe(false)
+    expect(matchesLabel('state-object', 'vinaya/state-object')).toBe(true)
+    expect(matchesLabel('direct-main-push', 'aeg:direct-main-push')).toBe(false)
+    expect(matchesLabel('dead-branch-push', 'aeg:dead-branch-push')).toBe(false)
+    expect(matchesLabel('incoherent', 'aeg:incoherent')).toBe(false)
   })
 
   it('hasLabel() scans a label set', () => {

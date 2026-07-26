@@ -60,13 +60,13 @@ function tierOptions(issues: BacklogIssue[]): string[] {
   return [...present].sort((a, b) => a.localeCompare(b))
 }
 
-/** Distinct flag labels present — the `needs:*` / blocked family. */
+/** Distinct flag labels present — the `needs:*`, blocked, and detection-flag families. */
 function flagOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
     for (const name of issue.labels) {
       const kind = labelKind(name)
-      if (kind === 'needs' || kind === 'state') present.add(name)
+      if (kind === 'needs' || kind === 'state' || kind === 'flag') present.add(name)
     }
   }
   return [...present].sort((a, b) => a.localeCompare(b))

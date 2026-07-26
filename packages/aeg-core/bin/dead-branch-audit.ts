@@ -19,13 +19,17 @@ import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { findDeadBranchPushes } from '../src/index'
 import type { DeadBranchFact, DeadBranchPush } from '../src/index'
-import { resolveRepo } from '@atta/aeg-forge-state'
+import { label, resolveRepo } from '@atta/aeg-forge-state'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
 
-const MARKER = '<!-- aeg:dead-branch-push -->'
-const LABEL = 'aeg:dead-branch-push'
+// Same discipline as `check-direct-main-push.ts`: the name is read from the
+// code-owned vocabulary, because this bin mints the label on first fire and a
+// literal would have created a retired `aeg:`-named one (D-123). The marker is
+// derived from the label so the two can never disagree.
+const LABEL = label('dead-branch-push')
+const MARKER = `<!-- ${LABEL} -->`
 const LABEL_DESCRIPTION = 'daily-drift: commits landed on this branch after its PR already resolved'
 const COMMAND_TIMEOUT_MS = 20_000
 

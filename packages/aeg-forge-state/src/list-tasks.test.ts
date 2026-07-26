@@ -70,6 +70,41 @@ describe('listTasksForSlug', () => {
     expect(task?.projects).toEqual(['herald'])
   })
 
+  it('reads the plain `Project: x` header form older Issues use (#614 addendum regression)', () => {
+    // The whole `vada-production-v1` cohort and the `aeg-forge-state-v1`
+    // fixture are authored this way. Accepting only the bold form dropped
+    // their project the moment #614 deleted the `project:*` labels.
+    vi.mocked(ghIssueListByLabel).mockReturnValue([
+      {
+        number: 431,
+        title: '[iter] 7 — plain-form header',
+        body: 'Project: aeg, aeg-core\nIteration: iter · task 7\n\n**Boundary** — x',
+        state: 'OPEN',
+        milestone: null,
+        labels: [{ name: 'vinaya/iteration:iter' }]
+      }
+    ])
+
+    const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'iter')
+    expect(task?.projects).toEqual(['aeg', 'aeg-core'])
+  })
+
+  it('still ignores the `**Project(s) + blast radius**` prose heading', () => {
+    vi.mocked(ghIssueListByLabel).mockReturnValue([
+      {
+        number: 800,
+        title: '[iter] 1 — heading only, no field',
+        body: '**Project(s) + blast radius** — reaches packages/ui.\n\n**Boundary** — x',
+        state: 'OPEN',
+        milestone: null,
+        labels: [{ name: 'vinaya/iteration:iter' }]
+      }
+    ])
+
+    const [task] = listTasksForSlug('daniboomerang', 'attalabs', 'iter')
+    expect(task?.projects).toEqual([])
+  })
+
   it('ignores prose in the **Project:** field rather than deriving a garbage project (#554)', () => {
     // #554's EXACT body line. Unguarded, this split to a single "project"
     // named "(none — tools/admin is unregistered; …)", which rendered as a
