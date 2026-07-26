@@ -1,4 +1,4 @@
-import { LABELS, matchesLabel } from '@atta/aeg-forge-state'
+import { LABELS, matchesLabel } from '@atta/aeg-forge-state/labels'
 import { Badge } from '@atta/ui/components'
 
 /**
@@ -14,7 +14,11 @@ import { Badge } from '@atta/ui/components'
  * kind: project is a body field, so the backlog renders project names from the
  * Issue's `**Project:**` field rather than from any label.
  *
- * Server-safe (no client hooks) so it renders in both server and client trees.
+ * Server-safe (no client hooks) so it renders in both server and client trees —
+ * and it is reached from a `'use client'` module (`BacklogTable.tsx`), which is
+ * why the vocabulary comes from the pure `@atta/aeg-forge-state/labels` SUBPATH
+ * and never the package barrel: the barrel re-exports `gh.ts`'s
+ * `node:child_process`, which Turbopack cannot bundle for the browser.
  */
 
 export type LabelKind = 'project' | 'tier' | 'state' | 'needs' | 'flag' | 'other'
