@@ -69,7 +69,14 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { type DocsCoherenceEntry, evaluateDocsCoherence, modelBackedDocPaths, parseDocFrontmatter } from '../src/docs'
+import {
+  type DocsCoherenceEntry,
+  evaluateDocsCoherence,
+  evaluatePublishedProse,
+  modelBackedDocPaths,
+  parseDocFrontmatter,
+  type PublishedProseEntry
+} from '../src/docs'
 import {
   type DoctrineContent,
   deriveDiagramModel,
@@ -260,6 +267,11 @@ function runPrMode(): void {
 
   // C5 — code→doc coverage via packages/governance/doc-owners (dormant when absent).
   runC5(changed)
+
+  // C7 — published prose, scoped to the doctrine files this PR actually
+  // changed. Blocking here (this is the gate CI runs); the repo-wide sweep is
+  // full mode's job.
+  runC7(new Set(changed.filter((p) => p.startsWith(AEG_ROOT_PREFIX) && p.endsWith('.md'))))
 }
 
 // ---- push mode (C5 only — D-078 ring-0 pre-push gate) -----------------------
@@ -357,6 +369,37 @@ function runC6(): void {
   for (const n of result.notes) notes.push(n)
 }
 
+/**
+ * C7 — published-prose. The doctrine files under `aeg-root/` whose paths are
+ * in `only` (PR mode: this diff's own changed files; full mode: every one) are
+ * parsed and handed to the pure check together with the same model-backed
+ * allowlist C6 uses, so the gate governs exactly what `/docs` publishes.
+ */
+function runC7(only?: ReadonlySet<string>): void {
+  const files = sh("git ls-files 'aeg-root/*.md' 'aeg-root/roles/*.md' 'aeg-root/contracts/*.md'")
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((filePath) => (only ? only.has(filePath) : true))
+
+  if (files.length === 0) return
+
+  const entries: PublishedProseEntry[] = files.map((filePath) => {
+    const raw = existsSync(filePath) ? readFileSync(filePath, 'utf8') : ''
+    const parsed = parseDocFrontmatter(raw)
+    return {
+      relPath: filePath.slice(AEG_ROOT_PREFIX.length),
+      frontmatter: parsed.frontmatter,
+      body: parsed.body
+    }
+  })
+
+  const surfacedPaths = modelBackedDocPaths(deriveDiagramModel(loadDoctrine(), null, null))
+  const result = evaluatePublishedProse(entries, surfacedPaths)
+  for (const e of result.errors) errors.push(e)
+  for (const n of result.notes) notes.push(n)
+}
+
 function runFullMode(): void {
   // F1 — every spec carries a Status block.
   const specs = sh("git ls-files 'apps/**/specs/*.md'")
@@ -403,6 +446,9 @@ function runFullMode(): void {
 
   // C6 — surfaced-doc manifest coherence (state-machine.md Section 15c).
   runC6()
+
+  // C7 — published prose: repo-wide sweep of every surfaced doctrine doc.
+  runC7()
 }
 
 function runCompletenessScoreboard(bindings: DocOwnersBinding[], noDocRules: NoDocRule[]): void {
