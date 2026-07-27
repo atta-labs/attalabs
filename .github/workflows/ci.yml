@@ -51,12 +51,12 @@ jobs:
       issues: read
     env:
       # GH_TOKEN (aeg-forge-state-v1 3b, #437): @atta/aeg-core's test suite
-      # now exercises the coherence oracle's forge-derived iteration read
+      # now exercises the coherence oracle's forge-derived tranche read
       # (verify-coherence.test.ts's CLI subprocess test, plus the new
       # golden-comparison test) — both shell out to `gh`, which needs a
       # token to authenticate on a fresh Actions runner. Without it, every
-      # per-iteration forge call fails and falls back to the file read
-      # (still correct, per loadIterationFiles' own fallback), but the
+      # per-tranche forge call fails and falls back to the file read
+      # (still correct, per loadTrancheFiles' own fallback), but the
       # golden comparison then only proves file-equals-file, not
       # forge-equals-file — this token is what makes it a real proof in CI.
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

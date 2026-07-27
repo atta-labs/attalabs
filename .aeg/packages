@@ -2,7 +2,7 @@
 #
 # Named as canonical by three governance docs that never had a file to point
 # at: `.vinaya/projects.md` ("Routing vs. conflicts"),
-# `aeg-root/iteration-model.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
+# `aeg-root/tranche-model.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
 # This file is that missing artifact.
 #
 # WHAT A LINE MEANS. One collision domain per line: a repo-relative path
@@ -19,7 +19,7 @@
 # DERIVATION, NOT INVENTION. Every `packages/*` workspace is a shared
 # collision domain by construction (CLAUDE.md: "Shared infrastructure lives in
 # packages"). The non-package entries below are the cross-cutting paths
-# projects.md and iteration-model.md §5 both name verbatim — lockfiles, migrations, codegen
+# projects.md and tranche-model.md §5 both name verbatim — lockfiles, migrations, codegen
 # output, monorepo config — which couple tasks *across* package boundaries.
 #
 # A domain being listed here does NOT by itself mean cross-product reach: a
@@ -46,7 +46,7 @@ packages/storage
 packages/typescript-config
 packages/ui
 
-# ---- cross-cutting paths (projects.md / iteration-model.md §5) ---------------
+# ---- cross-cutting paths (projects.md / tranche-model.md §5) ---------------
 bun.lock
 turbo.json
 biome.json

@@ -70,7 +70,7 @@ Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp. 
 | @atta/models | [packages/models/](packages/models/) | AI model catalog — dynamic fetch from models.dev + curated overlay |
 | @atta/storage | [packages/storage/](packages/storage/) | Cloudflare R2 storage client + image transforms |
 | @atta/typescript-config | [packages/typescript-config/](packages/typescript-config/) | Shared TypeScript configs |
-| @atta/aeg-forge-state | [packages/aeg-forge-state/](packages/aeg-forge-state/) | Derives an `Iteration` purely from forge objects (Milestone + labeled Issues) — repo/owner-parameterized, consumed by this repo's own migration and by `vinaya-cli-v1`'s CLI. A task's project comes from the union of its `project:*` labels **and** its Issue body's `**Project:**` field, so derivation survives the labels being dropped |
+| @atta/aeg-forge-state | [packages/aeg-forge-state/](packages/aeg-forge-state/) | Derives a `Tranche` purely from forge objects (Milestone + labeled Issues) — repo/owner-parameterized, consumed by this repo's own migration and by `vinaya-cli-v1`'s CLI. A task's project comes from the union of its `project:*` labels **and** its Issue body's `**Project:**` field, so derivation survives the labels being dropped |
 
 The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLabs product can live under it without implying ownership by Atta-the-product.
 
@@ -134,7 +134,7 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 ## Principal Session Hygiene
 
-Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one iteration-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline in a Principal session that's already carrying a lot of history.
+Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one tranche-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline in a Principal session that's already carrying a lot of history.
 
 ---
 

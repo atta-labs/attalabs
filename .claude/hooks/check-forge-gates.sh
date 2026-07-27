@@ -57,11 +57,11 @@ fi
 
 # --- Issue creation ---------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+create\b'; then
-  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (iteration:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the validated wrapper instead (same args):
+  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (tranche:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the validated wrapper instead (same args):
 
-  bun packages/aeg-core/bin/open-issue.ts --title \"...\" --body-file /path/to/body.md --label iteration:<slug> [other gh args]
+  bun packages/aeg-core/bin/open-issue.ts --title \"...\" --body-file /path/to/body.md --label tranche:<slug> [other gh args]
 
-Non-task Issues (no iteration label) pass straight through the wrapper unvalidated."
+Non-task Issues (no tranche label) pass straight through the wrapper unvalidated."
 fi
 
 # --- Issue body edits -------------------------------------------------------

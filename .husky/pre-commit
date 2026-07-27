@@ -6,7 +6,7 @@
 if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then
   echo "✖ pre-commit: direct commits to main are forbidden." >&2
   echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
-  echo "  Create a worktree branch (git worktree add … -b task/<iteration>/<n> origin/main) and commit there." >&2
+  echo "  Create a worktree branch (git worktree add … -b task/<tranche>/<n> origin/main) and commit there." >&2
   exit 1
 fi
 
