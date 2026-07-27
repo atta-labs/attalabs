@@ -66,7 +66,7 @@
  * CWD-independent by design: chdir's to the repo root immediately below.
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -102,16 +102,22 @@ process.chdir(REPO_ROOT)
 
 // ---- I/O helpers -------------------------------------------------------------
 
-function sh(cmd: string): string {
+// Array-form execFileSync — no shell, so no injection surface even though
+// today's arguments are fixed/derived literals (`open-issue.ts`'s discipline;
+// see also apps/vinaya/cli/src/checks/bin/check-dispatch-readiness.ts:58,
+// this CLI's own port of this gate). `cmd`/`args` never pass through a shell,
+// so a tranche slug (Milestone-title-derived, settable by any collaborator)
+// interpolated into an argument cannot break out into shell syntax.
+function sh(cmd: string, args: string[]): string {
   try {
-    return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
   } catch {
     return ''
   }
 }
 
-function shJson<T>(cmd: string): T | null {
-  const out = sh(cmd)
+function shJson<T>(cmd: string, args: string[]): T | null {
+  const out = sh(cmd, args)
   if (!out) return null
   try {
     return JSON.parse(out) as T
@@ -126,7 +132,15 @@ const issueCache = new Map<number, IssueJson | null>()
 
 function ghIssueView(num: number, repo: RepoRef): IssueJson | null {
   if (issueCache.has(num)) return issueCache.get(num) ?? null
-  const result = shJson<IssueJson>(`gh issue view ${num} -R ${repo.owner}/${repo.repo} --json number,state,body,labels`)
+  const result = shJson<IssueJson>('gh', [
+    'issue',
+    'view',
+    String(num),
+    '-R',
+    `${repo.owner}/${repo.repo}`,
+    '--json',
+    'number,state,body,labels'
+  ])
   issueCache.set(num, result)
   return result
 }
@@ -136,9 +150,18 @@ type PrListEntry = { number: number; headRefName: string; state: 'OPEN' | 'CLOSE
 /** One batched fetch of every PR (any state) whose head branch belongs to this tranche. */
 function fetchTrancheBranchPrs(trancheSlug: string, repo: RepoRef): Map<string, PrListEntry> {
   const all =
-    shJson<PrListEntry[]>(
-      `gh pr list -R ${repo.owner}/${repo.repo} --state all --json number,headRefName,state,mergedAt --limit 300`
-    ) ?? []
+    shJson<PrListEntry[]>('gh', [
+      'pr',
+      'list',
+      '-R',
+      `${repo.owner}/${repo.repo}`,
+      '--state',
+      'all',
+      '--json',
+      'number,headRefName,state,mergedAt',
+      '--limit',
+      '300'
+    ]) ?? []
   const prefix = `task/${trancheSlug}/`
   const map = new Map<string, PrListEntry>()
   for (const pr of all) {
@@ -299,9 +322,20 @@ async function resolvePriorTrancheArchival(
       // `--state all` query with the full Issue JSON, where this site wants
       // open Issues and their numbers only.
       const openIssues =
-        shJson<Array<{ number: number }>>(
-          `gh issue list -R ${repo.owner}/${repo.repo} --label "${trancheLabel(slug)}" --state open --json number --limit 100`
-        ) ?? []
+        shJson<Array<{ number: number }>>('gh', [
+          'issue',
+          'list',
+          '-R',
+          `${repo.owner}/${repo.repo}`,
+          '--label',
+          trancheLabel(slug),
+          '--state',
+          'open',
+          '--json',
+          'number',
+          '--limit',
+          '100'
+        ]) ?? []
       if (openIssues.length === 0) {
         found = { project, priorTrancheSlug: slug, archived: false }
         break
@@ -318,16 +352,16 @@ async function resolvePriorTrancheArchival(
 function computeLeftover(trancheSlug: string, taskId: string) {
   const branch = `task/${trancheSlug}/${taskId}`
   const worktreeDir = join(REPO_ROOT, '.worktrees', 'task', trancheSlug, taskId)
-  const branchExistsRemote = sh(`git ls-remote --heads origin ${branch}`).length > 0
+  const branchExistsRemote = sh('git', ['ls-remote', '--heads', 'origin', branch]).length > 0
   const worktreeExistsLocal = existsSync(worktreeDir)
 
   let commitsAheadOfMain = 0
   if (branchExistsRemote) {
-    sh(`git fetch origin ${branch} --quiet`)
-    const count = sh(`git rev-list --count origin/main..origin/${branch}`)
+    sh('git', ['fetch', 'origin', branch, '--quiet'])
+    const count = sh('git', ['rev-list', '--count', `origin/main..origin/${branch}`])
     commitsAheadOfMain = count && !Number.isNaN(Number(count)) ? Number(count) : 0
   } else if (worktreeExistsLocal) {
-    const count = sh(`git -C ${worktreeDir} rev-list --count origin/main..HEAD`)
+    const count = sh('git', ['-C', worktreeDir, 'rev-list', '--count', 'origin/main..HEAD'])
     commitsAheadOfMain = count && !Number.isNaN(Number(count)) ? Number(count) : 0
   }
 
@@ -345,23 +379,17 @@ type CaptureResult = { output: string; exitCode: number; ranAtAll: boolean }
  * ("not found / not applicable"). Finding counts need the opposite: a
  * non-zero exit from `verify-docs`/`verify-coherence` means "here are the
  * findings," not "nothing to report," so this helper harvests output
- * regardless of exit code instead of throwing it away. `2>&1` merges stderr
- * into the captured stream — both tools' finding output lands there, and
- * neither tool writes anything to stderr on its clean/`--json` path, so nothing
- * gets corrupted by the merge.
+ * regardless of exit code instead of throwing it away. Array-form
+ * `spawnSync` — no shell, so no `2>&1` redirect is available; stdout and
+ * stderr are captured separately and concatenated instead. Equivalent for
+ * both tools' finding output, since neither writes to stderr on its
+ * clean/`--json` path (module docstring above).
  */
-function captureCombinedOutput(cmd: string): CaptureResult {
-  try {
-    const output = execSync(`${cmd} 2>&1`, { encoding: 'utf8' })
-    return { output, exitCode: 0, ranAtAll: true }
-  } catch (err) {
-    const e = err as { stdout?: unknown; status?: number | null }
-    if (typeof e.stdout === 'string') {
-      return { output: e.stdout, exitCode: typeof e.status === 'number' ? e.status : 1, ranAtAll: true }
-    }
-    // No captured stdout at all (e.g. spawn failure) — the process never produced output to count.
-    return { output: '', exitCode: -1, ranAtAll: false }
-  }
+function captureCombinedOutput(cmd: string, args: string[]): CaptureResult {
+  const result = spawnSync(cmd, args, { encoding: 'utf8' })
+  if (result.error) return { output: '', exitCode: -1, ranAtAll: false }
+  const output = (result.stdout ?? '') + (result.stderr ?? '')
+  return { output, exitCode: result.status ?? 1, ranAtAll: true }
 }
 
 function parseJsonSafe<T>(text: string): T | null {
@@ -383,14 +411,14 @@ type FindingCount = { tool: string; findingCount: number; unavailable: boolean }
  * into the numeric count — see `docsUnavailable`/`coherenceUnavailable` below.
  */
 export function currentFindingCounts(): FindingCount[] {
-  const docs = captureCombinedOutput('bun packages/aeg-core/bin/verify-docs.ts')
+  const docs = captureCombinedOutput('bun', ['packages/aeg-core/bin/verify-docs.ts'])
   const docsFindingCount = docs.ranAtAll ? countErrorLines(docs.output) : 0
   // verify-docs's own contract: exit 1 iff errors.length > 0 (bin/verify-docs.ts).
   // A non-zero exit with zero ✗ lines means it crashed before reaching that
   // contract, not that it ran and found nothing.
   const docsUnavailable = !docs.ranAtAll || (docs.exitCode !== 0 && docsFindingCount === 0)
 
-  const coherence = captureCombinedOutput('bun packages/aeg-core/bin/verify-coherence.ts --json')
+  const coherence = captureCombinedOutput('bun', ['packages/aeg-core/bin/verify-coherence.ts', '--json'])
   const coherenceParsed = coherence.ranAtAll ? parseJsonSafe<{ summary: { failed: number } }>(coherence.output) : null
   const coherenceUnavailable = !coherence.ranAtAll || coherenceParsed === null
   const coherenceFindingCount = coherenceParsed?.summary.failed ?? 0
@@ -439,7 +467,7 @@ function runSimulateMode(trancheSlug: string, taskId: string, bodyFile: string):
     [
       'verify-brief',
       () =>
-        execSync('bun packages/aeg-core/bin/verify-brief.ts', {
+        execFileSync('bun', ['packages/aeg-core/bin/verify-brief.ts'], {
           env: { ...process.env, BRANCH: branch, PR_BODY: body },
           stdio: 'inherit'
         })
@@ -447,7 +475,7 @@ function runSimulateMode(trancheSlug: string, taskId: string, bodyFile: string):
     [
       'verify-docs --pr',
       () =>
-        execSync('bun packages/aeg-core/bin/verify-docs.ts --pr', {
+        execFileSync('bun', ['packages/aeg-core/bin/verify-docs.ts', '--pr'], {
           env: { ...process.env, PR_BODY: body },
           stdio: 'inherit'
         })
@@ -455,7 +483,7 @@ function runSimulateMode(trancheSlug: string, taskId: string, bodyFile: string):
     [
       'verify-docs --push (C5, via PR_BODY_FILE)',
       () =>
-        execSync('bun packages/aeg-core/bin/verify-docs.ts --push', {
+        execFileSync('bun', ['packages/aeg-core/bin/verify-docs.ts', '--push'], {
           env: { ...process.env, PR_BODY_FILE: bodyFile },
           stdio: 'inherit'
         })
@@ -563,7 +591,7 @@ async function runGateMode(trancheSlug: string, taskId: string): Promise<void> {
   // origin/main ref (git rev-list origin/main..origin/<branch>) — freshness
   // that used to be a side effect of the file-based tranche read above,
   // now made explicit since the forge read no longer needs it.
-  sh('git fetch origin main --quiet')
+  sh('git', ['fetch', 'origin', 'main', '--quiet'])
 
   const repo = await resolveRepo()
   const token = await resolveGithubToken()
@@ -623,7 +651,7 @@ async function runGateMode(trancheSlug: string, taskId: string): Promise<void> {
   const leftover = computeLeftover(trancheSlug, taskId)
 
   const rawCounts = currentFindingCounts()
-  const nowIso = sh('git log -1 --format=%cI') || new Date(0).toISOString()
+  const nowIso = sh('git', ['log', '-1', '--format=%cI']) || new Date(0).toISOString()
   const capturedBaseline = captureBaseline(
     rawCounts.map(({ tool, findingCount }) => ({ tool, findingCount })),
     nowIso

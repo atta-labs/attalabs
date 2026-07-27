@@ -8,42 +8,48 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * through `sh()`/`shJson()`, which swallow ANY non-zero exit to `''`/`null`.
  * Both tools exit non-zero exactly when findings exist, so the baseline
  * silently reported 0 in the one case it was supposed to catch. This mocks
- * `node:child_process`'s `execSync` to exercise every observable outcome
- * without needing the real tools to be in a specific state.
+ * `node:child_process`'s `spawnSync` (the array-form, no-shell primitive
+ * `captureCombinedOutput` uses since `tranche-rename-v1` task 2) to exercise
+ * every observable outcome without needing the real tools to be in a
+ * specific state.
  */
 
-const execSyncMock = vi.fn()
+const spawnSyncMock = vi.fn()
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
-  return { ...actual, execSync: (...args: unknown[]) => execSyncMock(...args) }
+  return { ...actual, spawnSync: (...args: unknown[]) => spawnSyncMock(...args) }
 })
 
 const { currentFindingCounts } = await import('./verify-dispatch')
 
 beforeEach(() => {
-  execSyncMock.mockReset()
+  spawnSyncMock.mockReset()
 })
 
-function throwWithStdout(stdout: string, status = 1): never {
-  const err = new Error('command failed') as Error & { stdout?: string; status?: number }
-  err.stdout = stdout
-  err.status = status
-  throw err
+function successResult(stdout: string, status = 0): { stdout: string; stderr: string; status: number } {
+  return { stdout, stderr: '', status }
 }
 
-function throwSpawnFailure(): never {
+function failureResult(stdout: string, status = 1): { stdout: string; stderr: string; status: number } {
+  return { stdout, stderr: '', status }
+}
+
+function spawnFailureResult(): { error: Error; stdout: null; stderr: null; status: null } {
   // No `.stdout` at all — simulates a spawn failure (e.g. ENOENT), never a
   // captured non-zero exit. Must not be confused with "0 findings."
-  throw new Error('spawn bun ENOENT')
+  return { error: new Error('spawn bun ENOENT'), stdout: null, stderr: null, status: null }
 }
 
 describe('currentFindingCounts', () => {
   it('(a) reports 0 when both tools exit 0 with no findings', () => {
-    execSyncMock.mockImplementation((cmd: string) => {
-      if (cmd.includes('verify-docs.ts')) return 'verify-docs passed (full mode).\n'
-      if (cmd.includes('verify-coherence.ts')) return JSON.stringify({ summary: { passed: 5, failed: 0, info: 0 } })
-      throw new Error(`unexpected command: ${cmd}`)
+    spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
+      if (args.includes('packages/aeg-core/bin/verify-docs.ts'))
+        return successResult('verify-docs passed (full mode).\n')
+      if (args.includes('packages/aeg-core/bin/verify-coherence.ts')) {
+        return successResult(JSON.stringify({ summary: { passed: 5, failed: 0, info: 0 } }))
+      }
+      throw new Error(`unexpected command: ${cmd} ${args.join(' ')}`)
     })
 
     expect(currentFindingCounts()).toEqual([
@@ -53,9 +59,9 @@ describe('currentFindingCounts', () => {
   })
 
   it('(b) counts real findings from a non-zero exit — the bug this task fixes', () => {
-    execSyncMock.mockImplementation((cmd: string) => {
-      if (cmd.includes('verify-docs.ts')) {
-        return throwWithStdout(
+    spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
+      if (args.includes('packages/aeg-core/bin/verify-docs.ts')) {
+        return failureResult(
           [
             '',
             'verify-docs FAILED (full mode) — 3 issue(s):',
@@ -67,10 +73,10 @@ describe('currentFindingCounts', () => {
           ].join('\n')
         )
       }
-      if (cmd.includes('verify-coherence.ts')) {
-        return throwWithStdout(JSON.stringify({ summary: { passed: 2, failed: 4, info: 0 } }))
+      if (args.includes('packages/aeg-core/bin/verify-coherence.ts')) {
+        return failureResult(JSON.stringify({ summary: { passed: 2, failed: 4, info: 0 } }))
       }
-      throw new Error(`unexpected command: ${cmd}`)
+      throw new Error(`unexpected command: ${cmd} ${args.join(' ')}`)
     })
 
     expect(currentFindingCounts()).toEqual([
@@ -80,7 +86,7 @@ describe('currentFindingCounts', () => {
   })
 
   it('(c) reports UNAVAILABLE, never 0, when a tool cannot run at all (spawn failure)', () => {
-    execSyncMock.mockImplementation(() => throwSpawnFailure())
+    spawnSyncMock.mockImplementation(() => spawnFailureResult())
 
     expect(currentFindingCounts()).toEqual([
       { tool: 'verify-docs-full', findingCount: 0, unavailable: true },
@@ -89,9 +95,11 @@ describe('currentFindingCounts', () => {
   })
 
   it('(c) reports UNAVAILABLE for verify-coherence when --json output is a crash, not a report', () => {
-    execSyncMock.mockImplementation((cmd: string) => {
-      if (cmd.includes('verify-docs.ts')) return 'verify-docs passed (full mode).\n'
-      return throwWithStdout('TypeError: Cannot read properties of undefined\n    at runCoherenceChecks (...)')
+    spawnSyncMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('packages/aeg-core/bin/verify-docs.ts')) {
+        return successResult('verify-docs passed (full mode).\n')
+      }
+      return failureResult('TypeError: Cannot read properties of undefined\n    at runCoherenceChecks (...)')
     })
 
     const result = currentFindingCounts()
@@ -104,9 +112,11 @@ describe('currentFindingCounts', () => {
   })
 
   it('(c) reports UNAVAILABLE for verify-docs when a non-zero exit produces no ✗ lines (crash, not a real 0)', () => {
-    execSyncMock.mockImplementation((cmd: string) => {
-      if (cmd.includes('verify-coherence.ts')) return JSON.stringify({ summary: { passed: 1, failed: 0, info: 0 } })
-      return throwWithStdout('Segmentation fault\n')
+    spawnSyncMock.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('packages/aeg-core/bin/verify-coherence.ts')) {
+        return successResult(JSON.stringify({ summary: { passed: 1, failed: 0, info: 0 } }))
+      }
+      return failureResult('Segmentation fault\n')
     })
 
     const result = currentFindingCounts()
@@ -122,21 +132,23 @@ describe('currentFindingCounts', () => {
 describe('(d) sh()/shJson() other call sites are untouched', () => {
   const src = readFileSync(join(import.meta.dirname, 'verify-dispatch.ts'), 'utf8')
 
-  it("sh()'s throw-and-swallow-to-'' contract is unchanged", () => {
-    const shBody = src.match(/function sh\(cmd: string\): string \{[\s\S]*?\n\}\n/)
+  it("sh()'s throw-and-swallow-to-'' contract is unchanged, array-form signature", () => {
+    const shBody = src.match(/function sh\(cmd: string, args: string\[]\): string \{[\s\S]*?\n\}\n/)
     expect(shBody).not.toBeNull()
     expect(shBody?.[0]).toContain("stdio: ['ignore', 'pipe', 'ignore']")
     expect(shBody?.[0]).toContain("return ''")
+    // Array-form execFileSync — no shell, no injection surface (task 2, #671).
+    expect(shBody?.[0]).toContain('execFileSync(cmd, args,')
   })
 
   it('every other sh()/shJson() call site (git, gh) still uses the original helpers, not the new one', () => {
     for (const needle of [
-      'git ls-remote --heads origin',
-      'git rev-list --count origin/main',
-      'git log -1 --format=%cI',
-      'gh issue view',
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${...}` is the asserted command text, not an interpolation
-      'gh pr list -R ${repo.owner}/${repo.repo} --state all'
+      "sh('git', ['ls-remote', '--heads', 'origin', branch])",
+      "sh('git', ['fetch', 'origin', branch, '--quiet'])",
+      "sh('git', ['log', '-1', '--format=%cI'])",
+      "'issue',\n    'view',",
+      "'--json',\n    'number,state,body,labels'",
+      "'--json',\n      'number,headRefName,state,mergedAt',"
     ]) {
       expect(src).toContain(needle)
     }
@@ -157,24 +169,28 @@ describe('(d) sh()/shJson() other call sites are untouched', () => {
  * identical gap. This is a structural, source-scanning test (not a live `gh`
  * mock) because live `gh` is unmockable cheaply — same style as the `(d)`
  * suite above and task 21's `sh()`/`shJson()` call-site assertions.
+ *
+ * Updated for the array-form `execFileSync` conversion (task 2, #671): the
+ * repo target is now the array element right after `'-R'`, not a template
+ * segment inside a single command string.
  */
 describe('(e) every gh invocation carries an explicit repo target (Part 1, task 23, #360)', () => {
   const src = readFileSync(join(import.meta.dirname, 'verify-dispatch.ts'), 'utf8')
 
-  it('every `gh ...` command string passed to sh()/shJson() contains -R <owner>/<repo>', () => {
-    const callPattern = /\b(?:sh|shJson(?:<[^(]*>)?)\(\s*`([^`]*)`/g
+  it("every 'gh' call passed to sh()/shJson() carries '-R', a repo template segment", () => {
+    const callPattern = /\('gh',\s*\[([\s\S]*?)\]\)/g
     const ghCommands: string[] = []
     let match: RegExpExecArray | null
     // biome-ignore lint/suspicious/noAssignInExpressions: standard exec-loop idiom
     while ((match = callPattern.exec(src)) !== null) {
-      const cmd = match[1] as string
-      if (cmd.trimStart().startsWith('gh ')) ghCommands.push(cmd)
+      ghCommands.push(match[1] as string)
     }
     // Fails loud if the gh calls this test targets ever get refactored away
-    // from sh()/shJson() (e.g. to execSync directly) without updating this scan.
+    // from sh()/shJson() (e.g. to execFileSync directly) without updating this scan.
     expect(ghCommands.length).toBe(3)
-    for (const cmd of ghCommands) {
-      expect(cmd).toMatch(/-R \$\{repo\.owner\}\/\$\{repo\.repo\}/)
+    for (const argsText of ghCommands) {
+      expect(argsText).toContain("'-R'")
+      expect(argsText).toMatch(/`\$\{repo\.owner\}\/\$\{repo\.repo\}`/)
     }
   })
 })
