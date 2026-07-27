@@ -341,7 +341,7 @@ export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectio
   return {
     status: 'fail',
     errors: [
-      'brief-validation plan-PR guard: a `plan/*` PR must not carry `Closes #N` — a plan PR creates Issues, it does not resolve one (roles/planner.md,). Remove the `Closes #N` reference; the task Issue closes from the task PR that does the work.'
+      'brief-validation plan-PR guard: a `plan/*` PR must not carry `Closes #N` — a plan PR creates Issues, it does not resolve one (roles/planner.md). Remove the `Closes #N` reference; the task Issue closes from the task PR that does the work.'
     ]
   }
 }

@@ -51,7 +51,7 @@ const RATIONALE_FIELDS: Array<{ name: string; pattern: string }> = [
 export function checkIssueRationale(body: string): IssueSectionResult {
   const errors = RATIONALE_FIELDS.filter((f) => !hasRationaleField(body, f.pattern)).map(
     (f) =>
-      `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md,).`
+      `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md).`
   )
   return { status: errors.length > 0 ? 'fail' : 'pass', errors }
 }

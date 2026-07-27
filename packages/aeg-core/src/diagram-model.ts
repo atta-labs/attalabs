@@ -199,7 +199,7 @@ export function deriveDiagramModel(
   const ring1Disabled = config?.rings?.ring1_forgeWriteInterception === false
   const ring2Disabled = config?.rings?.ring2_asyncAudits === false
 
-  // --- Ring nodes (Ring 0 has no ring-level switch,) ---
+  // --- Ring nodes (Ring 0 has no ring-level switch) ---
   nodes.push({ id: 'ring:0', kind: 'ring', label: labels[0], ringIndex: 0, renderState: 'active' })
   nodes.push({
     id: 'ring:1',

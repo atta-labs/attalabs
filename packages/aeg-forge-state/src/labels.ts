@@ -18,7 +18,7 @@
  * `iteration` axis, the `state-machine-v1` value. The namespace makes every
  * Vinaya label sortable and filterable as one group in a repo it shares with
  * an adopter's own labels — the reason a product namespace exists at all.
- * retired `aeg` as a public name, so no `aeg:*` label survives:
+ * The `aeg` name is retired in public, so no `aeg:*` label survives:
  * `aeg:blocked` became `vinaya/blocked`, and the forge's `aeg:incoherent` /
  * `aeg:stale-blocker` were renamed in place (history preserved).
  *
@@ -50,7 +50,7 @@
  * waived are independent axes, and no code should infer one from another.
  *
  * **Status is not in here, and must never be.** Execution status is derived
- * from forge objects (`state-machine-model.ts`,), never written
+ * from forge objects (`state-machine-model.ts`), never written
  * as a label — a `status:*` label would recreate the racing status store the
  * derivation model exists to eliminate. **Project is not in here either**: a
  * task's project is a `**Project:**` field in its Issue body, never a label.

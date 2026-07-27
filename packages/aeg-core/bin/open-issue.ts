@@ -562,7 +562,7 @@ export function main(): void {
     if (status === 'fail') {
       console.error(`\n[open-issue] FAILED — ${errors.length} rationale field(s) missing:\n`)
       for (const e of errors) console.error(`  ✗ ${e}`)
-      fail('the Issue body does not carry the full eight-field Planner rationale (planner-brief contract,).')
+      fail('the Issue body does not carry the full eight-field Planner rationale (planner-brief contract).')
     }
     console.log('[open-issue] rationale gate PASS.')
 

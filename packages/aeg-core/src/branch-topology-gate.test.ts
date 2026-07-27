@@ -126,7 +126,7 @@ describe('known theoretical divergences — synthetic-only, characterized so dri
   // Neither shape occurs in any real iteration file (all live + completed
   // files were swept at task-32 time — see PR #for-399's evidence). Where
   // the two disagree on synthetic input, parseIteration's reading is the
-  // authoritative one (only the `## Tasks` table defines rows,).
+  // authoritative one (only the `## Tasks` table defines rows).
 
   it('a row-shaped line OUTSIDE the Tasks table: grep matched it, the parser correctly does not', () => {
     const md = `${TOPOLOGY_MD}\n## Other\n\n| 555 | not a task row |\n`

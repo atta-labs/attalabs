@@ -22,7 +22,13 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
 /** Claims that a removed mechanism is current. */
 const RETIRED_IN_PRODUCT = [
-  String.raw`\bD-\d{3}\b`,
+  // `[0-9]`, never `\d`. Every pattern in this file is POSIX ERE, which has no
+  // `\d`/`\w`/`\s` and no lookaheads — GNU grep reads `\d` as a literal `d`, so
+  // `\bD-\d{3}\b` matches nothing on Linux. It shipped that way: the citation
+  // ban was vacuous on CI while passing locally, because a dev machine's `grep`
+  // may resolve to something more permissive. Local green is not evidence for
+  // this file; only CI is. The self-test below is what caught it.
+  String.raw`\bD-[0-9]{3}\b`,
   // The placeholder forms too. A doc that says `D-###` or `## D-NNN` is
   // teaching the grammar of a record that no longer exists, which is the same
   // failure as citing a real one — and it is the form four sweeps missed,
@@ -87,7 +93,19 @@ const RETIRED = [
   // checks deleted with the machinery
   'checkDecisionNumbersFresh',
   // the role that no longer exists
-  String.raw`roles/team-leader\.md`
+  String.raw`roles/team-leader\.md`,
+  // The wreckage a citation strip leaves when it deletes the contents of a
+  // parenthetical and not the punctuation around it. Three rounds produced
+  // three different signatures — `(, ` then ` (.)` then `,)` — because each
+  // scan looked for the shapes the previous round taught it. A pattern ends
+  // that: the shape is banned, not the instance.
+  //
+  // `()` is deliberately NOT here. It is a function call in every TypeScript
+  // file in the repo, and banning it would make this suite unrunnable — the
+  // empty-parenthesis case is caught by the guards in the strip itself.
+  String.raw`\(,`,
+  String.raw`,\)`,
+  String.raw`\(\.\)`
 ]
 
 /**
@@ -211,7 +229,7 @@ describe('the product carries no trace of a history the adopter lacks', () => {
  * failure mode is a pattern that matches nothing and therefore passes.
  */
 const SAMPLES: Record<string, string> = {
-  '\\bD-\\d{3}\\b': 'see D-097 for the rule',
+  '\\bD-[0-9]{3}\\b': 'see D-097 for the rule',
   'D-(###|NNN|nnn|xxx)': 'a Tier 3 change requiring a D-###',
   'decision log(s|ged|ging)?([^a-z]|$)': 'read the decision log first',
   'decision-log': 'a decision-log entry is required',
@@ -233,7 +251,11 @@ const SAMPLES: Record<string, string> = {
   'Challenges lock': 'Challenges lock: no',
   checkDecisionNumbersFresh: 'checkDecisionNumbersFresh refuses the branch',
   'roles/team-leader\\.md': 'see roles/team-leader.md',
-  'decision logic': 'NEGATIVE — all decision logic lives in the evaluator'
+  'decision logic': 'NEGATIVE — all decision logic lives in the evaluator',
+  // The strip-wreckage shapes, each written as the artifact itself.
+  '\\(,': 'a rationale block (, point-of-power principle) shipped once',
+  ',\\)': 'the seam contract (planner-brief contract,) named here',
+  '\\(\\.\\)': 'forces every agent back for the rules. (.)'
 }
 
 describe('the gate can see what it bans', () => {
