@@ -5,7 +5,6 @@ import {
   findTrancheSlug,
   hasLabel,
   trancheLabel,
-  trancheLabelsToQuery,
   trancheSlugLengthError,
   trancheSlugOf,
   type Label,
@@ -249,16 +248,6 @@ describe('trancheSlugOf() / findTrancheSlug()', () => {
 
   it('still constructs under the canonical prefix only', () => {
     expect(trancheLabel('iter')).toBe('vinaya/tranche:iter')
-  })
-})
-
-describe('trancheLabelsToQuery() — the migration window is closed', () => {
-  it('returns just the canonical label now that the migration window is closed', () => {
-    expect(trancheLabelsToQuery('iter')).toEqual(['vinaya/tranche:iter'])
-  })
-
-  it('always contains what trancheLabel() would construct', () => {
-    expect(trancheLabelsToQuery('state-machine-v1')).toContain(trancheLabel('state-machine-v1'))
   })
 })
 

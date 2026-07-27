@@ -34,7 +34,7 @@ import type {
   TaskRef
 } from '@atta/aeg-types'
 import { resolveGithubToken } from './github-token'
-import { trancheLabelsToQuery } from './labels'
+import { trancheLabel } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
 /** Branch ref convention: `task/<tranche>/<id>` (tranche-model.md). */
@@ -64,33 +64,22 @@ export async function fetchForgeTasksByLabel(input: {
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
-  // One query per accepted label, unioned: mid-rename a tranche's Issues can be
-  // split across the canonical and the superseded name, and either half alone
-  // is a wrong answer that reads as "this tranche has no tasks".
-  const responses = await Promise.all(
-    trancheLabelsToQuery(input.trancheSlug).map(async (labelName) => {
-      try {
-        return await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
-          owner: input.owner,
-          repo: input.repo,
-          label: labelName
-        })
-      } catch {
-        return null
-      }
+  let response: LabelIssuesResponse | null
+  try {
+    response = await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
+      owner: input.owner,
+      repo: input.repo,
+      label: trancheLabel(input.trancheSlug)
     })
-  )
+  } catch {
+    response = null
+  }
 
   const refs: Array<{ id: string; issue: number }> = []
-  const seen = new Set<number>()
-  for (const response of responses) {
-    for (const node of response?.repository?.issues?.nodes ?? []) {
-      if (seen.has(node.number)) continue
-      const taskId = parseTaskIdFromTitle(node.title, input.trancheSlug)
-      if (taskId === null) continue
-      seen.add(node.number)
-      refs.push({ id: taskId, issue: node.number })
-    }
+  for (const node of response?.repository?.issues?.nodes ?? []) {
+    const taskId = parseTaskIdFromTitle(node.title, input.trancheSlug)
+    if (taskId === null) continue
+    refs.push({ id: taskId, issue: node.number })
   }
   return refs
 }

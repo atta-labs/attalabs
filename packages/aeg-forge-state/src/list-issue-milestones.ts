@@ -1,5 +1,5 @@
 import { ghIssueListByAnyLabel } from './gh'
-import { trancheLabelsToQuery } from './labels'
+import { trancheLabel } from './labels'
 
 export type IssueMilestoneFact = { issue: number; milestoneTitle: string | null }
 
@@ -10,7 +10,7 @@ export type IssueMilestoneFact = { issue: number; milestoneTitle: string | null 
  * query (aeg-review-gate-v1 task 1 follow-up: the L4 coherence check).
  */
 export function listIssueMilestonesForSlug(owner: string, repo: string, slug: string): IssueMilestoneFact[] {
-  return ghIssueListByAnyLabel(owner, repo, trancheLabelsToQuery(slug))
+  return ghIssueListByAnyLabel(owner, repo, [trancheLabel(slug)])
     .filter((i) => i.state === 'OPEN')
     .map((i) => ({ issue: i.number, milestoneTitle: i.milestone?.title ?? null }))
 }

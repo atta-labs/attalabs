@@ -277,19 +277,6 @@ export function trancheLabel(slug: string): string {
 }
 
 /**
- * The full label `slug`'s Issues carry, wrapped in an array — the shape a
- * forge OR-query (`ghIssueListByAnyLabel`) expects.
- *
- * `trancheLabel()` is for CONSTRUCTION: the one name a new Issue is given.
- * This is for QUERYING; the two return the same string today, but stay
- * separate functions so a caller's intent — "build a label" vs. "query for
- * one" — is legible at the call site regardless of shape.
- */
-export function trancheLabelsToQuery(slug: string): string[] {
-  return [trancheLabel(slug)]
-}
-
-/**
  * Whether `name` is this label — exact match for a literal, prefix match for a
  * prefix family.
  */

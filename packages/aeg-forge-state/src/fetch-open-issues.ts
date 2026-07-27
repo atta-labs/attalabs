@@ -14,7 +14,7 @@
 
 import { graphql } from '@octokit/graphql'
 import type { ForgeIssue } from '@atta/aeg-types'
-import { trancheLabelsToQuery } from './labels'
+import { trancheLabel } from './labels'
 
 type LabeledIssuesResponse = {
   repository: Record<
@@ -45,18 +45,13 @@ export async function fetchOpenIssuesByLabel(
 
   // GraphQL alias: replace hyphens with underscores (hyphens are invalid in aliases)
   const toAlias = (slug: string) => `tranche_${slug.replace(/-/g, '_')}`
-  // One alias per (slug, accepted label). `labels: [a, b]` is an AND filter, so
-  // spanning a label rename means separate connections unioned client-side.
-  const variantAlias = (slug: string, i: number) => `${toAlias(slug)}__v${i}`
 
   const perSlug = slugs
-    .flatMap((slug) =>
-      trancheLabelsToQuery(slug).map(
-        (labelName, i) => `
-    ${variantAlias(slug, i)}: issues(states: [OPEN], labels: [${JSON.stringify(labelName)}], first: 100) {
+    .map(
+      (slug) => `
+    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(trancheLabel(slug))}], first: 100) {
       nodes { number body labels(first: 20) { nodes { name } } }
     }`
-      )
     )
     .join('')
 
@@ -75,21 +70,13 @@ export async function fetchOpenIssuesByLabel(
   if (!response.repository) return result
 
   for (const slug of slugs) {
-    // Union the per-label connections, deduped by Issue number: mid-rename an
-    // Issue can carry both the canonical and the superseded label.
-    const byNumber = new Map<number, ForgeIssue>()
-    trancheLabelsToQuery(slug).forEach((_labelName, i) => {
-      const conn = response.repository?.[variantAlias(slug, i)]
-      for (const n of conn?.nodes ?? []) {
-        if (byNumber.has(n.number)) continue
-        byNumber.set(n.number, {
-          number: n.number,
-          body: n.body ?? '',
-          labels: n.labels?.nodes?.map((l) => l.name) ?? []
-        })
-      }
-    })
-    result.set(slug, [...byNumber.values()])
+    const conn = response.repository[toAlias(slug)]
+    const issues: ForgeIssue[] = (conn?.nodes ?? []).map((n) => ({
+      number: n.number,
+      body: n.body ?? '',
+      labels: n.labels?.nodes?.map((l) => l.name) ?? []
+    }))
+    result.set(slug, issues)
   }
 
   return result
