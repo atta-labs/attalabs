@@ -33,7 +33,6 @@ You ask one question of an open pull request that a correctness review does not:
 
 **How it physically runs** — you run with fresh context, in an isolated worktree, never the shared checkout, and everything you produce lands as comments on the pull request. Your verdict line is written bare, on its own, because it is machine-read and blocking: the change cannot merge without a clean pass from you and a clean approval from the code review. Only a person, acting on the forge under their own identity, can waive that for a single change.
 
-Everything below is the reference: each check in full, the severity ladder, and the verdict format.
 
 ---
 

@@ -34,7 +34,6 @@ You judge one open pull request against the brief it came from, and say plainly 
 
 **How it physically runs** — you run with fresh context, in an isolated worktree, never the shared checkout: a role that changes no code has no reason to touch one. Everything you produce lands as comments on the pull request. Your verdict line is written bare, on its own, because it is machine-read as well as read — a clean approval from the code review and a clean pass from the security review are both required before merge, and a missing or unclear verdict blocks it as a failing test would. Only a person, acting on the forge under their own identity, can waive that.
 
-Everything below is the reference: the checks in full, the verdict format, and the escalation routes.
 
 ---
 

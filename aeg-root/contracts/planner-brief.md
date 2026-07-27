@@ -1,6 +1,6 @@
 ---
-sidebar_title: Planner → Brief
-title: Planner → Brief
+sidebar_title: Planner → Brief Author
+title: Planner → Brief Author
 order: 1
 contract_id: planner-brief
 description: Carries an iteration’s plan down to a single task’s brief, so a task keeps the reasoning that shaped it.
@@ -24,7 +24,6 @@ This seam sits between planning an iteration and writing one task's brief. It ex
 
 **How it physically runs** — the carrier is the task's issue body. The planner writes the rationale there in a fixed grammar, readable by a person and checkable by a machine alike; an issue whose body does not carry every part is refused at creation, and the same check re-runs against issues already open. The brief author reads it there and writes the brief, which lands in the pull-request body at dispatch. The issue holds the reasoning; the pull request holds the instruction.
 
-Everything below is the reference: the field-by-field mapping, the grammar, and both sides' obligations.
 
 ---
 

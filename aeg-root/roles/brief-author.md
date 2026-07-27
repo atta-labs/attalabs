@@ -32,7 +32,6 @@ You turn one planned task into one executable brief, just in time, and hand it o
 
 **How it physically runs** — you work in conversation, not in a repository: the brief is written, handed over, and lands in the pull-request body at dispatch. That is its only durable home; it is never committed and never stored in the issue, because a brief kept anywhere permanent goes stale before the work begins. The task's issue is where you read the plan from; the pull request is where your output lives. Nothing you write records status — the branch and the pull request are the status. At the end of a session you report your own token usage rather than writing it into a file.
 
-Everything below is the reference: the required sections in full, the model-selection fields, and the anti-patterns each rule came from.
 
 ---
 

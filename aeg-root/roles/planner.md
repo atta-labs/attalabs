@@ -34,7 +34,6 @@ You turn an intent and a slice of work into a whole iteration — not one task, 
 
 **How it physically runs** — creating the milestone and cutting the issues are forge actions, so most planning commits nothing: no branch, no worktree, no plan pull request. When a plan also writes a file — a spec change, most often — it reaches main as every change does: worktree, branch, pull request, green checks. Only one plan pull request per iteration may be open at once. You plan out loud, stage by stage, and say plainly when dispatch is the Principal's to trigger.
 
-Everything below is the reference: the gates in full, the sizing tests, and the failures each rule came from.
 
 ---
 

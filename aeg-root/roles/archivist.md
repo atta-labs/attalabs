@@ -31,7 +31,6 @@ You close out one merged pull request, so that months later it is still clear wh
 
 **How it physically runs** — you run after the merge, found by the task's branch name. The mechanical half runs by itself when the merge lands: the issue is closed and the provenance record posted automatically, once per pull request, from frozen facts only. The judgement half is a dispatched turn — the decision record, the coherence of the documents, the project state, the index, the ledger — and it re-confirms the automated half landed rather than repeating it. Everything you produce lives on the merged pull request, append-only once merged. Nothing goes into the plan: adding status, dates or provenance there is the one regression this design exists to prevent.
 
-Everything below is the reference: the checklist, the provenance fields, and the output format.
 
 ---
 

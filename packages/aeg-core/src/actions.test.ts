@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import matter from 'gray-matter'
 import { describe, expect, it } from 'vitest'
 import { type Action, ACTIONS, CROSSING_KEYWORDS } from './actions'
+import { readabilityErrors } from './docs/published-prose'
 import { type GateRow, parseEnforcementRegistry } from './registry-parse'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
@@ -90,4 +91,20 @@ describe('ACTIONS — real-file cross-check', () => {
       expect(roleIds.has(roleId), `performedBy '${roleId}' is not a real role_id`).toBe(true)
     }
   })
+})
+
+/**
+ * `/docs/actions` is rendered entirely from `ACTIONS` — label, summary and
+ * description all reach a reader. Because that prose lives in TypeScript
+ * rather than in a markdown file under `aeg-root/`, `evaluatePublishedProse`
+ * never sees it, so C7 guarded every other published page and not this one.
+ * Same rules, applied where the text actually lives.
+ */
+describe('C7 readability reaches the actions page', () => {
+  for (const action of ACTIONS) {
+    it(`"${action.id}" publishes nothing a reader cannot resolve`, () => {
+      const errors = readabilityErrors(`actions.ts:${action.id}`, [action.label, action.summary, action.description])
+      expect(errors, `\n${errors.join('\n')}\n`).toEqual([])
+    })
+  }
 })

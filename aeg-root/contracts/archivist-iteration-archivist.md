@@ -24,7 +24,6 @@ This seam sits between closing out one task and closing out the iteration that c
 
 **How it physically runs** — the carrier is the merged pull requests themselves, each with its provenance comment, plus the standing lessons thread and any follow-up issues. Iteration close-out reads them and stops if one is missing, flagging exactly which task's record is incomplete rather than working around it. The retrospective it then writes is a structured projection of those facts — assembled from merged work, recorded lessons and the decisions of the period, never generated from memory.
 
-Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
-sidebar_title: Brief → Developer
-title: Brief → Developer
+sidebar_title: Brief Author → Developer
+title: Brief Author → Developer
 order: 2
 contract_id: brief-developer
 description: Carries a brief to the agent that executes it, so nothing the author knew is left implicit.
@@ -24,7 +24,6 @@ This seam sits between the brief and the agent that executes it. It exists to cl
 
 **How it physically runs** — the carrier is the pull-request body, which holds the brief verbatim. That is the brief's permanent home: the executing agent reads it there, the reviewer reads it there to judge intent against outcome, and the close-out reads it there as evidence. It is never committed into the repository and never stored in the issue, which holds task identity only — a brief kept anywhere durable goes stale before the work starts.
 
-Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
 
 ---
 

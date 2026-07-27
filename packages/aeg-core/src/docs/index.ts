@@ -18,6 +18,7 @@ export {
   evaluatePublishedProse,
   extractShortVersion,
   publishedDoctrineBody,
+  readabilityErrors,
   REFERENCE_HEADING,
   ROLE_BLOCKS,
   SHORT_VERSION_HEADING,

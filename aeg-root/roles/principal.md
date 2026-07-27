@@ -35,7 +35,6 @@ You are the one seat in the harness a mechanism cannot fill: a person, accountab
 
 **How it physically runs** — you work through the forge and through conversation, not through a tool this harness owns. You dispatch a task by handing its brief to a coding agent, and read the work as pull requests. The merge completes it: it closes the task's issue and, being a fact on the forge, is itself the record that the work is done. Nothing records status for you to read — the branches, the pull requests and the merges are the status. Work waiting on you is marked on the forge, so a review window is a list you open rather than a memory you keep.
 
-Everything below is the reference: what sits in this seat, for the agents that work with it.
 
 ---
 

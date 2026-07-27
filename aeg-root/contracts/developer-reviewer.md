@@ -24,7 +24,6 @@ This seam sits between finished work and the review of it. It exists so that an 
 
 **How it physically runs** — the carrier is the open pull request: the diff, plus the body holding the brief. Coverage of the documents a change must touch is already enforced mechanically before review begins, which is why the reviewer's remaining job is the question no check can answer — whether the update is true, or a no-op edit that silenced the gate without describing the change. The verdict lands as comments on the pull request, with a severity on every finding, and a change cannot merge without a clean one.
 
-Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
 
 ---
 

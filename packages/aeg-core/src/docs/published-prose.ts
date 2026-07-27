@@ -80,7 +80,7 @@ export const ALLOWED_MECHANICS: readonly string[] = [
 export type PublishedProseEntry = {
   /** Path relative to `aeg-root/`, e.g. `roles/developer.md`. */
   relPath: string
-  frontmatter: Pick<DocFrontmatter, 'surfaced'>
+  frontmatter: Pick<DocFrontmatter, 'surfaced' | 'title' | 'description'>
   body: string
 }
 
@@ -197,6 +197,20 @@ export function enforcementPublishedText(content: string): string[] {
   return out.filter((text) => text.trim().length > 0)
 }
 
+/**
+ * The readability rules, callable on any published text — not just a doc body.
+ *
+ * Exported because `/docs/actions` renders prose that lives in TypeScript
+ * (`ACTIONS` in `actions.ts`), not in a markdown file, so `evaluatePublishedProse`
+ * never sees it. A whole published page was unguarded on that technicality;
+ * `actions.test.ts` closes it by running this over every entry.
+ */
+export function readabilityErrors(where: string, texts: string[]): string[] {
+  const errors: string[] = []
+  checkReadability(where, texts, errors)
+  return errors
+}
+
 function checkReadability(where: string, texts: string[], errors: string[]): void {
   const seen = new Set<string>()
   for (const raw of texts) {
@@ -260,6 +274,12 @@ export function evaluatePublishedProse(
   const surfaced = entries.filter((e) => isSurfacedDoc(e.relPath, e.frontmatter, surfacedPaths))
 
   for (const entry of surfaced) {
+    // Frontmatter renders too: `title` is the page heading and the sidebar
+    // entry, `description` is the page metadata. Checking only the body left
+    // both unguarded — a citation in a title reaches a reader exactly as
+    // surely as one in a paragraph.
+    checkReadability(entry.relPath, [entry.frontmatter.title ?? '', entry.frontmatter.description ?? ''], errors)
+
     const blocks = blocksFor(entry.relPath)
     if (blocks) {
       checkStructure(entry.relPath, entry.body, blocks, errors)

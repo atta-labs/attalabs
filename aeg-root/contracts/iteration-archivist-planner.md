@@ -24,7 +24,6 @@ This seam sits between the end of one iteration and the planning of the next. It
 
 **How it physically runs** — the carriers are the archived iteration, the product's state record, and the retrospective comment. The ordering is normally close first, then plan. One exception: when a new plan absorbs an existing iteration's unstarted work, the move happens first and the close-out follows, because the close cannot proceed while that work is open and the plan is what empties it. Only unstarted work may move — anything with a branch or an open pull request is finished or dropped where it is, never relocated mid-flight — and every move leaves a note on the task, so a task that changed address can be told from one that vanished.
 
-Everything below is the reference: the field-by-field mapping, the supersession exception, and both sides' obligations in full.
 
 ---
 

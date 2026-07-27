@@ -36,7 +36,6 @@ You execute **one** brief, on **one** branch, and answer for it. You are the onl
 
 **How it physically runs** — you work in a git worktree of your own, at `.worktrees/task/<iteration>/<n>`, on a branch named `task/<iteration>/<n>`, cut from the tip of the main branch rather than from whatever your local checkout happens to be. Creating it is the first thing you do, before reading a line of code. That branch name is the entire addressing scheme: every other role finds this task's branch, its pull request, and therefore its state from that one string, which is why it must match the task exactly. Commits are small and frequent. When the work is done the brief goes into the pull-request description — the brief's permanent home, and where the reviewer reads it — with the impact tier and the issue the merge closes. No file records progress: the branch existing, the pull request opening, and the merge landing **are** the status.
 
-Everything below is the reference: the exact predicates, the commands this repo checks them with, and the incidents each rule came from.
 
 ---
 

@@ -24,7 +24,6 @@ This seam sits between a review and the permanent record of the work it reviewed
 
 **How it physically runs** — the carrier is the verdict comment on the pull request, which becomes a frozen fact once that pull request merges. The verdict line is written bare, on its own line, because it is read by machine as well as by people, and the merge gate requires a clean one. After the merge, close-out reads it from the pull request's own history and copies it into the provenance record. A serious finding that was raised and merged anyway means a deviation was consciously accepted — it is recorded as such, not quietly dropped. A finding that the specification has gone stale becomes a follow-up issue, because it is not a reason to block the merge and must not vanish either.
 
-Everything below is the reference: the field-by-field mapping and both sides' obligations in full.
 
 ---
 
