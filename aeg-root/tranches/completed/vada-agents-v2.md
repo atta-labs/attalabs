@@ -40,7 +40,7 @@ a result on the new package). Bounded (new packages + vada route + 2 bug fixes +
 refs). Single failure mode (migration breaks deliberation). Passes all four tests.
 **Project(s) + blast radius:** vada (primary consumer, deliberation route rewired), engine
 (in blast radius — re-verify vada deliberation and herald audit both still work after any
-shared package reads change), aeg-core (YAML location changes — verify `parseIteration` and
+shared package reads change), aeg-core (YAML location changes — verify `parseTranche` and
 `parseLedger` still pass; verify any YAML catalog discovery still works).
 **Dependency rationale:** Depends on herald-agents-v2/2 — the package shape and conventions
 for `packages/agents/<name>/` are established by the Herald migration. Vāda follows that
