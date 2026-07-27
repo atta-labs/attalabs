@@ -20,11 +20,11 @@
  * exported — not re-implemented here).
  *
  * Usage:
- *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>
- *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --premise <body-file>
- *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --simulate <body-file>
- *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --check-baseline <file>
- *   bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n> --surfaces <glob1,glob2,...>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <tranche> <n>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <tranche> <n> --premise <body-file>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <tranche> <n> --simulate <body-file>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <tranche> <n> --check-baseline <file>
+ *   bun packages/aeg-core/bin/verify-dispatch.ts <tranche> <n> --surfaces <glob1,glob2,...>
  *
  * Modes:
  *   (default)         Forge dispatch-readiness gate + leftover-branch
@@ -89,14 +89,14 @@ import {
   compareToBaseline,
   type DispatchConflictsWithFact,
   type DispatchDependsOnFact,
-  type DispatchPriorIterationFact,
+  type DispatchPriorTrancheFact,
   type DispatchPriorTaskFact,
   deriveSection7,
   classifyDocOwnersManifest,
   DOC_OWNERS_PATH,
   parsePremiseBlock
 } from '../src/index'
-import type { Iteration, Task } from '../src/types'
+import type { Tranche, Task } from '../src/types'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -134,13 +134,13 @@ function ghIssueView(num: number, repo: RepoRef): IssueJson | null {
 
 type PrListEntry = { number: number; headRefName: string; state: 'OPEN' | 'CLOSED' | 'MERGED'; mergedAt: string | null }
 
-/** One batched fetch of every PR (any state) whose head branch belongs to this iteration. */
-function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<string, PrListEntry> {
+/** One batched fetch of every PR (any state) whose head branch belongs to this tranche. */
+function fetchTrancheBranchPrs(trancheSlug: string, repo: RepoRef): Map<string, PrListEntry> {
   const all =
     shJson<PrListEntry[]>(
       `gh pr list -R ${repo.owner}/${repo.repo} --state all --json number,headRefName,state,mergedAt --limit 300`
     ) ?? []
-  const prefix = `task/${iterationSlug}/`
+  const prefix = `task/${trancheSlug}/`
   const map = new Map<string, PrListEntry>()
   for (const pr of all) {
     if (!pr.headRefName.startsWith(prefix)) continue
@@ -150,42 +150,42 @@ function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<stri
   return map
 }
 
-// ---- iteration / task resolution ---------------------------------------------
+// ---- tranche / task resolution ---------------------------------------------
 
 /**
  * Forge-derived (task aeg-forge-state-v1 3a) — no longer reads
  * `aeg-root/iterations/<slug>.md` off `origin/main`; the forge (Milestone +
- * `vinaya/iteration:<slug>`-labeled Issues) is inherently live, so there is no
+ * `vinaya/tranche:<slug>`-labeled Issues) is inherently live, so there is no
  * separate "freshly-fetched" version to read. `null` now means the forge
  * call itself failed (network/gh unreachable), not "file absent" — a real,
  * distinct failure mode this bin didn't have before the cutover.
  */
-async function readIterationFromOrigin(iterationSlug: string, repo: RepoRef): Promise<Iteration | null> {
+async function readTrancheFromOrigin(trancheSlug: string, repo: RepoRef): Promise<Tranche | null> {
   try {
-    return await deriveTrancheFromForge(repo.owner, repo.repo, iterationSlug)
+    return await deriveTrancheFromForge(repo.owner, repo.repo, trancheSlug)
   } catch {
     return null
   }
 }
 
-/** `#NNN` or a prose cell containing `#NNN` (e.g. cross-iteration "other-iter #264"). */
+/** `#NNN` or a prose cell containing `#NNN` (e.g. cross-tranche "other-iter #264"). */
 function directIssueNumFromEdge(edge: string): number | null {
   const m = edge.match(/#(\d+)/)
   return m ? Number(m[1]) : null
 }
 
-function resolveSameIterationTask(edge: string, iteration: Iteration): Task | undefined {
-  return iteration.tasks.find((t) => t.id === edge.trim())
+function resolveSameTrancheTask(edge: string, tranche: Tranche): Task | undefined {
+  return tranche.tasks.find((t) => t.id === edge.trim())
 }
 
 function resolveDependsOn(
   edges: string[],
-  iteration: Iteration,
+  tranche: Tranche,
   branchPrs: Map<string, PrListEntry>,
   repo: RepoRef
 ): DispatchDependsOnFact[] {
   return edges.map((edge) => {
-    const sameTask = resolveSameIterationTask(edge, iteration)
+    const sameTask = resolveSameTrancheTask(edge, tranche)
     if (sameTask) {
       const pr = branchPrs.get(sameTask.id)
       if (pr) return { id: edge, issue: sameTask.issue, merged: pr.state === 'MERGED' }
@@ -200,7 +200,7 @@ function resolveDependsOn(
       const issueJson = ghIssueView(directIssue, repo)
       return { id: edge, issue: directIssue, merged: issueJson?.state === 'CLOSED' }
     }
-    // Unresolvable edge (neither a same-iteration task id nor a #NNN ref) —
+    // Unresolvable edge (neither a same-tranche task id nor a #NNN ref) —
     // conservative default: treat as unmerged so dispatch blocks rather than
     // silently proceeding. Known limitation, see PR body.
     return { id: edge, issue: null, merged: false }
@@ -209,17 +209,17 @@ function resolveDependsOn(
 
 function resolveConflictsWith(
   edges: string[],
-  iteration: Iteration,
+  tranche: Tranche,
   branchPrs: Map<string, PrListEntry>
 ): DispatchConflictsWithFact[] {
   return edges.map((edge) => {
-    const sameTask = resolveSameIterationTask(edge, iteration)
+    const sameTask = resolveSameTrancheTask(edge, tranche)
     if (sameTask) {
       const pr = branchPrs.get(sameTask.id)
       return { id: edge, issue: sameTask.issue, openOrInFlight: pr ? pr.state === 'OPEN' : false }
     }
     const directIssue = directIssueNumFromEdge(edge)
-    // No branch-PR knowledge for a cross-iteration edge — default to
+    // No branch-PR knowledge for a cross-tranche edge — default to
     // not-blocking (a conflict only matters if a PR genuinely exists and is
     // open; we have no evidence of one). Known limitation, see PR body.
     return { id: edge, issue: directIssue, openOrInFlight: false }
@@ -237,15 +237,15 @@ function resolveConflictsWith(
  * every caller of this function.
  */
 function resolvePriorTask(
-  iteration: Iteration,
+  tranche: Tranche,
   taskId: string,
   branchPrs: Map<string, PrListEntry>,
   provenanceByIssue: Map<number, boolean>,
   repo: RepoRef
 ): DispatchPriorTaskFact | null {
-  const idx = iteration.tasks.findIndex((t) => t.id === taskId)
+  const idx = tranche.tasks.findIndex((t) => t.id === taskId)
   if (idx <= 0) return null
-  const prior = iteration.tasks[idx - 1] as Task
+  const prior = tranche.tasks[idx - 1] as Task
   const pr = branchPrs.get(prior.id)
   const issueJson = prior.issue !== null ? ghIssueView(prior.issue, repo) : null
   return {
@@ -259,18 +259,18 @@ function resolvePriorTask(
 
 /**
  * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
- * amendment): "active" is a GitHub Milestone titled exactly the iteration
+ * amendment): "active" is a GitHub Milestone titled exactly the tranche
  * slug, open — the SAME `listActiveTrancheSlugs` Studio's
- * `readOtherActiveIterations` (`apps/vinaya/web/src/lib/forge/
+ * `readOtherActiveTranches` (`apps/vinaya/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.
  * Previously read the local `aeg-root/iterations/*.md` file listing —
- * file-based and unaware of Milestone state, so closing an iteration's
+ * file-based and unaware of Milestone state, so closing an tranche's
  * topology file to `completed/` WITHOUT also closing its Milestone left this
  * CLI saying READY while Studio correctly said BLOCKED (reproduced live on
  * `aeg-forge-state-v1`/`aeg-review-gate-v1`, 2026-07-08).
  */
-function otherActiveIterationSlugs(excludeSlug: string, repo: RepoRef): string[] {
+function otherActiveTrancheSlugs(excludeSlug: string, repo: RepoRef): string[] {
   return listActiveTrancheSlugs(repo.owner, repo.repo)
     .map((m) => m.slug)
     .filter((slug) => slug !== excludeSlug)
@@ -278,21 +278,21 @@ function otherActiveIterationSlugs(excludeSlug: string, repo: RepoRef): string[]
 
 /**
  * One entry per project named in `projects`: the first active, all-Issues-closed
- * prior iteration found, or a null-slug pass-through when none is found.
+ * prior tranche found, or a null-slug pass-through when none is found.
  */
-async function resolvePriorIterationArchival(
+async function resolvePriorTrancheArchival(
   projects: string[],
   excludeSlug: string,
   repo: RepoRef
-): Promise<DispatchPriorIterationFact[]> {
-  const candidates = otherActiveIterationSlugs(excludeSlug, repo)
-  const facts: DispatchPriorIterationFact[] = []
+): Promise<DispatchPriorTrancheFact[]> {
+  const candidates = otherActiveTrancheSlugs(excludeSlug, repo)
+  const facts: DispatchPriorTrancheFact[] = []
 
   for (const project of projects) {
-    let found: DispatchPriorIterationFact | null = null
+    let found: DispatchPriorTrancheFact | null = null
     for (const slug of candidates) {
-      const candidateIteration = await deriveTrancheFromForge(repo.owner, repo.repo, slug)
-      const touchesProject = candidateIteration.tasks.some((t) => t.projects.includes(project))
+      const candidateTranche = await deriveTrancheFromForge(repo.owner, repo.repo, slug)
+      const touchesProject = candidateTranche.tasks.some((t) => t.projects.includes(project))
       if (!touchesProject) continue
 
       // One query per accepted label — `--label` is an AND filter, and mid-
@@ -304,11 +304,11 @@ async function resolvePriorIterationArchival(
           ) ?? []
       )
       if (openIssues.length === 0) {
-        found = { project, priorIterationSlug: slug, archived: false }
+        found = { project, priorTrancheSlug: slug, archived: false }
         break
       }
     }
-    facts.push(found ?? { project, priorIterationSlug: null, archived: false })
+    facts.push(found ?? { project, priorTrancheSlug: null, archived: false })
   }
 
   return facts
@@ -316,9 +316,9 @@ async function resolvePriorIterationArchival(
 
 // ---- leftover detection -------------------------------------------------------
 
-function computeLeftover(iterationSlug: string, taskId: string) {
-  const branch = `task/${iterationSlug}/${taskId}`
-  const worktreeDir = join(REPO_ROOT, '.worktrees', 'task', iterationSlug, taskId)
+function computeLeftover(trancheSlug: string, taskId: string) {
+  const branch = `task/${trancheSlug}/${taskId}`
+  const worktreeDir = join(REPO_ROOT, '.worktrees', 'task', trancheSlug, taskId)
   const branchExistsRemote = sh(`git ls-remote --heads origin ${branch}`).length > 0
   const worktreeExistsLocal = existsSync(worktreeDir)
 
@@ -425,8 +425,8 @@ function runPremiseMode(bodyFile: string): void {
   process.exit(0)
 }
 
-function runSimulateMode(iterationSlug: string, taskId: string, bodyFile: string): void {
-  const branch = `task/${iterationSlug}/${taskId}`
+function runSimulateMode(trancheSlug: string, taskId: string, bodyFile: string): void {
+  const branch = `task/${trancheSlug}/${taskId}`
   const body = readFileSync(bodyFile, 'utf8')
   const assertions = parsePremiseBlock(body)
   console.log(
@@ -559,10 +559,10 @@ function runCheckBaselineMode(baselineFile: string): void {
   process.exit(0)
 }
 
-async function runGateMode(iterationSlug: string, taskId: string): Promise<void> {
+async function runGateMode(trancheSlug: string, taskId: string): Promise<void> {
   // Still needed here: computeLeftover() below compares against the local
   // origin/main ref (git rev-list origin/main..origin/<branch>) — freshness
-  // that used to be a side effect of the file-based iteration read above,
+  // that used to be a side effect of the file-based tranche read above,
   // now made explicit since the forge read no longer needs it.
   sh('git fetch origin main --quiet')
 
@@ -575,18 +575,18 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
     process.exit(1)
   }
 
-  const iteration = await readIterationFromOrigin(iterationSlug, repo)
-  if (!iteration) {
+  const tranche = await readTrancheFromOrigin(trancheSlug, repo)
+  if (!tranche) {
     console.error(
-      `verify-dispatch row-existence: could not derive iteration \`${iterationSlug}\` from the forge (no reachable Milestone/Issues, or the forge call failed).`
+      `verify-dispatch row-existence: could not derive tranche \`${trancheSlug}\` from the forge (no reachable Milestone/Issues, or the forge call failed).`
     )
     process.exit(1)
   }
 
-  const task = (iteration as Iteration).tasks.find((t) => t.id === taskId)
+  const task = (tranche as Tranche).tasks.find((t) => t.id === taskId)
   if (!task) {
     console.error(
-      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`${trancheLabel(iterationSlug)}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
+      `verify-dispatch row-existence: task "${taskId}" is not present in tranche \`${trancheSlug}\`'s forge-derived task list (no \`${trancheLabel(trancheSlug)}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
     )
     process.exit(1)
   }
@@ -594,21 +594,21 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   const issueJson = task.issue !== null ? ghIssueView(task.issue, repo) : null
   const issueRationalePass = issueJson ? checkIssueRationale(issueJson.body).status === 'pass' : true
 
-  const branchPrs = fetchIterationBranchPrs(iterationSlug, repo)
-  const dependsOn = resolveDependsOn(task.dependsOn, iteration as Iteration, branchPrs, repo)
-  const conflictsWith = resolveConflictsWith(task.conflictsWith, iteration as Iteration, branchPrs)
+  const branchPrs = fetchTrancheBranchPrs(trancheSlug, repo)
+  const dependsOn = resolveDependsOn(task.dependsOn, tranche as Tranche, branchPrs, repo)
+  const conflictsWith = resolveConflictsWith(task.conflictsWith, tranche as Tranche, branchPrs)
 
-  const priorTaskRaw = resolvePriorTaskRaw(iteration as Iteration, taskId)
+  const priorTaskRaw = resolvePriorTaskRaw(tranche as Tranche, taskId)
   let provenanceByIssue = new Map<number, boolean>()
   if (priorTaskRaw?.issue !== null && priorTaskRaw !== null) {
     provenanceByIssue = await fetchProvenance([priorTaskRaw.issue as number], repo.owner, repo.repo, token)
   }
-  const priorTask = resolvePriorTask(iteration as Iteration, taskId, branchPrs, provenanceByIssue, repo)
+  const priorTask = resolvePriorTask(tranche as Tranche, taskId, branchPrs, provenanceByIssue, repo)
 
-  const priorIterationArchival = await resolvePriorIterationArchival(task.projects, iterationSlug, repo)
+  const priorTrancheArchival = await resolvePriorTrancheArchival(task.projects, trancheSlug, repo)
 
   const gateResult = checkDispatchReadiness({
-    iterationSlug,
+    trancheSlug,
     task,
     issue:
       task.issue !== null && issueJson
@@ -618,10 +618,10 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
     dependsOn,
     conflictsWith,
     priorTask,
-    priorIterationArchival
+    priorTrancheArchival
   })
 
-  const leftover = computeLeftover(iterationSlug, taskId)
+  const leftover = computeLeftover(trancheSlug, taskId)
 
   const rawCounts = currentFindingCounts()
   const nowIso = sh('git log -1 --format=%cI') || new Date(0).toISOString()
@@ -630,7 +630,7 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
     nowIso
   )
 
-  console.log(`\nverify-dispatch: ${iterationSlug} task ${taskId}\n`)
+  console.log(`\nverify-dispatch: ${trancheSlug} task ${taskId}\n`)
   console.log(`dispatch-readiness: ${gateResult.ready ? 'READY' : 'NOT READY'}`)
   for (const b of gateResult.blockers) console.log(`  ✗ ${b}`)
 
@@ -654,22 +654,22 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
 }
 
 /** Raw prior-task lookup (before forge facts are attached) — used only to know which Issue to batch-fetch provenance for. */
-function resolvePriorTaskRaw(iteration: Iteration, taskId: string): Task | null {
-  const idx = iteration.tasks.findIndex((t) => t.id === taskId)
+function resolvePriorTaskRaw(tranche: Tranche, taskId: string): Task | null {
+  const idx = tranche.tasks.findIndex((t) => t.id === taskId)
   if (idx <= 0) return null
-  return (iteration.tasks[idx - 1] as Task) ?? null
+  return (tranche.tasks[idx - 1] as Task) ?? null
 }
 
 // ---- CLI entry point -----------------------------------------------------------
 
 if (import.meta.main) {
   const argv = process.argv.slice(2)
-  const iterationSlug = argv[0]
+  const trancheSlug = argv[0]
   const taskId = argv[1]
 
-  if (!iterationSlug || !taskId || iterationSlug.startsWith('--')) {
+  if (!trancheSlug || !taskId || trancheSlug.startsWith('--')) {
     console.error(
-      'Usage: verify-dispatch <iteration> <n> [--premise <file>] [--simulate <file>] [--check-baseline <file>] [--surfaces <glob1,glob2,...>]'
+      'Usage: verify-dispatch <tranche> <n> [--premise <file>] [--simulate <file>] [--check-baseline <file>] [--surfaces <glob1,glob2,...>]'
     )
     process.exit(1)
   }
@@ -699,7 +699,7 @@ if (import.meta.main) {
       console.error('--simulate requires a body-file path.')
       process.exit(1)
     }
-    runSimulateMode(iterationSlug, taskId, file)
+    runSimulateMode(trancheSlug, taskId, file)
   } else if (checkBaselineIdx !== -1) {
     const file = argv[checkBaselineIdx + 1]
     if (!file) {
@@ -708,6 +708,6 @@ if (import.meta.main) {
     }
     runCheckBaselineMode(file)
   } else {
-    await runGateMode(iterationSlug, taskId)
+    await runGateMode(trancheSlug, taskId)
   }
 }

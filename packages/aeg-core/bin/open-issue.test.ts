@@ -184,7 +184,7 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
   it('attaches the slug when the label is present, an open Milestone matches, and no explicit --milestone was given', () => {
     const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'active' as const })
     const result = resolveMilestoneToAttach(
-      ['vinaya/iteration:aeg-review-gate-v1', 'vinaya/tier:1'],
+      ['vinaya/tranche:aeg-review-gate-v1', 'vinaya/tier:1'],
       ['--title', 't'],
       false,
       lookup
@@ -195,12 +195,12 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
 
   it('returns null on edit — creation-time behavior only, never force-attaches retroactively', () => {
     const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'active' as const })
-    const result = resolveMilestoneToAttach(['vinaya/iteration:aeg-review-gate-v1'], ['--title', 't'], true, lookup)
+    const result = resolveMilestoneToAttach(['vinaya/tranche:aeg-review-gate-v1'], ['--title', 't'], true, lookup)
     expect(result).toBeNull()
     expect(lookup).not.toHaveBeenCalled()
   })
 
-  it('returns null when no iteration label is present — not a task Issue', () => {
+  it('returns null when no tranche label is present — not a task Issue', () => {
     const lookup = vi.fn()
     const result = resolveMilestoneToAttach(['vinaya/tier:1'], ['--title', 't'], false, lookup)
     expect(result).toBeNull()
@@ -210,7 +210,7 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
   it('returns null when the caller already passed an explicit --milestone flag', () => {
     const lookup = vi.fn()
     const result = resolveMilestoneToAttach(
-      ['vinaya/iteration:aeg-review-gate-v1'],
+      ['vinaya/tranche:aeg-review-gate-v1'],
       ['--milestone', 'something-else'],
       false,
       lookup
@@ -221,26 +221,26 @@ describe('resolveMilestoneToAttach (aeg-review-gate-v1 task 1 follow-up)', () =>
 
   it('returns null when the caller passed --milestone=<value> inline-equals form', () => {
     const lookup = vi.fn()
-    const result = resolveMilestoneToAttach(['vinaya/iteration:aeg-review-gate-v1'], ['--milestone=x'], false, lookup)
+    const result = resolveMilestoneToAttach(['vinaya/tranche:aeg-review-gate-v1'], ['--milestone=x'], false, lookup)
     expect(result).toBeNull()
     expect(lookup).not.toHaveBeenCalled()
   })
 
   it('returns null when no Milestone exists yet for the slug (not a hard failure)', () => {
     const lookup = vi.fn().mockReturnValue(null)
-    const result = resolveMilestoneToAttach(['vinaya/iteration:brand-new-iteration'], ['--title', 't'], false, lookup)
+    const result = resolveMilestoneToAttach(['vinaya/tranche:brand-new-tranche'], ['--title', 't'], false, lookup)
     expect(result).toBeNull()
   })
 
   it('returns null when a Milestone exists for the slug but is closed (complete, not active)', () => {
     const lookup = vi.fn().mockReturnValue({ goal: '', lifecycle: 'complete' as const })
-    const result = resolveMilestoneToAttach(['vinaya/iteration:aeg-forge-state-v1'], ['--title', 't'], false, lookup)
+    const result = resolveMilestoneToAttach(['vinaya/tranche:aeg-forge-state-v1'], ['--title', 't'], false, lookup)
     expect(result).toBeNull()
   })
 
-  it('uses the first vinaya/iteration:<slug> label when multiple are somehow present', () => {
+  it('uses the first vinaya/tranche:<slug> label when multiple are somehow present', () => {
     const result = resolveMilestoneToAttach(
-      ['vinaya/iteration:aeg-review-gate-v1', 'vinaya/iteration:other-iteration'],
+      ['vinaya/tranche:aeg-review-gate-v1', 'vinaya/tranche:other-tranche'],
       ['--title', 't'],
       false,
       activeLookup
@@ -330,7 +330,7 @@ function makeDeps(overrides: Partial<AmendDepsDeps> = {}): {
   const edited: Array<{ issue: string; body: string }> = []
   const logs: string[] = []
   const deps: AmendDepsDeps = {
-    fetchLabels: () => ['vinaya/iteration:aeg-forge-state-v1', 'vinaya/tier:1'],
+    fetchLabels: () => ['vinaya/tranche:aeg-forge-state-v1', 'vinaya/tier:1'],
     fetchBody: () => BODY_429,
     editBody: (issue, body) => edited.push({ issue, body }),
     today: () => '2026-07-13',
@@ -344,7 +344,7 @@ function makeDeps(overrides: Partial<AmendDepsDeps> = {}): {
 }
 
 describe('runAmendDeps', () => {
-  it('refuses when the target is not a task Issue (no vinaya/iteration:* label)', () => {
+  it('refuses when the target is not a task Issue (no vinaya/tranche:* label)', () => {
     const { deps, edited } = makeDeps({ fetchLabels: () => ['vinaya/tier:1'] })
     expect(() => runAmendDeps(parseAmendArgs(['429', '--depends-on', '2', '--note', 'x']), deps)).toThrow(
       /targets task Issues only/

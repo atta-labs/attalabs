@@ -2,20 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { isNewDiskStateFile } from './no-disk-state'
 
 describe('isNewDiskStateFile', () => {
-  it('flags a new active (top-level) iteration topology file', () => {
+  it('flags a new active (top-level) tranche topology file', () => {
     expect(isNewDiskStateFile('aeg-root/iterations/fake-v1.md', 'added')).toBe(true)
   })
 
-  it('flags a MODIFIED active (top-level) iteration topology file too', () => {
+  it('flags a MODIFIED active (top-level) tranche topology file too', () => {
     expect(isNewDiskStateFile('aeg-root/iterations/aeg-drift-prevention-v1.md', 'modified')).toBe(true)
   })
 
   it('does not flag a model doc that sits outside aeg-root/iterations/', () => {
-    // The iteration model moved out of the watched directory, so this passes
+    // The tranche model moved out of the watched directory, so this passes
     // by path shape rather than by an explicit carve-out. Asserted with a
     // second model doc so it cannot quietly become a one-file special case.
-    expect(isNewDiskStateFile('aeg-root/iteration-model.md', 'added')).toBe(false)
-    expect(isNewDiskStateFile('aeg-root/iteration-model.md', 'modified')).toBe(false)
+    expect(isNewDiskStateFile('aeg-root/tranche-model.md', 'added')).toBe(false)
+    expect(isNewDiskStateFile('aeg-root/tranche-model.md', 'modified')).toBe(false)
     expect(isNewDiskStateFile('aeg-root/state-machine.md', 'added')).toBe(false)
   })
 

@@ -1,36 +1,36 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
-import { listIterations, readRegistry } from '@/lib/repo-state'
-import { IterationsTabs } from './IterationsTabs'
+import { listTranches, readRegistry } from '@/lib/repo-state'
+import { TranchesTabs } from './TranchesTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Iterations · Vinaya Studio'
+  title: 'Tranches · Vinaya Studio'
 }
 
-export default async function IterationsPage() {
+export default async function TranchesPage() {
   if (isVercelDeploy()) notFound()
 
-  const [{ active, archived, forge }, registry] = await Promise.all([listIterations(), readRegistry()])
+  const [{ active, archived, forge }, registry] = await Promise.all([listTranches(), readRegistry()])
   // Registered project names — a board link resolves only to one of these
   // (`readProject` 404s on a retired name like `aeg`); passed to the client
-  // tabs so `iterationHref` skips unregistered projects.
+  // tabs so `trancheHref` skips unregistered projects.
   const registeredProjects = registry.map((p) => p.name)
 
   return (
     <div className='space-y-8'>
       <header className='space-y-2'>
-        <h1 className='font-serif text-3xl tracking-tight text-foreground'>Iterations</h1>
+        <h1 className='font-serif text-3xl tracking-tight text-foreground'>Tranches</h1>
         <p className='font-sans text-sm text-muted-foreground'>
-          All iterations across every project — active from open GitHub Milestones, archived from closed ones (plus a
+          All tranches across every project — active from open GitHub Milestones, archived from closed ones (plus a
           small, closed legacy set from <span className='font-mono'>aeg-root/iterations/completed/</span>).
         </p>
       </header>
 
-      <IterationsTabs active={active} archived={archived} forge={forge} registeredProjects={registeredProjects} />
+      <TranchesTabs active={active} archived={archived} forge={forge} registeredProjects={registeredProjects} />
     </div>
   )
 }

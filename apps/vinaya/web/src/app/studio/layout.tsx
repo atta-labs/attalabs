@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const links = [
   { label: 'Home', href: '/studio' },
   { label: 'Projects', href: '/studio/projects' },
-  { label: 'Iterations', href: '/studio/iterations' },
+  { label: 'Tranches', href: '/studio/tranches' },
   { label: 'Backlog', href: '/studio/backlog' },
   { label: 'Docs', href: '/docs' }
 ]

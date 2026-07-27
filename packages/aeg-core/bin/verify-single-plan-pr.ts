@@ -9,14 +9,14 @@
  * (`checkSinglePlanPr`, `@atta/aeg-core`) forge-side, in CI, on every PR —
  * one implementation per fact (§11 constraint), never a second copy.
  *
- * No-ops (exit 0) for any PR whose diff doesn't touch an iteration topology
+ * No-ops (exit 0) for any PR whose diff doesn't touch an tranche topology
  * file — an ordinary task-branch PR never touches `aeg-root/iterations/*.md`,
  * so this never fires for one (asserted in `verify-single-plan-pr.test.ts`).
  *
  * Usage (CI): PR_NUMBER=<n> bun packages/aeg-core/bin/verify-single-plan-pr.ts
  *
  * Exit code: 0 (pass / not a plan-PR diff) or 1 (another open PR already
- * touches the same iteration's topology file).
+ * touches the same tranche's topology file).
  */
 
 import { execSync } from 'node:child_process'
@@ -51,7 +51,7 @@ if (import.meta.main) {
 
   const branchFiles = fetchPrFiles(prNumber)
   if (!touchesAnyTopology(branchFiles)) {
-    console.log('verify-single-plan-pr: PR touches no iteration topology file — not a plan PR, skipping.')
+    console.log('verify-single-plan-pr: PR touches no tranche topology file — not a plan PR, skipping.')
     process.exit(0)
   }
 

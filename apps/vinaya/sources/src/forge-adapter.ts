@@ -18,7 +18,7 @@ export type ForgeSourceConfig = {
  */
 export function createForgeSource(config: ForgeSourceConfig): StateSource {
   return {
-    async getIteration(slug: string) {
+    async getTranche(slug: string) {
       return deriveTrancheFromForge(config.owner, config.repo, slug)
     }
   }

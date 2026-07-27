@@ -4,7 +4,7 @@ import { checkFirstPushDispatchGate, parseTaskBranch } from './first-push-dispat
 describe('parseTaskBranch', () => {
   it('parses a well-formed task branch', () => {
     expect(parseTaskBranch('task/aeg-governance-hardening/25')).toEqual({
-      iteration: 'aeg-governance-hardening',
+      tranche: 'aeg-governance-hardening',
       taskId: '25'
     })
   })

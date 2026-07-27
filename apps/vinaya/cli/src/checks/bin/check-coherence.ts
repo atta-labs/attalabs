@@ -3,12 +3,12 @@
 /**
  * Core check: coherence. Thin adapter over `@atta/aeg-core`'s coherence
  * evaluators — mirrors `packages/aeg-core/bin/verify-coherence.ts`'s
- * forge-fact assembly, but scoped to the CURRENT task branch's iteration
+ * forge-fact assembly, but scoped to the CURRENT task branch's tranche
  * only (derived from `BRANCH`/the current git branch), the same
- * branch-derived scoping `verify-coherence.ts`'s own `ciIterationSlug`
+ * branch-derived scoping `verify-coherence.ts`'s own `ciTrancheSlug`
  * already uses for T2/T3.
  *
- * Iteration state is read ONLY through a `StateSource`
+ * Tranche state is read ONLY through a `StateSource`
  * (`createForgeSource`). Forge facts come only from the two primitives this
  * task's boundary re-exports from `@atta/aeg-core`: `fetchForgeFacts` and
  * `fetchOpenIssuesByLabel`.
@@ -43,7 +43,7 @@ import {
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
   type CheckResult,
-  type IterationFile,
+  type TrancheFile,
   type TaskEntry
 } from '@atta/aeg-core'
 import { createForgeSource } from '@atta/vinaya-sources'
@@ -91,7 +91,7 @@ async function resolveToken(): Promise<string | null> {
   }
 }
 
-function currentIterationSlug(): string | null {
+function currentTrancheSlug(): string | null {
   const branch = process.env.BRANCH || git(['rev-parse', '--abbrev-ref', 'HEAD'])
   const m = branch.match(/^task\/([^/]+)\//)
   return m?.[1] ?? null
@@ -119,9 +119,9 @@ function recoveryPromptFor(checkCode: string): string {
     case 'T1':
       return "The topology names an Issue number that doesn't resolve on the forge. Fix the Issue number in the topology, or ask the Planner to re-cut it, then re-run `vinaya check coherence`."
     case 'T2':
-      return "An open Issue under this iteration's label is missing from the topology. Add its row to the iteration's task list, then re-run `vinaya check coherence`."
+      return "An open Issue under this tranche's label is missing from the topology. Add its row to the tranche's task list, then re-run `vinaya check coherence`."
     case 'T3':
-      return 'A task in this active iteration has no Issue (#TBD). Ask the Planner to cut the Issue, then re-run `vinaya check coherence`.'
+      return 'A task in this active tranche has no Issue (#TBD). Ask the Planner to cut the Issue, then re-run `vinaya check coherence`.'
     case 'D1':
       return "This task has an open PR but a declared dependency isn't closed. Close the dependency first (or verify it truly is), then re-run `vinaya check coherence`."
     case 'R1':
@@ -143,7 +143,7 @@ function emitFailure(result: CheckResult): void {
 }
 
 async function main(): Promise<void> {
-  const slug = currentIterationSlug()
+  const slug = currentTrancheSlug()
   if (!slug) {
     // Non-task branch — nothing scoped to check. Mirrors verify-brief.ts's bypass.
     process.exit(0)
@@ -163,18 +163,18 @@ async function main(): Promise<void> {
   }
 
   const source = createForgeSource({ owner: repo.owner, repo: repo.repo })
-  const iteration = await source.getIteration(slug)
-  const file: IterationFile = { slug, archived: false, iteration }
+  const tranche = await source.getTranche(slug)
+  const file: TrancheFile = { slug, archived: false, tranche }
 
-  const baseEntries: TaskEntry[] = iteration.tasks.map((t) => ({
-    iterationSlug: slug,
+  const baseEntries: TaskEntry[] = tranche.tasks.map((t) => ({
+    trancheSlug: slug,
     archived: false,
     task: t,
     facts: undefined
   }))
 
-  const taskRefs = iteration.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
-  const snapshot = await fetchForgeFacts({ owner: repo.owner, repo: repo.repo, iteration: slug, tasks: taskRefs })
+  const taskRefs = tranche.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
+  const snapshot = await fetchForgeFacts({ owner: repo.owner, repo: repo.repo, tranche: slug, tasks: taskRefs })
 
   const results: CheckResult[] = [checkL3([file])]
 
@@ -183,15 +183,15 @@ async function main(): Promise<void> {
       schema: CHECK_SCHEMA_VERSION,
       check: CHECK_NAME,
       severity: 'error',
-      message: `coherence severity:infra — forge facts unavailable for iteration "${slug}": ${snapshot.reason ?? 'unknown'}`,
+      message: `coherence severity:infra — forge facts unavailable for tranche "${slug}": ${snapshot.reason ?? 'unknown'}`,
       agent_recovery_prompt:
         'Confirm `gh auth status` passes and the forge is reachable, then re-run `vinaya check coherence`.'
     })
     process.exit(1)
   }
 
-  const enrichedEntries: TaskEntry[] = iteration.tasks.map((t) => ({
-    iterationSlug: slug,
+  const enrichedEntries: TaskEntry[] = tranche.tasks.map((t) => ({
+    trancheSlug: slug,
     archived: false,
     task: t,
     facts: snapshot.facts.get(t.id)
@@ -206,7 +206,7 @@ async function main(): Promise<void> {
 
   const token = (await resolveToken()) ?? ''
   const openIssuesBySlug = await fetchOpenIssuesByLabel([slug], repo.owner, repo.repo, token)
-  const topologyIssues = new Set(iteration.tasks.map((t) => t.issue).filter((n): n is number => n !== null))
+  const topologyIssues = new Set(tranche.tasks.map((t) => t.issue).filter((n): n is number => n !== null))
   const openNums = (openIssuesBySlug.get(slug) ?? []).map((i) => i.number)
   results.push(scopeT2ToPlanPr(checkT2(new Map([[slug, openNums]]), new Map([[slug, topologyIssues]]), slug), false))
   results.push(checkR1(openIssuesBySlug, R1_GRANDFATHERED_ISSUES))

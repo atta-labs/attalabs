@@ -6,9 +6,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { readIteration, readProject } from '@/lib/repo-state'
+import { readTranche, readProject } from '@/lib/repo-state'
 import { fetchPullRequestBriefs, type PullRequestBrief } from '@/lib/forge/fetch-pull-request-brief'
-import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
 import { statusVisual } from '../../_lib/status-display'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -88,21 +88,21 @@ const markdownComponents = {
 
 export default async function TaskDetailPage({ params }: { params: Promise<Params> }) {
   const { name, slug, taskId } = await params
-  const [project, detail] = await Promise.all([readProject(name), readIteration(slug)])
+  const [project, detail] = await Promise.all([readProject(name), readTranche(slug)])
   if (!project) notFound()
   if (!detail) notFound()
 
-  const { iteration, archived } = detail
-  const taskRow = iteration.tasks.find((t) => t.id === taskId)
+  const { tranche, archived } = detail
+  const taskRow = tranche.tasks.find((t) => t.id === taskId)
   if (!taskRow) notFound()
 
-  const snapshot = await loadIterationSnapshot(iteration, slug)
+  const snapshot = await loadTrancheSnapshot(tranche, slug)
   const derived: DerivedTask | undefined = snapshot.derived.tasks.find((dt) => dt.task.id === taskId)
   if (!derived) notFound()
 
   const brief = await loadBrief({ snapshot, slug, taskId })
   const visual = statusVisual(derived.status)
-  const iterationHref = `/studio/projects/${project.name}/iterations/${slug}`
+  const trancheHref = `/studio/projects/${project.name}/tranches/${slug}`
   const issueUrl =
     taskRow.issue !== null && snapshot.repo
       ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${taskRow.issue}`
@@ -119,8 +119,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           {project.name}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={iterationHref} className='hover:text-primary'>
-          {iteration.name || slug}
+        <NextLink variant='unstyled' href={trancheHref} className='hover:text-primary'>
+          {tranche.name || slug}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
         <span className='text-foreground/80'>{taskRow.id}</span>
@@ -132,7 +132,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           <Badge className={`${visual.badgeClass} font-mono text-[0.65rem] uppercase tracking-wider`}>
             {visual.label}
           </Badge>
-          {archived ? <Badge className='bg-muted/40 text-muted-foreground'>Archived iteration</Badge> : null}
+          {archived ? <Badge className='bg-muted/40 text-muted-foreground'>Archived tranche</Badge> : null}
         </div>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>
           <span className='font-mono text-2xl text-muted-foreground'>{taskRow.id}</span>
@@ -148,7 +148,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           dependsOnNotMerged={derived.blockers.dependsOnNotMerged}
           conflictsWithOpen={derived.blockers.conflictsWithOpenOrInFlight}
           projectName={project.name}
-          iterationSlug={slug}
+          trancheSlug={slug}
         />
         <LinksPanel issueUrl={issueUrl} brief={brief} />
       </section>
@@ -168,7 +168,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
 }
 
 type LoadBriefArgs = {
-  snapshot: Awaited<ReturnType<typeof loadIterationSnapshot>>
+  snapshot: Awaited<ReturnType<typeof loadTrancheSnapshot>>
   slug: string
   taskId: string
 }
@@ -178,7 +178,7 @@ async function loadBrief({ snapshot, slug, taskId }: LoadBriefArgs): Promise<Pul
   const { briefs } = await fetchPullRequestBriefs({
     owner: snapshot.repo.owner,
     repo: snapshot.repo.repo,
-    iteration: slug,
+    tranche: slug,
     taskIds: [taskId]
   })
   return briefs.get(taskId) ?? null
@@ -189,13 +189,13 @@ function MetaPanel({
   dependsOnNotMerged,
   conflictsWithOpen,
   projectName,
-  iterationSlug
+  trancheSlug
 }: {
   taskRow: { id: string; issue: number | null; projects: string[]; dependsOn: string[]; conflictsWith: string[] }
   dependsOnNotMerged: string[]
   conflictsWithOpen: string[]
   projectName: string
-  iterationSlug: string
+  trancheSlug: string
 }) {
   return (
     <div className='rounded-lg border border-border bg-card p-4'>
@@ -223,7 +223,7 @@ function MetaPanel({
             items={taskRow.dependsOn}
             blockers={dependsOnNotMerged}
             projectName={projectName}
-            iterationSlug={iterationSlug}
+            trancheSlug={trancheSlug}
           />
         </dd>
         <dt>conflicts-with</dt>
@@ -232,7 +232,7 @@ function MetaPanel({
             items={taskRow.conflictsWith}
             blockers={conflictsWithOpen}
             projectName={projectName}
-            iterationSlug={iterationSlug}
+            trancheSlug={trancheSlug}
           />
         </dd>
       </dl>
@@ -244,12 +244,12 @@ function EdgeList({
   items,
   blockers,
   projectName,
-  iterationSlug
+  trancheSlug
 }: {
   items: string[]
   blockers: string[]
   projectName: string
-  iterationSlug: string
+  trancheSlug: string
 }) {
   if (items.length === 0) return <span className='text-muted-foreground/60'>—</span>
   const blockerSet = new Set(blockers)
@@ -261,7 +261,7 @@ function EdgeList({
           <NextLink
             key={id}
             variant='unstyled'
-            href={`/studio/projects/${projectName}/iterations/${iterationSlug}/tasks/${id}`}
+            href={`/studio/projects/${projectName}/tranches/${trancheSlug}/tasks/${id}`}
             className={
               blocking
                 ? 'rounded border border-warning/40 bg-warning/10 px-1.5 py-px font-mono text-[0.65rem] text-warning hover:border-warning'
@@ -371,7 +371,7 @@ function BriefBody({
     <p className='font-sans text-sm text-muted-foreground/70'>
       No PR body found for this task. If a PR exists for branch{' '}
       <span className='font-mono text-foreground'>task/{taskId}</span> but isn't showing, the head-ref may not match the
-      Vinaya convention <span className='font-mono'>task/&lt;iteration&gt;/&lt;id&gt;</span>.
+      Vinaya convention <span className='font-mono'>task/&lt;tranche&gt;/&lt;id&gt;</span>.
     </p>
   )
 }

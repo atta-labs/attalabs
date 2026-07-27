@@ -25,7 +25,7 @@ const MODEL: DiagramModel = {
   ],
   edges: [],
   findings: [],
-  iteration: null
+  tranche: null
 }
 
 const SURFACED = modelBackedDocPaths(MODEL)
@@ -46,7 +46,7 @@ describe('modelBackedDocPaths: the node → doc allowlist', () => {
       nodes: [node('action', 'commit-the-work'), node('ring', 'Ring 1')],
       edges: [],
       findings: [],
-      iteration: null
+      tranche: null
     })
     expect(onlyActionsAndRings.size).toBe(0)
   })
@@ -56,7 +56,7 @@ describe('modelBackedDocPaths: the node → doc allowlist', () => {
       nodes: [node('gate', 'a'), node('gate', 'b'), node('check', 'c'), node('check', 'd')],
       edges: [],
       findings: [],
-      iteration: null
+      tranche: null
     })
     expect([...many]).toEqual(['enforcement.md'])
   })

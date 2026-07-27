@@ -23,15 +23,15 @@ import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/
  * from the Issue body's `**Project:**` field, not from a label (#614).
  *
  * Filters are project, tier, and flags — the families that actually vary across
- * backlog rows. Iteration and state do NOT vary here: the backlog is defined as
- * open Issues carrying NO `vinaya/iteration:*` label (`fetch-open-issues.ts`),
- * so every row is open and iteration-less. A row matches when it carries ANY
+ * backlog rows. Tranche and state do NOT vary here: the backlog is defined as
+ * open Issues carrying NO `vinaya/tranche:*` label (`fetch-open-issues.ts`),
+ * so every row is open and tranche-less. A row matches when it carries ANY
  * selected project (multi-project rows match either) AND its tier is selected
  * AND it carries any selected flag; an empty family means "all" for that
  * family. Filters are inline toggle chips (not a dropdown) — every option is
  * visible at a glance, and they wrap on narrow screens.
  *
- * The `#` and Title columns are split (like the iteration board's table). The
+ * The `#` and Title columns are split (like the tranche board's table). The
  * table sets a `min-w` so the library Table's own `overflow-auto` scroll
  * container kicks in on narrow screens instead of cramming the columns.
  *

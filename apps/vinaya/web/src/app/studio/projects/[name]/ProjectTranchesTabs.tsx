@@ -3,20 +3,20 @@
 import { Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { Inbox } from 'lucide-react'
-import type { ForgeStatus, IterationSummary } from '@/lib/repo-state'
+import type { ForgeStatus, TrancheSummary } from '@/lib/repo-state'
 import { ForgeBanners } from '@/app/studio/_components/ForgeUnavailableBanner'
-import { IterationCard } from '@/app/studio/_components/IterationCard'
+import { TrancheCard } from '@/app/studio/_components/TrancheCard'
 
-function IterationsGrid({
+function TranchesGrid({
   projectName,
-  iterations,
+  tranches,
   emptyHint
 }: {
   projectName: string
-  iterations: IterationSummary[]
+  tranches: TrancheSummary[]
   emptyHint: string | null
 }) {
-  if (iterations.length === 0) {
+  if (tranches.length === 0) {
     // A null hint means the empty state is explained by the forge banner.
     if (!emptyHint) return null
     return (
@@ -30,11 +30,11 @@ function IterationsGrid({
   }
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
-      {iterations.map((it) => (
-        <IterationCard
+      {tranches.map((it) => (
+        <TrancheCard
           key={it.fileSlug}
-          iteration={it}
-          href={`/studio/projects/${projectName}/iterations/${it.fileSlug}`}
+          tranche={it}
+          href={`/studio/projects/${projectName}/tranches/${it.fileSlug}`}
           showProjects={false}
         />
       ))}
@@ -42,15 +42,15 @@ function IterationsGrid({
   )
 }
 
-export function ProjectIterationsTabs({
+export function ProjectTranchesTabs({
   projectName,
   active,
   archived,
   forge
 }: {
   projectName: string
-  active: IterationSummary[]
-  archived: IterationSummary[]
+  active: TrancheSummary[]
+  archived: TrancheSummary[]
   forge: { active: ForgeStatus; archived: ForgeStatus }
 }) {
   return (
@@ -62,17 +62,17 @@ export function ProjectIterationsTabs({
           <TabsTrigger value='archived'>Archived ({archived.length})</TabsTrigger>
         </TabsList>
         <TabsContent value='active'>
-          <IterationsGrid
+          <TranchesGrid
             projectName={projectName}
-            iterations={active}
-            emptyHint={forge.active.kind === 'ok' ? 'No active iterations for this project.' : null}
+            tranches={active}
+            emptyHint={forge.active.kind === 'ok' ? 'No active tranches for this project.' : null}
           />
         </TabsContent>
         <TabsContent value='archived'>
-          <IterationsGrid
+          <TranchesGrid
             projectName={projectName}
-            iterations={archived}
-            emptyHint={forge.archived.kind === 'ok' ? 'No archived iterations yet.' : null}
+            tranches={archived}
+            emptyHint={forge.archived.kind === 'ok' ? 'No archived tranches yet.' : null}
           />
         </TabsContent>
       </Tabs>

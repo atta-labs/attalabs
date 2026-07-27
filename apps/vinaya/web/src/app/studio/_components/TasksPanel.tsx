@@ -5,12 +5,12 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { DashboardTask, TaskCategory } from '@/app/studio/_lib/load-dashboard-tasks'
-import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
+import { NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
 
 /**
  * The dashboard's Tasks card body (task 11 #571) — every Ready / active /
- * blocked iteration task plus the backlog, filterable by status category. A row
- * is just its status badge, title, and iteration (backlog rows have none) — no
+ * blocked tranche task plus the backlog, filterable by status category. A row
+ * is just its status badge, title, and tranche (backlog rows have none) — no
  * labels or other detail. Badges are pre-resolved by the loader (from
  * `status-display.ts`, the one vocabulary), so this stays purely presentational;
  * it only filters, sorts, and lays out. Categories offered are the ones actually
@@ -22,7 +22,7 @@ import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
  * A row is flex, not a table, but the issue cell is a fixed-width column
  * (`min-w-12` + `tabular-nums`, rendered even when a task has no Issue) so
  * `#38` and `#1852` leave the badge and title starting at the same x. The
- * iteration is pushed to the far right (`ml-auto`) for the same reason: row
+ * tranche is pushed to the far right (`ml-auto`) for the same reason: row
  * alignment must not depend on how long the title or the issue number is —
  * but only from `lg` up, since below it the row wraps and a right-pushed slug
  * would sit alone against the right edge instead of reading as part of its row.
@@ -124,7 +124,7 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
         // plain vertical rhythm comes back.
         <div className='divide-y divide-border pt-2 lg:space-y-2 lg:divide-y-0'>
           {filtered.map((task) => {
-            const key = `${task.iterationSlug ?? 'backlog'}-${task.taskId}`
+            const key = `${task.trancheSlug ?? 'backlog'}-${task.taskId}`
             return (
               <div key={key} className='flex flex-wrap items-center gap-2 py-2 font-mono text-xs lg:py-0'>
                 {/* Always rendered, Issue or not — it is the row's first column. */}
@@ -156,25 +156,25 @@ export function TasksPanel({ tasks }: { tasks: DashboardTask[] }) {
                     a long title still pushes the slug past the edge and flex
                     wrapping drops it to its own line. */}
                 <span className='text-card-foreground lg:min-w-0 lg:flex-1'>{task.title}</span>
-                {task.iterationSlug && (
+                {task.trancheSlug && (
                   // Below `lg` the row wraps and the slug lands on its own
                   // line, where right-aligning would strand it against the far
                   // edge, away from the row it belongs to — so it flows left
                   // there instead, under the issue number.
                   <span className='shrink-0 text-muted-foreground/70 lg:pl-2'>
-                    {task.iterationHref ? (
+                    {task.trancheHref ? (
                       <NextLink
                         variant='unstyled'
-                        href={task.iterationHref}
+                        href={task.trancheHref}
                         className='hover:text-primary hover:underline'
                       >
-                        {task.iterationSlug}
+                        {task.trancheSlug}
                       </NextLink>
                     ) : (
                       // No project → no board route. Say why, rather than
                       // rendering the slug as an unexplained dead label.
                       <span className='cursor-help' title={NO_BOARD_REASON}>
-                        {task.iterationSlug}
+                        {task.trancheSlug}
                       </span>
                     )}
                   </span>

@@ -40,7 +40,7 @@ describe('vinaya issue create --validate-only', () => {
     rmSync(cwd, { recursive: true, force: true })
   })
 
-  it('refuses a task Issue (iteration:* label) lacking the rationale', () => {
+  it('refuses a task Issue (tranche:* label) lacking the rationale', () => {
     const r = runCli(
       [
         'issue',
@@ -49,7 +49,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-no-rationale.md'),
         '--label',
-        'vinaya/iteration:demo'
+        'vinaya/tranche:demo'
       ],
       cwd
     )
@@ -72,7 +72,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-valid.md'),
         '--label',
-        'vinaya/iteration:demo'
+        'vinaya/tranche:demo'
       ],
       cwd
     )
@@ -80,7 +80,7 @@ describe('vinaya issue create --validate-only', () => {
     expect(r.stdout).toContain('PASS')
   })
 
-  it('passes a non-task Issue through unvalidated (no iteration label)', () => {
+  it('passes a non-task Issue through unvalidated (no tranche label)', () => {
     const r = runCli(
       ['issue', 'create', '--validate-only', '--body-file', join(FORGE_FIXTURES, 'issue-no-rationale.md')],
       cwd
@@ -99,7 +99,7 @@ describe('vinaya issue create --validate-only', () => {
         '--body-file',
         join(FORGE_FIXTURES, 'issue-valid.md'),
         '--label',
-        'vinaya/iteration:demo'
+        'vinaya/tranche:demo'
       ],
       cwd
     )

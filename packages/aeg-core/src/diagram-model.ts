@@ -19,7 +19,7 @@ import { ACTIONS, CROSSING_KEYWORDS } from './actions'
 import type { DoctrineContent } from './doctrine-source'
 import { findHeadingLine, findTable } from './markdown-table'
 import { parseEnforcementRegistry } from './registry-parse'
-import type { Iteration } from './types'
+import type { Tranche } from './types'
 
 export type DiagramNodeKind = 'ring' | 'gate' | 'check' | 'action' | 'role' | 'contract'
 export type RenderState = 'active' | 'disabled'
@@ -57,7 +57,7 @@ export type DiagramNode = {
   crosses?: 'into-github' | 'none'
   /** The node's name **for a reader**, when its `label` is an identifier rather
    * than words. `role`/`contract` nodes label themselves with their doctrine id
-   * (`brief-author`, `archivist-iteration-archivist`) because that id is the
+   * (`brief-author`, `archivist-tranche-archivist`) because that id is the
    * node's identity — routes, doc paths and edge endpoints all key off it, so
    * it cannot be prettified in place. This carries the doc's own `title:`
    * frontmatter instead, and every renderer showing a name to a person prefers
@@ -97,7 +97,7 @@ export type DiagramModel = {
   nodes: DiagramNode[]
   edges: DiagramEdge[]
   findings: DiagramFinding[]
-  iteration: Iteration | null
+  tranche: Tranche | null
 }
 
 /** Deterministic slug from a table row's first cell: lowercase, drop
@@ -182,14 +182,14 @@ function extractContract(content: string): ContractFrontmatter | null {
 
 /**
  * The pure derivation. `doctrine` is already-read raw markdown; `config` is the
- * declarative enable/disable input (null = nothing disabled); `iteration` is
+ * declarative enable/disable input (null = nothing disabled); `tranche` is
  * StateSource live context, passed through verbatim and never used to compute
  * render-state.
  */
 export function deriveDiagramModel(
   doctrine: DoctrineContent,
   config: DiagramConfig | null,
-  iteration: Iteration | null
+  tranche: Tranche | null
 ): DiagramModel {
   const nodes: DiagramNode[] = []
   const edges: DiagramEdge[] = []
@@ -368,5 +368,5 @@ export function deriveDiagramModel(
     }
   }
 
-  return { nodes, edges, findings, iteration }
+  return { nodes, edges, findings, tranche }
 }

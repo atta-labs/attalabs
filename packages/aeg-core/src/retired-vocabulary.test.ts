@@ -111,7 +111,7 @@ const RETIRED = [
 /**
  * Where a mention is legitimate:
  *  - the frozen archive and per-product logs are records of what was decided
- *  - `iterations/completed/**` and retrospectives are history, never rewritten
+ *  - `tranches/completed/**` and retrospectives are history, never rewritten
  *  - the published-prose check must contain the tokens it exists to catch
  *  - this file names them in order to ban them
  */

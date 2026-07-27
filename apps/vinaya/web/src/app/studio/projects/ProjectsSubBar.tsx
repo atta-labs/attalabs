@@ -34,7 +34,7 @@ export function ProjectsSubBar({ projects }: { projects: Project[] }) {
   // counterweight to `projects/layout.tsx`'s `pt-8`; if the shell padding
   // changes, revisit.
   // `h-10` is the bar's pinned height: sibling sticky headers in this same
-  // scroll container (the iteration board's task table) offset by `top-10`.
+  // scroll container (the tranche board's task table) offset by `top-10`.
   return (
     <div className='sticky top-0 z-20 -mt-6 shrink-0'>
       <ChromeFrame variant='bar' className='h-10 justify-center gap-4 px-6 font-mono text-[11px] select-none'>

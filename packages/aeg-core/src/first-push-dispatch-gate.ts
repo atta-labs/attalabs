@@ -22,9 +22,9 @@
  */
 
 /** A `task/<iteration>/<n>` branch parses to its two topology coordinates; anything else does not. */
-export function parseTaskBranch(branch: string): { iteration: string; taskId: string } | null {
+export function parseTaskBranch(branch: string): { tranche: string; taskId: string } | null {
   const m = /^task\/([^/]+)\/([^/]+)$/.exec(branch)
-  return m ? { iteration: m[1] as string, taskId: m[2] as string } : null
+  return m ? { tranche: m[1] as string, taskId: m[2] as string } : null
 }
 
 export type DispatchReadinessFact = 'READY' | 'NOT_READY' | 'UNKNOWN'

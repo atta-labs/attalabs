@@ -2,19 +2,19 @@ import { readMarkdownTable } from './parse-registry'
 import type { LedgerRow } from './types'
 
 /**
- * Parse the append-only token/cost ledger for an iteration. See
- * `aeg-root/iteration-model.md` §12 for the canonical format.
+ * Parse the append-only token/cost ledger for an tranche. See
+ * `aeg-root/tranche-model.md` §12 for the canonical format.
  *
  * The ledger lives in a sibling file `aeg-root/iterations/<name>.tokens.md`
  * (the recommended home, since two roles appending rows do not collide with
  * a Planner editing the topology file) but the parser also accepts a
- * `## Token ledger` section inside any markdown — so a future iteration that
+ * `## Token ledger` section inside any markdown — so a future tranche that
  * chose the inline form still parses.
  *
  * Pure: no I/O. The caller reads the file contents and hands them in.
  *
  * Tolerant by design: a malformed row is skipped rather than throwing, so a
- * typo does not crash Studio's display of an iteration's other rows.
+ * typo does not crash Studio's display of an tranche's other rows.
  */
 export function parseLedger(md: string): LedgerRow[] {
   const rows = readMarkdownTable(md, /^#{1,6}\s+Token\s+ledger\b/i)

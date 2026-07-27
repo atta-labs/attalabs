@@ -4,7 +4,7 @@
 
 Proposal / design capture — nothing here is decided. This doc preserves the thinking from the 2026-07-19 session so it survives to a future planning pass. It is not a spec to build against until a Type-1 decision ratifies the model.
 
-**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it forces, and how it graduates safely. Companion to the `iteration → tranche` rename (which is a prerequisite, see below).
+**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it forces, and how it graduates safely. Companion to the `tranche → tranche` rename (which is a prerequisite, see below).
 
 ---
 
@@ -59,15 +59,15 @@ The hard part of loop engineering — "when does a pass stop?" — is already so
 
 ## Vocabulary the loop forces (prerequisite: the rename)
 
-Adding loops makes the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would both claim the word "iteration":
+Adding loops makes the `tranche → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would both claim the word "tranche":
 
 | Concept | Name | Note |
 |---------|------|------|
 | The running cadence (ring 1/2) | **loop** | the engine/driver |
-| One turn of the loop | **iteration** | reclaimed — genuinely cyclic |
+| One turn of the loop | **tranche** | reclaimed — genuinely cyclic |
 | The bounded, operator-cut batch of tasks | **tranche** | the cargo a turn advances; greps clean; product-orthogonal |
 
-`loop` iterates; each `iteration` advances a `tranche`; a tranche closes when its milestone closes. Three words, zero collision. (Runner-up for the batch was `run`, rejected on grep-hygiene — `rg run` is catastrophic noise in a govern-by-grep repo, same failure that killed `lot`.)
+`loop` iterates; each `tranche` advances a `tranche`; a tranche closes when its milestone closes. Three words, zero collision. (Runner-up for the batch was `run`, rejected on grep-hygiene — `rg run` is catastrophic noise in a govern-by-grep repo, same failure that killed `lot`.)
 
 ## User experience (ring 1, target)
 
@@ -75,7 +75,7 @@ Adding loops makes the `iteration → tranche` rename **mandatory**, because a l
 2. `vinaya loop <tranche>` (illustrative) — press start.
 3. The loop reads the forge, asks Vinaya what's dispatchable, hands the next eligible task to a coding agent, which opens the PR.
 4. Vinaya's gates run. On failure the loop feeds the failure's `agent_recovery_prompt` straight back — the agent self-corrects, no human.
-5. Green → merge → next task. **Studio** shows it live: tasks flipping todo → in-flight → merged, one **iteration** of the loop per turn.
+5. Green → merge → next task. **Studio** shows it live: tasks flipping todo → in-flight → merged, one **tranche** of the loop per turn.
 6. It pauses at judgment points (a Type-1 decision, tranche close) and asks you. You approve or steer; it resumes.
 7. Last task merges → loop closes the tranche → stops.
 
@@ -91,4 +91,4 @@ You plan the cut, press start, supervise, approve the few human moments.
 
 ---
 
-*Captured 2026-07-19. Reference:. Prerequisite: iteration→tranche rename tranche.*
+*Captured 2026-07-19. Reference:. Prerequisite: tranche→tranche rename tranche.*

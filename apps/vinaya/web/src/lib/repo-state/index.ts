@@ -3,11 +3,11 @@ export {
   findAegRoot,
   readRegistry,
   readProject,
-  listIterations,
-  iterationsForProject,
-  readIteration,
-  loadActiveIterations,
-  type IterationDetail,
-  type IterationLists,
-  type IterationSummary
+  listTranches,
+  tranchesForProject,
+  readTranche,
+  loadActiveTranches,
+  type TrancheDetail,
+  type TrancheLists,
+  type TrancheSummary
 } from './read-root'

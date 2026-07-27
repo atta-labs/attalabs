@@ -1,28 +1,28 @@
 import { execSync } from 'node:child_process'
 import { describe, it } from 'vitest'
 import { deriveTrancheFromForge, resolveRepo } from '@atta/aeg-forge-state'
-import { parseIteration } from '../src/index'
+import { parseTranche } from '../src/index'
 
 /**
  * Golden comparison (aeg-forge-state-v1 3b, #437, Part 3): proves the
- * forge-derived `id`/`issue` `loadIterationFiles` now uses for every
- * non-touched iteration matches the pre-3b file-parsed topology table, for
- * every currently active iteration — not a fixture, the live repo.
+ * forge-derived `id`/`issue` `loadTrancheFiles` now uses for every
+ * non-touched tranche matches the pre-3b file-parsed topology table, for
+ * every currently active tranche — not a fixture, the live repo.
  *
  * Scoped to `id`/`issue` only (NOT `dependsOn`/`conflictsWith`) — a
  * deliberate narrowing per the Planner's triage on Issue #437. The original,
  * unscoped version of this test (comparing `dependsOn` too) found real
- * divergence across all 5 active iterations: legacy Issues predating the
+ * divergence across all 5 active tranches: legacy Issues predating the
  * "Dependency rationale" grammar carry no forge-parseable dependency
  * data, stale Issue bodies drift from topology-table edits, and
- * `parse-rationale-deps.ts` has its own cross-iteration-qualified-ref gaps.
- * `loadIterationFiles` (`verify-coherence.ts`) responded by keeping
+ * `parse-rationale-deps.ts` has its own cross-tranche-qualified-ref gaps.
+ * `loadTrancheFiles` (`verify-coherence.ts`) responded by keeping
  * `dependsOn`/`conflictsWith` sourced from the topology table itself,
  * merged onto the forge-derived task list — this test's job is to prove the
  * two fields that DID get cut over (`id`, `issue`) are safe to, not to
  * re-litigate the fields that didn't.
  *
- * Comparing the full `Iteration`/`Task` object beyond that would be both
+ * Comparing the full `Tranche`/`Task` object beyond that would be both
  * unnecessary and actively wrong: a forge-derived `Task.rationaleMarkdown` is
  * the Issue's full body, while the file-parsed version is only the topology
  * file's own `### Task <id> — …` block — different by design (see
@@ -41,7 +41,7 @@ import { parseIteration } from '../src/index'
  * not informative). CI (`ci.yml`'s `typecheck-and-tests` job) now carries
  * `GH_TOKEN` specifically so this runs as a real proof there, not a skip.
  */
-function activeIterationSlugs(): string[] {
+function activeTrancheSlugs(): string[] {
   // --full-tree: `<rev>:<path>` resolves relative to CWD by default for
   // `ls-tree` (unlike `git show`, which already resolves from repo root) —
   // this test runs from `packages/aeg-core`, not the repo root.
@@ -59,7 +59,7 @@ type ComparableTask = { id: string; issue: number | null }
  * Issue to derive from, so `deriveTrancheFromForge` structurally cannot
  * ever list them (confirmed live: `vada-production-v1`'s 6a/6b/6c) — that's
  * an expected, by-design gap in forge derivation itself, not a data-quality
- * divergence this test exists to catch. `loadIterationFiles` handles it
+ * divergence this test exists to catch. `loadTrancheFiles` handles it
  * separately (appends file-only tasks as-is — see `deriveOrFallback`'s
  * docstring); this test only proves equivalence for tasks forge CAN see.
  */
@@ -71,7 +71,7 @@ function normalizeTasks(tasks: readonly { id: string; issue: number | null }[]):
 }
 
 describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-state-v1 3b, #437)', () => {
-  it('produces identical id/issue for every active iteration', async () => {
+  it('produces identical id/issue for every active tranche', async () => {
     const repo = await resolveRepo()
     if (!repo) {
       console.warn(
@@ -80,16 +80,16 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
       return
     }
 
-    const slugs = activeIterationSlugs()
+    const slugs = activeTrancheSlugs()
     if (slugs.length === 0) {
       // Expected, permanent steady state post-#515/#517: every active
-      // iteration is forge-native, so there is no file left for this test
+      // tranche is forge-native, so there is no file left for this test
       // to compare against — the comparison this test exists to prove
       // (file-derived vs forge-derived `id`/`issue`) is now vacuously true,
       // not a gap. Do not reintroduce a `> 0` assertion; that would require
       // a live topology file to exist just to keep this test meaningful,
       // which is exactly the state this repo's cutover eliminated.
-      console.warn('[golden-comparison] no active iteration carries a topology file — nothing to compare, passing.')
+      console.warn('[golden-comparison] no active tranche carries a topology file — nothing to compare, passing.')
       return
     }
 
@@ -98,7 +98,7 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
 
     for (const slug of slugs) {
       const raw = execSync(`git show origin/main:aeg-root/iterations/${slug}.md`, { encoding: 'utf8' })
-      const fileTasks = normalizeTasks(parseIteration(raw).tasks)
+      const fileTasks = normalizeTasks(parseTranche(raw).tasks)
 
       let forgeTasks: ComparableTask[]
       try {
@@ -120,7 +120,7 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
 
     if (comparedCount === 0) {
       console.warn(
-        '[golden-comparison] forge derivation failed for every active iteration — skipping, nothing was actually compared.'
+        '[golden-comparison] forge derivation failed for every active tranche — skipping, nothing was actually compared.'
       )
       return
     }

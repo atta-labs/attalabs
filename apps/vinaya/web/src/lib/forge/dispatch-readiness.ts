@@ -1,5 +1,5 @@
 /**
- * Dispatch-readiness loader for the iteration board (#372 bundled finding).
+ * Dispatch-readiness loader for the tranche board (#372 bundled finding).
  *
  * For tasks in `todo` status only, computes `@atta/aeg-core`'s
  * `checkDispatchReadiness` — the exact function `bin/verify-dispatch.ts`
@@ -9,18 +9,18 @@
  * facts are still assembled below (dormant, feeding a field the gate no
  * longer reads) as dead-but-harmless plumbing — see `dispatch-gate.ts`.
  *
- * Display-only overlay: this NEVER touches `DerivedStatus`/`deriveIteration`
+ * Display-only overlay: this NEVER touches `DerivedStatus`/`deriveTranche`
  * and is unrelated to the `blocked` status (the anomaly holding-pen) —
  * same additive discipline as the task-26 assigned-chip.
  *
  * Fact sources, one implementation each (the verify-dispatch traps):
- *   - per-task forge facts     ← the snapshot `loadIterationSnapshot` already fetched
+ *   - per-task forge facts     ← the snapshot `loadTrancheSnapshot` already fetched
  *   - readiness verdict        ← `checkDispatchReadiness` (aeg-core, pure)
  *   - rationale                ← `checkIssueRationale` via `buildDispatchGateInput`
  *   - provenance               ← `fetchProvenance` (shared with the CLIs)
  *   - open-issues-by-label     ← `fetchOpenIssuesByLabel` (shared with verify-coherence)
- *   - prior-iteration archival ← same file-scan + label-query recipe as the CLI's
- *                                `resolvePriorIterationArchival`
+ *   - prior-tranche archival ← same file-scan + label-query recipe as the CLI's
+ *                                `resolvePriorTrancheArchival`
  *
  * Degrades to an empty map (badge falls back to plain `Todo`) when the forge
  * snapshot is unavailable or no token resolves.
@@ -32,21 +32,21 @@ import 'server-only'
 import {
   checkDispatchReadiness,
   fetchOpenIssuesByLabel,
-  type DispatchPriorIterationFact,
+  type DispatchPriorTrancheFact,
   type DispatchResult,
-  type Iteration,
+  type Tranche,
   type Task
 } from '@atta/aeg-core'
 import { fetchProvenance, resolveGithubToken } from '@atta/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
-import { loadActiveIterations } from '../repo-state'
-import type { IterationSnapshot } from './load-snapshot'
+import { loadActiveTranches } from '../repo-state'
+import type { TrancheSnapshot } from './load-snapshot'
 import { buildDispatchGateInput } from './map-dispatch-input'
 
 export async function loadDispatchReadiness(
-  iteration: Iteration,
+  tranche: Tranche,
   slug: string,
-  snapshot: IterationSnapshot
+  snapshot: TrancheSnapshot
 ): Promise<Map<string, DispatchResult>> {
   const empty = new Map<string, DispatchResult>()
   if (snapshot.unavailable || !snapshot.repo) return empty
@@ -58,28 +58,28 @@ export async function loadDispatchReadiness(
   if (!token) return empty
   const { owner, repo } = snapshot.repo
 
-  const taskById = new Map(iteration.tasks.map((t) => [t.id, t]))
+  const taskById = new Map(tranche.tasks.map((t) => [t.id, t]))
 
   // Row-adjacency prior task per todo task (the preceding TABLE ROW,
   // not the Depends-on column). Dormant since the row-adjacency gate was removed: still assembled and
   // passed through, but `checkDispatchReadiness` no longer evaluates it.
   const priorByTaskId = new Map<string, Task | null>()
   for (const t of todo) {
-    const idx = iteration.tasks.findIndex((x) => x.id === t.id)
-    priorByTaskId.set(t.id, idx > 0 ? (iteration.tasks[idx - 1] ?? null) : null)
+    const idx = tranche.tasks.findIndex((x) => x.id === t.id)
+    priorByTaskId.set(t.id, idx > 0 ? (tranche.tasks[idx - 1] ?? null) : null)
   }
   const priorIssues = [
     ...new Set([...priorByTaskId.values()].map((p) => p?.issue).filter((n): n is number => typeof n === 'number'))
   ]
 
-  // Prior-iteration-archival candidates: every OTHER active iteration file,
-  // parsed — the CLI's `otherActiveIterationSlugs` recipe.
-  const candidates = await readOtherActiveIterations(slug)
+  // Prior-tranche-archival candidates: every OTHER active tranche file,
+  // parsed — the CLI's `otherActiveTrancheSlugs` recipe.
+  const candidates = await readOtherActiveTranches(slug)
 
-  // One batched label query covers this iteration's rationale bodies AND every
+  // One batched label query covers this tranche's rationale bodies AND every
   // archival candidate's open-issue count; provenance batches separately.
   const labelSlugs = [slug, ...candidates.map((c) => c.slug)]
-  const crossNums = collectCrossIterationDependsOn(todo, taskById)
+  const crossNums = collectCrossTrancheDependsOn(todo, taskById)
   const [issuesBySlug, provenanceByIssue, crossIssueClosed] = await Promise.all([
     fetchOpenIssuesByLabel(labelSlugs, owner, repo, token),
     fetchProvenance(priorIssues, owner, repo, token),
@@ -89,28 +89,28 @@ export async function loadDispatchReadiness(
   const rationaleBodyByIssue = new Map<number, string>()
   for (const issue of issuesBySlug.get(slug) ?? []) rationaleBodyByIssue.set(issue.number, issue.body)
 
-  // Per-project archival resolution — the CLI's `resolvePriorIterationArchival`:
-  // a candidate iteration touching the project with ZERO open issues is
+  // Per-project archival resolution — the CLI's `resolvePriorTrancheArchival`:
+  // a candidate tranche touching the project with ZERO open issues is
   // complete-but-unarchived → blocks; open issues mean it's genuinely active.
   const projects = [...new Set(todo.flatMap((t) => t.projects))]
-  const archivalByProject = new Map<string, DispatchPriorIterationFact>()
+  const archivalByProject = new Map<string, DispatchPriorTrancheFact>()
   for (const project of projects) {
-    let found: DispatchPriorIterationFact | null = null
+    let found: DispatchPriorTrancheFact | null = null
     for (const c of candidates) {
-      if (!c.iteration.tasks.some((t) => t.projects.includes(project))) continue
+      if (!c.tranche.tasks.some((t) => t.projects.includes(project))) continue
       const openIssues = issuesBySlug.get(c.slug) ?? []
       if (openIssues.length === 0) {
-        found = { project, priorIterationSlug: c.slug, archived: false }
+        found = { project, priorTrancheSlug: c.slug, archived: false }
         break
       }
     }
-    archivalByProject.set(project, found ?? { project, priorIterationSlug: null, archived: false })
+    archivalByProject.set(project, found ?? { project, priorTrancheSlug: null, archived: false })
   }
 
   const result = new Map<string, DispatchResult>()
   for (const t of todo) {
     const input = buildDispatchGateInput({
-      iterationSlug: slug,
+      trancheSlug: slug,
       task: t,
       facts: snapshot.facts,
       taskById,
@@ -118,7 +118,7 @@ export async function loadDispatchReadiness(
       provenanceByIssue,
       crossIssueClosed,
       priorTask: priorByTaskId.get(t.id) ?? null,
-      priorIterationArchival: t.projects.map((p) => archivalByProject.get(p)).filter((f) => f !== undefined)
+      priorTrancheArchival: t.projects.map((p) => archivalByProject.get(p)).filter((f) => f !== undefined)
     })
     result.set(t.id, checkDispatchReadiness(input))
   }
@@ -127,17 +127,17 @@ export async function loadDispatchReadiness(
 
 // ---------- internal helpers ----------
 
-async function readOtherActiveIterations(excludeSlug: string): Promise<Array<{ slug: string; iteration: Iteration }>> {
+async function readOtherActiveTranches(excludeSlug: string): Promise<Array<{ slug: string; tranche: Tranche }>> {
   try {
-    const all = await loadActiveIterations()
-    return all.filter((it) => it.fileSlug !== excludeSlug).map((it) => ({ slug: it.fileSlug, iteration: it.iteration }))
+    const all = await loadActiveTranches()
+    return all.filter((it) => it.fileSlug !== excludeSlug).map((it) => ({ slug: it.fileSlug, tranche: it.tranche }))
   } catch {
     return []
   }
 }
 
-/** Cross-iteration `#NNN` depends-on edges of the todo tasks (same fact the CLI reads via `gh issue view`). */
-function collectCrossIterationDependsOn(todo: Task[], taskById: Map<string, Task>): number[] {
+/** Cross-tranche `#NNN` depends-on edges of the todo tasks (same fact the CLI reads via `gh issue view`). */
+function collectCrossTrancheDependsOn(todo: Task[], taskById: Map<string, Task>): number[] {
   const nums = new Set<number>()
   for (const t of todo) {
     for (const edge of t.dependsOn) {

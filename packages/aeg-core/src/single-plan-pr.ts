@@ -11,12 +11,12 @@
  */
 
 /**
- * Parses an iteration slug from a touched file path, when that path is an
- * active (non-`completed/`) iteration topology file. Returns `null` for
+ * Parses an tranche slug from a touched file path, when that path is an
+ * active (non-`completed/`) tranche topology file. Returns `null` for
  * everything else — including `README.md` and `*.tokens.md`, neither of
  * which is a topology file the single-plan-PR guard (below) cares about.
  */
-export function iterationSlugFromTopologyPath(path: string): string | null {
+export function trancheSlugFromTopologyPath(path: string): string | null {
   const m = path.match(/^aeg-root\/iterations\/([^/]+)\.md$/)
   if (!m) return null
   const slug = m[1] as string
@@ -28,8 +28,8 @@ export type OpenPrFiles = { number: number; files: string[] }
 
 /**
  * Single-plan-PR guard (task 19 / #336): refuses a plan-branch diff
- * that touches an iteration's topology file when another OPEN PR's diff
- * already touches that SAME iteration's topology file. Ends the plan-PR
+ * that touches an tranche's topology file when another OPEN PR's diff
+ * already touches that SAME tranche's topology file. Ends the plan-PR
  * race that produced two concurrent plan PRs for `aeg-governance-hardening`
  * itself (#352/#354) — each cut from `origin/main` unaware of the other's
  * newly-cut Issue.
@@ -37,7 +37,7 @@ export type OpenPrFiles = { number: number; files: string[] }
  * `branchFiles` is this branch's diff vs `origin/main` (or vs the PR's
  * base); `otherOpenPrs` is every other currently-open PR's touched files
  * (the caller excludes this PR's own number when editing). An ordinary
- * Dormant where plans are forge objects: with an iteration held as a
+ * Dormant where plans are forge objects: with an tranche held as a
  * Milestone plus labeled Issues, no plan diff touches a topology file and
  * this predicate has nothing to compare. It stays because it is still the
  * right guard for a repo that keeps plans as files — a dormant check that
@@ -50,16 +50,16 @@ export function checkSinglePlanPr(
   branchFiles: string[],
   otherOpenPrs: OpenPrFiles[]
 ): { ok: boolean; message?: string } {
-  const touchedSlugs = new Set(branchFiles.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
+  const touchedSlugs = new Set(branchFiles.map(trancheSlugFromTopologyPath).filter((s): s is string => s !== null))
   if (touchedSlugs.size === 0) return { ok: true }
 
   for (const pr of otherOpenPrs) {
-    const otherSlugs = new Set(pr.files.map(iterationSlugFromTopologyPath).filter((s): s is string => s !== null))
+    const otherSlugs = new Set(pr.files.map(trancheSlugFromTopologyPath).filter((s): s is string => s !== null))
     for (const slug of touchedSlugs) {
       if (otherSlugs.has(slug)) {
         return {
           ok: false,
-          message: `single-plan-pr: another open PR (#${pr.number}) already touches iteration "${slug}"'s topology file. Only one open plan PR per iteration is allowed at a time — wait for #${pr.number} to merge or close, or coordinate with its author.`
+          message: `single-plan-pr: another open PR (#${pr.number}) already touches tranche "${slug}"'s topology file. Only one open plan PR per tranche is allowed at a time — wait for #${pr.number} to merge or close, or coordinate with its author.`
         }
       }
     }
@@ -67,7 +67,7 @@ export function checkSinglePlanPr(
   return { ok: true }
 }
 
-/** True when any of `files` touches an active iteration's topology file — i.e. this diff is a plan-PR diff. */
+/** True when any of `files` touches an active tranche's topology file — i.e. this diff is a plan-PR diff. */
 export function touchesAnyTopology(files: string[]): boolean {
-  return files.some((f) => iterationSlugFromTopologyPath(f) !== null)
+  return files.some((f) => trancheSlugFromTopologyPath(f) !== null)
 }

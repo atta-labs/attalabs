@@ -45,7 +45,7 @@ describe('render-state fixture proof', () => {
         reason: 'config gates["gate:commit-msg"] references no gate or check in doctrine'
       }
     ],
-    iteration: null
+    tranche: null
   }
 
   it('keeps the disabled gate visible — present in the children array, not hidden', () => {

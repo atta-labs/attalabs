@@ -45,9 +45,9 @@ function sh(cmd: string): string | null {
 
 /** Fail-open: any forge failure degrades to `null` (the evaluator maps that
  * to a skip), same discipline as `sh()` above — this bin never throws. */
-async function resolveIssue(owner: string, repo: string, iteration: string, taskId: string): Promise<number | null> {
+async function resolveIssue(owner: string, repo: string, tranche: string, taskId: string): Promise<number | null> {
   try {
-    const derived = await deriveTrancheFromForge(owner, repo, iteration)
+    const derived = await deriveTrancheFromForge(owner, repo, tranche)
     return derived.tasks.find((t) => t.id === taskId)?.issue ?? null
   } catch {
     return null
@@ -93,7 +93,7 @@ if (import.meta.main) {
     const repoRef = await resolveRepo()
     repo = repoRef ? `${repoRef.owner}/${repoRef.repo}` : null
     if (repoRef !== null) {
-      issue = await resolveIssue(repoRef.owner, repoRef.repo, parsed.iteration, parsed.taskId)
+      issue = await resolveIssue(repoRef.owner, repoRef.repo, parsed.tranche, parsed.taskId)
     }
     if (issue !== null && repo !== null) {
       assignees = fetchAssignees(issue, repo)

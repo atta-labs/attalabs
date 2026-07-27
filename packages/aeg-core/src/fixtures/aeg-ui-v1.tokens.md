@@ -1,8 +1,8 @@
 # Token ledger — aeg-ui-v1
 
-Append-only per-iteration token/cost ledger. See `aeg-root/iterations/README.md` §12.
+Append-only per-tranche token/cost ledger. See `aeg-root/iterations/README.md` §12.
 
-Rules: each role appends one row at the end of its turn. Re-entry (re-plan, re-develop, re-review) appends a **new** row — never edits an existing one. The iteration total is `sum(rows)`, derived at read time, never stored.
+Rules: each role appends one row at the end of its turn. Re-entry (re-plan, re-develop, re-review) appends a **new** row — never edits an existing one. The tranche total is `sum(rows)`, derived at read time, never stored.
 
 Capture sources: terminal roles (Developer / Archivist run in Claude Code) self-report exact tokens via `/cost`; claude.ai roles (Planner / Brief Author / Reviewer / Security) cannot see their own token count and are filled by the Principal from the claude.ai UI usage figure — or left as `—` until then.
 

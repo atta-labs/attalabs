@@ -42,7 +42,7 @@ One paragraph of blast radius.
 describe('taskRefFromBranch', () => {
   it('parses a well-formed task branch', () => {
     expect(taskRefFromBranch('task/aeg-governance-hardening/5d')).toEqual({
-      iteration: 'aeg-governance-hardening',
+      tranche: 'aeg-governance-hardening',
       taskId: '5d'
     })
   })
@@ -68,10 +68,10 @@ describe('taskRefFromBranch', () => {
   })
 })
 
-// #524/#530 regression: a task PR can close an iteration-labeled Issue from a
+// #524/#530 regression: a task PR can close an tranche-labeled Issue from a
 // non-task branch. `extractIssue` is the bin shim's second eligibility signal
 // (alongside `taskRefFromBranch`) — it must find the closing Issue number so
-// the shim can check that Issue's own `vinaya/iteration:*` label.
+// the shim can check that Issue's own `vinaya/tranche:*` label.
 describe('extractIssue', () => {
   it('finds Closes #N on a non-task-branch PR body (the #530 shape)', () => {
     const body = '<!-- AEG:CLOSES:START -->\nCloses #524\n<!-- AEG:CLOSES:END -->\n\n## Summary\n\nCleanup fix.'
@@ -89,20 +89,20 @@ describe('extractIssue', () => {
 
 // #524/#530 regression, the actual shipped decision (not just its inputs):
 // a task-branch `ref` is sufficient on its own; a non-task branch needs the
-// closed Issue's own labels to carry `vinaya/iteration:*`.
+// closed Issue's own labels to carry `vinaya/tranche:*`.
 describe('isEligibleForProvenance', () => {
-  const ref = { iteration: 'aeg-governance-hardening', taskId: '5d' }
+  const ref = { tranche: 'aeg-governance-hardening', taskId: '5d' }
 
   it('is eligible when ref is a real task branch, regardless of labels', () => {
     expect(isEligibleForProvenance(ref, [])).toBe(true)
     expect(isEligibleForProvenance(ref, ['unrelated'])).toBe(true)
   })
 
-  it('is eligible when ref is null but the Issue carries a vinaya/iteration:* label (the #524/#530 shape)', () => {
-    expect(isEligibleForProvenance(null, ['vinaya/iteration:herald-hardening-v1'])).toBe(true)
+  it('is eligible when ref is null but the Issue carries a vinaya/tranche:* label (the #524/#530 shape)', () => {
+    expect(isEligibleForProvenance(null, ['vinaya/tranche:herald-hardening-v1'])).toBe(true)
   })
 
-  it('is NOT eligible when ref is null and no label starts with vinaya/iteration:', () => {
+  it('is NOT eligible when ref is null and no label starts with vinaya/tranche:', () => {
     expect(isEligibleForProvenance(null, ['bug', 'vinaya/needs:principal-input'])).toBe(false)
   })
 
@@ -121,18 +121,18 @@ describe('hasProvenance', () => {
   })
 
   it('is true when the first comment carries the heading', () => {
-    expect(hasProvenance(['### AEG provenance — task 1 (iteration x)', 'unrelated'])).toBe(true)
+    expect(hasProvenance(['### AEG provenance — task 1 (tranche x)', 'unrelated'])).toBe(true)
   })
 
   it('is true when a later comment carries the heading', () => {
-    expect(hasProvenance(['unrelated', 'also unrelated', '### AEG provenance — task 1 (iteration x)'])).toBe(true)
+    expect(hasProvenance(['unrelated', 'also unrelated', '### AEG provenance — task 1 (tranche x)'])).toBe(true)
   })
 })
 
 describe('buildProvenanceBlock', () => {
   it('assembles the full happy path with the exact heading format', () => {
     const { block, issue, dangling } = buildProvenanceBlock(facts({ body: FULL_BODY }))
-    expect(block.split('\n')[0]).toBe('### AEG provenance — task 5d (iteration aeg-governance-hardening)')
+    expect(block.split('\n')[0]).toBe('### AEG provenance — task 5d (tranche aeg-governance-hardening)')
     expect(issue).toBe(309)
     expect(dangling).toEqual([
       'no code-reviewer verdict comment found on this PR',

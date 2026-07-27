@@ -17,7 +17,7 @@ export default function TheStudioPage() {
         </Heading>
         <Text className='font-sans text-muted-foreground'>
           Vinaya Studio is the governance dashboard — the live derived-status viewer for this repo&rsquo;s projects,
-          iterations, and backlog.
+          tranches, and backlog.
         </Text>
       </section>
 
@@ -31,7 +31,7 @@ export default function TheStudioPage() {
             </Text>
           </div>
           <Text as='p' className='font-sans text-sm text-muted-foreground'>
-            Run it locally to see Projects, Iterations, and Backlog.
+            Run it locally to see Projects, Tranches, and Backlog.
           </Text>
           <NextLink
             href='/docs'

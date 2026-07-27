@@ -1,9 +1,9 @@
 /**
  * Backlog view (Studio task 2, #498; table redesign task 11, #571) — every
- * open Issue carrying no `vinaya/iteration:*` label, as a filterable table. Closes the
- * gap where unscoped Issues (e.g. #497) were invisible on every iteration-scoped
- * Studio page — `/studio/iterations` and `/studio/projects/[name]` both query
- * iteration-scoped data only.
+ * open Issue carrying no `vinaya/tranche:*` label, as a filterable table. Closes the
+ * gap where unscoped Issues (e.g. #497) were invisible on every tranche-scoped
+ * Studio page — `/studio/tranches` and `/studio/projects/[name]` both query
+ * tranche-scoped data only.
  *
  * One row per Issue (task 11): a cross-project Issue like #513 (`Project: aeg,
  * aeg-core`) is a single row carrying both project badges — the project filter
@@ -13,9 +13,9 @@
  *
  * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
  * server component only fetches, computes the distinct filter options, and
- * stays honest about forge failure. Iteration/state are NOT filters here: the
- * backlog is by definition the open, no-`vinaya/iteration:*` set (`fetch-open-issues.ts`),
- * so every row is open and iteration-less — nothing to filter on.
+ * stays honest about forge failure. Tranche/state are NOT filters here: the
+ * backlog is by definition the open, no-`vinaya/tranche:*` set (`fetch-open-issues.ts`),
+ * so every row is open and tranche-less — nothing to filter on.
  *
  * Forge honesty (task 11): the fetch carries a `ForgeStatus`; when the forge is
  * unreachable the page renders a banner, never a truth-shaped "everything is
@@ -29,7 +29,7 @@ import { notFound } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
 import { readRegistry } from '@/lib/repo-state'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
-import { fetchOpenIssuesWithoutIterationLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
+import { fetchOpenIssuesWithoutTrancheLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
 import { labelKind } from '@/app/studio/_components/LabelBadge'
 import { BacklogTable } from './_components/BacklogTable'
@@ -78,7 +78,7 @@ export default async function BacklogPage() {
   const [repo, token, registry] = await Promise.all([resolveRepo(), resolveGithubToken(), readRegistry()])
   const { issues, forge }: { issues: BacklogIssue[]; forge: ForgeStatus } =
     repo && token
-      ? await fetchOpenIssuesWithoutIterationLabel(repo.owner, repo.repo, token)
+      ? await fetchOpenIssuesWithoutTrancheLabel(repo.owner, repo.repo, token)
       : { issues: [], forge: { kind: 'unreachable' } }
 
   return (
@@ -86,8 +86,8 @@ export default async function BacklogPage() {
       <header className='space-y-2'>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Backlog</h1>
         <p className='font-sans text-sm text-muted-foreground'>
-          Open issues with no <span className='font-mono'>vinaya/iteration:*</span> label — tracked work outside any
-          iteration.
+          Open issues with no <span className='font-mono'>vinaya/tranche:*</span> label — tracked work outside any
+          tranche.
         </p>
       </header>
 
@@ -98,7 +98,7 @@ export default async function BacklogPage() {
         // backlog when the forge was actually reachable.
         forge.kind === 'ok' ? (
           <p className='font-sans text-sm text-muted-foreground'>
-            No backlog issues — everything is tracked under an iteration.
+            No backlog issues — everything is tracked under a tranche.
           </p>
         ) : null
       ) : (

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 // Hand-authored product page — five roadmap items. Deliberately NOT derived
-// from forge state (`listIterations()` / Milestones): that spawns `gh`
+// from forge state (`listTranches()` / Milestones): that spawns `gh`
 // subprocesses which 500 in prod on Vercel, the same reason `studio/*` pages
 // `notFound()` there. The content lives here as data, not as a forge query, so
 // this route has NO forge dependency and cannot fail that way.

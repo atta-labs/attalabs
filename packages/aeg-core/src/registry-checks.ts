@@ -8,7 +8,7 @@
  * mirroring `coherence-checks.ts`'s shape exactly (plain executables,
  * deterministic pass/fail, no config conditionals).
  *
- * Rollout policy: G1/G2 ship report-only this iteration — they can
+ * Rollout policy: G1/G2 ship report-only this tranche — they can
  * only ever report `'info'`, never `'fail'`, so they never affect CI's exit
  * code. G3–G5 are blocking (`'fail'` on any violation). G1 flips to blocking
  * in a later, separately-dispatched task; this task does not do that.
@@ -32,7 +32,7 @@ export type RegistryCheckResult = {
 
 /**
  * G1 — every row's non-empty `implementation` resolves on disk.
- * Report-only this iteration: a missing path is always `'info'`,
+ * Report-only this tranche: a missing path is always `'info'`,
  * Never `'fail'`.
  */
 export function checkG1(rows: GateRow[], existsFn: (path: string) => boolean): RegistryCheckResult {
@@ -54,7 +54,7 @@ export function checkG1(rows: GateRow[], existsFn: (path: string) => boolean): R
  * G2 — every candidate hook/CLI file is named by SOME row's `implementation`.
  * `candidateFiles` is already-globbed by the caller (`.husky/*`,
  * `.claude/hooks/*.sh`, `packages/aeg-core/bin/*.ts`, excluding `.husky/_`).
- * Report-only this iteration — same as G1, never `'fail'`.
+ * Report-only this tranche — same as G1, never `'fail'`.
  */
 export function checkG2(rows: GateRow[], candidateFiles: string[]): RegistryCheckResult {
   const implementations = new Set(rows.map((r) => r.implementation).filter((p) => p !== ''))

@@ -1,7 +1,7 @@
 /**
- * Open issues carrying no `vinaya/iteration:*` label — the backlog view's data
+ * Open issues carrying no `vinaya/tranche:*` label — the backlog view's data
  * source (Studio task 2, #498). A different fact from `fetchOpenIssuesByLabel`
- * (`@atta/aeg-core` — "under iteration X" vs. "under no iteration"): GitHub's
+ * (`@atta/aeg-core` — "under tranche X" vs. "under no tranche"): GitHub's
  * GraphQL `labels:` filter argument has no pattern-exclusion capability, so
  * this is a repo-wide query filtered client-side, not a parameterization of
  * the existing per-slug function (one implementation per fact).
@@ -31,7 +31,7 @@ export type BacklogIssue = { number: number; title: string; url: string; labels:
 
 /**
  * The backlog fetch result carries a `ForgeStatus` alongside the issues —
- * mirroring `listIterations`'s `{ …, forge }` shape (task 11, #571) — so a
+ * mirroring `listTranches`'s `{ …, forge }` shape (task 11, #571) — so a
  * consumer can distinguish a genuinely empty backlog (`ok`, `[]`) from a forge
  * failure that produced an empty list (`unreachable`). Without it, a page can't
  * tell "everything is tracked" from "GitHub was unreachable" and would render a
@@ -39,7 +39,7 @@ export type BacklogIssue = { number: number; title: string; url: string; labels:
  *
  * Only `ok` / `unreachable` ever appear here — this is one repo-wide query, not
  * a per-slug fan-out, so there is no `partial` (that state belongs to
- * `listIterations`, which loads many slugs and can lose a subset).
+ * `listTranches`, which loads many slugs and can lose a subset).
  */
 export type BacklogResult = { issues: BacklogIssue[]; forge: ForgeStatus }
 
@@ -57,7 +57,7 @@ type OpenIssuesResponse = {
   } | null
 }
 
-export async function fetchOpenIssuesWithoutIterationLabel(
+export async function fetchOpenIssuesWithoutTrancheLabel(
   owner: string,
   repo: string,
   token: string

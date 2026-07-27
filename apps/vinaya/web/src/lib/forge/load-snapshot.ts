@@ -3,44 +3,44 @@
  * detail). One server entry point that:
  *
  *   1. Resolves `{ owner, repo }` from the local git remote (`resolveRepo`).
- *   2. Resolves issue numbers for tasks: tries the `vinaya/iteration:<slug>` label
+ *   2. Resolves issue numbers for tasks: tries the `vinaya/tranche:<slug>` label
  * query first (canonical forge source ); falls back to topology
- *      refs when the label returns nothing (e.g. archived iterations that
+ *      refs when the label returns nothing (e.g. archived tranches that
  *      pre-date the labeling convention).
- *   3. Calls `fetchForgeFacts` for every task in the iteration that has an
+ *   3. Calls `fetchForgeFacts` for every task in the tranche that has an
  *      Issue number.
- *   4. Hands the raw `iteration` + facts map to `@atta/aeg-core`'s
- *      `deriveIteration` — derived status is **read from aeg-core, never
- *      re-derived in components** (`iteration-model.md` §3 + task 5 brief).
+ *   4. Hands the raw `tranche` + facts map to `@atta/aeg-core`'s
+ *      `deriveTranche` — derived status is **read from aeg-core, never
+ *      re-derived in components** (`tranche-model.md` §3 + task 5 brief).
  *
  * Degrades gracefully when:
  *   - The git remote can't be resolved (`resolveRepo` returns `null`).
  *   - The forge adapter returns `unavailable: true`.
- *   In both cases the derived statuses fall back to `todo` — iteration tasks
- * are committed work; `deriveIteration` emits `todo` when no facts are known.
+ *   In both cases the derived statuses fall back to `todo` — tranche tasks
+ * are committed work; `deriveTranche` emits `todo` when no facts are known.
  *
  * SERVER-ONLY.
  */
 
 import 'server-only'
 import {
-  deriveIteration,
+  deriveTranche,
   fetchForgeFacts,
   fetchForgeTasksByLabel,
-  type DerivedIteration,
+  type DerivedTranche,
   type ForgeFacts,
-  type Iteration,
+  type Tranche,
   type PrRef
 } from '@atta/aeg-core'
 import { resolveRepo, type RepoRef } from '@atta/aeg-forge-state'
 
-export type IterationSnapshot = {
-  derived: DerivedIteration
+export type TrancheSnapshot = {
+  derived: DerivedTranche
   repo: RepoRef | null
   /**
-   * Raw per-task forge facts, keyed by task id. `deriveIteration` already
+   * Raw per-task forge facts, keyed by task id. `deriveTranche` already
    * consumed these to produce `derived` — surfaced here too so callers can
-   * read facts `deriveIteration` doesn't project into `DerivedStatus` (e.g.
+   * read facts `deriveTranche` doesn't project into `DerivedStatus` (e.g.
    * `assigned`, which the state model deliberately excludes from status derivation).
    */
   facts: Map<string, ForgeFacts>
@@ -57,11 +57,11 @@ export type IterationSnapshot = {
 }
 
 /**
- * Per-iteration progress counts derived from the forge. Used by iteration
+ * Per-tranche progress counts derived from the forge. Used by tranche
  * cards on the list and project pages to show real status without loading
- * the full derived iteration.
+ * the full derived tranche.
  */
-export type IterationProgress = {
+export type TrancheProgress = {
   total: number
   merged: number
   /** in-flight + in-review + changes-requested combined. */
@@ -72,11 +72,11 @@ export type IterationProgress = {
   unavailable: boolean
 }
 
-export async function loadIterationSnapshot(iteration: Iteration, slug: string): Promise<IterationSnapshot> {
+export async function loadTrancheSnapshot(tranche: Tranche, slug: string): Promise<TrancheSnapshot> {
   const repo = await resolveRepo()
   if (!repo) {
     return {
-      derived: deriveIteration(iteration, new Map()),
+      derived: deriveTranche(tranche, new Map()),
       repo: null,
       facts: new Map(),
       prRefs: new Map(),
@@ -85,16 +85,16 @@ export async function loadIterationSnapshot(iteration: Iteration, slug: string):
     }
   }
 
-  const resolvedRefs = await resolveIterationTaskRefs(repo, slug, iteration)
+  const resolvedRefs = await resolveTrancheTaskRefs(repo, slug, tranche)
   const snapshot = await fetchForgeFacts({
     owner: repo.owner,
     repo: repo.repo,
-    iteration: slug,
+    tranche: slug,
     tasks: resolvedRefs
   })
 
   return {
-    derived: deriveIteration(iteration, snapshot.facts),
+    derived: deriveTranche(tranche, snapshot.facts),
     repo,
     facts: snapshot.facts,
     prRefs: snapshot.prRefs,
@@ -104,14 +104,14 @@ export async function loadIterationSnapshot(iteration: Iteration, slug: string):
 }
 
 /**
- * Lightweight progress loader for iteration cards. Uses the same label-based
- * resolution as `loadIterationSnapshot` but avoids loading the full iteration
- * file — callers pass `taskRefs` from `IterationSummary.taskRefs`.
+ * Lightweight progress loader for tranche cards. Uses the same label-based
+ * resolution as `loadTrancheSnapshot` but avoids loading the full tranche
+ * file — callers pass `taskRefs` from `TrancheSummary.taskRefs`.
  */
-export async function loadIterationProgress(
+export async function loadTrancheProgress(
   taskRefs: Array<{ id: string; issue: number | null }>,
   slug: string
-): Promise<IterationProgress> {
+): Promise<TrancheProgress> {
   const total = taskRefs.length
   const repo = await resolveRepo()
   if (!repo) {
@@ -122,7 +122,7 @@ export async function loadIterationProgress(
   const snapshot = await fetchForgeFacts({
     owner: repo.owner,
     repo: repo.repo,
-    iteration: slug,
+    tranche: slug,
     tasks: resolvedRefs
   })
 
@@ -130,8 +130,8 @@ export async function loadIterationProgress(
     return { total, merged: 0, active: 0, todo: total, backlog: 0, blocked: 0, unavailable: true }
   }
 
-  // Use a minimal Iteration (no edge data needed for progress counts).
-  const minimal: Iteration = {
+  // Use a minimal Tranche (no edge data needed for progress counts).
+  const minimal: Tranche = {
     name: slug,
     lifecycle: 'active',
     goal: '',
@@ -146,7 +146,7 @@ export async function loadIterationProgress(
     })),
     backlog: []
   }
-  const derived = deriveIteration(minimal, snapshot.facts)
+  const derived = deriveTranche(minimal, snapshot.facts)
 
   let merged = 0
   let active = 0
@@ -188,18 +188,18 @@ export async function loadIterationProgress(
 // ---------- internal helpers ----------
 
 /**
- * Resolve task refs for `loadIterationSnapshot`: augments topology null-issue
- * refs with forge-discovered issue numbers via the `vinaya/iteration:<slug>` label.
+ * Resolve task refs for `loadTrancheSnapshot`: augments topology null-issue
+ * refs with forge-discovered issue numbers via the `vinaya/tranche:<slug>` label.
  */
-async function resolveIterationTaskRefs(
+async function resolveTrancheTaskRefs(
   repo: RepoRef,
   slug: string,
-  iteration: Iteration
+  tranche: Tranche
 ): Promise<Array<{ id: string; issue: number | null }>> {
   return resolveRefs(
     repo,
     slug,
-    iteration.tasks.map((t) => ({ id: t.id, issue: t.issue }))
+    tranche.tasks.map((t) => ({ id: t.id, issue: t.issue }))
   )
 }
 

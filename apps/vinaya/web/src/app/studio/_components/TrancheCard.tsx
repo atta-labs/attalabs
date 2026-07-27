@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
-import type { IterationSummary } from '@/lib/repo-state'
-import { NO_BOARD_REASON } from '@/app/studio/_lib/iteration-href'
+import type { TrancheSummary } from '@/lib/repo-state'
+import { NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
 
 type TaskProgressProps = {
-  counts: IterationSummary['taskCounts']
+  counts: TrancheSummary['taskCounts']
 }
 
 function TaskProgress({ counts }: TaskProgressProps) {
@@ -50,13 +50,13 @@ function TaskProgress({ counts }: TaskProgressProps) {
   )
 }
 
-type IterationCardProps = {
-  iteration: IterationSummary
+type TrancheCardProps = {
+  tranche: TrancheSummary
   href: string | null
   showProjects?: boolean
 }
 
-export function IterationCard({ iteration: it, href, showProjects = false }: IterationCardProps) {
+export function TrancheCard({ tranche: it, href, showProjects = false }: TrancheCardProps) {
   const wrapperClassName = 'group block'
 
   const content = (

@@ -3,12 +3,12 @@ import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } fr
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { readIteration, readProject } from '@/lib/repo-state'
+import { readTranche, readProject } from '@/lib/repo-state'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
-import { fetchIterationTokenLedger } from '@/lib/forge/fetch-token-ledger'
-import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
+import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
+import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
 import { CoherencePanel } from './_components/CoherencePanel'
-import { IterationTabs } from './_components/IterationTabs'
+import { TrancheTabs } from './_components/TrancheTabs'
 import { statusVisual, todoDispatchVisual } from './_lib/status-display'
 import { TaskTitleCell } from './_components/TaskTitleCell'
 
@@ -32,15 +32,15 @@ function formatCost(n: number | null): string {
   return `$${n.toFixed(4)}`
 }
 
-export default async function IterationPage({ params }: { params: Promise<Params> }) {
+export default async function TranchePage({ params }: { params: Promise<Params> }) {
   const { name, slug } = await params
-  const [project, detail] = await Promise.all([readProject(name), readIteration(slug)])
+  const [project, detail] = await Promise.all([readProject(name), readTranche(slug)])
   if (!project) notFound()
   if (!detail) notFound()
 
-  const { iteration, archived } = detail
+  const { tranche, archived } = detail
 
-  const snapshot = await loadIterationSnapshot(iteration, slug)
+  const snapshot = await loadTrancheSnapshot(tranche, slug)
   const taskStatusMap = new Map<string, DerivedStatus>()
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
@@ -48,10 +48,10 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
   // Dispatch-readiness sub-state for `todo` rows (#372 bundled finding):
   // `checkDispatchReadiness` computed server-side, display-only — DerivedStatus
-  // is untouched. Archived iterations have no dispatchable work; skip.
+  // is untouched. Archived tranches have no dispatchable work; skip.
   const readinessMap = archived
     ? new Map<string, DispatchResult>()
-    : await loadDispatchReadiness(iteration, slug, snapshot)
+    : await loadDispatchReadiness(tranche, slug, snapshot)
 
   // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
   // (excludes it from derivation). Rendered as a subordinate chip on
@@ -63,7 +63,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
 
   // Map task id → issue number for resolving depends-on / conflicts-with
   const taskIssueMap = new Map<string, number | null>()
-  for (const task of iteration.tasks) {
+  for (const task of tranche.tasks) {
     taskIssueMap.set(String(task.id), task.issue)
   }
   const resolveDepLabel = (id: string): string | null => {
@@ -83,11 +83,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
   // no longer the `<slug>.tokens.md` file read. `.tokens.md` itself is not
   // deleted here (task 7's job, once this is proven).
   const tokenLedger = snapshot.repo
-    ? await fetchIterationTokenLedger({
+    ? await fetchTrancheTokenLedger({
         owner: snapshot.repo.owner,
         repo: snapshot.repo.repo,
-        iteration: slug,
-        tasks: iteration.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
+        tranche: slug,
+        tasks: tranche.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
       })
     : {
         ledgers: new Map<string, LedgerRow[]>(),
@@ -101,22 +101,22 @@ export default async function IterationPage({ params }: { params: Promise<Params
     <div className='space-y-8'>
       <header className='space-y-3'>
         <div className='flex items-center gap-3'>
-          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Iteration</p>
+          <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Tranche</p>
           {archived ? (
             <Badge className='bg-muted/40 text-muted-foreground'>Archived</Badge>
           ) : (
             <Badge className='bg-success/10 text-success'>Active</Badge>
           )}
         </div>
-        <h1 className='font-serif text-3xl tracking-tight text-foreground'>{iteration.name || slug}</h1>
-        {iteration.goal ? (
-          <p className='font-sans text-base text-muted-foreground'>{iteration.goal}</p>
+        <h1 className='font-serif text-3xl tracking-tight text-foreground'>{tranche.name || slug}</h1>
+        {tranche.goal ? (
+          <p className='font-sans text-base text-muted-foreground'>{tranche.goal}</p>
         ) : (
           <p className='font-sans text-sm text-muted-foreground/70'>No goal recorded.</p>
         )}
       </header>
 
-      <IterationTabs
+      <TrancheTabs
         tasks={
           <>
             <section className='space-y-3'>
@@ -132,9 +132,9 @@ export default async function IterationPage({ params }: { params: Promise<Params
                 </div>
               ) : null}
 
-              {iteration.tasks.length === 0 ? (
+              {tranche.tasks.length === 0 ? (
                 <p className='font-sans text-sm text-muted-foreground/70'>
-                  No tasks declared in this iteration's topology table.
+                  No tasks declared in this tranche's topology table.
                 </p>
               ) : (
                 // The `@atta/ui` Table owns all table behavior. `stickyHeader` (opt-in —
@@ -164,7 +164,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {iteration.tasks.map((task) => {
+                      {tranche.tasks.map((task) => {
                         const status = taskStatusMap.get(String(task.id))
                         const visual = status ? statusVisual(status) : null
                         const readiness = status === 'todo' ? readinessMap.get(String(task.id)) : undefined
@@ -280,11 +280,11 @@ export default async function IterationPage({ params }: { params: Promise<Params
               )}
             </section>
 
-            {iteration.backlog.length > 0 && (
+            {tranche.backlog.length > 0 && (
               <section className='space-y-3'>
                 <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Backlog</h2>
                 <ul className='space-y-1.5 font-sans text-sm text-muted-foreground'>
-                  {iteration.backlog.map((item) => (
+                  {tranche.backlog.map((item) => (
                     <li key={item} className='leading-relaxed'>
                       {item}
                     </li>

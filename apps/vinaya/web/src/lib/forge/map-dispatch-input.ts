@@ -9,10 +9,10 @@
  * mirrors its CLI counterpart in `packages/aeg-core/bin/verify-dispatch.ts`
  * (`resolveDependsOn`, `resolveConflictsWith`, `resolvePriorTask`):
  *
- *   depends-on merged   ← same-iteration edge: the dep's `prState === 'merged'`;
+ *   depends-on merged   ← same-tranche edge: the dep's `prState === 'merged'`;
  *                         when no PR is known (`'none'`), fall back to
  *                         issue-closed — the CLI's exact fallback. Cross-
- *                         iteration `#NNN` edges read the pre-fetched issue
+ *                         tranche `#NNN` edges read the pre-fetched issue
  *                         state; unresolvable edges default to unmerged
  *                         (conservative, same as the CLI).
  *                         One known divergence: a dep whose PR was closed
@@ -22,8 +22,8 @@
  *                         closed PR) would say unmerged. That shape is a
  * terminal anomaly (`dropped`/`incoherent`)
  *                         and does not occur on a healthy board.
- *   conflicts-with      ← same-iteration edge: `prState === 'open'`; cross-
- *                         iteration edges default to not-blocking (no PR
+ *   conflicts-with      ← same-tranche edge: `prState === 'open'`; cross-
+ *                         tranche edges default to not-blocking (no PR
  *                         evidence), same as the CLI.
  *   prior task          ← the immediately preceding TABLE ROW (row-adjacency,
  *), not the Depends-on column — resolved by the
@@ -41,30 +41,30 @@ import {
   type DispatchConflictsWithFact,
   type DispatchDependsOnFact,
   type DispatchGateInput,
-  type DispatchPriorIterationFact,
+  type DispatchPriorTrancheFact,
   type ForgeFacts,
   type Task
 } from '@atta/aeg-core'
 
 export type DispatchInputSources = {
-  iterationSlug: string
+  trancheSlug: string
   task: Task
-  /** Per-task forge facts, keyed by task id (from `loadIterationSnapshot`). */
+  /** Per-task forge facts, keyed by task id (from `loadTrancheSnapshot`). */
   facts: Map<string, ForgeFacts>
-  /** Same-iteration topology lookup. */
+  /** Same-tranche topology lookup. */
   taskById: Map<string, Task>
-  /** Issue number → Issue body, for this iteration's open issues. */
+  /** Issue number → Issue body, for this tranche's open issues. */
   rationaleBodyByIssue: Map<number, string>
   /** Prior-task Issue number → provenance-block-present (from `fetchProvenance`). */
   provenanceByIssue: Map<number, boolean>
-  /** Cross-iteration `#NNN` depends-on edge → issue closed. */
+  /** Cross-tranche `#NNN` depends-on edge → issue closed. */
   crossIssueClosed: Map<number, boolean>
   /** The immediately preceding topology row, or null for the first row. */
   priorTask: Task | null
-  priorIterationArchival: DispatchPriorIterationFact[]
+  priorTrancheArchival: DispatchPriorTrancheFact[]
 }
 
-/** `#NNN` or a prose cell containing `#NNN` (e.g. cross-iteration "other-iter #264"). */
+/** `#NNN` or a prose cell containing `#NNN` (e.g. cross-tranche "other-iter #264"). */
 function directIssueNumFromEdge(edge: string): number | null {
   const m = edge.match(/#(\d+)/)
   return m ? Number(m[1]) : null
@@ -106,7 +106,7 @@ export function buildDispatchGateInput(s: DispatchInputSources): DispatchGateInp
   const priorFacts = s.priorTask ? s.facts.get(s.priorTask.id) : undefined
 
   return {
-    iterationSlug: s.iterationSlug,
+    trancheSlug: s.trancheSlug,
     task,
     issue: task.issue !== null && taskFacts ? { number: task.issue, state: taskFacts.issueState } : null,
     issueRationalePass: body !== undefined ? checkIssueRationale(body).status === 'pass' : true,
@@ -121,6 +121,6 @@ export function buildDispatchGateInput(s: DispatchInputSources): DispatchGateInp
           hasProvenance: s.priorTask.issue !== null ? (s.provenanceByIssue.get(s.priorTask.issue) ?? false) : false
         }
       : null,
-    priorIterationArchival: s.priorIterationArchival
+    priorTrancheArchival: s.priorTrancheArchival
   }
 }

@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { deriveIteration } from './derive-iteration'
-import { parseIteration } from './parse-iteration'
-import type { DerivedStatus, ForgeFacts, Iteration, Task } from './types'
+import { deriveTranche } from './derive-tranche'
+import { parseTranche } from './parse-tranche'
+import type { DerivedStatus, ForgeFacts, Tranche, Task } from './types'
 
 function task(id: string, dependsOn: string[] = [], conflictsWith: string[] = []): Task {
   return {
@@ -17,7 +17,7 @@ function task(id: string, dependsOn: string[] = [], conflictsWith: string[] = []
   }
 }
 
-function iteration(tasks: Task[]): Iteration {
+function tranche(tasks: Task[]): Tranche {
   return {
     name: 'test',
     lifecycle: 'active',
@@ -42,32 +42,32 @@ function facts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
   }
 }
 
-describe('deriveIteration: §3 status table (each status)', () => {
+describe('deriveTranche: §3 status table (each status)', () => {
   // One synthetic task; vary its forge facts to hit every status row.
-  const oneTask = iteration([task('1')])
+  const oneTask = tranche([task('1')])
 
-  it('todo: issue open, unassigned (no backlog inside iterations)', () => {
-    const d = deriveIteration(oneTask, new Map([['1', facts()]]))
+  it('todo: issue open, unassigned (no backlog inside tranches)', () => {
+    const d = deriveTranche(oneTask, new Map([['1', facts()]]))
     expect(d.tasks[0]?.status).toBe('todo')
   })
 
   it('todo: issue open, assigned, no branch yet', () => {
-    const d = deriveIteration(oneTask, new Map([['1', facts({ assigned: true })]]))
+    const d = deriveTranche(oneTask, new Map([['1', facts({ assigned: true })]]))
     expect(d.tasks[0]?.status).toBe('todo')
   })
 
   it('in-flight: branch exists, no PR', () => {
-    const d = deriveIteration(oneTask, new Map([['1', facts({ assigned: true, branchExists: true })]]))
+    const d = deriveTranche(oneTask, new Map([['1', facts({ assigned: true, branchExists: true })]]))
     expect(d.tasks[0]?.status).toBe('in-flight')
   })
 
   it('in-review: PR open', () => {
-    const d = deriveIteration(oneTask, new Map([['1', facts({ assigned: true, branchExists: true, prState: 'open' })]]))
+    const d = deriveTranche(oneTask, new Map([['1', facts({ assigned: true, branchExists: true, prState: 'open' })]]))
     expect(d.tasks[0]?.status).toBe('in-review')
   })
 
   it('changes-requested: PR open with reviewDecision changes_requested', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([
         [
@@ -85,7 +85,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('merged: PR merged', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', branchExists: true, prState: 'merged' })]])
     )
@@ -93,7 +93,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('todo: issue reopened after its original closing PR merged (stale prState override)', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'open', branchExists: false, prState: 'merged' })]])
     )
@@ -101,7 +101,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('in-flight: issue reopened after merge, and a new task branch already exists', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'open', branchExists: true, prState: 'merged' })]])
     )
@@ -109,7 +109,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('dropped: issue closed NOT_PLANNED, no merged PR', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'not_planned' })]])
     )
@@ -117,7 +117,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('incoherent: issue closed COMPLETED but no merged PR link', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'completed' })]])
     )
@@ -125,7 +125,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('merged wins over stateReason: closed COMPLETED with merged PR → merged (regression)', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', branchExists: true, prState: 'merged', stateReason: 'completed' })]])
     )
@@ -133,7 +133,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('incoherent: issue closed with no recorded stateReason and no merged PR', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: null })]])
     )
@@ -141,7 +141,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 
   it('blocked: vinaya/blocked label wins over every other status', () => {
-    const d = deriveIteration(
+    const d = deriveTranche(
       oneTask,
       new Map([
         [
@@ -160,23 +160,23 @@ describe('deriveIteration: §3 status table (each status)', () => {
   })
 })
 
-describe('deriveIteration: missing forge facts', () => {
-  it('treats a task absent from the forge map as todo (iteration tasks are minimum todo)', () => {
-    const d = deriveIteration(iteration([task('1')]), new Map())
+describe('deriveTranche: missing forge facts', () => {
+  it('treats a task absent from the forge map as todo (tranche tasks are minimum todo)', () => {
+    const d = deriveTranche(tranche([task('1')]), new Map())
     expect(d.tasks[0]?.status).toBe('todo')
   })
 })
 
-describe('deriveIteration: §8 dispatch gates', () => {
+describe('deriveTranche: §8 dispatch gates', () => {
   const tasks = [task('1'), task('2', ['1']), task('3', [], ['2'])]
-  const iter = iteration(tasks)
+  const iter = tranche(tasks)
 
   it('depends-on merged → dispatchable', () => {
     const forge = new Map<string, ForgeFacts>([
       ['1', facts({ issueState: 'closed', prState: 'merged' })],
       ['2', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t2 = d.tasks.find((t) => t.task.id === '2')
     expect(t2?.dispatchable).toBe(true)
     expect(t2?.blockers.dependsOnNotMerged).toEqual([])
@@ -187,7 +187,7 @@ describe('deriveIteration: §8 dispatch gates', () => {
       ['1', facts({ assigned: true, branchExists: true, prState: 'open' })],
       ['2', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t2 = d.tasks.find((t) => t.task.id === '2')
     expect(t2?.dispatchable).toBe(false)
     expect(t2?.blockers.dependsOnNotMerged).toEqual(['1'])
@@ -198,7 +198,7 @@ describe('deriveIteration: §8 dispatch gates', () => {
       ['2', facts({ assigned: true, branchExists: true })], // in-flight
       ['3', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t3 = d.tasks.find((t) => t.task.id === '3')
     expect(t3?.dispatchable).toBe(false)
     expect(t3?.blockers.conflictsWithOpenOrInFlight).toEqual(['2'])
@@ -209,7 +209,7 @@ describe('deriveIteration: §8 dispatch gates', () => {
       ['2', facts({ assigned: true, branchExists: true, prState: 'open' })],
       ['3', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t3 = d.tasks.find((t) => t.task.id === '3')
     expect(t3?.dispatchable).toBe(false)
     expect(t3?.blockers.conflictsWithOpenOrInFlight).toEqual(['2'])
@@ -220,7 +220,7 @@ describe('deriveIteration: §8 dispatch gates', () => {
       ['2', facts({ issueState: 'closed', prState: 'merged' })],
       ['3', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t3 = d.tasks.find((t) => t.task.id === '3')
     expect(t3?.dispatchable).toBe(true)
     expect(t3?.blockers.conflictsWithOpenOrInFlight).toEqual([])
@@ -231,16 +231,16 @@ describe('deriveIteration: §8 dispatch gates', () => {
       ['2', facts({ assigned: true })], // todo
       ['3', facts({ assigned: true })]
     ])
-    const d = deriveIteration(iter, forge)
+    const d = deriveTranche(iter, forge)
     const t3 = d.tasks.find((t) => t.task.id === '3')
     expect(t3?.dispatchable).toBe(true)
   })
 })
 
-describe('deriveIteration: unknown edge references', () => {
+describe('deriveTranche: unknown edge references', () => {
   it('reports edges to ids not in the table without throwing', () => {
-    const iter = iteration([task('1', ['ghost'], ['phantom'])])
-    const d = deriveIteration(iter, new Map())
+    const iter = tranche([task('1', ['ghost'], ['phantom'])])
+    const d = deriveTranche(iter, new Map())
     expect(d.unknownEdges).toEqual([
       { from: '1', to: 'ghost', kind: 'depends-on' },
       { from: '1', to: 'phantom', kind: 'conflicts-with' }
@@ -261,8 +261,8 @@ describe('deriveIteration: unknown edge references', () => {
 const FIXTURES = join(__dirname, 'fixtures')
 const heraldMd = readFileSync(join(FIXTURES, 'herald-onto-engine.md'), 'utf8')
 
-describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot', () => {
-  const iter = parseIteration(heraldMd)
+describe('deriveTranche: live herald-onto-engine.md + today’s forge snapshot', () => {
+  const iter = parseTranche(heraldMd)
 
   // Today's snapshot: task 1 merged (#104), nothing else started.
   const snapshot = new Map<string, ForgeFacts>([
@@ -283,7 +283,7 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
     // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (no forge facts = minimum todo).
   ])
 
-  const derived = deriveIteration(iter, snapshot)
+  const derived = deriveTranche(iter, snapshot)
   const statusOf = (id: string): DerivedStatus | undefined => derived.tasks.find((t) => t.task.id === id)?.status
   const dispatchableOf = (id: string) => derived.tasks.find((t) => t.task.id === id)?.dispatchable
 

@@ -129,7 +129,7 @@ function FailedCheck({ result, repo }: { result: CheckResult; repo: CoherenceRes
         <ul className='space-y-1.5 pl-5'>
           {result.failures.map((f, i) => (
             <li key={i} className='font-sans text-xs text-destructive/90 leading-relaxed'>
-              <span className='font-mono text-muted-foreground'>{f.iteration}</span>
+              <span className='font-mono text-muted-foreground'>{f.tranche}</span>
               {f.task ? <span className='font-mono text-muted-foreground'> / {f.task}</span> : null}
               {f.issue != null ? (
                 <>

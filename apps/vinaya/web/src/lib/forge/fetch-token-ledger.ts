@@ -4,7 +4,7 @@
  * `aggregateTaskTokenRows`/`parseTokenReportEntries`/`parseTokensLines` are
  * pure; this file gathers the PR bodies + comments they parse.
  *
- * Source: every MERGED PR on the task's own branch (`task/<iteration>/<id>`)
+ * Source: every MERGED PR on the task's own branch (`task/<tranche>/<id>`)
  * — the Developer's "Token report" entries (one per push) live in the PR
  * body, and the Reviewer's/Security's `Tokens: …` verdict lines live in that
  * same PR's comments (a verdict is posted on the PR under review, never on
@@ -15,7 +15,7 @@
  * resolving "the plan PR for this task" via the task Issue's
  * `CROSS_REFERENCED_EVENT` timeline (the same idiom `fetch-provenance.ts`
  * uses for its own cross-reference fallback) — confirmed live, against this
- * repo's real `aeg-forge-state-v1` iteration, that this produces WRONG
+ * repo's real `aeg-forge-state-v1` tranche, that this produces WRONG
  * (not just missing) data: GitHub creates a cross-reference for ANY PR
  * whose body merely *mentions* `#<issue>` in passing prose (this repo's own
  * "Dependency rationale" / "Depends-on" sections constantly cite other
@@ -50,7 +50,7 @@ import { resolveGithubToken } from '@atta/aeg-forge-state'
 export type FetchTokenLedgerInput = {
   owner: string
   repo: string
-  iteration: string
+  tranche: string
   tasks: Array<{ id: string; issue: number | null }>
   token?: string
 }
@@ -62,7 +62,7 @@ export type TokenLedgerSnapshot = {
   reason?: string
 }
 
-export async function fetchIterationTokenLedger(input: FetchTokenLedgerInput): Promise<TokenLedgerSnapshot> {
+export async function fetchTrancheTokenLedger(input: FetchTokenLedgerInput): Promise<TokenLedgerSnapshot> {
   const token = await resolveGithubToken(input.token)
   if (!token) {
     return {
@@ -77,7 +77,7 @@ export async function fetchIterationTokenLedger(input: FetchTokenLedgerInput): P
   }
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
-  const query = buildBatchQuery(input.iteration, input.tasks)
+  const query = buildBatchQuery(input.tranche, input.tasks)
 
   let response: BatchResponse
   try {
@@ -117,11 +117,11 @@ export async function fetchIterationTokenLedger(input: FetchTokenLedgerInput): P
 
 // ---------- internal: GraphQL query construction ----------------------------
 
-function buildBatchQuery(iteration: string, tasks: FetchTokenLedgerInput['tasks']): string {
+function buildBatchQuery(tranche: string, tasks: FetchTokenLedgerInput['tasks']): string {
   const perTask = tasks
     .map((task) => {
       const a = aliasFor(task.id)
-      const branch = buildBranchName(iteration, task.id)
+      const branch = buildBranchName(tranche, task.id)
       return `
     ${a}: pullRequests(
       first: 10,

@@ -12,7 +12,7 @@
  * exists to prevent. Presence-only, like `brief-validation.ts`: content
  * quality stays a judgment call; existence does not.
  *
- * Applies to task Issues only (label `vinaya/iteration:<slug>`) — the caller decides
+ * Applies to task Issues only (label `vinaya/tranche:<slug>`) — the caller decides
  * applicability from the labels; this module only checks the body.
  */
 
@@ -355,7 +355,7 @@ function edgesNameEachOther(a: TaskIssueFacts, b: TaskIssueFacts): boolean {
  * so this prints and never blocks. It is also why AEG's conflict rule is
  * declared-and-static in the first place: a real answer needs a live
  * task→changed-files map, the mutable state the model eliminates
- * (`iteration-model.md` §5).
+ * (`tranche-model.md` §5).
  */
 export function checkConflictCompleteness(
   subject: TaskIssueFacts,
@@ -376,7 +376,7 @@ export function checkConflictCompleteness(
     if (shared.length === 0) continue
     if (edgesNameEachOther(subject, sibling)) continue
     warnings.push(
-      `issue-validation conflict completeness: this Issue and ${sibling.ref} both name ${shared.join(', ')} but neither declares the other in Conflicts-with. If they can run in parallel, say so; otherwise declare the edge (aeg-root/iteration-model.md §5).`
+      `issue-validation conflict completeness: this Issue and ${sibling.ref} both name ${shared.join(', ')} but neither declares the other in Conflicts-with. If they can run in parallel, say so; otherwise declare the edge (aeg-root/tranche-model.md §5).`
     )
   }
   return warnings

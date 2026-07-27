@@ -99,10 +99,10 @@ describe('checkIssueRationale', () => {
 })
 
 describe('isTaskIssueLabelSet', () => {
-  it('is true when an iteration label is present', () => {
-    expect(isTaskIssueLabelSet(['vinaya/iteration:aeg-governance-hardening', 'vinaya/tier:3'])).toBe(true)
+  it('is true when an tranche label is present', () => {
+    expect(isTaskIssueLabelSet(['vinaya/tranche:aeg-governance-hardening', 'vinaya/tier:3'])).toBe(true)
   })
-  it('is false for non-iteration labels', () => {
+  it('is false for non-tranche labels', () => {
     expect(isTaskIssueLabelSet(['bug', 'help wanted'])).toBe(false)
   })
   it('is false for no labels', () => {
@@ -161,7 +161,7 @@ describe('declaredProjects', () => {
   })
 
   it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
-    expect(declaredProjects(rationale({ boundary: 'x' }), ['project:vada', 'vinaya/iteration:x'])).toEqual(['vinaya'])
+    expect(declaredProjects(rationale({ boundary: 'x' }), ['project:vada', 'vinaya/tranche:x'])).toEqual(['vinaya'])
   })
 })
 

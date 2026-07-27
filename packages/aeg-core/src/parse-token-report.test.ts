@@ -119,7 +119,7 @@ describe('parseTokensLines: Reviewer/Security/Planner one-line report', () => {
     })
   })
 
-  it('parses a Planner report line (no task-id prefix — iteration-wide "planning" phase)', () => {
+  it('parses a Planner report line (no task-id prefix — tranche-wide "planning" phase)', () => {
     const rows = parseTokensLines('Tokens: planning — Planner — claude-opus-4-7 (chat) — 184327/12502/$3.4781')
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ phase: 'planning', role: 'Planner', tokensIn: 184327, tokensOut: 12502 })

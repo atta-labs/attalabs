@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { iterationsForProject, readProject } from '@/lib/repo-state'
-import { ProjectIterationsTabs } from './ProjectIterationsTabs'
+import { tranchesForProject, readProject } from '@/lib/repo-state'
+import { ProjectTranchesTabs } from './ProjectTranchesTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const { name } = await params
   const project = await readProject(name)
   if (!project) notFound()
-  const { active, archived, forge } = await iterationsForProject(name)
+  const { active, archived, forge } = await tranchesForProject(name)
 
   return (
     <div className='space-y-8'>
@@ -33,7 +33,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
         </dl>
       </header>
 
-      <ProjectIterationsTabs projectName={project.name} active={active} archived={archived} forge={forge} />
+      <ProjectTranchesTabs projectName={project.name} active={active} archived={archived} forge={forge} />
     </div>
   )
 }

@@ -1,3 +1,3 @@
-# Some Iteration
+# Some Tranche
 
-An excluded iteration execution file, correctly ignored by the coherence check.
+An excluded tranche execution file, correctly ignored by the coherence check.

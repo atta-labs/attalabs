@@ -53,7 +53,7 @@ function baseModel(gateIds: string[]): DiagramModel {
     ],
     edges: [],
     findings: [],
-    iteration: null
+    tranche: null
   }
 }
 
@@ -110,7 +110,7 @@ describe('deriveGroups', () => {
       nodes: [disabledRing0, ring1, ring2, { ...gate('locked-one'), renderState: 'locked', lock: '' }],
       edges: [],
       findings: [],
-      iteration: null
+      tranche: null
     }
     const groups = deriveGroups(model)
     const ring0Group = groups.find((g) => g.key === 'ring0')

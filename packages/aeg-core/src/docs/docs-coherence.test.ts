@@ -49,7 +49,7 @@ describe('evaluateDocsCoherence: broken tree', () => {
     expect(result.errors).toContain('C6: link "contracts/missing.md" in "process.md" resolves to no surfaced doc')
   })
 
-  it('does not flag the dangling link inside an excluded iteration file', () => {
+  it('does not flag the dangling link inside an excluded tranche file', () => {
     expect(result.errors.some((e) => e.includes('roles/does-not-exist.md" in "iterations/aeg-fake.md"'))).toBe(false)
   })
 

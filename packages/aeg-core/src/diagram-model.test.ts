@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ACTIONS } from './actions'
 import { deriveDiagramModel } from './diagram-model'
 import type { DoctrineContent } from './doctrine-source'
-import type { Iteration } from './types'
+import type { Tranche } from './types'
 
 // --- Synthetic fixture doctrine ------------------------------------------
 
@@ -61,7 +61,7 @@ const FIXTURE_DOCTRINE: DoctrineContent = {
   ]
 }
 
-const FIXTURE_ITERATION: Iteration = {
+const FIXTURE_TRANCHE: Tranche = {
   name: 'fixture-iter',
   lifecycle: 'active',
   goal: 'prove the model',
@@ -74,7 +74,7 @@ describe('deriveDiagramModel — fixture', () => {
     rings: { ring1_forgeWriteInterception: false },
     gates: { 'creating-a-pull-request': false, 'git-push': false, 'no-such-gate': false }
   }
-  const model = deriveDiagramModel(FIXTURE_DOCTRINE, config, FIXTURE_ITERATION)
+  const model = deriveDiagramModel(FIXTURE_DOCTRINE, config, FIXTURE_TRANCHE)
   const byId = (id: string) => model.nodes.find((n) => n.id === id)
 
   it('emits the expected node counts per kind', () => {
@@ -126,13 +126,13 @@ describe('deriveDiagramModel — fixture', () => {
     expect(model.edges.some((e) => e.kind === 'consumes' && e.from === 'role:developer')).toBe(true)
   })
 
-  it('passes the iteration through verbatim', () => {
-    expect(model.iteration).toBe(FIXTURE_ITERATION)
+  it('passes the tranche through verbatim', () => {
+    expect(model.tranche).toBe(FIXTURE_TRANCHE)
   })
 
-  it('accepts a null config and null iteration', () => {
+  it('accepts a null config and null tranche', () => {
     const m = deriveDiagramModel(FIXTURE_DOCTRINE, null, null)
-    expect(m.iteration).toBeNull()
+    expect(m.tranche).toBeNull()
     expect(m.findings).toHaveLength(0)
     expect(m.nodes.find((n) => n.id === 'gate:creating-a-pull-request')?.renderState).toBe('active')
   })

@@ -2,14 +2,14 @@
  * Visual mapping for derived statuses. The status set itself is owned by
  * `@atta/aeg-core`'s `DerivedStatus` — this module only assigns labels and
  * semantic-token classes. **No tokens are re-derived here**; everything reads
- * the status `deriveIteration` produced.
+ * the status `deriveTranche` produced.
  *
  * Column order is editorial — left-to-right walks the task through its
  * lifecycle (todo → done). `dropped`/`incoherent` follow `merged` as the two
  * honest-terminal anomaly states: a closed Issue that never had a
  * merged PR. `blocked` stays at the end as the holding pen for tasks lifted
  * out of normal flow. `backlog` is project-level only and never
- * appears on the iteration board.
+ * appears on the tranche board.
  *
  * Sharing between the kanban board, the task-detail badge, and any future
  * surface is deliberate so the colour vocabulary stays consistent.

@@ -1,3 +1,3 @@
-# Iterations — README
+# Tranches — README
 
-The one exception to the `iterations/` exclusion rule.
+The one exception to the `tranches/` exclusion rule.

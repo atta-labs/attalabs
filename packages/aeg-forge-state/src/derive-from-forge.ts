@@ -1,9 +1,9 @@
-import type { Iteration } from '@atta/aeg-types'
+import type { Tranche } from '@atta/aeg-types'
 import { findMilestoneForSlug, type MilestoneFacts } from './fetch-milestone'
 import { listTasksForSlugAsync } from './list-tasks'
 
 /**
- * Derives an `@atta/aeg-types` `Iteration` purely from forge objects:
+ * Derives an `@atta/aeg-types` `Tranche` purely from forge objects:
  *   - a Milestone titled exactly `slug` → `goal` + `lifecycle` (absent when no
  *     Milestone exists yet for this tranche — a real transitional state,
  *     not an error; `goal`/`lifecycle` then degrade to `''`/`'active'`,
@@ -30,7 +30,7 @@ export async function deriveTrancheFromForge(
   repo: string,
   slug: string,
   known?: MilestoneFacts
-): Promise<Iteration> {
+): Promise<Tranche> {
   const milestone = known ?? findMilestoneForSlug(owner, repo, slug)
   const tasks = await listTasksForSlugAsync(owner, repo, slug)
 

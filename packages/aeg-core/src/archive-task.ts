@@ -30,26 +30,26 @@ export type MergedPrFacts = {
 const TASK_BRANCH_PATTERN = /^task\/([^/]+)\/([^/]+)$/
 
 /**
- * null when headRefName is not task/<iteration>/<taskId>.
+ * null when headRefName is not task/<tranche>/<taskId>.
  *
  * This is ONE of two independent eligibility signals for provenance —
  * the branch-name pattern — not the only one. A PR that closes an
- * iteration-labeled Issue from a non-`task/*` branch (e.g. a small ad-hoc
+ * tranche-labeled Issue from a non-`task/*` branch (e.g. a small ad-hoc
  * `fix/*` cleanup that finally attaches `Closes #N` to a task whose real
  * work already shipped elsewhere) is EQUALLY eligible: the CLI shim
  * (`bin/archive-task.ts`) additionally checks the closed Issue's own
- * `vinaya/iteration:*` label via `gh issue view --json labels` and proceeds if
+ * `vinaya/tranche:*` label via `gh issue view --json labels` and proceeds if
  * either signal is present. `buildProvenanceBlock` already tolerates a
  * `null` ref (falls back to a branch-name task label), so this function's
  * only remaining job is the branch-name half of that OR — it is no longer
  * the sole gate. (Confirmed gap, #524/#530: a task whose Issue carried
- * `vinaya/iteration:herald-hardening-v1` was closed by a `fix/*`-branch PR;
+ * `vinaya/tranche:herald-hardening-v1` was closed by a `fix/*`-branch PR;
  * branch-name-only detection silently skipped provenance forever.)
  */
-export function taskRefFromBranch(branch: string): { iteration: string; taskId: string } | null {
+export function taskRefFromBranch(branch: string): { tranche: string; taskId: string } | null {
   const m = branch.match(TASK_BRANCH_PATTERN)
   if (!m) return null
-  return { iteration: m[1] as string, taskId: m[2] as string }
+  return { tranche: m[1] as string, taskId: m[2] as string }
 }
 
 /**
@@ -57,10 +57,10 @@ export function taskRefFromBranch(branch: string): { iteration: string; taskId: 
  * testable without mocking `gh` — the CLI shim (`bin/archive-task.ts`) does
  * only the I/O (resolve `ref`, fetch the closed Issue's labels) and hands
  * both facts here. True when EITHER signal holds: a real task-branch `ref`,
- * or the closed Issue's own labels carry an `vinaya/iteration:*` tag.
+ * or the closed Issue's own labels carry an `vinaya/tranche:*` tag.
  */
 export function isEligibleForProvenance(
-  ref: { iteration: string; taskId: string } | null,
+  ref: { tranche: string; taskId: string } | null,
   issueLabels: string[]
 ): boolean {
   if (ref !== null) return true
@@ -183,7 +183,7 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
 
   const ticket = extractField(facts.body, 'Ticket') ?? 'none'
 
-  const taskLabel = ref ? `task ${ref.taskId} (iteration ${ref.iteration})` : `task (branch ${facts.headRefName})`
+  const taskLabel = ref ? `task ${ref.taskId} (tranche ${ref.tranche})` : `task (branch ${facts.headRefName})`
 
   const lines = [
     `${PROVENANCE_HEADING} — ${taskLabel}`,

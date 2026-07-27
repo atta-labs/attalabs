@@ -25,8 +25,8 @@
  *
  * Gates (all must pass, in order):
  *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
- *                       iteration's topology file when another OPEN PR's
- *                       diff already touches that SAME iteration's topology
+ *                       tranche's topology file when another OPEN PR's
+ *                       diff already touches that SAME tranche's topology
  * file (task 19 / #336). Ordinary task-branch
  *                       PRs touch no topology file, so this passes trivially.
  *   1. verify-brief   — brief-section grammar vs the current branch (task
@@ -54,7 +54,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { checkForgeTitle } from '../src/brief-validation'
-import { checkSinglePlanPr, iterationSlugFromTopologyPath, type OpenPrFiles } from '../src/single-plan-pr'
+import { checkSinglePlanPr, trancheSlugFromTopologyPath, type OpenPrFiles } from '../src/single-plan-pr'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -178,7 +178,7 @@ function fetchOtherOpenPrFiles(excludePrNumber: number | null): OpenPrFiles[] {
 /** Wires the pure `checkSinglePlanPr` check to live `git`/`gh` state. Skips the `gh` call entirely for ordinary task PRs (no topology file touched). */
 function checkSinglePlanPrGate(editPrNumber: number | null): void {
   const branchFiles = currentBranchTouchedFiles()
-  const touchesTopology = branchFiles.some((f) => iterationSlugFromTopologyPath(f) !== null)
+  const touchesTopology = branchFiles.some((f) => trancheSlugFromTopologyPath(f) !== null)
   if (!touchesTopology) return
 
   let otherPrs: OpenPrFiles[]

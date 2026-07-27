@@ -101,12 +101,12 @@ export const COMMANDS: readonly Command[] = [
     flags: [
       { flag: '--title', description: 'Issue title (validated on task Issues)' },
       { flag: '--body-file', description: 'Path to the Issue body (stream-safe; same bytes validated and sent)' },
-      { flag: '--label', description: 'Label(s) to apply; a `vinaya/iteration:*` label marks a task Issue' },
+      { flag: '--label', description: 'Label(s) to apply; a `vinaya/tranche:*` label marks a task Issue' },
       { flag: '--validate-only', description: 'Run every gate and report PASS without opening the Issue' },
       { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
     ],
     details: [
-      'A task Issue (any `vinaya/iteration:*` label) must carry the full Planner rationale (`briefSchema.issue`); non-task Issues pass through unvalidated.'
+      'A task Issue (any `vinaya/tranche:*` label) must carry the full Planner rationale (`briefSchema.issue`); non-task Issues pass through unvalidated.'
     ],
     status: 'shipped'
   },

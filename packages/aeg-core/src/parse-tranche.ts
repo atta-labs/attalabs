@@ -1,11 +1,11 @@
 import { readMarkdownTable } from './parse-registry'
-import type { Iteration, Lifecycle, Task } from './types'
+import type { Tranche, Lifecycle, Task } from './types'
 
 /**
- * Parse `aeg-root/iterations/<name>.md` into a typed `Iteration`.
+ * Parse `aeg-root/iterations/<name>.md` into a typed `Tranche`.
  *
  * Captures:
- *   - the iteration's name (from `# Iteration: <name> — <timeframe>`)
+ *   - the tranche's name (from `# Iteration: <name> — <timeframe>`)
  *   - the lifecycle marker (`Lifecycle: active|complete`, defaulting to
  *     `'active'` when absent — pre-§11 files have no marker)
  *   - the first goal paragraph
@@ -13,11 +13,11 @@ import type { Iteration, Lifecycle, Task } from './types'
  *   - per-task rationale blocks (raw markdown, captured verbatim)
  *   - an optional `## Backlog` section as bullets
  *
- * Real iteration files include narrative references to dropped task ids in
+ * Real tranche files include narrative references to dropped task ids in
  * prose (e.g. `herald-onto-engine.md`'s "Task 3a — removed"). The parser
  * ignores those — only rows present in the topology table become tasks.
  */
-export function parseIteration(md: string): Iteration {
+export function parseTranche(md: string): Tranche {
   return {
     name: parseName(md),
     lifecycle: parseLifecycle(md),
@@ -131,8 +131,8 @@ function stripBackticks(s: string): string {
  * Capture each `### Task <id> — …` block as raw markdown — from the heading
  * through the line before the next `### ` / `## ` / `# ` / end-of-file.
  * The id may be `1`, `7a`, `7b`, etc. Per-task rationale lives inline in the
- * iteration file (see §4 template); the planner's rationale also lives in the
- * Issue body, but the inline copy is what `parseIteration` exposes.
+ * tranche file (see §4 template); the planner's rationale also lives in the
+ * Issue body, but the inline copy is what `parseTranche` exposes.
  */
 function extractRationales(md: string): Map<string, string> {
   const out = new Map<string, string>()

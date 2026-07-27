@@ -43,7 +43,7 @@ describe('parseLedger: aeg-ui-v1.tokens.md (sibling-file form)', () => {
 })
 
 describe('parseLedger: alternative formats', () => {
-  it('reads a `## Token ledger` section inside an iteration file (inline form)', () => {
+  it('reads a `## Token ledger` section inside an tranche file (inline form)', () => {
     const md = [
       '# Iteration: x — June 2026',
       '',

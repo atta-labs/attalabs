@@ -3,8 +3,8 @@
 /**
  * check-branch-topology — thin CLI/I/O shim for the branch↔topology
  * gate wired into `.husky/pre-push` (aeg-governance-hardening task 32,
- * #399). Derives the iteration from the forge (`@atta/aeg-forge-state`,
- * task aeg-forge-state-v1 3a — a Milestone + `vinaya/iteration:<slug>`-labeled
+ * #399). Derives the tranche from the forge (`@atta/aeg-forge-state`,
+ * task aeg-forge-state-v1 3a — a Milestone + `vinaya/tranche:<slug>`-labeled
  * Issues) and hands the result to the pure evaluator `checkBranchTopology`
  * (@atta/aeg-core), which answers row membership from `topology.tasks`. No
  * check logic lives here.
@@ -37,7 +37,7 @@ if (import.meta.main) {
     process.exit(0)
   }
 
-  const topoPath = `aeg-root/iterations/${fields.iteration}.md`
+  const topoPath = `aeg-root/iterations/${fields.tranche}.md`
 
   const repo = await resolveRepo()
   if (!repo) {
@@ -49,10 +49,10 @@ if (import.meta.main) {
 
   let topology: Awaited<ReturnType<typeof deriveTrancheFromForge>> | null
   try {
-    topology = await deriveTrancheFromForge(repo.owner, repo.repo, fields.iteration)
+    topology = await deriveTrancheFromForge(repo.owner, repo.repo, fields.tranche)
   } catch (err) {
     console.error(
-      `✖ pre-push: check-branch-topology could not reach the forge for iteration \`${fields.iteration}\`: ${(err as Error).message}`
+      `✖ pre-push: check-branch-topology could not reach the forge for tranche \`${fields.tranche}\`: ${(err as Error).message}`
     )
     process.exit(1)
   }

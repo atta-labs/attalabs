@@ -144,7 +144,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
-  const query = buildBatchQuery(input.iteration, queriedTasks)
+  const query = buildBatchQuery(input.tranche, queriedTasks)
   let response: BatchResponse
   try {
     response = await client<BatchResponse>(query, { owner: input.owner, repo: input.repo })

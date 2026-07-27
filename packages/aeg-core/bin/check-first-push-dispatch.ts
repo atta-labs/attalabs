@@ -48,7 +48,7 @@
  * refusal here: a task legitimately mid-flight across multiple pre-PR pushes
  * always has commits ahead of main, so the combined exit code would block
  * every push after the first. The dispatch-readiness predicates (Issue-
- * existence, depends-on, conflicts-with, prior-iteration-archival, etc. —
+ * existence, depends-on, conflicts-with, prior-tranche-archival, etc. —
  * the actual entry-gate items this task mechanizes) are unaffected by
  * leftover-detection and are what this gate cares about.
  *
@@ -73,10 +73,10 @@ function ghReachable(): boolean {
   }
 }
 
-function runVerifyDispatch(iteration: string, taskId: string): { readiness: DispatchReadinessFact; output: string } {
+function runVerifyDispatch(tranche: string, taskId: string): { readiness: DispatchReadinessFact; output: string } {
   let output: string
   try {
-    output = execSync(`bun packages/aeg-core/bin/verify-dispatch.ts ${iteration} ${taskId}`, {
+    output = execSync(`bun packages/aeg-core/bin/verify-dispatch.ts ${tranche} ${taskId}`, {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe']
@@ -112,7 +112,7 @@ if (import.meta.main) {
       output =
         '[check-first-push-dispatch] `gh auth status` failed — forge unreachable/unauthenticated; skipping verify-dispatch.'
     } else {
-      const run = runVerifyDispatch(parsed.iteration, parsed.taskId)
+      const run = runVerifyDispatch(parsed.tranche, parsed.taskId)
       readiness = run.readiness
       output = run.output
     }

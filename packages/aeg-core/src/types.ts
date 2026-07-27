@@ -1,12 +1,12 @@
 /**
- * Typed model for AEG artifacts. See `aeg-root/iteration-model.md` for the
+ * Typed model for AEG artifacts. See `aeg-root/tranche-model.md` for the
  * canonical specification (§3 status table, §4 thin-file template).
  *
  * This module is pure: no I/O. The parser produces these shapes from file
- * contents; `deriveIteration` consumes them plus a `ForgeFacts` snapshot.
+ * contents; `deriveTranche` consumes them plus a `ForgeFacts` snapshot.
  */
 
-import type { ForgeFacts, Iteration, Lifecycle, Task } from '@atta/aeg-types'
+import type { ForgeFacts, Tranche, Lifecycle, Task } from '@atta/aeg-types'
 
 // ---------- Registry (projects.md) ----------
 
@@ -27,23 +27,23 @@ export type Project = {
 
 export type Registry = Project[]
 
-// ---------- Iteration file (iterations/<name>.md) ----------
+// ---------- Tranche file (tranches/<name>.md) ----------
 
 /**
- * `Lifecycle`/`Task`/`Iteration` live in `@atta/aeg-types` (task
+ * `Lifecycle`/`Task`/`Tranche` live in `@atta/aeg-types` (task
  * aeg-forge-state-v1 3a) — re-exported here since every existing call site
  * across the repo imports them from `@atta/aeg-core`. Moved out so
  * `@atta/aeg-forge-state` can depend on these shapes without creating a
  * package cycle with `aeg-core` (which in turn depends on
  * `aeg-forge-state`'s derivation function).
  */
-export type { Lifecycle, Task, Iteration }
+export type { Lifecycle, Task, Tranche }
 
 // ---------- Forge facts ----------
 
 /**
  * `ForgeFacts` lives in `@atta/aeg-types` (aeg-core-purity fix, #521) —
- * re-exported here for the same reason as `Lifecycle`/`Task`/`Iteration`:
+ * re-exported here for the same reason as `Lifecycle`/`Task`/`Tranche`:
  * every existing call site imports it from `@atta/aeg-core`, and it moved
  * out so the I/O-performing fetchers that produce it (now in
  * `@atta/aeg-forge-state`) don't need to depend on `aeg-core`.
@@ -54,13 +54,13 @@ export type { ForgeFacts }
 
 /**
  * The statuses derivation can conclude. The *rules* that produce them are not
- * written here or in `derive-iteration.ts` — they live as an ordered,
+ * written here or in `derive-tranche.ts` — they live as an ordered,
  * pure-data list in `state-machine-model.ts` (the `actions.ts`
  * discipline), which `deriveStatus` executes and the docs render from the
  * same list.
  *
  * `backlog` remains a member because it is a project-level concept consumers
- * still render; derivation never emits it inside an iteration.
+ * still render; derivation never emits it inside an tranche.
  *
  * `dropped` and `incoherent` are the two **honest terminal** statuses.
  * A closed Issue with no merged PR must never resolve to `todo` (which implies
@@ -110,11 +110,11 @@ export type UnknownEdge = {
   kind: 'depends-on' | 'conflicts-with'
 }
 
-export type DerivedIteration = {
-  iteration: Iteration
+export type DerivedTranche = {
+  tranche: Tranche
   tasks: DerivedTask[]
   /**
-   * Edges that reference task ids not present in this iteration's topology
+   * Edges that reference task ids not present in this tranche's topology
    * table. Surface for diagnostics; does not throw, since real files
    * occasionally name dropped/prose-only ids (e.g. `3a` in
    * `herald-onto-engine.md`'s narrative).
@@ -122,13 +122,13 @@ export type DerivedIteration = {
   unknownEdges: UnknownEdge[]
 }
 
-// ---------- Token ledger (iterations/<name>.tokens.md) ----------
+// ---------- Token ledger (tranches/<name>.tokens.md) ----------
 
 /**
- * One row of the append-only per-iteration token/cost ledger. See
- * `aeg-root/iteration-model.md` §12 for the canonical format. Each role
+ * One row of the append-only per-tranche token/cost ledger. See
+ * `aeg-root/tranche-model.md` §12 for the canonical format. Each role
  * appends one row at the end of its turn; re-entry appends another row.
- * The iteration total is `sum(rows)`, derived at read time — never stored.
+ * The tranche total is `sum(rows)`, derived at read time — never stored.
  *
  * The two capture sources surface here as `null` cells: a row written by a
  * claude.ai role (Planner / Brief Author / Reviewer / Security) before the
@@ -138,7 +138,7 @@ export type DerivedIteration = {
  */
 export type LedgerRow = {
   /** Free-text phase identifier. Convention: `<task-id>: <phase>` per task
-   * (e.g. `9: develop`), or a bare phase for iteration-wide work (e.g.
+   * (e.g. `9: develop`), or a bare phase for tranche-wide work (e.g.
    * `planning`). The parser does not enforce the convention — the Phase
    * cell is opaque so the table can be re-pivoted later. */
   phase: string

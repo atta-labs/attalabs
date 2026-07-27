@@ -117,7 +117,7 @@ describe('fetchForgeFacts — squash-merge closer fact loss', () => {
     const snapshot = await fetchForgeFacts({
       owner: 'owner',
       repo: 'repo',
-      iteration: 'iter',
+      tranche: 'iter',
       tasks: [{ id: '1', issue: 100 }],
       token: 'test-token'
     })
@@ -147,7 +147,7 @@ describe('fetchForgeFacts — squash-merge closer fact loss', () => {
     const snapshot = await fetchForgeFacts({
       owner: 'owner',
       repo: 'repo',
-      iteration: 'iter',
+      tranche: 'iter',
       tasks: [{ id: '1', issue: 100 }],
       token: 'test-token'
     })
@@ -187,7 +187,7 @@ describe('fetchForgeFacts — stale ClosedEvent after reopen (#524)', () => {
     const snapshot = await fetchForgeFacts({
       owner: 'owner',
       repo: 'repo',
-      iteration: 'iter',
+      tranche: 'iter',
       tasks: [{ id: '1', issue: 524 }],
       token: 'test-token'
     })

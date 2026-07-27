@@ -129,7 +129,7 @@ export const ACTIONS: Action[] = [
     id: 'write-the-retrospective',
     label: 'write the retrospective',
     crosses: 'none',
-    performedBy: ['iteration-archivist'],
+    performedBy: ['tranche-archivist'],
     summary: 'Ever finished a big chunk of work with nobody writing down what was learned?',
     description: 'Closing out a finished phase of work by recording what actually happened and what it taught.'
   }

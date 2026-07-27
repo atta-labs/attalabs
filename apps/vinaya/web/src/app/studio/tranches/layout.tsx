@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export default function IterationsLayout({ children }: { children: ReactNode }) {
+export default function TranchesLayout({ children }: { children: ReactNode }) {
   // StudioShell owns the scroll container and the page padding (`px-8 py-8`) —
   // this layout adds neither. It previously re-applied both plus its own
   // `h-full overflow-y-auto`, which nested a second scroller inside the shell's

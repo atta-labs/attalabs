@@ -1,23 +1,23 @@
 import { deriveStatusFromModel } from './state-machine-model'
-import type { DerivedIteration, DerivedStatus, DerivedTask, ForgeFacts, Iteration, Task, UnknownEdge } from './types'
+import type { DerivedTranche, DerivedStatus, DerivedTask, ForgeFacts, Tranche, Task, UnknownEdge } from './types'
 
 /**
  * Compute each task's derived status, the resolved depends-on / conflicts-with
- * graph, and dispatch-eligibility per `iteration-model.md` §3 (status table)
+ * graph, and dispatch-eligibility per `tranche-model.md` §3 (status table)
  * and §8 (dispatch gates).
  *
- * The function is pure: `iteration` + `forgeFacts` in, `DerivedIteration` out.
- * Edges referencing task ids not present in this iteration's table are
+ * The function is pure: `tranche` + `forgeFacts` in, `DerivedTranche` out.
+ * Edges referencing task ids not present in this tranche's table are
  * reported via `unknownEdges` rather than throwing — see §4 traps in the brief
  * (real files reference dropped/prose-only ids in narrative).
  */
-export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, ForgeFacts>): DerivedIteration {
+export function deriveTranche(tranche: Tranche, forgeFacts: Map<string, ForgeFacts>): DerivedTranche {
   const byId = new Map<string, Task>()
-  for (const task of iteration.tasks) byId.set(task.id, task)
+  for (const task of tranche.tasks) byId.set(task.id, task)
 
   // First pass: derive each task's own status.
   const statuses = new Map<string, DerivedStatus>()
-  for (const task of iteration.tasks) {
+  for (const task of tranche.tasks) {
     statuses.set(task.id, deriveStatus(forgeFacts.get(task.id)))
   }
 
@@ -25,7 +25,7 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
   // statuses (so it must come after the first pass).
   const unknownEdges: UnknownEdge[] = []
   const derived: DerivedTask[] = []
-  for (const task of iteration.tasks) {
+  for (const task of tranche.tasks) {
     const status = statuses.get(task.id) ?? 'todo'
     const dependsOnNotMerged: string[] = []
     for (const dep of task.dependsOn) {
@@ -54,14 +54,14 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
     })
   }
 
-  return { iteration, tasks: derived, unknownEdges }
+  return { tranche, tasks: derived, unknownEdges }
 }
 
 /**
  * Map a single task's forge facts to its derived status. Mirrors the §3 table
  *: `blocked` wins over everything else, then `merged`, then
  * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for the
- * open-issue cases (assigned or not — both are `todo` inside an iteration per
+ * open-issue cases (assigned or not — both are `todo` inside an tranche per
  *), then the honest terminal cases for a closed-without-merge Issue.
  *
  * Reopened-after-merge exception: a reopened Issue can carry a stale
@@ -79,7 +79,7 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
  * `incoherent` (genuinely done but unprovable, or a broken close that the
  * `Closes #N` law was built to surface).
  *
- * A missing `forgeFacts` entry → `todo`. Iteration tasks are committed work;
+ * A missing `forgeFacts` entry → `todo`. Tranche tasks are committed work;
  * `backlog` is a project-level concept only and is never emitted here.
  *
  * The rules themselves are no longer written here. They live as an ordered,
