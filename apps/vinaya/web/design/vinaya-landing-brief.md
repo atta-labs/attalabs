@@ -1,4 +1,4 @@
-> **Historical record.** This is the original handoff brief that produced `apps/vinaya/web`; it is kept as written and describes the repo as it stood at authoring time. The old AEG Studio app it refers to was deleted outright by `deprecation-v1` task 1, so its path citations have been dropped — nothing else here has been restated.
+> **Historical record.** This is the original handoff brief that produced `apps/vinaya/web`; it is kept as written and describes the repo as it stood at authoring time. The old AEG Studio app it refers to was deleted outright by `deprecation-v1` task 1 (D-132), so its path citations have been dropped — nothing else here has been restated.
 
 **Zero-context handoff — build the public Vinaya site (`vinaya.attalabs.dev`).** You are picking this up cold; everything you need is below. This is a NEW build in the `daniboomerang/attalabs` monorepo — `apps/vinaya/web` does not exist yet.
 
@@ -45,9 +45,9 @@ This is the substantial page. Purely mechanical/technical content, structured ar
 
 1. **A central visual**: **GitHub positioned in the middle**, with the **three enforcement rings arranged around it** — this was a specific, repeated instruction. The concept (already mocked up, see below): GitHub/the forge as a hub node at the center; Ring 0 as the innermost ring (closest to the agent, runs pre-forge, on the agent's own machine); Ring 1 as the ring at the forge boundary (CI, "the guarantee," merge-blocking); Ring 2 as the outermost ring (post-merge, continuous, non-blocking audit). Small connection points showing where an agent and a human touch the diagram.
 2. **The three rings explained**, each with: where it runs / what it catches / who pays when it fails:
- - **Ring 0 — Prevent** (agent's own machine): catches malformed commits/conventions before they leave the session; nobody pays, the agent self-corrects.
- - **Ring 1 — Detect** (CI, "the guarantee"): catches everything regardless of what wrote it; merge is blocked until green.
- - **Ring 2 — Audit** (post-merge, continuous): catches drift between what shipped and what was decided; never blocks, writes the permanent record.
+   - **Ring 0 — Prevent** (agent's own machine): catches malformed commits/conventions before they leave the session; nobody pays, the agent self-corrects.
+   - **Ring 1 — Detect** (CI, "the guarantee"): catches everything regardless of what wrote it; merge is blocked until green.
+   - **Ring 2 — Audit** (post-merge, continuous): catches drift between what shipped and what was decided; never blocks, writes the permanent record.
 3. **A commit walkthrough** — the actual sequence a single change goes through: write → Ring 0 (local hook) → push/PR → Ring 1 (CI) → human review (judgment, not compliance) → merge → Ring 2 (audit record).
 4. **The roles**, stated plainly, each tagged human or agent: Principal (human — ratifies irreversible decisions), Team Leader (agent — plans, writes briefs), Developer (agent — executes, opens PRs), Reviewer (agent — independent judgment, fresh context), Archivist (agent — closes out, writes the permanent record).
 5. **Why GitHub specifically** — the "derived status" idea: no status field anywhere is hand-written by a human or agent; status is read fresh from what actually happened (branch exists → in progress; PR open → in review; CI red → blocked; PR merged → done). Nothing can drift because nothing stores it.

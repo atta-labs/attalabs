@@ -30,7 +30,7 @@
  *   (default)         Forge dispatch-readiness gate + leftover-branch
  *                      classification + a baseline capture (informational —
  *                      the standing contract is "≤ captured baseline", never
- * "must be green"/live-fire #2).
+ *                      "must be green", D-074/live-fire #2).
  *   --premise <file>   Re-assert every `Premise:` pin in the given body file
  *                      against the current on-disk state. A failed premise
  *                      is a stop condition, not a silent re-guess
@@ -49,7 +49,7 @@
  *                      compared as if it scored 0 — it fails the check
  *                      outright (fail-closed: no signal means no pass).
  *   --surfaces <globs>  Mechanically derive the §7 doc-update-list floor
- * for a comma-separated list of intended surface
+ *                      (D-076) for a comma-separated list of intended surface
  *                      globs, by matching them against
  *                      `.vinaya/doc-owners`. Prints every fired
  *                      binding so a Planner/Brief Author sees, DURING Dig,
@@ -226,8 +226,8 @@ function resolveConflictsWith(
 
 /**
  * "The prior task" means the immediately preceding TABLE ROW (`idx - 1`),
- * not the `Depends-on` column. removed the
- * predicate `checkDispatchReadiness` used to evaluate from this fact —
+ * not the `Depends-on` column (D-081). D-120 (2026-07-13) removed the
+ * predicate `checkDispatchReadiness` used to evaluate from this fact — D-077
  * automated the provenance-posting signal the row-adjacency block existed to
  * protect. This resolver still runs and still feeds `DispatchGateInput.priorTask`
  * (dormant, no longer consumed by the gate) — dead-but-harmless plumbing, kept
@@ -258,7 +258,7 @@ function resolvePriorTask(
 /**
  * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
  * amendment): "active" is a GitHub Milestone titled exactly the iteration
- * slug, open — the SAME `listActiveIterationSlugs` Studio's
+ * slug, open (D-110) — the SAME `listActiveIterationSlugs` Studio's
  * `readOtherActiveIterations` (`apps/vinaya/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.

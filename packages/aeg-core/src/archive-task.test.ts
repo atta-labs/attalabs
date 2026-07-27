@@ -28,6 +28,7 @@ const FULL_BODY = `
 Closes #309
 Project: aeg, aeg-core
 For: a high-capability model (coding-agent CLI, dispatched session)
+Conforms-to: D-077
 Ticket: none
 
 ## Summary
@@ -142,6 +143,7 @@ describe('buildProvenanceBlock', () => {
     expect(block).toContain('- Tier:         3')
     expect(block).toContain('- Project(s):   aeg, aeg-core')
     expect(block).toContain('- Model/agent:  a high-capability model (coding-agent CLI, dispatched session)')
+    expect(block).toContain('- Decision:     D-077 (conforms to existing decision)')
     expect(block).toContain('- Ticket:       none')
     expect(block).toContain('- Merged:       abc123def456 at 2026-07-02T12:00:00Z')
   })
@@ -210,6 +212,24 @@ describe('buildProvenanceBlock', () => {
     const { block, dangling } = buildProvenanceBlock(facts({ body }))
     expect(block).toContain('- Tier:         DANGLING — no Tier field in PR body')
     expect(dangling).toContain('no `Tier:` field found in PR body — Tier field is DANGLING')
+  })
+
+  it('flags a Tier 3 PR with no Conforms-to field as DANGLING for Decision', () => {
+    const body = FULL_BODY.replace('Conforms-to: D-077\n', '')
+    const { block, dangling } = buildProvenanceBlock(facts({ body }))
+    expect(block).toContain(
+      '- Decision:     DANGLING — Tier 3 but no `Conforms-to:` field found and no new decision entry detectable from the PR body'
+    )
+    expect(dangling).toContain(
+      'Tier 3 PR carries no `Conforms-to: D-###` field — verify a new decision entry was added and reference it manually'
+    )
+  })
+
+  it('records Decision: none for a Tier 0/1 PR with no Conforms-to field', () => {
+    const body = FULL_BODY.replace('**Tier:** 3', '**Tier:** 1').replace('Conforms-to: D-077\n', '')
+    const { block, dangling } = buildProvenanceBlock(facts({ body }))
+    expect(block).toContain('- Decision:     none')
+    expect(dangling.some((d) => d.includes('Conforms-to'))).toBe(false)
   })
 
   it('captures a code-review APPROVE verdict comment when present', () => {

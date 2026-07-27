@@ -6,9 +6,9 @@
  *
  * Column order is editorial — left-to-right walks the task through its
  * lifecycle (todo → done). `dropped`/`incoherent` follow `merged` as the two
- * honest-terminal anomaly states: a closed Issue that never had a
+ * honest-terminal anomaly states (D-069): a closed Issue that never had a
  * merged PR. `blocked` stays at the end as the holding pen for tasks lifted
- * out of normal flow. `backlog` is project-level only and never
+ * out of normal flow. `backlog` is project-level only (D-059) and never
  * appears on the iteration board.
  *
  * Sharing between the kanban board, the task-detail badge, and any future
@@ -18,20 +18,20 @@
  * **Ready** / **Blocked · needs #N**, rendered by `todoDispatchVisual` from
  * `checkDispatchReadiness`'s verdict (`@atta/aeg-core`, the same function
  * `verify-dispatch.ts` calls) — never a re-derivation, and unrelated to the
- * `blocked` DerivedStatus above ('s anomaly holding-pen). Blocking refs
+ * `blocked` DerivedStatus above (D-069's anomaly holding-pen). Blocking refs
  * are extracted verbatim from the gate's own `blockers` strings.
  *
  * States sharing a status token are graded by opacity, hue = family,
  * intensity = weight (Principal direction, 2026-07-05). The bg opacity is on
  * `badgeClass`, the border opacity on `accentClass` — badges no longer carry a
  * `border-*` of their own, so the constant neobrutalist outline shows through
- *:
+ * (D-131):
  *   success:     Ready (/10 bg, /40 border) < Merged (/25, /70)
  *   destructive: Blocked · needs #N (/10, /40) < blocked (/20, /60)
  *                < incoherent (/30, /80)
  *   primary:     In-flight (/10, /40) < In review (/25, /70)
  *
- * `in-review` graded into the primary family by it was `accent` on a
+ * `in-review` graded into the primary family by D-131: it was `accent` on a
  * separate hue, but `accent` is a fill token now and cannot be an ink, so the
  * two lifecycle states separate by weight rather than by family.
  */
@@ -143,7 +143,7 @@ export function extractBlockerRefs(blockers: string[]): string[] {
 /**
  * Visual for the `todo` badge's dispatch-readiness sub-state. Blocked reads
  * as `destructive` (Principal direction, 2026-07-05) — "cannot dispatch" is a
- * hard stop, and the `blocked` DerivedStatus it shares the color with
+ * hard stop, and the D-069 `blocked` DerivedStatus it shares the color with
  * never co-occurs on the same row (that status replaces `todo` entirely).
  */
 export function todoDispatchVisual(result: DispatchResult): TodoDispatchVisual {

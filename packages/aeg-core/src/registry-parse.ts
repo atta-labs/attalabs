@@ -1,11 +1,11 @@
 /**
  * registry-parse.ts — pure, no-I/O parser for `aeg-root/enforcement.md`'s
  * three ring markdown tables (Ring 0/1/2). enforcement.md's tables ARE the
- * gate registry (no live file duplicates forge state); this
+ * gate registry (D-117/D-118: no live file duplicates forge state); this
  * parses them rather than maintaining a second copy.
  *
  * The generic markdown-table extraction lives in `./markdown-table` — the one
- * aeg-core-owned parser every doctrine consumer shares. This module
+ * aeg-core-owned parser every doctrine consumer shares (D-087). This module
  * imports `findTable`/`findHeadingLine` from there rather than re-deriving
  * them; it adds only the enforcement-specific normalization on top (the
  * ring-heading list, `stripBackticks`, and the last-two-columns rule).

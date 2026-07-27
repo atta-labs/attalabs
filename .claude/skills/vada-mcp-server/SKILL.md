@@ -10,19 +10,19 @@ description: Vāda MCP server — two surfaces: local stdio (current) and hosted
 Vāda's MCP server exists as two distinct surfaces that share the same tool surface — the same two tools (`vada__consult`, `vada__deliberate`) routing to the same YAML catalog — but differ in transport, authentication, and key management. The local stdio server is the current implementation; the hosted HTTP server is the documented target architecture, not yet built.
 
 1. **Local stdio server (current implementation — see below)**
- - Runs on user's machine via `bun run`
- - User-supplied env vars for provider keys
- - Sessions log to user-configured `DATABASE_URL`
- - Used for: local dev, internal testing, users who want full local control
+   - Runs on user's machine via `bun run`
+   - User-supplied env vars for provider keys
+   - Sessions log to user-configured `DATABASE_URL`
+   - Used for: local dev, internal testing, users who want full local control
 
 2. **Hosted HTTP server (live in production since May 4, 2026 — see `apps/vada-ai/specs/mcp-architecture.md`)**
- - Endpoint: `https://vada.attalabs.dev/api/mcp`
- - Transport: Streamable HTTP (POST + SSE response stream) per MCP spec
- - Auth: Vāda API key (bearer token in `Authorization` header)
- - BYOK: provider keys envelope-encrypted at rest (AES-256-GCM, env-var master key), decrypted per-request
- - Sessions log to Vāda's production DB
- - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
- - Status: shipped May 4, 2026 (PRs #9 + #10). Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
+   - Endpoint: `https://vada.attalabs.dev/api/mcp`
+   - Transport: Streamable HTTP (POST + SSE response stream) per MCP spec
+   - Auth: Vāda API key (bearer token in `Authorization` header)
+   - BYOK: provider keys envelope-encrypted at rest (AES-256-GCM, env-var master key), decrypted per-request
+   - Sessions log to Vāda's production DB
+   - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
+   - Status: shipped May 4, 2026 (PRs #9 + #10). Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
 
 Both surfaces expose the same two tools (`vada__consult`, `vada__deliberate`) and route to the same YAML catalog. Transport and key management differ; tool input/output shapes do not.
 
@@ -42,18 +42,18 @@ Location: `apps/vada-ai/mcp-server/src/`
 
 ```
 apps/vada-ai/mcp-server/src/
-├── server.ts # MCP server setup; registers all tools
-├── spec-registry.ts # Dynamic YAML discovery; lookupSpec / listPublicSpecs / validateAllSpecs
-├── session-logger.ts # Writes session logs to Postgres via @atta/db
+├── server.ts               # MCP server setup; registers all tools
+├── spec-registry.ts        # Dynamic YAML discovery; lookupSpec / listPublicSpecs / validateAllSpecs
+├── session-logger.ts       # Writes session logs to Postgres via @atta/db
 └── tools/
- ├── consult.ts # vada__consult — builds inline `Flow` from reviewer profiles
- └── deliberate.ts # vada__deliberate — uses lookupSpec + compileFlow for catalog team specs
+    ├── consult.ts          # vada__consult — builds inline `Flow` from reviewer profiles
+    └── deliberate.ts       # vada__deliberate — uses lookupSpec + compileFlow for catalog team specs
 ```
 
 The hosted HTTP server lives at:
 
 ```
-apps/vada-ai/web/src/app/api/mcp/route.ts # Next.js Route Handler — Streamable HTTP transport, bearer auth, dispatches the same tools
+apps/vada-ai/web/src/app/api/mcp/route.ts   # Next.js Route Handler — Streamable HTTP transport, bearer auth, dispatches the same tools
 ```
 
 It uses the same `consult.ts` / `deliberate.ts` tool implementations as the stdio server (composed differently for HTTP), and the route adds a bearer-validation step (`verifyApiKeyBearer` from `@atta/auth`) before dispatch and a provider-key decryption step (envelope decryption from `@atta/crypto`) inside the request handler.
@@ -84,7 +84,7 @@ Agent definitions live in the YAML spec loaded via `lookupSpec` (auto-discovered
 - Refused with structured `missing_provider_key` error if `providerKeys[vendorId]` is absent server-side
 - Errors include resolved `vendorId`, `modelId`, and `agentName` for client-side reporting
 
-The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). in `vada-decisions.md`.
+The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). See D-032 in `vada-decisions.md`.
 
 ### `vada__deliberate` — Rounds-Based Team Deliberation
 
@@ -108,11 +108,11 @@ const spec = lookupSpec('vada-reviewers')
 const spec = lookupSpec('vada-reviewers-synthesis')
 
 // Lookup by short alias (explicit ALIASES map: a0, a1 only)
-const spec = lookupSpec('a0') // ALIASES['a0'] → 'a0-baseline'
-const spec = lookupSpec('a1') // ALIASES['a1'] → 'a1-baseline'
+const spec = lookupSpec('a0')            // ALIASES['a0'] → 'a0-baseline'
+const spec = lookupSpec('a1')            // ALIASES['a1'] → 'a1-baseline'
 
 // All non-experimental specs (for tool description generation)
-const specs = listPublicSpecs() // Returns: vada-reviewers, vada-reviewers-synthesis (as of May 11)
+const specs = listPublicSpecs()          // Returns: vada-reviewers, vada-reviewers-synthesis (as of May 11)
 ```
 
 `validateAllSpecs()` runs at startup. A malformed YAML causes a startup crash — preferable to a runtime error mid-session.
@@ -131,19 +131,19 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 
 ## Adding a New Public Spec
 
-1. Create `packages/agents/vada-deliberation/yamls/<name>.yaml` (no `-v1` suffix —)
+1. Create `packages/agents/vada-deliberation/yamls/<name>.yaml` (no `-v1` suffix — see D-025)
 2. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 3. If it should be addressable by a short alias from `vada__deliberate`, add to the `ALIASES` map:
- ```ts
- 'my-alias': 'my-spec',
- ```
+   ```ts
+   'my-alias': 'my-spec',
+   ```
 4. Write a verify script in `apps/vada-ai/web/scripts/verify-<name>-port.ts` following `verify-sparring-port.ts`:
- ```ts
- import { loadYamlFromCatalog, compileFlow } from '@atta/engine'
- const flow = loadYamlFromCatalog('my-spec')
- const plan = compileFlow(flow, question, model)
- const conclusion = await adapter.execute({ plan, customVars: {} })
- ```
+   ```ts
+   import { loadYamlFromCatalog, compileFlow } from '@atta/engine'
+   const flow = loadYamlFromCatalog('my-spec')
+   const plan = compileFlow(flow, question, model)
+   const conclusion = await adapter.execute({ plan, customVars: {} })
+   ```
 5. Run the verify script to confirm it executes end-to-end
 
 ---
@@ -175,7 +175,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
-- Vendor registry + SDK-shape dispatch: in `apps/vada-ai/specs/vada-decisions.md` + `packages/models/src/vendors.ts`
+- Vendor registry + SDK-shape dispatch: D-032 in `apps/vada-ai/specs/vada-decisions.md` + `packages/models/src/vendors.ts`
 
 ---
 
@@ -192,7 +192,7 @@ Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-ar
 - User configures provider keys in Settings → API Keys
 - Encrypted at rest in the `user_provider_keys` table with envelope encryption (AES-256-GCM, AAD-bound to `clerkId`, master key from `MASTER_ENCRYPTION_KEY` env var; `kms_key_id` column reserved for future KMS migration)
 - Decrypted only inside the request handler for the duration of the LLM call — never logged, never persisted in plaintext
-- Same store backs the web app's deliberate page (single canonical key store as of; the prior browser-only IndexedDB BYOK was demoted from canonical role on May 4, 2026)
+- Same store backs the web app's deliberate page (single canonical key store as of D-028; the prior browser-only IndexedDB BYOK was demoted from canonical role on May 4, 2026)
 
 **Request lifecycle (brief):**
 - Client POST → bearer token validation → provider key decryption → engine execution → SSE stream back → session log

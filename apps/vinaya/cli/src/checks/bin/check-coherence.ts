@@ -125,7 +125,7 @@ function recoveryPromptFor(checkCode: string): string {
     case 'D1':
       return "This task has an open PR but a declared dependency isn't closed. Close the dependency first (or verify it truly is), then re-run `vinaya check coherence`."
     case 'R1':
-      return 'The Issue fails the rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check coherence`.'
+      return 'The Issue fails the D-078 rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check coherence`.'
     default:
       return 'Read the named coherence failure and resolve the underlying forge/topology drift it names, then re-run `vinaya check coherence`.'
   }

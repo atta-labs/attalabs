@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 /**
  * The model frame for a file-sized doc slug: the node that points at it
- *. `role`/`contract` docs each back exactly one node — its
+ * (D-079). `role`/`contract` docs each back exactly one node — its
  * `category`/`actorType` is the frame.
  */
 function frameForSlug(slug: string, model: DiagramModel): { kindTag: string; badges: string[] } | undefined {

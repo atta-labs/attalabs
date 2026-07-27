@@ -7,10 +7,12 @@ const ring1: DiagramNode = { id: 'ring:1', kind: 'ring', label: 'Ring 1', ringIn
 const ring2: DiagramNode = { id: 'ring:2', kind: 'ring', label: 'Ring 2', ringIndex: 2, renderState: 'active' }
 
 /**
- * "Cannot lie by omission," proven at the render layer: a fixture with two
- * `disabled` gates, turned off by different means. Both must still be present
- * in `deriveGroups`' output — neither is filtered out, dropped, or merged
- * away. A gate that is off is still a gate the reader is told about.
+ * D-087's "cannot lie by omission," proven at the render layer: a fixture
+ * with one `disabled` gate (config turned it off) and one `locked` gate
+ * (doctrine pins a lock — config tried to disable it too, and lost, exactly
+ * mirroring `deriveDiagramModel`'s own precedence: lock is checked before
+ * config). Both must still be present in `deriveGroups`' output — neither
+ * is filtered out, dropped, or merged away.
  */
 describe('render-state fixture proof', () => {
   const model: DiagramModel = {
@@ -31,7 +33,8 @@ describe('render-state fixture proof', () => {
         kind: 'gate',
         label: 'commit-msg',
         ringIndex: 0,
-        renderState: 'disabled',
+        renderState: 'locked',
+        lock: 'D-999',
         category: 'hook'
       }
     ],
@@ -52,11 +55,12 @@ describe('render-state fixture proof', () => {
     expect(disabledGate?.renderState).toBe('disabled')
   })
 
-  it('keeps every disabled gate visible — a gate that is off is still rendered', () => {
+  it('keeps the locked gate visible and distinct from disabled — config never overrides a lock', () => {
     const ring0 = deriveGroups(model).find((g) => g.key === 'ring0')
-    const secondGate = ring0?.children.find((n) => n.id === 'gate:commit-msg')
-    expect(secondGate).toBeDefined()
-    expect(secondGate?.renderState).toBe('disabled')
+    const lockedGate = ring0?.children.find((n) => n.id === 'gate:commit-msg')
+    expect(lockedGate).toBeDefined()
+    expect(lockedGate?.renderState).toBe('locked')
+    expect(lockedGate?.lock).toBe('D-999')
   })
 
   it('both gates share the same ring0 group — child count is 2, not 1 or 0', () => {

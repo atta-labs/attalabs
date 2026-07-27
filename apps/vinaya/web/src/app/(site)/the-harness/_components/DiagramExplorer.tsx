@@ -51,7 +51,7 @@ type LegendEntry = { name: string; description: string; groupKey?: GroupKey }
  * Built from the live `DiagramModel` groups, NOT a hardcoded table. Two facts
  * that must never drift from the diagram the ring itself paints are DERIVED
  * from the model here rather than typed into prose — the actor roster and the
- * count of canonical actions. That is the page's whole thesis: counts
+ * count of canonical actions. That is the page's whole thesis (D-119): counts
  * and names come from `aeg-root/**` doctrine at build time, so a role added or
  * an action retired updates this copy with zero page change. The rest is fixed
  * editorial framing, same status as the ring/seam labels in `groupings.ts`.
@@ -136,7 +136,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
   const drilledGroup = groups.find((g) => g.key === drilledKey) ?? null
 
   // Built from the live model each render — the roster/count inside the copy
-  // track the doctrine, never a stale constant. `groupExplanation` is
+  // track the doctrine, never a stale constant (D-119). `groupExplanation` is
   // the same source, so the drilled-ring text can never disagree with the
   // overview legend for the same ring.
   const legend = buildHarnessLegend(groups)

@@ -27,7 +27,7 @@ export default async function HowItWorksPage() {
   // role/contract, not action), `viewSourceHrefs` is the GitHub source link
   // (exists for every kind `readMoreTarget` resolves at all). A role/contract
   // slug that isn't in the surfaced set would ship a dead "Read more" link —
-  // fail the build loudly instead, per the brief's ruling.
+  // fail the build loudly instead, per the brief's D-087 ruling.
   const readMoreHrefs: Record<string, string> = {}
   const viewSourceHrefs: Record<string, string> = {}
   for (const node of model.nodes) {

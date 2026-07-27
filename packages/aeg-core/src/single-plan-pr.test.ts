@@ -25,7 +25,7 @@ describe('iterationSlugFromTopologyPath', () => {
   })
 })
 
-describe('checkSinglePlanPr — single-plan-PR guard ( task 19 / #336)', () => {
+describe('checkSinglePlanPr — single-plan-PR guard (D-069 task 19 / #336)', () => {
   it('passes trivially for an ordinary task-branch PR (no topology file touched)', () => {
     const branchFiles = ['packages/aeg-core/bin/open-pr.ts', 'packages/aeg-core/bin/open-pr.test.ts']
     const otherOpenPrs = [{ number: 100, files: ['aeg-root/iterations/aeg-governance-hardening.md'] }]

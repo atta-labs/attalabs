@@ -7,7 +7,7 @@ import { cache } from 'react'
  * single request — the Portal/Studio switch renders once per request, in a
  * layout, so an uncached call here would shell out on every page load.
  *
- * NOT an authorization check — see `isVercelDeploy()` in `env.ts` and.
+ * NOT an authorization check — see `isVercelDeploy()` in `env.ts` and D-126.
  * This only answers "can this server reach GitHub?".
  */
 export const hasForgeConnection = cache(async (): Promise<boolean> => {

@@ -20,15 +20,15 @@
  *                         (map-forge-facts.ts), so it falls to the
  *                         issue-closed fallback where the CLI (which sees the
  *                         closed PR) would say unmerged. That shape is a
- * terminal anomaly (`dropped`/`incoherent`)
+ *                         terminal anomaly (`dropped`/`incoherent`, D-069)
  *                         and does not occur on a healthy board.
  *   conflicts-with      ← same-iteration edge: `prState === 'open'`; cross-
  *                         iteration edges default to not-blocking (no PR
  *                         evidence), same as the CLI.
  *   prior task          ← the immediately preceding TABLE ROW (row-adjacency,
- *), not the Depends-on column — resolved by the
+ *                         D-081), not the Depends-on column — resolved by the
  *                         caller; this mapper only attaches its forge facts.
- * Dormant since `checkDispatchReadiness`
+ *                         Dormant since D-120 (2026-07-13): `checkDispatchReadiness`
  *                         no longer evaluates `priorTask`; still assembled
  *                         here as dead-but-harmless plumbing.
  *   rationale           ← `checkIssueRationale` (aeg-core) against the Issue

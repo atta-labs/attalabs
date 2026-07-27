@@ -107,7 +107,7 @@ describe('deriveGroups', () => {
   it('surfaces a disabled ring0 render-state onto the group, never overridden by a locked gate', () => {
     const disabledRing0: DiagramNode = { ...ring0, renderState: 'disabled' }
     const model: DiagramModel = {
-      nodes: [disabledRing0, ring1, ring2, { ...gate('locked-one'), renderState: 'locked', lock: '' }],
+      nodes: [disabledRing0, ring1, ring2, { ...gate('locked-one'), renderState: 'locked', lock: 'D-999' }],
       edges: [],
       findings: [],
       iteration: null

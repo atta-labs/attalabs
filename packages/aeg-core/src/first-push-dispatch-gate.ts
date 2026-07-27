@@ -16,7 +16,7 @@
  * `UNKNOWN` (forge unreachable — `verify-dispatch.ts`'s own `severity:infra`
  * marker, printed when repo/token resolution fails) maps to `allow`, the
  * same deliberate fail-open choice `dead-branch-push-guard.ts` already makes
- * for the sibling gate: a guard that can block *all* pushes on a
+ * for the sibling D-069 gate: a guard that can block *all* pushes on a
  * transient forge-reachability issue is worse than the bug it fixes. See
  * `aeg-root/enforcement.md`.
  */
@@ -32,7 +32,7 @@ export type DispatchReadinessFact = 'READY' | 'NOT_READY' | 'UNKNOWN'
 export type FirstPushDispatchGateInput = {
   /** The branch being pushed. */
   branch: string
-  /** Whether a PR already exists for this branch — the hook's existing C5/ detection, reused, never re-derived here. */
+  /** Whether a PR already exists for this branch — the hook's existing C5/D-080 detection, reused, never re-derived here. */
   prExists: boolean
   /** verify-dispatch's classified result. Irrelevant (never read) when the branch is not a task branch or a PR already exists. */
   readiness: DispatchReadinessFact

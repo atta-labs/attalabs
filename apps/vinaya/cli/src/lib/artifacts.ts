@@ -5,15 +5,15 @@
 // Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
 // what a shipped check consumes.** The manifest is exactly five items —
 // `vinaya.config.json` (starter ruleset, `checks: {}` empty), two `vinaya-`
-// workflows, git-hook managed blocks, a root `VINAYA.md`
-// doctrine pointer ( reading-order convention), and labels. Everything
+// workflows (D-115, D-085), git-hook managed blocks, a root `VINAYA.md`
+// doctrine pointer (D-111 reading-order convention), and labels. Everything
 // else the earlier amendment-4 manifest carried (GitHub templates, the
 // governance/ scaffold, example check scripts) was this monorepo's own
 // operational apparatus, not product surface — no shipped check consumes it,
 // so it is cut from the installer.
 //
 // The starter ruleset seeded into `vinaya.config.json` is EXTRACTED from this
-// repo's own battle-tested gates, not invented blanks — the failure it
+// repo's own battle-tested gates (D-105), not invented blanks — the failure it
 // kills is blank-config paralysis.
 
 import { label } from '@atta/aeg-core'
@@ -32,7 +32,7 @@ export type InitContext = {
 // --- neutral scaffold paths (never aeg-root / aeg-project) ------------------
 export const CONFIG_PATH = 'vinaya.config.json'
 // Root VINAYA.md — the doctrine pointer. Root placement is the whole point
-// ( reading-order convention): an agent orienting in a fresh repo finds it
+// (D-111 reading-order convention): an agent orienting in a fresh repo finds it
 // beside README, not buried inside a governance/ subfolder.
 export const DOCTRINE_POINTER_PATH = 'VINAYA.md'
 export const CHECKS_WORKFLOW_PATH = '.github/workflows/vinaya-checks.yml'
@@ -42,13 +42,13 @@ const MANAGED_NOTE =
   'Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.'
 
 // ---------------------------------------------------------------------------
-// starter ruleset — the seed for vinaya.config.json (no `managed`; the
+// D-105 starter ruleset — the seed for vinaya.config.json (no `managed`; the
 // installer injects the ownership manifest after applying every op).
 // ---------------------------------------------------------------------------
 export function starterConfig(): VinayaConfig {
   return {
     // Ring 1 (forge-write interception) and Ring 2 (async audits) are opt-in
-    // accelerators, off by default. Ring 0 (git hooks) and the CI
+    // accelerators, off by default (D-090). Ring 0 (git hooks) and the CI
     // guarantee are non-negotiable and deliberately absent from the schema.
     rings: { ring1_forgeWriteInterception: false, ring2_asyncAudits: false },
     // `checks` starts EMPTY (2026-07-23 minimal-manifest re-ruling). init
@@ -78,7 +78,7 @@ export function starterConfig(): VinayaConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Workflow files (two, both refuse-if-foreign, both vinaya-prefixed)
+// Workflow files (D-115: two, both refuse-if-foreign, both vinaya-prefixed)
 // ---------------------------------------------------------------------------
 function checksWorkflow(): string {
   return `# ${MANAGED_NOTE}
@@ -112,7 +112,7 @@ jobs:
 function reviewWorkflow(): string {
   return `# ${MANAGED_NOTE}
 #
-# The review gate — split from the checks suite so a verdict *comment*
+# The review gate — split from the checks suite (D-115) so a verdict *comment*
 # re-triggers it. GitHub fires \`issue_comment\` for a new PR comment, a
 # different event from \`pull_request\`; the checks workflow (pull_request only)
 # structurally cannot receive it. A cheap \`contains(..., 'VERDICT')\` guard
@@ -184,7 +184,7 @@ npx --no-install vinaya check --all || exit 1`
 }
 
 // ---------------------------------------------------------------------------
-// Doctrine pointer (root VINAYA.md, the only orientation artifact)
+// Doctrine pointer (D-111 — root VINAYA.md, the only orientation artifact)
 // ---------------------------------------------------------------------------
 function doctrinePointer(): string {
   return `<!-- ${MANAGED_NOTE} -->
@@ -193,7 +193,7 @@ function doctrinePointer(): string {
 This repo is governed by Vinaya. The full, canonical doctrine (roles,
 contracts, the state machine, the ring gates) ships inside the installed
 \`vinaya\` npm package as versioned reference content and is updated cleanly by
-\`vinaya upgrade\` — there is no in-repo copy to drift.
+\`vinaya upgrade\` — there is no in-repo copy to drift (D-111).
 
 An agent working in this repo follows the governed flow by reading two things:
 
@@ -214,7 +214,7 @@ package's own reference content is the source of truth.
 // Labels — create-if-absent, existing never modified (amendment-4 manifest).
 // The names come from the code-owned vocabulary (`@atta/aeg-core`'s re-exported
 // `LABELS`), never written here as literals, so an adopter's repo is seeded
-// with exactly the namespaced set this repo runs on. Only the
+// with exactly the namespaced set this repo runs on (D-105, D-123). Only the
 // tier + needs families are installed: no tier:2 (vestigial), no status:*
 // (status is derived), no project:* (project is a body field).
 // ---------------------------------------------------------------------------
@@ -237,7 +237,7 @@ export function labelOps(): CreateLabelOp[] {
   ]
 }
 
-const BRANCH_PROTECTION_NOTE = `Recommended (run yourself — vinaya never applies branch protection):
+const BRANCH_PROTECTION_NOTE = `Recommended (run yourself — vinaya never applies branch protection, D-091):
 
   gh api -X PUT repos/{owner}/{repo}/branches/main/protection \\
     -F required_pull_request_reviews.required_approving_review_count=1 \\
@@ -289,7 +289,7 @@ export function buildInitOps(ctx: InitContext): Op[] {
     group: 'Config (starter ruleset)'
   })
 
-  // Doctrine pointer — root VINAYA.md, the only orientation artifact.
+  // Doctrine pointer (D-111) — root VINAYA.md, the only orientation artifact.
   ops.push({
     kind: 'create-file',
     path: DOCTRINE_POINTER_PATH,
@@ -300,7 +300,7 @@ export function buildInitOps(ctx: InitContext): Op[] {
   // Labels.
   ops.push(...labelOps())
 
-  // Branch protection — printed only, never applied.
+  // Branch protection — printed only, never applied (D-091).
   ops.push({ kind: 'print', message: BRANCH_PROTECTION_NOTE, group: 'Branch protection (printed, never applied)' })
 
   return ops

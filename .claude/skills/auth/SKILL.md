@@ -9,7 +9,7 @@ description: Clerk authentication patterns across the Atta ecosystem — shared 
 
 The **Atta family** (Atta, Vāda, and other Atta-composed surfaces) uses a **single Clerk application** via the `@atta/auth` wrapper, with auth state propagating across product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`). Sign in once on any Atta-family subdomain → signed in everywhere (the Google model).
 
-**Herald is a deliberate exception**: it is a standalone AttaLabs product with its **own** Clerk application (`closing-blowfish-4`), its **own** Neon DB, and its **own** `user_provider_keys` table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below before applying any rule here to Herald.
+**Herald is a deliberate exception** (D-031): it is a standalone AttaLabs product with its **own** Clerk application (`closing-blowfish-4`), its **own** Neon DB, and its **own** `user_provider_keys` table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below before applying any rule here to Herald.
 
 For the Atta family there is one shared `users` table in `@atta/db`, keyed by `clerk_id`; per-product profile rows reference `clerk_id` as a foreign key. Identity does not live in product tables.
 
@@ -78,15 +78,15 @@ Users sync from Clerk into a single `users` table in `@atta/db`, keyed by `clerk
 
 ```ts
 export const users = pgTable('users', {
- clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
- email: varchar('email', { length: 320 }).notNull(),
- createdAt: timestamp('created_at').defaultNow().notNull(),
+  clerkId: varchar('clerk_id', { length: 255 }).primaryKey(),
+  email: varchar('email', { length: 320 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
 export const vadaProfile = pgTable('vada_profile', {
- clerkId: varchar('clerk_id', { length: 255 })
-.primaryKey()
-.references(() => users.clerkId, { onDelete: 'cascade' }),
+  clerkId: varchar('clerk_id', { length: 255 })
+    .primaryKey()
+    .references(() => users.clerkId, { onDelete: 'cascade' }),
 })
 ```
 
@@ -96,7 +96,7 @@ There is no `account.attalabs.dev` hub. Each product hosts its own `/settings` U
 
 ---
 
-## Herald exception
+## Herald exception (D-031)
 
 Herald does **not** follow Rules #1, #2, #4 above. It is a standalone identity perimeter:
 
@@ -112,9 +112,9 @@ Reversal (folding Herald into the shared Clerk app) requires migrating Herald id
 
 ### Herald library/chrome note (cross-ref, not auth)
 
-Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile**. Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
+Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile** (D-035). Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
 
-### Herald owner-route gate
+### Herald owner-route gate (D-061)
 
 Herald has a per-route ownership gate on top of Clerk auth: routes under `app/[username]/(owner)/*` (currently `/{username}/ui` and `/{username}/settings`) are only accessible to the signed-in user whose own `username` matches the `[username]` URL segment.
 
@@ -122,13 +122,13 @@ Herald has a per-route ownership gate on top of Clerk auth: routes under `app/[u
 
 ```ts
 const { userId } = await auth()
-if (!userId) redirect('/sign-in') // anonymous → /sign-in
+if (!userId) redirect('/sign-in')                              // anonymous → /sign-in
 
 const user = await getUserByClerkId(userId)
-if (!user?.onboardingComplete) redirect('/onboarding') // half-onboarded → /onboarding
+if (!user?.onboardingComplete) redirect('/onboarding')         // half-onboarded → /onboarding
 
 const { username: segment } = await params
-if (user.username !== segment) notFound() // wrong owner → 404
+if (user.username !== segment) notFound()                      // wrong owner → 404
 ```
 
 The public profile at `/[username]` (rendered by the sibling `(profile)` route group) stays open and unaffected; only the `(owner)` subtree is gated.
@@ -146,22 +146,22 @@ If adding more owner-only routes under `/[username]/`, place them inside `(owner
 import { clerkMiddleware, createRouteMatcher } from '@atta/auth/middleware'
 
 const isProtected = createRouteMatcher([
- '/bulk-audit(.*)',
- '/ui(.*)',
- '/settings(.*)',
- '/onboarding(.*)',
+  '/bulk-audit(.*)',
+  '/ui(.*)',
+  '/settings(.*)',
+  '/onboarding(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
- if (isProtected(req)) await auth.protect()
+  if (isProtected(req)) await auth.protect()
 })
 
 export const config = {
- matcher: ['/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)']
+  matcher: ['/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)']
 }
 ```
 
-> The matcher above shows Herald's flat routes. Atta-family apps use their own protected prefixes (e.g. `/app`, `/dashboard`).
+> The matcher above shows Herald's flat routes (D-036). Atta-family apps use their own protected prefixes (e.g. `/app`, `/dashboard`).
 
 ---
 
@@ -184,10 +184,10 @@ const user = await currentUser() // heavier — only when needed
 import { useAuth, useUser } from '@atta/auth'
 
 function MyComponent() {
- const { userId, isSignedIn, isLoaded } = useAuth()
- const { user } = useUser()
- if (!isLoaded) return null
- if (!isSignedIn) return <SignInButton />
+  const { userId, isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
+  if (!isLoaded) return null
+  if (!isSignedIn) return <SignInButton />
 }
 ```
 
@@ -203,7 +203,7 @@ Each product hosts its own sign-in/sign-up routes that delegate to Clerk. For th
 // apps/{product}/web/src/app/sign-in/[[...sign-in]]/page.tsx
 import { SignIn } from '@clerk/nextjs'
 export default function SignInPage() {
- return <SignIn />
+  return <SignIn />
 }
 ```
 
@@ -214,8 +214,8 @@ export default function SignInPage() {
 Atta family: use **`.attalabs.test`** locally (IETF-reserved TLD, no HTTPS enforcement).
 
 ```
-127.0.0.1 attalabs.test
-127.0.0.1 vada.attalabs.test
+127.0.0.1   attalabs.test
+127.0.0.1   vada.attalabs.test
 ```
 
 Configure a Clerk development instance with cookie domain `.attalabs.test`. Do **not** use `.attalabs.dev` locally (Chrome forces HTTPS on `.dev`). Herald uses its own Clerk development instance.
@@ -235,7 +235,7 @@ const appearance = buildClerkAppearance({ background: 'oklch(...)', foreground: 
 
 ## Anti-patterns
 
-- ❌ Creating a separate Clerk application for a new **Atta-family** surface (Herald's own app is the one sanctioned exception, not a precedent for Atta-family products)
+- ❌ Creating a separate Clerk application for a new **Atta-family** surface (Herald's own app is the one sanctioned exception, D-031 — not a precedent for Atta-family products)
 - ❌ Sharing a Clerk app or `users` table **between Herald and the Atta family** — Herald's identity perimeter is separate
 - ❌ Adding `AuthProvider` inside `NextWebShell` children
 - ❌ Setting Atta-family cookie scope to a product subdomain instead of the parent `.attalabs.dev` — breaks SSO

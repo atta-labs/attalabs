@@ -6,11 +6,11 @@
  * (`verdict-extraction.ts`) the post-merge Archivist automation already runs,
  * now gated pre-merge and blocking instead of post-merge and advisory-only.
  *
- * A verified `vinaya/waiver:review` label ('s exact actor-verification pattern,
+ * A verified `vinaya/waiver:review` label (D-097's exact actor-verification pattern,
  * `isWaiverLabelActorVerified` reused directly and parameterized by label —
  * see `waiver-label.ts`) lets a principal explicitly skip the requirement for
  * one PR. Label presence alone is never sufficient — only an actor-verified
- * label waives the gate, mirroring exactly.
+ * label waives the gate, mirroring D-097 exactly.
  *
  * Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
  * (`bin/verify-review-gate.ts`) resolves the PR's comments/labels/label-actor

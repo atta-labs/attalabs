@@ -26,7 +26,7 @@ process.chdir(REPO_ROOT)
 
 // Same discipline as `check-direct-main-push.ts`: the name is read from the
 // code-owned vocabulary, because this bin mints the label on first fire and a
-// literal would have created a retired `aeg:`-named one. The marker is
+// literal would have created a retired `aeg:`-named one (D-123). The marker is
 // derived from the label so the two can never disagree.
 const LABEL = label('dead-branch-push')
 const MARKER = `<!-- ${LABEL} -->`

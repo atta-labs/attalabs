@@ -73,7 +73,7 @@ let cache: LoadedDocs | null = null
  * `bodyBySlug` still holds the raw `aeg-root/**.md` bodies for the file-sized
  * pages (roles, contracts) plus `enforcement.md` — whose intro renders as the
  * `/docs/rings` landing. The file allowlist deciding which raw bodies are
- * readable stays `modelBackedDocPaths` — this changes nav construction,
+ * readable stays `modelBackedDocPaths` (D-079) — this changes nav construction,
  * not the allowlist.
  */
 export async function loadAegDocs(): Promise<LoadedDocs> {

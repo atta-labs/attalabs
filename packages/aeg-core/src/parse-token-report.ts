@@ -6,7 +6,7 @@ import type { LedgerRow } from './types'
  * Live-source token parsing (aeg-forge-state-v1 task 4b, #445). Where
  * `parse-ledger.ts` reads the Archivist's hand-assembled `<name>.tokens.md`
  * ledger, this file extracts the same `LedgerRow` shape directly from the
- * artifacts says every role already produces on its own turn — the
+ * artifacts D-071 says every role already produces on its own turn — the
  * Developer's "Token report" section in a PR body, and the Reviewer's /
  * Security's / Planner's one-line `Tokens: …` report in a verdict comment,
  * PR body, or planning report. Nothing here does I/O — the caller (Studio's

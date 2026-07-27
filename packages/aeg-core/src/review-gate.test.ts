@@ -59,7 +59,7 @@ describe('checkReviewGate', () => {
     expect(result.verdict).toBe('pass')
   })
 
-  describe('vinaya/waiver:review actor verification ( pattern)', () => {
+  describe('vinaya/waiver:review actor verification (D-097 pattern)', () => {
     it('label absent → gate still evaluates verdicts normally (fails on empty comments)', () => {
       const result = checkReviewGate({ comments: [], labels: ['vinaya/tier:1'], waiverLabelActor: 'daniboomerang' })
       expect(result.verdict).toBe('fail')

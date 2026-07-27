@@ -23,17 +23,17 @@ No runtime logic lives in either location. YAML specs compose agents into delibe
 
 ```
 apps/vada-ai/web/src/components/agents/visuals/
-└── index.ts # VadaAgentVisual type + per-agent display configs (web-only)
+└── index.ts                       # VadaAgentVisual type + per-agent display configs (web-only)
 
 packages/agents/vada-deliberation/yamls/
-├── sparring.yaml # 2-agent default (Strategist + Critic, 3 rounds)
-├── crucible.yaml # 4-agent heavy team
-├── war-room.yaml # 6-agent heavyweight
-├── a0-baseline.yaml # Single-agent naive baseline
-├── a1-baseline.yaml # Single-agent structured-output baseline
-├── brokered-trio.yaml # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
-├── brokered-quartet.yaml # 4 reviewers, no rounds (experimental)
-└── vada-fusion-native.yaml # Outside Read — 4-agent attack-vector panel → battlefield-map synthesizer → audit
+├── sparring.yaml                  # 2-agent default (Strategist + Critic, 3 rounds)
+├── crucible.yaml                  # 4-agent heavy team
+├── war-room.yaml                  # 6-agent heavyweight
+├── a0-baseline.yaml               # Single-agent naive baseline
+├── a1-baseline.yaml               # Single-agent structured-output baseline
+├── brokered-trio.yaml             # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
+├── brokered-quartet.yaml          # 4 reviewers, no rounds (experimental)
+└── vada-fusion-native.yaml        # Outside Read — 4-agent attack-vector panel → battlefield-map synthesizer → audit (D-036)
 ```
 
 ---
@@ -80,40 +80,40 @@ display_name: Sparring
 description: Two-agent debate across three rounds with dual audit and revision.
 
 defaults:
- model: claude-sonnet-4-6
+  model: claude-sonnet-4-6
 
 agents:
- - name: Strategist
- description: Maps the landscape...
- tools: [web_search, web_fetch]
- classifier:
- mode: auto
- system_prompt: |
- You are the Strategist...
+  - name: Strategist
+    description: Maps the landscape...
+    tools: [web_search, web_fetch]
+    classifier:
+      mode: auto
+    system_prompt: |
+      You are the Strategist...
 
 flow:
- rounds:
- count: 3
- agents: [Strategist, Critic]
- message_template: |
- {{question}}
-...
- synthesis:
- agent: ConclusionSynthesizer
- message_template: |
-...
- audit:
- agents: [BlindCritic, FactChecker]
- message_template: |
- Principal's question: {{question}}
- Conclusion to Review: {{conclusion}}
- revision:
- max: 1
- trigger:
- type: contains
- value: FLAG
- case_sensitive: false
- logic: any
+  rounds:
+    count: 3
+    agents: [Strategist, Critic]
+    message_template: |
+      {{question}}
+      ...
+  synthesis:
+    agent: ConclusionSynthesizer
+    message_template: |
+      ...
+  audit:
+    agents: [BlindCritic, FactChecker]
+    message_template: |
+      Principal's question: {{question}}
+      Conclusion to Review: {{conclusion}}
+    revision:
+      max: 1
+      trigger:
+        type: contains
+        value: FLAG
+        case_sensitive: false
+      logic: any
 ```
 
 **Reviewers mode** (brokered — parallel independent advisors, no rounds):
@@ -124,26 +124,26 @@ display_name: Brokered Trio
 description: Three independent advisory reviewers.
 
 defaults:
- model: claude-sonnet-4-6
+  model: claude-sonnet-4-6
 
 agents:
- - name: Strategist
- classifier:
- mode: skip # no classifier, single-shot
- system_prompt: |
-...
+  - name: Strategist
+    classifier:
+      mode: skip           # no classifier, single-shot
+    system_prompt: |
+      ...
 
 reviewers:
- - agent: Strategist
- message_template: "{{question}}"
- - agent: Critic
- message_template: "{{question}}"
- - agent: "Devil's Advocate"
- message_template: "{{question}}"
+  - agent: Strategist
+    message_template: "{{question}}"
+  - agent: Critic
+    message_template: "{{question}}"
+  - agent: "Devil's Advocate"
+    message_template: "{{question}}"
 
 response:
- mode: concatenate
- format: "## {agent_name}\n\n{content}\n\n---\n\n"
+  mode: concatenate
+  format: "## {agent_name}\n\n{content}\n\n---\n\n"
 ```
 
 Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`
@@ -162,8 +162,8 @@ const spec = lookupSpec('sparring')
 const spec = lookupSpec('crucible')
 
 // By short alias (explicit ALIASES — a0, a1 only)
-const spec = lookupSpec('a0') // → a0-baseline
-const spec = lookupSpec('a1') // → a1-baseline
+const spec = lookupSpec('a0')    // → a0-baseline
+const spec = lookupSpec('a1')    // → a1-baseline
 
 // All non-experimental specs
 const specs = listPublicSpecs()
@@ -182,13 +182,13 @@ Do not deviate without Principal approval. Empirically grounded.
 ```ts
 // ✅ In YAML: audit agent, no tools, skip classifier
 - name: BlindCritic
- classifier:
- mode: skip
- system_prompt:...
+  classifier:
+    mode: skip
+  system_prompt: ...
 
 // ❌ Breaks audit invariant
 - name: BlindCritic
- tools: [web_search] # contaminates the blind audit
+  tools: [web_search]    # contaminates the blind audit
 ```
 
 ### `name` is PascalCase and Unique
@@ -198,15 +198,15 @@ Agent names in YAML `rounds[].agents[].name` must exactly match the `name` field
 ```yaml
 # ✅
 agents:
- - name: ConclusionSynthesizer
+  - name: ConclusionSynthesizer
 flow:
- synthesis:
- agent: ConclusionSynthesizer # exact match
+  synthesis:
+    agent: ConclusionSynthesizer   # exact match
 
 # ❌
 flow:
- synthesis:
- agent: Conclusion-Synthesizer # mismatch → runtime error
+  synthesis:
+    agent: Conclusion-Synthesizer  # mismatch → runtime error
 ```
 
 ### Export Agent Instances, Not Factories
@@ -215,10 +215,10 @@ Agents in `@vada/agents` are configs, not classes. No builders, no factory funct
 
 ```ts
 // ✅
-export const critic = { name: 'Critic',... } satisfies VadaAgentDef;
+export const critic = { name: 'Critic', ... } satisfies VadaAgentDef;
 
 // ❌
-export function createCritic(options?: CriticOptions): VadaAgentDef {... }
+export function createCritic(options?: CriticOptions): VadaAgentDef { ... }
 ```
 
 ### Explicit `tools: []` Over Omission
@@ -227,10 +227,10 @@ Makes the tool-off invariant visually obvious in `@vada/agents` code review.
 
 ```ts
 // ✅
-{ name: 'BlindCritic', tools: [],... } // "I intentionally have no tools"
+{ name: 'BlindCritic', tools: [], ... }    // "I intentionally have no tools"
 
 // ❌ Ambiguous
-{ name: 'BlindCritic',... } // did you forget or intend none?
+{ name: 'BlindCritic', ... }               // did you forget or intend none?
 ```
 
 ---
@@ -248,7 +248,7 @@ For use with `vada__consult` (Brokered mode):
 
 ## Adding a New Team (YAML spec)
 
-1. Create `packages/agents/vada-deliberation/yamls/<team-name>.yaml` (no `-v1` suffix —)
+1. Create `packages/agents/vada-deliberation/yamls/<team-name>.yaml` (no `-v1` suffix — see D-025)
 2. Define agents inline in the YAML
 3. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 4. Add to ALIASES map only if a short-name is needed for MCP UX
@@ -293,7 +293,7 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 - ❌ `tools: undefined` in YAML (use `[]` for explicit none)
 - ❌ Making Crucible the default again without Round 24+ evidence
 - ❌ Agent name mismatch between YAML flow references and agent definition
-- ❌ Adding `-v1` suffix to new YAML filenames before a fork exists
+- ❌ Adding `-v1` suffix to new YAML filenames before a fork exists (see D-025)
 
 ---
 

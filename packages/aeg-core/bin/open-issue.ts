@@ -2,16 +2,16 @@
 
 /**
  * open-issue — the ONLY sanctioned way to create or body-edit an Issue in
- * this repo. The `check-forge-gates.sh` PreToolUse hook denies raw
+ * this repo (D-078). The `check-forge-gates.sh` PreToolUse hook denies raw
  * `gh issue create` / `gh issue edit --body*`, directing every agent here.
  *
  * Gate: a task Issue (any `vinaya/iteration:<slug>` label) must carry the full
  * eight-field Planner's rationale in its body (`checkIssueRationale`,
- * planner-brief contract) — refused locally otherwise, before anything
+ * planner-brief contract, D-055) — refused locally otherwise, before anything
  * reaches the forge. Non-task Issues (no iteration label) pass through
  * unvalidated: the rationale contract does not apply to them.
  *
- * Content gate: past presence, three checks grade what those fields
+ * Content gate (D-130): past presence, three checks grade what those fields
  * SAY against the surface the task touches, and refuse — `checkBlastRadiusScope`
  * (a shared collision domain from `.aeg/packages` that no declared project
  * owns, without a second project or a `blast-radius-ack:` line),
@@ -251,7 +251,7 @@ export function resolveMilestoneToAttach(
 // paragraph in ONE atomic write (`amendRationaleDeps`), with a runtime
 // round-trip parse gate — closing the five-incident class this session where
 // the field and a later free-form amendment drifted apart because nothing
-// forced them to change together. Modeled on's "the sanctioned path is
+// forced them to change together. Modeled on D-097's "the sanctioned path is
 // the only path": there is no code path here that rewrites one representation
 // without the other.
 
@@ -562,7 +562,7 @@ export function main(): void {
     if (status === 'fail') {
       console.error(`\n[open-issue] FAILED — ${errors.length} rationale field(s) missing:\n`)
       for (const e of errors) console.error(`  ✗ ${e}`)
-      fail('the Issue body does not carry the full eight-field Planner rationale (planner-brief contract).')
+      fail('the Issue body does not carry the full eight-field Planner rationale (planner-brief contract, D-055).')
     }
     console.log('[open-issue] rationale gate PASS.')
 

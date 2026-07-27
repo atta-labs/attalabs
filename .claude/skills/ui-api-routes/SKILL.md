@@ -23,12 +23,12 @@ All API routes use Next.js App Router (`route.ts`). Routes must handle errors gr
 ### Input Validation
 ```ts
 export async function POST(request: Request) {
- const body = await request.json()
+  const body = await request.json()
 
- if (!body.jobDescription || typeof body.jobDescription !== 'string') {
- return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
- }
- //...
+  if (!body.jobDescription || typeof body.jobDescription !== 'string') {
+    return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
+  }
+  // ...
 }
 ```
 
@@ -36,19 +36,19 @@ export async function POST(request: Request) {
 ```ts
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
- return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+  return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
 }
 ```
 
 ### Error Handling
 ```ts
 try {
- const result = await processRequest(data)
- return NextResponse.json(result)
+  const result = await processRequest(data)
+  return NextResponse.json(result)
 } catch (err) {
- console.error('Route error:', err)
- return NextResponse.json(buildFallbackResponse(), { status: 200 })
- // Note: return 200 with fallback for LLM failures — partial data is better than hard error
+  console.error('Route error:', err)
+  return NextResponse.json(buildFallbackResponse(), { status: 200 })
+  // Note: return 200 with fallback for LLM failures — partial data is better than hard error
 }
 ```
 
@@ -60,37 +60,38 @@ try {
 ```ts
 // Signals (non-critical)
 const signals = await Promise.race([
- fetchGithubSignals(handle),
- new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
+  fetchGithubSignals(handle),
+  new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
 ])
 
 // LLM (critical path) — see LLM Integration below for what runs here
 const result = await Promise.race([
- run({ profile: userPrompt, modelId, vendor, apiKey, schema }),
- new Promise<never>((_, reject) =>
- setTimeout(() => reject(new Error('LLM timeout')), 25000))
+  run({ profile: userPrompt, modelId, vendor, apiKey, schema }),
+  new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('LLM timeout')), 25000)
+  )
 ])
 ```
 
 ### LLM Integration
 
-**MUST NOT** call `generateText()` or a raw provider SDK directly in a route handler. Every LLM call runs through `@atta/engine` (`loadFlow` / `loadYamlFromCatalog` → `compileFlow` → `LangGraphAdapter.execute`) — never a bespoke per-route call. This is/Herald's original `/api/match` called `generateText()` directly, and was migrated onto the engine specifically so Herald inherits the cognitive router, multi-vendor failover, transcript tracing, and cost tracking that a direct SDK call can never get. Direct `generateText`/SDK calls in a route are a rejected pattern, not a convenience shortcut.
+**MUST NOT** call `generateText()` or a raw provider SDK directly in a route handler. Every LLM call runs through `@atta/engine` (`loadFlow` / `loadYamlFromCatalog` → `compileFlow` → `LangGraphAdapter.execute`) — never a bespoke per-route call. This is D-044/D-045: Herald's original `/api/match` called `generateText()` directly, and was migrated onto the engine specifically so Herald inherits the cognitive router, multi-vendor failover, transcript tracing, and cost tracking that a direct SDK call can never get. Direct `generateText`/SDK calls in a route are a rejected pattern, not a convenience shortcut.
 
 Two sanctioned shapes, chosen by whether the agent is reused across routes:
 
-**(a) Packaged agent — preferred for reusable product intelligence.** The engine chain lives inside a self-contained package at `packages/agents/<name>/`, which exports a `run()`. The route just calls it:
+**(a) Packaged agent — preferred for reusable product intelligence.** The engine chain lives inside a self-contained package at `packages/agents/<name>/` (D-051), which exports a `run()`. The route just calls it:
 
 ```ts
 // apps/herald-ai/web/src/app/api/audit/route.ts
 import { run } from '@atta/forensic-hiring-auditor'
 
 const report = await run({
- profile: userPrompt,
- modelId: creds.modelId,
- vendor: creds.vendor,
- apiKey: creds.apiKey,
- schema: MATCH_REPORT_SCHEMA,
- candidateInfo: { name: profile.name, title: profile.title, github: profile.github }
+  profile: userPrompt,
+  modelId: creds.modelId,
+  vendor: creds.vendor,
+  apiKey: creds.apiKey,
+  schema: MATCH_REPORT_SCHEMA,
+  candidateInfo: { name: profile.name, title: profile.title, github: profile.github }
 })
 ```
 
@@ -117,14 +118,14 @@ Once an agent's logic is reused by more than one route, promote it to a `package
 
 ```ts
 // ✅ consistent shape
-return NextResponse.json({ grade: 'B', score: 72, signals: [] }) // success
-return NextResponse.json({ grade: 'N/A', score: 0, signals: [] }) // fallback
+return NextResponse.json({ grade: 'B', score: 72, signals: [] })      // success
+return NextResponse.json({ grade: 'N/A', score: 0, signals: [] })     // fallback
 
 // ❌ inconsistent
-return NextResponse.json({ error: 'failed' }) // different shape on error
+return NextResponse.json({ error: 'failed' })    // different shape on error
 ```
 
-**Additive failure signal, not a shape swap.** A route can (and, should) surface *why* a fallback fired without breaking the "consistent shape" rule above — add an optional field that's absent on success and present on failure, never change the envelope itself. `apps/herald-ai/web/src/app/api/audit/route.ts` is the reference example: `MatchReport.auditFailed?: { reason, category }` is set only when `buildPartialReport()` builds a fallback (execution failed, not just parsed-oddly); every consumer that ignores the field still gets the exact same shape it always did. Prefer this pattern over inventing a second response envelope for the failure case.
+**Additive failure signal, not a shape swap.** A route can (and, per D-058, should) surface *why* a fallback fired without breaking the "consistent shape" rule above — add an optional field that's absent on success and present on failure, never change the envelope itself. `apps/herald-ai/web/src/app/api/audit/route.ts` is the reference example: `MatchReport.auditFailed?: { reason, category }` is set only when `buildPartialReport()` builds a fallback (execution failed, not just parsed-oddly); every consumer that ignores the field still gets the exact same shape it always did. Prefer this pattern over inventing a second response envelope for the failure case.
 
 ---
 
@@ -132,14 +133,14 @@ return NextResponse.json({ error: 'failed' }) // different shape on error
 
 ```
 src/app/api/
-├── audit/route.ts # POST — main feature endpoint (engine-backed, see LLM Integration)
-├── audit/resolve-input/route.ts # POST — polymorphic input resolver, see note below
+├── audit/route.ts              # POST — main feature endpoint (engine-backed, see LLM Integration)
+├── audit/resolve-input/route.ts  # POST — polymorphic input resolver, see note below
 ├── admin/
-│ └── onboarding-chat/route.ts
+│   └── onboarding-chat/route.ts
 ├── webhooks/
-│ └── clerk/route.ts # POST — Clerk `user.deleted` → DB cleanup, see note below
+│   └── clerk/route.ts          # POST — Clerk `user.deleted` → DB cleanup, see note below
 └── mcp/
- └── signals/route.ts # GET — MCP server endpoint
+    └── signals/route.ts        # GET — MCP server endpoint
 ```
 
 **Reference example — vendor webhook, not the standard user-request shape:** `webhooks/clerk/route.ts` (Herald) doesn't follow the `{ success, data }` / `{ success, error }` response envelope described below — it's not a client-facing route, it's Clerk calling us. It verifies the request with `verifyWebhook` from `@clerk/nextjs/webhooks` (reads `CLERK_WEBHOOK_SIGNING_SECRET`), returns a 400 on verification failure, and on `user.deleted` deletes the corresponding rows from `users`, `apiKeys`, and `userProviderKeys` (only `heraldProfiles` has a DB-level `ON DELETE CASCADE`; the other two tables have no FK and need explicit cleanup) so a deleted account's username/GitHub handle can be re-claimed immediately instead of staying blocked by orphaned rows.

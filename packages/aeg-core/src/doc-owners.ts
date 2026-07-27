@@ -109,7 +109,7 @@ export function readDocAcks(body: string): DocAck[] {
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
  * changed code file produces an empty result — no errors, no notes.
  *
- * `waiverActive` is a single PR-wide boolean, not a per-binding
+ * `waiverActive` (D-097) is a single PR-wide boolean, not a per-binding
  * pointer/reason lookup — it's the caller-resolved result of
  * `isWaiverLabelActorVerified`, itself a mechanized read of a forge fact.
  * There is no agent-emittable `Doc-waiver:` string anymore; a waiver is

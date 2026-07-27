@@ -1,5 +1,5 @@
 /**
- * the check error schema is a versioned public surface — plugins
+ * D-100/D-103: the check error schema is a versioned public surface — plugins
  * will be written against it. Additive evolution ONLY: never remove or
  * retype a field; bump `CHECK_SCHEMA_VERSION` only on a breaking change.
  *
@@ -14,7 +14,7 @@ export type CheckSeverity = 'error' | 'warning'
  * One JSON line on stderr, per finding. `message` is the diagnosis (what is
  * wrong); `agent_recovery_prompt` is the corrective INSTRUCTION addressed to
  * the model that will read it (what to do about it) — never a restatement of
- * `message`. exists to engineer the ring-0 self-correction loop; a
+ * `message`. D-100 exists to engineer the ring-0 self-correction loop; a
  * prompt that merely rephrases the diagnosis fails that purpose.
  */
 export type CheckError = {
@@ -27,13 +27,13 @@ export type CheckError = {
   line?: number
 }
 
-/** every check declares its scope. `diff` checks may be skipped by the runner when no changed file matches `include`. */
+/** D-099: every check declares its scope. `diff` checks may be skipped by the runner when no changed file matches `include`. */
 export type CheckScope = 'diff' | 'full'
 
 /**
  * A check's spec, whether built-in (registry.ts) or config-registered
  * (vinaya.config.json). Both produce this exact shape — no field either can
- * carry that the other cannot ('s no-privileged-API invariant).
+ * carry that the other cannot (D-092's no-privileged-API invariant).
  */
 export type CheckSpec = {
   name: string
@@ -41,7 +41,7 @@ export type CheckSpec = {
   run: string
   args?: string[]
   scope: CheckScope
-  /** glob SCOPING allowed. Conditionals are never part of this grammar. */
+  /** D-109: glob SCOPING allowed. Conditionals are never part of this grammar. */
   include?: string[]
   /** Advisory — the RUNNER enforces the actual timeout, never the check itself. */
   timeoutMs?: number

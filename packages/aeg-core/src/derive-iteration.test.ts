@@ -46,7 +46,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
   // One synthetic task; vary its forge facts to hit every status row.
   const oneTask = iteration([task('1')])
 
-  it('todo: issue open, unassigned (no backlog inside iterations)', () => {
+  it('todo: issue open, unassigned (D-059: no backlog inside iterations)', () => {
     const d = deriveIteration(oneTask, new Map([['1', facts()]]))
     expect(d.tasks[0]?.status).toBe('todo')
   })
@@ -108,7 +108,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('in-flight')
   })
 
-  it('dropped: issue closed NOT_PLANNED, no merged PR', () => {
+  it('dropped: issue closed NOT_PLANNED, no merged PR (D-069)', () => {
     const d = deriveIteration(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'not_planned' })]])
@@ -116,7 +116,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('dropped')
   })
 
-  it('incoherent: issue closed COMPLETED but no merged PR link', () => {
+  it('incoherent: issue closed COMPLETED but no merged PR link (D-069)', () => {
     const d = deriveIteration(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: 'completed' })]])
@@ -124,7 +124,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('incoherent')
   })
 
-  it('merged wins over stateReason: closed COMPLETED with merged PR → merged ( regression)', () => {
+  it('merged wins over stateReason: closed COMPLETED with merged PR → merged (D-069 regression)', () => {
     const d = deriveIteration(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', branchExists: true, prState: 'merged', stateReason: 'completed' })]])
@@ -132,7 +132,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
     expect(d.tasks[0]?.status).toBe('merged')
   })
 
-  it('incoherent: issue closed with no recorded stateReason and no merged PR', () => {
+  it('incoherent: issue closed with no recorded stateReason and no merged PR (D-069)', () => {
     const d = deriveIteration(
       oneTask,
       new Map([['1', facts({ issueState: 'closed', prState: 'none', stateReason: null })]])
@@ -161,7 +161,7 @@ describe('deriveIteration: §3 status table (each status)', () => {
 })
 
 describe('deriveIteration: missing forge facts', () => {
-  it('treats a task absent from the forge map as todo (iteration tasks are minimum todo)', () => {
+  it('treats a task absent from the forge map as todo (D-059: iteration tasks are minimum todo)', () => {
     const d = deriveIteration(iteration([task('1')]), new Map())
     expect(d.tasks[0]?.status).toBe('todo')
   })
@@ -280,7 +280,7 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
         mergedAt: null
       }
     ]
-    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (no forge facts = minimum todo).
+    // Tasks 2, 3b, 4, 5, 6, 7a, 7b absent → todo (D-059: no forge facts = minimum todo).
   ])
 
   const derived = deriveIteration(iter, snapshot)
@@ -291,7 +291,7 @@ describe('deriveIteration: live herald-onto-engine.md + today’s forge snapshot
     expect(statusOf('1')).toBe('merged')
   })
 
-  it('all other tasks derive todo (absent from snapshot — minimum todo)', () => {
+  it('all other tasks derive todo (absent from snapshot — D-059: minimum todo)', () => {
     expect(statusOf('2')).toBe('todo')
     expect(statusOf('3b')).toBe('todo')
     expect(statusOf('4')).toBe('todo')

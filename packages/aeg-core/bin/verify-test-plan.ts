@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * verify-test-plan — runtime Test Plan checkbox-state gate. Thin
+ * verify-test-plan — runtime Test Plan checkbox-state gate (D-049). Thin
  * CLI/I/O shim: reads `PR_BODY`/`BRANCH` from env and prints the pure
  * evaluator's messages. All decision logic lives in `evaluateTestPlanGate`
  * (@atta/aeg-core) — see that module's docstring for the full behavior

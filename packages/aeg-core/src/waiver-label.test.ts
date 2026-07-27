@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL } from './waiver-label'
 
-describe('isWaiverLabelActorVerified ( actor-verified waiver label)', () => {
+describe('isWaiverLabelActorVerified (D-097 actor-verified waiver label)', () => {
   it('label absent → false, regardless of actor', () => {
     expect(
       isWaiverLabelActorVerified({

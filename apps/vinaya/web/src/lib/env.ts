@@ -10,8 +10,8 @@
  * signal that distinguishes any actual Vercel deploy — production or preview
  * — from a local production-mode build.
  *
- * This is a PLACEHOLDER, not the concept. It stands exactly where
- * Phase 3's viewer-auth check (repo/org membership on a deployed,
+ * This is a PLACEHOLDER, not the concept (D-126). It stands exactly where
+ * D-101 Phase 3's viewer-auth check (repo/org membership on a deployed,
  * auth-gated Studio) goes. Today "not a Vercel deploy" is the only available
  * proxy for "the only visitor is you" — Vinaya has no viewer identity yet.
  * When Phase 3 ships real auth, replace this term wherever it gates Studio

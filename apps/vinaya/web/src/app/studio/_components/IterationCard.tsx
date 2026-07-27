@@ -79,7 +79,7 @@ export function IterationCard({ iteration: it, href, showProjects = false }: Ite
   )
 
   // No project → no board route exists. The card says why, both inline and on
-  // hover, rather than reading as a link that quietly does nothing.
+  // hover, rather than reading as a link that quietly does nothing (D-087).
   if (!href) {
     return (
       <div className={`${wrapperClassName} cursor-help`} title={NO_BOARD_REASON}>

@@ -234,7 +234,7 @@ function recoveryPromptFor(blocker: string): string {
     return 'This task has no resolvable Issue yet. Wait for the Planner to cut the Issue (or fix the phantom reference in the topology), then re-run `vinaya check dispatch-readiness`.'
   }
   if (blocker.startsWith('dispatch-gate rationale:')) {
-    return "The task's Issue fails the rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check dispatch-readiness`."
+    return "The task's Issue fails the D-078 rationale gate. Ask the Planner to complete the eight-field rationale on the Issue body, then re-run `vinaya check dispatch-readiness`."
   }
   if (blocker.startsWith('dispatch-gate depends-on:')) {
     return 'A declared dependency is not merged yet. Do not start this task — wait for the named dependency PR to merge, then re-run `vinaya check dispatch-readiness`.'

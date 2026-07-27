@@ -31,7 +31,7 @@ process.chdir(REPO_ROOT)
 // The label name comes from the code-owned vocabulary — never a literal here.
 // This bin MINTS the label on first fire (`ensureLabelExists`), so a literal
 // would have silently created a retired `aeg:`-named label the first time a
-// direct push ever happened. No forge object exists yet: it has never
+// direct push ever happened (D-123). No forge object exists yet: it has never
 // fired, which is also why renaming the idempotency marker below is safe —
 // there is no already-posted comment carrying the old one to miss.
 const LABEL = label('direct-main-push')

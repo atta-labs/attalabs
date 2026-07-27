@@ -6,16 +6,16 @@ role_id: archivist
 description: Closes out a merged pull request, recording what shipped and the intent it came from.
 actor: either
 performs:
- - close-the-issue
- - confirm-decision-logged
- - confirm-docs-updated
- - update-per-project-state-issue
- - update-docs-index
- - assemble-provenance-block
- - post-provenance-comment
- - append-token-ledger-rows
+  - close-the-issue
+  - confirm-decision-logged
+  - confirm-docs-updated
+  - update-per-project-state-issue
+  - update-docs-index
+  - assemble-provenance-block
+  - post-provenance-comment
+  - append-token-ledger-rows
 refuses_when: >
- The task's PR isn't merged — close-out happens after merge, not before.
+  The task's PR isn't merged — close-out happens after merge, not before.
 summary: Ever lost track of why a decision was made, months later?
 ---
 # Archivist — Role Reference
@@ -97,7 +97,7 @@ Work through this checklist for the merged task. Confirm each against reality �
 3. **Docs updated.** The tier-required docs the brief listed actually moved. (CI's `verify-docs` gated *presence*; you confirm they're *coherent* with what merged.)
 4. **Per-project status updated — for every project the task listed.** Per-project operational state is no longer a `state.md` file — it lives on a **pinned GitHub Issue**, one per project, created at the migration (one for each of `aeg`, `vada`, `herald`, and `cetana`; the root ecosystem-wide bucket — `aeg-core`/`atta`/`desktop`/`attalabs` plus cross-project facts — is its own pinned Issue). That move landed with the `aeg-forge-state-v1` migration. Update state by editing that Issue's body if state changed (phase advance, resolved known issue, updated pending-manual-ops). A multi-project task updates *every* listed project's pinned Issue. This is the one place you write to per-project state — and note: this is project *status documentation*, not task status (task status stays derived from the forge). (`now.md` no longer exists.)
 5. **`docs-index.md`** updated if files were added, removed, or renamed.
-6. **Token ledger rows recorded.** No role appends its own row on a task branch. **For almost every task there is now no file to append to:** `aeg-forge-state-v1` task 7 deleted `<name>.tokens.md` for every active iteration, and `packages/aeg-core/bin/check-no-disk-state.ts` CI-blocks adding a new one anywhere in the repo (tokens live in the PR body, not a committed ledger). Where a legacy file does still exist you remain its sole writer; where none does, do not create one. Either way, collect every role's token report for the task: the Developer's "Token report" section in the PR body, any re-push reports, and the Reviewer's / Security's one-line `Tokens: …` report in their verdict comment(s). For each report found, append one row (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`) — one row per role-turn, including re-entry rows (a second Developer turn, a re-review), and including your own turn (`Phase: <task-id>: archive`, `Role: Archivist`). Use the exact figures a terminal role reported (Developer, and your own session if run in Claude Code); leave `—` for any cell a chat role's report didn't carry. If a role's report is missing entirely (e.g. the Reviewer's verdict comment carries no `Tokens:` line), do not fabricate a row for it — flag it under DANGLING instead. **The live-read mechanism is the ledger now (`aeg-forge-state-v1` task 4b):** Studio's iteration page no longer reads `<name>.tokens.md` to render token totals — it fetches every merged PR on the task's own branch and re-derives the same rows live (`aggregateTaskTokenRows`, `packages/aeg-core/src/parse-token-report.ts`, called from `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`). Since no active iteration carries the file and CI blocks adding one, that re-derivation *is* the ledger; the sole-writer duty above governs only a legacy file that predates the deletion. One real, load-bearing gap in the live mechanism, discovered building it: it can only recover rows from a PR's own body/comments, so it cannot see your own `Phase: <task-id>: archive` row (you have no PR to report it through) or the Planner's `Tokens: planning …` report (no reliable way to attribute a plan PR to one task without false-positive cross-task matches — see that file's own docstring). Those two sources therefore have **no durable home today** — that is a known, open gap, not a licence to create a `.tokens.md` for them.
+6. **Token ledger rows recorded.** No role appends its own row on a task branch. **For almost every task there is now no file to append to:** `aeg-forge-state-v1` task 7 deleted `<name>.tokens.md` for every active iteration, and `packages/aeg-core/bin/check-no-disk-state.ts` CI-blocks adding a new one anywhere in the repo (D-071 — tokens live in the PR body, not a committed ledger). Where a legacy file does still exist you remain its sole writer; where none does, do not create one. Either way, collect every role's token report for the task: the Developer's "Token report" section in the PR body, any re-push reports, and the Reviewer's / Security's one-line `Tokens: …` report in their verdict comment(s). For each report found, append one row (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`) — one row per role-turn, including re-entry rows (a second Developer turn, a re-review), and including your own turn (`Phase: <task-id>: archive`, `Role: Archivist`). Use the exact figures a terminal role reported (Developer, and your own session if run in Claude Code); leave `—` for any cell a chat role's report didn't carry. If a role's report is missing entirely (e.g. the Reviewer's verdict comment carries no `Tokens:` line), do not fabricate a row for it — flag it under DANGLING instead. **The live-read mechanism is the ledger now (`aeg-forge-state-v1` task 4b):** Studio's iteration page no longer reads `<name>.tokens.md` to render token totals — it fetches every merged PR on the task's own branch and re-derives the same rows live (`aggregateTaskTokenRows`, `packages/aeg-core/src/parse-token-report.ts`, called from `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`). Since no active iteration carries the file and CI blocks adding one, that re-derivation *is* the ledger; the sole-writer duty above governs only a legacy file that predates the deletion. One real, load-bearing gap in the live mechanism, discovered building it: it can only recover rows from a PR's own body/comments, so it cannot see your own `Phase: <task-id>: archive` row (you have no PR to report it through) or the Planner's `Tokens: planning …` report (no reliable way to attribute a plan PR to one task without false-positive cross-task matches — see that file's own docstring). Those two sources therefore have **no durable home today** — that is a known, open gap, not a licence to create a `.tokens.md` for them.
 7. **Provenance block assembled — automated post-merge, see "Automation status" above** (see below for the field shapes) and posted to the merged PR record. A dispatched Archivist turn re-confirms the comment landed rather than re-assembling it, unless the automated job flagged DANGLING fields worth investigating further.
 
 ## The provenance block
@@ -110,16 +110,16 @@ Fields (omit any whose source fact is genuinely absent; never invent one):
 
 ```
 ### AEG provenance — task <n> (iteration <name>)
-- Issue: #N (closed by merge)
-- Tier: 0|1|3
-- Brief: in this PR body (the frozen intent)
-- Project(s): <from the brief's Project: field, resolved via projects.md>
-- Model/agent: <from the brief's `For:` line — AEG forbids commit-trailer attribution, so this is the source>
-- Code review: APPROVE | REQUEST CHANGES→resolved (PR review by <reviewer>)
-- Security: PASS | FAIL→resolved (PR review by <reviewer>)
-- Decision: D-### (Tier 3 only) | none
-- Ticket: <from the brief's Ticket: field, if any — reference only>
-- Merged: <merge commit SHA> at <merge timestamp> (forge facts)
+- Issue:        #N  (closed by merge)
+- Tier:         0|1|3
+- Brief:        in this PR body (the frozen intent)
+- Project(s):   <from the brief's Project: field, resolved via projects.md>
+- Model/agent:  <from the brief's `For:` line — AEG forbids commit-trailer attribution, so this is the source>
+- Code review:  APPROVE | REQUEST CHANGES→resolved   (PR review by <reviewer>)
+- Security:     PASS | FAIL→resolved                 (PR review by <reviewer>)
+- Decision:     D-### (Tier 3 only) | none
+- Ticket:       <from the brief's Ticket: field, if any — reference only>
+- Merged:       <merge commit SHA> at <merge timestamp>   (forge facts)
 ```
 
 If a *required* source fact is missing (e.g. Tier 3 but no decision entry, or no recorded review), that is a close-out finding — record it under DANGLING, don't fabricate the field.
@@ -149,12 +149,12 @@ DONE:
 - <project> pinned state Issue updated
 - token ledger rows appended (N roles: <list>)
 - provenance block posted to PR #M
--...
+- ...
 
 PROVENANCE: posted | INCOMPLETE (missing: <fields whose source fact was absent>)
 
 DANGLING (needs a human):
-- worktree.worktrees/task/<it>/<n> — remove with `git worktree remove …`
+- worktree .worktrees/task/<it>/<n> — remove with `git worktree remove …`
 - orphaned branch task/<it>/<x> (PR never opened) — delete?
 - <anything Tier-3 missing, e.g. decision entry not found>
 

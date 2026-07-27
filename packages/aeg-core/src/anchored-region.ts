@@ -121,7 +121,7 @@ function maskCode(body: string): string {
  * blocks) is always stripped — that is the quoted-example case every caller
  * wants blinded.
  *
- * - `'strip'` (default) — the/#617 shape: spans go too, because a
+ * - `'strip'` (default) — the D-078/#617 shape: spans go too, because a
  *   `` `Closes #5` `` is code to GitHub's auto-close parser and must be to this
  *   one. Every existing caller relies on it; the default never changes.
  * - `'keep'` — block-blind, span-aware. For checks whose subject *is* a path,

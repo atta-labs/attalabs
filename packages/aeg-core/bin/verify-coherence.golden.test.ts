@@ -13,7 +13,7 @@ import { parseIteration } from '../src/index'
  * deliberate narrowing per the Planner's triage on Issue #437. The original,
  * unscoped version of this test (comparing `dependsOn` too) found real
  * divergence across all 5 active iterations: legacy Issues predating the
- * "Dependency rationale" grammar carry no forge-parseable dependency
+ * D-078 "Dependency rationale" grammar carry no forge-parseable dependency
  * data, stale Issue bodies drift from topology-table edits, and
  * `parse-rationale-deps.ts` has its own cross-iteration-qualified-ref gaps.
  * `loadIterationFiles` (`verify-coherence.ts`) responded by keeping

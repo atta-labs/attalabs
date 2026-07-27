@@ -25,23 +25,23 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > ### How to add or change a primitive — the right workflow
 >
 > 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
-> library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
-> layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
+>    layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
 > 2. **Check if the upstream's exported API matches our contract** (`packages/ui/component-contract.mjs`).
-> Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
-> `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
-> and you're done.
+>    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
+>    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
+>    and you're done.
 > 3. **If the upstream's API differs from our contract**, **add a wrapper** in
-> `components/<comp>.tsx` (or `components/interactive/`) that adapts it to our contract's
-> flat named exports. The wrapper IS editable. `installed/` stays verbatim. (retro's old
-> Base UI heritage needed this — dotted `Object.assign` Tabs, `render`-instead-of-`asChild`
-> Button — but its Radix-flavor upstream exports flat components and native `asChild`, so
-> those adapters were removed.)
+>    `components/<comp>.tsx` (or `components/interactive/`) that adapts it to our contract's
+>    flat named exports. The wrapper IS editable. `installed/` stays verbatim. (retro's old
+>    Base UI heritage needed this — dotted `Object.assign` Tabs, `render`-instead-of-`asChild`
+>    Button — but its Radix-flavor upstream exports flat components and native `asChild`, so
+>    those adapters were removed.)
 > 4. **If you want to vary appearance for one library (e.g. add a variant prop)** — that goes
-> in the wrapper layer (`components/interactive/<comp>.tsx`), NOT in `installed/`. The
-> `Button.ghost-pill` variant is the canonical example: basic's `installed/button.tsx` is
-> shadcn canonical, and the additional variant lives in
-> `packages/ui/libraries/basic/components/interactive/button.tsx`.
+>    in the wrapper layer (`components/interactive/<comp>.tsx`), NOT in `installed/`. The
+>    `Button.ghost-pill` variant is the canonical example: basic's `installed/button.tsx` is
+>    shadcn canonical, and the additional variant lives in
+>    `packages/ui/libraries/basic/components/interactive/button.tsx`.
 >
 > ### When a consumer in `components/` imports from `installed/` and that's blocking you
 >
@@ -65,7 +65,7 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > - "I'll add `font-mono` to the trigger here, it's a small tweak."
 > - "I'll fix the hover colour in `installed/`, easier than adding a wrapper."
 > - "Our `installed/<comp>.tsx` was already drifted from upstream when I got here, so a bit
-> more drift is fine."
+>   more drift is fine."
 >
 > No to all of them. Either pull the upstream canonical (paste verbatim) or add a wrapper.
 > If you find yourself wanting to edit `installed/`, STOP and pick one of the workflow steps above.
@@ -100,12 +100,12 @@ import { TextReveal } from '@atta/ui'
 <Button variant="ghost">Click me</Button>
 <Input placeholder="Type here..." />
 <Card><CardHeader><CardTitle>Title</CardTitle></CardHeader></Card>
-<TextReveal text="What are you wrestling with?" /> // typography reveal animation
+<TextReveal text="What are you wrestling with?" />   // typography reveal animation
 
 // ❌ Never
 <button className="...">Click me</button>
 <input type="text" className="..." />
-<div className="card...">...</div>
+<div className="card ...">...</div>
 ```
 
 **Never build custom primitives.** Do not create custom Button, Card, Input, Dialog, Badge, etc. from scratch. Extend shadcn/ui components when customization is needed.
@@ -121,12 +121,12 @@ This includes "simple" cases like tab bars, toggle groups, segmented controls, o
 **Required workflow when a component is missing:**
 
 1. **Install the upstream canonical via shadcn CLI** into the active library's `installed/`. Each library has its own upstream registry — never hand-roll the file:
- - `basic` → `bunx shadcn@latest add <component>` (shadcn/ui registry)
- - `animate` → `bunx shadcn@latest add @animate-ui/<component>`
- - `retro` → `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` (Radix flavor)
- - `brutal` → `bunx shadcn@latest add @neobrutalism/<component>`
+   - `basic` → `bunx shadcn@latest add <component>` (shadcn/ui registry)
+   - `animate` → `bunx shadcn@latest add @animate-ui/<component>`
+   - `retro` → `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` (Radix flavor)
+   - `brutal` → `bunx shadcn@latest add @neobrutalism/<component>`
 
- Copy the CLI output verbatim to `packages/ui/libraries/{name}/installed/{component}.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` → `../../../lib/utils`). Helper directory trees (e.g. animate-ui's `installed/animate-ui/primitives/...`) are preserved as-is. `installed/*` is Biome-ignored — never reformat.
+   Copy the CLI output verbatim to `packages/ui/libraries/{name}/installed/{component}.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` → `../../../lib/utils`). Helper directory trees (e.g. animate-ui's `installed/animate-ui/primitives/...`) are preserved as-is. `installed/*` is Biome-ignored — never reformat.
 2. **Install the canonical in every other library too** (matching its own upstream). If a non-`basic` library has no design-system equivalent, fall back to basic with `export { Tabs } from '../../basic/installed/tabs'` in `components/index.ts`.
 3. **Wrap only if the upstream's exported shape differs from our contract.** Most upstreams (including retro's Radix flavor) export flat named components (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) and native `asChild`, so you re-export from `components/index.ts` directly. Add a thin adapter in `components/interactive/{component}.tsx` only when an upstream genuinely diverges — e.g. a dotted `Object.assign` API or a different child-prop name. (retro used to diverge on both counts under its old Base UI heritage; its Radix flavor no longer does.) The adapter is editable; `installed/` stays verbatim.
 4. **Add the component + its Props type** to `REQUIRED_COMPONENTS` and `REQUIRED_TYPES` in `packages/ui/component-contract.mjs`. The contract validates **component + type NAMES across libraries** — not variant enums. Each library derives its own Props from its own cva via `VariantProps<typeof buttonVariants>`.
@@ -160,7 +160,7 @@ All colors **MUST** come from CSS variables via Tailwind semantic classes. Hardc
 // ❌ Never — hardcoded colors
 <div className="bg-[#1A1610] text-[#E8D5B7]" />
 <div style={{ background: '#0D0B08' }} />
-<div className="bg-zinc-900 text-amber-200" /> // Tailwind palette colors, not theme
+<div className="bg-zinc-900 text-amber-200" />   // Tailwind palette colors, not theme
 ```
 
 ### Full CSS Variable Token Reference
@@ -208,7 +208,7 @@ All colors **MUST** come from CSS variables via Tailwind semantic classes. Hardc
 
 // ❌ Forbidden — use Tailwind instead
 <div style={{ padding: '16px', borderRadius: '8px' }} />
-<div style={{ color: 'var(--foreground)' }} /> // Use className="text-foreground"
+<div style={{ color: 'var(--foreground)' }} />   // Use className="text-foreground"
 ```
 
 ---
@@ -224,7 +224,7 @@ import { ArrowRight, Check, AlertTriangle, ChevronDown } from 'lucide-react'
 
 // ❌
 import { FaArrowRight } from 'react-icons/fa'
-<svg viewBox="..."><path d="..." /></svg> // custom inline SVG for standard icons
+<svg viewBox="..."><path d="..." /></svg>   // custom inline SVG for standard icons
 ```
 
 ---
@@ -263,7 +263,7 @@ Font values (which Google Font is used for each role) are set by the active them
 import { Button, Card, Badge, Input } from '@atta/ui'
 
 // ❌ Don't hard-switch libraries in component code
-import { Button } from '@atta/ui/brutal/components' // unless specifically required
+import { Button } from '@atta/ui/brutal/components'   // unless specifically required
 ```
 
 Shared cross-library primitives (`Heading`, `Text`, `Flex`, `AgentThinkingText`) live in `@atta/ui/shared` and are always available regardless of active library.
@@ -312,7 +312,7 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 
 When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
 
-When a button has both icon and label (Sign out, Settings, Theme — the pattern established): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
+When a button has both icon and label (Sign out, Settings, Theme — the pattern established by D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 
@@ -337,7 +337,7 @@ touching a component other consumers depend on:
 ```tsx
 // ✅ The constraint belongs to THIS table's fixed layout, not to the badge
 const LABEL_CELL =
- 'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:overflow-visible [&>*]:break-words [&>*]:whitespace-normal'
+  'flex min-w-0 flex-wrap gap-1 [&>*]:h-auto [&>*]:max-w-full [&>*]:overflow-visible [&>*]:break-words [&>*]:whitespace-normal'
 <TableCell><div className={LABEL_CELL}>{labels.map(l => <LabelBadge key={l} label={l} />)}</div></TableCell>
 
 // ❌ Editing the shared badge (or its consumers' wrapper) to fix one table
@@ -357,7 +357,7 @@ The reasoning test: *would every other consumer want this change?* If yes, it be
 `components/interactive/` wrapper (see RULE 1b). If it only holds inside your container, it
 belongs on your container. Either way it never goes in `installed/`.
 
-Live example: `apps/vinaya/web`'s `studio/backlog/_components/BacklogTable.tsx`.
+Live example: `apps/vinaya/web`'s `studio/backlog/_components/BacklogTable.tsx` (#624).
 Note that `table-fixed` `w-[..%]` widths are one 100% budget — widening one column means
 rebalancing the whole set, not just editing one value.
 

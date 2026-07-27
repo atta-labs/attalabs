@@ -79,7 +79,7 @@ function passesWithNoFailures(r: CheckResult) {
   expect(r.failures).toHaveLength(0)
 }
 
-// ---------- closes-N: Closes #N gate ( Layer 1) -------------------------
+// ---------- closes-N: Closes #N gate (D-069 Layer 1) -------------------------
 
 describe('checkClosesN', () => {
   it('ok — non-task branch bypasses entirely', () => {
@@ -466,9 +466,9 @@ describe('T2: orphan-task', () => {
   })
 })
 
-// ---------- T2 point-of-power relocation --------------------
+// ---------- T2 point-of-power relocation (task 24, D-082) --------------------
 
-describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24)', () => {
+describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24, D-082)', () => {
   it('reproduces the #363 incident, then shows the fix: a failing T2 is demoted to info for a non-plan (task) PR', () => {
     const openIssues = new Map([['aeg-governance-hardening', [364, 365]]])
     const topology = new Map([['aeg-governance-hardening', new Set([19])]]) // #364/#365 not yet in topology
@@ -478,7 +478,7 @@ describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24)',
     const scoped = scopeT2ToPlanPr(raw, false) // task PR — cannot cause or cure this gap
     expect(scoped.status).toBe('info')
     expect(scoped.failures).toEqual(raw.failures) // findings stay visible, never omitted
-    expect(scoped.note).toMatch(/non-blocking outside plan PRs/)
+    expect(scoped.note).toMatch(/D-082/)
   })
 
   it('leaves a failing T2 blocking for a plan PR (the only PR kind that can fix the gap)', () => {
@@ -502,7 +502,7 @@ describe('scopeT2ToPlanPr — T2 relocation (aeg-governance-hardening task 24)',
   })
 })
 
-// ---------- R1: missing-rationale-field ( planner→brief gate) -----------
+// ---------- R1: missing-rationale-field (D-078 planner→brief gate) -----------
 
 const FULL_RATIONALE_BODY = `
 **Boundary** — test boundary

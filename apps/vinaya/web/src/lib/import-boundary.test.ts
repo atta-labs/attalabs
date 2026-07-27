@@ -3,7 +3,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * one-way import boundary: web must never import cli internals.
+ * D-087 one-way import boundary: web must never import cli internals.
  * Matches import/export module specifiers only — never raw file text —
  * so prose like the known-limits page's "apps/vinaya/cli" string cannot
  * fire this guard.

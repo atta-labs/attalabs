@@ -4,7 +4,7 @@
  * verify-review-gate — required pre-merge CI check (aeg-review-gate-v1 task 1,
  * #474). Blocks a task-branch PR from merging unless a code-reviewer
  * `APPROVE` verdict AND a security-review `PASS` verdict both exist on the
- * PR, or an actor-verified `vinaya/waiver:review` label is present ('s exact
+ * PR, or an actor-verified `vinaya/waiver:review` label is present (D-097's exact
  * pattern — `isWaiverLabelActorVerified`, reused not duplicated).
  *
  * Only `plan/*` branches bypass (`isReviewGateExemptBranch`) — a plan PR

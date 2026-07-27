@@ -39,7 +39,7 @@ const STATIC_GROUP_LABELS: Record<'contracts' | 'actions' | 'actors', string> = 
 /**
  * Derives the six interactive drill groups from a `DiagramModel`.
  *
- * The `actions` seam holds ALL ten canonical actions, not only the
+ * The `actions` seam holds ALL ten canonical actions (D-119), not only the
  * five that cross into GitHub. It used to hold five: the ring was called
  * "GitHub Crossing", so the other five — `commit-the-work`,
  * `author-the-brief`, `produce-the-verdict`, `post-provenance-comment`,

@@ -51,7 +51,7 @@ describe('validateForgeWrite — brief-schema gate', () => {
     const [e] = errors
     expect(e?.check).toBe('brief-schema')
     expect(e?.schema).toBe(1)
-    // The recovery prompt names the corrective command, and is NOT the diagnosis restated.
+    // The recovery prompt names the corrective command, and is NOT the diagnosis restated (D-100).
     expect(e?.agent_recovery_prompt).toContain('vinaya pr create')
     expect(e?.agent_recovery_prompt).not.toBe(e?.message)
   })

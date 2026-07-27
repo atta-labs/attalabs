@@ -7,13 +7,13 @@ description: Herald AI forensic match engine — Skeptical Auditor YAML rules, a
 
 ## Context
 
-Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code. Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate. The system is tuned for honesty and evidence — not marketing.
+Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code (D-044, D-045, D-051). Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate. The system is tuned for honesty and evidence — not marketing.
 
 ---
 
 ## RULE #1: Never Modify the Auditor YAML Without Explicit Instruction
 
-`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted in) — the prompt now lives here, declaratively, not in Herald's app code.
+`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted in D-045) — the prompt now lives here, declaratively, not in Herald's app code.
 
 **Do NOT modify it without explicit user instruction.**
 
@@ -28,19 +28,19 @@ What it enforces:
 
 ## Audit API Flow (`POST /api/audit`)
 
-One endpoint, two payload shapes, still true today:
+One endpoint, two payload shapes (D-045), still true today:
 
 ```
 1. Dispatch on payload — `candidates` array present → batch shape; absent → single shape
 2. Single: resolve profile (DB by `username`, `_test_profile_override`, or DANI_PROFILE default)
- and resolve credentials (BYOK per-user vendor key, or ANTHROPIC_API_KEY env fallback
- for the test/default paths)
+   and resolve credentials (BYOK per-user vendor key, or ANTHROPIC_API_KEY env fallback
+   for the test/default paths)
 3. Batch: requires Clerk auth; resolves the logged-in user's BYOK key; fans out up to
- 10 candidates via Promise.all, each through the same single-pair cell
+   10 candidates via Promise.all, each through the same single-pair cell
 4. Check in-memory cache — hash(JD + profile + vendor + modelId) → 24h TTL
 5. Call `run()` from `@atta/forensic-hiring-auditor` — internally loads the YAML,
- compiles it to a Plan, and executes it via `LangGraphAdapter`, with
- `fetch_github_signals` wired in as a custom tool the model may call
+   compiles it to a Plan, and executes it via `LangGraphAdapter`, with
+   `fetch_github_signals` wired in as a custom tool the model may call
 6. Per attempt: race the call against a 90s timeout; up to 2 attempts
 7. `run()` returns a parsed `MatchReport` or `null` (parse failure or engine FAILED state)
 8. If both attempts fail → return a partial report (never throw)
@@ -83,7 +83,7 @@ The placeholder grade/recommendation text above is defensive only — it is neve
 
 ## Input Resolution (`POST /api/audit/resolve-input`)
 
-Separate endpoint from the audit call — resolves a polymorphic CV or JD input (pasted text, URL, Herald profile username, or an uploaded file) into a plain `{ text,... }` shape the audit call consumes. Two payload shapes, dispatched on `content-type`:
+Separate endpoint from the audit call — resolves a polymorphic CV or JD input (pasted text, URL, Herald profile username, or an uploaded file) into a plain `{ text, ... }` shape the audit call consumes. Two payload shapes, dispatched on `content-type`:
 
 - `application/json` — `{ role: 'cv' | 'jd', input }`, handled by `handleJson`, which delegates to `resolveCvInput`/`resolveJdInput` (`src/lib/audit-input/resolve.ts`).
 - `multipart/form-data` — a `file` + `kind` (`'pdf' | 'markdown'`) + `role` (`'cv' | 'jd'`, defaults to `'cv'` for backward compatibility with pre-existing callers), handled inline by `handleFileUpload` in the route itself (not `resolve.ts` — file parsing has always lived separately). Both roles share one `unpdf`/`file.text()` extraction branch; only the returned shape (`ResolvedCv` vs `ResolvedJd`) branches on `role`.
@@ -98,10 +98,10 @@ GitHub signals are raw facts — no LLM interpretation happens in the tool itsel
 
 ```ts
 type RawSignal = {
- type: 'architecture' | 'data' | 'infra' | 'ai' | 'unknown'
- evidence: string // Human-readable fact: "Turborepo monorepo configuration"
- source: { repo: string; file?: string; isPrivate: boolean }
- confidence: 'high' | 'medium' | 'low'
+  type: 'architecture' | 'data' | 'infra' | 'ai' | 'unknown'
+  evidence: string          // Human-readable fact: "Turborepo monorepo configuration"
+  source: { repo: string; file?: string; isPrivate: boolean }
+  confidence: 'high' | 'medium' | 'low'
 }
 ```
 
@@ -129,15 +129,15 @@ Declarative, in `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.ya
 
 ```yaml
 defaults:
- model: claude-sonnet-4-6
- max_tokens: 8000
+  model: claude-sonnet-4-6
+  max_tokens: 8000
 agents:
- - name: SkepticalAuditor
- classifier:
- mode: skip # no Haiku classifier overhead for a single-shot audit
- custom_tools:
- - name: fetch_github_signals
-...
+  - name: SkepticalAuditor
+    classifier:
+      mode: skip          # no Haiku classifier overhead for a single-shot audit
+    custom_tools:
+      - name: fetch_github_signals
+        ...
 ```
 
 Herald's route does not call the model directly. It calls `run()` from `@atta/forensic-hiring-auditor`, which does `loadFlow(yaml) → compileFlow → LangGraphAdapter.execute`. The actual vendor/model dispatched is whatever `creds.vendor`/`creds.modelId` the route resolves (BYOK per-user selection, or the YAML's `claude-sonnet-4-6` default via `envFallbackCreds`) — the YAML's `defaults.model` is the fallback, not a hardcoded call-site value. There is no `temperature` override in the YAML; it runs at the engine's default.
@@ -149,7 +149,7 @@ Herald's route does not call the model directly. It calls `run()` from `@atta/fo
 ## JSON Parsing (`packages/agents/forensic-hiring-auditor/src/parse.ts`)
 
 `parseMatchReport()` handles model output that isn't clean JSON:
-1. Strip markdown fences (` ```json... ``` `)
+1. Strip markdown fences (` ```json ... ``` `)
 2. Try `JSON.parse` on the cleaned text
 3. If that throws, fall back to scanning for the first balanced `{...}` object in the text (tolerates leading/trailing prose) and parse that
 4. Validate required fields (`grade`, `recommendation`, `signal`, `hard_requirements` array) exist on the parsed object
@@ -164,25 +164,25 @@ If parsing returns `null`, the route's retry loop tries again (up to 2 attempts 
 
 ```ts
 type MatchReport = {
- candidate: { name: string; title: string; github?: string }
- hard_requirements: Array<{
- requirement: string
- kind: 'hard' | 'soft'
- met: boolean
- evidence: string
- }>
- grade: 'A' | 'A-' | 'B+' | 'B' | 'STRETCH' | 'NO FIT'
- recommendation: string
- confidence: string
- confidence_reasoning: string[]
- signal: Array<{
- title: string
- observation: string
- interpretation: string
- confidence: string
- }>
- gaps: Array<{ gap: string; severity: 'disqualifying' | 'minor'; mitigation: string | null }>
- interview_hooks: string[]
+  candidate: { name: string; title: string; github?: string }
+  hard_requirements: Array<{
+    requirement: string
+    kind: 'hard' | 'soft'
+    met: boolean
+    evidence: string
+  }>
+  grade: 'A' | 'A-' | 'B+' | 'B' | 'STRETCH' | 'NO FIT'
+  recommendation: string
+  confidence: string
+  confidence_reasoning: string[]
+  signal: Array<{
+    title: string
+    observation: string
+    interpretation: string
+    confidence: string
+  }>
+  gaps: Array<{ gap: string; severity: 'disqualifying' | 'minor'; mitigation: string | null }>
+  interview_hooks: string[]
 }
 ```
 

@@ -3,11 +3,11 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 
-// rings is the only schema surface this task ships — declarative
-// booleans, no conditional logic (). Ring 0 (git hooks) and the
+// D-117: rings is the only schema surface this task ships — declarative
+// booleans, no conditional logic (D-092/D-109). Ring 0 (git hooks) and the
 // CI/branch-protection guarantee are never represented here, by design.
 //
-// `checks` (vinaya-cli-v1 task 3): custom-check registration.
+// `checks` (vinaya-cli-v1 task 3, D-092/D-109): custom-check registration.
 // Same discipline — globs (`include`) are permitted for SCOPING, conditionals
 // (`if`/`unless`/`except`) are never part of this grammar. Any entry here
 // produces the exact same `CheckSpec` shape the built-in registry does
@@ -20,14 +20,14 @@ const CheckEntrySchema = z.object({
   timeoutMs: z.number().optional()
 })
 
-// briefSchema (vinaya-cli-v1 task 5): the config-defined brief schema
+// briefSchema (vinaya-cli-v1 task 5, D-087): the config-defined brief schema
 // the forge-write commands validate a body against. WHICH sections a `pr`/
 // `issue` body must carry is expressed HERE, never hardcoded in the command
 // code — this repo's required-section set is just one instance (one
 // derivation, N consumers). Declarative only: a section is either a named
 // battle-tested built-in (backed by an `@atta/aeg-core` validator) or a
 // generic heading/field/phrase matcher an adopter authors for their own
-// required sections. No conditional grammar (no if/unless/except) —
+// required sections. No conditional grammar (D-109: no if/unless/except) —
 // any diff-conditionality (lock-ack, premise coverage) lives inside the
 // built-in validator's code, never in this config.
 export const BRIEF_BUILTINS = [
@@ -68,7 +68,7 @@ const BriefSchemaSchema = z.object({
 })
 export type BriefSchema = z.infer<typeof BriefSchemaSchema>
 
-// `managed` (vinaya-cli-v1 task 4): the ownership manifest
+// `managed` (vinaya-cli-v1 task 4, D-110/D-111): the ownership manifest
 // `vinaya init` writes and `vinaya eject` reads. It records exactly what the
 // installer created so eject reverses it precisely — deleting only files it
 // created, stripping only blocks it wrote (leaving adopter content), and

@@ -27,24 +27,24 @@ description: How the @atta/ui multi-library system works — build-time generati
 > ### The workflow when you need a change
 >
 > 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
-> library's `installed/<comp>.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` →
-> `../../../lib/utils`).
+>    library's `installed/<comp>.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` →
+>    `../../../lib/utils`).
 > 2. **Match the contract** — `packages/ui/component-contract.mjs` requires each library to
-> export the same set of components + Props types. If the upstream's API is flat named
-> exports (most are) and matches the contract, just re-export from `components/index.ts`.
+>    export the same set of components + Props types. If the upstream's API is flat named
+>    exports (most are) and matches the contract, just re-export from `components/index.ts`.
 > 3. **If the upstream's API doesn't match the contract**, **add a wrapper** in
-> `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
-> The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
-> old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
-> Button — but as of the Radix-flavor switch, retro's upstream exports flat named
-> components and native `asChild`, so those adapters are gone.)
+>    `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
+>    The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
+>    old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
+>    Button — but as of the Radix-flavor switch, retro's upstream exports flat named
+>    components and native `asChild`, so those adapters are gone.)
 > 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
-> `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
-> is the canonical example.
+>    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
+>    is the canonical example.
 > 5. **If a consumer in `components/` imports from `installed/` and that's blocking you,**
-> switch the import to the editable `components/interactive/<component>` (e.g.
-> `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
-> `../../installed/button`).
+>    switch the import to the editable `components/interactive/<component>` (e.g.
+>    `model-picker.tsx` should import `Button` from `../interactive/button`, NOT
+>    `../../installed/button`).
 >
 > See "Canonical extension patterns — variants vs wrappers" below for worked examples
 > (`ghost-pill`, `'bare'`, `Heading.weight`, `SmartPromptInput.surface`,
@@ -63,9 +63,10 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ---
 
-## Per-library `installed/*` — CLI sources, doctrine, and contract rule
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
 
-The banner above states the rule; this section is the operational reference. Codified after PR #207's Tabs + Button reconciliation.
+The banner above states the rule; this section is the operational reference. Codified by
+D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 
 ### Upstream-source mapping (CLI install commands)
 
@@ -73,19 +74,19 @@ The banner above states the rule; this section is the operational reference. Cod
 |---|---|---|---|
 | `basic` | shadcn/ui | `bunx shadcn@latest add <component>` | Default registry. Slot/asChild idioms. |
 | `animate` | animate-ui | `bunx shadcn@latest add @animate-ui/<component>` | Motion-driven Radix wrappers. Installs a helper tree under `installed/animate-ui/primitives/...` — preserve as-is, never flatten. |
-| `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
+| `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched (2026-07-12) shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
 | `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
 
 ### Doctrine (the rule, restated for skim-readers)
 
 - `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
 - Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
- `../../../lib/utils`) when moving the file under the library. Nothing else.
+  `../../../lib/utils`) when moving the file under the library. Nothing else.
 - Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
- are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
+  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
 - **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
- matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
- formatter rules never fight a fresh CLI paste. Re-installing later just works.
+  matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
+  formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
 ### Base UI vs Radix flavor — the `asChild` contract idiom
 
@@ -98,9 +99,9 @@ Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
 
 **Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
 `asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
-`installed/*`. The adapter resolves the single element child and forwards it as
+`installed/*` (D-065). The adapter resolves the single element child and forwards it as
 `render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
-lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1
+lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
 built for retro's Base UI Button before retro was re-based onto Radix.
 
 **Flavor matrix — TODAY** (per `installed/*` import; `radix` = native `asChild`, `base-ui` =
@@ -127,45 +128,45 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 ### CLI workflow when adding or restoring a component
 
 1. **Install:** run the matching CLI from the table above. If the upstream registry is down
- or partial, paste the canonical from the upstream's docs into a scratch file first, then
- move it.
+   or partial, paste the canonical from the upstream's docs into a scratch file first, then
+   move it.
 2. **Adjust import paths only:** `@/lib/utils` → relative `../../../lib/utils`. Don't touch
- class strings, variants, types, or formatting. Don't run Biome `--write` against the
- file — the ignore glob exists for that.
+   class strings, variants, types, or formatting. Don't run Biome `--write` against the
+   file — the ignore glob exists for that.
 3. **Wrap only if the upstream shape differs from the cross-library contract:**
- - As of the Radix-flavor switch (ui-retro-contract-v1 task 2, #539, 2026-07-12) retro's
- upstream matches the contract natively — Tabs exports flat (`Tabs`, `TabsList`,
- `TabsTrigger`, `TabsContent`) and Button supports `asChild` via Radix `Slot`. Both the
- old dotted-Tabs adapter and the `asChild`→`render` Button adapter were
- **deleted** by that switch. retro's Button wrapper now only bakes in the universal
- `leading-none` default; `installed/button.tsx` already bundles `cursor-pointer`.
- - The only surviving retro wrappers adapt OUR own extensions, not an upstream mismatch:
- `form/input.tsx` (adds our `InputBlock` + the shared `InputProps` mapping — no upstream
- equivalent) and `form/checkbox.tsx` (a thin re-export of the native retro checkbox).
+   - As of the Radix-flavor switch (ui-retro-contract-v1 task 2, #539, 2026-07-12) retro's
+     upstream matches the contract natively — Tabs exports flat (`Tabs`, `TabsList`,
+     `TabsTrigger`, `TabsContent`) and Button supports `asChild` via Radix `Slot`. Both the
+     old dotted-Tabs adapter and the `asChild`→`render` Button adapter (task 1, #536) were
+     **deleted** by that switch. retro's Button wrapper now only bakes in the universal
+     `leading-none` default; `installed/button.tsx` already bundles `cursor-pointer`.
+   - The only surviving retro wrappers adapt OUR own extensions, not an upstream mismatch:
+     `form/input.tsx` (adds our `InputBlock` + the shared `InputProps` mapping — no upstream
+     equivalent) and `form/checkbox.tsx` (a thin re-export of the native retro checkbox).
 4. **Validate:** `bun run validate:ui-contract` — every library must still export all
- contracted component names + type names.
+   contracted component names + type names.
 
 ### Per-library cva rule
 
 - Each library derives its **own** Props from its **own** cva via
- `VariantProps<typeof buttonVariants>` (or equivalent). Variant names diverge across
- libraries by design (e.g. brutal's Button has `noShadow`/`neutral`/`reverse`; basic +
- animate share `outline`/`destructive`/`ghost`/`link`; the Radix-flavor retroui Button
- ships `destructive` too).
+  `VariantProps<typeof buttonVariants>` (or equivalent). Variant names diverge across
+  libraries by design (e.g. brutal's Button has `noShadow`/`neutral`/`reverse`; basic +
+  animate share `outline`/`destructive`/`ghost`/`link`; the Radix-flavor retroui Button
+  ships `destructive` too).
 - **`component-contract.mjs` validates COMPONENT + TYPE NAMES, NOT variant enums.**
- We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
- forcing every library to extend with a shared name set. That gave consumers no real
- cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
- in `brutal`) and forced bespoke implementations. Removed / PR #207. Consumer
- code that wants cross-library certainty for a specific call site should pick a variant
- every library exports (default / outline / ghost, depending on coverage) or hard-import
- from a single library.
+  We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
+  forcing every library to extend with a shared name set. That gave consumers no real
+  cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
+  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  code that wants cross-library certainty for a specific call site should pick a variant
+  every library exports (default / outline / ghost, depending on coverage) or hard-import
+  from a single library.
 
 ---
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
 
 | Pattern | Resolution | How |
 |---------|-----------|-----|
@@ -213,8 +214,8 @@ The file is gitignored — it is created on every build from the CMS config.
 import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
 
 const nextConfig = async () => {
- await generateUIIndex('{app}') // writes generated/{app}/components.ts
- return { /*...next config... */ }
+  await generateUIIndex('{app}')   // writes generated/{app}/components.ts
+  return { /* ...next config... */ }
 }
 export default nextConfig
 ```
@@ -224,12 +225,12 @@ export default nextConfig
 ```json
 // apps/{app}/web/tsconfig.json
 {
- "compilerOptions": {
- "paths": {
- "@atta/ui/components": ["../../../packages/ui/generated/{app}/components"],
- "@atta/ui/canvas": ["../../../packages/ui/generated/{app}/canvas"]
- }
- }
+  "compilerOptions": {
+    "paths": {
+      "@atta/ui/components": ["../../../packages/ui/generated/{app}/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/{app}/canvas"]
+    }
+  }
 }
 ```
 
@@ -265,11 +266,12 @@ import { LibraryProvider } from '@atta/ui/lib/library-provider'
 
 // In a page or layout:
 export default function EnvoyPage({ user }) {
- const userLibrary = (user.library ?? 'basic') as UILibrary
- return (
- <LibraryProvider library={userLibrary}>
- <PageContent />
- </LibraryProvider>)
+  const userLibrary = (user.library ?? 'basic') as UILibrary
+  return (
+    <LibraryProvider library={userLibrary}>
+      <PageContent />
+    </LibraryProvider>
+  )
 }
 ```
 
@@ -281,9 +283,9 @@ export default function EnvoyPage({ user }) {
 import { useComponents } from '@atta/ui/lib/library-provider'
 
 function MyComponent() {
- const { Button, Card, Badge } = useComponents()
- // Button/Card/Badge are from whichever library the LibraryProvider loaded
- return <Button variant="default">Click</Button>
+  const { Button, Card, Badge } = useComponents()
+  // Button/Card/Badge are from whichever library the LibraryProvider loaded
+  return <Button variant="default">Click</Button>
 }
 ```
 
@@ -295,12 +297,12 @@ function MyComponent() {
 
 ```ts
 const loadLibrary = useCallback((library: UILibrary) => {
- if (loadedLibraryRef.current === library) return // already loaded
- loadedLibraryRef.current = library
- LIBRARY_IMPORTERS[library]().then((mod) => {
- if (loadedLibraryRef.current !== library) return // stale — discard
- setComponents(mod as ComponentMap)
- })
+  if (loadedLibraryRef.current === library) return   // already loaded
+  loadedLibraryRef.current = library
+  LIBRARY_IMPORTERS[library]().then((mod) => {
+    if (loadedLibraryRef.current !== library) return  // stale — discard
+    setComponents(mod as ComponentMap)
+  })
 }, [])
 ```
 
@@ -314,11 +316,11 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ## Composing the two patterns — build-time chrome + runtime per-user surface
 
-The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver, so a composing app's build-time alias and its runtime provider agree by construction.
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
-**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant", which `.vinaya/doc-owners` binds as the owner of those routes, and [`docs/decisions-legacy.md`](../../../docs/decisions-legacy.md) ().
+**Which apps compose the patterns, on which routes, and with which providers is an app-level architecture decision — owned by that app's spec, not here.** The worked example, including its locked route-subtree contract and verification recipe, is Herald's: see [`apps/herald-ai/specs/herald-app-architecture.md`](../../../apps/herald-ai/specs/herald-app-architecture.md) §4 "Library resolution — the critical invariant (D-035)", which `.vinaya/doc-owners` binds as the owner of those routes, and [`docs/decisions-legacy.md`](../../../docs/decisions-legacy.md) D-035 (`Lock: YES`).
 
 ---
 
@@ -329,25 +331,25 @@ Each library lives at `packages/ui/libraries/{name}/` and exports its component 
 ```
 libraries/
 ├── basic/
-│ ├── components/index.ts # The canonical export list
-│ └── installed/ # Raw shadcn/ui component files
+│   ├── components/index.ts     # The canonical export list
+│   └── installed/              # Raw shadcn/ui component files
 ├── animate/
-│ ├── components/index.ts # Extends/overrides basic with motion versions
-│ └── installed/ # Motion-enhanced components (button, collapsible...)
+│   ├── components/index.ts     # Extends/overrides basic with motion versions
+│   └── installed/              # Motion-enhanced components (button, collapsible...)
 ├── retro/
-│ └── components/index.ts
+│   └── components/index.ts
 └── brutal/
- └── components/index.ts
+    └── components/index.ts
 ```
 
 Non-basic libraries override specific components and **fall back to basic** for everything else:
 
 ```ts
 // packages/ui/libraries/animate/components/index.ts
-export { Badge } from '../../basic/installed/badge' // falls back to basic
-export { Button } from '../installed/button' // animate override
-export { Collapsible,... } from '../installed/collapsible' // animate override
-export { DropdownMenu,... } from '../../basic/installed/dropdown-menu' // falls back
+export { Badge } from '../../basic/installed/badge'         // falls back to basic
+export { Button } from '../installed/button'                // animate override
+export { Collapsible, ... } from '../installed/collapsible' // animate override
+export { DropdownMenu, ... } from '../../basic/installed/dropdown-menu' // falls back
 ```
 
 ### Adding a Component to a Library
@@ -403,25 +405,25 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 ### Build-Time Pattern (recommended for new apps)
 
 1. **Call generateUIIndex in next.config.ts:**
- ```ts
- import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
- const nextConfig = async () => {
- await generateUIIndex('your-app')
- return { /*... */ }
- }
- ```
+   ```ts
+   import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
+   const nextConfig = async () => {
+     await generateUIIndex('your-app')
+     return { /* ... */ }
+   }
+   ```
 
 2. **Add tsconfig path aliases** — the alias key is `@atta/ui/components`, not bare `@atta/ui` (see the note under "Generated File Format" above, and "Import Bypass Bug" under Debugging). Every live app aliases this exact string; app code must import it verbatim:
- ```json
- {
- "compilerOptions": {
- "paths": {
- "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
- "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
- }
- }
- }
- ```
+   ```json
+   {
+     "compilerOptions": {
+       "paths": {
+         "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
+         "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
+       }
+     }
+   }
+   ```
 
 3. **Set the library in Sanity CMS:** The `{app}Config` document's `userInterface.library` field controls which library gets written to the generated index.
 
@@ -448,10 +450,10 @@ If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles
 * **Incorrect — bare package name:** `import { Tabs } from '@atta/ui'`
 * **Correct — the exact aliased string:** `import { Tabs } from '@atta/ui/components'`
 * **Why:** A build-time app's `tsconfig.json` aliases only **exact strings** — `@atta/ui/components` and `@atta/ui/canvas` (plus whatever else that app declares). There is no wildcard and **no bare `@atta/ui` entry**. Anything else falls back to `packages/ui/package.json`'s `exports`, and both fallbacks land on `basic`:
- * `"./components/*"` → `./libraries/basic/installed/*.tsx` — catches the subpath form.
- * `"."` → `./libraries/basic/components/index.ts` — **catches the bare form, hardcoding `basic`.**
+  * `"./components/*"` → `./libraries/basic/installed/*.tsx` — catches the subpath form.
+  * `"."` → `./libraries/basic/components/index.ts` — **catches the bare form, hardcoding `basic`.**
 
- So `@atta/ui` is not "the flat import" — it is the second way to pin yourself to `basic`. Only the exact aliased string reaches `packages/ui/generated/{app}/components.ts`, which is what re-exports the CMS-configured library. **"Flat" here means "no subpath *after* `/components`", never "drop the `/components`".**
+  So `@atta/ui` is not "the flat import" — it is the second way to pin yourself to `basic`. Only the exact aliased string reaches `packages/ui/generated/{app}/components.ts`, which is what re-exports the CMS-configured library. **"Flat" here means "no subpath *after* `/components`", never "drop the `/components`".**
 * **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (`vinaya-pages-v1` task 8, #568: this section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
 * **Not this bug:** `@atta/ui/shared`, `@atta/ui/topbar`, `@atta/ui/footer`, `@atta/ui/canvas`, `@atta/ui/lib/*`, `@atta/ui/smart-prompt-input`, `@atta/ui/doc-collector`. These resolve to library-independent code (shared primitives, composites, utilities) — they are not library-swapped, so there is no per-app index for them to miss.
 
@@ -502,13 +504,13 @@ bun run validate:ui-contract
 ```
 🔍 Validating UI Component Contract
 
- Contract: 37 components, 43 types
- Libraries: basic, retro, animate, brutal
+   Contract : 37 components, 43 types
+   Libraries: basic, retro, animate, brutal
 
 📦 Checking retro...
- ❌ Missing components (2):
- - Toast
- - ToastProvider
+   ❌ Missing components (2):
+        - Toast
+        - ToastProvider
 
 ❌ Some libraries are missing required exports. Fix them or update the contract.
 ```
@@ -572,7 +574,7 @@ Verified against the official shadcn registry (`ui.shadcn.com/docs/components`,
 2026-07-17): **shadcn ships no `code`, `code-block`, or `snippet` component.** It
 ships `Kbd` — keyboard keys, not code display. So `basic/installed/code.tsx`
 **does not exist and must not be created**: `installed/` holds a verbatim CLI
-paste from that library's own upstream, and hand-rolling a file there is
+paste from that library's own upstream (D-065), and hand-rolling a file there is
 exactly the drift the banner calls non-negotiable. Pasting *another* registry's
 code-block (shadcn-studio, shadcn.io, retroui) into `basic/installed/` is the
 same violation wearing a disguise — basic ← shadcn only, and a third-party item
@@ -676,7 +678,7 @@ axe flags `aria-allowed-attr` [critical] — `aria-pressed` is valid only on a
 `button`/`role=button`, and the outer button already carries the real state from
 Radix's Root. The wrapper passes `aria-pressed={undefined}` to strip it from
 `toggle-item`; this works only because the primitive spreads `{...props}` AFTER
-its own `aria-pressed`, and it keeps `installed/` verbatim.
+its own `aria-pressed`, and it keeps `installed/` verbatim (D-065).
 
 **`toggle-highlight` cannot be reached this way and still violates.**
 `installed/toggle.tsx` renders it as `<ToggleHighlightPrimitive className='…' />`
@@ -685,7 +687,7 @@ decorative empty div with no accessible name, and `AnimatePresence` only mounts
 it in the pressed state, so the violation appears in the pressed state only.
 Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
-which is the drift exists to prevent, so it is deliberately not done here.
+which is the drift D-065 exists to prevent, so it is deliberately not done here.
 
 **`Switch`** (`vinaya-pages-v2` task 9, #622) joined as `Switch` + `SwitchProps`, and is
 the first contracted component where **all four** libraries had their own upstream —
@@ -742,17 +744,17 @@ It also forecloses a runtime per-user library — a user who has chosen
 **Contract every shared composite MUST follow:**
 
 1. **No library imports in the composite tree.** `grep` for
- `'../../libraries/'` inside the package — it should match nothing.
+   `'../../libraries/'` inside the package — it should match nothing.
 2. **`components?: { Foo?, Bar? }` prop on the public API.** Include only the
- primitives the composite actually renders. Each entry is optional so the
- composite degrades gracefully during a runtime library's first-render
- window. Mirror Herald `JDInput`'s `Button ? <Button…>: <button>` pattern
- for fallbacks — never crash on `undefined`.
+   primitives the composite actually renders. Each entry is optional so the
+   composite degrades gracefully during a runtime library's first-render
+   window. Mirror Herald `JDInput`'s `Button ? <Button…> : <button>` pattern
+   for fallbacks — never crash on `undefined`.
 3. **Threaded via a private context** (e.g. `SmartPromptComponentsProvider`)
- so internal subtrees can resolve injected primitives without prop drilling.
+   so internal subtrees can resolve injected primitives without prop drilling.
 4. **Both consumer call sites updated in the same PR** as the contract is
- added. The composite isn't done shipping until every existing consumer
- passes `components`.
+   added. The composite isn't done shipping until every existing consumer
+   passes `components`.
 
 `SmartPromptInput` is the canonical example — see
 `packages/ui/smart-prompt-input/vendor/components-context.tsx` and the
@@ -762,12 +764,12 @@ It also forecloses a runtime per-user library — a user who has chosen
 **Stop conditions when applying this rule to a NEW composite:**
 
 - A vendored primitive turns out to be used and has no `@atta/ui` library
- equivalent → STOP and report. Do NOT reintroduce a hardcoded
- `libraries/basic/...` import. Add the primitive to all four libraries (and
- the component contract) first.
+  equivalent → STOP and report. Do NOT reintroduce a hardcoded
+  `libraries/basic/...` import. Add the primitive to all four libraries (and
+  the component contract) first.
 - The runtime consumer can't supply a primitive through `useComponents()`
- without a provider change → STOP. Wiring a fresh provider is in scope; a
- silent hardcoded-basic fallback is not.
+  without a provider change → STOP. Wiring a fresh provider is in scope; a
+  silent hardcoded-basic fallback is not.
 
 ### `SmartPromptInput` — Gemini-style prompt entry
 
@@ -776,7 +778,7 @@ vendored `PromptInput*` primitives (`vendor/prompt-input.tsx`) and adds:
 
 - Attachment tile header (tile-with-meta layout)
 - Single-line ↔ multi-line responsive switching driven by textarea
- `scrollHeight` measurement
+  `scrollHeight` measurement
 - Optional caller-provided **actions slot** (left or right) and **submit slot**
 - Caller-tunable **textarea className** for one-off layout overrides
 
@@ -847,14 +849,14 @@ If a new product needs to customize SmartPromptInput, add a new optional prop
 the same way `submitSlot` was added:
 
 1. **Additive only.** Default behavior with the prop unset must match the
- previous behavior bit-for-bit. Herald's JDInput is the canary.
+   previous behavior bit-for-bit. Herald's JDInput is the canary.
 2. **Honor it in every code path the default would render in.** `submitSlot`
- replaces the default submit in BOTH inline and footer modes — partial
- replacement is a confusing footgun.
-3. **Update this section** in the same PR ( doc-coherence). The props
- table is the contract; if it's not here, future agents won't know the slot exists.
+   replaces the default submit in BOTH inline and footer modes — partial
+   replacement is a confusing footgun.
+3. **Update this section** in the same PR (D-058 doc-coherence). The props
+   table is the contract; if it's not here, future agents won't know the slot exists.
 4. **No library swap.** SmartPromptInput is a single implementation. Do not
- create per-library variants.
+   create per-library variants.
 
 ### `DocCollector` — drop-zone document tile collector
 
@@ -875,32 +877,32 @@ visual lives at `packages/ui/lib/attachment-chip.tsx` (`AttachmentChip` +
 #### Behavior
 
 - **Instant tile on drop, eager resolution.** Dropping a `.md`/`.pdf` file
- inserts a tile with `status: 'resolving'` immediately — before resolution
- completes — then patches it to `status: 'ready'` (with resolved `text`) or
- `status: 'error'`. `.md`/text files resolve via `file.text()`; `.pdf`
- files resolve via a dynamic `import('unpdf')` inside the drop handler
- (never a static top-level import, so non-`DocCollector` consumers of
- `packages/ui` never pay for PDF.js in their bundle), mirroring the exact
- `extractText` call shape used server-side in
- `apps/herald-ai/web/src/app/api/admin/parse-cv/route.ts`.
+  inserts a tile with `status: 'resolving'` immediately — before resolution
+  completes — then patches it to `status: 'ready'` (with resolved `text`) or
+  `status: 'error'`. `.md`/text files resolve via `file.text()`; `.pdf`
+  files resolve via a dynamic `import('unpdf')` inside the drop handler
+  (never a static top-level import, so non-`DocCollector` consumers of
+  `packages/ui` never pay for PDF.js in their bundle), mirroring the exact
+  `extractText` call shape used server-side in
+  `apps/herald-ai/web/src/app/api/admin/parse-cv/route.ts`.
 - **Commit gating.** Typed/pasted text is NEVER auto-converted into a tile
- on any length threshold — unlike `SmartPromptInput`'s `pasteToFileChars`,
- there is no such path here. A tile is created only on explicit click of
- the Add button.
+  on any length threshold — unlike `SmartPromptInput`'s `pasteToFileChars`,
+  there is no such path here. A tile is created only on explicit click of
+  the Add button.
 - **Newest-first ordering.** The tile row (conditionally rendered only when
- `items.length > 0`, `flex items-center gap-2 overflow-x-auto`) always shows
- the most recently committed item first, sorted by `addedAt`.
+  `items.length > 0`, `flex items-center gap-2 overflow-x-auto`) always shows
+  the most recently committed item first, sorted by `addedAt`.
 - **Custom sources (resolve-then-insert).** Each entry in `customSources`
- renders its own labeled row (`Input` + `Add` button) below the drop zone.
- Unlike file drops, a custom source resolves *before* any tile is created —
- `source.resolve(value)` is awaited first; only on success is a
- `status: 'ready'` tile inserted. On rejection, nothing is added to the
- list — the row reports the error itself (via `source.onError` if the
- consumer provided one, else an inline message that self-clears after 4s).
- This intentionally differs from the drop-zone's instant-tile-then-patch
- pattern: a dropped file is a real artifact worth showing even if
- unreadable, but a mistyped username/URL shouldn't leave a permanent error
- tile in the collected-documents list.
+  renders its own labeled row (`Input` + `Add` button) below the drop zone.
+  Unlike file drops, a custom source resolves *before* any tile is created —
+  `source.resolve(value)` is awaited first; only on success is a
+  `status: 'ready'` tile inserted. On rejection, nothing is added to the
+  list — the row reports the error itself (via `source.onError` if the
+  consumer provided one, else an inline message that self-clears after 4s).
+  This intentionally differs from the drop-zone's instant-tile-then-patch
+  pattern: a dropped file is a real artifact worth showing even if
+  unreadable, but a mistyped username/URL shouldn't leave a permanent error
+  tile in the collected-documents list.
 
 #### Props
 

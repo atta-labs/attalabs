@@ -7,7 +7,7 @@ type Segment = 'portal' | 'studio'
 
 /**
  * Client component ONLY because a switch commits by firing `onCheckedChange`
- * rather than being a link, so navigation happens in a handler. The
+ * rather than being a link, so navigation happens in a handler. The D-126
  * authorization gate does NOT live here — it stays in the async server
  * component that renders this one, so an unauthorized request never ships this
  * control to the browser at all.

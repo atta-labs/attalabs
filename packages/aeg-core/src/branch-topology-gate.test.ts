@@ -25,7 +25,7 @@ const TOPOLOGY_MD = `# Iteration: parity-fixture — test
 
 Lifecycle: active
 
-Goal (execution): prove grep/parseIteration parity for the gate.
+Goal (execution): prove grep/parseIteration parity for the D-073 gate.
 
 ## Tasks (topology)
 
@@ -79,7 +79,7 @@ describe('checkBranchTopology ↔ bash-grep parity (the exact pre-task-32 regex)
 })
 
 describe('checkBranchTopology refusal messages are byte-identical to the old hook output', () => {
-  it('missing topology file → the exact missing-iteration message', () => {
+  it('missing topology file → the exact D-073/D-075 missing-iteration message', () => {
     const result = checkBranchTopology({
       branch: 'task/ghost-iter/5',
       iteration: 'ghost-iter',
@@ -90,11 +90,11 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
       '✖ pre-push: branch `task/ghost-iter/5` names iteration `ghost-iter`, but aeg-root/iterations/ghost-iter.md does not exist.\n' +
-        ' A task branch must belong to a real iteration ().'
+        '  A task branch must belong to a real iteration (D-073/D-075).'
     )
   })
 
-  it('no matching row → the exact no-row message', () => {
+  it('no matching row → the exact D-073 no-row message', () => {
     const result = checkBranchTopology({
       branch: 'task/parity-fixture/999',
       iteration: 'parity-fixture',
@@ -105,8 +105,8 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
       '✖ pre-push: branch `task/parity-fixture/999` — no row with `#` = `999` in aeg-root/iterations/parity-fixture.md.\n' +
-        "  The branch suffix must literal-match the topology's # column.\n" +
-        "  If the plan PR adding this row hasn't merged yet, merge it first."
+        "  The branch suffix must literal-match the topology's # column (D-073).\n" +
+        "  If the plan PR adding this row hasn't merged yet, merge it first (D-075)."
     )
   })
 
@@ -126,7 +126,7 @@ describe('known theoretical divergences — synthetic-only, characterized so dri
   // Neither shape occurs in any real iteration file (all live + completed
   // files were swept at task-32 time — see PR #for-399's evidence). Where
   // the two disagree on synthetic input, parseIteration's reading is the
-  // authoritative one (only the `## Tasks` table defines rows).
+  // authoritative one (only the `## Tasks` table defines rows, D-073).
 
   it('a row-shaped line OUTSIDE the Tasks table: grep matched it, the parser correctly does not', () => {
     const md = `${TOPOLOGY_MD}\n## Other\n\n| 555 | not a task row |\n`

@@ -37,7 +37,7 @@ describe('resolveStudioTarget', () => {
     expect(target).toEqual({ kind: 'missing' })
   })
 
-  it('does not attempt to detect an installed @vinaya/studio package (stub)', () => {
+  it('does not attempt to detect an installed @vinaya/studio package (stub, D-098)', () => {
     const fakePackageDir = join(tmpDir, 'node_modules', '@vinaya', 'studio')
     mkdirSync(fakePackageDir, { recursive: true })
     writeFileSync(join(fakePackageDir, 'package.json'), JSON.stringify({ name: '@vinaya/studio' }))

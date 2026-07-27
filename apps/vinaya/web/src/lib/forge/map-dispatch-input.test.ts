@@ -170,7 +170,7 @@ describe('conflicts-with resolution', () => {
   })
 })
 
-describe('prior-task (row-adjacency, dormant still assembled)', () => {
+describe('prior-task (row-adjacency, D-081 — dormant since D-120, still assembled)', () => {
   it('attaches issue-closed, pr-merged, and provenance facts to the prior row', () => {
     const prior = task({ id: '1', issue: 5 })
     const t = task({ id: '2', issue: 10 })
@@ -216,7 +216,7 @@ describe('end-to-end through checkDispatchReadiness', () => {
     expect(result).toEqual({ ready: true, blockers: [] })
   })
 
-  it('an unmerged prior row no longer blocks (row-adjacency gate removed)', () => {
+  it('D-120: an unmerged prior row no longer blocks (row-adjacency gate removed)', () => {
     const prior = task({ id: '1', issue: 5 })
     const t = task({ id: '2', issue: 10 })
     const result = checkDispatchReadiness(

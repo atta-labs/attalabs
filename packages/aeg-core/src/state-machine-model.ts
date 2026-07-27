@@ -2,7 +2,7 @@
  * state-machine-model.ts — the canonical, code-owned model of AEG's execution
  * state machine: what it reads, what it can conclude, and the ordered rules
  * that get from one to the other. Pure data, zero I/O — the same discipline as
- * `actions.ts` and `waiver-label.ts` (one pure-data list, read by both
+ * `actions.ts` and `waiver-label.ts` (D-119: one pure-data list, read by both
  * the logic and the rendered docs, so the two can never drift). Its only
  * non-type import is `label()` from the sibling pure-data label vocabulary
  * (`@atta/aeg-forge-state`'s `labels.ts`), so the label names this model quotes
@@ -12,7 +12,7 @@
  *
  *   1. `FORGE_FACT_INPUTS` — every `ForgeFacts` field and the GitHub object it
  *      is read from. The inputs are the whole source of truth: status is
- * *derived* from forge objects, never written down. Descriptive
+ *      *derived* from forge objects, never written down (D-059). Descriptive
  *      only — the mapping itself is performed by `map-forge-facts.ts`.
  *   2. `DERIVED_STATUSES` — the statuses derivation can conclude.
  *   3. `DERIVATION_RULES` — the ordered rule list, first match wins.
@@ -62,7 +62,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   {
     fact: 'assigned',
     readsFrom: 'Issue.assignees (count > 0)',
-    meaning: 'An assignee exists. No longer affects derivation: assigned and unassigned are both todo.'
+    meaning: 'An assignee exists. No longer affects derivation (D-059): assigned and unassigned are both todo.'
   },
   {
     fact: 'branchExists',
@@ -87,7 +87,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   {
     fact: 'stateReason',
     readsFrom: 'Issue.stateReason (COMPLETED | NOT_PLANNED | REOPENED | null)',
-    meaning: 'Separates a legitimate drop from an incoherent close on a closed, never-merged Issue.'
+    meaning: 'Separates a legitimate drop from an incoherent close on a closed, never-merged Issue (D-069).'
   },
   {
     fact: 'closedAt',
@@ -105,7 +105,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
 
 /**
  * Every value `DerivedStatus` admits. `backlog` is a project-level concept and
- * is never emitted by derivation inside an iteration — iteration tasks
+ * is never emitted by derivation inside an iteration (D-059) — iteration tasks
  * are committed work, so their floor is `todo`. It stays in the set because
  * the type still admits it and consumers still render it.
  */
@@ -161,7 +161,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'No forge facts for this task',
     matches: (facts) => !facts,
     status: 'todo',
-    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside an iteration.'
+    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside an iteration (D-059).'
   },
   {
     id: 'blocked-label',
@@ -225,7 +225,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'The Issue is open, with no branch and no PR',
     matches: (facts) => facts?.issueState === 'open',
     status: 'todo',
-    why: 'Not started. Assigned or not, both are todo inside an iteration.'
+    why: 'Not started. Assigned or not, both are todo inside an iteration (D-059).'
   },
   {
     id: 'closed-not-planned',
@@ -241,7 +241,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'Issue closed for any other reason, with no merged PR',
     matches: () => true,
     status: 'incoherent',
-    why: 'The honest terminal fallback: closed but unprovable must never read as todo. Total by design, so derivation always concludes.'
+    why: 'The honest terminal fallback (D-069): closed but unprovable must never read as todo. Total by design, so derivation always concludes.'
   }
 ]
 
@@ -249,7 +249,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
  * Execute the model: the first rule whose predicate matches decides the
  * status. `deriveStatus` in `derive-iteration.ts` delegates here, so the
  * rendered rules and the real derivation are the same list — the whole point
- * of the discipline.
+ * of the D-119 discipline.
  *
  * The trailing return is unreachable by construction (the final rule matches
  * unconditionally) and exists only to satisfy the type checker;

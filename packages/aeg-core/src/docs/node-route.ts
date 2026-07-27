@@ -1,5 +1,5 @@
 /**
- * The single node → `/docs` route derivation. Nav construction
+ * The single node → `/docs` route derivation (D-087). Nav construction
  * (`load-aeg-docs.ts`), the "Read more" resolver (`read-more.ts`), and the
  * harness map (`/docs` `page.tsx`) all resolve a `DiagramNode` to its docs
  * location through THIS function — one source of truth, so a card's deep-link,

@@ -19,7 +19,7 @@ import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/
  * grouped-cards layout: one row per Issue, so a cross-project Issue (#513,
  * `Project: aeg, aeg-core`) is a single row carrying BOTH project badges
  * instead of being duplicated under two headings — and the project filter
- * matches it under either (never drop the second project). Projects come
+ * matches it under either (D-091: never drop the second project). Projects come
  * from the Issue body's `**Project:**` field, not from a label (#614).
  *
  * Filters are project, tier, and flags — the families that actually vary across

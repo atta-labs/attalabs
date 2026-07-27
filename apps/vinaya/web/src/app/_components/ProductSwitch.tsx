@@ -6,10 +6,10 @@ type Segment = 'portal' | 'studio'
 
 /**
  * Portal↔Studio switch. Reachable only where serving Studio is authorized
- * — today that means: not a Vercel deploy (production or preview),
+ * (D-126) — today that means: not a Vercel deploy (production or preview),
  * and this server can reach GitHub. Order matters: the synchronous env check
  * MUST run first so a deployed request never reaches the async forge check
- * at all (see a GitHub token existing is not the same as this
+ * at all (see D-126 — a GitHub token existing is not the same as this
  * visitor being authorized).
  *
  * This component stays a server component precisely so that gate runs on the

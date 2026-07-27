@@ -31,7 +31,7 @@ describe('ACTIONS — shape', () => {
     }
   })
 
-  it('commit-the-work crosses none — git commit is local, only git push reaches the forge', () => {
+  it('commit-the-work crosses none — git commit is local, only git push reaches the forge (D-119)', () => {
     const commit = ACTIONS.find((a) => a.id === 'commit-the-work')
     expect(commit?.crosses).toBe('none')
   })
@@ -51,8 +51,8 @@ describe('ACTIONS — shape', () => {
 })
 
 describe('ACTIONS — real-file cross-check', () => {
-  // CROSSING_KEYWORDS now lives in./actions (exported), shared with
-  // diagram-model.ts's guards edges so the map can never drift.
+  // CROSSING_KEYWORDS now lives in ./actions (exported), shared with
+  // diagram-model.ts's guards edges so the map can never drift (D-119).
   const ring0Rows: GateRow[] = parseEnforcementRegistry(readFileSync(ENFORCEMENT_PATH, 'utf8')).filter(
     (r) => r.ring === 'ring0'
   )

@@ -1,6 +1,6 @@
 /**
  * Live token-ledger fetch (aeg-forge-state-v1 task 4b, #445) — the I/O half
- * of the live-read mechanism. `@atta/aeg-core`'s
+ * of the D-071 live-read mechanism. `@atta/aeg-core`'s
  * `aggregateTaskTokenRows`/`parseTokenReportEntries`/`parseTokensLines` are
  * pure; this file gathers the PR bodies + comments they parse.
  *
@@ -31,7 +31,7 @@
  * Scoped down accordingly; flagged in the task 4b report for Principal
  * review rather than silently narrowed.
  *
- * Read-only, always (AEG). No writes, no labels, no comments.
+ * Read-only, always (AEG D-029). No writes, no labels, no comments.
  *
  * Graceful degradation contract (mirrors `fetchForgeFacts`):
  *   - No token → returns `{ ledgers: empty, unavailable: true }`.

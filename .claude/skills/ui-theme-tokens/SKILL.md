@@ -19,7 +19,7 @@ Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Color
 
 If the color you want is not in the list, it does not exist. Pick the closest semantic token by **role** (see doctrine below), or add a new one to `globals.css` and to the CMS theme schema — do **not** reach for the Tailwind palette as an escape hatch.
 
-**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
+**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. Per D-065 those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
 
 ---
 
@@ -58,7 +58,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `popover-foreground` | **Floating ink** | `popover` | Text inside popovers/menus/tooltips. |
 | `secondary-foreground` | **Frame ink** | `secondary` | Text on `secondary` surfaces (topbar labels, toolbar buttons). **Do not use this as free-floating "metadata text" on a `background` surface** — its contrast is calibrated against `secondary`, not `background`. |
 | `primary-foreground` | **CTA ink** | `primary` | Text on `primary` fills (button labels, badge text on primary backgrounds). |
-| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" before, when `accent` was still a highlight; it is a fill now.) |
+| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" before D-131, when `accent` was still a highlight; it is a fill now.) |
 | `destructive-foreground` | **Error fill ink** | `destructive` | Text on `destructive` fills. Note: `destructive` text on a non-destructive surface uses `text-destructive` directly (see status section). |
 
 **Rule of thumb:** if you wrote `bg-X`, the matching text token is `text-X-foreground`. If you wrote `bg-background` or no surface at all, your text choices are `foreground` or `muted-foreground`.
@@ -68,9 +68,9 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | Token | Role | Use for |
 |---|---|---|
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
-| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent`. |
+| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent` (D-131). |
 
-> ### THE FILL/HIGHLIGHT SPLIT — stated once, here
+> ### THE FILL/HIGHLIGHT SPLIT (D-131) — stated once, here
 >
 > **`accent` paints backgrounds. `primary` colours text and borders.**
 >
@@ -223,22 +223,22 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 <div style={{ color: 'oklch(72% 0.17 75)' }} />
 
 // ❌ Wrong-pair text on surface (contrast not calibrated)
-<div className='bg-background text-secondary-foreground' /> // secondary-foreground belongs on bg-secondary
-<div className='bg-card text-popover-foreground' /> // popover-foreground belongs on bg-popover
+<div className='bg-background text-secondary-foreground' />  // secondary-foreground belongs on bg-secondary
+<div className='bg-card text-popover-foreground' />          // popover-foreground belongs on bg-popover
 
 // ❌ Status token used for mood, not outcome
-<div className='text-success'>Welcome back!</div> // not an outcome — use foreground
+<div className='text-success'>Welcome back!</div>            // not an outcome — use foreground
 
 // ❌ Hover FILL reaching for primary
-<button className='hover:bg-primary' /> // fills use hover:bg-accent
+<button className='hover:bg-primary' />                       // fills use hover:bg-accent
 
 // ❌ accent used as an ink — it is a fill (see THE FILL/HIGHLIGHT SPLIT)
-<a className='hover:text-accent' /> // use hover:text-primary
-<div className='hover:border-accent' /> // use hover:border-primary
-<span className='text-accent' /> // use text-primary
+<a className='hover:text-accent' />                           // use hover:text-primary
+<div className='hover:border-accent' />                       // use hover:border-primary
+<span className='text-accent' />                              // use text-primary
 
 // ❌ Sidebar tokens leaking into non-sidebar chrome
-<header className='bg-sidebar text-sidebar-foreground' /> // use bg-secondary text-secondary-foreground
+<header className='bg-sidebar text-sidebar-foreground' />    // use bg-secondary text-secondary-foreground
 ```
 
 ## Correct Patterns
@@ -259,7 +259,7 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 // ✅ accent = the hover FILL; primary = the ink/border highlight
 <button className='bg-card hover:bg-accent text-card-foreground hover:text-accent-foreground' />
 <a className='text-foreground hover:text-primary'>Read more</a>
-<span className='text-primary font-serif'>deliberation</span> // sparingly: 1–2 emphases per view
+<span className='text-primary font-serif'>deliberation</span>  // sparingly: 1–2 emphases per view
 
 // ✅ Soft hover for dense lists
 <li className='hover:bg-accent/10' />
@@ -289,38 +289,38 @@ Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Us
 When unsure, walk this tree top-down. The first match wins.
 
 1. **Is this a surface?**
- - The page itself → `background`
- - Persistent app chrome (topbar, toolbar, footer, tabs) → `secondary`
- - The actual sidebar component → `sidebar`
- - A card / panel / dialog body → `card`
- - A popover / menu / tooltip → `popover`
- - An inline recessed fill (chip, code block) → `muted`
- - An input field → `input`
+   - The page itself → `background`
+   - Persistent app chrome (topbar, toolbar, footer, tabs) → `secondary`
+   - The actual sidebar component → `sidebar`
+   - A card / panel / dialog body → `card`
+   - A popover / menu / tooltip → `popover`
+   - An inline recessed fill (chip, code block) → `muted`
+   - An input field → `input`
 
 2. **Is this text?**
- - On `bg-background` and load-bearing → `foreground`
- - On `bg-background` and quiet (metadata, captions, hints) → `muted-foreground`
- - On any other surface → the matching `*-foreground` token
+   - On `bg-background` and load-bearing → `foreground`
+   - On `bg-background` and quiet (metadata, captions, hints) → `muted-foreground`
+   - On any other surface → the matching `*-foreground` token
 
 3. **Is this an interactive state?**
- - Default rest state → the surface's normal token
- - Hover → see **THE FILL/HIGHLIGHT SPLIT**: fill = `accent`, text/border = `primary`
- - Selected / active / current → `primary`
- - Focus ring → `ring`
- - Disabled → `muted` background + `muted-foreground` text
+   - Default rest state → the surface's normal token
+   - Hover → see **THE FILL/HIGHLIGHT SPLIT**: fill = `accent`, text/border = `primary`
+   - Selected / active / current → `primary`
+   - Focus ring → `ring`
+   - Disabled → `muted` background + `muted-foreground` text
 
 4. **Is this a status signal?**
- - Success outcome → `success`
- - Needs attention → `warning`
- - Failure / destructive → `destructive`
- - Informational with weight → `primary`
- - Informational without weight → `muted-foreground`
+   - Success outcome → `success`
+   - Needs attention → `warning`
+   - Failure / destructive → `destructive`
+   - Informational with weight → `primary`
+   - Informational without weight → `muted-foreground`
 
 5. **Is this a border?**
- - Default → `border`
- - Hover/selected emphasis → `primary` (see THE FILL/HIGHLIGHT SPLIT)
- - Status-tagged → `success/40` / `warning/40` / `destructive/40`
- - Focus → `ring`
+   - Default → `border`
+   - Hover/selected emphasis → `primary` (see THE FILL/HIGHLIGHT SPLIT)
+   - Status-tagged → `success/40` / `warning/40` / `destructive/40`
+   - Focus → `ring`
 
 6. **None of the above fit?** → See "If a Token Is Missing".
 
@@ -341,9 +341,9 @@ When unsure, walk this tree top-down. The first match wins.
 
 1. Walk the decision tree first. Most "missing" tokens turn out to exist under a role-based name (e.g., wanting "info blue" → use `primary` or `muted-foreground`).
 2. If genuinely missing, add it in three places:
- - `packages/ui/styles/globals.css` — declare `--x` under `:root` AND under `.dark`, map `--color-x: var(--x)` under `@theme inline`.
- - `packages/cms/` — expose the field in the Sanity theme schema so CMS can override per product.
- - `packages/ui/lib/next-web-shell.tsx` — pipe the CMS value into the generated style block.
+   - `packages/ui/styles/globals.css` — declare `--x` under `:root` AND under `.dark`, map `--color-x: var(--x)` under `@theme inline`.
+   - `packages/cms/` — expose the field in the Sanity theme schema so CMS can override per product.
+   - `packages/ui/lib/next-web-shell.tsx` — pipe the CMS value into the generated style block.
 3. Document it in this skill under the correct role section AND the token list.
 
 **Never skip step 3.** A token that isn't documented here doesn't exist to future contributors.

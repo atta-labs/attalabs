@@ -5,7 +5,7 @@ import { coreCheckRegistry } from '../../src/checks/registry'
 import { runChecks } from '../../src/checks/runner'
 
 /**
- *'s no-privileged-API proof. This test must fail if someone later adds
+ * D-092's no-privileged-API proof. This test must fail if someone later adds
  * a fast path — core checks are ordinary subprocesses, exactly like a
  * custom check, with no extra field and no branch in the runner.
  */
@@ -14,7 +14,7 @@ const FIXTURE = join(import.meta.dir, '..', 'fixtures', 'checks', 'passing-check
 
 const ALLOWED_KEYS = new Set<keyof CheckSpec>(['name', 'run', 'args', 'scope', 'include', 'timeoutMs'])
 
-describe('no-privileged-api', () => {
+describe('no-privileged-api (D-092)', () => {
   it('core registry CheckSpecs carry no field a config-derived CheckSpec cannot carry', () => {
     const coreSpecs = coreCheckRegistry()
     expect(coreSpecs.length).toBeGreaterThan(0)

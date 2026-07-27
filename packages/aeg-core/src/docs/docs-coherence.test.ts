@@ -25,7 +25,7 @@ function loadTree(name: 'broken' | 'clean'): DocsCoherenceEntry[] {
   })
 }
 
-// The surfaced set is model-backed (): in production it is
+// The surfaced set is model-backed (D-079/D-087): in production it is
 // `modelBackedDocPaths(deriveDiagramModel(...))`. These fixtures test the C6
 // mechanism (reachability, parent refs, cross-doc links), so they pass the
 // set that a model WOULD produce for each tree directly — the docs a node
