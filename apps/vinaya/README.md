@@ -42,7 +42,7 @@ is refused by contract, not caught in review.
 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
-| **Web** | [`web/`](web/) | `@atta/vinaya-web` | 🟢 Landing · `/install` (command reference) · `/docs` · Studio Portal |
+| **Web** | [`web/`](web/) | `@atta/vinaya-web` | 🟢 Landing · `/install` (command reference) · `/quick-start` (five-step tutorial) · `/docs` · Studio Portal |
 | **CLI** | [`cli/`](cli/) | `@atta/vinaya-cli` | 🟠 Core commands live (below); installer commands pending |
 
 ---
