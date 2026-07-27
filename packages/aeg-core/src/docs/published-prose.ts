@@ -103,7 +103,15 @@ const PROSE_RULES: ProseRule[] = [
   {
     id: 'label-vocabulary',
     what: 'forge label vocabulary',
-    pattern: /(?:vinaya\/)?\b(?:tranche|tier|needs|waiver|project|aeg):(?![/\s]|$)/
+    // Every entry here is CUMULATIVE — a retired namespace stays banned after
+    // the objects carrying it are gone, because a published page naming it is
+    // just as unreadable to a stranger as one naming the current grammar (see
+    // the module header). `aeg:` is retired and still listed for that reason,
+    // and `iteration:` joins it: the rename to `tranche:` ADDS an alternative,
+    // it does not substitute one. Substituting is how a rename silently
+    // narrows this gate — the forge still carried `vinaya/iteration:*` labels
+    // when the rename landed, and a page naming one would have passed.
+    pattern: /(?:vinaya\/)?\b(?:tranche|iteration|tier|needs|waiver|project|aeg):(?![/\s]|$)/
   },
   { id: 'internal-path', what: 'a repo-internal path', pattern: /\b(?:packages|apps|aeg-root|tools|scripts)\// },
   { id: 'internal-path', what: 'a repo-internal path', pattern: /\.(?:claude|husky|github)\// },

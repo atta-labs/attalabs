@@ -179,6 +179,22 @@ describe('C7 readability', () => {
     }
   })
 
+  it('still fails the RETIRED iteration: namespace — the rule is cumulative, never substituted', () => {
+    // Regression guard for the iteration → tranche rename, which initially
+    // swapped `iteration` out of this alternation instead of adding `tranche`
+    // to it. That silently narrowed the gate: a published page could name
+    // `vinaya/iteration:foo` — a label the forge was still carrying — and pass.
+    // A retired namespace stays banned; the next substitution fails here
+    // rather than in review.
+    for (const token of ['Apply vinaya/iteration:foo.', 'Label it iteration:<slug>.', 'See aeg:blocked.']) {
+      const { errors } = evaluatePublishedProse([entry('roles/developer.md', withToken(token))], SURFACED)
+      expect(
+        errors.some((e) => e.includes('forge label vocabulary')),
+        token
+      ).toBe(true)
+    }
+  })
+
   it('fails a repo-internal path', () => {
     const { errors } = evaluatePublishedProse(
       [entry('roles/developer.md', withToken('Run packages/aeg-core/bin/foo.ts.'))],
