@@ -1,17 +1,12 @@
 import { COMMANDS } from '@atta/vinaya-sources'
 import { Badge, Code } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
+import { CliSidebar } from './_components/CliSidebar'
 import { CommandBlock } from './_components/CommandBlock'
 import { DetailText } from './_components/DetailText'
 import { commandSlug } from './_components/command-slug'
-import { InstallSidebar } from './_components/InstallSidebar'
 
-// `init` leads the page — it is the install, so its reference entry stands in
-// for a separate top "install" section rather than sitting wherever the
-// registry happens to list it.
-const ORDERED_COMMANDS = [...COMMANDS].sort((a, b) => (a.name === 'init' ? -1 : b.name === 'init' ? 1 : 0))
-
-export default function InstallPage() {
+export default function CliPage() {
   return (
     // Two-pane command reference on `lg:`, mirroring the `/docs` layout: a
     // flush-left, full-height command sidebar with its own scroll beside a
@@ -22,13 +17,13 @@ export default function InstallPage() {
     // `max-w-3xl` scrolling column the page has always been (`main`'s `px-6
     // py-12` + the inner `mx-auto max-w-3xl gap-10` reproduce it exactly).
     <Flex className='flex-col lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden'>
-      <InstallSidebar commands={ORDERED_COMMANDS} />
+      <CliSidebar commands={COMMANDS} />
 
       <main className='min-w-0 flex-1 px-6 py-12 lg:overflow-y-auto lg:px-12 lg:pt-4 lg:pb-10'>
         <div className='mx-auto flex max-w-3xl flex-col gap-10 lg:max-w-4xl'>
           <section className='flex flex-col gap-4'>
             <Heading level={1} className='font-serif'>
-              Install
+              Vinaya CLI
             </Heading>
             <Text className='font-sans' muted>
               Vinaya&rsquo;s command reference.
@@ -36,7 +31,7 @@ export default function InstallPage() {
           </section>
 
           <section className='flex flex-col gap-8'>
-            {ORDERED_COMMANDS.map((command) => {
+            {COMMANDS.map((command) => {
               const synopsis = command.name === 'init' ? `npx vinaya ${command.name}` : `vinaya ${command.name}`
               return (
                 // `scroll-mt-6` offsets the anchor target so a click/scroll-spy
