@@ -12,7 +12,8 @@ const links = [
   // the enforcement model, this one renders the state machine's own tables.
   { label: 'State Machine', href: '/state-machine' },
   { label: 'Studio', href: '/the-studio' },
-  { label: 'Install', href: '/install' },
+  { label: 'Quick Start', href: '/quick-start' },
+  { label: 'CLI', href: '/cli' },
   { label: 'Docs', href: '/docs' },
   { label: 'Roadmap', href: '/roadmap' }
 ]

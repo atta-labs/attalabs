@@ -60,7 +60,8 @@ export default function HomePage() {
         links={[
           { label: 'The Harness', href: '/the-harness' },
           { label: 'Studio', href: '/the-studio' },
-          { label: 'Install', href: '/install' },
+          { label: 'Quick Start', href: '/quick-start' },
+          { label: 'CLI', href: '/cli' },
           { label: 'Docs', href: '/docs' }
         ]}
       />
