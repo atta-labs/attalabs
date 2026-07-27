@@ -108,7 +108,7 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
  * crossing is the group heading, so no redundant per-action badge.
  */
 function actionGroups(model: DiagramModel): HarnessSectionGroup[] {
-  // `ACTIONS.performedBy` carries role IDS (`team-leader`), which are identity,
+  // `ACTIONS.performedBy` carries role IDS (`brief-author`), which are identity,
   // not names. Resolve each through the model's own role node so this line
   // reads as words — the same `displayLabel` the map cards use, so the two
   // surfaces can never name the same role differently.

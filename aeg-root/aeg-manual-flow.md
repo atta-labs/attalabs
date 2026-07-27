@@ -176,8 +176,8 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
-- Confirms: Issue closed (the merge auto-closes it if linked), decision logged if Tier 3, docs updated, per-project pinned state Issue updated for every project the task listed (D-110). Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11). (`now.md` no longer exists — D-057.)
-- Assembles the **provenance block** from frozen facts (brief, PR reviews, decision log, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
+- Confirms: Issue closed (the merge auto-closes it if linked), docs updated, per-project pinned state Issue updated for every project the task listed (D-110). Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iterations/README.md` §11). (`now.md` no longer exists — D-057.)
+- Assembles the **provenance block** from frozen facts (brief, PR reviews, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.
 

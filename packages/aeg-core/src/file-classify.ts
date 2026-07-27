@@ -3,16 +3,36 @@
  * Pure string predicates — no I/O.
  */
 
+/**
+ * Decision archives: frozen records of what was decided, not documentation.
+ * Touching one must never satisfy C3's code-requires-docs pairing, carry a
+ * tier signal, or be held to a spec's `Status:` block.
+ *
+ * Identified by PATH, not by a filename suffix. The suffix rule broke the
+ * moment the per-product logs were restored to their original names — the
+ * files were still archives, the predicate stopped believing it, and the
+ * assertions that would have caught it were pointed at a synthetic path
+ * instead. Naming the real files is the only form of this rule that cannot
+ * silently stop applying.
+ */
+const FROZEN_ARCHIVES: ReadonlySet<string> = new Set([
+  'docs/decisions-legacy.md',
+  'apps/herald-ai/specs/herald-decisions.md',
+  'apps/vada-ai/specs/vada-decisions.md'
+])
+
+export function isFrozenArchive(p: string): boolean {
+  return FROZEN_ARCHIVES.has(p) || p.endsWith('-decisions-legacy.md')
+}
+
 export function isDocFile(p: string): boolean {
   return (
     (p.startsWith('aeg-root/') && p.endsWith('.md')) ||
     (p.startsWith('aeg-project/') && p.endsWith('.md')) ||
     (p.includes('/aeg-project/') && p.endsWith('.md')) ||
     (p.startsWith('.vinaya/') && p.endsWith('.md')) ||
-    // The frozen decision archives are history, not documentation: touching one
-    // must never satisfy C3's code-requires-docs pairing.
-    (p.startsWith('docs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')) ||
-    (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')) ||
+    (p.startsWith('docs/') && p.endsWith('.md') && !isFrozenArchive(p)) ||
+    (p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !isFrozenArchive(p)) ||
     (p.startsWith('.claude/skills/') && p.endsWith('.md')) ||
     p === 'docs-index.md' ||
     p === 'README.md' ||
@@ -26,7 +46,5 @@ export function isCodeFile(p: string): boolean {
 }
 
 export function isSpecFile(p: string): boolean {
-  // `-legacy.md` is a frozen archive living in a specs directory, not a spec:
-  // it carries no `Status:` block for C1 to check and no tier signal to derive.
-  return p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !p.endsWith('-legacy.md')
+  return p.startsWith('apps/') && p.includes('/specs/') && p.endsWith('.md') && !isFrozenArchive(p)
 }

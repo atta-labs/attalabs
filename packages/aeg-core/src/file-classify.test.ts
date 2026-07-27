@@ -55,11 +55,26 @@ describe('the frozen decision archives are not documentation', () => {
   // touching a file nobody reads. History is not a doc update.
   it('excludes the legacy archives from the doc set', () => {
     expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
-    expect(isDocFile('docs/other-legacy.md')).toBe(false)
+    expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/herald-ai/specs/herald-decisions.md')).toBe(false)
+    expect(isDocFile('apps/vada-ai/specs/vada-decisions.md')).toBe(false)
   })
 
   it('still counts real docs in the same directories', () => {
     expect(isDocFile('docs/some-guide.md')).toBe(true)
     expect(isDocFile('apps/vinaya/specs/vinaya-spec.md')).toBe(true)
+  })
+})
+
+describe('the restored per-product logs are still archives', () => {
+  // Review round 5: renaming these back to their original names silently
+  // defeated a suffix-based exclusion, and the assertions that would have
+  // caught it had been repointed at a synthetic path. Both real files are
+  // named here so the predicate cannot stop applying without a test failing.
+  it('excludes them from the doc set, the spec set, and tier derivation', () => {
+    for (const p of ['apps/herald-ai/specs/herald-decisions.md', 'apps/vada-ai/specs/vada-decisions.md']) {
+      expect(isDocFile(p), p).toBe(false)
+      expect(isSpecFile(p), p).toBe(false)
+    }
   })
 })
