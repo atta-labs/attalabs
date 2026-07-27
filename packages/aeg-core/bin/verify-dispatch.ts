@@ -297,12 +297,31 @@ async function resolvePriorTrancheArchival(
 
       // One query per accepted label — `--label` is an AND filter, and mid-
       // rename the slug's Issues can be split across canonical and superseded.
-      const openIssues = trancheLabelsToQuery(slug).flatMap(
-        (labelName) =>
-          shJson<Array<{ number: number }>>(
-            `gh issue list -R ${repo.owner}/${repo.repo} --label "${labelName}" --state open --json number --limit 100`
-          ) ?? []
-      )
+      //
+      // Deduped by Issue number, as `trancheLabelsToQuery`'s doc comment makes
+      // a caller obligation: mid-migration an Issue can carry BOTH labels and
+      // would otherwise be counted twice. Only the emptiness of this set is
+      // read today, and duplicates cannot turn a zero non-zero — but the
+      // moment anyone reads it as a count, an undeduped union is silently
+      // wrong, and a prior-tranche predicate is exactly the thing that grows
+      // a count. Deduping here costs nothing and removes the trap.
+      //
+      // Not routed through `ghIssueListByAnyLabel`: that helper is internal to
+      // `@atta/aeg-forge-state`'s `gh.ts` (not exported) and issues a
+      // `--state all` query with the full Issue JSON, where this site wants
+      // open Issues and their numbers only.
+      const openIssues = [
+        ...new Set(
+          trancheLabelsToQuery(slug)
+            .flatMap(
+              (labelName) =>
+                shJson<Array<{ number: number }>>(
+                  `gh issue list -R ${repo.owner}/${repo.repo} --label "${labelName}" --state open --json number --limit 100`
+                ) ?? []
+            )
+            .map((i) => i.number)
+        )
+      ]
       if (openIssues.length === 0) {
         found = { project, priorTrancheSlug: slug, archived: false }
         break

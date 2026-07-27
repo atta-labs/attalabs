@@ -274,7 +274,7 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
  *   only tasks in THAT tranche are checked — prevents vada/herald legacy
  *   #TBD rows from blocking a PR against an unrelated tranche.
  *
- * `enrichedEntries`: when provided (post-forge-fetch), used to determine if an
+ * `enrichedEntries`: when provided (post-forge-fetch), used to determine if a
  *   tranche predates `COHERENCE_ENFORCED_FROM` by proxy: if the tranche has
  *   any task whose `closedAt` or `mergedAt` is pre-cutoff, its #TBD rows are
  *   grandfathered as `info`.

@@ -33,7 +33,7 @@ export type ActiveTrancheRef = { slug: string; goal: string }
 
 /**
  * Lists every OPEN Milestone as an active-tranche slug — the forge-native
- * enumeration of "which tranches are currently active" — an
+ * enumeration of "which tranches are currently active" — a
  * tranche's Goal/Lifecycle lives on a Milestone titled exactly its slug.
  */
 export function listActiveTrancheSlugs(owner: string, repo: string): ActiveTrancheRef[] {

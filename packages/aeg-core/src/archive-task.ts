@@ -33,7 +33,7 @@ const TASK_BRANCH_PATTERN = /^task\/([^/]+)\/([^/]+)$/
  * null when headRefName is not task/<tranche>/<taskId>.
  *
  * This is ONE of two independent eligibility signals for provenance —
- * the branch-name pattern — not the only one. A PR that closes an
+ * the branch-name pattern — not the only one. A PR that closes a
  * tranche-labeled Issue from a non-`task/*` branch (e.g. a small ad-hoc
  * `fix/*` cleanup that finally attaches `Closes #N` to a task whose real
  * work already shipped elsewhere) is EQUALLY eligible: the CLI shim

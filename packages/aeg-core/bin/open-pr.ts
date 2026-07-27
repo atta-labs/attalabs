@@ -24,7 +24,7 @@
  * fallback to the local branch.
  *
  * Gates (all must pass, in order):
- *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
+ *   0b. single-plan-pr — plan branches only: refuses a diff that touches a
  *                       tranche's topology file when another OPEN PR's
  *                       diff already touches that SAME tranche's topology
  * file (task 19 / #336). Ordinary task-branch

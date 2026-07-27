@@ -51,10 +51,31 @@ function activeTrancheSlugs(): string[] {
   // than returning empty. That is the same zero answer as "no active tranche
   // carries a topology file", which the caller already treats as the expected
   // permanent steady state, so it degrades to that rather than failing.
+  //
+  // ONLY that one cause is absorbed. A blanket `catch` would turn an unfetched
+  // `origin/main`, a corrupt object store or any other git failure into the
+  // same silent `[]` — and this test's pass condition IS the empty list, so it
+  // would go permanently, invisibly vacuous.
+  //
+  // The discriminator is NOT the message: `git ls-tree` prints the identical
+  // `fatal: Not a valid object name <rev>:<path>` whether the revision is
+  // missing or only the path within it is. So the revision is resolved
+  // separately — if `origin/main` itself does not resolve, the failure is an
+  // unfetched or broken ref and must surface, not be read as "no tranches".
   let listing: string
   try {
-    listing = execSync('git ls-tree --full-tree --name-only origin/main:aeg-root/tranches', { encoding: 'utf8' })
-  } catch {
+    listing = execSync('git ls-tree --full-tree --name-only origin/main:aeg-root/tranches', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+  } catch (err) {
+    try {
+      execSync('git rev-parse --verify --quiet origin/main^{commit}', { stdio: 'ignore' })
+    } catch {
+      throw new Error(
+        `[golden-comparison] origin/main does not resolve — the golden comparison cannot be trusted as "nothing to compare". Fetch it and re-run. Original: ${(err as Error).message}`
+      )
+    }
     console.warn('[golden-comparison] no aeg-root/tranches on origin/main — nothing to compare, passing.')
     return []
   }
