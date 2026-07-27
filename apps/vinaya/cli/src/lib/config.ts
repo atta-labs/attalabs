@@ -101,8 +101,14 @@ const ManagedBlockRecordSchema = z.object({
   comment: z.enum(['hash', 'html'])
 })
 export type ManagedBlockRecord = z.infer<typeof ManagedBlockRecordSchema>
+// `version` is a plain positive integer, NOT `z.literal(MANAGED_MANIFEST_VERSION)`:
+// `vinaya upgrade` (D-093) must be able to READ a manifest recorded by an older
+// package version to migrate it forward, or refuse with a self-explaining
+// message when the manifest is NEWER than the installed package understands —
+// an exact-literal pin would make either case a schema-parse failure instead
+// of a real, diagnosable comparison.
 const ManagedManifestSchema = z.object({
-  version: z.literal(MANAGED_MANIFEST_VERSION),
+  version: z.number().int().positive(),
   files: z.array(SafeRepoRelPath),
   blocks: z.array(ManagedBlockRecordSchema),
   labels: z.array(z.string())
