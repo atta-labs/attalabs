@@ -47,7 +47,7 @@ After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the
 
 ## Phase 1: Idea origination
 
-**Who:** Principal and Planner / Brief Author (Strategist mode).
+**Who:** Principal and Planner.
 
 The Principal brings an idea. The Brief Author pressure-tests, pushes back, surfaces related decisions, checks whether it's already specced. The Brief Author's job is **not** to immediately agree and plan — it's to:
 - Read the relevant specs to confirm the idea isn't already settled
@@ -157,7 +157,7 @@ The Developer cannot author its own briefs, expand scope without escalation, mod
 The Developer escalates through the escalation mechanism — a manual escalation note, or, if dispatched by an automation layer, its request-input mechanism — tagged with a `severity` that routes it:
 
 - `severity: execution` → Brief Author. Most common: a deprecated dependency, an unanticipated flag, a "null or throw?" call.
-- `severity: strategy` → Brief Author (Strategist mode). Less common: the brief's approach has a structural problem; the work touches an undiscussed area.
+- `severity: strategy` → Brief Author. Less common: the brief's approach has a structural problem; the work touches an undiscussed area.
 - `severity: product` → Principal. Rare: user-visible behavior the brief didn't address; a Type 1 decision is required.
 
 The task is marked `blocked` (an `aeg:blocked` label — the one status with no native forge fact) until a reply arrives. The responder (Planner or Principal) formulates a reply and the Developer resumes.

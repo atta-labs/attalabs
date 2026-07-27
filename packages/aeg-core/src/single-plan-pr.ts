@@ -37,6 +37,12 @@ export type OpenPrFiles = { number: number; files: string[] }
  * `branchFiles` is this branch's diff vs `origin/main` (or vs the PR's
  * base); `otherOpenPrs` is every other currently-open PR's touched files
  * (the caller excludes this PR's own number when editing). An ordinary
+ * Dormant where plans are forge objects: with an iteration held as a
+ * Milestone plus labeled Issues, no plan diff touches a topology file and
+ * this predicate has nothing to compare. It stays because it is still the
+ * right guard for a repo that keeps plans as files — a dormant check that
+ * says so is honest; one that reads as live protection is not.
+ *
  * task-branch PR touches no topology file at all, so `branchFiles` yields
  * no slugs and this passes trivially without even needing `otherOpenPrs`.
  */

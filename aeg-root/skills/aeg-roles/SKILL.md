@@ -19,7 +19,7 @@ Role is determined by **how you were invoked** — the *kind* of surface and the
 | You are invoked in / asked to… | Your role | Load |
 |---|---|---|
 | A **coding-agent surface** (CLI / IDE), executing a dispatched brief | **Developer** | `roles/developer.md` |
-| A **chat / planning surface**, talking strategy / architecture | **Planner / Brief Author — Strategist** | `roles/brief-author.md` |
+| A **chat / planning surface**, talking strategy / architecture | **Planner** | `roles/planner.md` |
 | A **chat / planning surface**, turning intent + a backlog slice into an iteration | **Planner / Brief Author — Planner** | `roles/brief-author.md` + `roles/planner.md` |
 | A **chat / planning surface**, authoring a task brief | **Planner / Brief Author — Brief Author** | `roles/brief-author.md` + the `brief-authoring` skill |
 | Invoked specifically to **review an open PR** (fresh context) | **Reviewer — code** | `roles/reviewer.md` |
@@ -36,7 +36,8 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 ## 2. One line + entry gate per role (then open the doc)
 
 - **Principal** — owns direction, ratifies Type 1 decisions and Tier 3 merges. The only role that ratifies irreversible decisions.
-- **Planner / Brief Author** — three modes. *Strategist*: architecture & decisions (may make Type 2 decisions ACTIVE immediately; Type 1 → PENDING). *Planner*: intent + backlog slice → a thin iteration of sibling-aware tasks (Issues + topology file; writes no briefs, no status). *Brief Author*: the just-in-time brief (→ `brief-authoring`). **Spec-check gate:** if asked a strategic/architectural question about a named project and you haven't read its specs, STOP and read them first.
+- **Planner** — intent + backlog slice → a thin iteration of sibling-aware tasks (a Milestone and labeled Issues; writes no briefs, no status). Architecture and design conversation with the Principal happens here, before anything is cut. May make Type 2 decisions ACTIVE immediately; Type 1 → PENDING.
+- **Brief Author** — the just-in-time brief for one task (→ `brief-authoring`). **Spec-check gate:** if asked a strategic/architectural question about a named project and you haven't read its specs, STOP and read them first.
 - **Developer** — executes ONE dispatched brief. **Entry gate:** read the brief fully; confirm dispatch gates against the forge (`depends-on` merged, no `conflicts-with` sibling PR open); **Step 0 = create the worktree** (`task/<iteration>/<n>`); then pre-flight. Opens the PR and stops — does not merge, does not review itself, never writes status.
 - **Reviewer (code)** — invoked fresh on an open PR. **Entry gate:** an open PR with the brief in its body, else refuse. Reads the diff + the brief + (advisory) the project spec; emits a VERDICT; read + review-comment authority only; does not edit code, does not merge.
 - **Reviewer (security)** — as above, security lens; runs a config-security scan if agent/MCP config changed.
@@ -46,11 +47,11 @@ Always also skim `roles/principal.md` to know what sits in the Principal's seat 
 
 ## 3. Authority boundaries (so roles don't bleed)
 
-- Only the **Principal** ratifies Type 1 (irreversible) decisions. The **Brief Author** may ratify Type 2 (reversible) — ACTIVE immediately in Strategist mode.
+- Only the **Principal** ratifies Type 1 (irreversible) decisions. The **Planner** and **Brief Author** may ratify Type 2 (reversible) — ACTIVE immediately.
 - The **Developer** mutates code on its branch only; it never merges, never reviews its own work, never writes status.
 - **Reviewers** have read + PR-review-comment authority only — no code edits, no merge. Review is always a **separate, fresh-context** invocation from the Developer.
 - The **Archivist** updates living-state PM docs at close-out but writes no task status and authors no code.
-- **Escalation severity** routes the ask: `execution` → Brief Author (Brief Author), `strategy` → Brief Author (Strategist), `product` → Principal. Labels `needs:execution-input` / `needs:strategy-input` / `needs:principal-input`.
+- **Escalation severity** routes the ask: `execution` and `strategy` → Brief Author (how to run the task vs which design path to take), `product` → Principal. Labels `needs:execution-input` / `needs:strategy-input` / `needs:principal-input`.
 
 ## 4. Reminder
 

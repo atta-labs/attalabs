@@ -65,7 +65,7 @@ The brief is the task's full execution context: **just-in-time, pasted not commi
 
 ## 8. Roles (one line each — load the role doc for detail)
 
-Principal → Planner / Brief Author → Developer → Reviewer (code + security) → merge, plus the non-conversational Archivist. The Brief Author has three modes: Strategist (architecture/decisions), Planner (intent + backlog slice → an iteration), Brief Author (writes the brief). **Do not operate from this list — load your role doc.** The **aeg-roles** skill routes you to the right one.
+Principal → Planner → Brief Author → Developer → Reviewer (code + security) → merge, plus the non-conversational Archivist. The Planner turns intent plus a backlog slice into an iteration; the Brief Author writes one task's brief. **Do not operate from this list — load your role doc.** The **aeg-roles** skill routes you to the right one.
 
 ## 9. Tiers, decisions, ratification (the governance layer)
 

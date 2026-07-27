@@ -150,7 +150,7 @@ Role is determined by environment and context — not by which agent you are. Re
 ### If you are the Planner / Brief Author (a chat/planning surface, talking strategy/planning)
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
-2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which mode you're in (Strategist / Planner / Brief Author). If planning an iteration, also read `roles/planner.md`.
+2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which of the two you are. Planning an iteration is the Planner; authoring one task's brief is the Brief Author.
 3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `iterations/<name>.md` for in-flight task topology.
 4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `iteration:<slug>`, open PRs, `aeg:blocked` labels.
 5. **Check the `needs:principal-input` label** — any labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open` retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on pinned Issue #452.)
@@ -198,7 +198,7 @@ Forge state > file state > memory. Always.
 
 ### Hard rule — the spec-check gate
 
-If Dani asks a strategic, architectural, or product-shape question about a named product, and you have not read the specs for that product, **stop and read them first.** No "thinking out loud first." Applies in Strategist/Planner mode. Does NOT apply when executing a brief (the brief specifies scope; do not expand it).
+If Dani asks a strategic, architectural, or product-shape question about a named product, and you have not read the specs for that product, **stop and read them first.** No "thinking out loud first." Applies to the Planner and the Brief Author alike. Does NOT apply when executing a brief (the brief specifies scope; do not expand it).
 
 ---
 
@@ -208,7 +208,7 @@ If Dani asks a strategic, architectural, or product-shape question about a named
 
 **Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; `severity: product` escalations; PENDING Type 2 decisions.
 
-**Does NOT wait:** Type 2 decisions the Brief Author makes in Strategist mode (ACTIVE immediately); Tier 0/1 PR merges (after CI + Brief Author spec review); `severity: execution`/`strategy` escalations (Brief Author handles); already-ratified items.
+**Does NOT wait:** Type 2 decisions the Brief Author makes (ACTIVE immediately); Tier 0/1 PR merges (after CI + Brief Author spec review); `severity: execution`/`strategy` escalations (Brief Author handles); already-ratified items.
 
 **Brief Author responsibility:** before each window, surface PENDING items; after, mark RESOLVED with the Principal's action and date.
 
@@ -319,6 +319,6 @@ Dani works with multiple AI collaborators simultaneously: Claude (multiple sessi
 
 When other AI outputs are pasted in, Claude responds as the adversarial reviewer / Critic. Synthesis across multiple AI views is part of the working pattern — the manual version of what Vāda automates.
 
-The AEG model formalizes this: Principal → Planner / Brief Author (Strategist / Planner / Brief Author) → Developer → Reviewer + Security → merge → Archivist. The Brief Author routes escalations by severity. Agents do not make final calls.
+The AEG model formalizes this: Principal → Planner → Brief Author → Developer → Reviewer + Security → merge → Archivist. The Brief Author routes escalations by severity. Agents do not make final calls.
 
-**Tooling note (this repo, May 2026):** GitHub MCP may be available via OAuth in fresh conversations — prefer it over paste-back for reading repo content and creating Issues/PRs. The coding-agent surface has direct filesystem access to the worktree. Self-hosted MCP servers with bearer-token auth (e.g. Vāda's hosted MCP) work via a coding-agent CLI, not via the chat connector broker. In this repo, Cetana provides the orchestration-tool strategist binding (list active tasks, reply to a blocked task) when connected — a convenience of the tool in use, not part of AEG.
+**Tooling note (this repo, May 2026):** GitHub MCP may be available via OAuth in fresh conversations — prefer it over paste-back for reading repo content and creating Issues/PRs. The coding-agent surface has direct filesystem access to the worktree. Self-hosted MCP servers with bearer-token auth (e.g. Vāda's hosted MCP) work via a coding-agent CLI, not via the chat connector broker. An orchestration tool may bind the same conversational surface (list active tasks, reply to a blocked task) — a convenience of whatever tool is in use, never part of the model.

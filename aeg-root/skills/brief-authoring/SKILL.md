@@ -10,7 +10,7 @@ description: Rules for authoring task briefs dispatched to Developer agents. Loa
 
 Every task brief the Planner / Brief Author writes or dispatches must follow these rules. They exist because vague briefs produce vague work, and well-structured briefs can be handed to any Developer agent — a coding agent dispatched by an automation layer, or a direct paste — with no additional context.
 
-**This skill is Brief Author mode.** Load it when the Planner / Brief Author is authoring or reviewing a brief. Do not load for strategy/architecture (Strategist mode) or for planning a whole iteration (Planner mode — see `aeg-root/roles/planner.md`).
+**This skill is Brief Author mode.** Load it when the Planner / Brief Author is authoring or reviewing a brief. Do not load for planning a whole iteration — that is the Planner, see `aeg-root/roles/planner.md`.
 
 **Where the brief lives.** The brief is the task's full execution context. It is **pasted to the Developer, not committed**, and it **lands in the PR body** when the Developer opens the PR — that is its permanent, durable home, read by the Reviewer and Archivist. A brief is **never** put in the task's forge Issue (the Issue holds identity + metadata + the Planner's rationale, not the brief; a brief there would go stale before work starts). Context lives entirely in the brief: if it isn't in the brief, it doesn't exist.
 

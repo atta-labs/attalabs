@@ -80,7 +80,7 @@ When invoked, an agent does not trust that you called it correctly. It checks tw
 
 ## 4.5. The conversational protocol — how every role talks to the Principal
 
-Self-location (§4) is *what* an agent verifies before acting. The **conversational protocol** is *how* it speaks while it works. It applies to **every conversational role** (Principal-facing Brief Author modes — Strategist, Planner, Brief Author — and the Developer, Reviewer, Security passes), so that across the whole flow the human always knows **who is speaking, what stage they're in, what just happened, and what comes next.** A governed flow that runs silently is illegible; legibility is itself a governance property (it is the same "make the invisible visible" that §1 calls the point of manual mode).
+Self-location (§4) is *what* an agent verifies before acting. The **conversational protocol** is *how* it speaks while it works. It applies to **every conversational role** (the Principal-facing Planner and Brief Author, and the Developer, Reviewer, Security passes), so that across the whole flow the human always knows **who is speaking, what stage they're in, what just happened, and what comes next.** A governed flow that runs silently is illegible; legibility is itself a governance property (it is the same "make the invisible visible" that §1 calls the point of manual mode).
 
 This is a **shared, model-level protocol**. Each role specializes it in its own role doc (the Planner's specialization is in `roles/planner.md` — the first written; Brief Author, Developer, and Reviewer specializations follow as each is modeled). The shared spine, which no role overrides:
 
