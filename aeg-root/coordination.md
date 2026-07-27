@@ -24,10 +24,10 @@ If you are starting a fresh session and need to orient:
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Planner / Brief Author (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/tranche-model.md` — the tranche model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
-5. **Per-project state (pinned Issues)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
+5. **Per-project state (pinned Issues)** — what is true right now, per project (`aeg`, `vada`, `herald` — one pinned Issue each, found via the repo's native Pinned Issues view, not a memorized number) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, its own pinned Issue). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
-7. `aeg-root/tranches/<name>.md` — the current tranche's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active tranches no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `tranche:<slug>`-labeled Issues). **No active tranche carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`tranche-model.md` §4); `completed/` tranches keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
-8. **Lessons log (pinned Issue #453)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
+7. `aeg-root/tranches/<name>.md` — the current tranche's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover:** most active tranches no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `tranche:<slug>`-labeled Issues). **No active tranche carries this file at all today** — the last tracked exception's file was deleted once its backfill completed (`tranche-model.md` §4); `completed/` tranches keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
+8. **Lessons log (pinned Issue)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
 
@@ -35,7 +35,7 @@ The AEG model front door is the **`aeg`** skill (the model in one read) → the 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, and the active tranche there. It never expects a per-project copy of the model.
 
-Living **state** is held in pinned forge Issues (lessons, per-project operational state, since `aeg-forge-state-v1` task 4): one root ecosystem-wide pinned Issue (#451, covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450). A task updates the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
+Living **state** is held in pinned forge Issues (lessons, per-project operational state): one root ecosystem-wide pinned Issue (covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg`, `vada`, `herald`, `cetana`). A task updates the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
@@ -65,7 +65,7 @@ gh issue list --label "tranche:<slug>" --state open --assignee ""
 gh issue list --label "aeg:blocked" --state open
 ```
 
-**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active tranche file at `aeg-root/tranches/<name>.md`.
+**"What's the current focus?"** — read the ecosystem pinned state Issue's "Current focus" section and the active tranche file at `aeg-root/tranches/<name>.md`.
 
 **"What merged recently?"** — `gh pr list --state merged --limit 20`
 
@@ -91,12 +91,12 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | `aeg-root/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
 | Per-project state (pinned Issue) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
 | `aeg-root/tranches/<name>.md` | The current tranche's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
-| Lessons log (pinned Issue #453) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
+| Lessons log (pinned Issue) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
 > **`now.md` is retired.** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
 
-The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research (`deprecation-v1` task 1) — cross-cutting items are cut as backlog Issues instead. **Backlog convention:** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (the old per-unit `aeg-project/` state folder is retired).
+The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research — cross-cutting items are cut as backlog Issues instead. **Backlog convention:** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (the old per-unit `aeg-project/` state folder is retired).
 
 ### What lives in the repo
 
@@ -151,9 +151,9 @@ Role is determined by environment and context — not by which agent you are. Re
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
 2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which of the two you are. Planning a tranche is the Planner; authoring one task's brief is the Brief Author.
-3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `tranches/<name>.md` for in-flight task topology.
+3. **Read the ecosystem pinned state Issue** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `tranches/<name>.md` for in-flight task topology.
 4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `tranche:<slug>`, open PRs, `aeg:blocked` labels.
-5. **Check the `needs:principal-input` label** — any labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open` retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on pinned Issue #452.)
+5. **Check the `needs:principal-input` label** — any labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open` retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on the pinned ratification Issue.)
 6. **Determine the project in scope** — apply the spec-check gate (below) before anything substantive.
 
 ### If you are the Developer (a coding-agent surface, executing a brief)
@@ -204,7 +204,7 @@ If Dani asks a strategic, architectural, or product-shape question about a named
 
 ## Ratification windows
 
-1-2 daily sessions where the Principal resolves items requiring his final authority. there is no queue file — the Brief Author applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on pinned Issue #452.
+1-2 daily sessions where the Principal resolves items requiring his final authority. there is no queue file — the Brief Author applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on the pinned ratification Issue.
 
 **Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; `severity: product` escalations; PENDING Type 2 decisions.
 
@@ -224,7 +224,7 @@ Locked. Spec filenames are `{product}-spec.md` or `{component}-spec.md` — no `
 
 ### Every repo-file change goes through a worktree + PR — no direct commits to `main`
 
-**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the tranche topology — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the tranche file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
+**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the tranche topology — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the tranche file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it.
 
 This is **mechanically enforced**, not merely asked:
 - `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
@@ -236,7 +236,7 @@ The only thing a non-Developer role does *not* route through a worktree is a pur
 
 ### When state changes, update the pinned state Issue
 
-State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The Brief Author updates the relevant project's pinned state Issue (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide #451) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
+State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The Brief Author updates the relevant project's pinned state Issue (`aeg`, `vada`, `herald`, `cetana`, or the ecosystem-wide one) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
 
 Active work, next candidates, and blocked tasks are **derived from the forge** — they are never written to a file. (`now.md` is retired.)
 
@@ -262,12 +262,12 @@ State the decision in the pull request that carries the work, during the convers
 |----------------------|-------|
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/`) |
 | A project spec, ecosystem vision, naming decision | Repo only |
-| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue: `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
+| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue: `aeg`, `vada`, `herald`, `cetana`, plus one covering `aeg-core`/`atta`/`desktop`/`attalabs` ecosystem-wide |
 | The execution plan (task topology, edges) | `aeg-root/tranches/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project); cross-cutting items are cut as backlog Issues |
 | Completed work history | `git log` / merged-PR history (redundant with a committed changelog, so none is kept) |
-| Calibration lessons + anti-patterns | Pinned Issue #453, one new comment per lesson |
-| Items awaiting Principal ratification | `needs:principal-input` label on the relevant Issue/PR; historical record on pinned Issue #452 |
+| Calibration lessons + anti-patterns | Pinned lessons Issue, one new comment per lesson |
+| Items awaiting Principal ratification | `needs:principal-input` label on the relevant Issue/PR; historical record on the pinned ratification Issue |
 | Live task status (what's active, blocked, next) | **Nowhere — derived from the forge** (`gh issue list --label "tranche:<slug>"`, `gh pr list`, Issues view) |
 | Adding/removing/renaming a repo file | Repo + `bun docs:index` |
 | Fundamental coordination rules | This file |
