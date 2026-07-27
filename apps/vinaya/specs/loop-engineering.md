@@ -4,7 +4,7 @@
 
 Proposal / design capture — nothing here is decided. This doc preserves the thinking from the 2026-07-19 session so it survives to a future planning pass. It is not a spec to build against until a Type-1 decision ratifies the model.
 
-**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it forces, and how it graduates safely. Companion to the `iteration → tranche` rename (which is a prerequisite, see below).
+**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it rests on, and how it graduates safely. Companion to the `iteration → tranche` rename, which was this doc's one prerequisite and has since landed (tranche `tranche-rename-v1`, Issue #669) — see below.
 
 ---
 
@@ -57,9 +57,9 @@ The hard part of loop engineering — "when does a pass stop?" — is already so
 2. **Continue-vs-stop authority** — reuse **ratification windows** as the human-in-the-loop checkpoint; don't invent a new one.
 3. **Guards** — per-pass token/cost/time ceiling; concurrency cap. `conflicts-with` edges already give parallel-dispatch collision avoidance.
 
-## Vocabulary the loop forces (prerequisite: the rename)
+## Vocabulary the loop forces (the rename: done)
 
-Adding loops makes the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would both claim the word "iteration":
+Adding loops made the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would otherwise both claim the word "iteration". That rename has landed (tranche `tranche-rename-v1`, Issue #669): the batch of tasks is a `tranche` everywhere in code, doctrine and the forge, and `iteration` is free for the sense below. The three-way split this table describes is the vocabulary the loop work now builds on, not a precondition it is waiting for:
 
 | Concept | Name | Note |
 |---------|------|------|
@@ -91,4 +91,4 @@ You plan the cut, press start, supervise, approve the few human moments.
 
 ---
 
-*Captured 2026-07-19. Reference:. Prerequisite: iteration→tranche rename tranche.*
+*Captured 2026-07-19. Prerequisite: the `iteration → tranche` rename — landed in tranche `tranche-rename-v1` (Issue #669).*
