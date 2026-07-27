@@ -18,8 +18,6 @@ or contradicted in code. They are left as written; this file is not rewritten.
 
 Cross-product architectural decisions that affect the Atta ecosystem as a whole. Product-specific decisions live in per-product decision logs (`apps/*/specs/*-decisions.md`).
 
-**Schema:** See `state-machine.md` Section 6. Append-only — never edit existing entries. Status transitions are new entries that reference old ones.
-
 ---
 
 ## D-001 — Three-role + Archivist operational model
