@@ -126,7 +126,7 @@ export function resolveTaskIssueRef(title: string, labels: string[]): TaskIssueR
   if (!m) return null
   const taskId = (m[2] ?? '').trim()
   if (!taskId) return null
-  const iterSlug = findTrancheSlug(labels)
-  if (!iterSlug) return null
-  return { iterSlug, taskId }
+  const trancheSlug = findTrancheSlug(labels)
+  if (!trancheSlug) return null
+  return { trancheSlug, taskId }
 }

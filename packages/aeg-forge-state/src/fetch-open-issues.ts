@@ -44,7 +44,7 @@ export async function fetchOpenIssuesByLabel(
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
   // GraphQL alias: replace hyphens with underscores (hyphens are invalid in aliases)
-  const toAlias = (slug: string) => `iter_${slug.replace(/-/g, '_')}`
+  const toAlias = (slug: string) => `tranche_${slug.replace(/-/g, '_')}`
   // One alias per (slug, accepted label). `labels: [a, b]` is an AND filter, so
   // spanning a label rename means separate connections unioned client-side.
   const variantAlias = (slug: string, i: number) => `${toAlias(slug)}__v${i}`

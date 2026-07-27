@@ -110,8 +110,8 @@ export type ForgeIssue = { number: number; body: string; labels: string[] }
  * task id derived from its title (`[<slug>] <id> — ...`) and `vinaya/tranche:<slug>`
  * label. Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1
  * reverse): a branch closing an Issue that resolves to one of these must be
- * named `task/<iterSlug>/<taskId>`. */
-export type TaskIssueRef = { iterSlug: string; taskId: string }
+ * named `task/<trancheSlug>/<taskId>`. */
+export type TaskIssueRef = { trancheSlug: string; taskId: string }
 
 /** Identity of a task as parsed from the tranche topology table. */
 export type TaskRef = {

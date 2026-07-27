@@ -116,7 +116,7 @@ export function checkA1(entries: TaskEntry[]): CheckResult {
  * Fail class: `archived-without-provenance`
  * Terminal event date: `prMergedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
  *
- * `hasProvenanceByKey`: Map keyed by `${iterSlug}/${taskId}` → true when the
+ * `hasProvenanceByKey`: Map keyed by `${trancheSlug}/${taskId}` → true when the
  * closing PR has a comment containing `### AEG provenance`.
  */
 export function checkA2(entries: TaskEntry[], hasProvenanceByKey: Map<string, boolean>): CheckResult {
@@ -658,8 +658,8 @@ export function extractClosesReferences(prBody: string): Set<number> {
  * the gap that let `feat/vinaya-landing-v3` implement Issue #509 with zero
  * forge-visible status. Runs for ANY branch, gated on `taskIssueRefs` being
  * supplied: each `Closes #N` the body references is looked up in the map;
- * an entry resolving to a task's `{iterSlug, taskId}` requires
- * `branch === "task/<iterSlug>/<taskId>"`. A missing map entry (issue not
+ * an entry resolving to a task's `{trancheSlug, taskId}` requires
+ * `branch === "task/<trancheSlug>/<taskId>"`. A missing map entry (issue not
  * resolved, e.g. no forge token) or an ordinary non-task Issue (`null` in
  * the map) skips the check for that reference — this direction only ever
  * *adds* a failure, never silently passes something the forward direction
@@ -681,11 +681,11 @@ export function checkClosesN(
     for (const n of referenced) {
       const ref = taskIssueRefs.get(n)
       if (!ref) continue
-      const expectedBranch = `task/${ref.iterSlug}/${ref.taskId}`
+      const expectedBranch = `task/${ref.trancheSlug}/${ref.taskId}`
       if (branch !== expectedBranch) {
         return {
           ok: false,
-          message: `closes-n-reverse: branch "${branch}" closes #${n} (task ${ref.taskId} of tranche "${ref.iterSlug}") but is not named "${expectedBranch}" — rename the branch and re-push, or if this work is intentionally outside AEG's dispatch flow, remove the Closes reference.`
+          message: `closes-n-reverse: branch "${branch}" closes #${n} (task ${ref.taskId} of tranche "${ref.trancheSlug}") but is not named "${expectedBranch}" — rename the branch and re-push, or if this work is intentionally outside AEG's dispatch flow, remove the Closes reference.`
         }
       }
     }
@@ -694,29 +694,29 @@ export function checkClosesN(
   const m = branch.match(/^task\/([^/]+)\/([^/]+)$/)
   if (!m) return { ok: true } // non-task branch — forward direction bypass
 
-  const iterSlug = m[1] as string
+  const trancheSlug = m[1] as string
   const taskId = m[2] as string
 
-  const iterFile = trancheFiles.find((f) => f.slug === iterSlug)
-  if (!iterFile) {
+  const trancheFile = trancheFiles.find((f) => f.slug === trancheSlug)
+  if (!trancheFile) {
     return {
       ok: false,
-      message: `closes-n: branch "${branch}" references tranche "${iterSlug}" but no topology file found at aeg-root/tranches/${iterSlug}.md. Ensure the tranche file exists before opening the PR.`
+      message: `closes-n: branch "${branch}" references tranche "${trancheSlug}" but no topology file found at aeg-root/tranches/${trancheSlug}.md. Ensure the tranche file exists before opening the PR.`
     }
   }
 
-  const task = iterFile.tranche.tasks.find((t) => t.id === taskId)
+  const task = trancheFile.tranche.tasks.find((t) => t.id === taskId)
   if (!task) {
     return {
       ok: false,
-      message: `closes-n: branch "${branch}" references task "${taskId}" not found in ${iterSlug} topology. Verify the task ID matches the tranche file.`
+      message: `closes-n: branch "${branch}" references task "${taskId}" not found in ${trancheSlug} topology. Verify the task ID matches the tranche file.`
     }
   }
 
   if (task.issue === null) {
     return {
       ok: false,
-      message: `closes-n: task "${taskId}" in "${iterSlug}" has no Issue number (#TBD). The Planner must cut the Issue before this PR can be validated.`
+      message: `closes-n: task "${taskId}" in "${trancheSlug}" has no Issue number (#TBD). The Planner must cut the Issue before this PR can be validated.`
     }
   }
 
@@ -725,7 +725,7 @@ export function checkClosesN(
     return {
       ok: false,
       expectedIssue,
-      message: `closes-n: PR body does not contain \`Closes #${expectedIssue}\` (required for task "${taskId}" in tranche "${iterSlug}"). Add it to the PR body Summary section.`
+      message: `closes-n: PR body does not contain \`Closes #${expectedIssue}\` (required for task "${taskId}" in tranche "${trancheSlug}"). Add it to the PR body Summary section.`
     }
   }
 

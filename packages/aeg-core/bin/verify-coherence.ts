@@ -607,8 +607,8 @@ if (import.meta.main) {
     // Scoped load: checkClosesN only ever reads the ONE tranche named in
     // the branch — deriving every other tranche from the forge here would
     // pay the full repo-wide sweep's latency for data this gate never uses.
-    const branchIterSlug = branch.match(/^task\/([^/]+)\//)?.[1]
-    const files = await loadTrancheFiles(null, branchIterSlug)
+    const branchTrancheSlug = branch.match(/^task\/([^/]+)\//)?.[1]
+    const files = await loadTrancheFiles(null, branchTrancheSlug)
 
     // Reverse-direction data: resolve every `Closes #N` the body references
     // to its AEG task identity, one batched forge query (not a per-issue
