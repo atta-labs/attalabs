@@ -109,7 +109,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 - `gh` has no built-in `milestone` subcommand — resolve the Milestone's number by title, then close it via the REST API directly: `gh api "repos/{owner}/{repo}/milestones?state=open" --jq '.[] | select(.title=="<slug>") | .number'`, then `gh api repos/{owner}/{repo}/milestones/<number> -X PATCH -f state=closed`. Closing the Milestone IS the tranche's lifecycle transition to `complete`. This is a forge action, not a repo commit.
 - The Issues themselves are already closed (verified in step 1) and stay attached to the closed Milestone — that attachment is the durable historical record; nothing needs to be moved or archived as a file.
-- **Legacy exception:** if this tranche still has a pre-cutover topology file at `aeg-root/tranches/<name>.md` (rare — the forge-native cutover is complete for every tranche created after `aeg-forge-state-v1`), archive it as before: add `Lifecycle: complete` as the first line after the `# Tranche:` heading, then `git mv aeg-root/tranches/<name>.md aeg-root/tranches/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
+- **Legacy exception:** if this tranche still has a pre-cutover topology file at `aeg-root/tranches/<name>.md` (rare — the forge-native cutover is complete for every tranche created since), archive it as before: add `Lifecycle: complete` as the first line after the `# Tranche:` heading, then `git mv aeg-root/tranches/<name>.md aeg-root/tranches/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
 
 ### 4. Update the pinned state Issue
 
