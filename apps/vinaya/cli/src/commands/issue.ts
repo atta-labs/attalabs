@@ -32,7 +32,7 @@ function locateBodyOrRefuse(ghArgs: string[], retryCommand: string): BodyResult 
  * Fetches the target Issue's actual current labels from the forge. `edit`
  * invocations don't re-pass `--label`, so argv says nothing about whether the
  * target is a task Issue — the forge is the only truthful source (#417). A
- * failed fetch is a HARD refusal, never treated as "no iteration label".
+ * failed fetch is a HARD refusal, never treated as "no tranche label".
  */
 function fetchForgeLabels(issueRef: string): string[] {
   let out: string
@@ -93,7 +93,7 @@ function validateTaskIssue(body: string | null, title: string | null, retryComma
     refuse([
       makeCheckError(
         'forge-args',
-        'A task Issue (a `vinaya/iteration:*` label) requires a `--body-file <path>` so the rationale gate can validate it.',
+        'A task Issue (a `vinaya/tranche:*` label) requires a `--body-file <path>` so the rationale gate can validate it.',
         `Add \`--body-file <path>\`, then re-run \`${retryCommand}\`.`
       )
     ])

@@ -1,21 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./gh', () => ({
-  ghIssueListByLabel: vi.fn()
+  ghIssueListByAnyLabel: vi.fn()
 }))
 
-const { ghIssueListByLabel } = await import('./gh')
+const { ghIssueListByAnyLabel } = await import('./gh')
 const { listIssueMilestonesForSlug } = await import('./list-issue-milestones')
 
 describe('listIssueMilestonesForSlug', () => {
   it('maps each open Issue to its milestone title, or null when unattached', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: '[iter] 1 — a',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: { title: 'iter' }
       },
       {
@@ -23,7 +23,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 2 — b',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: null
       }
     ])
@@ -34,14 +34,14 @@ describe('listIssueMilestonesForSlug', () => {
     ])
   })
 
-  it('excludes closed Issues — only open Issues are in scope for the active-iteration drift check', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+  it('excludes closed Issues — only open Issues are in scope for the active-tranche drift check', () => {
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: '[iter] 1 — a',
         body: '',
         state: 'CLOSED',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: null
       }
     ])

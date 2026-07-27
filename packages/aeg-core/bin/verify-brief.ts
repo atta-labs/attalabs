@@ -22,7 +22,7 @@
  * bypass protects. But the branch name was the wrong proxy for it: a standalone
  * `fix/*` brief is a brief, and under the old branch-only rule it bypassed every
  * section check (a fix brief shipped with no §7 doc-update list and nothing
- * caught it). So `verify-brief` validates when the branch is `task/<iter>/<n>`
+ * caught it). So `verify-brief` validates when the branch is `task/<tranche>/<n>`
  * **or** the body is brief-shaped (`isBriefShaped`), and bypasses only when
  * neither holds. `Closes #N` stays a task-branch-only requirement — see
  * `BriefSectionsOptions.requireClosesN`. Reads `BRANCH` the same way

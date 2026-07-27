@@ -7,11 +7,11 @@ these seams allowed file/forge reads. Implements `StateSource` and
 ## StateSource adapters
 
 - **`createForgeSource`** (`src/forge-adapter.ts`) — primary design. Wires
-  `@atta/aeg-forge-state`'s `deriveIterationFromForge` behind the contract.
+  `@atta/aeg-forge-state`'s `deriveTrancheFromForge` behind the contract.
   Imported as a workspace dependency, not re-homed — see the rationale in
   `src/forge-adapter.ts`'s docstring.
 - **`createFileSource`** (`src/file-adapter.ts`) — transitional. Wraps
-  `@atta/aeg-core`'s `parseIteration` over a configurable governance root
+  `@atta/aeg-core`'s `parseTranche` over a configurable governance root
   (`FileSourceConfig.root`, default `aeg-root`). Deliberate throwaway,
   deleted once every consumer of `StateSource` is forge-backed.
 
@@ -29,7 +29,7 @@ zod-validated config object.
   derivation pure: doctrine arrives as already-read `DoctrineContent`, so the
   library can be packaged for adopters whose repos have no `aeg-root/`.
 
-## Open question — publish-time packaging (LAUNCH-iteration, not resolved here)
+## Open question — publish-time packaging (LAUNCH-tranche, not resolved here)
 
 Whether this package ships inside the CLI's published package boundary or
 stays dev-only is a launch-time decision, not a build-time one. The CLI's

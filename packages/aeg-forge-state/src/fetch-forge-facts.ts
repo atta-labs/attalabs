@@ -1,7 +1,7 @@
 /**
  * Public entry point for the local GitHub read adapter.
  *
- * Given a list of tasks for an iteration, return a `Map<TaskId, ForgeFacts>`
+ * Given a list of tasks for a tranche, return a `Map<TaskId, ForgeFacts>`
  * matching the `ForgeFacts` contract (`@atta/aeg-types`). One batched GraphQL
  * query covers all tasks (issue + ref + latest PR per task, aliased) —
  * rate-limit-friendly and avoids aggregating REST `/reviews` for
@@ -13,7 +13,7 @@
  *   - No token discoverable → returns `{ facts: empty, unavailable: true }`.
  *   - Network error / 401 / 403 / 5xx → same.
  *   - Tasks with no Issue number (`null`) are omitted from the query and the
- *     map; `deriveIteration` treats absent entries as `todo`.
+ *     map; `deriveTranche` treats absent entries as `todo`.
  *
  * SERVER-ONLY. Pulls `node:child_process` transitively via
  * `resolveGithubToken`.
@@ -34,19 +34,19 @@ import type {
   TaskRef
 } from '@atta/aeg-types'
 import { resolveGithubToken } from './github-token'
-import { iterationLabel } from './labels'
+import { trancheLabelsToQuery } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
-/** Branch ref convention: `task/<iteration>/<id>` (iteration-model.md). */
-export function buildBranchName(iteration: string, taskId: string): string {
-  return `task/${iteration}/${taskId}`
+/** Branch ref convention: `task/<tranche>/<id>` (tranche-model.md). */
+export function buildBranchName(tranche: string, taskId: string): string {
+  return `task/${tranche}/${taskId}`
 }
 
 /**
- * Discover iteration task refs from the forge by querying Issues labeled
- * `vinaya/iteration:<slug>`. Returns an empty array when:
+ * Discover tranche task refs from the forge by querying Issues labeled
+ * `vinaya/tranche:<slug>`. Returns an empty array when:
  *   - No token is available.
- *   - The label has no issues (e.g. archived iterations that pre-date the label
+ *   - The label has no issues (e.g. archived tranches that pre-date the label
  *     convention).
  *   - Any network/API error occurs.
  *
@@ -56,39 +56,47 @@ export function buildBranchName(iteration: string, taskId: string): string {
 export async function fetchForgeTasksByLabel(input: {
   owner: string
   repo: string
-  iterationSlug: string
+  trancheSlug: string
   token?: string
 }): Promise<Array<{ id: string; issue: number }>> {
   const token = await resolveGithubToken(input.token)
   if (!token) return []
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
-  const iterationLabelName = iterationLabel(input.iterationSlug)
 
-  let response: LabelIssuesResponse
-  try {
-    response = await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
-      owner: input.owner,
-      repo: input.repo,
-      label: iterationLabelName
+  // One query per accepted label, unioned: mid-rename a tranche's Issues can be
+  // split across the canonical and the superseded name, and either half alone
+  // is a wrong answer that reads as "this tranche has no tasks".
+  const responses = await Promise.all(
+    trancheLabelsToQuery(input.trancheSlug).map(async (labelName) => {
+      try {
+        return await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
+          owner: input.owner,
+          repo: input.repo,
+          label: labelName
+        })
+      } catch {
+        return null
+      }
     })
-  } catch {
-    return []
-  }
-
-  const nodes = response.repository?.issues?.nodes
-  if (!nodes) return []
+  )
 
   const refs: Array<{ id: string; issue: number }> = []
-  for (const node of nodes) {
-    const taskId = parseTaskIdFromTitle(node.title, input.iterationSlug)
-    if (taskId !== null) refs.push({ id: taskId, issue: node.number })
+  const seen = new Set<number>()
+  for (const response of responses) {
+    for (const node of response?.repository?.issues?.nodes ?? []) {
+      if (seen.has(node.number)) continue
+      const taskId = parseTaskIdFromTitle(node.title, input.trancheSlug)
+      if (taskId === null) continue
+      seen.add(node.number)
+      refs.push({ id: taskId, issue: node.number })
+    }
   }
   return refs
 }
 
 const LABEL_ISSUES_QUERY = `
-  query IterationIssues($owner: String!, $repo: String!, $label: String!) {
+  query TrancheIssues($owner: String!, $repo: String!, $label: String!) {
     repository(owner: $owner, name: $repo) {
       issues(first: 50, labels: [$label], states: [OPEN, CLOSED]) {
         nodes {
@@ -108,12 +116,12 @@ type LabelIssuesResponse = {
 
 /**
  * Parse the task ID from the AEG issue title convention:
- *   `[<iteration-slug>] <task-id> — <title>`
+ *   `[<tranche-slug>] <task-id> — <title>`
  *
  * Returns `null` for titles that do not follow the convention.
  */
-function parseTaskIdFromTitle(title: string, iterationSlug: string): string | null {
-  const escapedSlug = iterationSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function parseTaskIdFromTitle(title: string, trancheSlug: string): string | null {
+  const escapedSlug = trancheSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const match = title.match(new RegExp(`^\\[${escapedSlug}\\]\\s+(\\S+)\\s+[—-]`))
   return match?.[1] ?? null
 }
@@ -136,7 +144,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
-  const query = buildBatchQuery(input.iteration, queriedTasks)
+  const query = buildBatchQuery(input.tranche, queriedTasks)
   let response: BatchResponse
   try {
     response = await client<BatchResponse>(query, { owner: input.owner, repo: input.repo })
@@ -181,7 +189,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 /**
  * Build one batched GraphQL query with three aliased sub-queries per task:
  *   <alias>_issue   — issue.state, assignees count, labels, closing PR via timelineItems
- *   <alias>_ref     — ref existence for refs/heads/task/<iter>/<id>
+ *   <alias>_ref     — ref existence for refs/heads/task/<tranche>/<id>
  *   <alias>_prs     — latest PR with that head branch (fallback when no closing PR)
  *
  * The issue sub-query includes timelineItems(CLOSED_EVENT) to surface the PR
@@ -195,11 +203,11 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
  * Costs ~3 nodes per task. For 8 tasks that's ~24 nodes / 1 HTTP call;
  * comfortably under GitHub's per-hour points budget (default 5000).
  */
-function buildBatchQuery(iteration: string, tasks: Array<TaskRef & { issue: number }>): string {
+function buildBatchQuery(tranche: string, tasks: Array<TaskRef & { issue: number }>): string {
   const perTask = tasks
     .map((task) => {
       const a = aliasFor(task.id)
-      const branch = buildBranchName(iteration, task.id)
+      const branch = buildBranchName(tranche, task.id)
       // String interpolation here is safe because aliases pass `aliasFor`
       // (alphanum + underscore only) and the branch is escaped via JSON.stringify.
       return `
@@ -309,7 +317,7 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
 
   // Prefer the PR that actually closed the issue (branch-name-independent).
   // Fall back to the branch-named PR for in-flight tasks (open issue, PR open
-  // on the task/<iter>/<id> branch) — and also when a ClosedEvent closer is a
+  // on the task/<tranche>/<id> branch) — and also when a ClosedEvent closer is a
   // Commit, in which case the `... on PullRequest` fragment yields an empty
   // object, not `null`. Guard on `number`/`url` (same shape-check `prRefs`
   // below already applies) so that empty object doesn't win over `branchPr`.

@@ -1,6 +1,6 @@
 /**
- * Open-issues-by-iteration-label fetch — the single implementation of the
- * "which Issues are still open under `vinaya/iteration:<slug>`?" fact.
+ * Open-issues-by-tranche-label fetch — the single implementation of the
+ * "which Issues are still open under `vinaya/tranche:<slug>`?" fact.
  *
  * One implementation per fact (discipline); do not re-implement.
  *
@@ -14,7 +14,7 @@
 
 import { graphql } from '@octokit/graphql'
 import type { ForgeIssue } from '@atta/aeg-types'
-import { iterationLabel } from './labels'
+import { trancheLabelsToQuery } from './labels'
 
 type LabeledIssuesResponse = {
   repository: Record<
@@ -24,7 +24,7 @@ type LabeledIssuesResponse = {
 }
 
 /**
- * Fetch open issues (number + body + labels) for each active iteration slug
+ * Fetch open issues (number + body + labels) for each active tranche slug
  * in one batched query. Returns a Map from slug → ForgeIssue[].
  *
  * Extended for R1 (the rationale-completeness gate — aeg-governance-hardening
@@ -44,14 +44,19 @@ export async function fetchOpenIssuesByLabel(
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
 
   // GraphQL alias: replace hyphens with underscores (hyphens are invalid in aliases)
-  const toAlias = (slug: string) => `iter_${slug.replace(/-/g, '_')}`
+  const toAlias = (slug: string) => `tranche_${slug.replace(/-/g, '_')}`
+  // One alias per (slug, accepted label). `labels: [a, b]` is an AND filter, so
+  // spanning a label rename means separate connections unioned client-side.
+  const variantAlias = (slug: string, i: number) => `${toAlias(slug)}__v${i}`
 
   const perSlug = slugs
-    .map(
-      (slug) => `
-    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(iterationLabel(slug))}], first: 100) {
+    .flatMap((slug) =>
+      trancheLabelsToQuery(slug).map(
+        (labelName, i) => `
+    ${variantAlias(slug, i)}: issues(states: [OPEN], labels: [${JSON.stringify(labelName)}], first: 100) {
       nodes { number body labels(first: 20) { nodes { name } } }
     }`
+      )
     )
     .join('')
 
@@ -70,14 +75,21 @@ export async function fetchOpenIssuesByLabel(
   if (!response.repository) return result
 
   for (const slug of slugs) {
-    const conn = response.repository[toAlias(slug)]
-    const issues: ForgeIssue[] =
-      conn?.nodes?.map((n) => ({
-        number: n.number,
-        body: n.body ?? '',
-        labels: n.labels?.nodes?.map((l) => l.name) ?? []
-      })) ?? []
-    result.set(slug, issues)
+    // Union the per-label connections, deduped by Issue number: mid-rename an
+    // Issue can carry both the canonical and the superseded label.
+    const byNumber = new Map<number, ForgeIssue>()
+    trancheLabelsToQuery(slug).forEach((_labelName, i) => {
+      const conn = response.repository?.[variantAlias(slug, i)]
+      for (const n of conn?.nodes ?? []) {
+        if (byNumber.has(n.number)) continue
+        byNumber.set(n.number, {
+          number: n.number,
+          body: n.body ?? '',
+          labels: n.labels?.nodes?.map((l) => l.name) ?? []
+        })
+      }
+    })
+    result.set(slug, [...byNumber.values()])
   }
 
   return result

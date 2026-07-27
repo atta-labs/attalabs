@@ -148,12 +148,12 @@ describe('(d) sh()/shJson() other call sites are untouched', () => {
 })
 
 /**
- * aeg-governance-hardening task 23 (#360) — `resolvePriorIterationArchival`'s
+ * aeg-governance-hardening task 23 (#360) — `resolvePriorTrancheArchival`'s
  * `gh issue list` called with no explicit repo target, which silently returns
  * `[]` from a linked worktree checkout (the only environment this script runs
  * in during real dispatch) even when real open Issues exist. Reproduced live
  * 2026-07-04: `[]` vs 4 real Issues, same worktree, same instant. Every other
- * `gh` call in the file (`ghIssueView`, `fetchIterationBranchPrs`) had the
+ * `gh` call in the file (`ghIssueView`, `fetchTrancheBranchPrs`) had the
  * identical gap. This is a structural, source-scanning test (not a live `gh`
  * mock) because live `gh` is unmockable cheaply — same style as the `(d)`
  * suite above and task 21's `sh()`/`shJson()` call-site assertions.

@@ -37,7 +37,7 @@ This seam sits between a review and the permanent record of the work it reviewed
 
 ## Why this file exists
 
-Close-out is not a mechanical afterthought — it is the step that makes an iteration's history honest. When the Reviewer's verdict is incomplete (no severity tags, no spec-conformance result, no explicit verdict line), the Archivist cannot assemble the provenance block correctly: they cannot distinguish what was reviewed from what was inferred, what was found from what was missed. This contract removes that ambiguity by specifying exactly what the Reviewer's verdict must contain and exactly what the Archivist reads from it.
+Close-out is not a mechanical afterthought — it is the step that makes a tranche's history honest. When the Reviewer's verdict is incomplete (no severity tags, no spec-conformance result, no explicit verdict line), the Archivist cannot assemble the provenance block correctly: they cannot distinguish what was reviewed from what was inferred, what was found from what was missed. This contract removes that ambiguity by specifying exactly what the Reviewer's verdict must contain and exactly what the Archivist reads from it.
 
 The failure mode this prevents: an Archivist who assembles a provenance block with fabricated or inferred fields because the Reviewer's comment was vague; or a BLOCKER finding that merged silently because the Archivist didn't know it existed; or a STALE-SPEC finding that disappeared without a follow-up Issue because no one tracked it.
 
@@ -69,17 +69,17 @@ Every item the Reviewer produces in the verdict (left) has exactly one obligatio
 - The verdict line must be the **first line** of the verdict comment, in the exact format specified by `roles/reviewer.md`: `VERDICT: APPROVE | REQUEST CHANGES`.
 - The spec-conformance result must be stated explicitly — `CONFORMS`, `DRIFTS`, `CONTRADICTS`, or `STALE-SPEC`. "Not checked" is not acceptable for Tier 1+ tasks with a named Project.
 - A verdict comment missing any of these three elements is malformed. The Reviewer does not post it.
-- Append one row to the iteration's token ledger after posting the verdict.
+- Append one row to the tranche's token ledger after posting the verdict.
 
 ## Consumer obligations (the per-task Archivist)
 
 - Do not run close-out on unmerged PRs. The merge is the authorization signal — confirmed by querying the forge, not by reading a status field.
 - Assemble the provenance block from frozen PR facts (brief in PR body, verdict comment, merge metadata) — never fabricate a field whose source fact is absent. A missing source fact is a DANGLING item, not an opportunity to infer.
 - Post the provenance block as a comment on the merged PR (the PR is a frozen truth domain once merged; the provenance block is its permanent record).
-- **The provenance block comment is the forge-derived coherence signal that downstream roles depend on.** The next Developer to start a task in this iteration checks whether the most-recently-merged task PR carries a provenance block before executing step 0 — its absence is a hard STOP that blocks the next task from starting. Post it completely; a partial or absent block does not satisfy the Developer's entry gate (see `aeg-root/roles/developer.md` and `aeg-root/contracts/brief-developer.md`).
+- **The provenance block comment is the forge-derived coherence signal that downstream roles depend on.** The next Developer to start a task in this tranche checks whether the most-recently-merged task PR carries a provenance block before executing step 0 — its absence is a hard STOP that blocks the next task from starting. Post it completely; a partial or absent block does not satisfy the Developer's entry gate (see `aeg-root/roles/developer.md` and `aeg-root/contracts/brief-developer.md`).
 - A `BLOCKER` or `MAJOR` finding present in the verdict of a merged PR means a deviation was approved. Log it in the provenance block under DANGLING and post a new comment on the pinned lessons Issue.
 - A `STALE-SPEC` finding in a merged PR must produce a follow-up Issue if the Developer did not already open one. This is the Archivist's responsibility to ensure it happens.
-- Append one row to the iteration's token ledger at close-out.
+- Append one row to the tranche's token ledger at close-out.
 
 ---
 

@@ -1,8 +1,8 @@
 /**
- * Aggregates the dashboard's Tasks card across every active iteration (task 11,
+ * Aggregates the dashboard's Tasks card across every active tranche (task 11,
  * #571) — everything Ready to pick up, everything actively moving, and
- * everything Blocked. It reads the SAME derivation the iteration board reads —
- * `deriveIteration` (via `loadIterationSnapshot`) for the `DerivedStatus`, and
+ * everything Blocked. It reads the SAME derivation the tranche board reads —
+ * `deriveTranche` (via `loadTrancheSnapshot`) for the `DerivedStatus`, and
  * `checkDispatchReadiness` (via `loadDispatchReadiness`) for the `todo`
  * Ready/Blocked sub-state — and never a second status mapping of its own:
  * `status-display.ts` is the one source of the label vocabulary, and this
@@ -20,9 +20,9 @@
  * `merged` and the terminal anomaly states are out of scope — this is the
  * "what can I pick up / what is moving / what is stuck" window.
  *
- * Forge honesty: `loadActiveIterations` returns `[]` when the forge is
+ * Forge honesty: `loadActiveTranches` returns `[]` when the forge is
  * unreachable, so this returns `[]` too — the dashboard reads the forge status
- * separately (from `listIterations().forge`) and renders a banner instead of a
+ * separately (from `listTranches().forge`) and renders a banner instead of a
  * truth-shaped empty card.
  *
  * SERVER-ONLY.
@@ -31,10 +31,10 @@
 import 'server-only'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
-import { loadIterationSnapshot } from '@/lib/forge/load-snapshot'
-import { loadActiveIterations, readRegistry } from '@/lib/repo-state'
-import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/iterations/[slug]/_lib/status-display'
-import { boardHref } from '@/app/studio/_lib/iteration-href'
+import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
+import { loadActiveTranches, readRegistry } from '@/lib/repo-state'
+import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/tranches/[slug]/_lib/status-display'
+import { boardHref } from '@/app/studio/_lib/tranche-href'
 
 export type TaskCategory = 'ready' | 'blocked' | 'in-flight' | 'in-review' | 'changes-requested' | 'backlog'
 
@@ -42,10 +42,10 @@ export type TaskCategory = 'ready' | 'blocked' | 'in-flight' | 'in-review' | 'ch
 export type TaskBadge = { label: string; badgeClass: string; title?: string }
 
 export type DashboardTask = {
-  /** Iteration slug, or `null` for a backlog Issue (no iteration by definition). */
-  iterationSlug: string | null
-  /** Deep link to the iteration's board, or `null` (backlog / no project). */
-  iterationHref: string | null
+  /** Tranche slug, or `null` for a backlog Issue (no tranche by definition). */
+  trancheSlug: string | null
+  /** Deep link to the tranche's board, or `null` (backlog / no project). */
+  trancheHref: string | null
   taskId: string
   title: string
   issue: number | null
@@ -57,15 +57,15 @@ export type DashboardTask = {
 
 /**
  * Map the backlog Issues into the same `DashboardTask` shape so the Tasks card
- * can list them alongside iteration tasks under a `backlog` filter — one row
+ * can list them alongside tranche tasks under a `backlog` filter — one row
  * type, one badge vocabulary (`statusVisual('backlog')`). Backlog Issues carry
- * no iteration, so `iterationSlug` is `null` and no iteration renders.
+ * no tranche, so `trancheSlug` is `null` and no tranche renders.
  */
 export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
   const v = statusVisual('backlog')
   return issues.map((issue) => ({
-    iterationSlug: null,
-    iterationHref: null,
+    trancheSlug: null,
+    trancheHref: null,
     taskId: `backlog-${issue.number}`,
     title: issue.title,
     issue: issue.number,
@@ -76,32 +76,32 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
 }
 
 export async function loadDashboardTasks(): Promise<DashboardTask[]> {
-  const [active, registry] = await Promise.all([loadActiveIterations(), readRegistry()])
+  const [active, registry] = await Promise.all([loadActiveTranches(), readRegistry()])
   // Board links resolve only to registered projects — a retired name (e.g. a
   // task still carrying `Project: aeg`) has no project page.
   const registered = new Set(registry.map((p) => p.name))
 
-  // Fan the per-iteration forge reads out in parallel — each iteration's
+  // Fan the per-tranche forge reads out in parallel — each tranche's
   // snapshot + readiness are independent, and the underlying forge derivation
   // is now genuinely async (`@atta/aeg-forge-state` async twins), so the old
-  // serial `for…of await` loop needlessly summed every iteration's latency.
-  const perIteration = await Promise.all(
-    active.map(async ({ fileSlug, iteration }) => {
+  // serial `for…of await` loop needlessly summed every tranche's latency.
+  const perTranche = await Promise.all(
+    active.map(async ({ fileSlug, tranche }) => {
       const rows: DashboardTask[] = []
-      const snapshot = await loadIterationSnapshot(iteration, fileSlug)
+      const snapshot = await loadTrancheSnapshot(tranche, fileSlug)
       const statusById = new Map(snapshot.derived.tasks.map((dt) => [dt.task.id, dt.status]))
-      const readinessById = await loadDispatchReadiness(iteration, fileSlug, snapshot)
+      const readinessById = await loadDispatchReadiness(tranche, fileSlug, snapshot)
 
-      for (const task of iteration.tasks) {
+      for (const task of tranche.tasks) {
         const status = statusById.get(String(task.id))
         const issueUrl =
           snapshot.repo && task.issue != null
             ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${task.issue}`
             : null
-        const iterationHref = boardHref(task.projects, fileSlug, registered)
+        const trancheHref = boardHref(task.projects, fileSlug, registered)
         const base = {
-          iterationSlug: fileSlug,
-          iterationHref,
+          trancheSlug: fileSlug,
+          trancheHref,
           taskId: String(task.id),
           title: task.title,
           issue: task.issue,
@@ -136,6 +136,6 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
   )
 
   // Ordering is the panel's job (its `CATEGORY_ORDER` is the single source, and
-  // it must order the merged iteration+backlog list anyway) — return unsorted.
-  return perIteration.flat()
+  // it must order the merged tranche+backlog list anyway) — return unsorted.
+  return perTranche.flat()
 }

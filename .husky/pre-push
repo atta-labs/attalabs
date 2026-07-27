@@ -9,15 +9,15 @@ while read -r _localref _localsha remoteref remotesha; do
   if [ "$remoteref" = "refs/heads/main" ]; then
     echo "✖ pre-push: direct pushes to main are forbidden." >&2
     echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
-    echo "  Push your task/<iteration>/<n> branch and open a PR instead." >&2
+    echo "  Push your task/<tranche>/<n> branch and open a PR instead." >&2
     exit 1
   fi
 
-  # D-073/D-078: a task/<iteration>/<id> branch may only be pushed when its
-  # <id> literal-matches a row in aeg-root/iterations/<iteration>.md's `#`
+  # D-073/D-078: a task/<tranche>/<id> branch may only be pushed when its
+  # <id> literal-matches a row in aeg-root/tranches/<tranche>.md's `#`
   # column. Catches wrong-branch-name pushes (the T-prefix epidemic) at the
   # earliest possible moment instead of leaving them to die at PR-open.
-  # Delegates to `parseIteration` via check-branch-topology.ts (task 32,
+  # Delegates to `parseTranche` via check-branch-topology.ts (task 32,
   # #399) — the same authoritative parser Studio and verify-dispatch use —
   # instead of the hand-rolled grep this section used to fork. Refusal
   # messages are printed by the bin, byte-identical to the old inline ones.
@@ -35,7 +35,7 @@ while read -r _localref _localsha remoteref remotesha; do
   # (2026-07-03): six topology rows landed on plan PR #325's branch AFTER
   # that PR merged, silently accepted by git/GitHub with no push-time
   # signal, orphaning invisibly until AEG Studio and the coherence oracle
-  # disagreed about the iteration's state. One batched `gh pr list` call;
+  # disagreed about the tranche's state. One batched `gh pr list` call;
   # fails OPEN (allows the push) when the forge is unreachable — a network
   # flake must never block all pushes (deliberate choice, see
   # aeg-root/enforcement.md). Placed before the C5 check below: no point

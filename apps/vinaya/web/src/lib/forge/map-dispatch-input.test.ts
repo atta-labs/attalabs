@@ -38,14 +38,14 @@ function facts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
 
 function sources(overrides: Partial<DispatchInputSources> & { task: Task }): DispatchInputSources {
   return {
-    iterationSlug: 'iter',
+    trancheSlug: 'iter',
     facts: new Map(),
     taskById: new Map([[overrides.task.id, overrides.task]]),
     rationaleBodyByIssue: new Map(),
     provenanceByIssue: new Map(),
     crossIssueClosed: new Map(),
     priorTask: null,
-    priorIterationArchival: [],
+    priorTrancheArchival: [],
     ...overrides
   }
 }
@@ -101,7 +101,7 @@ describe('depends-on resolution', () => {
     })
   }
 
-  it('merged when the same-iteration dep has a merged PR', () => {
+  it('merged when the same-tranche dep has a merged PR', () => {
     expect(buildDispatchGateInput(depSources(facts({ prState: 'merged' }))).dependsOn).toEqual([
       { id: '1', issue: 5, merged: true }
     ])
@@ -126,7 +126,7 @@ describe('depends-on resolution', () => {
     expect(buildDispatchGateInput(depSources(null)).dependsOn).toEqual([{ id: '1', issue: 5, merged: false }])
   })
 
-  it('resolves cross-iteration #NNN edges from the pre-fetched issue state', () => {
+  it('resolves cross-tranche #NNN edges from the pre-fetched issue state', () => {
     const t = task({ id: '2', issue: 10, dependsOn: ['other-iter #77', '#88'] })
     const input = buildDispatchGateInput(sources({ task: t, crossIssueClosed: new Map([[77, true]]) }))
     expect(input.dependsOn).toEqual([
@@ -144,7 +144,7 @@ describe('depends-on resolution', () => {
 })
 
 describe('conflicts-with resolution', () => {
-  it('blocking only when the same-iteration sibling has an OPEN PR', () => {
+  it('blocking only when the same-tranche sibling has an OPEN PR', () => {
     const sibling = task({ id: '3', issue: 6 })
     const t = task({ id: '2', issue: 10, conflictsWith: ['3'] })
     const base = {
@@ -162,7 +162,7 @@ describe('conflicts-with resolution', () => {
     ).toEqual([{ id: '3', issue: 6, openOrInFlight: false }])
   })
 
-  it('cross-iteration conflict edges default to not-blocking (no PR evidence, CLI parity)', () => {
+  it('cross-tranche conflict edges default to not-blocking (no PR evidence, CLI parity)', () => {
     const t = task({ id: '2', issue: 10, conflictsWith: ['other #44'] })
     expect(buildDispatchGateInput(sources({ task: t })).conflictsWith).toEqual([
       { id: 'other #44', issue: 44, openOrInFlight: false }

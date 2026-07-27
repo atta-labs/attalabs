@@ -4,8 +4,8 @@ export type { DoctrineContent, DoctrineSource } from './doctrine-source'
 export { ANCHOR_FIELDS, anchoredRegion } from './anchored-region'
 export type { AnchorField } from './anchored-region'
 export { parseRegistry } from './parse-registry'
-export { parseIteration } from './parse-iteration'
-export { deriveIteration } from './derive-iteration'
+export { parseTranche } from './parse-tranche'
+export { deriveTranche } from './derive-tranche'
 export { parseLedger, rowFromCells } from './parse-ledger'
 export { sumLedger } from './sum-ledger'
 export { aggregateTaskTokenRows, parseTokenReportEntries, parseTokensLines } from './parse-token-report'
@@ -72,7 +72,7 @@ export {
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr
 } from './coherence-checks'
-export type { CheckFailure, CheckResult, ForgeIssue, IterationFile, TaskEntry } from './coherence-checks'
+export type { CheckFailure, CheckResult, ForgeIssue, TrancheFile, TaskEntry } from './coherence-checks'
 export {
   buildProvenanceBlock,
   extractIssue,
@@ -141,11 +141,11 @@ export type {
   DispatchEdgeFact,
   DispatchGateInput,
   DispatchIssueFact,
-  DispatchPriorIterationFact,
+  DispatchPriorTrancheFact,
   DispatchPriorTaskFact,
   DispatchResult
 } from './dispatch-gate'
-export { checkSinglePlanPr, iterationSlugFromTopologyPath, touchesAnyTopology } from './single-plan-pr'
+export { checkSinglePlanPr, trancheSlugFromTopologyPath, touchesAnyTopology } from './single-plan-pr'
 export type { OpenPrFiles } from './single-plan-pr'
 export { isNewDiskStateFile } from './no-disk-state'
 export type { DiskStateFileStatus } from './no-disk-state'
@@ -175,11 +175,12 @@ export {
   fetchForgeTasksByLabel,
   fetchOpenIssuesByLabel,
   fetchTaskIssueRefs,
-  findIterationSlug,
+  findTrancheSlug,
   hasLabel,
-  iterationLabel,
-  iterationSlugLengthError,
-  iterationSlugOf,
+  trancheLabel,
+  trancheLabelsToQuery,
+  trancheSlugLengthError,
+  trancheSlugOf,
   LABEL_MAX_LENGTH,
   LABEL_NAMESPACE,
   LABELS,

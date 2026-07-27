@@ -3,7 +3,7 @@
 /**
  * assign-task-issue — thin CLI/I/O shim for first-push Issue self-assignment
  * (aeg-governance-hardening task 33, #401), wired into `.husky/pre-push`.
- * On a `task/<iteration>/<n>` branch's genuinely first push (the remote ref
+ * On a `task/<tranche>/<n>` branch's genuinely first push (the remote ref
  * does not exist yet), assigns the task's Issue to the authenticated `gh`
  * user — the actual pusher — so Studio's dispatch-visibility chip (task 26,
  * #368) always has a real signal to render instead of depending on the
@@ -29,7 +29,7 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { decideIssueAssignment, parseTaskBranch } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
@@ -45,9 +45,9 @@ function sh(cmd: string): string | null {
 
 /** Fail-open: any forge failure degrades to `null` (the evaluator maps that
  * to a skip), same discipline as `sh()` above — this bin never throws. */
-async function resolveIssue(owner: string, repo: string, iteration: string, taskId: string): Promise<number | null> {
+async function resolveIssue(owner: string, repo: string, tranche: string, taskId: string): Promise<number | null> {
   try {
-    const derived = await deriveIterationFromForge(owner, repo, iteration)
+    const derived = await deriveTrancheFromForge(owner, repo, tranche)
     return derived.tasks.find((t) => t.id === taskId)?.issue ?? null
   } catch {
     return null
@@ -93,7 +93,7 @@ if (import.meta.main) {
     const repoRef = await resolveRepo()
     repo = repoRef ? `${repoRef.owner}/${repoRef.repo}` : null
     if (repoRef !== null) {
-      issue = await resolveIssue(repoRef.owner, repoRef.repo, parsed.iteration, parsed.taskId)
+      issue = await resolveIssue(repoRef.owner, repoRef.repo, parsed.tranche, parsed.taskId)
     }
     if (issue !== null && repo !== null) {
       assignees = fetchAssignees(issue, repo)

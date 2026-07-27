@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 /**
  * One dashboard card (task 11, #571) — a titled surface with a total count in
  * the header. The body holds whatever the caller passes: a few preview rows
- * that link onward (Projects, Iterations) or a full status-filtered list (the
+ * that link onward (Projects, Tranches) or a full status-filtered list (the
  * unified Tasks card). The footer "view all" link is optional — omit
  * `href`/`viewAllLabel` for a card that IS the surface, not a window onto
  * another page (the Tasks card has no onward page to link to).

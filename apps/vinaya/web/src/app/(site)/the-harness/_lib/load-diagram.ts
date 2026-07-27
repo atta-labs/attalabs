@@ -6,8 +6,8 @@ import { findAegRoot } from '@/lib/github-links'
 /**
  * Build-time data spine for `/how-it-works`: reads doctrine off disk and
  * derives the render model. `config` is `null` — v1 ships no
- * `vinaya.config.json` UI, so nothing is disabled. `iteration` is `null` —
- * `DiagramModel.iteration` is passthrough task-lifecycle data with no
+ * `vinaya.config.json` UI, so nothing is disabled. `tranche` is `null` —
+ * `DiagramModel.tranche` is passthrough task-lifecycle data with no
  * per-check pass/fail signal (see `diagram-model.ts`'s own doc comment), so
  * there is nothing honest to render from it beyond a label this page doesn't
  * need. Throws if the doctrine read or derivation fails — a broken build is

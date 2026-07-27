@@ -12,7 +12,7 @@
 
 Build a small, standalone Next.js app at `apps/vinaya/web`, two pages only, deployed to `vinaya.attalabs.dev` (wildcard DNS already configured for `*.attalabs.dev` — deployment is the same Vercel pattern every other app in this monorepo uses; check `apps/herald-ai/web` or `apps/vada-ai/web` for the reference `NextWebShell` / Sanity theme wiring pattern).
 
-**This is explicitly decoupled from and running AHEAD of** a separate, already-planned iteration (`vinaya-studio-v1`) that will eventually copy the old AEG Studio UI into this same app as additional routes. Do NOT build Studio here. Do NOT structure this app assuming a later wholesale copy-in — build it as its own clean, small app; Studio routes get ADDED to it later, in a separate task, by someone else.
+**This is explicitly decoupled from and running AHEAD of** a separate, already-planned tranche (`vinaya-studio-v1`) that will eventually copy the old AEG Studio UI into this same app as additional routes. Do NOT build Studio here. Do NOT structure this app assuming a later wholesale copy-in — build it as its own clean, small app; Studio routes get ADDED to it later, in a separate task, by someone else.
 
 **Why this matters / urgency:** the person building this needs a real, live, public link to point to from their CV/portfolio *now*, even though the underlying CLI (`npx vinaya init`) isn't shippable yet. Priority is high. An honest "coming soon" on the actual install command is correct and wanted — do not fake a working install.
 

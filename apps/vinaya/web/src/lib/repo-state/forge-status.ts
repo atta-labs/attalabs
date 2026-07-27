@@ -2,7 +2,7 @@
  * Pure types + classification for granular forge-availability reporting
  * (Issue #543). Replaces the single `forgeAvailable: boolean` signal — which
  * ANDed every slug's outcome together, so one transient `gh` failure among
- * six active iterations discarded all six — with a structured status that
+ * six active tranches discarded all six — with a structured status that
  * distinguishes total outage from a partial, per-slug failure.
  *
  * No I/O here; `read-root.ts` is the caller that turns `Promise.allSettled`

@@ -170,6 +170,6 @@ describe('arg extraction', () => {
 
   it('collects comma-separated and repeated labels', () => {
     expect(extractLabels(['--label', 'a,b', '--label', 'c'])).toEqual(['a', 'b', 'c'])
-    expect(extractLabels(['--label=vinaya/iteration:demo'])).toEqual(['vinaya/iteration:demo'])
+    expect(extractLabels(['--label=vinaya/tranche:demo'])).toEqual(['vinaya/tranche:demo'])
   })
 })

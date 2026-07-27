@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { anchoredRegion } from './anchored-region'
 import { buildProvenanceBlock, extractIssue, type MergedPrFacts } from './archive-task'
 import { checkClosesN as checkClosesNField, checkProjectField } from './brief-validation'
-import { checkClosesN, extractClosesReferences, type IterationFile } from './coherence-checks'
+import { checkClosesN, extractClosesReferences, type TrancheFile } from './coherence-checks'
 import { fenceShapes } from './fixtures/fence-shapes'
 import { readTierFromPrBody } from './pr-tier'
 import { parsePremiseBlock } from './premise-check'
@@ -22,8 +22,8 @@ function makeTask(id: string, issue: number | null): Task {
   return { id, title: `Task ${id}`, issue, projects: ['aeg'], dependsOn: [], conflictsWith: [], rationaleMarkdown: '' }
 }
 
-function makeIterationFile(slug: string, tasks: Task[]): IterationFile {
-  return { slug, archived: false, iteration: { name: slug, lifecycle: 'active', goal: 'test', tasks, backlog: [] } }
+function makeTrancheFile(slug: string, tasks: Task[]): TrancheFile {
+  return { slug, archived: false, tranche: { name: slug, lifecycle: 'active', goal: 'test', tasks, backlog: [] } }
 }
 
 function makeFacts(body: string): MergedPrFacts {
@@ -140,7 +140,7 @@ describe('anchor recognition is additive — PR #407 freeform round-trip', () =>
   })
 
   it('checkClosesN — unchanged (ok, expected Issue 395)', () => {
-    const files = [makeIterationFile('aeg-governance-hardening', [makeTask('31', 395)])]
+    const files = [makeTrancheFile('aeg-governance-hardening', [makeTask('31', 395)])]
     const r = checkClosesN('task/aeg-governance-hardening/31', body, files)
     expect(r.ok).toBe(true)
     expect(r.expectedIssue).toBe(395)
@@ -156,7 +156,11 @@ describe('anchor recognition is additive — PR #407 freeform round-trip', () =>
     // Re-pinned when the provenance block's `Decision:` line was removed with
     // the machinery behind it. The pin exists to catch *accidental* drift in
     // block assembly; this change was deliberate.
-    expect(sha256(block)).toBe('66b89fe7d0f6a8fc191bebc23e7824a9c630033d335bbaef90afc39fc828b111')
+    //
+    // Re-pinned again by the iteration → tranche rename. The block's only
+    // rendered change is its task label: `task 31 (iteration <slug>)` became
+    // `task 31 (tranche <slug>)`. Assembly is untouched.
+    expect(sha256(block)).toBe('db426b34b87dd719d8ca4f26b19022b79e84e0b380edb6b23197681070af7ff3')
   })
 })
 
@@ -218,10 +222,10 @@ describe('anchor vs decoy — Closes #N', () => {
   ].join('\n')
 
   it('checkClosesN counts only references inside the pair', () => {
-    const files = [makeIterationFile('aeg-governance-hardening', [makeTask('31', 395)])]
+    const files = [makeTrancheFile('aeg-governance-hardening', [makeTask('31', 395)])]
     expect(checkClosesN('task/aeg-governance-hardening/31', body, files).ok).toBe(true)
     // …and the decoy alone would NOT satisfy the gate for issue 999:
-    const files999 = [makeIterationFile('aeg-governance-hardening', [makeTask('31', 999)])]
+    const files999 = [makeTrancheFile('aeg-governance-hardening', [makeTask('31', 999)])]
     expect(checkClosesN('task/aeg-governance-hardening/31', body, files999).ok).toBe(false)
   })
 
@@ -336,7 +340,7 @@ describe('template-shaped body — anchored report above a <details>-wrapped bri
       expect(tp.section).not.toContain('decoy unticked box')
     }
 
-    const files = [makeIterationFile('aeg-governance-hardening', [makeTask('30', 393)])]
+    const files = [makeTrancheFile('aeg-governance-hardening', [makeTask('30', 393)])]
     expect(checkClosesN('task/aeg-governance-hardening/30', body, files).ok).toBe(true)
 
     const { issue, block } = buildProvenanceBlock(makeFacts(body))

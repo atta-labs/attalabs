@@ -1,12 +1,12 @@
 /**
  * Read-only fetch of the latest PR's identity + body for a given task. The
- * **brief lives in the PR body** (`iteration-model.md` §7 — not in the Issue,
+ * **brief lives in the PR body** (`tranche-model.md` §7 — not in the Issue,
  * which holds the Planner's rationale + metadata only). Studio's task-detail
  * view reads it here so the model's "where briefs live" rule is honoured.
  *
- * One small batched GraphQL query covers all tasks in an iteration; callers
+ * One small batched GraphQL query covers all tasks in a tranche; callers
  * that only need one task pass a single-element `tasks` array. The query keys
- * each PR by `headRefName = task/<iteration>/<id>` (the same convention
+ * each PR by `headRefName = task/<tranche>/<id>` (the same convention
  * `fetchForgeFacts` uses) and returns the most recent PR per branch.
  *
  * Graceful degradation contract (mirrors `fetchForgeFacts`):
@@ -36,7 +36,7 @@ export type PullRequestBrief = {
 export type FetchPullRequestBriefsInput = {
   owner: string
   repo: string
-  iteration: string
+  tranche: string
   taskIds: string[]
   token?: string
 }
@@ -62,7 +62,7 @@ export async function fetchPullRequestBriefs(input: FetchPullRequestBriefsInput)
   }
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
-  const query = buildBatchQuery(input.iteration, input.taskIds)
+  const query = buildBatchQuery(input.tranche, input.taskIds)
 
   let response: BatchResponse
   try {
@@ -102,11 +102,11 @@ export async function fetchPullRequestBriefs(input: FetchPullRequestBriefsInput)
 
 // ---------- internal -------------------------------------------------------
 
-function buildBatchQuery(iteration: string, taskIds: string[]): string {
+function buildBatchQuery(tranche: string, taskIds: string[]): string {
   const perTask = taskIds
     .map((taskId) => {
       const a = aliasFor(taskId)
-      const branch = buildBranchName(iteration, taskId)
+      const branch = buildBranchName(tranche, taskId)
       return `
     ${a}: pullRequests(
       first: 1,

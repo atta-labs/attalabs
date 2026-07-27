@@ -2,7 +2,7 @@
  * Dispatch-readiness composition (aeg-governance-hardening task 11, #324).
  * Pure — no `fs`, no `fetch`. Composes the forge/rationale/provenance/
  * archival facts the CLI shim (`bin/verify-dispatch.ts`) gathers (reusing
- * `parseIteration`, `hasProvenance`, `taskRefFromBranch`,
+ * `parseTranche`, `hasProvenance`, `taskRefFromBranch`,
  * `checkIssueRationale`, `fetchProvenance` — never re-implementing any of
  * them) into one `{ ready, blockers }` verdict, one blocker string per
  * failing predicate.
@@ -52,16 +52,16 @@ export type DispatchPriorTaskFact = {
   hasProvenance: boolean
 }
 
-export type DispatchPriorIterationFact = {
+export type DispatchPriorTrancheFact = {
   project: string
-  /** null when this project has no prior iteration at all — the gate passes trivially for it. */
-  priorIterationSlug: string | null
+  /** null when this project has no prior tranche at all — the gate passes trivially for it. */
+  priorTrancheSlug: string | null
   archived: boolean
 }
 
 export type DispatchGateInput = {
-  iterationSlug: string
-  /** The topology row for this task, as parsed by `parseIteration`. */
+  trancheSlug: string
+  /** The topology row for this task, as parsed by `parseTranche`. */
   task: Task
   /** null when the task has no Issue (#TBD/blank) OR the Issue number doesn't resolve on the forge (phantom ref). */
   issue: DispatchIssueFact
@@ -70,20 +70,20 @@ export type DispatchGateInput = {
   dependsOn: DispatchDependsOnFact[]
   conflictsWith: DispatchConflictsWithFact[]
   /**
-   * The immediately-prior task in this same iteration's topology, or null
+   * The immediately-prior task in this same tranche's topology, or null
    * when this is the first task. no longer read by
    * `checkDispatchReadiness` — dormant field, kept for caller compatibility.
    */
   priorTask: DispatchPriorTaskFact | null
   /** One entry per project named in `task.projects`. */
-  priorIterationArchival: DispatchPriorIterationFact[]
+  priorTrancheArchival: DispatchPriorTrancheFact[]
 }
 
 export type DispatchResult = { ready: boolean; blockers: string[] }
 
 export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult {
-  const { iterationSlug, task } = input
-  const taskLabel = `task ${task.id} (iteration ${iterationSlug})`
+  const { trancheSlug, task } = input
+  const taskLabel = `task ${task.id} (tranche ${trancheSlug})`
   const blockers: string[] = []
 
   // Issue-existence — the topology row itself has no Issue number.
@@ -133,11 +133,11 @@ export function checkDispatchReadiness(input: DispatchGateInput): DispatchResult
   // justification. `input.priorTask` is still accepted (dormant) for caller
   // compatibility; see the type's doc comment above.
 
-  // Prior-iteration archival, per project named in Project(s).
-  for (const proj of input.priorIterationArchival) {
-    if (proj.priorIterationSlug !== null && !proj.archived) {
+  // Prior-tranche archival, per project named in Project(s).
+  for (const proj of input.priorTrancheArchival) {
+    if (proj.priorTrancheSlug !== null && !proj.archived) {
       blockers.push(
-        `dispatch-gate prior-iteration-archival: project \`${proj.project}\`'s previous iteration \`${proj.priorIterationSlug}\` is not archived — the Iteration Archivist must run before new work on this product.`
+        `dispatch-gate prior-tranche-archival: project \`${proj.project}\`'s previous tranche \`${proj.priorTrancheSlug}\` is not archived — the Tranche Archivist must run before new work on this product.`
       )
     }
   }

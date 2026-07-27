@@ -161,16 +161,32 @@ describe('C7 readability', () => {
     }
   })
 
-  it('fails an iteration slug', () => {
+  it('fails a tranche slug', () => {
     const { errors } = evaluatePublishedProse(
       [entry('roles/developer.md', withToken('Shipped in vinaya-pages-v2.'))],
       SURFACED
     )
-    expect(errors.some((e) => e.includes('an iteration slug'))).toBe(true)
+    expect(errors.some((e) => e.includes('a tranche slug'))).toBe(true)
   })
 
   it('fails label vocabulary, namespaced and retired alike', () => {
-    for (const token of ['Apply vinaya/waiver:docs.', 'Apply waiver:docs.', 'Label it iteration:<slug>.']) {
+    for (const token of ['Apply vinaya/waiver:docs.', 'Apply waiver:docs.', 'Label it tranche:<slug>.']) {
+      const { errors } = evaluatePublishedProse([entry('roles/developer.md', withToken(token))], SURFACED)
+      expect(
+        errors.some((e) => e.includes('forge label vocabulary')),
+        token
+      ).toBe(true)
+    }
+  })
+
+  it('still fails the RETIRED iteration: namespace — the rule is cumulative, never substituted', () => {
+    // Regression guard for the iteration → tranche rename, which initially
+    // swapped `iteration` out of this alternation instead of adding `tranche`
+    // to it. That silently narrowed the gate: a published page could name
+    // `vinaya/iteration:foo` — a label the forge was still carrying — and pass.
+    // A retired namespace stays banned; the next substitution fails here
+    // rather than in review.
+    for (const token of ['Apply vinaya/iteration:foo.', 'Label it iteration:<slug>.', 'See aeg:blocked.']) {
       const { errors } = evaluatePublishedProse([entry('roles/developer.md', withToken(token))], SURFACED)
       expect(
         errors.some((e) => e.includes('forge label vocabulary')),
@@ -188,7 +204,7 @@ describe('C7 readability', () => {
   })
 
   it('passes the protocol mechanics a reader must learn', () => {
-    const mechanics = 'You work in `.worktrees/task/<iteration>/<n>` on branch `task/<iteration>/<n>`.'
+    const mechanics = 'You work in `.worktrees/task/<tranche>/<n>` on branch `task/<tranche>/<n>`.'
     const { errors } = evaluatePublishedProse([entry('roles/developer.md', withToken(mechanics))], SURFACED)
     expect(errors).toEqual([])
   })

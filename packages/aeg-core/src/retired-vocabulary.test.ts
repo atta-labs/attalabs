@@ -111,7 +111,7 @@ const RETIRED = [
 /**
  * Where a mention is legitimate:
  *  - the frozen archive and per-product logs are records of what was decided
- *  - `iterations/completed/**` and retrospectives are history, never rewritten
+ *  - `tranches/completed/**` and retrospectives are history, never rewritten
  *  - the published-prose check must contain the tokens it exists to catch
  *  - this file names them in order to ban them
  */
@@ -119,7 +119,7 @@ const EXEMPT = [
   'docs/decisions-legacy.md',
   'apps/herald-ai/docs/',
   'apps/vada-ai/docs/',
-  'aeg-root/iterations/completed/',
+  'aeg-root/tranches/completed/',
   'packages/aeg-core/src/docs/published-prose',
   'packages/aeg-core/src/retired-vocabulary.test.ts',
   '/fixtures/',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveRepo } from '@atta/aeg-forge-state'
-import { fetchIterationTokenLedger } from './fetch-token-ledger'
+import { fetchTrancheTokenLedger } from './fetch-token-ledger'
 
 /**
  * Golden comparison (aeg-forge-state-v1 task 4b, #445) — proves the live
@@ -8,16 +8,16 @@ import { fetchIterationTokenLedger } from './fetch-token-ledger'
  *
  * The brief's own verification story asks for a row-for-row match against
  * the existing `<name>.tokens.md` file for real closed tasks across ≥2
- * iterations. Live investigation of this repo's actual data found a real
+ * tranches. Live investigation of this repo's actual data found a real
  * precondition gap the brief didn't anticipate: **no task in this repo's
  * history currently has both** (a) a `.tokens.md` file recording it AND (b)
  * a real "Token report" PR body to recover it from.
- *   - Every iteration that HAS a `.tokens.md` file today (the 4 completed
+ *   - Every tranche that HAS a `.tokens.md` file today (the 4 completed
  *     ones + `vada-production-v1`) predates the PR-body/verdict-comment
  *     reporting convention entirely — their ledger rows were hand-typed
  *     directly into the file by the old self-append protocol, so their PRs
  *     carry no "Token report" section for this aggregator to find at all.
- *   - The iterations whose PRs DO carry real "Token report" sections
+ *   - The tranches whose PRs DO carry real "Token report" sections
  *     (`aeg-forge-state-v1`, `aeg-governance-hardening`, `herald-hardening-v1`)
  *     have no `.tokens.md` file yet — no task in any of them has reached the
  *     Archivist's per-task ledger-write step.
@@ -26,7 +26,7 @@ import { fetchIterationTokenLedger } from './fetch-token-ledger'
  * terminal role reported"), the real PR body's own Token report content IS
  * what a `.tokens.md` row for that task would read — so this test uses the
  * real, frozen PR bodies/comments of already-merged PRs as the golden
- * expectation directly, across 2 iterations, rather than a `.tokens.md` file
+ * expectation directly, across 2 tranches, rather than a `.tokens.md` file
  * that does not yet exist for any of them. Flagged explicitly in this task's
  * report rather than silently substituted.
  *
@@ -50,10 +50,10 @@ describe('golden comparison: live token-ledger aggregator vs real merged PRs (4b
       { id: '3b', issue: 437 },
       { id: '4', issue: 428 }
     ]
-    const snap = await fetchIterationTokenLedger({
+    const snap = await fetchTrancheTokenLedger({
       owner: repo.owner,
       repo: repo.repo,
-      iteration: 'aeg-forge-state-v1',
+      tranche: 'aeg-forge-state-v1',
       tasks
     })
     if (snap.unavailable) {
@@ -102,10 +102,10 @@ describe('golden comparison: live token-ledger aggregator vs real merged PRs (4b
       { id: '4', issue: 355 },
       { id: '5', issue: 356 }
     ]
-    const snap = await fetchIterationTokenLedger({
+    const snap = await fetchTrancheTokenLedger({
       owner: repo.owner,
       repo: repo.repo,
-      iteration: 'herald-hardening-v1',
+      tranche: 'herald-hardening-v1',
       tasks
     })
     if (snap.unavailable) {

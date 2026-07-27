@@ -11,7 +11,7 @@ Documentation coherence is not one obligation — it is a relay across every rol
 
 | Role | Reads (before acting) | Writes (at its seam) |
 |---|---|---|
-| **Planner** | Every spec/skill/doc relevant to the whole iteration's code surfaces — the whole-iteration read pass required before cutting a single task (Pillar 1). | The **"Docs to keep coherent"** rationale field on each task's Issue — names intended surfaces (not resolved doc pointers; the manifest evolves before dispatch). No doc files edited directly. |
+| **Planner** | Every spec/skill/doc relevant to the whole tranche's code surfaces — the whole-tranche read pass required before cutting a single task (Pillar 1). | The **"Docs to keep coherent"** rationale field on each task's Issue — names intended surfaces (not resolved doc pointers; the manifest evolves before dispatch). No doc files edited directly. |
 | **Brief Author** | The Planner's rationale (via `contracts/planner-brief.md`), plus its **own task-scoped re-read** of the same surface — re-verified fresh at dispatch time, since docs may have moved since planning (Pillar 1). | Brief **§2** (surfaces what the Developer must know) and **§7** (the doc-update list) — mechanically re-derived by matching the task's intended surfaces against the live `.vinaya/doc-owners` manifest (`deriveSection7`), then supplemented by its own reading. Any override of the derived floor carries a one-line reason. |
 | **Developer** | The brief's §2 and §7 — zero-discovery execution: the Developer does not re-derive what §7 already names. | Updates every doc named in §7 in the same PR (Pillar 2, a DoD gate — a named doc not updated is a BLOCKER at review). Independently, for any changed code file that matches an `.vinaya/doc-owners` binding, satisfies C5's bind‑or‑waive rule (update the bound doc, `Doc-ack:`, or a principal's actor-verified waiver label) whether or not §7 named it. |
 | **Reviewer** | The brief in the PR body, then the diff. | No files — a **verdict** with a dual check: §7 completeness/correctness as a BLOCKER gate (`contracts/developer-reviewer.md`), and judgment of C5-covered doc **correctness** (a passing C5 plus a no-op or misleading doc edit is still a BLOCKER). |
@@ -34,7 +34,7 @@ Neither track substitutes for the other: §7 catches what the manifest doesn't y
 
 The read obligation splits by altitude, not by redundancy:
 
-- The **Planner's** read pass is whole-iteration — before any task is cut, it reads the specs/skills/docs relevant to every surface in scope and records, per task, which docs that task will make incoherent.
+- The **Planner's** read pass is whole-tranche — before any task is cut, it reads the specs/skills/docs relevant to every surface in scope and records, per task, which docs that task will make incoherent.
 - The **Brief Author's** read pass is task-scoped re-verification — at dispatch time (which may be well after planning), it re-reads the same surface fresh and mechanically re-derives the §7 floor from the *live* `doc-owners` manifest (`deriveSection7`), because the manifest — and the docs themselves — can have moved since the Planner's pass. The Planner names intended surfaces, never resolved pointers, for exactly this reason.
 
 This is why the Planner's rationale field survives even though a mechanical derivation exists: the derivation runs once, at brief time, against current reality — it cannot run at plan time without freezing a pointer list that goes stale.
@@ -43,15 +43,15 @@ This is why the Planner's rationale field survives even though a mechanical deri
 
 ## Reader-facing readability — no unresolvable symbols
 
-Some of these docs are read by strangers, not only by agents that carry this repo's history in context. The published set (the enforcement map, the role docs, the contracts) is the harness's public face, and any token that requires insider knowledge — a decision id, a section number, an Issue or PR number, an iteration slug, an internal file path — means nothing to a stranger, because it points at something not on the page. The rule is therefore a principle, not a fixed list of symbol types:
+Some of these docs are read by strangers, not only by agents that carry this repo's history in context. The published set (the enforcement map, the role docs, the contracts) is the harness's public face, and any token that requires insider knowledge — a decision id, a section number, an Issue or PR number, a tranche slug, an internal file path — means nothing to a stranger, because it points at something not on the page. The rule is therefore a principle, not a fixed list of symbol types:
 
-> **A reader-facing published doc contains no token that requires insider knowledge — no decision ids, section refs, Issue/PR numbers, iteration slugs, or internal paths; state facts in plain words. Machine fields and named references to other published docs are exempt.**
+> **A reader-facing published doc contains no token that requires insider knowledge — no decision ids, section refs, Issue/PR numbers, tranche slugs, or internal paths; state facts in plain words. Machine fields and named references to other published docs are exempt.**
 
 State the fact in plain words and delete the token; the sentence must stay true and complete for a stranger. Exempt: machine fields a parser/build reads (frontmatter keys), and named references to other **published** docs a reader can open.
 
 **This rule is mechanized — C7, in `verify-docs`.** It scans the text that actually reaches a reader and nothing else: for a role or contract that is the `## The short version` section (the binding opener each one now carries), and for the enforcement map it is the introduction plus the four columns the page renders — the row's own name, `Summary`, `Category`, `Description`. The enforcing columns are never scanned; they exist to gate, not to read. C7 also asserts the structure of that section: all four blocks present, in order, inside the word band. It runs **blocking at the pull-request gate**, scoped to the doctrine files the diff touched, and again repo-wide in full mode. Protocol mechanics an adopter must learn — the isolated-worktree path and the task branch convention — are explicit, tested exemptions rather than accidental passes.
 
-**Frontmatter `provenance:` is the sanctioned home for an internal reference.** A decision id, a file path or an iteration slug an agent genuinely needs stays greppable there and never reaches the page, because frontmatter is stripped before render. **HTML comments are not a substitute:** this repo's renderer runs without raw-HTML support and prints `<!-- … -->` as visible text on the page — verified live. `aeg-root/enforcement.md` demonstrates the pattern.
+**Frontmatter `provenance:` is the sanctioned home for an internal reference.** A decision id, a file path or a tranche slug an agent genuinely needs stays greppable there and never reaches the page, because frontmatter is stripped before render. **HTML comments are not a substitute:** this repo's renderer runs without raw-HTML support and prints `<!-- … -->` as visible text on the page — verified live. `aeg-root/enforcement.md` demonstrates the pattern.
 
 The Reviewer's judgment now sits **on top of** the check rather than instead of it: C7 catches the token classes it can name, and the Reviewer still judges whether a published page reads complete to a stranger who lands on it cold — the question no pattern can answer. A published doc that leaves an insider-only token on the page is a finding either way.
 
@@ -60,6 +60,6 @@ The Reviewer's judgment now sits **on top of** the check rather than instead of 
 ## Cross-references
 
 - The read/write obligation, the `doc-owners` coverage gate, and the mechanical derivation of the doc-update list are all stated above; the seam contracts carry the per-role halves.
-- **Seam contracts** (`aeg-root/contracts/`): `planner-brief.md`, `brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-iteration-archivist.md`, `iteration-archivist-planner.md`.
+- **Seam contracts** (`aeg-root/contracts/`): `planner-brief.md`, `brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-tranche-archivist.md`, `tranche-archivist-planner.md`.
 - **`state-machine.md` §15** — Coherence Seam: Doc Coverage — the C5 mechanics in full.
 - **`enforcement.md`** — the three-ring enforcement map; documentation coverage is called out there as enforced at both push and PR-open.

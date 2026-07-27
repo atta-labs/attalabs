@@ -159,8 +159,8 @@
         trow('Who pays / responsible','Nobody — the agent edits the message and retries.','agent'),
         row('Contract','.husky/commit-msg → commitlint --edit, against commitlint.config.js.')
       ]),
-      leaf('branch-topology','branch topology', 'branch name must literal-match the iteration file', [
-        row('Catches','A task/<iteration>/<n> push whose <n> doesn’t match a real row in that iteration’s topology file — the wrong-branch-name failure mode.'),
+      leaf('branch-topology','branch topology', 'branch name must literal-match the tranche file', [
+        row('Catches','A task/<tranche>/<n> push whose <n> doesn’t match a real row in that tranche’s topology file — the wrong-branch-name failure mode.'),
         trow('Who pays / responsible','Nobody — the push is refused before it reaches origin.','agent'),
         row('Contract','check-branch-topology.ts, run from .husky/pre-push on every task/*/* push.')
       ]),
@@ -211,8 +211,8 @@
         trow('Who pays / responsible','vinaya/needs:brief-correction label applied; merge blocked.','agent'),
         row('Contract','forge-lifecycle.yml → Brief Validation job.')
       ]),
-      leaf('single-plan-pr','single-plan-PR guard','one open plan PR per iteration', [
-        row('Catches','A second open plan PR for an iteration that already has one — a planning-side race.'),
+      leaf('single-plan-pr','single-plan-PR guard','one open plan PR per tranche', [
+        row('Catches','A second open plan PR for a tranche that already has one — a planning-side race.'),
         trow('Who pays / responsible','Merge blocked on the newer one.','agent'),
         row('Contract','forge-lifecycle.yml → single-plan-PR guard (ring-1 backstop).')
       ])
@@ -288,7 +288,7 @@
         row('Refuses when','— final authority; nothing sits above it to refuse to.')
       ], 'human'),
       leaf('brief-author','Brief Author','plans, then writes the brief', [
-        row('Does','Turns intent into an iteration (Planner mode); writes the brief a Developer executes against (Brief Author mode).'),
+        row('Does','Turns intent into a tranche (Planner mode); writes the brief a Developer executes against (Brief Author mode).'),
         row('Touches','Before Ring 0 — the brief exists before any commit does.'),
         row('Refuses when','Asked to write code instead of a brief, or to implement directly.')
       ], 'agent'),

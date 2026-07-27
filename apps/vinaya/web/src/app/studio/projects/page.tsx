@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
       <header className='space-y-2'>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Projects</h1>
         <p className='font-sans text-sm text-muted-foreground'>
-          Registry from <span className='font-mono'>.vinaya/projects.md</span>. Pick one to see its iterations.
+          Registry from <span className='font-mono'>.vinaya/projects.md</span>. Pick one to see its tranches.
         </p>
       </header>
 

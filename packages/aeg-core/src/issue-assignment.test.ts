@@ -13,7 +13,7 @@ describe('decideIssueAssignment — branch-type scoping', () => {
   it('skips a plan branch', () => {
     const result = decideIssueAssignment({ ...base, branch: 'plan/aeg-governance-hardening' })
     expect(result.action).toBe('skip')
-    expect(result.reason).toContain('not a task/<iteration>/<n> branch')
+    expect(result.reason).toContain('not a task/<tranche>/<n> branch')
   })
 
   it('skips a fix branch', () => {

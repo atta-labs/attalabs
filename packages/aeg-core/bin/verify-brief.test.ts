@@ -10,7 +10,7 @@ import { afterAll, describe, expect, it } from 'vitest'
  * and the `--body-file` authoring-time entry. The section grammar itself is
  * covered in `src/brief-validation.test.ts` — this file only asserts routing.
  *
- * Live failure being regressed: a standalone fix brief on `fix/studio-iteration-href`
+ * Live failure being regressed: a standalone fix brief on `fix/studio-tranche-href`
  * shipped with no §7 documentation-update list and CI stayed green, because the
  * branch-only bypass exempted every non-`task/*` branch before any section check
  * ran.

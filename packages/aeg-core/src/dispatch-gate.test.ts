@@ -17,14 +17,14 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 function makeInput(overrides: Partial<DispatchGateInput> = {}): DispatchGateInput {
   return {
-    iterationSlug: 'aeg-governance-hardening',
+    trancheSlug: 'aeg-governance-hardening',
     task: makeTask(),
     issue: { number: 326, state: 'open' },
     issueRationalePass: true,
     dependsOn: [],
     conflictsWith: [],
     priorTask: null,
-    priorIterationArchival: [],
+    priorTrancheArchival: [],
     ...overrides
   }
 }
@@ -109,35 +109,35 @@ describe('checkDispatchReadiness', () => {
     expect(result.ready).toBe(true)
   })
 
-  it('passes trivially when there is no prior task (first task of a fresh iteration)', () => {
+  it('passes trivially when there is no prior task (first task of a fresh tranche)', () => {
     const result = checkDispatchReadiness(makeInput({ priorTask: null }))
     expect(result.ready).toBe(true)
   })
 
-  it('blocks when a named project has an unarchived prior iteration', () => {
+  it('blocks when a named project has an unarchived prior tranche', () => {
     const result = checkDispatchReadiness(
       makeInput({
-        priorIterationArchival: [{ project: 'aeg', priorIterationSlug: 'aeg-consolidation', archived: false }]
+        priorTrancheArchival: [{ project: 'aeg', priorTrancheSlug: 'aeg-consolidation', archived: false }]
       })
     )
     expect(result.ready).toBe(false)
-    expect(result.blockers[0]).toContain('prior-iteration-archival')
+    expect(result.blockers[0]).toContain('prior-tranche-archival')
     expect(result.blockers[0]).toContain('aeg-consolidation')
   })
 
-  it('passes when a named project has an archived prior iteration', () => {
+  it('passes when a named project has an archived prior tranche', () => {
     const result = checkDispatchReadiness(
       makeInput({
-        priorIterationArchival: [{ project: 'aeg', priorIterationSlug: 'aeg-consolidation', archived: true }]
+        priorTrancheArchival: [{ project: 'aeg', priorTrancheSlug: 'aeg-consolidation', archived: true }]
       })
     )
     expect(result.ready).toBe(true)
   })
 
-  it('passes trivially when a named project has no prior iteration at all', () => {
+  it('passes trivially when a named project has no prior tranche at all', () => {
     const result = checkDispatchReadiness(
       makeInput({
-        priorIterationArchival: [{ project: 'aeg', priorIterationSlug: null, archived: false }]
+        priorTrancheArchival: [{ project: 'aeg', priorTrancheSlug: null, archived: false }]
       })
     )
     expect(result.ready).toBe(true)

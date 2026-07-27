@@ -312,7 +312,7 @@ export function validateForgeWrite(input: ForgeValidationInput): CheckError[] {
           makeCheckError(
             CHECK_FORGE_TITLE,
             message,
-            `Rewrite the \`--title\` to match the forge-title grammar (\`Type: description\` / \`Type(scope): description\`, or \`[iteration] id — description\`), then re-run \`${input.retryCommand}\`.`
+            `Rewrite the \`--title\` to match the forge-title grammar (\`Type: description\` / \`Type(scope): description\`, or \`[tranche] id — description\`), then re-run \`${input.retryCommand}\`.`
           )
         )
       }

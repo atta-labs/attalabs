@@ -74,7 +74,7 @@ vi.mock('@octokit/graphql', () => ({
 }))
 
 const PROVENANCE_FOR = (issue: number) =>
-  `### AEG provenance — task 1 (iteration fixture)\n- Issue:        #${issue}  (closed by merge)\n- Tier:         1`
+  `### AEG provenance — task 1 (tranche fixture)\n- Issue:        #${issue}  (closed by merge)\n- Tier:         1`
 
 beforeEach(() => {
   closedEventFixtures = {}
@@ -162,12 +162,12 @@ describe('fetchProvenance — Part 2: null-closer fallback', () => {
  * into one file and feeds it straight to `jq`. Spawns the real CLI as a
  * subprocess (not the in-process `runCoherenceChecks`) so this actually
  * exercises the same stdio path CI does, including the real `git fetch`
- * this file's `loadIterationFiles` now performs.
+ * this file's `loadTrancheFiles` now performs.
  *
- * Timeout raised 30s → 60s (aeg-forge-state-v1 3b, #437): `loadIterationFiles`
- * now derives each non-touched iteration from the forge (one `gh` round trip
- * per iteration, sequential) instead of a local `git show` — ~30s observed
- * across this repo's real ~20 iterations, leaving no margin under the old
+ * Timeout raised 30s → 60s (aeg-forge-state-v1 3b, #437): `loadTrancheFiles`
+ * now derives each non-touched tranche from the forge (one `gh` round trip
+ * per tranche, sequential) instead of a local `git show` — ~30s observed
+ * across this repo's real ~20 tranches, leaving no margin under the old
  * 30s budget.
  */
 describe('CLI --json mode produces pure JSON on stdout (PR #378 review)', () => {

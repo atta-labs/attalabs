@@ -1,7 +1,7 @@
 import type { LedgerRow, LedgerTotals } from './types'
 
 /**
- * Pure aggregate over ledger rows. The iteration total is derived from the
+ * Pure aggregate over ledger rows. The tranche total is derived from the
  * rows — never stored — so re-entry (a role appending a second row for the
  * same phase) naturally adds to the total without any "replace existing"
  * semantics. This is the same philosophy as derived task status and the

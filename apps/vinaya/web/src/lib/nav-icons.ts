@@ -3,12 +3,12 @@ import type { LucideIcon } from 'lucide-react'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   'all-projects': FolderKanban,
-  'all-iterations': LayoutList,
+  'all-tranches': LayoutList,
   graph: GitBranch,
   docs: BookOpen,
   overview: LayoutDashboard,
   projects: FolderKanban,
-  iterations: LayoutList,
+  tranches: LayoutList,
   backlog: ListTodo
 }
 

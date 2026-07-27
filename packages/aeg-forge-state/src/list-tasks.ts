@@ -1,9 +1,9 @@
 import type { Task, TaskIssueRef } from '@atta/aeg-types'
-import { type GhIssue, ghIssueListByLabel, ghIssueListByLabelAsync } from './gh'
-import { findIterationSlug, iterationLabel } from './labels'
+import { type GhIssue, ghIssueListByAnyLabel, ghIssueListByAnyLabelAsync } from './gh'
+import { findTrancheSlug, trancheLabelsToQuery } from './labels'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
-/** Issue title convention: `[<iteration-slug>] <task-id> — <title>`, the same
+/** Issue title convention: `[<tranche-slug>] <task-id> — <title>`, the same
  * shape every Vinaya Issue is opened with (`open-issue.ts`, brief-authoring). */
 export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
 
@@ -93,27 +93,27 @@ function tasksFromIssues(issues: GhIssue[]): Task[] {
   return tasks.sort((a, b) => compareTaskIds(a.id, b.id))
 }
 
-/** Lists `vinaya/iteration:<slug>`-labeled Issues and builds the `Task[]` for
- * that iteration. Issue title's bracketed slug is not re-validated against
- * `slug` — the `vinaya/iteration:<slug>` label is the authoritative membership
+/** Lists `vinaya/tranche:<slug>`-labeled Issues and builds the `Task[]` for
+ * that tranche. Issue title's bracketed slug is not re-validated against
+ * `slug` — the `vinaya/tranche:<slug>` label is the authoritative membership
  * signal; a title typo should not silently drop a real task. */
 export function listTasksForSlug(owner: string, repo: string, slug: string): Task[] {
-  return tasksFromIssues(ghIssueListByLabel(owner, repo, iterationLabel(slug)))
+  return tasksFromIssues(ghIssueListByAnyLabel(owner, repo, trancheLabelsToQuery(slug)))
 }
 
 /** Async twin of `listTasksForSlug` — non-blocking `gh` exec, same transform. */
 export async function listTasksForSlugAsync(owner: string, repo: string, slug: string): Promise<Task[]> {
-  return tasksFromIssues(await ghIssueListByLabelAsync(owner, repo, iterationLabel(slug)))
+  return tasksFromIssues(await ghIssueListByAnyLabelAsync(owner, repo, trancheLabelsToQuery(slug)))
 }
 
 /**
  * Resolves an arbitrary Issue's title + labels to its Vinaya task identity, if
  * it has one — the REVERSE of `taskFromIssue`/`listTasksForSlug` (those start
- * from a known iteration slug and list its tasks; this starts from an
+ * from a known tranche slug and list its tasks; this starts from an
  * unknown Issue and asks "is this a task Issue, and if so which task?").
  *
  * Same authoritative-signal discipline as `listTasksForSlug`'s doc comment:
- * the `vinaya/iteration:<slug>` label — not the title's bracketed text — is the
+ * the `vinaya/tranche:<slug>` label — not the title's bracketed text — is the
  * slug source. The title only needs to match the `[<slug>] <id> — ...`
  * shape closely enough to yield a task id; a bracket/label slug mismatch
  * (title typo) doesn't invalidate the label's membership signal.
@@ -126,7 +126,7 @@ export function resolveTaskIssueRef(title: string, labels: string[]): TaskIssueR
   if (!m) return null
   const taskId = (m[2] ?? '').trim()
   if (!taskId) return null
-  const iterSlug = findIterationSlug(labels)
-  if (!iterSlug) return null
-  return { iterSlug, taskId }
+  const trancheSlug = findTrancheSlug(labels)
+  if (!trancheSlug) return null
+  return { trancheSlug, taskId }
 }

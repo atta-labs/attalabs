@@ -11,7 +11,7 @@ const STAGES = ['PLAN', 'BRIEF', 'BUILD', 'REVIEW', 'VERIFY', 'MERGE', 'ARCHIVE'
 // route that actually ships:
 //   • the Harness → understand the model
 //   • the docs    → evaluate the rules
-//   • the Studio  → see the real build (live iterations/tasks) while install isn't available
+//   • the Studio  → see the real build (live tranches/tasks) while install isn't available
 const DESTINATIONS = [
   {
     title: 'UNDERSTAND THE HARNESS',
@@ -27,7 +27,7 @@ const DESTINATIONS = [
   },
   {
     title: 'FOLLOW THE BUILD',
-    body: 'See how the work is governed, iteration by iteration.',
+    body: 'See how the work is governed, tranche by tranche.',
     label: 'Open the Studio',
     href: '/the-studio'
   }

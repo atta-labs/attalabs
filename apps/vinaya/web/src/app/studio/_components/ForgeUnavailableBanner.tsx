@@ -20,10 +20,10 @@ export function ForgeUnavailableBanner({
 }: {
   scope: 'active' | 'archived' | 'both'
   status: ForgeStatus
-  /** Overrides the iteration-worded tail of the `unreachable` message so a
-   *  non-iteration surface (e.g. the backlog view, task 11 #571) can reuse this
-   *  banner without claiming "iterations cannot be listed". Defaults to the
-   *  iterations wording, so every existing call site is unchanged. */
+  /** Overrides the tranche-worded tail of the `unreachable` message so a
+   *  non-tranche surface (e.g. the backlog view, task 11 #571) can reuse this
+   *  banner without claiming "tranches cannot be listed". Defaults to the
+   *  tranches wording, so every existing call site is unchanged. */
   detail?: string
 }) {
   if (status.kind === 'ok') return null
@@ -34,13 +34,13 @@ export function ForgeUnavailableBanner({
         <AlertTriangle className='size-4 shrink-0 translate-y-0.5 text-warning' aria-hidden />
         <p className='font-sans text-xs text-warning'>
           Live forge state unavailable — GitHub could not be reached.{' '}
-          {detail ?? 'Showing archived/legacy data only; active iterations cannot be listed right now.'}
+          {detail ?? 'Showing archived/legacy data only; active tranches cannot be listed right now.'}
         </p>
       </div>
     )
   }
 
-  const scopeLabel = scope === 'both' ? 'iterations' : `${scope} iterations`
+  const scopeLabel = scope === 'both' ? 'tranches' : `${scope} tranches`
   const slugList = status.failed.map((f) => f.slug).join(', ')
   return (
     <div className='flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning'>

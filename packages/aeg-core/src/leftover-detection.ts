@@ -14,7 +14,7 @@
  */
 
 export type LeftoverInput = {
-  /** A `task/<iteration>/<n>` branch already exists on the forge remote. */
+  /** A `task/<tranche>/<n>` branch already exists on the forge remote. */
   branchExistsRemote: boolean
   /** A local worktree for this task already exists on disk. */
   worktreeExistsLocal: boolean

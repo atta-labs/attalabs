@@ -2,7 +2,7 @@
 
 **Status:** draft · living reference (out of the AEG flow; not a ratified spec)
 
-**Out of the AEG flow.** Held / future / research items for Vinaya. Reference the Planner reads when choosing the next iteration slice; the flow never operates on it.
+**Out of the AEG flow.** Held / future / research items for Vinaya. Reference the Planner reads when choosing the next tranche slice; the flow never operates on it.
 
 First mention of this file — created by `vinaya-cli-v1` task 1 (#381), per the brief's §2 correction (`vinaya-spec.md` already existed at dig time; this backlog file did not).
 

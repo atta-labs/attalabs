@@ -49,9 +49,9 @@ describe('buildDocNav', () => {
   })
 
   it('derives stable lowercased section ids', () => {
-    const docs = [doc({ slug: 'a', title: 'A', section: 'Iteration Plans' })]
+    const docs = [doc({ slug: 'a', title: 'A', section: 'Tranche Plans' })]
     const nav = buildDocNav(docs)
-    expect(nav.sections[0]?.id).toBe('iteration-plans')
+    expect(nav.sections[0]?.id).toBe('tranche-plans')
   })
 
   it('returns an empty nav when given no docs', () => {

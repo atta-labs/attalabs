@@ -14,16 +14,16 @@
  *   - `:` separates the **namespace** from its value — `vinaya/tier:1`
  *   - `-` separates the **words** inside a name — `vinaya/needs:brief-correction`
  *
- * So `vinaya/iteration:state-machine-v1` reads as: the Vinaya product, the
- * `iteration` axis, the `state-machine-v1` value. The namespace makes every
+ * So `vinaya/tranche:state-machine-v1` reads as: the Vinaya product, the
+ * `tranche` axis, the `state-machine-v1` value. The namespace makes every
  * Vinaya label sortable and filterable as one group in a repo it shares with
  * an adopter's own labels — the reason a product namespace exists at all.
  * The `aeg` name is retired in public, so no `aeg:*` label survives:
  * `aeg:blocked` became `vinaya/blocked`, and the forge's `aeg:incoherent` /
  * `aeg:stale-blocker` were renamed in place (history preserved).
  *
- * GitHub caps a label name at 50 characters. `vinaya/iteration:` spends 17 of
- * them before the slug starts — `iterationSlugLengthError` is the check that
+ * GitHub caps a label name at 50 characters. `vinaya/tranche:` spends 15 of
+ * them before the slug starts — `trancheSlugLengthError` is the check that
  * keeps a Planner from cutting a slug the forge cannot hold.
  *
  * ## Why it lives here
@@ -40,13 +40,13 @@
  * ## The helpers are the contract
  *
  * No call site may write a label string as a literal. `label()`,
- * `iterationLabel()`, `matchesLabel()` and `iterationSlugOf()` are the only
+ * `trancheLabel()`, `matchesLabel()` and `trancheSlugOf()` are the only
  * sanctioned ways to construct or match one — a stray literal is a site the
  * next rename will silently miss, and a missed site is a broken gate.
  *
  * Each entry records the *orthogonal fact* the label carries — the one thing
  * the mechanism learns from its presence. Labels are orthogonal by design:
- * a task's tier, its iteration, what it is waiting on, and what has been
+ * a task's tier, its tranche, what it is waiting on, and what has been
  * waived are independent axes, and no code should infer one from another.
  *
  * **Status is not in here, and must never be.** Execution status is derived
@@ -65,8 +65,8 @@ export type LabelCategory =
   | 'state'
   /** Governance weight of the change — drives the doc/decision gates. */
   | 'tier'
-  /** Which iteration a task Issue belongs to. */
-  | 'iteration'
+  /** Which tranche a task Issue belongs to. */
+  | 'tranche'
   /** What the task is waiting on, and from whom. */
   | 'needs'
   /**
@@ -90,7 +90,7 @@ export type LabelCategory =
 
 /**
  * Whether `id` is the complete label string or the stable prefix of a family
- * whose suffix is open-ended. `vinaya/iteration:` is a prefix family — its
+ * whose suffix is open-ended. `vinaya/tranche:` is a prefix family — its
  * suffix is whatever slug the Planner cut — so no fixed list can enumerate it,
  * and code must match it by prefix rather than by equality.
  */
@@ -106,7 +106,7 @@ export type LabelKey =
   | 'tier-0'
   | 'tier-1'
   | 'tier-3'
-  | 'iteration'
+  | 'tranche'
   | 'needs-execution-input'
   | 'needs-strategy-input'
   | 'needs-principal-input'
@@ -166,11 +166,11 @@ export const LABELS: Label[] = [
     carries: 'Tier 1 plus the reasoning for the change, stated in the pull request that makes it.'
   },
   {
-    key: 'iteration',
-    id: 'vinaya/iteration:',
-    category: 'iteration',
+    key: 'tranche',
+    id: 'vinaya/tranche:',
+    category: 'tranche',
     form: 'prefix',
-    carries: "The iteration slug this task Issue belongs to — the forge's grouping key, matched by prefix."
+    carries: "The tranche slug this task Issue belongs to — the forge's grouping key, matched by prefix."
   },
   {
     key: 'needs-execution-input',
@@ -251,6 +251,38 @@ export const LABELS: Label[] = [
   }
 ]
 
+/**
+ * Superseded label ids a key still MATCHES but never CONSTRUCTS — the migration
+ * seam that lets code and forge disagree for a bounded window.
+ *
+ * A label rename is two writes that cannot be atomic: the code that names the
+ * label ships in a merge commit, the ~170 Issues carrying it are renamed by a
+ * separate `gh label edit` pass. Whichever goes first, there is an interval in
+ * which one side knows a name the other does not — and a matcher that knows
+ * only the new name stops every gate at once during it. Accepting both names
+ * removes the interval: the code merges reading either, the forge is renamed
+ * afterwards at leisure, and no gate ever sees a label it cannot classify.
+ *
+ * Read by `matchesLabel` and `trancheSlugOf` only. Construction (`label()`,
+ * `trancheLabel()`, the length check) always uses the canonical `id`, so
+ * nothing new is ever written under a superseded name.
+ *
+ * **This map is temporary by construction.** Each entry is deleted once its
+ * forge objects carry the canonical id — deleting it is the last step of the
+ * migration that added it, not optional cleanup.
+ */
+const SUPERSEDED_IDS: Partial<Record<LabelKey, readonly string[]>> = {
+  // `iteration` → `tranche` (this migration). Drop once every
+  // `vinaya/iteration:*` label has been renamed on the forge.
+  tranche: ['vinaya/iteration:']
+}
+
+/** Every id `key` accepts when matching — canonical first, then superseded. */
+function acceptedIds(l: Label): readonly string[] {
+  const superseded = SUPERSEDED_IDS[l.key]
+  return superseded ? [l.id, ...superseded] : [l.id]
+}
+
 const BY_KEY = new Map<LabelKey, Label>(LABELS.map((l) => [l.key, l]))
 
 function entry(key: LabelKey): Label {
@@ -264,16 +296,36 @@ function entry(key: LabelKey): Label {
 
 /**
  * The label string for `key` — the complete name for a literal label, or the
- * bare prefix for a prefix family (use `iterationLabel` to build a full
- * `vinaya/iteration:<slug>`). The ONLY sanctioned way to construct one.
+ * bare prefix for a prefix family (use `trancheLabel` to build a full
+ * `vinaya/tranche:<slug>`). The ONLY sanctioned way to construct one.
  */
 export function label(key: LabelKey): string {
   return entry(key).id
 }
 
-/** The full `vinaya/iteration:<slug>` label for an iteration slug. */
-export function iterationLabel(slug: string): string {
-  return `${label('iteration')}${slug}`
+/** The full `vinaya/tranche:<slug>` label for a tranche slug. */
+export function trancheLabel(slug: string): string {
+  return `${label('tranche')}${slug}`
+}
+
+/**
+ * Every full label `slug`'s Issues may currently carry — the canonical one
+ * first, then any id in `SUPERSEDED_IDS` still live on the forge.
+ *
+ * `trancheLabel()` is for CONSTRUCTION: the one name a new Issue is given.
+ * This is for QUERYING, and the two cannot be the same function during a
+ * rename. A forge query names a label and the server matches it exactly, so a
+ * query built from the canonical id alone returns nothing at all while the
+ * objects still carry the old name — silently, as an empty result rather than
+ * an error, which reads to every gate as "this tranche has no tasks".
+ * Reading has to span the migration window in both directions; only writing
+ * stays canonical.
+ *
+ * Callers must union the results and dedupe by Issue number: an Issue mid-
+ * migration can legitimately carry both labels.
+ */
+export function trancheLabelsToQuery(slug: string): string[] {
+  return acceptedIds(entry('tranche')).map((prefix) => `${prefix}${slug}`)
 }
 
 /**
@@ -282,8 +334,8 @@ export function iterationLabel(slug: string): string {
  */
 export function matchesLabel(key: LabelKey, name: string): boolean {
   const l = entry(key)
-  if (l.form === 'prefix') return name.startsWith(l.id)
-  return name === l.id
+  if (l.form === 'prefix') return acceptedIds(l).some((id) => name.startsWith(id))
+  return acceptedIds(l).some((id) => name === id)
 }
 
 /** Whether any label in `names` matches `key`. */
@@ -292,34 +344,37 @@ export function hasLabel(key: LabelKey, names: readonly string[]): boolean {
 }
 
 /**
- * The iteration slug carried by `name`, or `null` when it is not an iteration
- * label.
+ * The tranche slug carried by `name`, or `null` when it is not a tranche
+ * label. Accepts every id in `SUPERSEDED_IDS` alongside the canonical prefix,
+ * so a slug reads the same either side of a label rename.
  */
-export function iterationSlugOf(name: string): string | null {
-  const prefix = label('iteration')
-  return name.startsWith(prefix) ? name.slice(prefix.length) : null
+export function trancheSlugOf(name: string): string | null {
+  for (const prefix of acceptedIds(entry('tranche'))) {
+    if (name.startsWith(prefix)) return name.slice(prefix.length)
+  }
+  return null
 }
 
-/** The first iteration slug in `names`, or `null` when none carries one. */
-export function findIterationSlug(names: readonly string[]): string | null {
+/** The first tranche slug in `names`, or `null` when none carries one. */
+export function findTrancheSlug(names: readonly string[]): string | null {
   for (const n of names) {
-    const slug = iterationSlugOf(n)
+    const slug = trancheSlugOf(n)
     if (slug !== null) return slug
   }
   return null
 }
 
 /**
- * Why `slug` cannot be used as an iteration label, or `null` when it can.
- * `vinaya/iteration:` spends 17 of GitHub's 50 characters before the slug
+ * Why `slug` cannot be used as a tranche label, or `null` when it can.
+ * `vinaya/tranche:` spends 15 of GitHub's 50 characters before the slug
  * starts, so a slug the Planner is free to write in prose can still be one the
- * forge refuses to hold. Checked where an iteration label is first applied,
+ * forge refuses to hold. Checked where a tranche label is first applied,
  * not where one is read — an over-long label cannot exist to be read.
  */
-export function iterationSlugLengthError(slug: string): string | null {
-  const full = iterationLabel(slug)
+export function trancheSlugLengthError(slug: string): string | null {
+  const full = trancheLabel(slug)
   if (full.length <= LABEL_MAX_LENGTH) return null
-  return `iteration slug '${slug}' makes a ${full.length}-character label ('${full}') — GitHub caps a label name at ${LABEL_MAX_LENGTH}. Shorten the slug by ${full.length - LABEL_MAX_LENGTH} character(s).`
+  return `tranche slug '${slug}' makes a ${full.length}-character label ('${full}') — GitHub caps a label name at ${LABEL_MAX_LENGTH}. Shorten the slug by ${full.length - LABEL_MAX_LENGTH} character(s).`
 }
 
 /**

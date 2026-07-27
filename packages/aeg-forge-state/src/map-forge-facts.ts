@@ -8,7 +8,7 @@
  *   assigned       ← issue.assigneesCount > 0
  *   blockedLabel   ← `vinaya/blocked` present in issue.labels
  *                    (Issue-scoped per state-machine.md §14)
- *   branchExists   ← refExists for `refs/heads/task/<iteration>/<id>`
+ *   branchExists   ← refExists for `refs/heads/task/<tranche>/<id>`
  *   prState        ← pullRequest.state lowercased; `'closed'` (PR closed without
  *                    merge) collapses to `'none'` since AEG only models open /
  *                    merged / none in `ForgeFacts`.
@@ -23,7 +23,7 @@
  *                    `incoherent` (completed / null), never `todo`.
  *
  * Missing issue → return `null` (caller omits the task from the map, which
- * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo`).
+ * `deriveTranche` treats as `todo` — tranche tasks are minimum `todo`).
  */
 
 import type { ForgeFacts, RawTaskFacts } from '@atta/aeg-types'
@@ -64,7 +64,7 @@ function mapPrState(state: 'OPEN' | 'CLOSED' | 'MERGED' | undefined): ForgeFacts
   if (state === 'OPEN') return 'open'
   if (state === 'MERGED') return 'merged'
   // 'CLOSED' (without merge) and undefined both collapse to 'none' — AEG does
-  // not model closed-without-merge separately; deriveIteration treats either
+  // not model closed-without-merge separately; deriveTranche treats either
   // as "no PR" for status purposes, falling through to branch / issue facts.
   return 'none'
 }

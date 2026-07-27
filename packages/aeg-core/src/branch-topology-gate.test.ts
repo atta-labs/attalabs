@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { checkBranchTopology, taskBranchTopologyFields } from './branch-topology-gate'
-import { parseIteration } from './parse-iteration'
+import { parseTranche } from './parse-tranche'
 
 /**
  * Parity oracle: the EXACT grep invocation `.husky/pre-push` ran before
@@ -21,11 +21,11 @@ function grepAccepts(topoFile: string, id: string): boolean {
 // whitespace/suffix shape the bash regex tolerated: no-space cells, wide
 // spaces, a tab-padded cell, a letter-suffixed id, and a numeric row (320)
 // that shares a prefix with a non-row id (32).
-const TOPOLOGY_MD = `# Iteration: parity-fixture — test
+const TOPOLOGY_MD = `# Tranche: parity-fixture — test
 
 Lifecycle: active
 
-Goal (execution): prove grep/parseIteration parity for the gate.
+Goal (execution): prove grep/parseTranche parity for the gate.
 
 ## Tasks (topology)
 
@@ -51,10 +51,10 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }))
 function evaluatorAccepts(id: string, md: string | null = TOPOLOGY_MD): boolean {
   const result = checkBranchTopology({
     branch: `task/parity-fixture/${id}`,
-    iteration: 'parity-fixture',
+    tranche: 'parity-fixture',
     taskId: id,
-    topoPath: 'aeg-root/iterations/parity-fixture.md',
-    topology: md === null ? null : parseIteration(md)
+    topoPath: 'aeg-root/tranches/parity-fixture.md',
+    topology: md === null ? null : parseTranche(md)
   })
   return result.verdict === 'allow'
 }
@@ -79,32 +79,32 @@ describe('checkBranchTopology ↔ bash-grep parity (the exact pre-task-32 regex)
 })
 
 describe('checkBranchTopology refusal messages are byte-identical to the old hook output', () => {
-  it('missing topology file → the exact missing-iteration message', () => {
+  it('missing topology file → the exact missing-tranche message', () => {
     const result = checkBranchTopology({
       branch: 'task/ghost-iter/5',
-      iteration: 'ghost-iter',
+      tranche: 'ghost-iter',
       taskId: '5',
-      topoPath: 'aeg-root/iterations/ghost-iter.md',
+      topoPath: 'aeg-root/tranches/ghost-iter.md',
       topology: null
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
-      '✖ pre-push: branch `task/ghost-iter/5` names iteration `ghost-iter`, but aeg-root/iterations/ghost-iter.md does not exist.\n' +
-        '  A task branch must belong to a real iteration.'
+      '✖ pre-push: branch `task/ghost-iter/5` names tranche `ghost-iter`, but aeg-root/tranches/ghost-iter.md does not exist.\n' +
+        '  A task branch must belong to a real tranche.'
     )
   })
 
   it('no matching row → the exact no-row message', () => {
     const result = checkBranchTopology({
       branch: 'task/parity-fixture/999',
-      iteration: 'parity-fixture',
+      tranche: 'parity-fixture',
       taskId: '999',
-      topoPath: 'aeg-root/iterations/parity-fixture.md',
-      topology: parseIteration(TOPOLOGY_MD)
+      topoPath: 'aeg-root/tranches/parity-fixture.md',
+      topology: parseTranche(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
-      '✖ pre-push: branch `task/parity-fixture/999` — no row with `#` = `999` in aeg-root/iterations/parity-fixture.md.\n' +
+      '✖ pre-push: branch `task/parity-fixture/999` — no row with `#` = `999` in aeg-root/tranches/parity-fixture.md.\n' +
         "  The branch suffix must literal-match the topology's # column.\n" +
         "  If the plan PR adding this row hasn't merged yet, merge it first."
     )
@@ -113,19 +113,19 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
   it('matching row → allow', () => {
     const result = checkBranchTopology({
       branch: 'task/parity-fixture/7a',
-      iteration: 'parity-fixture',
+      tranche: 'parity-fixture',
       taskId: '7a',
-      topoPath: 'aeg-root/iterations/parity-fixture.md',
-      topology: parseIteration(TOPOLOGY_MD)
+      topoPath: 'aeg-root/tranches/parity-fixture.md',
+      topology: parseTranche(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('allow')
   })
 })
 
 describe('known theoretical divergences — synthetic-only, characterized so drift is visible', () => {
-  // Neither shape occurs in any real iteration file (all live + completed
+  // Neither shape occurs in any real tranche file (all live + completed
   // files were swept at task-32 time — see PR #for-399's evidence). Where
-  // the two disagree on synthetic input, parseIteration's reading is the
+  // the two disagree on synthetic input, parseTranche's reading is the
   // authoritative one (only the `## Tasks` table defines rows).
 
   it('a row-shaped line OUTSIDE the Tasks table: grep matched it, the parser correctly does not', () => {
@@ -152,15 +152,15 @@ describe('known theoretical divergences — synthetic-only, characterized so dri
 })
 
 describe('taskBranchTopologyFields mirrors the hook’s case-pattern + cut extraction', () => {
-  it('extracts iteration and task id from a canonical task branch', () => {
+  it('extracts tranche and task id from a canonical task branch', () => {
     expect(taskBranchTopologyFields('task/aeg-governance-hardening/32')).toEqual({
-      iteration: 'aeg-governance-hardening',
+      tranche: 'aeg-governance-hardening',
       taskId: '32'
     })
   })
 
   it('ignores segments beyond the third, exactly as `cut -d/ -f2,-f3` did', () => {
-    expect(taskBranchTopologyFields('task/iter/32/extra')).toEqual({ iteration: 'iter', taskId: '32' })
+    expect(taskBranchTopologyFields('task/iter/32/extra')).toEqual({ tranche: 'iter', taskId: '32' })
   })
 
   it('returns null for branches the hook’s `task/*/*` case never matched', () => {
@@ -170,6 +170,6 @@ describe('taskBranchTopologyFields mirrors the hook’s case-pattern + cut extra
   })
 
   it('preserves the shell pattern’s empty-segment tolerance (`*` matches empty)', () => {
-    expect(taskBranchTopologyFields('task//x')).toEqual({ iteration: '', taskId: 'x' })
+    expect(taskBranchTopologyFields('task//x')).toEqual({ tranche: '', taskId: 'x' })
   })
 })

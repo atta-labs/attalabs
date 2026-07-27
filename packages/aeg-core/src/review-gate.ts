@@ -41,7 +41,7 @@ export type ReviewGateInput = {
  * True only for `plan/*` branches — topology docs only, ever,
  * by contract (roles/planner.md Step 0): a plan PR has no code to review.
  * Every other branch, INCLUDING `fix/*`, is held to the review gate — `fix/*`
- * carries real code despite not matching `task/<iteration>/<id>`, so reusing
+ * carries real code despite not matching `task/<tranche>/<id>`, so reusing
  * `checkClosesN`'s broader "any non-task branch bypasses" idiom here was a
  * gap: a `fix/*` PR could merge with no enforced code-reviewer or
  * security-review verdict. `checkClosesN`'s bypass is correct for itself (it

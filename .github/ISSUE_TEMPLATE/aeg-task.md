@@ -1,9 +1,9 @@
 ---
 name: AEG Task
-about: An AEG-governed task. No planning metadata (priority, estimates, points, roadmap) — see iteration-model.md §9. The Planner's rationale goes in the body below the metadata fields.
+about: An AEG-governed task. No planning metadata (priority, estimates, points, roadmap) — see tranche-model.md §9. The Planner's rationale goes in the body below the metadata fields.
 ---
 
-**Iteration:** <!-- e.g. vada-production-v1 -->
+**Tranche:** <!-- e.g. vada-production-v1 -->
 **Task:** <!-- task number or id, e.g. 1 or S0 -->
 **Project(s):** <!-- comma-separated project identifiers, e.g. vada, engine, adapter -->
 **Depends-on:** <!-- forge Issue numbers or — , e.g. #88, #89 -->

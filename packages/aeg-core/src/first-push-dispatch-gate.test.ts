@@ -4,7 +4,7 @@ import { checkFirstPushDispatchGate, parseTaskBranch } from './first-push-dispat
 describe('parseTaskBranch', () => {
   it('parses a well-formed task branch', () => {
     expect(parseTaskBranch('task/aeg-governance-hardening/25')).toEqual({
-      iteration: 'aeg-governance-hardening',
+      tranche: 'aeg-governance-hardening',
       taskId: '25'
     })
   })
@@ -34,7 +34,7 @@ describe('checkFirstPushDispatchGate — branch-type scoping', () => {
       readiness: 'NOT_READY'
     })
     expect(result.verdict).toBe('allow')
-    expect(result.reason).toContain('not a task/<iteration>/<n> branch')
+    expect(result.reason).toContain('not a task/<tranche>/<n> branch')
   })
 
   it('allows an archive branch regardless of readiness', () => {

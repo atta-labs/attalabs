@@ -1,5 +1,5 @@
 /**
- * Shared AEG iteration/task shapes, extracted from `@atta/aeg-core` (task
+ * Shared AEG tranche/task shapes, extracted from `@atta/aeg-core` (task
  * aeg-forge-state-v1 3a) so `@atta/aeg-forge-state` can depend on these
  * types without creating a package cycle: `aeg-forge-state` needs them to
  * type its forge-derived output, and `aeg-core`'s bin scripts need to
@@ -12,7 +12,7 @@ export type Lifecycle = 'active' | 'complete'
 
 export type Task = {
   /**
-   * Task identifier. A string — not a number — because real iterations contain
+   * Task identifier. A string — not a number — because real tranches contain
    * suffixed ids like `3a`, `7a`, `7b` (verification-coupled splits).
    */
   id: string
@@ -33,13 +33,13 @@ export type Task = {
   rationaleMarkdown: string
 }
 
-export type Iteration = {
-  /** Slug from `# Iteration: <name> — <timeframe>`. */
+export type Tranche = {
+  /** Slug from `# Tranche: <name> — <timeframe>`. */
   name: string
   /**
    * Lifecycle marker per §4 / §11. Defaults to `'active'` when absent — the
-   * pre-§11 iteration files do not carry the marker, and the file living at
-   * the top of `iterations/` (not `completed/`) implies active.
+   * pre-§11 tranche files do not carry the marker, and the file living at
+   * the top of `tranches/` (not `completed/`) implies active.
    */
   lifecycle: Lifecycle
   /** First-paragraph goal (bold markers stripped). Empty string if missing. */
@@ -66,17 +66,17 @@ export type Iteration = {
 // every existing call site that imports from `@atta/aeg-core`.
 
 /**
- * Per-task forge snapshot. `deriveIteration` (`@atta/aeg-core`) consumes this.
+ * Per-task forge snapshot. `deriveTranche` (`@atta/aeg-core`) consumes this.
  *
  * Conventions for missing entries: a task absent from the `Map<TaskId,
- * ForgeFacts>` passed to `deriveIteration` is treated as `todo` — iteration
+ * ForgeFacts>` passed to `deriveTranche` is treated as `todo` — tranche
  * tasks are committed work; `backlog` is a project-level concept (D-059).
  */
 export type ForgeFacts = {
   issueState: 'open' | 'closed'
   /** Issue assignee present. No longer affects `todo` derivation (D-059). */
   assigned: boolean
-  /** A `task/<iteration>/<n>` branch exists on the forge. */
+  /** A `task/<tranche>/<n>` branch exists on the forge. */
   branchExists: boolean
   prState: 'none' | 'open' | 'merged'
   /**
@@ -106,14 +106,14 @@ export type ForgeFacts = {
 /** An open Issue's forge-fetched body + labels, as returned by the batched label query. */
 export type ForgeIssue = { number: number; body: string; labels: string[] }
 
-/** A `Closes #N` Issue's resolved AEG task identity — the iteration slug and
- * task id derived from its title (`[<slug>] <id> — ...`) and `vinaya/iteration:<slug>`
+/** A `Closes #N` Issue's resolved AEG task identity — the tranche slug and
+ * task id derived from its title (`[<slug>] <id> — ...`) and `vinaya/tranche:<slug>`
  * label. Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1
  * reverse): a branch closing an Issue that resolves to one of these must be
- * named `task/<iterSlug>/<taskId>`. */
-export type TaskIssueRef = { iterSlug: string; taskId: string }
+ * named `task/<trancheSlug>/<taskId>`. */
+export type TaskIssueRef = { trancheSlug: string; taskId: string }
 
-/** Identity of a task as parsed from the iteration topology table. */
+/** Identity of a task as parsed from the tranche topology table. */
 export type TaskRef = {
   /** Task id from the topology table — a string (e.g. `3`, `7a`). */
   id: string
@@ -125,8 +125,8 @@ export type TaskRef = {
 export type FetchForgeFactsInput = {
   owner: string
   repo: string
-  /** Iteration slug — used to build the `task/<iteration>/<id>` branch ref. */
-  iteration: string
+  /** Tranche slug — used to build the `task/<tranche>/<id>` branch ref. */
+  tranche: string
   tasks: TaskRef[]
   /**
    * Optional explicit token. When absent the I/O layer auto-discovers (env,
@@ -160,8 +160,8 @@ export type ForgeFactsSnapshot = {
   prRefs: Map<string, PrRef>
   /**
    * `true` when GitHub was unreachable or no token was available. The facts
-   * map will be empty in this case; `deriveIteration` then treats every task
-   * as `todo` — iteration tasks are committed work, minimum `todo` (D-059).
+   * map will be empty in this case; `deriveTranche` then treats every task
+   * as `todo` — tranche tasks are committed work, minimum `todo` (D-059).
    */
   unavailable: boolean
   /** Diagnostic — logged, not user-facing. Empty when `unavailable` is false. */
@@ -188,7 +188,7 @@ export type RawTaskFacts = {
     assigneesCount: number
     labels: string[]
   } | null
-  /** Presence of `refs/heads/task/<iteration>/<id>` on the forge. */
+  /** Presence of `refs/heads/task/<tranche>/<id>` on the forge. */
   refExists: boolean
   /** Most recent PR (any state) whose head branch matches the task ref. */
   pullRequest: {

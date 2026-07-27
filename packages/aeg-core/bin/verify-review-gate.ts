@@ -10,7 +10,7 @@
  * Only `plan/*` branches bypass (`isReviewGateExemptBranch`) — a plan PR
  * touches only topology docs, never code. Every other branch,
  * INCLUDING `fix/*`, is held to the gate: `fix/*` carries real code despite
- * not matching `task/<iteration>/<id>`, so it must not be waved through the
+ * not matching `task/<tranche>/<id>`, so it must not be waved through the
  * same way a genuinely code-free `plan/*` branch is. This is a going-forward
  * gate, never a re-evaluation of already-merged history.
  *

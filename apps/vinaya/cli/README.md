@@ -83,6 +83,6 @@ None ship in this task. When a later task adds an interactive command with an ab
 
 ## Architecture
 
-Ported from Cetana's CLI: the config-loader pattern and its precedence regression tests only. No JSONL, no IPC, no coordinator, no state-sync code came across (local parallel state is the disease Vinaya exists to kill). `@atta/aeg-core` and `@atta/vinaya-sources` are workspace dependencies as of the check engine — every core check consumes their public exports read-only; iteration state is read only through a `StateSource`, never a hardcoded path.
+Ported from Cetana's CLI: the config-loader pattern and its precedence regression tests only. No JSONL, no IPC, no coordinator, no state-sync code came across (local parallel state is the disease Vinaya exists to kill). `@atta/aeg-core` and `@atta/vinaya-sources` are workspace dependencies as of the check engine — every core check consumes their public exports read-only; tranche state is read only through a `StateSource`, never a hardcoded path.
 
 See `apps/vinaya/specs/vinaya-spec.md` for the full product spec and `apps/vinaya/specs/vinaya-backlog.md` for what's still ahead.

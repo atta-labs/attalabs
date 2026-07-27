@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./gh', () => ({
-  ghIssueListByLabel: vi.fn()
+  ghIssueListByAnyLabel: vi.fn()
 }))
 
-const { ghIssueListByLabel } = await import('./gh')
+const { ghIssueListByAnyLabel } = await import('./gh')
 const { listTasksForSlug } = await import('./list-tasks')
 
 describe('listTasksForSlug', () => {
   it('parses id/title from the `[<slug>] <id> — <title>` convention and projects from the body field', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 425,
         title: '[aeg-forge-state-v1] 1 — Generic forge-reading adapter (packages/forge-state)',
         body: '**Project:** aeg-core\n\n**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:aeg-forge-state-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/tranche:aeg-forge-state-v1' }]
       }
     ])
 
@@ -37,14 +37,14 @@ describe('listTasksForSlug', () => {
   })
 
   it('derives projects from the **Project:** field alone (post-#614 / state-machine-v1)', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 614,
         title: '[state-machine-v1] 2 — Migrate labels to the vinaya/ namespace',
         body: '**Boundary** — ...\n\n**Project(s) + blast radius** — `Project: aeg-core`.\n\n**Tier:** 3\n**Project:** aeg-core, vinaya',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:state-machine-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/tranche:state-machine-v1' }]
       }
     ])
 
@@ -54,14 +54,14 @@ describe('listTasksForSlug', () => {
   })
 
   it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 700,
         title: '[iter] 1 — a stale project label lingers on the Issue',
         body: '**Project:** herald',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'project:vinaya' }, { name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'project:vinaya' }, { name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -74,14 +74,14 @@ describe('listTasksForSlug', () => {
     // The whole `vada-production-v1` cohort and the `aeg-forge-state-v1`
     // fixture are authored this way. Accepting only the bold form dropped
     // their project the moment #614 deleted the `project:*` labels.
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 431,
         title: '[iter] 7 — plain-form header',
-        body: 'Project: aeg, aeg-core\nIteration: iter · task 7\n\n**Boundary** — x',
+        body: 'Project: aeg, aeg-core\nTranche: iter · task 7\n\n**Boundary** — x',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -90,14 +90,14 @@ describe('listTasksForSlug', () => {
   })
 
   it('still ignores the `**Project(s) + blast radius**` prose heading', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 800,
         title: '[iter] 1 — heading only, no field',
         body: '**Project(s) + blast radius** — reaches packages/ui.\n\n**Boundary** — x',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -111,14 +111,14 @@ describe('listTasksForSlug', () => {
     // project label and built a board link that 404s — strictly worse than
     // the board-less row it replaced. Regression pin: fails without the
     // slug-shape guard in `parseProjectField`.
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 554,
         title: '[admin-ui-library-picker-v1] 1 — Add per-app Library picker to tools/admin',
         body: '**Project:** (none — tools/admin is unregistered; see Project(s) + blast radius above)',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:admin-ui-library-picker-v1' }]
+        labels: [{ name: 'vinaya/tranche:admin-ui-library-picker-v1' }]
       }
     ])
 
@@ -128,14 +128,14 @@ describe('listTasksForSlug', () => {
   })
 
   it('sorts numeric ids ahead of alpha suffix, e.g. 7 before 7a', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 2,
         title: '[iter] 7a — split B',
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       },
       {
         number: 1,
@@ -143,7 +143,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       },
       {
         number: 3,
@@ -151,7 +151,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -160,14 +160,14 @@ describe('listTasksForSlug', () => {
   })
 
   it('drops Issues whose title does not match the `[slug] id — title` convention', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: 'A malformed title with no brackets',
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 

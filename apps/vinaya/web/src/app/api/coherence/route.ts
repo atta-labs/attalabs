@@ -40,7 +40,7 @@ function buildEnv(): NodeJS.ProcessEnv {
 
 export type CheckFailure = {
   issue?: number | null
-  iteration: string
+  tranche: string
   task?: string
   reason: string
 }

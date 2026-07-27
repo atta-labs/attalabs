@@ -53,7 +53,7 @@ export function decideIssueAssignment(input: IssueAssignmentInput): IssueAssignm
   if (parseTaskBranch(branch) === null) {
     return {
       action: 'skip',
-      reason: `Branch \`${branch}\` is not a task/<iteration>/<n> branch — Issue self-assignment only applies to task branches.`
+      reason: `Branch \`${branch}\` is not a task/<tranche>/<n> branch — Issue self-assignment only applies to task branches.`
     }
   }
 

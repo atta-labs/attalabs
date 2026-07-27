@@ -1,16 +1,16 @@
-# Iteration: aeg-ui-v1 — June 2026
+# Tranche: aeg-ui-v1 — June 2026
 
 Lifecycle: active
 
-**Goal (execution, not roadmap-why):** build **AEG Studio** — the local, no-auth tool that reads *this* monorepo's AEG artifacts off disk and reads GitHub locally (operator's own token) for live per-task status, and renders this repo's governance: projects → iterations → tasks (kanban by derived status) → task detail (brief from the PR body), a task-dependency-graph view, and the full model documentation. Plus the shared **`@atta/aeg-core`** package (parser + `deriveIteration` + the shared docs renderer) that Studio runs on and the future public **Portal** will inherit.
+**Goal (execution, not roadmap-why):** build **AEG Studio** — the local, no-auth tool that reads *this* monorepo's AEG artifacts off disk and reads GitHub locally (operator's own token) for live per-task status, and renders this repo's governance: projects → tranches → tasks (kanban by derived status) → task detail (brief from the PR body), a task-dependency-graph view, and the full model documentation. Plus the shared **`@atta/aeg-core`** package (parser + `deriveTranche` + the shared docs renderer) that Studio runs on and the future public **Portal** will inherit.
 
-**Center of gravity:** `@atta/aeg-core` (the shared substrate) + AEG Studio (its first consumer). Per AEG-product D-001, AEG is two products over this core — **Studio** (local, this iteration) and **Portal** (public, future). This iteration builds the core and Studio only; the Portal is explicitly out.
+**Center of gravity:** `@atta/aeg-core` (the shared substrate) + AEG Studio (its first consumer). Per AEG-product D-001, AEG is two products over this core — **Studio** (local, this tranche) and **Portal** (public, future). This tranche builds the core and Studio only; the Portal is explicitly out.
 
 **Repo:** attalabs (`daniboomerang/atta.ai`)   ·   **Team Leader:** Dani
 
-> **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. Live status is `gh pr list` / the forge, never written here. Per `iterations/README.md` §11, the Archivist sets `Lifecycle: complete` and moves this file to `iterations/completed/` when every task is merged — it is never deleted (the rationale is durable history).
+> **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. Live status is `gh pr list` / the forge, never written here. Per `tranches/README.md` §11, the Archivist sets `Lifecycle: complete` and moves this file to `tranches/completed/` when every task is merged — it is never deleted (the rationale is durable history).
 
-> **Readiness gate (run explicitly, per `roles/planner.md`):** intent bounded ✅ (Studio local-first read path + docs; Portal out); specs reachable ✅ (`apps/aeg/specs/aeg-app-architecture.md` §0/§3, `aeg-backlog.md`); code readable ✅ (`@atta/aeg-core` is greenfield; reuse surfaces verified: `@atta/ui/engine-flow`, `@atta/ui/topbar`, `@atta/ui/footer`, Vāda's `content/` + archived "science" doc layout, `apps/vada-ai/web` shell); shared substrate inspectable ✅ (`@atta/ui` consumers known — Vāda, Herald; this iteration *consumes* `@atta/ui` additively, does not change it, so no cross-product blast radius); locked decisions known ✅ (AEG-product D-001 two-product split + local-first; D-029 read-only/derived-status; D-036 shared TopBar props); registry resolves ✅ (`aeg` registered; new `aeg-core` package registered as part of task 1). Concurrency ✅ — **disjoint from `herald-onto-engine`**: that iteration touches `engine`, `adapter-langgraph`, `herald`; this one touches `aeg-core` (new), `apps/aeg`, and *consumes* `@atta/ui` without editing it. **No shared collision domain → the two iterations run fully parallel** (`iterations/README.md` §5, §11).
+> **Readiness gate (run explicitly, per `roles/planner.md`):** intent bounded ✅ (Studio local-first read path + docs; Portal out); specs reachable ✅ (`apps/aeg/specs/aeg-app-architecture.md` §0/§3, `aeg-backlog.md`); code readable ✅ (`@atta/aeg-core` is greenfield; reuse surfaces verified: `@atta/ui/engine-flow`, `@atta/ui/topbar`, `@atta/ui/footer`, Vāda's `content/` + archived "science" doc layout, `apps/vada-ai/web` shell); shared substrate inspectable ✅ (`@atta/ui` consumers known — Vāda, Herald; this tranche *consumes* `@atta/ui` additively, does not change it, so no cross-product blast radius); locked decisions known ✅ (AEG-product D-001 two-product split + local-first; D-029 read-only/derived-status; D-036 shared TopBar props); registry resolves ✅ (`aeg` registered; new `aeg-core` package registered as part of task 1). Concurrency ✅ — **disjoint from `herald-onto-engine`**: that tranche touches `engine`, `adapter-langgraph`, `herald`; this one touches `aeg-core` (new), `apps/aeg`, and *consumes* `@atta/ui` without editing it. **No shared collision domain → the two tranches run fully parallel** (`tranches/README.md` §5, §11).
 
 ---
 
@@ -18,10 +18,10 @@ Lifecycle: active
 
 | # | Task | Issue | Project(s) | Depends-on | Conflicts-with |
 |---|------|-------|-----------|------------|----------------|
-| 1 | `@atta/aeg-core` — AEG-artifact parser + `deriveIteration` (pure) | #94 | aeg-core | — | — |
+| 1 | `@atta/aeg-core` — AEG-artifact parser + `deriveTranche` (pure) | #94 | aeg-core | — | — |
 | 2 | Scaffold `apps/aeg/web/studio` + top-bar/sidebar shell | #95 | aeg | — | — |
-| 3 | Local GitHub read adapter → forge facts for `deriveIteration` | #97 | aeg, aeg-core | 1 | — |
-| 4 | Projects + iterations pages (sidebar nav, topology table, active/archived) | #98 | aeg | 1, 2 | 5, 6 |
+| 3 | Local GitHub read adapter → forge facts for `deriveTranche` | #97 | aeg, aeg-core | 1 | — |
+| 4 | Projects + tranches pages (sidebar nav, topology table, active/archived) | #98 | aeg | 1, 2 | 5, 6 |
 | 5 | Kanban + task detail (columns by derived status; brief from PR body) | #100 | aeg | 1, 2, 3 | 4, 6 |
 | 6 | Task-dependency-graph view (`@atta/ui/engine-flow`) | #99 | aeg | 1, 2 | 4, 5 |
 | 7 | Shared docs renderer in `@atta/aeg-core` + Studio docs section | #101 | aeg-core, aeg | 1, 2 | — |
@@ -30,25 +30,25 @@ Lifecycle: active
 **Wave structure (max concurrency, from the edges):**
 - **Wave 1 (parallel):** 1 (#94, `aeg-core` parser), 2 (#95, shell scaffold), 8 (#96, icon) — three independent foundations, no shared surface. (2 can stub data until 1 lands; 8 is pure asset work.)
 - **Wave 2:** 3 (#97, GitHub read) — needs 1's types.
-- **Wave 3 (serialized within the app surface):** 4 (#98), 5 (#100), 6 (#99) all build pages inside `apps/aeg/web/studio` and share the app's routing/layout surface, so they **conflict with each other** (same collision domain: the Studio app shell wiring). Run them one at a time: **4 → 6 → 5** (4 establishes the project/iteration nav the others hang off; 6 is read-only-ish graph; 5 is the richest, needs 3's live status + PR-body read, so last). 7 (#101, docs) touches `aeg-core` + a separate docs route, so it can run **parallel to one** of 4/5/6 if desired, but to stay safe it's simplest to slot it after 4.
-- Max *cross-iteration* concurrency with `herald-onto-engine`: unlimited (disjoint).
+- **Wave 3 (serialized within the app surface):** 4 (#98), 5 (#100), 6 (#99) all build pages inside `apps/aeg/web/studio` and share the app's routing/layout surface, so they **conflict with each other** (same collision domain: the Studio app shell wiring). Run them one at a time: **4 → 6 → 5** (4 establishes the project/tranche nav the others hang off; 6 is read-only-ish graph; 5 is the richest, needs 3's live status + PR-body read, so last). 7 (#101, docs) touches `aeg-core` + a separate docs route, so it can run **parallel to one** of 4/5/6 if desired, but to stay safe it's simplest to slot it after 4.
+- Max *cross-tranche* concurrency with `herald-onto-engine`: unlimited (disjoint).
 
-> **Note on the 4/5/6 conflict:** these are same-project, same-app-shell tasks. The model's conflict rule is package-level; here the collision domain is the Studio app's shared layout/routing files. Declaring them mutually `conflicts-with` and serializing is the conservative, correct call (`iterations/README.md` §5 — "when unsure, declare and serialize"). If, at brief time, the surfaces prove cleanly separable (distinct route files, no shared layout edits), they may parallelize — but the plan declares the conflict.
+> **Note on the 4/5/6 conflict:** these are same-project, same-app-shell tasks. The model's conflict rule is package-level; here the collision domain is the Studio app's shared layout/routing files. Declaring them mutually `conflicts-with` and serializing is the conservative, correct call (`tranches/README.md` §5 — "when unsure, declare and serialize"). If, at brief time, the surfaces prove cleanly separable (distinct route files, no shared layout edits), they may parallelize — but the plan declares the conflict.
 
 ---
 
 ## Task details — Planner's rationale per task (full rationale also in each Issue body)
 
-### Task 1 — `@atta/aeg-core`: AEG-artifact parser + `deriveIteration` (pure) · Issue #94
+### Task 1 — `@atta/aeg-core`: AEG-artifact parser + `deriveTranche` (pure) · Issue #94
 **Project(s):** aeg-core · **Depends-on:** — · **Conflicts-with:** —
 
-- **Boundary:** a new shared package `packages/aeg-core` (`@atta/aeg-core`). Two pure capabilities: (a) **parse** a repo's AEG artifacts — `aeg-root/projects.md` (the registry), `aeg-root/iterations/*.md` (topology tables + edges + lifecycle marker), and the per-project `aeg-project/` state — into a typed model; (b) **`deriveIteration(parsedFile, forgeFacts)`** → per-task derived status, the dependency/conflict graph, dispatch-eligibility. **Pure: no I/O, no GitHub client, no filesystem reads** (the caller passes file contents + forge facts in). What this is NOT: not the GitHub read (task 3 supplies `forgeFacts`), not the docs renderer (task 7, separate concern in the same package), not any UI.
+- **Boundary:** a new shared package `packages/aeg-core` (`@atta/aeg-core`). Two pure capabilities: (a) **parse** a repo's AEG artifacts — `aeg-root/projects.md` (the registry), `aeg-root/tranches/*.md` (topology tables + edges + lifecycle marker), and the per-project `aeg-project/` state — into a typed model; (b) **`deriveTranche(parsedFile, forgeFacts)`** → per-task derived status, the dependency/conflict graph, dispatch-eligibility. **Pure: no I/O, no GitHub client, no filesystem reads** (the caller passes file contents + forge facts in). What this is NOT: not the GitHub read (task 3 supplies `forgeFacts`), not the docs renderer (task 7, separate concern in the same package), not any UI.
 - **Sizing:** passes the four tests — one verification story (given fixture files + a forge-fact snapshot, the typed model + derived statuses are correct), one agent can hold it (pure functions + types + tests), bounded file surface (the new package only), single failure mode (a parse or a derivation is wrong). It is the cleanest, most testable unit and everything depends on it, so it is wave-1 lead.
 - **Project(s) + blast radius:** new package `aeg-core`, no consumers yet → zero blast radius. (Studio becomes the first consumer in later tasks; the Portal later. Designing it pure + standalone now is what lets both consume it.)
 - **Dependency rationale:** none. Foundation.
-- **Traps to avoid:** keep it **pure** — the temptation is to read files/call GitHub inside it; don't, or it becomes untestable and couples to a runtime. The parser must tolerate the *real* current artifact shapes (the `herald-onto-engine` iteration file's table + rationale blocks; the `aeg-ui-v1` file's; the lifecycle marker just added) — use the live files as fixtures. `deriveIteration` must mirror the status table in `iterations/README.md` §3 exactly (don't invent statuses).
+- **Traps to avoid:** keep it **pure** — the temptation is to read files/call GitHub inside it; don't, or it becomes untestable and couples to a runtime. The parser must tolerate the *real* current artifact shapes (the `herald-onto-engine` tranche file's table + rationale blocks; the `aeg-ui-v1` file's; the lifecycle marker just added) — use the live files as fixtures. `deriveTranche` must mirror the status table in `tranches/README.md` §3 exactly (don't invent statuses).
 - **Suggested agent-class:** **mid-to-high** — pure logic, but the parsing + derivation correctness is the heart of the product; worth careful work and exhaustive tests.
-- **Stop-and-escalate:** if the artifact formats turn out under-specified for reliable parsing (ambiguous table shapes across iteration files), STOP and escalate `severity:strategy` — the fix may be to tighten the iteration-file format in the model, not to write a fragile parser.
+- **Stop-and-escalate:** if the artifact formats turn out under-specified for reliable parsing (ambiguous table shapes across tranche files), STOP and escalate `severity:strategy` — the fix may be to tighten the tranche-file format in the model, not to write a fragile parser.
 
 ### Task 2 — Scaffold `apps/aeg/web/studio` + top-bar/sidebar shell · Issue #95
 **Project(s):** aeg · **Depends-on:** — · **Conflicts-with:** —
@@ -61,10 +61,10 @@ Lifecycle: active
 - **Suggested agent-class:** **mid** — app scaffold + layout reuse; mechanical but multi-file. Reference the existing app setups closely.
 - **Stop-and-escalate:** if scaffolding reveals the shell genuinely needs a new shared `@atta/ui` capability (not just reuse), STOP and escalate `severity:strategy` (it pulls Vāda/Herald into scope).
 
-### Task 3 — Local GitHub read adapter → forge facts for `deriveIteration` · Issue #97
+### Task 3 — Local GitHub read adapter → forge facts for `deriveTranche` · Issue #97
 **Project(s):** aeg, aeg-core · **Depends-on:** 1 · **Conflicts-with:** —
 
-- **Boundary:** the thin adapter that, running locally with the operator's own GitHub auth (the `gh` CLI token or a `GITHUB_TOKEN` env), fetches the **forge facts** `deriveIteration` consumes — Issue state/assignment, branch existence (`task/<iteration>/<n>`), PR state, review decision, merge — for this repo, and maps them to the `forgeFacts` type task 1 defined. Read-only. What this is NOT: not `deriveIteration` itself (task 1), not the UI that displays the result (tasks 4–6), not a GitHub App / vault / webhook cache (deferred, hosted-only, D-001 §3.2–3.3).
+- **Boundary:** the thin adapter that, running locally with the operator's own GitHub auth (the `gh` CLI token or a `GITHUB_TOKEN` env), fetches the **forge facts** `deriveTranche` consumes — Issue state/assignment, branch existence (`task/<tranche>/<n>`), PR state, review decision, merge — for this repo, and maps them to the `forgeFacts` type task 1 defined. Read-only. What this is NOT: not `deriveTranche` itself (task 1), not the UI that displays the result (tasks 4–6), not a GitHub App / vault / webhook cache (deferred, hosted-only, D-001 §3.2–3.3).
 - **Sizing:** passes the four tests — one verification story (against this real repo, the adapter returns correct current forge facts that drive correct derived statuses), one agent can hold it (one read module + its types), bounded file surface (the adapter, likely in `aeg-core` or a thin `studio` lib calling `aeg-core` types), single failure mode (a forge read is wrong/missing).
 - **Project(s) + blast radius:** `aeg` + `aeg-core` (the fact-shape may live in `aeg-core` as a type, the fetch in the app). No other consumers.
 - **Dependency rationale:** **depends-on 1** — it produces the `forgeFacts` shape task 1 defined; that type must exist first.
@@ -72,33 +72,33 @@ Lifecycle: active
 - **Suggested agent-class:** **mid** — a contained read adapter; the GitHub API surface is well-trodden.
 - **Stop-and-escalate:** if read-only local auth can't cover what the kanban needs (e.g. a datum only available via an App), STOP and escalate `severity:strategy` rather than reaching for the hosted machinery.
 
-### Task 4 — Projects + iterations pages (sidebar nav, topology table, active/archived) · Issue #98
+### Task 4 — Projects + tranches pages (sidebar nav, topology table, active/archived) · Issue #98
 **Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 5, 6
 
-- **Boundary:** populate the **sidebar** with the repo's projects (from `aeg-core`'s parse), and build the **project page** → its **iterations** (active/archived, from the lifecycle marker) → the **iteration topology table** (the parsed table). This is the navigational spine: root project → projects → iterations → (table). What this is NOT: not the kanban/task-detail (task 5), not the graph (task 6).
-- **Sizing:** passes the four tests — one verification story (launch on this repo → sidebar lists the real projects → drill to an iteration → its real topology table renders), one agent can hold it (the nav + table pages), bounded file surface (these routes + sidebar wiring), single failure mode (nav/table doesn't render the parsed model).
+- **Boundary:** populate the **sidebar** with the repo's projects (from `aeg-core`'s parse), and build the **project page** → its **tranches** (active/archived, from the lifecycle marker) → the **tranche topology table** (the parsed table). This is the navigational spine: root project → projects → tranches → (table). What this is NOT: not the kanban/task-detail (task 5), not the graph (task 6).
+- **Sizing:** passes the four tests — one verification story (launch on this repo → sidebar lists the real projects → drill to a tranche → its real topology table renders), one agent can hold it (the nav + table pages), bounded file surface (these routes + sidebar wiring), single failure mode (nav/table doesn't render the parsed model).
 - **Project(s) + blast radius:** `aeg` only.
 - **Dependency rationale:** **depends-on 1** (the parsed model) **and 2** (the shell to render inside). **Conflicts-with 5 and 6** — all three add pages inside the Studio app and touch shared layout/routing; serialize (this one first — it builds the nav spine the others hang off).
-- **Traps to avoid:** active/archived comes from the **lifecycle marker** + `completed/` location (`iterations/README.md` §11), not from inventing a status. Read topology from `aeg-core`, don't re-parse in the component.
+- **Traps to avoid:** active/archived comes from the **lifecycle marker** + `completed/` location (`tranches/README.md` §11), not from inventing a status. Read topology from `aeg-core`, don't re-parse in the component.
 - **Suggested agent-class:** **mid** — standard data-driven pages over a parsed model.
 - **Stop-and-escalate:** if the parsed model from task 1 is missing something these pages need, escalate back toward task 1's scope (`severity:strategy`).
 
 ### Task 5 — Kanban + task detail (columns by derived status; brief from PR body) · Issue #100
 **Project(s):** aeg · **Depends-on:** 1, 2, 3 · **Conflicts-with:** 4, 6
 
-- **Boundary:** the **kanban** view of an iteration's tasks — columns = derived statuses (`todo`/`in-flight`/`in-review`/`changes-requested`/`merged`/`blocked`), each task placed in its column by **live** status (from task 3). Click a task → **task detail**: read the **brief** (from the **PR body** — the model's home for the brief), show status/progress, link to the Issue/PR. What this is NOT: not the graph (task 6), not the nav/table (task 4).
-- **Sizing:** passes the four tests — one verification story (an iteration's real tasks land in the right columns by live status; opening one shows its real brief from the PR body), one agent can hold it (the kanban + detail views), bounded file surface (these routes/components), single failure mode (wrong column placement or brief not fetched).
+- **Boundary:** the **kanban** view of a tranche's tasks — columns = derived statuses (`todo`/`in-flight`/`in-review`/`changes-requested`/`merged`/`blocked`), each task placed in its column by **live** status (from task 3). Click a task → **task detail**: read the **brief** (from the **PR body** — the model's home for the brief), show status/progress, link to the Issue/PR. What this is NOT: not the graph (task 6), not the nav/table (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real tasks land in the right columns by live status; opening one shows its real brief from the PR body), one agent can hold it (the kanban + detail views), bounded file surface (these routes/components), single failure mode (wrong column placement or brief not fetched).
 - **Project(s) + blast radius:** `aeg` only.
 - **Dependency rationale:** **depends-on 1** (derived status), **2** (shell), **3** (live forge facts + the PR-body fetch for the brief). It is the richest task and the most dependency-laden, so it runs **last** in the app-surface wave. **Conflicts-with 4 and 6** (shared app shell).
-- **Traps to avoid:** the **brief lives in the PR body** (`iterations/README.md` §7) — fetch it from the PR, not the Issue (the Issue holds the rationale, not the brief). Derived status must come from `aeg-core`'s `deriveIteration`, not re-derived in the component. Handle the no-PR-yet / no-token cases (a `backlog`/`todo` task has no brief yet).
+- **Traps to avoid:** the **brief lives in the PR body** (`tranches/README.md` §7) — fetch it from the PR, not the Issue (the Issue holds the rationale, not the brief). Derived status must come from `aeg-core`'s `deriveTranche`, not re-derived in the component. Handle the no-PR-yet / no-token cases (a `backlog`/`todo` task has no brief yet).
 - **Suggested agent-class:** **mid-to-high** — the most stateful view (live data, columns, detail fetch), though still Herald-free and bounded.
 - **Stop-and-escalate:** if the PR-body brief isn't reliably fetchable read-only, or derived status needs a fact task 3 doesn't supply, escalate `severity:strategy`.
 
 ### Task 6 — Task-dependency-graph view (`@atta/ui/engine-flow`) · Issue #99
 **Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 4, 5
 
-- **Boundary:** render an iteration's tasks as a **graph** (UI label: **"task dependency graph"**) using `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — nodes = tasks, **depends-on = directed arrows**, **conflicts-with = dashed/undirected links**. Optional per-node live-status tint if task 3's data is present (additive, not required for V1). What this is NOT: not the kanban (task 5), not the nav (task 4).
-- **Sizing:** passes the four tests — one verification story (an iteration's real depends-on/conflicts-with edges render as a correct directed graph), one agent can hold it (one graph view reusing engine-flow), bounded file surface (the graph route/component), single failure mode (graph/edges render wrong).
+- **Boundary:** render a tranche's tasks as a **graph** (UI label: **"task dependency graph"**) using `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — nodes = tasks, **depends-on = directed arrows**, **conflicts-with = dashed/undirected links**. Optional per-node live-status tint if task 3's data is present (additive, not required for V1). What this is NOT: not the kanban (task 5), not the nav (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real depends-on/conflicts-with edges render as a correct directed graph), one agent can hold it (one graph view reusing engine-flow), bounded file surface (the graph route/component), single failure mode (graph/edges render wrong).
 - **Project(s) + blast radius:** `aeg` only. **Reuses `@atta/ui/engine-flow` as-is** — verify no change needed to the shared renderer (if a change *is* needed, Vāda enters scope → escalate).
 - **Dependency rationale:** **depends-on 1** (the graph structure from the parse) **and 2** (shell). **Conflicts-with 4 and 5** (shared app shell). Independent of task 3 (structure is file-derived; live tint is optional).
 - **Traps to avoid:** the two edge types are different (directed depends-on = a DAG; undirected conflicts-with = symmetric) — render them distinctly. Reuse engine-flow's existing node/edge components; **do not** fork or modify `@atta/ui/engine-flow`.
@@ -133,7 +133,7 @@ Lifecycle: active
 
 - **Issues cut** (#94–#101); the topology above is live. Assigning an Issue is the `backlog → todo` promotion.
 - **Dispatch order:** wave 1 = **1 (#94), 2 (#95), 8 (#96)** in parallel (parser, shell, icon). Then 3 (#97). Then the app-surface wave **4 (#98) → 6 (#99) → 5 (#100)** serialized (shared shell), with 7 (#101) slottable after 4.
-- **Runs fully parallel with `herald-onto-engine`** — disjoint collision domains (that iteration: engine/adapter/herald; this: aeg-core/apps-aeg/+ consumes @atta/ui read-only). No cross-iteration serialization needed (`iterations/README.md` §5, §11).
-- **Resolves AEG-product D-001's first iteration.** OQ-aeg-1 (primary viewer) and OQ-aeg-2 (cost/token tier) remain open and are NOT in V1 — Studio's single-repo local read path doesn't need them.
+- **Runs fully parallel with `herald-onto-engine`** — disjoint collision domains (that tranche: engine/adapter/herald; this: aeg-core/apps-aeg/+ consumes @atta/ui read-only). No cross-tranche serialization needed (`tranches/README.md` §5, §11).
+- **Resolves AEG-product D-001's first tranche.** OQ-aeg-1 (primary viewer) and OQ-aeg-2 (cost/token tier) remain open and are NOT in V1 — Studio's single-repo local read path doesn't need them.
 - **The `@atta/ui` reuse is additive** across tasks 2/5/6 — none edits `@atta/ui`. If any task finds it must, that's a scope change pulling Vāda/Herald into the blast radius → escalate before proceeding.
-- **Prototypes the model's iteration-lifecycle + cross-iteration-concurrency rules** (just added to `iterations/README.md` §11) — this is the first iteration to run *concurrent* with another.
+- **Prototypes the model's tranche-lifecycle + cross-tranche-concurrency rules** (just added to `tranches/README.md` §11) — this is the first tranche to run *concurrent* with another.

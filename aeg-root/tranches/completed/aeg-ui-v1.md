@@ -1,0 +1,176 @@
+# Tranche: aeg-ui-v1 — June 2026
+
+Lifecycle: complete
+
+> **Status (June 17):** 9 of 10 tasks merged. Task 9-view (#110, token ledger Studio display) is the only remaining task — never built, unblocked. All other tasks are on main.
+
+**Goal (execution, not roadmap-why):** build **AEG Studio** — the local, no-auth tool that reads *this* monorepo's AEG artifacts off disk and reads GitHub locally (operator's own token) for live per-task status, and renders this repo's governance: projects → tranches → tasks (kanban by derived status) → task detail (brief from the PR body), a task-dependency-graph view, and the full model documentation. Plus the shared **`@atta/aeg-core`** package (parser + `deriveTranche` + the shared docs renderer) that Studio runs on and the future public **Portal** will inherit.
+
+**Center of gravity:** `@atta/aeg-core` (the shared substrate) + AEG Studio (its first consumer). Per AEG-product D-001, AEG is two products over this core — **Studio** (local, this tranche) and **Portal** (public, future). This tranche builds the core and Studio only; the Portal is explicitly out.
+
+**Repo:** attalabs (`daniboomerang/attalabs`)   ·   **Team Leader:** Dani
+
+> **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. Live status is `gh pr list` / the forge, never written here. Per `tranches/README.md` §11, the Archivist sets `Lifecycle: complete` and moves this file to `tranches/completed/` when every task is merged — it is never deleted (the rationale is durable history).
+
+> **Readiness gate (run explicitly, per `roles/planner.md`):** intent bounded ✅ (Studio local-first read path + docs; Portal out); specs reachable ✅ (`apps/aeg/specs/aeg-app-architecture.md` §0/§3, `aeg-backlog.md`); code readable ✅ (`@atta/aeg-core` is greenfield; reuse surfaces verified: `@atta/ui/engine-flow`, `@atta/ui/topbar`, `@atta/ui/footer`, Vāda's `content/` + archived "science" doc layout, `apps/vada-ai/web` shell); shared substrate inspectable ✅ (`@atta/ui` consumers known — Vāda, Herald; this tranche *consumes* `@atta/ui` additively, does not change it, so no cross-product blast radius); locked decisions known ✅ (AEG-product D-001 two-product split + local-first; D-029 read-only/derived-status; D-036 shared TopBar props); registry resolves ✅ (`aeg` registered; new `aeg-core` package registered as part of task 1). Concurrency ✅ — **disjoint from `herald-onto-engine`**: that tranche touches `engine`, `adapter-langgraph`, `herald`; this one touches `aeg-core` (new), `apps/aeg`, and *consumes* `@atta/ui` without editing it. **No shared collision domain → the two tranches run fully parallel** (`tranches/README.md` §5, §11).
+
+---
+
+## Tasks (topology)
+
+| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |
+|---|------|-------|-----------|------------|----------------|
+| 1 | `@atta/aeg-core` — AEG-artifact parser + `deriveTranche` (pure) | #94 | aeg-core | — | — |
+| 2 | Scaffold `apps/aeg/web/studio` + top-bar/sidebar shell | #95 | aeg | — | — |
+| 3 | Local GitHub read adapter → forge facts for `deriveTranche` | #97 | aeg, aeg-core | 1 | — |
+| 4 | Projects + tranches pages (sidebar nav, topology table, active/archived) | #98 | aeg | 1, 2 | 5, 6 |
+| 5 | Kanban + task detail (columns by derived status; brief from PR body) | #100 | aeg | 1, 2, 3 | 4, 6 |
+| 6 | Task-dependency-graph view (`@atta/ui/engine-flow`) | #99 | aeg | 1, 2 | 4, 5 |
+| 7 | Shared docs renderer in `@atta/aeg-core` + Studio docs section | #101 | aeg-core, aeg | 1, 2 | — |
+| 8 | AEG icon — find/design | #96 | aeg | — | — |
+| 9 | Per-tranche token/cost ledger (append-only in the model + Studio view) | #110 | aeg, aeg-core | 1, 4 | — |
+| 10 | Verification role — runtime test-plan execution as a model phase + merge gate | #126 | aeg-core | — | — |
+
+**Wave structure (max concurrency, from the edges):**
+- **Wave 1 (parallel):** 1 (#94, `aeg-core` parser), 2 (#95, shell scaffold), 8 (#96, icon) — three independent foundations, no shared surface. (2 can stub data until 1 lands; 8 is pure asset work.)
+- **Wave 2:** 3 (#97, GitHub read) — needs 1's types.
+- **Wave 3 (serialized within the app surface):** 4 (#98), 5 (#100), 6 (#99) all build pages inside `apps/aeg/web/studio` and share the app's routing/layout surface, so they **conflict with each other** (same collision domain: the Studio app shell wiring). Run them one at a time: **4 → 6 → 5** (4 establishes the project/tranche nav the others hang off; 6 is read-only-ish graph; 5 is the richest, needs 3's live status + PR-body read, so last). 7 (#101, docs) touches `aeg-core` + a separate docs route, so it can run **parallel to one** of 4/5/6 if desired, but to stay safe it's simplest to slot it after 4.
+- **Wave 4 (last):** 9 (#110, token ledger) — its **model half** (the append-only ledger format + the per-role append rule + the `aeg-core` parser) could ship anytime after task 1, but its **view half** hangs on the tranche pages, so it depends-on 4 and runs last. Its `aeg-core` parser addition is additive (no conflict with 7's renderer).
+- **Task 10 (#126, verification role)** is dependency-free and conflict-free (model docs + brief skill + optional CI gate; no app surface). Runs parallel with any task in either tranche, anytime.
+- Max *cross-tranche* concurrency with `herald-onto-engine`: unlimited (disjoint).
+
+> **Note on the 4/5/6 conflict:** these are same-project, same-app-shell tasks. The model's conflict rule is package-level; here the collision domain is the Studio app's shared layout/routing files. Declaring them mutually `conflicts-with` and serializing is the conservative, correct call (`tranches/README.md` §5 — "when unsure, declare and serialize"). If, at brief time, the surfaces prove cleanly separable (distinct route files, no shared layout edits), they may parallelize — but the plan declares the conflict.
+
+---
+
+## Task details — Planner's rationale per task (full rationale also in each Issue body)
+
+### Task 1 — `@atta/aeg-core`: AEG-artifact parser + `deriveTranche` (pure) · Issue #94
+**Project(s):** aeg-core · **Depends-on:** — · **Conflicts-with:** —
+
+- **Boundary:** a new shared package `packages/aeg-core` (`@atta/aeg-core`). Two pure capabilities: (a) **parse** a repo's AEG artifacts — `aeg-root/projects.md` (the registry), `aeg-root/tranches/*.md` (topology tables + edges + lifecycle marker), and the per-project `aeg-project/` state — into a typed model; (b) **`deriveTranche(parsedFile, forgeFacts)`** → per-task derived status, the dependency/conflict graph, dispatch-eligibility. **Pure: no I/O, no GitHub client, no filesystem reads** (the caller passes file contents + forge facts in). What this is NOT: not the GitHub read (task 3 supplies `forgeFacts`), not the docs renderer (task 7, separate concern in the same package), not any UI.
+- **Sizing:** passes the four tests — one verification story (given fixture files + a forge-fact snapshot, the typed model + derived statuses are correct), one agent can hold it (pure functions + types + tests), bounded file surface (the new package only), single failure mode (a parse or a derivation is wrong). It is the cleanest, most testable unit and everything depends on it, so it is wave-1 lead.
+- **Project(s) + blast radius:** new package `aeg-core`, no consumers yet → zero blast radius. (Studio becomes the first consumer in later tasks; the Portal later. Designing it pure + standalone now is what lets both consume it.)
+- **Dependency rationale:** none. Foundation.
+- **Traps to avoid:** keep it **pure** — the temptation is to read files/call GitHub inside it; don't, or it becomes untestable and couples to a runtime. The parser must tolerate the *real* current artifact shapes (the `herald-onto-engine` tranche file's table + rationale blocks; the `aeg-ui-v1` file's; the lifecycle marker just added) — use the live files as fixtures. `deriveTranche` must mirror the status table in `tranches/README.md` §3 exactly (don't invent statuses).
+- **Suggested agent-class:** **mid-to-high** — pure logic, but the parsing + derivation correctness is the heart of the product; worth careful work and exhaustive tests.
+- **Stop-and-escalate:** if the artifact formats turn out under-specified for reliable parsing (ambiguous table shapes across tranche files), STOP and escalate `severity:strategy` — the fix may be to tighten the tranche-file format in the model, not to write a fragile parser.
+
+### Task 2 — Scaffold `apps/aeg/web/studio` + top-bar/sidebar shell · Issue #95
+**Project(s):** aeg · **Depends-on:** — · **Conflicts-with:** —
+
+- **Boundary:** create the Next.js app at `apps/aeg/web/studio` (mirroring the Vāda/Herald app setup — App Router, `@atta/ui` styles, Biome, tsconfig) and build the **shell**: a **top bar** (reusing `@atta/ui/topbar`, with the **AEG icon slot top-left** — placeholder "AEG" text until task 8) **plus a left sidebar** (modeled on Vāda's archived "science" doc layout, `apps/vada-ai/web/src/app/(main)/_archived-science`). No auth, no `(app)` guard. The shell renders with stubbed/empty data — real data arrives in tasks 4–7. What this is NOT: not the pages' content (4/5/6), not docs (7).
+- **Sizing:** passes the four tests — one verification story (the app boots locally, the top-bar+sidebar shell renders, nav scaffolding works), one agent can hold it (app config + layout), bounded file surface (the new app dir), single failure mode (the app doesn't boot / shell doesn't render).
+- **Project(s) + blast radius:** `aeg` (the new app). **Consumes `@atta/ui` (topbar, styles) additively — does NOT edit it**, so Vāda/Herald are NOT in the blast radius (re-confirm: no `@atta/ui` source change). If the shell needs a `@atta/ui` change, that's a scope change → escalate.
+- **Dependency rationale:** none — can scaffold against stub data before `aeg-core` lands. (Kept independent of task 1 deliberately so wave 1 has two parallel foundations.)
+- **Traps to avoid:** **do not edit `@atta/ui`** — reuse `TopBar` via its existing props (`isSignedIn`/`accountMenu` exist per global D-036; Studio is no-auth so pass the no-auth shape). Confirm whether Studio uses the CMS-library chrome pattern (like Herald, D-035) or plain `@atta/ui` (simpler; likely correct for an infra tool). Copy the Next.js worktree-root resolution fix the other apps needed (`next.config.ts`).
+- **Suggested agent-class:** **mid** — app scaffold + layout reuse; mechanical but multi-file. Reference the existing app setups closely.
+- **Stop-and-escalate:** if scaffolding reveals the shell genuinely needs a new shared `@atta/ui` capability (not just reuse), STOP and escalate `severity:strategy` (it pulls Vāda/Herald into scope).
+- **Note:** Plain `@atta/ui` (no CMS chrome). Known follow-up backlogged: TopBar `useUser()` is unconditional → Studio needs Clerk env to boot (a `@atta/ui` change, Vāda/Herald in blast radius).
+
+### Task 3 — Local GitHub read adapter → forge facts for `deriveTranche` · Issue #97
+**Project(s):** aeg, aeg-core · **Depends-on:** 1 · **Conflicts-with:** —
+
+- **Boundary:** the thin adapter that, running locally with the operator's own GitHub auth (the `gh` CLI token or a `GITHUB_TOKEN` env), fetches the **forge facts** `deriveTranche` consumes — Issue state/assignment, branch existence (`task/<tranche>/<n>`), PR state, review decision, merge — for this repo, and maps them to the `forgeFacts` type task 1 defined. Read-only. What this is NOT: not `deriveTranche` itself (task 1), not the UI that displays the result (tasks 4–6), not a GitHub App / vault / webhook cache (deferred, hosted-only, D-001 §3.2–3.3).
+- **Sizing:** passes the four tests — one verification story (against this real repo, the adapter returns correct current forge facts that drive correct derived statuses), one agent can hold it (one read module + its types), bounded file surface (the adapter, likely in `aeg-core` or a thin `studio` lib calling `aeg-core` types), single failure mode (a forge read is wrong/missing).
+- **Project(s) + blast radius:** `aeg` + `aeg-core` (the fact-shape may live in `aeg-core` as a type, the fetch in the app). No other consumers.
+- **Dependency rationale:** **depends-on 1** — it produces the `forgeFacts` shape task 1 defined; that type must exist first.
+- **Traps to avoid:** **read-only, always** (D-029 — the UI never writes the forge). Use the operator's existing auth; **do not** build an auth system. Handle the no-token / unauthenticated case gracefully (the file-derived topology still renders; only live status is absent) — Studio must be useful even before GitHub is reachable. Note (from task 2): Studio currently needs Clerk env to boot — keep the GitHub-read path independent of that so "useful before GitHub reachable" still holds. Mind rate limits but **do not** build the webhook cache (that's the deferred hosted path).
+- **Suggested agent-class:** **mid** — a contained read adapter; the GitHub API surface is well-trodden.
+- **Stop-and-escalate:** if read-only local auth can't cover what the kanban needs (e.g. a datum only available via an App), STOP and escalate `severity:strategy` rather than reaching for the hosted machinery.
+
+### Task 4 — Projects + tranches pages (sidebar nav, topology table, active/archived) · Issue #98
+**Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 5, 6
+
+- **Boundary:** populate the **sidebar** with the repo's projects (from `aeg-core`'s parse), and build the **project page** → its **tranches** (active/archived, from the lifecycle marker) → the **tranche topology table** (the parsed table). This is the navigational spine: root project → projects → tranches → (table). What this is NOT: not the kanban/task-detail (task 5), not the graph (task 6).
+- **Sizing:** passes the four tests — one verification story (launch on this repo → sidebar lists the real projects → drill to a tranche → its real topology table renders), one agent can hold it (the nav + table pages), bounded file surface (these routes + sidebar wiring), single failure mode (nav/table doesn't render the parsed model).
+- **Project(s) + blast radius:** `aeg` only.
+- **Dependency rationale:** **depends-on 1** (the parsed model) **and 2** (the shell to render inside). **Conflicts-with 5 and 6** — all three add pages inside the Studio app and touch shared layout/routing; serialize (this one first — it builds the nav spine the others hang off).
+- **Traps to avoid:** active/archived comes from the **lifecycle marker** + `completed/` location (`tranches/README.md` §11), not from inventing a status. Read topology from `aeg-core`, don't re-parse in the component.
+- **Suggested agent-class:** **mid** — standard data-driven pages over a parsed model.
+- **Stop-and-escalate:** if the parsed model from task 1 is missing something these pages need, escalate back toward task 1's scope (`severity:strategy`).
+
+### Task 5 — Kanban + task detail (columns by derived status; brief from PR body) · Issue #100
+**Project(s):** aeg · **Depends-on:** 1, 2, 3 · **Conflicts-with:** 4, 6
+
+- **Boundary:** the **kanban** view of a tranche's tasks — columns = derived statuses (`todo`/`in-flight`/`in-review`/`changes-requested`/`merged`/`blocked`), each task placed in its column by **live** status (from task 3). Click a task → **task detail**: read the **brief** (from the **PR body** — the model's home for the brief), show status/progress, link to the Issue/PR. What this is NOT: not the graph (task 6), not the nav/table (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real tasks land in the right columns by live status; opening one shows its real brief from the PR body), one agent can hold it (the kanban + detail views), bounded file surface (these routes/components), single failure mode (wrong column placement or brief not fetched).
+- **Project(s) + blast radius:** `aeg` only.
+- **Dependency rationale:** **depends-on 1** (derived status), **2** (shell), **3** (live forge facts + the PR-body fetch for the brief). It is the richest task and the most dependency-laden, so it runs **last** in the app-surface wave. **Conflicts-with 4 and 6** (shared app shell).
+- **Traps to avoid:** the **brief lives in the PR body** (`tranches/README.md` §7) — fetch it from the PR, not the Issue (the Issue holds the rationale, not the brief). Derived status must come from `aeg-core`'s `deriveTranche`, not re-derived in the component. Handle the no-PR-yet / no-token cases (a `backlog`/`todo` task has no brief yet).
+- **Suggested agent-class:** **mid-to-high** — the most stateful view (live data, columns, detail fetch), though still Herald-free and bounded.
+- **Stop-and-escalate:** if the PR-body brief isn't reliably fetchable read-only, or derived status needs a fact task 3 doesn't supply, escalate `severity:strategy`.
+
+### Task 6 — Task-dependency-graph view (`@atta/ui/engine-flow`) · Issue #99
+**Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 4, 5
+
+- **Boundary:** render a tranche's tasks as a **graph** (UI label: **"task dependency graph"**) using `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — nodes = tasks, **depends-on = directed arrows**, **conflicts-with = dashed/undirected links**. Optional per-node live-status tint if task 3's data is present (additive, not required for V1). What this is NOT: not the kanban (task 5), not the nav (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real depends-on/conflicts-with edges render as a correct directed graph), one agent can hold it (one graph view reusing engine-flow), bounded file surface (the graph route/component), single failure mode (graph/edges render wrong).
+- **Project(s) + blast radius:** `aeg` only. **Reuses `@atta/ui/engine-flow` as-is** — verify no change needed to the shared renderer (if a change *is* needed, Vāda enters scope → escalate).
+- **Dependency rationale:** **depends-on 1** (the graph structure from the parse) **and 2** (shell). **Conflicts-with 4 and 5** (shared app shell). Independent of task 3 (structure is file-derived; live tint is optional).
+- **Traps to avoid:** the two edge types are different (directed depends-on = a DAG; undirected conflicts-with = symmetric) — render them distinctly. Reuse engine-flow's existing node/edge components; **do not** fork or modify `@atta/ui/engine-flow`.
+- **Suggested agent-class:** **mid** — reuse of an existing renderer over a parsed graph.
+- **Stop-and-escalate:** if engine-flow can't express the two edge types without a shared-package change, STOP and escalate `severity:strategy` (pulls Vāda into scope).
+
+### Task 7 — Shared docs renderer in `@atta/aeg-core` + Studio docs section · Issue #101
+**Project(s):** aeg-core, aeg · **Depends-on:** 1, 2 · **Conflicts-with:** —
+
+- **Boundary:** add the **docs renderer** to `@atta/aeg-core` — render the `aeg-root/` model docs (constitution, roles, flow, contracts, routes & meanings — **everything**) following **Vāda's local-markdown pattern** (local `.md` → reader component; ref `apps/vada-ai/web/content/` + the archived "science" doc layout). Then wire Studio's **docs section** to it (sidebar-doc layout). Built **shared** so the future Portal inherits it (AEG-product D-001). What this is NOT: not Studio-only (the renderer is shared), not the Portal (future).
+- **Sizing:** passes the four tests — one verification story (the full `aeg-root/` model renders as browsable docs in Studio via the shared renderer), one agent can hold it (the renderer + the docs route), bounded file surface (the renderer in `aeg-core` + Studio's docs route), single failure mode (docs don't render/navigate).
+- **Project(s) + blast radius:** `aeg-core` (the renderer) + `aeg` (Studio's docs route). The renderer is a **new shared capability** with one consumer now (Studio) and one future (Portal) — design it consumer-agnostic.
+- **Dependency rationale:** **depends-on 1** (lives in the `aeg-core` package created there) **and 2** (rendered in Studio's shell). No conflict — separate package surface + a distinct docs route, so it can parallelize with one of 4/5/6 if desired.
+- **Traps to avoid:** reuse Vāda's **existing** markdown rendering approach — don't invent a new MDX pipeline. Keep the renderer **content-source-agnostic** (it takes markdown + a nav structure; it doesn't hardcode Studio's filesystem) so the Portal can feed it the same `aeg-root/` docs from a deployed context. Render the *whole* model per the Principal's intent — constitution, roles, flow, contracts, routes, meanings — not a subset.
+- **Suggested agent-class:** **mid** — pattern reuse, but the shared-renderer design (consumer-agnostic) wants care.
+- **Stop-and-escalate:** if Vāda's doc pattern can't be cleanly shared (it's too app-coupled to extract), escalate `severity:strategy` — the fix is a small shared extraction, decided deliberately.
+
+### Task 8 — AEG icon (find/design) · Issue #96
+**Project(s):** aeg · **Depends-on:** — · **Conflicts-with:** —
+
+- **Boundary:** produce the **AEG icon/logo** asset (we don't have one) for the top-left of the shell (and later the Portal/favicon). Deliver the asset + drop it into the icon slot task 2 leaves as placeholder text. What this is NOT: not the shell (task 2 leaves a placeholder), not branding beyond the mark.
+- **Sizing:** trivially bounded — one asset. Passes all four tests by being a single deliverable.
+- **Project(s) + blast radius:** `aeg` only (an asset + a one-line swap).
+- **Dependency rationale:** none — pure asset work, parallel to everything. (The shell's placeholder means task 2 doesn't block on it.)
+- **Traps to avoid:** it's a design/taste task, not code — may be Principal-driven or need a design pass. Keep it an SVG that fits the `@atta/ui` aesthetic; don't let it block the shell (placeholder covers that).
+- **Suggested agent-class:** **fast / or Principal** — asset sourcing/design, minimal code. (Could be done by hand by the Principal; flagged as a task so it isn't forgotten.)
+- **Stop-and-escalate:** none material; if it needs a real design decision, that's the Principal's call.
+
+### Task 9 — Per-tranche token/cost ledger (append-only in the model + Studio view) · Issue #110 · **last**
+**Project(s):** aeg, aeg-core · **Depends-on:** 1, 4 · **Conflicts-with:** —
+
+- **Principal intent (June 14):** every role reports its token/cost; each tranche carries a **simple table updated by each agent in each phase**; re-entering a stage (plan again, code again) **adds** a row, never overwrites. Add to the **model** now; the Studio **view** later (same task, sequenced last).
+- **Boundary — two halves:** **(model, now)** an **append-only per-tranche token ledger** — a markdown table (`Phase | Role | Agent/Model | Tokens in | Tokens out | Cost | Date`), either a `## Token ledger` section in the tranche file or a sibling `tranches/<name>.tokens.md` (sibling is cleaner for append-without-collision; decide at brief) — plus the **rule** (into `roles/*.md` + `aeg-manual-flow.md`): *at the end of a role's turn, append one row; never edit a row; re-entry appends; the tranche total is `sum(rows)`, derived at read time, never stored.* Same philosophy as forge-derived status + append-only logs. Also teach `@atta/aeg-core` to **parse** the ledger + a pure `sumLedger()`. **(view, later — same task)** Studio displays per-task/per-tranche token+cost totals on the tranche pages (task 4) / task detail (task 5), summed via `sumLedger()`.
+- **Two capture sources (the design constraint):** **terminal roles** (Developer in Claude Code) know their tokens (`/cost`) → append exact numbers, ideally auto (a close-out step or **Cetana** captures at dispatch-end). **claude.ai roles** (Planner / Brief Author / Reviewer) **cannot see their own token count** → rows filled **by the Principal from the claude.ai UI** figure, or left approximate. V1 accepts the manual seam (chat turns are cheap; coding dominates and is captured exactly). Design for this asymmetry — don't pretend it's uniform.
+- **Sizing:** model half small (table format + append rule + `aeg-core` parser/`sumLedger`); view half mid and hangs on the pages. `depends-on 1` (aeg-core parser) **and 4** (the pages to display on). Last in the tranche.
+- **Project(s) + blast radius:** `aeg-core` (parser/`sumLedger`) + `aeg` (display) + **model docs** (`roles/*.md`, `aeg-manual-flow.md`, and `state-machine.md` §13 append-only list — the ledger is a new append-only artifact + a per-role turn-end obligation). No runtime blast radius. **Tier 3, Type 1** (changes what every role does at turn-end).
+- **Dependency rationale:** **1** (aeg-core ledger parser) + **4** (the view). Additive in both — no conflict.
+- **Traps to avoid:** **append-only, never edit** (derive the sum at read time — a mutable total reintroduces merge-collisions + stale aggregates). Don't make claude.ai roles auto-report tokens they can't see — design for auto-terminal / manual-chat. Keep the `aeg-core` ledger parser **pure**. Token counts are exact from the meters; **cost depends on the PRICING table** (currently missing `claude-sonnet-4-20250514` → `$0.0000`, a known Herald-backlog bug) — show tokens reliably, cost best-effort, note the dependency.
+- **Suggested agent-class:** **mid** — format + append rule + pure parser + read-only display; the care is in append-only discipline + the two-source model.
+- **Stop-and-escalate:** if "every role appends a row" needs an automation layer that doesn't exist yet (Cetana can't cleanly capture terminal-session tokens) → ship the **manual append-by-hand** V1, backlog auto-capture, don't block. If the ledger format can't be parsed unambiguously → tighten it (`severity:strategy`, like task 1). If touching `state-machine.md` artifact classes is contentious → Type 1, Principal ratifies.
+- **Why last:** observes the *whole* process (every role, every phase); its view depends on the pages (task 4). Makes AEG's legibility include **cost legibility** (per-phase agent spend — neither Spec Kit nor Cordum surfaces this). Resolves the long-open **OQ-aeg-2 (cost/token tier)**.
+
+### Task 10 — Verification role: runtime test-plan execution as a model phase + merge gate · Issue #126 · **Tier 3, Type 1**
+**Project(s):** aeg-core · **Depends-on:** — · **Conflicts-with:** —
+
+- **Principal intent (June 16):** Across this tranche, four features merged CI-green but were broken at runtime — a missing DB migration, a missing env var, a missing IdentityProvider, an unexecuted polymorphic-input test plan. Root cause is structural: no role owns runtime verification. The Developer agent writes code + static gates but cannot exercise auth-gated, key-dependent, or browser-rendered flows; the Reviewer reads the diff, not a running app. So the test plan — which good agents already write into PR bodies — falls into a gap between "agent who can't run it" and "reviewer who doesn't," is never executed, and untested features merge. This task makes runtime verification a first-class phase with an explicit owner and a merge gate.
+- **Boundary — four coordinated edits to the model (no app code):**
+  - **New role `aeg-root/roles/verifier.md`** — the role that executes a PR's runtime test plan before merge. The **two-actor split** (mirroring D-048's two-source ledger design): **[agent]** items (non-auth, scriptable — SSRF rejections, parse checks, route responses, render smoke) run by a dispatched local agent with a booted app; **[principal]** items (auth-gated, key-dependent, visual — a real signed-in BYOK audit, a ModelPicker render behind Clerk) run by the Principal in a browser. The Verifier is a **phase** jointly satisfied by the Developer-agent and the Principal, **not a new actor**.
+  - **`aeg-root/skills/brief-authoring/SKILL.md`** (the canonical source — `.claude/skills/brief-authoring/SKILL.md` is a generated view per D-039, regenerated by `aeg generate-skills`) — make the Test Plan a **required brief field**, each item tagged `[agent]` or `[principal]`. A brief with runtime surface and no tagged test plan is blocked by Brief Validation. Pure-logic tasks declare `Test Plan: unit-tests-only` explicitly (an allowed value, not an empty skip).
+  - **`aeg-root/process.md` + `aeg-root/aeg-manual-flow.md`** — insert a **Verification phase** between Review and Merge: a PR is not mergeable until its `[agent]` test-plan items are executed-and-passing (reported in the PR) and its `[principal]` items are Principal-confirmed. State the doctrine: **CI green ≠ app boots ≠ feature works.**
+  - **`aeg-root/state-machine.md`** — register the Verification gate + the Verifier role; record "runtime test plan executed" as a merge precondition alongside "CI passing." Add a decision-log entry in `aeg-project/decisions.md` (this is Type 1 → Principal ratifies).
+- **Optional enforcement** (decide at build, ship doctrine regardless): a `verify-test-plan` CI check that fails if the PR body has unchecked `[principal]`/`[runtime]` boxes. If the PR-body parse is clean, ship it; if flaky, ship the doctrine + Brief-Validation requirement and backlog the CI enforcer. **Do NOT over-engineer** — a checkbox-state parse is the whole scope.
+- **Traps to avoid:** don't build a heavyweight QA bureaucracy — one tagged section in the brief + one gate before merge. Keep the **two-actor split** sharp (the all-session failure was pretending the agent could verify what it structurally can't). Make `Test Plan: unit-tests-only` first-class. The `[principal]` gate is satisfied by the Principal ticking the box, **not** the agent (mirror D-048's "dispatched agent can't self-fill" asymmetry).
+- **Suggested agent-class:** **mid-to-high** — small code, but a Type-1 constitutional change; care is in the role boundary, the two-actor ownership, and enforceable-but-not-bureaucratic wording.
+- **Stop-and-escalate:** if the CI enforcer proves flaky, ship doctrine + human gate, backlog the enforcer. If the role boundary needs a new actor the model lacks, **STOP** and escalate `severity:strategy` (Principal ratifies).
+
+---
+
+## Open questions / notes for dispatch
+
+- **Issues cut** (#94–#101, #110); the topology above is live. Assigning an Issue is the `backlog → todo` promotion.
+- **Dispatch order:** wave 1 = **1 (#94), 2 (#95), 8 (#96)** in parallel (parser, shell, icon). Then 3 (#97). Then the app-surface wave **4 (#98) → 6 (#99) → 5 (#100)** serialized (shared shell), with 7 (#101) slottable after 4. **9 (#110, token ledger) last** — its view hangs on task 4's pages.
+- **Progress (June 14):** task 1 (#94) MERGED via PR #105; task 2 (#95) MERGED via PR #108. Next dispatchable: 3 (#97), 8 (#96), and — once 4 lands — the app-surface wave.
+- **Runs fully parallel with `herald-onto-engine`** — disjoint collision domains (that tranche: engine/adapter/herald; this: aeg-core/apps-aeg/+ consumes @atta/ui read-only). No cross-tranche serialization needed (`tranches/README.md` §5, §11).
+- **Resolves AEG-product D-001's first tranche.** OQ-aeg-1 (primary viewer) remains open and is NOT in V1. **OQ-aeg-2 (cost/token tier) is now addressed by task 9** (#110).
+- **The `@atta/ui` reuse is additive** across tasks 2/5/6 — none edits `@atta/ui`. If any task finds it must, that's a scope change pulling Vāda/Herald into the blast radius → escalate before proceeding. (Task 2 surfaced one such follow-up — the TopBar `useUser()` unbind — now backlogged as a shared-package task.)
+- **Prototypes the model's tranche-lifecycle + cross-tranche-concurrency rules** (just added to `tranches/README.md` §11) — this is the first tranche to run *concurrent* with another.
+- **`aeg-core` registers as a project row (task-1 decision, June 14).** At task-1 dispatch the Brief Author leaned "don't register `aeg-core`"; the Developer's dig overturned that, correctly: `projects.md` explicitly allows a project to be "one package," the tranche's `Project(s)` column already names `aeg-core` multiple times, and the model's own validation rule (`projects.md` §"How `Project` is validated") makes every one of those cells **malformed** without a registry row — and forcing the pure parser to special-case an unregistered name would couple it to a hidden convention that breaks on the next such package. So `aeg-core` gets a registry row (`packages/aeg-core` · `packages/aeg-core/specs/` · state-tracked-globally, mirroring the `atta`/`desktop` pattern), added by task 1. **Precedent for the model:** a **shared package may be a registry row** — registry identity is about routing/validation resolution, not app-vs-package ontology; `aeg-core` is the first package-as-project. A one-line note belongs in `projects.md` §"What a project is" so the next shared package follows the same path rather than re-litigating — **do this on top of merged main** (task 1's PR already edited `projects.md`).

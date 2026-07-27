@@ -86,7 +86,7 @@ jobs:
         env:
           BRANCH: ${{ github.head_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-          # GH_TOKEN (aeg-forge-state-v1 3b, #437): loadIterationFiles' repo-state
+          # GH_TOKEN (aeg-forge-state-v1 3b, #437): loadTrancheFiles' repo-state
           # reads now derive from the forge (`gh` CLI shell-out) instead of
           # `git show origin/main:...` — this step had no forge dependency
           # before and so never needed a token; it does now.
@@ -98,11 +98,11 @@ jobs:
       # D1/R1/M1/M3 failures → red (the CLI exits non-zero on ANY check
       # with status:'fail' — see coherence-checks.ts for each check's exact
       # fail/info semantics; several grandfather via COHERENCE_ENFORCED_FROM /
-      # R1_GRANDFATHERED_ISSUES). T2/T3 are scoped to the PR's own iteration
-      # (via BRANCH) — an unrelated iteration's topology gap never blocks this
+      # R1_GRANDFATHERED_ISSUES). T2/T3 are scoped to the PR's own tranche
+      # (via BRANCH) — an unrelated tranche's topology gap never blocks this
       # PR (task 19). T2 relocation (task 24, #364, Part 2 — D-082): T2 only
       # blocks when PR_TOUCHED_FILES shows this PR's own diff touches a
-      # topology file (a plan PR). Repo-state reads (topology files, iteration
+      # topology file (a plan PR). Repo-state reads (topology files, tranche
       # list) come from a freshly-fetched origin/main via PR_HEAD_SHA/
       # PR_TOUCHED_FILES, not the checkout's merge-ref, which GitHub
       # materializes lazily and can lag behind main. On A1 failures the
@@ -164,7 +164,7 @@ jobs:
       # opened through that wrapper — a web-UI-opened PR bypasses it. This
       # step re-runs the IDENTICAL predicate (`checkSinglePlanPr`,
       # `@atta/aeg-core/src/single-plan-pr.ts`) forge-side. A no-op (exit 0)
-      # for any PR whose diff doesn't touch an iteration topology file —
+      # for any PR whose diff doesn't touch a tranche topology file —
       # ordinary task-branch PRs never do (asserted in
       # `verify-single-plan-pr.test.ts`).
       - name: Single-plan-PR guard (ring-1 backstop)
@@ -238,7 +238,7 @@ jobs:
         run: bun packages/aeg-core/bin/verify-docs.ts --pr
 
       # ── No new on-disk state (#512) ─────────────────────────────────────
-      # Blocks a diff that adds/edits a live `aeg-root/iterations/*.md`
+      # Blocks a diff that adds/edits a live `aeg-root/tranches/*.md`
       # topology file (other than README.md) or any new `*.tokens.md` file
       # anywhere — the residue classes this task's own Part B proved
       # unnecessary. Existing `completed/**` files are exempt (D-117); this

@@ -1,4 +1,4 @@
-# Iteration: herald-onto-engine — June 2026
+# Tranche: herald-onto-engine — June 2026
 
 **Goal (execution, not product-why):** onboard **Herald onto `@atta/engine`** — express Herald's auditor as a **flow YAML the engine runs** (exactly as Vāda's agents are YAMLs the engine runs), then build **Bulk Audit** (N CVs × M JDs → one forensic report per pair) on top, and finally make the auditor a **tool-using YAML agent** (it gathers its own GitHub evidence) — which requires first **building custom client-side tool execution into the shared engine.** The durable, multi-project win is Herald stopping being special: one engine runs every product's agents, defined declaratively in YAML — including their tools.
 
@@ -12,7 +12,7 @@
 
 > **Status is derived from the forge, not stored here.** This file is topology + the planner's durable rationale only. No PR numbers, no dates, no status. Issues are cut: task → Issue mapping below is fixed; live status is `gh pr list` / the Issue/PR state, never written here.
 
-> **This iteration is a working demonstration of the model catching its own errors.** It was the first deliberate planning prototype (F1–F6, global D-042); then the **Brief Author dig caught a mis-scoped task** (3a dropped, June 12); then the **planner readiness gate caught a hidden shared-engine dependency** (task 7 split into 7a/7b, June 13). Twice, the dig overturned a premise before a wrong brief shipped. The full Planner's rationale lives in each task's Issue body; the per-task summaries below are for topology reading.
+> **This tranche is a working demonstration of the model catching its own errors.** It was the first deliberate planning prototype (F1–F6, global D-042); then the **Brief Author dig caught a mis-scoped task** (3a dropped, June 12); then the **planner readiness gate caught a hidden shared-engine dependency** (task 7 split into 7a/7b, June 13). Twice, the dig overturned a premise before a wrong brief shipped. The full Planner's rationale lives in each task's Issue body; the per-task summaries below are for topology reading.
 
 ---
 
@@ -91,7 +91,7 @@ Define Herald's **GitHub signal tool in the auditor YAML** and register its impl
 ## Open questions / notes for dispatch
 
 - **Issues:** #88–#93, #102 (7a), #103 (7b) live (#87/3a closed not-planned). Assigning an Issue is the `backlog → todo` promotion.
-- **One genuine shared-engine change this iteration: 7a** (custom tool execution), Vāda in blast radius, additive/opt-in. Everything else is Herald-side. The *migration* (task 1) consumes the engine unchanged; if task 1 finds a hidden engine gap, that's a `severity:strategy` escalation (not assumed).
+- **One genuine shared-engine change this tranche: 7a** (custom tool execution), Vāda in blast radius, additive/opt-in. Everything else is Herald-side. The *migration* (task 1) consumes the engine unchanged; if task 1 finds a hidden engine gap, that's a `severity:strategy` escalation (not assumed).
 - **The tool chain is 1 → 7a → 7b:** task 1 makes the auditor a YAML agent (signals pre-fetched); 7a gives the engine the ability to run custom tools (shared); 7b moves Herald's signal-gathering into the agent as a YAML-declared tool. End state: maximal "logic in the YAML, not code," with the agent owning its own evidence-gathering.
 - **Structured-output-on-other-vendors** (the old 3a) is backlogged as an optional future engine enhancement, not required by Herald.
-- **This iteration is the model catching its own errors twice:** 3a dropped (Brief Author dig, June 12) and task 7 split into 7a/7b (planner readiness gate, June 13) — both before a wrong brief shipped.
+- **This tranche is the model catching its own errors twice:** 3a dropped (Brief Author dig, June 12) and task 7 split into 7a/7b (planner readiness gate, June 13) — both before a wrong brief shipped.

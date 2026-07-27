@@ -51,7 +51,7 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  * on that one point, preserving the brief's actual constraint (no per-value
  * colour coding). `either` renders as two badges — see `badgeLabels`.
  *
- * No live-status pill — `DiagramModel.iteration` never backs this panel (see
+ * No live-status pill — `DiagramModel.tranche` never backs this panel (see
  * `load-diagram.ts`).
  *
  * `readMoreHref`/`viewSourceHref` both arrive pre-computed from the server

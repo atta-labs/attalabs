@@ -2,11 +2,12 @@ import type { RawTaskFacts } from '@atta/aeg-types'
 import { describe, expect, it } from 'vitest'
 import {
   AEG_BLOCKED_LABEL,
-  findIterationSlug,
+  findTrancheSlug,
   hasLabel,
-  iterationLabel,
-  iterationSlugLengthError,
-  iterationSlugOf,
+  trancheLabel,
+  trancheLabelsToQuery,
+  trancheSlugLengthError,
+  trancheSlugOf,
   type Label,
   type LabelCategory,
   type LabelKey,
@@ -18,14 +19,14 @@ import {
 } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
-const CATEGORIES: LabelCategory[] = ['state', 'tier', 'iteration', 'needs', 'waiver', 'flag', 'kind']
+const CATEGORIES: LabelCategory[] = ['state', 'tier', 'tranche', 'needs', 'waiver', 'flag', 'kind']
 
 const KEYS: LabelKey[] = [
   'blocked',
   'tier-0',
   'tier-1',
   'tier-3',
-  'iteration',
+  'tranche',
   'needs-execution-input',
   'needs-strategy-input',
   'needs-principal-input',
@@ -175,11 +176,11 @@ describe('label() — the only sanctioned constructor', () => {
   })
 
   it('returns the bare prefix for the prefix family', () => {
-    expect(label('iteration')).toBe('vinaya/iteration:')
+    expect(label('tranche')).toBe('vinaya/tranche:')
   })
 
-  it('iterationLabel() builds the full slug label', () => {
-    expect(iterationLabel('state-machine-v1')).toBe('vinaya/iteration:state-machine-v1')
+  it('trancheLabel() builds the full slug label', () => {
+    expect(trancheLabel('state-machine-v1')).toBe('vinaya/tranche:state-machine-v1')
   })
 })
 
@@ -191,15 +192,15 @@ describe('matchesLabel() / hasLabel()', () => {
   })
 
   it('matches a prefix family by prefix, whatever the slug', () => {
-    expect(matchesLabel('iteration', 'vinaya/iteration:anything-at-all')).toBe(true)
-    expect(matchesLabel('iteration', 'vinaya/tier:1')).toBe(false)
+    expect(matchesLabel('tranche', 'vinaya/tranche:anything-at-all')).toBe(true)
+    expect(matchesLabel('tranche', 'vinaya/tier:1')).toBe(false)
   })
 
   it('rejects the pre-vinaya/ name — the transition window is closed', () => {
     expect(matchesLabel('blocked', 'aeg:blocked')).toBe(false)
     expect(matchesLabel('tier-1', 'tier:1')).toBe(false)
     expect(matchesLabel('waiver-review', 'waiver:review')).toBe(false)
-    expect(matchesLabel('iteration', 'iteration:deprecation-v1')).toBe(false)
+    expect(matchesLabel('tranche', 'tranche:deprecation-v1')).toBe(false)
   })
 
   it('rejects the old colon grammar on the labels that used it (#614 addendum)', () => {
@@ -213,44 +214,75 @@ describe('matchesLabel() / hasLabel()', () => {
   it('hasLabel() scans a label set', () => {
     expect(hasLabel('tier-1', ['bug', 'vinaya/tier:1'])).toBe(true)
     expect(hasLabel('tier-1', ['bug', 'vinaya/tier:3'])).toBe(false)
-    expect(hasLabel('iteration', [])).toBe(false)
+    expect(hasLabel('tranche', [])).toBe(false)
+  })
+
+  it('accepts the superseded vinaya/iteration: prefix — the migration window is OPEN', () => {
+    expect(matchesLabel('tranche', 'vinaya/iteration:anything-at-all')).toBe(true)
+    expect(hasLabel('tranche', ['bug', 'vinaya/iteration:iter'])).toBe(true)
   })
 })
 
-describe('iterationSlugOf() / findIterationSlug()', () => {
-  it('extracts the slug from a namespaced iteration label', () => {
-    expect(iterationSlugOf('vinaya/iteration:state-machine-v1')).toBe('state-machine-v1')
+describe('trancheSlugOf() / findTrancheSlug()', () => {
+  it('extracts the slug from a namespaced tranche label', () => {
+    expect(trancheSlugOf('vinaya/tranche:state-machine-v1')).toBe('state-machine-v1')
   })
 
   it('returns null for the pre-vinaya/ form — the transition window is closed', () => {
-    expect(iterationSlugOf('iteration:deprecation-v1')).toBeNull()
+    expect(trancheSlugOf('tranche:deprecation-v1')).toBeNull()
   })
 
-  it('returns null for a non-iteration label', () => {
-    expect(iterationSlugOf('vinaya/tier:1')).toBeNull()
-    expect(iterationSlugOf('bug')).toBeNull()
+  it('returns null for a non-tranche label', () => {
+    expect(trancheSlugOf('vinaya/tier:1')).toBeNull()
+    expect(trancheSlugOf('bug')).toBeNull()
   })
 
-  it('findIterationSlug() returns the first slug in a label set', () => {
-    expect(findIterationSlug(['bug', 'vinaya/tier:1', 'vinaya/iteration:iter'])).toBe('iter')
-    expect(findIterationSlug(['bug', 'vinaya/tier:1'])).toBeNull()
+  it('findTrancheSlug() returns the first slug in a label set', () => {
+    expect(findTrancheSlug(['bug', 'vinaya/tier:1', 'vinaya/tranche:iter'])).toBe('iter')
+    expect(findTrancheSlug(['bug', 'vinaya/tier:1'])).toBeNull()
+  })
+
+  it('reads a slug from the superseded vinaya/iteration: prefix too, so the rename is invisible here', () => {
+    expect(trancheSlugOf('vinaya/iteration:state-machine-v1')).toBe('state-machine-v1')
+    expect(findTrancheSlug(['bug', 'vinaya/iteration:iter'])).toBe('iter')
+  })
+
+  it('still constructs under the canonical prefix only', () => {
+    expect(trancheLabel('iter')).toBe('vinaya/tranche:iter')
   })
 })
 
-describe('iterationSlugLengthError() — GitHub’s 50-character cap', () => {
+describe('trancheLabelsToQuery() — reading spans the migration window', () => {
+  it('names the canonical label first, then every superseded one', () => {
+    expect(trancheLabelsToQuery('iter')).toEqual(['vinaya/tranche:iter', 'vinaya/iteration:iter'])
+  })
+
+  it('always contains what trancheLabel() would construct', () => {
+    expect(trancheLabelsToQuery('state-machine-v1')).toContain(trancheLabel('state-machine-v1'))
+  })
+
+  it('is what a forge query must use — the canonical id alone misses an un-renamed forge', () => {
+    // The failure this guards is silent: a `--label` query for a name no Issue
+    // carries yet returns an empty list, not an error, and every gate reads
+    // that as "this tranche has no tasks".
+    expect(trancheLabelsToQuery('iter').length).toBeGreaterThan(1)
+  })
+})
+
+describe('trancheSlugLengthError() — GitHub’s 50-character cap', () => {
   it('passes a slug that fits', () => {
-    expect(iterationSlugLengthError('state-machine-v1')).toBeNull()
+    expect(trancheSlugLengthError('state-machine-v1')).toBeNull()
   })
 
   it('passes the longest slug that exactly fills the cap', () => {
-    const slug = 'x'.repeat(LABEL_MAX_LENGTH - 'vinaya/iteration:'.length)
-    expect(iterationLabel(slug).length).toBe(LABEL_MAX_LENGTH)
-    expect(iterationSlugLengthError(slug)).toBeNull()
+    const slug = 'x'.repeat(LABEL_MAX_LENGTH - 'vinaya/tranche:'.length)
+    expect(trancheLabel(slug).length).toBe(LABEL_MAX_LENGTH)
+    expect(trancheSlugLengthError(slug)).toBeNull()
   })
 
   it('rejects a slug one character too long, and says by how much', () => {
-    const slug = 'x'.repeat(LABEL_MAX_LENGTH - 'vinaya/iteration:'.length + 1)
-    const err = iterationSlugLengthError(slug)
+    const slug = 'x'.repeat(LABEL_MAX_LENGTH - 'vinaya/tranche:'.length + 1)
+    const err = trancheSlugLengthError(slug)
     expect(err).toContain('caps a label name at 50')
     expect(err).toContain('Shorten the slug by 1 character(s)')
   })

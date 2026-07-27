@@ -19,7 +19,7 @@
  *      lead-ins differ by kind but the count and order never do.
  *   2. **Readability** — the text that actually reaches a reader carries no
  *      token a stranger cannot resolve from the page: no decision id, no
- *      section sign, no forge number, no retired public name, no iteration
+ *      section sign, no forge number, no retired public name, no tranche
  *      slug, no repo-internal path, and no label vocabulary (namespaced or
  *      retired alike — a published page should name neither, and flagging only
  *      the current grammar would leave every retired mention invisible).
@@ -36,8 +36,8 @@
  * all three, the same property `registry-parse.ts` relies on for
  * `Description`.
  *
- * **Protocol mechanics are published on purpose.** `.worktrees/task/<iteration>/<n>`
- * and the `task/<iteration>/<n>` branch convention are the method an adopter
+ * **Protocol mechanics are published on purpose.** `.worktrees/task/<tranche>/<n>`
+ * and the `task/<tranche>/<n>` branch convention are the method an adopter
  * must learn, not this repo's internals — they are masked out before scanning
  * so a path rule can never eat them, and that exemption is tested rather than
  * incidental.
@@ -72,8 +72,8 @@ export const CONTRACT_BLOCKS = [
  * claim the branch convention.
  */
 export const ALLOWED_MECHANICS: readonly string[] = [
-  '.worktrees/task/<iteration>/<n>',
-  'task/<iteration>/<n>',
+  '.worktrees/task/<tranche>/<n>',
+  'task/<tranche>/<n>',
   '.worktrees/'
 ]
 
@@ -99,11 +99,19 @@ const PROSE_RULES: ProseRule[] = [
   { id: 'section-ref', what: 'a section reference', pattern: /§/ },
   { id: 'forge-number', what: 'a forge number', pattern: /#\d+/ },
   { id: 'retired-name', what: 'the retired public name', pattern: /\bAEG\b/ },
-  { id: 'iteration-slug', what: 'an iteration slug', pattern: /\b[a-z][a-z0-9]*(?:-[a-z0-9]+)+-v\d+\b/ },
+  { id: 'tranche-slug', what: 'a tranche slug', pattern: /\b[a-z][a-z0-9]*(?:-[a-z0-9]+)+-v\d+\b/ },
   {
     id: 'label-vocabulary',
     what: 'forge label vocabulary',
-    pattern: /(?:vinaya\/)?\b(?:iteration|tier|needs|waiver|project|aeg):(?![/\s]|$)/
+    // Every entry here is CUMULATIVE — a retired namespace stays banned after
+    // the objects carrying it are gone, because a published page naming it is
+    // just as unreadable to a stranger as one naming the current grammar (see
+    // the module header). `aeg:` is retired and still listed for that reason,
+    // and `iteration:` joins it: the rename to `tranche:` ADDS an alternative,
+    // it does not substitute one. Substituting is how a rename silently
+    // narrows this gate — the forge still carried `vinaya/iteration:*` labels
+    // when the rename landed, and a page naming one would have passed.
+    pattern: /(?:vinaya\/)?\b(?:tranche|iteration|tier|needs|waiver|project|aeg):(?![/\s]|$)/
   },
   { id: 'internal-path', what: 'a repo-internal path', pattern: /\b(?:packages|apps|aeg-root|tools|scripts)\// },
   { id: 'internal-path', what: 'a repo-internal path', pattern: /\.(?:claude|husky|github)\// },

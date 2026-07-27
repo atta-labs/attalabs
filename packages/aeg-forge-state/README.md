@@ -1,12 +1,12 @@
 # @atta/aeg-forge-state
 
-A generic, repo-parameterized adapter that derives an `@atta/aeg-core` `Iteration`
+A generic, repo-parameterized adapter that derives an `@atta/aeg-core` `Tranche`
 purely from GitHub forge objects — no topology file required:
 
 - a Milestone titled exactly `<slug>` → `goal` (description) + `lifecycle`
   (`open`/`closed` → `active`/`complete`); `null` when no Milestone exists yet
   for that slug (a real, expected transitional state during rollout)
-- `iteration:<slug>`-labeled Issues → the `Task[]` list, with `id`/`title`
+- `tranche:<slug>`-labeled Issues → the `Task[]` list, with `id`/`title`
   parsed from the `[<slug>] <id> — <title>` Issue-title convention,
   `projects` from `project:<name>` labels, and `dependsOn`/`conflictsWith`
   edges parsed from each Issue's "Dependency rationale" section — hardened
@@ -21,7 +21,7 @@ octokit-based access path.
 ## Two consumers
 
 1. **This repo's own migration** (`aeg-forge-state-v1` tasks 3/4/5) — the live
-   The gates and Vinaya Studio cut over from reading `aeg-root/iterations/*.md`
+   The gates and Vinaya Studio cut over from reading `aeg-root/tranches/*.md`
    files to calling this package directly.
 2. **`vinaya-cli-v1`'s shippable CLI** (task 2, #382) — imports or re-homes
    this package as the forge-backed half of Vinaya's `StateSource` seam, for
@@ -35,8 +35,8 @@ package exists as its own thing instead of living inside `vinaya-cli-v1`.
 
 - No writes to the forge (read-only, always).
 - No `backlog` derivation — the file's `## Backlog` section is project-level
-  prose with no owning forge object; forge-derived iterations always report
-  `backlog: []`. No currently-active iteration's forge derivation loses real
+  prose with no owning forge object; forge-derived tranches always report
+  `backlog: []`. No currently-active tranche's forge derivation loses real
   backlog content today because none has been proven to round-trip yet — a
   future task's problem, not this one's.
 - No amendment-prose ingestion — `dependsOn`/`conflictsWith` are parsed from

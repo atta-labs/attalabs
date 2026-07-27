@@ -68,7 +68,7 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
 
       <Section
         title='Labels, and the one fact each carries'
-        lead='Labels carry only what the forge cannot express natively. They are orthogonal axes — a task’s tier, its iteration, what it waits on, what has been waived are independent, and no code infers one from another. Status is deliberately absent: a status label would recreate the racing store this model exists to remove.'
+        lead='Labels carry only what the forge cannot express natively. They are orthogonal axes — a task’s tier, its tranche, what it waits on, what has been waived are independent, and no code infers one from another. Status is deliberately absent: a status label would recreate the racing store this model exists to remove.'
       >
         <Table stickyHeader className='min-w-[720px]'>
           <TableHeader>
@@ -92,7 +92,7 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
 
       <Section
         title='Derived statuses'
-        lead='Every status the type admits, and the rules that conclude it. Backlog is listed and marked underivable rather than dropped: it is a project-level concept consumers still render, but no rule inside an iteration ever concludes it — committed work starts at todo.'
+        lead='Every status the type admits, and the rules that conclude it. Backlog is listed and marked underivable rather than dropped: it is a project-level concept consumers still render, but no rule inside a tranche ever concludes it — committed work starts at todo.'
       >
         <Table stickyHeader className='min-w-[720px]'>
           <TableHeader>

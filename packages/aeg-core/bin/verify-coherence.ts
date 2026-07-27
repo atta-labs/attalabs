@@ -3,7 +3,7 @@
 /**
  * verify-coherence — deterministic plan↔forge coherence oracle.
  *
- * Detects governance-state drift between iteration topology files (plan) and
+ * Detects governance-state drift between tranche topology files (plan) and
  * the forge (GitHub Issue state / PR merge events). Zero LLM calls. Stateless
  * — every run is a fresh read; no persistent store.
  *
@@ -31,17 +31,17 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  deriveIterationFromForge,
+  deriveTrancheFromForge,
   fetchProvenance,
   fetchTaskIssueRefs,
   findMilestoneForSlug,
-  listActiveIterationSlugs,
-  listArchivedIterationSlugs,
+  listActiveTrancheSlugs,
+  listArchivedTrancheSlugs,
   listIssueMilestonesForSlug,
   resolveGithubToken,
   resolveRepo
 } from '@atta/aeg-forge-state'
-import type { Iteration } from '@atta/aeg-types'
+import type { Tranche } from '@atta/aeg-types'
 import {
   checkA1,
   checkA2,
@@ -62,12 +62,12 @@ import {
   extractClosesReferences,
   fetchForgeFacts,
   fetchOpenIssuesByLabel,
-  parseIteration,
+  parseTranche,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
   touchesAnyTopology
 } from '../src/index'
-import type { CheckResult, ForgeFacts, IterationFile, TaskEntry } from '../src/index'
+import type { CheckResult, ForgeFacts, TrancheFile, TaskEntry } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
@@ -91,7 +91,7 @@ function checkM1M2M3(): CheckResult[] {
   results.push({
     check: 'M1',
     status: m1Errors.length > 0 ? 'fail' : 'pass',
-    failures: m1Errors.map((reason) => ({ iteration: 'doc-owners', reason }))
+    failures: m1Errors.map((reason) => ({ tranche: 'doc-owners', reason }))
   })
   results.push({
     check: 'M2',
@@ -102,7 +102,7 @@ function checkM1M2M3(): CheckResult[] {
   results.push({
     check: 'M3',
     status: m3Errors.length > 0 ? 'fail' : 'pass',
-    failures: m3Errors.map((reason) => ({ iteration: 'doc-owners', reason }))
+    failures: m3Errors.map((reason) => ({ tranche: 'doc-owners', reason }))
   })
 
   return results
@@ -116,20 +116,20 @@ function checkM1M2M3(): CheckResult[] {
 // keep working unchanged.
 export { fetchProvenance }
 
-// ---------- iteration file loader --------------------------------------------
+// ---------- tranche file loader --------------------------------------------
 
-const ITERATIONS_RELDIR = 'aeg-root/iterations'
-const COMPLETED_RELDIR = 'aeg-root/iterations/completed'
+const TRANCHES_RELDIR = 'aeg-root/tranches'
+const COMPLETED_RELDIR = 'aeg-root/tranches/completed'
 
-function isIterationFile(name: string): boolean {
+function isTrancheFile(name: string): boolean {
   return name.endsWith('.md') && name !== 'README.md' && !name.endsWith('.tokens.md')
 }
 
 /**
  * PR context for item 5 (aeg-governance-hardening task 24, #364, Part 2;
- *): when set, iteration files THIS PR's own diff touches are read
+ *): when set, tranche files THIS PR's own diff touches are read
  * from the PR's head ref (its own proposed content, e.g. a plan PR adding a
- * topology row); every other iteration file — the "repo state" side of
+ * topology row); every other tranche file — the "repo state" side of
  * every coherence comparison — is read from a freshly-fetched
  * `origin/main`, never from the local checkout's `refs/pull/N/merge`, which
  * GitHub materializes lazily and can lag behind main (confirmed 5+ false-red
@@ -173,26 +173,26 @@ function readFileAtRef(ref: string, relPath: string): string | null {
 }
 
 /**
- * Reads one non-PR-touched iteration file's content: `id`/`issue` come from
- * the forge (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, task
+ * Reads one non-PR-touched tranche file's content: `id`/`issue` come from
+ * the forge (`@atta/aeg-forge-state`'s `deriveTrancheFromForge`, task
  * aeg-forge-state-v1 3b, #437) when a repo resolves and the forge call
  * succeeds — the golden comparison (Issue #437) confirmed these two fields
  * match the file-parsed topology table exactly for every task that HAS a
  * forge Issue. `dependsOn`/`conflictsWith` are read from the topology table
- * itself (`parseIteration`) and merged in, NOT forge-derived — a deliberate,
+ * itself (`parseTranche`) and merged in, NOT forge-derived — a deliberate,
  * TEMPORARY narrowing (Planner triage, Issue #437) of the original swap: at
  * least 9 grandfathered `vada-production-v1` Issues (#183 #184 #185 #186
  * #187 #188 #240 #241 #244) predate the "Dependency rationale" grammar
  * and carry no forge-parseable dependency data at all, and
- * `parse-rationale-deps.ts`'s cross-iteration-qualified-ref handling has its
+ * `parse-rationale-deps.ts`'s cross-tranche-qualified-ref handling has its
  * own real gaps independent of that (fixed one instance on Issue #388, but
  * others may remain). Backfilling/auditing the rest is its own follow-up
  * task, not a blocker for this cutover.
  *
  * A `#TBD` topology row (no Issue cut yet, `issue: null`) has no forge
- * representation at all — `deriveIterationFromForge` can only ever list
+ * representation at all — `deriveTrancheFromForge` can only ever list
  * tasks it finds via a labeled Issue, so a row with no Issue is structurally
- * invisible to it. T3 (`tbd-in-active-iteration`) exists specifically to
+ * invisible to it. T3 (`tbd-in-active-tranche`) exists specifically to
  * catch these — silently dropping them here would blind the one check whose
  * entire job is to see them (confirmed live: `vada-production-v1`'s 6a/6b/6c
  * rows, real `#TBD` entries, vanish from the forge-derived list entirely).
@@ -205,35 +205,35 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * discipline, already applied to every forge-dependent check below. This is
  * the ONLY place either fallback/merge applies — the PR-head-SHA path
  * (the plan-PR scoping, below) always reads the PR's own uncommitted
- * diff via `readFileAtRef` + `parseIteration`, never the forge, since a plan
+ * diff via `readFileAtRef` + `parseTranche`, never the forge, since a plan
  * PR's own in-progress topology edit has no forge equivalent to derive from.
  */
 async function deriveOrFallback(
   repo: { owner: string; repo: string } | null,
   slug: string,
   relPath: string
-): Promise<Iteration | null> {
+): Promise<Tranche | null> {
   const raw = readFileAtRef('origin/main', relPath)
-  const fileIteration = raw === null ? null : parseIteration(raw)
+  const fileTranche = raw === null ? null : parseTranche(raw)
 
-  if (!repo) return fileIteration
+  if (!repo) return fileTranche
 
-  let forgeIteration: Iteration
+  let forgeTranche: Tranche
   try {
-    forgeIteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
+    forgeTranche = await deriveTrancheFromForge(repo.owner, repo.repo, slug)
   } catch (err) {
     console.warn(
-      `[verify-coherence] forge derivation failed for iteration "${slug}" — falling back to file read: ${(err as Error).message}`
+      `[verify-coherence] forge derivation failed for tranche "${slug}" — falling back to file read: ${(err as Error).message}`
     )
-    return fileIteration
+    return fileTranche
   }
 
-  if (fileIteration === null) return forgeIteration
+  if (fileTranche === null) return forgeTranche
 
-  const forgeTaskIds = new Set(forgeIteration.tasks.map((t) => t.id))
-  const fileTaskById = new Map(fileIteration.tasks.map((t) => [t.id, t]))
+  const forgeTaskIds = new Set(forgeTranche.tasks.map((t) => t.id))
+  const fileTaskById = new Map(fileTranche.tasks.map((t) => [t.id, t]))
 
-  const mergedTasks = forgeIteration.tasks.map((t) => {
+  const mergedTasks = forgeTranche.tasks.map((t) => {
     const fileTask = fileTaskById.get(t.id)
     // No file-side counterpart (shouldn't normally happen — forge/file ids
     // matched exactly for every real task in the golden comparison) —
@@ -243,24 +243,24 @@ async function deriveOrFallback(
   })
 
   // File-only tasks (#TBD rows, no Issue to derive from) — appended as-is.
-  const fileOnlyTasks = fileIteration.tasks.filter((t) => !forgeTaskIds.has(t.id))
+  const fileOnlyTasks = fileTranche.tasks.filter((t) => !forgeTaskIds.has(t.id))
 
-  return { ...forgeIteration, tasks: [...mergedTasks, ...fileOnlyTasks] }
+  return { ...forgeTranche, tasks: [...mergedTasks, ...fileOnlyTasks] }
 }
 
 /**
- * `onlySlug`: skip every iteration but this one during the forge-derive
+ * `onlySlug`: skip every tranche but this one during the forge-derive
  * sweep below. The forge swap makes the general (unscoped) sweep meaningfully
- * slower than the old local-file read (one `gh` round trip per iteration per
- * lookup, sequential — ~1.5s/iteration observed across a real ~20-iteration
+ * slower than the old local-file read (one `gh` round trip per tranche per
+ * lookup, sequential — ~1.5s/tranche observed across a real ~20-tranche
  * repo, vs near-instant `git show`), so a caller that only ever needs ONE
- * iteration's data (`--closes-n`, below) must opt out of paying for the rest.
+ * tranche's data (`--closes-n`, below) must opt out of paying for the rest.
  * `runCoherenceChecks` never passes this — its checks are genuinely
- * repo-wide and need every iteration.
+ * repo-wide and need every tranche.
  */
-export async function loadIterationFiles(prContext: PrReadContext = null, onlySlug?: string): Promise<IterationFile[]> {
+export async function loadTrancheFiles(prContext: PrReadContext = null, onlySlug?: string): Promise<TrancheFile[]> {
   gitFetchMainQuiet()
-  const files: IterationFile[] = []
+  const files: TrancheFile[] = []
   const repo = await resolveRepo()
 
   const loadDir = async (relDir: string, archived: boolean): Promise<void> => {
@@ -268,7 +268,7 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
     const prNames = prContext ? new Set(listDirAtRef(prContext.prHeadSha, relDir)) : new Set<string>()
 
     for (const name of new Set([...mainNames, ...prNames])) {
-      if (!isIterationFile(name)) continue
+      if (!isTrancheFile(name)) continue
       const slug = name.replace(/\.md$/, '')
       if (onlySlug && slug !== onlySlug) continue
       const relPath = `${relDir}/${name}`
@@ -277,22 +277,22 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
       if (readFromHead) {
         const raw = readFileAtRef(prContext!.prHeadSha, relPath)
         if (raw === null) continue
-        files.push({ slug, archived, iteration: parseIteration(raw) })
+        files.push({ slug, archived, tranche: parseTranche(raw) })
         continue
       }
 
-      const iteration = await deriveOrFallback(repo, slug, relPath)
-      if (iteration === null) continue
-      files.push({ slug, archived, iteration })
+      const tranche = await deriveOrFallback(repo, slug, relPath)
+      if (tranche === null) continue
+      files.push({ slug, archived, tranche })
     }
   }
 
-  await loadDir(ITERATIONS_RELDIR, false)
+  await loadDir(TRANCHES_RELDIR, false)
   await loadDir(COMPLETED_RELDIR, true)
 
-  // Forge-native iterations with no topology file at all (the forge-native cutover:
+  // Forge-native tranches with no topology file at all (the forge-native cutover:
   // vinaya-studio-v1, vinaya-cli-v1, herald-hardening-v1 all had their
-  // aeg-root/iterations/*.md deleted once their Milestone-derived replacement
+  // aeg-root/tranches/*.md deleted once their Milestone-derived replacement
   // was proven safe) are structurally invisible to the directory-listing
   // enumeration above — there is no filename for a slug with zero file to
   // ever appear in `mainNames`/`prNames`, so `deriveOrFallback` is never even
@@ -302,36 +302,36 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
   // slug (`onlySlug` — the closes-n gate's scoped-load path; the unscoped
   // repo-wide sweep never sets it and is unaffected) and that slug wasn't
   // already found via files. Gated on an explicit Milestone existence check
-  // so an unrecognized branch slug (typo, deleted iteration with no
+  // so an unrecognized branch slug (typo, deleted tranche with no
   // Milestone either) still reports "no topology found" rather than silently
-  // synthesizing an iteration.
+  // synthesizing a tranche.
   if (onlySlug && repo && !files.some((f) => f.slug === onlySlug)) {
     const milestone = findMilestoneForSlug(repo.owner, repo.repo, onlySlug)
     if (milestone) {
-      const iteration = await deriveOrFallback(repo, onlySlug, `${ITERATIONS_RELDIR}/${onlySlug}.md`)
-      if (iteration !== null) files.push({ slug: onlySlug, archived: false, iteration })
+      const tranche = await deriveOrFallback(repo, onlySlug, `${TRANCHES_RELDIR}/${onlySlug}.md`)
+      if (tranche !== null) files.push({ slug: onlySlug, archived: false, tranche })
     }
   }
 
   // Same forge-native gap, general (unscoped) sweep (#515):
-  // once no iteration carries a topology file at all, the directory-listing
+  // once no tranche carries a topology file at all, the directory-listing
   // enumeration above finds nothing and every repo-wide check (A1-A3, T1-T3,
-  // D1, L1-L4) would silently see zero iterations. Fill in every Milestone
+  // D1, L1-L4) would silently see zero tranches. Fill in every Milestone
   // (open or closed) the file sweep didn't already surface — same
   // `deriveOrFallback` used everywhere else in this loader, so a Milestone
   // whose slug DOES still have a legacy file gets its dependsOn/conflictsWith
   // merged in exactly as before.
   if (!onlySlug && repo) {
-    const activeRefs = listActiveIterationSlugs(repo.owner, repo.repo)
-    const archivedRefs = listArchivedIterationSlugs(repo.owner, repo.repo)
+    const activeRefs = listActiveTrancheSlugs(repo.owner, repo.repo)
+    const archivedRefs = listArchivedTrancheSlugs(repo.owner, repo.repo)
     for (const { slug, archived } of [
       ...activeRefs.map((r) => ({ slug: r.slug, archived: false })),
       ...archivedRefs.map((r) => ({ slug: r.slug, archived: true }))
     ]) {
       if (files.some((f) => f.slug === slug)) continue
-      const relPath = `${archived ? COMPLETED_RELDIR : ITERATIONS_RELDIR}/${slug}.md`
-      const iteration = await deriveOrFallback(repo, slug, relPath)
-      if (iteration !== null) files.push({ slug, archived, iteration })
+      const relPath = `${archived ? COMPLETED_RELDIR : TRANCHES_RELDIR}/${slug}.md`
+      const tranche = await deriveOrFallback(repo, slug, relPath)
+      if (tranche !== null) files.push({ slug, archived, tranche })
     }
   }
 
@@ -345,7 +345,7 @@ export type RunCoherenceChecksOptions = {
   prContext?: PrReadContext
   /**
    * T2 relocation: `true` ONLY for a CI run against a plan PR whose
-   * own diff touches an iteration topology file — the only PR kind that can
+   * own diff touches a tranche topology file — the only PR kind that can
    * cause or cure a T2 gap. Defaults to `false` (info-only, never blocking)
    * for every other context: task-PR CI, local dev, `--json` audit mode,
    * daily-drift — matching the brief's "surfaced never blocking" rule.
@@ -357,14 +357,14 @@ export async function runCoherenceChecks(
   options: RunCoherenceChecksOptions = {}
 ): Promise<{ results: CheckResult[]; forgeUnavailable: boolean }> {
   const { prContext = null, isPlanPr = false } = options
-  const files = await loadIterationFiles(prContext)
+  const files = await loadTrancheFiles(prContext)
   const results: CheckResult[] = []
 
   // ---------- CI scope detection ----------
-  // Parse the PR's iteration from BRANCH (CI) or GITHUB_HEAD_REF (Actions env).
+  // Parse the PR's tranche from BRANCH (CI) or GITHUB_HEAD_REF (Actions env).
   // Used to scope T3 so a PR against aeg-coherence-v1 isn't blocked by legacy
-  // #TBD rows in vada-production-v1 or herald iterations.
-  const ciIterationSlug: string | null = (() => {
+  // #TBD rows in vada-production-v1 or herald tranches.
+  const ciTrancheSlug: string | null = (() => {
     const branch = process.env.BRANCH ?? process.env.GITHUB_HEAD_REF ?? ''
     const m = branch.match(/^task\/([^/]+)\//)
     return m?.[1] ?? null
@@ -373,7 +373,7 @@ export async function runCoherenceChecks(
   // ---------- base entries (no forge facts yet) ----------
 
   const allEntries: TaskEntry[] = files.flatMap((f) =>
-    f.iteration.tasks.map((t) => ({ iterationSlug: f.slug, archived: f.archived, task: t, facts: undefined }))
+    f.tranche.tasks.map((t) => ({ trancheSlug: f.slug, archived: f.archived, task: t, facts: undefined }))
   )
 
   results.push(checkL3(files))
@@ -384,9 +384,9 @@ export async function runCoherenceChecks(
   const token = await resolveGithubToken()
 
   if (!token) {
-    // No forge fetch was attempted at all — every iteration is unavailable.
+    // No forge fetch was attempted at all — every tranche is unavailable.
     const allUnavailableSlugs = new Set(files.map((f) => f.slug))
-    results.push(checkT3(allEntries, ciIterationSlug, undefined, allUnavailableSlugs))
+    results.push(checkT3(allEntries, ciTrancheSlug, undefined, allUnavailableSlugs))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -398,9 +398,9 @@ export async function runCoherenceChecks(
   }
 
   if (!repo) {
-    // No forge fetch was attempted at all — every iteration is unavailable.
+    // No forge fetch was attempted at all — every tranche is unavailable.
     const allUnavailableSlugs = new Set(files.map((f) => f.slug))
-    results.push(checkT3(allEntries, ciIterationSlug, undefined, allUnavailableSlugs))
+    results.push(checkT3(allEntries, ciTrancheSlug, undefined, allUnavailableSlugs))
     results.push({
       check: 'FORGE',
       status: 'fail',
@@ -413,21 +413,21 @@ export async function runCoherenceChecks(
 
   const { owner, repo: repoName } = repo
 
-  // Fetch forge facts for all iterations (A1/A2/A3 share this fetch)
+  // Fetch forge facts for all tranches (A1/A2/A3 share this fetch)
   const snapshotsBySlug = new Map<string, Map<string, ForgeFacts>>()
   let anyForgeUnavailable = false
 
   const eligible = files
     .map((f) => ({
       f,
-      tasks: f.iteration.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
+      tasks: f.tranche.tasks.filter((t) => t.issue !== null).map((t) => ({ id: t.id, issue: t.issue as number }))
     }))
     .filter(({ tasks }) => tasks.length > 0)
 
   const snapshotResults = await Promise.all(
     eligible.map(async ({ f, tasks }) => ({
       f,
-      snapshot: await fetchForgeFacts({ owner, repo: repoName, iteration: f.slug, tasks })
+      snapshot: await fetchForgeFacts({ owner, repo: repoName, tranche: f.slug, tasks })
     }))
   )
 
@@ -439,19 +439,19 @@ export async function runCoherenceChecks(
     }
   }
 
-  // Iterations whose forge snapshot fetch failed entirely — used by T3's
+  // Tranches whose forge snapshot fetch failed entirely — used by T3's
   // forge-unavailable carve-out so a #TBD row isn't silently un-grandfathered
-  // just because its iteration's forge data never arrived.
+  // just because its tranche's forge data never arrived.
   const forgeUnavailableSlugs = new Set(files.map((f) => f.slug).filter((slug) => !snapshotsBySlug.has(slug)))
 
   // Build enriched entries with forge facts
   const enrichedEntries: TaskEntry[] = files.flatMap((f) => {
     const factsMap = snapshotsBySlug.get(f.slug)
-    return f.iteration.tasks.map((t) => ({
-      iterationSlug: f.slug,
+    return f.tranche.tasks.map((t) => ({
+      trancheSlug: f.slug,
       archived: f.archived,
       task: t,
-      // undefined when forge unavailable for this iteration OR when issue doesn't exist
+      // undefined when forge unavailable for this tranche OR when issue doesn't exist
       facts: factsMap?.get(t.id)
     }))
   })
@@ -461,11 +461,11 @@ export async function runCoherenceChecks(
   const taskToEntry = new Map<string, TaskEntry>()
   for (const e of enrichedEntries) {
     if (e.task.issue !== null) issueToEntry.set(e.task.issue, e)
-    taskToEntry.set(`${e.iterationSlug}/${e.task.id}`, e)
+    taskToEntry.set(`${e.trancheSlug}/${e.task.id}`, e)
   }
 
-  // Only run forge checks for entries whose iteration snapshot was available
-  const availableEntries = enrichedEntries.filter((e) => snapshotsBySlug.has(e.iterationSlug))
+  // Only run forge checks for entries whose tranche snapshot was available
+  const availableEntries = enrichedEntries.filter((e) => snapshotsBySlug.has(e.trancheSlug))
 
   // A1 / A3 checks
   results.push(checkA1(availableEntries))
@@ -484,7 +484,7 @@ export async function runCoherenceChecks(
     if (e.task.issue === null) continue
     const hasProvenance = provenanceByIssueNum.get(e.task.issue)
     if (hasProvenance !== undefined) {
-      provenanceByKey.set(`${e.iterationSlug}/${e.task.id}`, hasProvenance)
+      provenanceByKey.set(`${e.trancheSlug}/${e.task.id}`, hasProvenance)
     }
   }
   results.push(checkA2(availableEntries, provenanceByKey))
@@ -493,12 +493,12 @@ export async function runCoherenceChecks(
   results.push(checkT1(availableEntries))
 
   // T3 — post-forge so enrichedEntries can be used for pre-cutoff date proxy
-  results.push(checkT3(allEntries, ciIterationSlug, enrichedEntries, forgeUnavailableSlugs))
+  results.push(checkT3(allEntries, ciTrancheSlug, enrichedEntries, forgeUnavailableSlugs))
 
   // T2 / R1 checks — share one batched label-scoped Issue fetch (number + body + labels).
   // The fetch itself stays repo-wide (all active slugs) so --json/audit mode
   // keeps full coverage; only checkT2's own failure computation is scoped by
-  // ciIterationSlug, mirroring T3.
+  // ciTrancheSlug, mirroring T3.
   const activeSlugs = files.filter((f) => !f.archived).map((f) => f.slug)
   const issuesBySlug = await fetchOpenIssuesByLabel(activeSlugs, owner, repoName, token)
 
@@ -510,12 +510,12 @@ export async function runCoherenceChecks(
   for (const f of files) {
     if (f.archived) continue
     const nums = new Set<number>()
-    for (const t of f.iteration.tasks) {
+    for (const t of f.tranche.tasks) {
       if (t.issue !== null) nums.add(t.issue)
     }
     topologyIssuesBySlug.set(f.slug, nums)
   }
-  results.push(scopeT2ToPlanPr(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciIterationSlug), isPlanPr))
+  results.push(scopeT2ToPlanPr(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciTrancheSlug), isPlanPr))
   results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES))
 
   // D1 check
@@ -524,9 +524,9 @@ export async function runCoherenceChecks(
   // L1 / L2 checks
   const entriesBySlug = new Map<string, TaskEntry[]>()
   for (const e of availableEntries) {
-    const list = entriesBySlug.get(e.iterationSlug) ?? []
+    const list = entriesBySlug.get(e.trancheSlug) ?? []
     list.push(e)
-    entriesBySlug.set(e.iterationSlug, list)
+    entriesBySlug.set(e.trancheSlug, list)
   }
   results.push(checkL1(files, entriesBySlug))
   results.push(checkL2(files, entriesBySlug))
@@ -534,17 +534,17 @@ export async function runCoherenceChecks(
   // L4 — Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
   // follow-up). Active = forge Milestone open, the same authority
   // `verify-dispatch.ts`'s Milestone-aware discovery uses — not `!f.archived`
-  // (file location), so this never flags an iteration whose file predates
+  // (file location), so this never flags a tranche whose file predates
   // the Milestone birth rule but has no live Milestone yet.
-  const milestoneActiveSlugs = listActiveIterationSlugs(owner, repoName).map((m) => m.slug)
+  const milestoneActiveSlugs = listActiveTrancheSlugs(owner, repoName).map((m) => m.slug)
   const issueMilestones = milestoneActiveSlugs.flatMap((slug) =>
-    listIssueMilestonesForSlug(owner, repoName, slug).map((f) => ({ iteration: slug, ...f }))
+    listIssueMilestonesForSlug(owner, repoName, slug).map((f) => ({ tranche: slug, ...f }))
   )
   results.push(checkL4(milestoneActiveSlugs, issueMilestones))
 
   // L5 — forge-native Milestone-state coherence (Issue #481, drift class #2):
   // an open Milestone whose every task Issue is closed. Advisory analogue of
-  // file-based L1 for post-cutover iterations that have no topology file.
+  // file-based L1 for post-cutover tranches that have no topology file.
   results.push(checkL5(milestoneActiveSlugs, entriesBySlug))
 
   // N/M stubs
@@ -557,7 +557,7 @@ export async function runCoherenceChecks(
 
 function printHuman(results: CheckResult[], forgeUnavailable: boolean): void {
   if (forgeUnavailable) {
-    console.warn('\n⚠  Some iterations had forge data unavailable — forge-dependent checks may be incomplete.\n')
+    console.warn('\n⚠  Some tranches had forge data unavailable — forge-dependent checks may be incomplete.\n')
   }
 
   const failed = results.filter((r) => r.status === 'fail')
@@ -585,7 +585,7 @@ function printHuman(results: CheckResult[], forgeUnavailable: boolean): void {
     for (const f of r.failures) {
       const issueStr = f.issue != null ? ` #${f.issue}` : ''
       const taskStr = f.task ? ` [task ${f.task}]` : ''
-      console.error(`      ${f.iteration}${issueStr}${taskStr}: ${f.reason}`)
+      console.error(`      ${f.tranche}${issueStr}${taskStr}: ${f.reason}`)
     }
   }
 }
@@ -604,11 +604,11 @@ if (import.meta.main) {
       console.warn('closes-n: BRANCH env var not set — skipping (non-task context).')
       process.exit(0)
     }
-    // Scoped load: checkClosesN only ever reads the ONE iteration named in
-    // the branch — deriving every other iteration from the forge here would
+    // Scoped load: checkClosesN only ever reads the ONE tranche named in
+    // the branch — deriving every other tranche from the forge here would
     // pay the full repo-wide sweep's latency for data this gate never uses.
-    const branchIterSlug = branch.match(/^task\/([^/]+)\//)?.[1]
-    const files = await loadIterationFiles(null, branchIterSlug)
+    const branchTrancheSlug = branch.match(/^task\/([^/]+)\//)?.[1]
+    const files = await loadTrancheFiles(null, branchTrancheSlug)
 
     // Reverse-direction data: resolve every `Closes #N` the body references
     // to its AEG task identity, one batched forge query (not a per-issue
@@ -634,7 +634,7 @@ if (import.meta.main) {
 
   // PR context for item 5/T2-relocation — set only by the
   // coherence-gate CI job (forge-lifecycle.yml). Absent everywhere else
-  // (local dev, daily-drift, manual --json audit runs): every iteration
+  // (local dev, daily-drift, manual --json audit runs): every tranche
   // file reads from origin/main and T2 stays info-only (never blocking).
   const prHeadSha = process.env.PR_HEAD_SHA || null
   const touchedFilesRaw = process.env.PR_TOUCHED_FILES ?? ''

@@ -2,7 +2,7 @@
 
 /**
  * check-no-disk-state — CI gate (#512) blocking new on-disk state-file
- * creation: a live `aeg-root/iterations/*.md` topology file (other than
+ * creation: a live `aeg-root/tranches/*.md` topology file (other than
  * `README.md`, at any depth including `completed/**` when newly added) —
  * the residue class this task's Part B proved unnecessary
  * (`aeg-drift-prevention-v1.md` deleted, forge derivation covers it) — or
@@ -11,11 +11,11 @@
  * `isNewDiskStateFile` (`@atta/aeg-core`) — this is a thin CLI/I/O shim.
  *
  * Status-aware (`git diff --name-status`), not path-shape-only: editing an
- * EXISTING file under `aeg-root/iterations/completed/**` (the 15 legacy
+ * EXISTING file under `aeg-root/tranches/completed/**` (the 15 legacy
  * archive files) stays legal — only genuinely NEW files there are
  * refused, closing the gap a path-shape-only exemption would leave open (a
  * brand-new file smuggled into `completed/` to dodge the top-level check).
- * A top-level active topology file (directly under `aeg-root/iterations/`,
+ * A top-level active topology file (directly under `aeg-root/tranches/`,
  * not a subdirectory) fails on add OR edit — that class shouldn't exist at
  * all post-cutover. Deleted files are never checked (this task's own
  * removal of `aeg-drift-prevention-v1.md` must not trip it).

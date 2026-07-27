@@ -5,10 +5,10 @@
  * this repo. The `check-forge-gates.sh` PreToolUse hook denies raw
  * `gh issue create` / `gh issue edit --body*`, directing every agent here.
  *
- * Gate: a task Issue (any `vinaya/iteration:<slug>` label) must carry the full
+ * Gate: a task Issue (any `vinaya/tranche:<slug>` label) must carry the full
  * eight-field Planner's rationale in its body (`checkIssueRationale`,
  * planner-brief contract) — refused locally otherwise, before anything
- * reaches the forge. Non-task Issues (no iteration label) pass through
+ * reaches the forge. Non-task Issues (no tranche label) pass through
  * unvalidated: the rationale contract does not apply to them.
  *
  * Content gate: past presence, three checks grade what those fields
@@ -28,13 +28,13 @@
  * silent — nobody re-passes `--label` when changing a body — so the target
  * Issue's ACTUAL current labels are fetched from the forge
  * (`gh issue view <n> --json labels`) and unioned with any argv labels. A
- * failed forge fetch is a hard refusal, never treated as "no iteration
+ * failed forge fetch is a hard refusal, never treated as "no tranche
  * label" (#417).
  *
  * Usage:
- *   bun packages/aeg-core/bin/open-issue.ts --title t --body-file <path> --label "vinaya/iteration:x" [gh args...]
+ *   bun packages/aeg-core/bin/open-issue.ts --title t --body-file <path> --label "vinaya/tranche:x" [gh args...]
  *   bun packages/aeg-core/bin/open-issue.ts edit <n> --body-file <path> [gh args...]
- *   bun packages/aeg-core/bin/open-issue.ts --validate-only --body-file <path> --label "vinaya/iteration:x"
+ *   bun packages/aeg-core/bin/open-issue.ts --validate-only --body-file <path> --label "vinaya/tranche:x"
  */
 
 import { execFileSync } from 'node:child_process'
@@ -43,10 +43,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   amendRationaleDeps,
-  findIterationSlug,
+  findTrancheSlug,
   findMilestoneForSlug,
-  iterationLabel,
-  iterationSlugLengthError,
+  trancheLabelsToQuery,
+  trancheSlugLengthError,
   type MilestoneFacts,
   parseRationaleDeps
 } from '@atta/aeg-forge-state'
@@ -176,7 +176,7 @@ function extractLabels(args: string[]): string[] {
  * invocations don't normally re-pass `--label` flags, so argv says nothing
  * about whether the target is a task Issue — the forge is the only truthful
  * source (#417). Fails loud/closed: a failed fetch is never treated as "no
- * iteration label", which would silently re-open the exact bypass this
+ * tranche label", which would silently re-open the exact bypass this
  * function exists to close.
  */
 function fetchForgeLabels(issueRef: string): string[] {
@@ -201,9 +201,9 @@ function fetchForgeLabels(issueRef: string): string[] {
   }
 }
 
-/** First `vinaya/iteration:<slug>` label's slug, or `null` when the set carries none. */
-function iterationSlugFromLabels(labels: string[]): string | null {
-  return findIterationSlug(labels)
+/** First `vinaya/tranche:<slug>` label's slug, or `null` when the set carries none. */
+function trancheSlugFromLabels(labels: string[]): string | null {
+  return findTrancheSlug(labels)
 }
 
 /** True when argv already carries an explicit `--milestone`/`-m` flag — the caller's choice always wins. */
@@ -213,17 +213,17 @@ function hasExplicitMilestoneFlag(args: string[]): boolean {
 
 /**
  * Milestone auto-attach on Issue CREATE (aeg-review-gate-v1 task 1 follow-up).
- * `deriveIterationFromForge`/`listActiveIterationSlugs` (`@atta/aeg-forge-state`)
+ * `deriveTrancheFromForge`/`listActiveTrancheSlugs` (`@atta/aeg-forge-state`)
  * never read an Issue's GitHub-native milestone field — only the
- * `vinaya/iteration:<slug>` label — so this drift was never functionally
+ * `vinaya/tranche:<slug>` label — so this drift was never functionally
  * load-pathing; it is pure GitHub-view hygiene (a Milestone showing
  * `open_issues=0` while 3 real open task Issues carry its label). Creation-time
  * only, by design: `edit` never force-attaches retroactively (an unrelated
  * body edit must not silently reassign an Issue's milestone).
  *
- * Not a hard failure when no matching Milestone exists yet — an iteration's
+ * Not a hard failure when no matching Milestone exists yet — a tranche's
  * Milestone may not exist yet at first-Issue-cut time (task 5/#429 backfilled
- * Milestones after the fact for the first cohort; a brand-new iteration's
+ * Milestones after the fact for the first cohort; a brand-new tranche's
  * very first Issue necessarily precedes its own Milestone in some workflows).
  * `lookupMilestone` is injected so this stays testable without a real `gh` call.
  */
@@ -236,7 +236,7 @@ export function resolveMilestoneToAttach(
   if (isEdit) return null
   if (!isTaskIssueLabelSet(labels)) return null
   if (hasExplicitMilestoneFlag(args)) return null
-  const slug = iterationSlugFromLabels(labels)
+  const slug = trancheSlugFromLabels(labels)
   if (!slug) return null
   const milestone = lookupMilestone(slug)
   if (milestone?.lifecycle !== 'active') return null
@@ -341,7 +341,7 @@ export function runAmendDeps(flags: AmendDepsFlags, deps: AmendDepsDeps): void {
 
   const labels = deps.fetchLabels(issue)
   if (!isTaskIssueLabelSet(labels)) {
-    deps.fail(`amend-deps targets task Issues only — Issue ${issue} carries no \`vinaya/iteration:*\` label.`)
+    deps.fail(`amend-deps targets task Issues only — Issue ${issue} carries no \`vinaya/tranche:*\` label.`)
   }
 
   const body = deps.fetchBody(issue)
@@ -433,7 +433,7 @@ function readProjectPaths(): ProjectPath[] {
 }
 
 /**
- * The iteration's other open task Issues, for check C. Best-effort by design:
+ * The tranche's other open task Issues, for check C. Best-effort by design:
  * C is warn-only, so a forge hiccup must degrade to "no warning", never to a
  * refusal — the opposite of `fetchForgeLabels`, which fails closed because a
  * missing label there would silently skip a *blocking* gate.
@@ -441,9 +441,9 @@ function readProjectPaths(): ProjectPath[] {
 function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssueFacts[] {
   try {
     // Labels are filtered CLIENT-side, deliberately. `gh issue list --label
-    // vinaya/iteration:<slug>` returns an empty set against this repo's live labels
+    // vinaya/tranche:<slug>` returns an empty set against this repo's live labels
     // even though the label exists and Issues carry it (reproduced on
-    // `vinaya/iteration:vinaya-pages-v2`: 11 matching open Issues, `--label` yields
+    // `vinaya/tranche:vinaya-pages-v2`: 11 matching open Issues, `--label` yields
     // 0). Server-side filtering would have shipped C permanently silent and
     // indistinguishable from "no overlap" — the exact false-green shape this
     // whole change exists to remove. Listing open Issues and matching here is
@@ -454,7 +454,7 @@ function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssue
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }
     )
     return (JSON.parse(out) as Array<{ number: number; body: string; labels: Array<{ name: string }> }>)
-      .filter((i) => i.labels.some((l) => l.name === iterationLabel(slug)))
+      .filter((i) => i.labels.some((l) => trancheLabelsToQuery(slug).includes(l.name)))
       .filter((i) => String(i.number) !== String(selfRef ?? '').replace(/^#/, ''))
       .map((i) => ({
         ref: `#${i.number}`,
@@ -537,13 +537,13 @@ export function main(): void {
   }
 
   if (isTaskIssueLabelSet(labels)) {
-    // GitHub caps a label name at 50 characters and `vinaya/iteration:` spends
-    // 17 of them, so a slug that reads fine in prose can be one the forge
-    // refuses to create. Caught here — the first place a new iteration's label
+    // GitHub caps a label name at 50 characters and `vinaya/tranche:` spends
+    // 15 of them, so a slug that reads fine in prose can be one the forge
+    // refuses to create. Caught here — the first place a new tranche's label
     // reaches the forge — rather than as an opaque `gh` 422 later.
-    const labelSlug = iterationSlugFromLabels(labels)
+    const labelSlug = trancheSlugFromLabels(labels)
     if (labelSlug !== null) {
-      const lengthError = iterationSlugLengthError(labelSlug)
+      const lengthError = trancheSlugLengthError(labelSlug)
       if (lengthError) fail(`open-issue label-length: ${lengthError}`)
     }
 
@@ -554,10 +554,10 @@ export function main(): void {
     }
     if (body === null) {
       fail(
-        'a task Issue (vinaya/iteration:* label) requires a `--body-file <path>` so the rationale gate can validate it.'
+        'a task Issue (vinaya/tranche:* label) requires a `--body-file <path>` so the rationale gate can validate it.'
       )
     }
-    console.log('[open-issue] task Issue (iteration label) — validating the Planner rationale…')
+    console.log('[open-issue] task Issue (tranche label) — validating the Planner rationale…')
     const { status, errors } = checkIssueRationale(body)
     if (status === 'fail') {
       console.error(`\n[open-issue] FAILED — ${errors.length} rationale field(s) missing:\n`)
@@ -588,7 +588,7 @@ export function main(): void {
 
     // C — warn-only. Never blocks: an Issue declares no precise file surface,
     // so an overlapping collision domain is a hint, not a fact.
-    const slug = iterationSlugFromLabels(labels)
+    const slug = trancheSlugFromLabels(labels)
     if (slug) {
       const selfRef = isEdit ? (ghArgs[0] as string) : null
       const conflictWarnings = checkConflictCompleteness(
@@ -603,7 +603,7 @@ export function main(): void {
       for (const w of conflictWarnings) console.warn(`[open-issue] WARNING — ${w}`)
     }
   } else {
-    console.log('[open-issue] no iteration label — rationale gate does not apply, passing through.')
+    console.log('[open-issue] no tranche label — rationale gate does not apply, passing through.')
   }
 
   if (validateOnly) {
@@ -621,7 +621,7 @@ export function main(): void {
   })
   const createArgs = milestoneSlug ? [...bodyArgs, '--milestone', milestoneSlug] : bodyArgs
   if (milestoneSlug) {
-    console.log(`[open-issue] auto-attaching to open Milestone "${milestoneSlug}" (iteration label match).`)
+    console.log(`[open-issue] auto-attaching to open Milestone "${milestoneSlug}" (tranche label match).`)
   }
 
   const { finalArgs, cleanup } = resolveShippableArgs(createArgs, bodyResult)

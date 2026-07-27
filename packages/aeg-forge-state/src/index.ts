@@ -1,24 +1,25 @@
 export { amendRationaleDeps } from './amend-rationale-deps'
 export type { AmendDepsInput } from './amend-rationale-deps'
-export { deriveIterationFromForge } from './derive-from-forge'
+export { deriveTrancheFromForge } from './derive-from-forge'
 export {
   findMilestoneForSlug,
-  listActiveIterationSlugs,
-  listActiveIterationSlugsAsync,
-  listArchivedIterationSlugs,
-  listArchivedIterationSlugsAsync
+  listActiveTrancheSlugs,
+  listActiveTrancheSlugsAsync,
+  listArchivedTrancheSlugs,
+  listArchivedTrancheSlugsAsync
 } from './fetch-milestone'
-export type { ActiveIterationRef, MilestoneFacts } from './fetch-milestone'
+export type { ActiveTrancheRef, MilestoneFacts } from './fetch-milestone'
 export { fetchProvenance } from './fetch-provenance'
 export { buildBranchName, fetchForgeFacts, fetchForgeTasksByLabel } from './fetch-forge-facts'
 export { fetchOpenIssuesByLabel } from './fetch-open-issues'
 export { fetchTaskIssueRefs } from './fetch-task-issue-refs'
 export {
-  findIterationSlug,
+  findTrancheSlug,
   hasLabel,
-  iterationLabel,
-  iterationSlugLengthError,
-  iterationSlugOf,
+  trancheLabel,
+  trancheLabelsToQuery,
+  trancheSlugLengthError,
+  trancheSlugOf,
   LABEL_MAX_LENGTH,
   LABEL_NAMESPACE,
   LABELS,

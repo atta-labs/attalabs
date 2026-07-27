@@ -20,7 +20,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 
 ## 2. Context — read before doing anything
 
-- **Iteration:** [`iteration-slug`], task [n], Issue #[N]. Branch `task/[iteration-slug]/[n]`. `Depends-on: [—|ids]`, `Conflicts-with: [—|ids]`. Confirm `READY TO DISPATCH` at your own Step 0.
+- **Tranche:** [`tranche-slug`], task [n], Issue #[N]. Branch `task/[tranche-slug]/[n]`. `Depends-on: [—|ids]`, `Conflicts-with: [—|ids]`. Confirm `READY TO DISPATCH` at your own Step 0.
 - **Read Issue #[N] in full** for the complete rationale — do not re-derive it.
 - [CONTEXT — the Planner's rationale carried forward (boundary, blast radius, traps), what was previously validated, what is settled and must not be re-litigated, and everything your own Dig confirmed about the current surface. If it isn't in the brief, it doesn't exist.]
 
@@ -49,11 +49,11 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 **Step 0 (mandatory, verbatim):**
 
 ```
-git worktree add .worktrees/task/[iteration-slug]/[n] -b task/[iteration-slug]/[n] origin/main && cd .worktrees/task/[iteration-slug]/[n] && bun install --frozen-lockfile --silent
+git worktree add .worktrees/task/[tranche-slug]/[n] -b task/[tranche-slug]/[n] origin/main && cd .worktrees/task/[tranche-slug]/[n] && bun install --frozen-lockfile --silent
 ```
 
 1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`).
-2. `bun packages/aeg-core/bin/verify-dispatch.ts [iteration-slug] [n]` → `READY TO DISPATCH` required; else STOP.
+2. `bun packages/aeg-core/bin/verify-dispatch.ts [tranche-slug] [n]` → `READY TO DISPATCH` required; else STOP.
 3. [any task-specific pre-flight checks — required tools present, reference files readable, re-digs to confirm the §2 citations]
 
 On any failure: STOP and report.
@@ -88,13 +88,13 @@ STOP and report if: pre-flight fails; [the Planner's stop-and-escalate condition
 
 - [each Planner trap as an explicit "do NOT do X; do Y instead"]
 - [forbidden patterns for this task — deferred features, off-limits paths]
-- Never write status anywhere; never add execution metadata to the iteration file.
+- Never write status anywhere; never add execution metadata to the tranche file.
 
 > **Autonomy:** Do not stop to ask clarifying questions. For any ambiguity not covered by a Section 10 stop condition, choose the most reasonable option consistent with this brief, record the choice in the PR body, and continue. Halt only for the explicit Section 10 stop conditions — and when you halt, record the blocker in the PR body or an Issue comment rather than waiting interactively for input.
 
 ## 12. Deliverable
 
-- PR title (exact): `[[iteration-slug]] [n] — [task title]`
+- PR title (exact): `[[tranche-slug]] [n] — [task title]`
 - Open the PR only via `bun packages/aeg-core/bin/open-pr.ts --body-file <path> --title "<title above>"`.
 - PR body = the Developer's PR report (start from `aeg-root/templates/pr-report-template.md`), with this entire brief pasted as the reference copy inside a collapsed `<details>` block, and `Closes #[N]` at the top of the header block.
 - [what to state in the PR body: decisions made, confirmations required by §8]

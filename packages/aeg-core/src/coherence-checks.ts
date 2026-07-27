@@ -2,15 +2,15 @@
  * verify-coherence pure check evaluators — deterministic plan↔forge coherence
  * oracle logic (A1/A2/A3, T1/T2/T3, D1, L1/L2/L3/L4, closes-N)..
  *
- * Pure — no `fs`, no `fetch`, no `process.env`. All forge facts and iteration
+ * Pure — no `fs`, no `fetch`, no `process.env`. All forge facts and tranche
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
-import { iterationLabel, label } from '@atta/aeg-forge-state'
+import { trancheLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion, stripCode } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
-import type { ForgeFacts, Iteration, Task } from './types'
+import type { ForgeFacts, Tranche, Task } from './types'
 
 // ---------- grandfather cutoff -----------------------------------------------
 
@@ -20,7 +20,7 @@ import type { ForgeFacts, Iteration, Task } from './types'
  * (which blocks CI). Applies to A1/A2/A3/T3.
  *
  * Rationale: branch protection is unavailable on the free plan; pre-existing
- * repo-wide debt (legacy vada/herald/aeg-ui iterations) can't be retro-fixed,
+ * repo-wide debt (legacy vada/herald/aeg-ui tranches) can't be retro-fixed,
  * so a hard gate on those findings would make every new PR un-mergeable.
  */
 export const COHERENCE_ENFORCED_FROM = '2026-07-01'
@@ -38,7 +38,7 @@ export function isGrandfathered(isoDate: string | null | undefined): boolean {
  * body carries no reliable "authored under which grammar" timestamp, so this
  * is an explicit number set rather than a date proxy — populated once, at
  * `aeg-governance-hardening` task 1 implementation time, with exactly the
- * active-iteration task Issues that failed `checkIssueRationale` against the
+ * active-tranche task Issues that failed `checkIssueRationale` against the
  * live forge (see the task's PR body for the list + counts).
  *
  * New/edited task Issues are already gated at ring 0 (`bin/open-issue.ts`,
@@ -52,7 +52,7 @@ export const R1_GRANDFATHERED_ISSUES: ReadonlySet<number> = new Set([279, 280, 2
 
 export type CheckFailure = {
   issue?: number | null
-  iteration: string
+  tranche: string
   task?: string
   reason: string
   /** True when the terminal event predates `COHERENCE_ENFORCED_FROM` — finding is info, not fail. */
@@ -67,17 +67,17 @@ export type CheckResult = {
 }
 
 export type TaskEntry = {
-  iterationSlug: string
+  trancheSlug: string
   archived: boolean
   task: Task
   /** `undefined` when the forge was unavailable or the issue didn't exist. */
   facts: ForgeFacts | undefined
 }
 
-export type IterationFile = {
+export type TrancheFile = {
   slug: string
   archived: boolean
-  iteration: Iteration
+  tranche: Tranche
 }
 
 // ---------- pure check evaluators --------------------------------------------
@@ -94,7 +94,7 @@ export function checkA1(entries: TaskEntry[]): CheckResult {
     if (e.facts.issueState === 'closed' && e.facts.prState !== 'merged') {
       failures.push({
         issue: e.task.issue,
-        iteration: e.iterationSlug,
+        tranche: e.trancheSlug,
         task: e.task.id,
         reason: `Issue closed but closing PR is not merged (prState: ${e.facts.prState})`,
         grandfathered: isGrandfathered(e.facts.closedAt)
@@ -116,7 +116,7 @@ export function checkA1(entries: TaskEntry[]): CheckResult {
  * Fail class: `archived-without-provenance`
  * Terminal event date: `prMergedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
  *
- * `hasProvenanceByKey`: Map keyed by `${iterSlug}/${taskId}` → true when the
+ * `hasProvenanceByKey`: Map keyed by `${trancheSlug}/${taskId}` → true when the
  * closing PR has a comment containing `### AEG provenance`.
  */
 export function checkA2(entries: TaskEntry[], hasProvenanceByKey: Map<string, boolean>): CheckResult {
@@ -125,14 +125,14 @@ export function checkA2(entries: TaskEntry[], hasProvenanceByKey: Map<string, bo
     if (!e.facts) continue
     // Only check tasks whose issue is closed AND whose closing PR merged.
     if (e.facts.issueState !== 'closed' || e.facts.prState !== 'merged') continue
-    const key = `${e.iterationSlug}/${e.task.id}`
+    const key = `${e.trancheSlug}/${e.task.id}`
     const hasProvenance = hasProvenanceByKey.get(key)
     // If key is absent from the map we were unable to fetch (forge error); skip.
     if (hasProvenance === undefined) continue
     if (!hasProvenance) {
       failures.push({
         issue: e.task.issue,
-        iteration: e.iterationSlug,
+        tranche: e.trancheSlug,
         task: e.task.id,
         reason: 'Closing PR has no `### AEG provenance` comment (Archivist close-out missing)',
         grandfathered: isGrandfathered(e.facts.mergedAt)
@@ -161,7 +161,7 @@ export function checkA3(entries: TaskEntry[]): CheckResult {
     if (e.facts.prState === 'merged' && e.facts.issueState !== 'closed') {
       failures.push({
         issue: e.task.issue,
-        iteration: e.iterationSlug,
+        tranche: e.trancheSlug,
         task: e.task.id,
         reason: 'Closing PR is merged but Issue is still open (GitHub auto-close misfire)',
         grandfathered: isGrandfathered(e.facts.mergedAt)
@@ -194,7 +194,7 @@ export function checkT1(entries: TaskEntry[]): CheckResult {
     if (e.facts === undefined) {
       failures.push({
         issue: e.task.issue,
-        iteration: e.iterationSlug,
+        tranche: e.trancheSlug,
         task: e.task.id,
         reason: `Issue #${e.task.issue} in topology does not resolve to a real GitHub Issue`
       })
@@ -204,35 +204,35 @@ export function checkT1(entries: TaskEntry[]): CheckResult {
 }
 
 /**
- * T2: Every open Issue labeled `vinaya/iteration:X` appears in X's topology file.
+ * T2: Every open Issue labeled `vinaya/tranche:X` appears in X's topology file.
  * Fail class: `orphan-task`
  *
- * `openIssuesBySlug`: Map from active iteration slug → list of open issue
- * numbers fetched from the forge with that `vinaya/iteration:` label.
+ * `openIssuesBySlug`: Map from active tranche slug → list of open issue
+ * numbers fetched from the forge with that `vinaya/tranche:` label.
  * `topologyIssuesBySlug`: Map from slug → Set of issue numbers in the topology.
  *
- * `ciIterationSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
- *   only the iteration matching that slug is checked — prevents a coherence
- *   gap in one iteration's topology (e.g. a Planner plan-PR mid-flight) from
- *   blocking CI on an unrelated PR against a different iteration. Mirrors
- *   `checkT3`'s `ciIterationSlug` parameter exactly.
+ * `ciTrancheSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
+ *   only the tranche matching that slug is checked — prevents a coherence
+ *   gap in one tranche's topology (e.g. a Planner plan-PR mid-flight) from
+ *   blocking CI on an unrelated PR against a different tranche. Mirrors
+ *   `checkT3`'s `ciTrancheSlug` parameter exactly.
  */
 export function checkT2(
   openIssuesBySlug: Map<string, number[]>,
   topologyIssuesBySlug: Map<string, Set<number>>,
-  ciIterationSlug?: string | null
+  ciTrancheSlug?: string | null
 ): CheckResult {
   const failures: CheckFailure[] = []
   for (const [slug, openNums] of openIssuesBySlug) {
-    if (ciIterationSlug && slug !== ciIterationSlug) continue
+    if (ciTrancheSlug && slug !== ciTrancheSlug) continue
 
     const topologySet = topologyIssuesBySlug.get(slug) ?? new Set<number>()
     for (const num of openNums) {
       if (!topologySet.has(num)) {
         failures.push({
           issue: num,
-          iteration: slug,
-          reason: `Issue #${num} is open and labeled ${iterationLabel(slug)} but does not appear in the topology file`
+          tranche: slug,
+          reason: `Issue #${num} is open and labeled ${trancheLabel(slug)} but does not appear in the topology file`
         })
       }
     }
@@ -245,10 +245,10 @@ export function checkT2(
  * Part 2; supersedes half of task 19's T2-in-task-PR-CI placement).
  * A gate may only red a PR that could cause or cure the violation it
  * reports — live incident #363 (2026-07-04): registering Issues #364/#365
- * correctly reddened same-iteration task PR #363's CI, which could neither
+ * correctly reddened same-tranche task PR #363's CI, which could neither
  * have caused nor fixed the topology gap. `checkT2`'s own assertion logic
  * (above) is untouched; this only demotes its CI-blocking status when the
- * current PR is NOT a plan PR (i.e. its diff doesn't touch an iteration
+ * current PR is NOT a plan PR (i.e. its diff doesn't touch a tranche
  * topology file) — the only PR kind that can actually close a T2 gap. The
  * underlying findings stay visible (`status: 'info'`, never omitted) for
  * every other context: task-PR CI, `--json`/audit mode, and daily-drift.
@@ -265,23 +265,23 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
 }
 
 /**
- * T3: No `#TBD` rows in an active iteration.
- * Fail class: `tbd-in-active-iteration`
+ * T3: No `#TBD` rows in an active tranche.
+ * Fail class: `tbd-in-active-tranche`
  *
- * A task in an active iteration has a null issue ref (empty / `—` / `#TBD`).
+ * A task in an active tranche has a null issue ref (empty / `—` / `#TBD`).
  *
- * `ciIterationSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
- *   only tasks in THAT iteration are checked — prevents vada/herald legacy
- *   #TBD rows from blocking a PR against an unrelated iteration.
+ * `ciTrancheSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
+ *   only tasks in THAT tranche are checked — prevents vada/herald legacy
+ *   #TBD rows from blocking a PR against an unrelated tranche.
  *
- * `enrichedEntries`: when provided (post-forge-fetch), used to determine if an
- *   iteration predates `COHERENCE_ENFORCED_FROM` by proxy: if the iteration has
+ * `enrichedEntries`: when provided (post-forge-fetch), used to determine if a
+ *   tranche predates `COHERENCE_ENFORCED_FROM` by proxy: if the tranche has
  *   any task whose `closedAt` or `mergedAt` is pre-cutoff, its #TBD rows are
  *   grandfathered as `info`.
  *
- * `forgeUnavailableSlugs`: iteration slugs whose forge snapshot fetch failed
+ * `forgeUnavailableSlugs`: tranche slugs whose forge snapshot fetch failed
  *   entirely (the caller couldn't fetch `closedAt`/`mergedAt` for ANY task in
- *   that iteration). A `#TBD` row in one of these iterations cannot be evaluated
+ *   that tranche). A `#TBD` row in one of these tranches cannot be evaluated
  *   against the grandfather proxy at all — treating it as `grandfathered: false`
  *   would silently fail it purely because of a forge outage, not because it's
  *   genuinely un-grandfathered. Such rows are reported `grandfathered: true`
@@ -289,16 +289,16 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
  */
 export function checkT3(
   entries: TaskEntry[],
-  ciIterationSlug?: string | null,
+  ciTrancheSlug?: string | null,
   enrichedEntries?: TaskEntry[],
   forgeUnavailableSlugs?: Set<string>
 ): CheckResult {
-  // Build set of iterations that are pre-enforcement (by proxy: any task with a pre-cutoff date).
+  // Build set of tranches that are pre-enforcement (by proxy: any task with a pre-cutoff date).
   const preEnforcement = new Set<string>()
   if (enrichedEntries) {
     for (const e of enrichedEntries) {
       if (isGrandfathered(e.facts?.closedAt) || isGrandfathered(e.facts?.mergedAt)) {
-        preEnforcement.add(e.iterationSlug)
+        preEnforcement.add(e.trancheSlug)
       }
     }
   }
@@ -306,15 +306,15 @@ export function checkT3(
   const failures: CheckFailure[] = []
   for (const e of entries) {
     if (!e.archived && e.task.issue === null) {
-      // Branch-scope: in CI for a specific iteration, only check that iteration.
-      if (ciIterationSlug && e.iterationSlug !== ciIterationSlug) continue
+      // Branch-scope: in CI for a specific tranche, only check that tranche.
+      if (ciTrancheSlug && e.trancheSlug !== ciTrancheSlug) continue
 
-      if (forgeUnavailableSlugs?.has(e.iterationSlug)) {
+      if (forgeUnavailableSlugs?.has(e.trancheSlug)) {
         failures.push({
           issue: null,
-          iteration: e.iterationSlug,
+          tranche: e.trancheSlug,
           task: e.task.id,
-          reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty), but forge data for iteration "${e.iterationSlug}" was unavailable — cannot evaluate grandfather status, not silently failed`,
+          reason: `Task ${e.task.id} in active tranche has no Issue ref (#TBD or empty), but forge data for tranche "${e.trancheSlug}" was unavailable — cannot evaluate grandfather status, not silently failed`,
           grandfathered: true
         })
         continue
@@ -322,10 +322,10 @@ export function checkT3(
 
       failures.push({
         issue: null,
-        iteration: e.iterationSlug,
+        tranche: e.trancheSlug,
         task: e.task.id,
-        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — the model requires all active tasks to have Issue numbers`,
-        grandfathered: preEnforcement.has(e.iterationSlug)
+        reason: `Task ${e.task.id} in active tranche has no Issue ref (#TBD or empty) — the model requires all active tasks to have Issue numbers`,
+        grandfathered: preEnforcement.has(e.trancheSlug)
       })
     }
   }
@@ -345,7 +345,7 @@ export function checkT3(
  *
  * `issueToEntry`: Map from issue number → TaskEntry, for resolving `#NNN`
  * style depends-on refs in addition to task-ID style refs.
- * `taskToEntry`: Map from `${slug}/${taskId}` → TaskEntry for same-iteration refs.
+ * `taskToEntry`: Map from `${slug}/${taskId}` → TaskEntry for same-tranche refs.
  */
 export function checkD1(
   entries: TaskEntry[],
@@ -358,7 +358,7 @@ export function checkD1(
     if (e.facts.prState !== 'open') continue
 
     for (const dep of e.task.dependsOn) {
-      const depEntry = resolveDepEntry(dep, e.iterationSlug, issueToEntry, taskToEntry)
+      const depEntry = resolveDepEntry(dep, e.trancheSlug, issueToEntry, taskToEntry)
       if (!depEntry) continue // unknown dep — not a D1 concern
 
       const depFacts = depEntry.facts
@@ -366,7 +366,7 @@ export function checkD1(
       if (!depClosed) {
         failures.push({
           issue: e.task.issue,
-          iteration: e.iterationSlug,
+          tranche: e.trancheSlug,
           task: e.task.id,
           reason: `Task has open PR but depends-on ${dep} (issue #${depEntry.task.issue ?? '?'}) is not closed`
         })
@@ -378,15 +378,15 @@ export function checkD1(
 
 function resolveDepEntry(
   dep: string,
-  iterationSlug: string,
+  trancheSlug: string,
   issueToEntry: Map<number, TaskEntry>,
   taskToEntry: Map<string, TaskEntry>
 ): TaskEntry | undefined {
   // `#NNN` style — resolve by issue number
   const issueMatch = dep.match(/^#(\d+)$/)
   if (issueMatch?.[1]) return issueToEntry.get(Number(issueMatch[1]))
-  // Task-ID style — resolve within same iteration first, then globally
-  return taskToEntry.get(`${iterationSlug}/${dep}`) ?? taskToEntry.get(dep)
+  // Task-ID style — resolve within same tranche first, then globally
+  return taskToEntry.get(`${trancheSlug}/${dep}`) ?? taskToEntry.get(dep)
 }
 
 /**
@@ -397,7 +397,7 @@ function resolveDepEntry(
 export type { ForgeIssue }
 
 /**
- * R1: Every active-iteration task Issue's body carries the full eight-field
+ * R1: Every active-tranche task Issue's body carries the full eight-field
  * Planner's rationale (`aeg-root/contracts/planner-brief.md`).
  * Fail class: `missing-rationale-field`
  *
@@ -406,7 +406,7 @@ export type { ForgeIssue }
  * Issues). This is the ring-1/2 half: continuous re-checking of the stock.
  * One grammar, one parser — this function does not re-implement it.
  *
- * `issuesBySlug`: open Issues per active iteration slug, from the same
+ * `issuesBySlug`: open Issues per active tranche slug, from the same
  * batched label-scoped query T2 uses (`fetchOpenIssuesByLabel`), extended to
  * carry `body` + `labels`.
  * `grandfatheredIssues`: `R1_GRANDFATHERED_ISSUES` — pre- stock,
@@ -424,7 +424,7 @@ export function checkR1(
       if (status !== 'fail') continue
       failures.push({
         issue: issue.number,
-        iteration: slug,
+        tranche: slug,
         reason: `Issue #${issue.number} fails the rationale gate: ${errors.join(' | ')}`,
         grandfathered: grandfatheredIssues.has(issue.number)
       })
@@ -441,15 +441,15 @@ export function checkR1(
 }
 
 /**
- * L1: Active iteration with zero open task-Issues → should be archived.
+ * L1: Active tranche with zero open task-Issues → should be archived.
  * **Advisory (info-only)** per `state-machine.md` §12 (L1/L2 are lifecycle-hygiene
  * signals, not the done-lifecycle gate). Findings are surfaced for a human to
  * investigate; they never fail CI. Only A1/A2/A3/M1/M3 block.
  *
- * An active iteration (file not in completed/) where every task with a
+ * An active tranche (file not in completed/) where every task with a
  * known issue has `issueState === 'closed'`.
  */
-export function checkL1(files: IterationFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
+export function checkL1(files: TrancheFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
   const failures: CheckFailure[] = []
   for (const f of files) {
     if (f.archived) continue
@@ -459,8 +459,8 @@ export function checkL1(files: IterationFile[], entriesBySlug: Map<string, TaskE
     const allClosed = withFacts.every((e) => e.facts?.issueState === 'closed')
     if (allClosed) {
       failures.push({
-        iteration: f.slug,
-        reason: 'Active iteration has no open task-Issues — consider archiving to completed/'
+        tranche: f.slug,
+        reason: 'Active tranche has no open task-Issues — consider archiving to completed/'
       })
     }
   }
@@ -470,18 +470,18 @@ export function checkL1(files: IterationFile[], entriesBySlug: Map<string, TaskE
     failures,
     note:
       failures.length > 0
-        ? `${failures.length} active iteration(s) with no open task-Issues — consider archiving (advisory)`
+        ? `${failures.length} active tranche(s) with no open task-Issues — consider archiving (advisory)`
         : undefined
   }
 }
 
 /**
- * L2: Archived iteration with any open task-Issue → premature archive.
+ * L2: Archived tranche with any open task-Issue → premature archive.
  * **Advisory (info-only)** per `state-machine.md` §12 (L1/L2 are lifecycle-hygiene
  * signals, not the done-lifecycle gate). Findings are surfaced for a human to
  * investigate; they never fail CI. Only A1/A2/A3/M1/M3 block.
  */
-export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
+export function checkL2(files: TrancheFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
   const failures: CheckFailure[] = []
   for (const f of files) {
     if (!f.archived) continue
@@ -491,9 +491,9 @@ export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskE
       if (e.facts.issueState === 'open') {
         failures.push({
           issue: e.task.issue,
-          iteration: f.slug,
+          tranche: f.slug,
           task: e.task.id,
-          reason: `Archived iteration has open task-Issue #${e.task.issue ?? '?'} (premature archive)`
+          reason: `Archived tranche has open task-Issue #${e.task.issue ?? '?'} (premature archive)`
         })
       }
     }
@@ -504,34 +504,34 @@ export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskE
     failures,
     note:
       failures.length > 0
-        ? `${failures.length} archived iteration(s) with an open task-Issue — investigate (advisory)`
+        ? `${failures.length} archived tranche(s) with an open task-Issue — investigate (advisory)`
         : undefined
   }
 }
 
 /**
- * L3: Count of active iterations — informational only, does not affect exit code.
+ * L3: Count of active tranches — informational only, does not affect exit code.
  */
-export function checkL3(files: IterationFile[]): CheckResult {
+export function checkL3(files: TrancheFile[]): CheckResult {
   const active = files.filter((f) => !f.archived)
   return {
     check: 'L3',
     status: 'info',
     failures: [],
-    note: `${active.length} active iteration(s): ${active.map((f) => f.slug).join(', ') || '(none)'}`
+    note: `${active.length} active tranche(s): ${active.map((f) => f.slug).join(', ') || '(none)'}`
   }
 }
 
 /**
  * L4: Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
- * follow-up). An open task-Issue carrying `vinaya/iteration:<slug>` for an ACTIVE
- * iteration (open Milestone titled the slug) whose GitHub-native
+ * follow-up). An open task-Issue carrying `vinaya/tranche:<slug>` for an ACTIVE
+ * tranche (open Milestone titled the slug) whose GitHub-native
  * `milestone` field doesn't match that same Milestone.
  *
  * **Advisory (info-only)**, same framing as L1/L2 (`state-machine.md` §12):
- * confirmed NOT functionally load-bearing — `deriveIterationFromForge`/
- * `listActiveIterationSlugs` never read an Issue's milestone field, only the
- * `vinaya/iteration:<slug>` label, which remains the sole, sufficient membership
+ * confirmed NOT functionally load-bearing — `deriveTrancheFromForge`/
+ * `listActiveTrancheSlugs` never read an Issue's milestone field, only the
+ * `vinaya/tranche:<slug>` label, which remains the sole, sufficient membership
  * signal. This is real drift between GitHub's own Milestone view (e.g.
  * `open_issues`/`closed_issues` counts) and reality — cosmetic, not a gate,
  * surfaced so it doesn't silently accumulate rather than because anything
@@ -540,21 +540,21 @@ export function checkL3(files: IterationFile[]): CheckResult {
  * predates that gate or was created outside it.
  */
 export function checkL4(
-  activeIterationSlugs: string[],
-  issueMilestones: Array<{ iteration: string; issue: number; milestoneTitle: string | null }>
+  activeTrancheSlugs: string[],
+  issueMilestones: Array<{ tranche: string; issue: number; milestoneTitle: string | null }>
 ): CheckResult {
-  const activeSet = new Set(activeIterationSlugs)
+  const activeSet = new Set(activeTrancheSlugs)
   const failures: CheckFailure[] = []
   for (const f of issueMilestones) {
-    if (!activeSet.has(f.iteration)) continue
-    if (f.milestoneTitle === f.iteration) continue
+    if (!activeSet.has(f.tranche)) continue
+    if (f.milestoneTitle === f.tranche) continue
     failures.push({
       issue: f.issue,
-      iteration: f.iteration,
+      tranche: f.tranche,
       reason:
         f.milestoneTitle === null
-          ? `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but has no GitHub-native milestone attached`
-          : `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
+          ? `Issue #${f.issue} carries ${trancheLabel(f.tranche)} (active) but has no GitHub-native milestone attached`
+          : `Issue #${f.issue} carries ${trancheLabel(f.tranche)} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
     })
   }
   return {
@@ -563,22 +563,22 @@ export function checkL4(
     failures,
     note:
       failures.length > 0
-        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their ${label('iteration')}<slug> label (cosmetic drift, advisory)`
+        ? `${failures.length} open task-Issue(s) in an active tranche whose GitHub-native milestone doesn't match their ${label('tranche')}<slug> label (cosmetic drift, advisory)`
         : undefined
   }
 }
 
 /**
- * L5: Open Milestone whose every task Issue is closed → the iteration is
+ * L5: Open Milestone whose every task Issue is closed → the tranche is
  * effectively complete but its Milestone was never closed / archived
  * (Issue #481, drift class #2; 1 live incident this session —
  * `aeg-forge-state-v1`'s Milestone left open after full archive).
  *
- * This is the FORGE-NATIVE analogue of file-based L1: L1 reads `IterationFile[]`
- * (a `!f.archived` file location), but post-cutover most iterations have no
+ * This is the FORGE-NATIVE analogue of file-based L1: L1 reads `TrancheFile[]`
+ * (a `!f.archived` file location), but post-cutover most tranches have no
  * topology file at all, so their Milestone-object drift is invisible to L1.
- * L5 keys off `listActiveIterationSlugs` (open Milestones — the
- * authority) instead, so it sees exactly the iterations L1 no longer can.
+ * L5 keys off `listActiveTrancheSlugs` (open Milestones — the
+ * authority) instead, so it sees exactly the tranches L1 no longer can.
  *
  * **Advisory (info-only)**, same framing as L1/L2/L4 (`state-machine.md` §12):
  * a real completion may simply not be archived yet, so this never fails CI —
@@ -586,18 +586,18 @@ export function checkL4(
  * outage) are skipped, mirroring L1's `withFacts.length === 0` guard — an
  * outage is not a finding.
  */
-export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
+export function checkL5(activeTrancheSlugs: string[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
   const failures: CheckFailure[] = []
-  for (const slug of activeIterationSlugs) {
+  for (const slug of activeTrancheSlugs) {
     const entries = entriesBySlug.get(slug) ?? []
     const withFacts = entries.filter((e) => e.facts !== undefined)
     if (withFacts.length === 0) continue // forge unavailable or no tasks with issues
     const allClosed = withFacts.every((e) => e.facts?.issueState === 'closed')
     if (allClosed) {
       failures.push({
-        iteration: slug,
+        tranche: slug,
         reason:
-          'Milestone still open but every task Issue is closed — close the Milestone / archive the iteration (advisory)'
+          'Milestone still open but every task Issue is closed — close the Milestone / archive the tranche (advisory)'
       })
     }
   }
@@ -649,17 +649,17 @@ export function extractClosesReferences(prBody: string): Set<number> {
 /**
  * Closes #N gate — Layer 1 of forge-lifecycle enforcement.
  *
- * Forward direction: a task PR (branch `task/<iter>/<n>`) must carry
+ * Forward direction: a task PR (branch `task/<tranche>/<n>`) must carry
  * `Closes #<its-issue>` in the body. Non-task branches are silently
  * bypassed for this direction (returns ok:true).
  *
- * Reverse direction (added: a branch NOT named `task/<iter>/<n>` that
+ * Reverse direction (added: a branch NOT named `task/<tranche>/<n>` that
  * nonetheless closes a real AEG task Issue must be named after that task —
  * the gap that let `feat/vinaya-landing-v3` implement Issue #509 with zero
  * forge-visible status. Runs for ANY branch, gated on `taskIssueRefs` being
  * supplied: each `Closes #N` the body references is looked up in the map;
- * an entry resolving to a task's `{iterSlug, taskId}` requires
- * `branch === "task/<iterSlug>/<taskId>"`. A missing map entry (issue not
+ * an entry resolving to a task's `{trancheSlug, taskId}` requires
+ * `branch === "task/<trancheSlug>/<taskId>"`. A missing map entry (issue not
  * resolved, e.g. no forge token) or an ordinary non-task Issue (`null` in
  * the map) skips the check for that reference — this direction only ever
  * *adds* a failure, never silently passes something the forward direction
@@ -672,7 +672,7 @@ export function extractClosesReferences(prBody: string): Set<number> {
 export function checkClosesN(
   branch: string,
   prBody: string,
-  iterationFiles: IterationFile[],
+  trancheFiles: TrancheFile[],
   taskIssueRefs?: Map<number, TaskIssueRef | null>
 ): { ok: boolean; message?: string; expectedIssue?: number } {
   const referenced = extractClosesReferences(prBody)
@@ -681,11 +681,11 @@ export function checkClosesN(
     for (const n of referenced) {
       const ref = taskIssueRefs.get(n)
       if (!ref) continue
-      const expectedBranch = `task/${ref.iterSlug}/${ref.taskId}`
+      const expectedBranch = `task/${ref.trancheSlug}/${ref.taskId}`
       if (branch !== expectedBranch) {
         return {
           ok: false,
-          message: `closes-n-reverse: branch "${branch}" closes #${n} (task ${ref.taskId} of iteration "${ref.iterSlug}") but is not named "${expectedBranch}" — rename the branch and re-push, or if this work is intentionally outside AEG's dispatch flow, remove the Closes reference.`
+          message: `closes-n-reverse: branch "${branch}" closes #${n} (task ${ref.taskId} of tranche "${ref.trancheSlug}") but is not named "${expectedBranch}" — rename the branch and re-push, or if this work is intentionally outside AEG's dispatch flow, remove the Closes reference.`
         }
       }
     }
@@ -694,29 +694,29 @@ export function checkClosesN(
   const m = branch.match(/^task\/([^/]+)\/([^/]+)$/)
   if (!m) return { ok: true } // non-task branch — forward direction bypass
 
-  const iterSlug = m[1] as string
+  const trancheSlug = m[1] as string
   const taskId = m[2] as string
 
-  const iterFile = iterationFiles.find((f) => f.slug === iterSlug)
-  if (!iterFile) {
+  const trancheFile = trancheFiles.find((f) => f.slug === trancheSlug)
+  if (!trancheFile) {
     return {
       ok: false,
-      message: `closes-n: branch "${branch}" references iteration "${iterSlug}" but no topology file found at aeg-root/iterations/${iterSlug}.md. Ensure the iteration file exists before opening the PR.`
+      message: `closes-n: branch "${branch}" references tranche "${trancheSlug}" but no topology file found at aeg-root/tranches/${trancheSlug}.md. Ensure the tranche file exists before opening the PR.`
     }
   }
 
-  const task = iterFile.iteration.tasks.find((t) => t.id === taskId)
+  const task = trancheFile.tranche.tasks.find((t) => t.id === taskId)
   if (!task) {
     return {
       ok: false,
-      message: `closes-n: branch "${branch}" references task "${taskId}" not found in ${iterSlug} topology. Verify the task ID matches the iteration file.`
+      message: `closes-n: branch "${branch}" references task "${taskId}" not found in ${trancheSlug} topology. Verify the task ID matches the tranche file.`
     }
   }
 
   if (task.issue === null) {
     return {
       ok: false,
-      message: `closes-n: task "${taskId}" in "${iterSlug}" has no Issue number (#TBD). The Planner must cut the Issue before this PR can be validated.`
+      message: `closes-n: task "${taskId}" in "${trancheSlug}" has no Issue number (#TBD). The Planner must cut the Issue before this PR can be validated.`
     }
   }
 
@@ -725,7 +725,7 @@ export function checkClosesN(
     return {
       ok: false,
       expectedIssue,
-      message: `closes-n: PR body does not contain \`Closes #${expectedIssue}\` (required for task "${taskId}" in iteration "${iterSlug}"). Add it to the PR body Summary section.`
+      message: `closes-n: PR body does not contain \`Closes #${expectedIssue}\` (required for task "${taskId}" in tranche "${trancheSlug}"). Add it to the PR body Summary section.`
     }
   }
 

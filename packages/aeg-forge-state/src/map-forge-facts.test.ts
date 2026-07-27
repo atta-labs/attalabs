@@ -219,7 +219,7 @@ describe('mapForgeFacts', () => {
       expect(facts?.branchExists).toBe(false)
     })
 
-    it('vinaya/blocked + open PR → blockedLabel set (deriveIteration treats blocked as winner)', () => {
+    it('vinaya/blocked + open PR → blockedLabel set (deriveTranche treats blocked as winner)', () => {
       const facts = mapForgeFacts(
         rawBase({
           issue: { state: 'OPEN', stateReason: null, assigneesCount: 1, labels: [AEG_BLOCKED_LABEL] },

@@ -5,15 +5,15 @@ sidebar_title: Process
 
 This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs and skills updated.
 
-It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iteration-model.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
+It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `tranche-model.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
 
 If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any project-specific specs.
 
 ---
 
-## Where tasks come from: the iteration
+## Where tasks come from: the tranche
 
-The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Planner / Brief Author mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iteration-model.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
+The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Planner / Brief Author mode) when a tranche is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`tranche-model.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
 
 **Status is never stored.** Throughout every phase, a task's status is *derived* from the forge — Issue open/assigned, branch existence, PR open, review decision, merge — never written to a label or a file. When a phase below says a task "becomes in-review," it means *a PR was opened*, not that anyone set a status field.
 
@@ -36,7 +36,7 @@ Every piece of work moves through some subset of these. Trivial work (Tier 0) sk
 10. Review (agent passes, then human reviews)
 11. Verification (runtime test plan execution — agent half + Principal half)
 12. Merge
-13. Iteration Close
+13. Tranche Close
 ```
 
 > **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/developer.md` § Verification and).
@@ -55,11 +55,11 @@ The Principal brings an idea. The Brief Author pressure-tests, pushes back, surf
 - Identify the impact tier (0 / 1 / 3) — this drives everything downstream
 - Identify the Type 1 (irreversible — Principal ratifies) vs Type 2 (reversible — Brief Author ratifies) profile
 
-If already locked or specced, the conversation ends here. If genuinely new, it produces a shared understanding of what the work is, why now, its tier, and its decision profile — which the Planner then turns into Issues (the iteration).
+If already locked or specced, the conversation ends here. If genuinely new, it produces a shared understanding of what the work is, why now, its tier, and its decision profile — which the Planner then turns into Issues (the tranche).
 
 **Artifacts:** usually none (conversation is ephemeral). A significant decision is stated in the pull request that carries the work.
 
-**Exit:** the idea dies, or it's worth planning into an iteration.
+**Exit:** the idea dies, or it's worth planning into a tranche.
 
 ---
 
@@ -86,7 +86,7 @@ When a task is picked up for execution, the Brief Author writes its brief — **
 - Type 1 / Type 2 declaration if architectural decisions are expected
 - `principal_delegate:` if the work runs while the Principal is offline
 - Spike flag (`spike: true`) if exploratory
-- The mandatory worktree-first Step 0 (`git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main` — no exceptions)
+- The mandatory worktree-first Step 0 (`git worktree add .worktrees/task/<tranche>/<n> -b task/<tranche>/<n> origin/main` — no exceptions)
 - An explicit documentation-update list tied to the tier
 - Optional `Ticket:` (reference-only provenance) and, in a multi-project repo, `Project:` (resolves against `projects.md`)
 - Clear scope, stop conditions, Task Done checklist
@@ -96,7 +96,7 @@ A brief is self-contained and executable without further conversation. If it nee
 
 **Where the brief lives:** it is pasted to the Developer and will land in the **PR body** at Phase 9. It is **not** committed and **not** put in the Issue body — the Issue (created by the Planner) holds task identity + metadata only. A brief in the Issue would age before work starts.
 
-**Artifacts:** the brief (a markdown block, not a committed file). The task's Issue already exists from iteration planning.
+**Artifacts:** the brief (a markdown block, not a committed file). The task's Issue already exists from tranche planning.
 
 **Exit:** the brief is well-formed and ready to dispatch.
 
@@ -125,12 +125,12 @@ If it fails, it's not dispatchable until fixed. The Developer also re-checks wel
 
 Dispatch starts the task. There are two equivalent routes:
 
-- **Manual:** the Principal pastes the brief into the coding agent. The brief's worktree-first Step 0 makes the Developer create its own worktree (`.worktrees/task/<iteration>/<n>/`, branch `task/<iteration>/<n>`, from `origin/main`) as its first action.
+- **Manual:** the Principal pastes the brief into the coding agent. The brief's worktree-first Step 0 makes the Developer create its own worktree (`.worktrees/task/<tranche>/<n>/`, branch `task/<tranche>/<n>`, from `origin/main`) as its first action.
 - **Automated:** an automation layer creates the worktree, generates the agent's config, spawns the Developer in it, and streams progress. This is a convenience; the semantics are identical to manual.
 
 Either way: **before starting, the Developer checks the dispatch gates against the forge** — every `depends-on` task's PR merged, no `conflicts-with` sibling's PR open. If a gate isn't satisfied, it does not start (the task serializes). Opening the branch *is* the `todo → in-flight` transition; nobody writes a status label.
 
-The branch name `task/<iteration>/<n>` is the convention that links the task to its branch and PR, so any role can derive its live status with one forge query.
+The branch name `task/<tranche>/<n>` is the convention that links the task to its branch and PR, so any role can derive its live status with one forge query.
 
 **Exit:** the Developer is working in its worktree.
 
@@ -140,7 +140,7 @@ The branch name `task/<iteration>/<n>` is the convention that links the task to 
 
 **Who:** Developer (the coding agent — spawned or pasted).
 
-Per `roles/developer.md`, the Developer reads `coordination.md` / `state.md` / its role doc, derives live execution state from the forge (session-start queries in `coordination.md`), reads the relevant skills (auto-loaded when matching code is touched) and project specs, confirms pre-flight (starting with the worktree), and works in small, frequent commits on the `task/<iteration>/<n>` branch. When dispatched by an automation layer, it streams progress events to that layer.
+Per `roles/developer.md`, the Developer reads `coordination.md` / `state.md` / its role doc, derives live execution state from the forge (session-start queries in `coordination.md`), reads the relevant skills (auto-loaded when matching code is touched) and project specs, confirms pre-flight (starting with the worktree), and works in small, frequent commits on the `task/<tranche>/<n>` branch. When dispatched by an automation layer, it streams progress events to that layer.
 
 The Developer cannot author its own briefs, expand scope without escalation, modify files outside scope, skip verification hooks, skip the Task Done checklist, or **write status anywhere** (status is derived). If the brief is wrong or contradicts reality, it escalates (Phase 7) — it does not paper over confusion or improvise outside scope.
 
@@ -250,7 +250,7 @@ The test plan is split by who can structurally execute each item:
 
 **The merge gate.** A PR is not mergeable while any Test Plan checkbox is unticked — `[agent]` items waiting for evidence, or `[principal]` items waiting for Principal confirmation. An `[agent]` item that fails returns the PR to the Developer on the same branch (same loop as a `CHANGES_REQUESTED` review); a `[principal]` failure does the same. Re-running an item appends a fresh evidence comment; it does not edit the previous one.
 
-**Enforcement note:** the `verify-test-plan` CI check (a checkbox-state parse over the PR body) is **live and mandatory** — `packages/aeg-core/bin/verify-test-plan.ts` runs unconditionally as one of the nine always-produced verdicts of the `aeg-gate-suite` job (`.github/workflows/forge-lifecycle.yml`). It is not opt-in and not decided per-iteration. What remains **trusted discipline** is the judgment the parse cannot make — whether a ticked box was genuinely run. The doctrine (Phase 11 exists; the brief carries a tagged Test Plan; an unticked box means not-yet-mergeable) holds whether the CI enforcer is on or off. Brief Validation rejects a brief that touches a runtime surface and has no tagged Test Plan.
+**Enforcement note:** the `verify-test-plan` CI check (a checkbox-state parse over the PR body) is **live and mandatory** — `packages/aeg-core/bin/verify-test-plan.ts` runs unconditionally as one of the nine always-produced verdicts of the `aeg-gate-suite` job (`.github/workflows/forge-lifecycle.yml`). It is not opt-in and not decided per-tranche. What remains **trusted discipline** is the judgment the parse cannot make — whether a ticked box was genuinely run. The doctrine (Phase 11 exists; the brief carries a tagged Test Plan; an unticked box means not-yet-mergeable) holds whether the CI enforcer is on or off. Brief Validation rejects a brief that touches a runtime surface and has no tagged Test Plan.
 
 **Exit:** every `[agent]` Test Plan item has an evidence comment on the PR and is ticked; every `[principal]` item is ticked by the Principal. Or: the brief declared `Test Plan: unit-tests-only` and the §4 surface is pure-logic.
 
@@ -268,35 +268,35 @@ The Principal merges. Tier 3 work merges during a ratification window (`coordina
 
 ---
 
-## Phase 13: Iteration Close
+## Phase 13: Tranche Close
 
-**Who:** Principal (declares), Iteration Archivist (executes).
+**Who:** Principal (declares), Tranche Archivist (executes).
 
-When the last task of an iteration has merged, the Principal declares it done and dispatches the Iteration Archivist with an explicit declaration that the iteration is closed. The Iteration Archivist (roles/iteration-archivist.md) owns all close-out steps. No automation or GitHub Actions required — self-contained, forge-agnostic.
+When the last task of a tranche has merged, the Principal declares it done and dispatches the Tranche Archivist with an explicit declaration that the tranche is closed. The Tranche Archivist (roles/tranche-archivist.md) owns all close-out steps. No automation or GitHub Actions required — self-contained, forge-agnostic.
 
-**Steps (executed by the Iteration Archivist):**
+**Steps (executed by the Tranche Archivist):**
 
 1. **Verify the forge** — confirm all task PRs are merged, all task Issues are closed, no orphaned branches remain.
 
 2. **Write the retrospective** — append a new section to `aeg-project/lessons.md` with observations on what went well, what stalled, carry-forward lessons, decisions made, and unbuilt tasks. Assembled from merged PR summaries and topology — not invented.
 
-3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
+3. **Archive the tranche** — set `Lifecycle: complete` as the first line after the tranche file's heading, move the file from `aeg-root/tranches/` to `aeg-root/tranches/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the tranche is no longer active.
 
 4. **Update state docs** — refresh `aeg-project/state.md` (last-updated date, current focus pointer, recently shipped section, clear any resolved pending-manual-ops). Active-work state is derived from the forge — no `now.md`.
 
-5. **Surface pending Type 1 decisions** — query the `needs:principal-input` label for this iteration's open items. List them explicitly; the Principal ratifies at the next ratification window.
+5. **Surface pending Type 1 decisions** — query the `needs:principal-input` label for this tranche's open items. List them explicitly; the Principal ratifies at the next ratification window.
 
-6. **Update docs-index.md** — if iteration tasks added, removed, or renamed files tracked in the index, confirm it reflects the current state.
+6. **Update docs-index.md** — if tranche tasks added, removed, or renamed files tracked in the index, confirm it reflects the current state.
 
-7. **Post iteration provenance** — comment on the last merged task PR with a summary of tasks completed, duration, archival path, pending ratifications, and any dangling items.
+7. **Post tranche provenance** — comment on the last merged task PR with a summary of tasks completed, duration, archival path, pending ratifications, and any dangling items.
 
-**Artifacts:** no new commits beyond the iteration file move and state doc updates — those commits *are* the close-out. Lessons appended to `lessons.md`. Pending decisions surfaced (not ratified by the Archivist).
+**Artifacts:** no new commits beyond the tranche file move and state doc updates — those commits *are* the close-out. Lessons appended to `lessons.md`. Pending decisions surfaced (not ratified by the Archivist).
 
-**Exit:** iteration is archived, state docs are current, pending decisions are surfaced, and the Principal has declared what's next (new iteration, pause, pivot, cross-cutting initiative).
+**Exit:** tranche is archived, state docs are current, pending decisions are surfaced, and the Principal has declared what's next (new tranche, pause, pivot, cross-cutting initiative).
 
 ---
 
-## What happens after merge and iteration close
+## What happens after merge and tranche close
 
 The Principal eventually removes the worktree (`git worktree remove …`) — deliberate friction; the worktree is sometimes useful for post-merge inspection. The specs and skills are now canonical repo state that future sessions read.
 
@@ -311,7 +311,7 @@ The Principal eventually removes the worktree (`git worktree remove …`) — de
 Skips Phase 2; short brief; minimal checklist; light Phase 10 (a code-reviewer pass is cheap insurance, but the security pass and Brief Author spec review can be skipped when there's no config/auth surface and no spec change). Declare `Tier: 0` in the PR body so verify-docs doesn't require doc updates.
 
 ### Multi-developer parallel work
-Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`iteration-model.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the iteration's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
+Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`tranche-model.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the tranche's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
 
 ### Cross-project tasks
 A task may legitimately span multiple projects (one branch, one PR, `Project: a, b`) when the change is only verifiable as a unit (e.g. generalize a shared engine + migrate the first consumer). Review fans out across each project's lens; close-out updates each project's state. See `projects.md` and `roles/planner.md`.
@@ -326,7 +326,7 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 - **Going straight to brief authoring without Phase 1** — produces briefs that solve the wrong problem.
 - **Dispatching an unvalidated or malformed brief** — the Developer's entry gate refuses it; bypassing the gate manually defeats the model.
 - **Letting the Developer review its own work** — the Phase 10 agent passes are separate fresh-context invocations for a reason.
-- **Writing status anywhere** — status is derived from the forge. Setting a label or editing the iteration file to record state recreates the racing status model the design eliminated.
+- **Writing status anywhere** — status is derived from the forge. Setting a label or editing the tranche file to record state recreates the racing status model the design eliminated.
 - **Putting the brief in the Issue** — it lives in the PR body, just-in-time. The Issue is task identity only.
 - **Developer scope creep** — "while I'm here…" is a new task and a new brief.
 - **Brief Author self-ratifying Type 1 decisions in solo sessions** — they queue as PENDING for a ratification window.
@@ -335,13 +335,13 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 - **Treating "review passed" as "ready to merge"** — review reads the diff; verification runs the booted app. CI green ≠ app boots ≠ feature works. An unticked Test Plan box is the merge gate even when the reviews are clean.
 - **Inventing a Test Plan at verification time when the brief omitted one** — that is the Brief Author's job by design; verification *executes* the plan, it does not author it. A missing Test Plan is a brief-validation failure (`needs:brief-correction`).
 - **Mis-tagging a `[principal]` Test Plan item as `[agent]`** to make the agent half look complete — the asymmetry is structural (the agent surface lacks auth/keys/eyes); reclassifying loses the point of the split.
-- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iteration-model.md` §9).
+- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`tranche-model.md` §9).
 
 ---
 
 ## How this process maps to file artifacts
 
-For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `roles/planner.md`, `roles/brief-author.md`, `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iteration-model.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
+For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `roles/planner.md`, `roles/brief-author.md`, `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the tranche/task model, see `tranche-model.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
 
 ---
 

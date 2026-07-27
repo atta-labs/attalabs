@@ -62,7 +62,7 @@ function shJson<T>(cmd: string): T | null {
 
 type RemoteBranch = { name: string; sha: string }
 
-/** Every remote `task/*` branch (any iteration/task id), via one `git ls-remote` call — no per-branch fetch needed. */
+/** Every remote `task/*` branch (any tranche/task id), via one `git ls-remote` call — no per-branch fetch needed. */
 function listTaskBranches(): RemoteBranch[] {
   const out = sh("git ls-remote --heads origin 'task/*'")
   if (!out) return []

@@ -305,7 +305,7 @@ export function checkClosesN(prBody: string): BriefSectionResult {
  * Forge-title grammar — the two title forms this repo actually uses:
  *   1. Commit-style: `Type: description` or `Type(scope): description`, with
  *      the commitlint type set plus `Plan` (plan PRs).
- *   2. Task-style: `[iteration] id — description` (task Issues and task PRs).
+ *   2. Task-style: `[tranche] id — description` (task Issues and task PRs).
  * Anything else is refused: titles ride into merge commits and the forge's
  * derived views, so they carry the same grammar obligation as commit messages
  * (husky/commitlint parity, applied at the wrapper).
@@ -317,7 +317,7 @@ export function checkForgeTitle(title: string): BriefSectionResult {
   return {
     status: 'fail',
     errors: [
-      `brief-validation title: "${title}" matches neither title grammar — expected \`Type: description\` / \`Type(scope): description\` (commitlint types + Plan) or \`[iteration] id — description\` (task form).`
+      `brief-validation title: "${title}" matches neither title grammar — expected \`Type: description\` / \`Type(scope): description\` (commitlint types + Plan) or \`[tranche] id — description\` (task form).`
     ]
   }
 }
@@ -365,9 +365,9 @@ const BRIEF_SHAPE_MARKERS = [checkSurfaceMap, checkDocUpdateList, checkStopCondi
  * Is this PR body a brief? — the predicate that replaces the branch name as
  * `verify-brief`'s trigger for running `checkBriefSections`.
  *
- * The old rule was "validate iff the branch is `task/<iter>/<n>`", which meant a
+ * The old rule was "validate iff the branch is `task/<tranche>/<n>`", which meant a
  * standalone `fix/*` brief bypassed **every** section check. Confirmed live: a
- * fix brief on `fix/studio-iteration-href` shipped with no §7
+ * fix brief on `fix/studio-tranche-href` shipped with no §7
  * documentation-update list, and `checkDocUpdateList` — the checker that exists
  * for exactly that — never ran, because the branch wasn't a task branch. The
  * exemption still has to exist (an ordinary one-line dependency-bump PR has no
@@ -384,7 +384,7 @@ const BRIEF_SHAPE_MARKERS = [checkSurfaceMap, checkDocUpdateList, checkStopCondi
  *
  * Threshold is ≥2 of four rather than any-one so that a brief missing one
  * section is still detected as a brief — the failure mode this gate exists to
- * catch. The `fix/studio-iteration-href` body trips three with §7 absent.
+ * catch. The `fix/studio-tranche-href` body trips three with §7 absent.
  */
 export function isBriefShaped(prBody: string): boolean {
   const stripped = stripCode(prBody)
@@ -411,7 +411,7 @@ export type BriefSectionsOptions = {
    * existing caller keeps today's behavior).
    *
    * A task PR must close its Issue, so `verify-brief` leaves this on for
-   * `task/<iter>/<n>`. A brief-shaped body on a non-task branch must not: a
+   * `task/<tranche>/<n>`. A brief-shaped body on a non-task branch must not: a
    * standalone fix brief has no task Issue to close, and a `plan/*` PR is
    * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` — so
    * requiring it there would make the two gates jointly unsatisfiable. Issue

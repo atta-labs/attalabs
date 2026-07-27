@@ -17,7 +17,7 @@ import {
   type CheckResult,
   extractClosesReferences,
   type ForgeIssue,
-  type IterationFile,
+  type TrancheFile,
   scopeT2ToPlanPr,
   type TaskEntry
 } from './coherence-checks'
@@ -45,7 +45,7 @@ function makeFacts(overrides: Partial<ForgeFacts> = {}): ForgeFacts {
 }
 
 function makeEntry(
-  iterationSlug: string,
+  trancheSlug: string,
   taskId: string,
   issue: number | null,
   facts: ForgeFacts | undefined,
@@ -53,18 +53,18 @@ function makeEntry(
   dependsOn: string[] = []
 ): TaskEntry {
   return {
-    iterationSlug,
+    trancheSlug,
     archived,
     task: makeTask(taskId, issue, dependsOn),
     facts
   }
 }
 
-function makeIterationFile(slug: string, archived: boolean, taskCount = 2): IterationFile {
+function makeTrancheFile(slug: string, archived: boolean, taskCount = 2): TrancheFile {
   return {
     slug,
     archived,
-    iteration: {
+    tranche: {
       name: slug,
       lifecycle: archived ? 'complete' : 'active',
       goal: 'test',
@@ -88,38 +88,38 @@ describe('checkClosesN', () => {
   })
 
   it('ok — task branch with matching Closes #N in body', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', 264)]
     const r = checkClosesN('task/aeg-consolidation/2', 'Summary\n\nCloses #264\n', files)
     expect(r.ok).toBe(true)
     expect(r.expectedIssue).toBe(264)
   })
 
-  it('fail — no topology file found for the branch iteration', () => {
+  it('fail — no topology file found for the branch tranche', () => {
     const r = checkClosesN('task/unknown-iter/2', 'Closes #1', [])
     expect(r.ok).toBe(false)
     expect(r.message).toMatch(/no topology file found/)
   })
 
   it('fail — task id not found in topology', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('1', 263)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('1', 263)]
     const r = checkClosesN('task/aeg-consolidation/99', 'Closes #1', files)
     expect(r.ok).toBe(false)
     expect(r.message).toMatch(/not found in aeg-consolidation topology/)
   })
 
   it('fail — task has no Issue number (#TBD)', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', null)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', null)]
     const r = checkClosesN('task/aeg-consolidation/2', 'Closes #1', files)
     expect(r.ok).toBe(false)
     expect(r.message).toMatch(/has no Issue number/)
   })
 
   it('fail — PR body does not reference the expected issue', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', 264)]
     const r = checkClosesN('task/aeg-consolidation/2', 'Summary\n\nCloses #999\n', files)
     expect(r.ok).toBe(false)
     expect(r.expectedIssue).toBe(264)
@@ -127,8 +127,8 @@ describe('checkClosesN', () => {
   })
 
   it('ok — accepts fixes/resolves synonyms and is case-insensitive', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', 264)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', 264)]
     for (const phrase of ['Fixes #264', 'RESOLVES #264', 'fix: #264', 'close #264']) {
       const r = checkClosesN('task/aeg-consolidation/2', phrase, files)
       expect(r.ok).toBe(true)
@@ -136,8 +136,8 @@ describe('checkClosesN', () => {
   })
 
   it('ok — branch with a suffixed task id (e.g. 7a)', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('7a', 300)]
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('7a', 300)]
     const r = checkClosesN('task/aeg-consolidation/7a', 'Closes #300', files)
     expect(r.ok).toBe(true)
     expect(r.expectedIssue).toBe(300)
@@ -147,13 +147,13 @@ describe('checkClosesN', () => {
   // (the `feat/vinaya-landing-v3` + Issue #509 live gap this brief closes)
 
   it('fail — non-task branch closes a real task Issue (reverse gate)', () => {
-    const taskIssueRefs = new Map([[509, { iterSlug: 'vinaya-pages-v1', taskId: '2' }]])
+    const taskIssueRefs = new Map([[509, { trancheSlug: 'vinaya-pages-v1', taskId: '2' }]])
     const r = checkClosesN('feat/vinaya-landing-v3', 'Closes #509', [], taskIssueRefs)
     expect(r.ok).toBe(false)
     expect(r.message).toMatch(/^closes-n-reverse:/)
     expect(r.message).toContain('branch "feat/vinaya-landing-v3"')
     expect(r.message).toContain('closes #509')
-    expect(r.message).toContain('task 2 of iteration "vinaya-pages-v1"')
+    expect(r.message).toContain('task 2 of tranche "vinaya-pages-v1"')
     expect(r.message).toContain('not named "task/vinaya-pages-v1/2"')
   })
 
@@ -169,18 +169,18 @@ describe('checkClosesN', () => {
   })
 
   it('ok — task branch correctly named for the task Issue it closes (reverse passes trivially)', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', 264)]
-    const taskIssueRefs = new Map([[264, { iterSlug: 'aeg-consolidation', taskId: '2' }]])
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', 264)]
+    const taskIssueRefs = new Map([[264, { trancheSlug: 'aeg-consolidation', taskId: '2' }]])
     const r = checkClosesN('task/aeg-consolidation/2', 'Closes #264', files, taskIssueRefs)
     expect(r.ok).toBe(true)
     expect(r.expectedIssue).toBe(264)
   })
 
   it('fail — task branch closes a DIFFERENT task Issue than its own name implies', () => {
-    const files = [makeIterationFile('aeg-consolidation', false)]
-    files[0]!.iteration.tasks = [makeTask('2', 264), makeTask('3', 265)]
-    const taskIssueRefs = new Map([[265, { iterSlug: 'aeg-consolidation', taskId: '3' }]])
+    const files = [makeTrancheFile('aeg-consolidation', false)]
+    files[0]!.tranche.tasks = [makeTask('2', 264), makeTask('3', 265)]
+    const taskIssueRefs = new Map([[265, { trancheSlug: 'aeg-consolidation', taskId: '3' }]])
     const r = checkClosesN('task/aeg-consolidation/2', 'Closes #265', files, taskIssueRefs)
     expect(r.ok).toBe(false)
     expect(r.message).toMatch(/^closes-n-reverse:/)
@@ -202,7 +202,7 @@ describe('A1: closed-without-merge', () => {
     expect(r.status).toBe('fail')
     expect(r.failures).toHaveLength(1)
     expect(r.failures[0]!.issue).toBe(101)
-    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.tranche).toBe('iter-1')
     expect(r.failures[0]!.reason).toMatch(/prState: none/)
   })
 
@@ -403,17 +403,17 @@ describe('T2: orphan-task', () => {
     const r = checkT2(openIssues, topology)
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.issue).toBe(999)
-    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.tranche).toBe('iter-1')
     expect(r.failures[0]!.reason).toMatch(/does not appear in the topology/)
   })
 
-  it('pass — empty open issues for an iteration', () => {
+  it('pass — empty open issues for a tranche', () => {
     const openIssues = new Map([['iter-1', []]])
     const topology = new Map([['iter-1', new Set([101])]])
     passesWithNoFailures(checkT2(openIssues, topology))
   })
 
-  it('fail — topology for that slug is empty (iteration file has no matching tasks)', () => {
+  it('fail — topology for that slug is empty (tranche file has no matching tasks)', () => {
     const openIssues = new Map([['iter-1', [101]]])
     const topology = new Map<string, Set<number>>() // no entry for iter-1
     const r = checkT2(openIssues, topology)
@@ -421,7 +421,7 @@ describe('T2: orphan-task', () => {
     expect(r.failures[0]!.issue).toBe(101)
   })
 
-  it('backward compat — ciIterationSlug unset reports gaps across every iteration', () => {
+  it('backward compat — ciTrancheSlug unset reports gaps across every tranche', () => {
     const openIssues = new Map([
       ['iter-1', [101]],
       ['iter-2', [355]]
@@ -432,10 +432,10 @@ describe('T2: orphan-task', () => {
     ])
     const r = checkT2(openIssues, topology)
     expect(r.status).toBe('fail')
-    expect(r.failures.map((f) => f.iteration)).toEqual(['iter-2'])
+    expect(r.failures.map((f) => f.tranche)).toEqual(['iter-2'])
   })
 
-  it('pass — ciIterationSlug scopes check: gap in OTHER iteration is not reported', () => {
+  it('pass — ciTrancheSlug scopes check: gap in OTHER tranche is not reported', () => {
     // Reproduces the #358/#359 incident: a PR against aeg-governance-hardening
     // must not fail T2 because herald-hardening-v1 has an unrelated gap.
     const openIssues = new Map([
@@ -449,19 +449,19 @@ describe('T2: orphan-task', () => {
     passesWithNoFailures(checkT2(openIssues, topology, 'aeg-governance-hardening'))
   })
 
-  it('fail — ciIterationSlug scopes check: gap in SAME iteration still fails', () => {
+  it('fail — ciTrancheSlug scopes check: gap in SAME tranche still fails', () => {
     const openIssues = new Map([
       ['aeg-governance-hardening', [999]],
       ['herald-hardening-v1', [355]]
     ])
     const topology = new Map([
-      ['aeg-governance-hardening', new Set<number>()], // genuine gap in the scoped iteration
+      ['aeg-governance-hardening', new Set<number>()], // genuine gap in the scoped tranche
       ['herald-hardening-v1', new Set<number>()] // also a gap, but out of scope
     ])
     const r = checkT2(openIssues, topology, 'aeg-governance-hardening')
     expect(r.status).toBe('fail')
     expect(r.failures).toHaveLength(1)
-    expect(r.failures[0]!.iteration).toBe('aeg-governance-hardening')
+    expect(r.failures[0]!.tranche).toBe('aeg-governance-hardening')
     expect(r.failures[0]!.issue).toBe(999)
   })
 })
@@ -525,7 +525,7 @@ const MISSING_TRAPS_BODY = `
 **Docs to keep coherent** — none
 `
 
-function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/iteration:iter-1']): ForgeIssue {
+function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/tranche:iter-1']): ForgeIssue {
   return { number, body, labels }
 }
 
@@ -540,7 +540,7 @@ describe('R1: missing-rationale-field', () => {
     const r = checkR1(issuesBySlug, new Set())
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.issue).toBe(102)
-    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.tranche).toBe('iter-1')
     expect(r.failures[0]!.reason).toMatch(/Traps to avoid/)
   })
 
@@ -552,21 +552,21 @@ describe('R1: missing-rationale-field', () => {
     expect(r.note).toMatch(/grandfathered/)
   })
 
-  it('non-task Issue (no vinaya/iteration: label) is ignored', () => {
+  it('non-task Issue (no vinaya/tranche: label) is ignored', () => {
     const issuesBySlug = new Map([['iter-1', [makeForgeIssue(104, MISSING_TRAPS_BODY, ['bug'])]]])
     passesWithNoFailures(checkR1(issuesBySlug, new Set()))
   })
 })
 
-// ---------- T3: tbd-in-active-iteration --------------------------------------
+// ---------- T3: tbd-in-active-tranche --------------------------------------
 
-describe('T3: tbd-in-active-iteration', () => {
-  it('pass — active iteration with all issue numbers present', () => {
+describe('T3: tbd-in-active-tranche', () => {
+  it('pass — active tranche with all issue numbers present', () => {
     const entries = [makeEntry('iter-1', '1', 101, undefined, false)]
     passesWithNoFailures(checkT3(entries))
   })
 
-  it('fail — active iteration with null issue', () => {
+  it('fail — active tranche with null issue', () => {
     const entries = [makeEntry('iter-1', '1', null, undefined, false)]
     const r = checkT3(entries)
     expect(r.status).toBe('fail')
@@ -574,25 +574,25 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.reason).toMatch(/TBD/)
   })
 
-  it('pass — archived iteration with null issue is not a T3 concern', () => {
+  it('pass — archived tranche with null issue is not a T3 concern', () => {
     const entries = [makeEntry('iter-1', '1', null, undefined, true)]
     passesWithNoFailures(checkT3(entries))
   })
 
-  it('pass — ciIterationSlug scopes check: null issue in OTHER iteration is skipped', () => {
+  it('pass — ciTrancheSlug scopes check: null issue in OTHER tranche is skipped', () => {
     const entries = [makeEntry('vada-production-v1', '6a', null, undefined, false)]
     // Running CI gate for aeg-coherence-v1 → only aeg-coherence-v1 T3 matters
     passesWithNoFailures(checkT3(entries, 'aeg-coherence-v1'))
   })
 
-  it('fail — ciIterationSlug scopes check: null issue in SAME iteration still fails', () => {
+  it('fail — ciTrancheSlug scopes check: null issue in SAME tranche still fails', () => {
     const entries = [makeEntry('aeg-coherence-v1', '99', null, undefined, false)]
     const r = checkT3(entries, 'aeg-coherence-v1')
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.task).toBe('99')
   })
 
-  it('info — null issue in iteration whose tasks have pre-cutoff closedAt is grandfathered', () => {
+  it('info — null issue in tranche whose tasks have pre-cutoff closedAt is grandfathered', () => {
     const tbdEntry = makeEntry('vada-production-v1', '6a', null, undefined, false)
     const resolvedEntry = makeEntry(
       'vada-production-v1',
@@ -606,9 +606,9 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.grandfathered).toBe(true)
   })
 
-  it('fail — null issue in iteration with no pre-cutoff dates is NOT grandfathered', () => {
+  it('fail — null issue in tranche with no pre-cutoff dates is NOT grandfathered', () => {
     const tbdEntry = makeEntry('new-iter', '1', null, undefined, false)
-    // Enriched entries show the iteration has only post-cutoff activity
+    // Enriched entries show the tranche has only post-cutoff activity
     const resolvedEntry = makeEntry(
       'new-iter',
       '2',
@@ -621,9 +621,9 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.grandfathered).toBe(false)
   })
 
-  it('info (never fail) — #TBD in an iteration whose forge snapshot fetch failed entirely', () => {
-    // Simulates total forge failure: every entry in the iteration has facts: undefined,
-    // and the iteration's slug is in forgeUnavailableSlugs (snapshotsBySlug never had it).
+  it('info (never fail) — #TBD in a tranche whose forge snapshot fetch failed entirely', () => {
+    // Simulates total forge failure: every entry in the tranche has facts: undefined,
+    // and the tranche's slug is in forgeUnavailableSlugs (snapshotsBySlug never had it).
     const tbdEntry = makeEntry('down-iter', '1', null, undefined, false)
     const otherEntry = makeEntry('down-iter', '2', 500, undefined, false)
     const forgeUnavailableSlugs = new Set(['down-iter'])
@@ -633,8 +633,8 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.reason).toMatch(/forge data.*unavailable/)
   })
 
-  it('fail — #TBD in an iteration whose forge WAS available, with no pre-cutoff activity (regression guard)', () => {
-    // Same undefined-facts shape as the case above, but the iteration is NOT in
+  it('fail — #TBD in a tranche whose forge WAS available, with no pre-cutoff activity (regression guard)', () => {
+    // Same undefined-facts shape as the case above, but the tranche is NOT in
     // forgeUnavailableSlugs (forge was available; there just happened to be no
     // pre-cutoff activity). Must still fail — the carve-out must not leak here.
     const tbdEntry = makeEntry('up-iter', '1', null, undefined, false)
@@ -645,9 +645,9 @@ describe('T3: tbd-in-active-iteration', () => {
     expect(r.failures[0]!.grandfathered).toBe(false)
   })
 
-  it("BUG (preserved, not fixed): T3 grandfather proxy uses ANY task in the iteration, not the specific #TBD task's own history", () => {
-    // A #TBD task in an iteration is grandfathered as long as *some other task*
-    // in the same iteration has a pre-cutoff date — even if the #TBD task
+  it("BUG (preserved, not fixed): T3 grandfather proxy uses ANY task in the tranche, not the specific #TBD task's own history", () => {
+    // A #TBD task in a tranche is grandfathered as long as *some other task*
+    // in the same tranche has a pre-cutoff date — even if the #TBD task
     // itself was added long after COHERENCE_ENFORCED_FROM. This is the
     // "branch-scoping proxy" the brief calls out as a known bug to preserve,
     // not fix (that's Task 3 / #220's job).
@@ -687,7 +687,7 @@ describe('D1: dispatched-on-unmet-deps', () => {
     expect(r.failures[0]!.reason).toMatch(/open/)
   })
 
-  it('pass — open PR task with all deps closed (by task ID ref in same iteration)', () => {
+  it('pass — open PR task with all deps closed (by task ID ref in same tranche)', () => {
     const dep = makeEntry('iter-1', '1', 100, makeFacts({ issueState: 'closed' }))
     const main = makeEntry('iter-1', '2', 200, makeFacts({ prState: 'open' }), false, ['1'])
     const issueMap = new Map([[100, dep]])
@@ -719,23 +719,23 @@ describe('D1: dispatched-on-unmet-deps', () => {
   })
 })
 
-// ---------- L1: stale-active-iteration ---------------------------------------
+// ---------- L1: stale-active-tranche ---------------------------------------
 
-describe('L1: stale-active-iteration (advisory — info, never fail)', () => {
-  it('info + finding — active iteration with all issues closed', () => {
-    const f = makeIterationFile('iter-1', false)
-    const entries = f.iteration.tasks.map((t) =>
+describe('L1: stale-active-tranche (advisory — info, never fail)', () => {
+  it('info + finding — active tranche with all issues closed', () => {
+    const f = makeTrancheFile('iter-1', false)
+    const entries = f.tranche.tasks.map((t) =>
       makeEntry('iter-1', t.id, t.issue, makeFacts({ issueState: 'closed' }), false)
     )
     const entriesBySlug = new Map([['iter-1', entries]])
     const r = checkL1([f], entriesBySlug)
     expect(r.status).toBe('info')
-    expect(r.failures[0]!.iteration).toBe('iter-1')
+    expect(r.failures[0]!.tranche).toBe('iter-1')
     expect(r.failures[0]!.reason).toMatch(/consider archiving/)
   })
 
-  it('info + no findings — active iteration with at least one open issue', () => {
-    const f = makeIterationFile('iter-1', false)
+  it('info + no findings — active tranche with at least one open issue', () => {
+    const f = makeTrancheFile('iter-1', false)
     const entries = [
       makeEntry('iter-1', '1', 101, makeFacts({ issueState: 'closed' })),
       makeEntry('iter-1', '2', 102, makeFacts({ issueState: 'open' }))
@@ -746,9 +746,9 @@ describe('L1: stale-active-iteration (advisory — info, never fail)', () => {
     expect(r.failures).toHaveLength(0)
   })
 
-  it('info + no findings — archived iteration is not an L1 concern', () => {
-    const f = makeIterationFile('iter-arch', true)
-    const entries = f.iteration.tasks.map((t) =>
+  it('info + no findings — archived tranche is not an L1 concern', () => {
+    const f = makeTrancheFile('iter-arch', true)
+    const entries = f.tranche.tasks.map((t) =>
       makeEntry('iter-arch', t.id, t.issue, makeFacts({ issueState: 'closed' }), true)
     )
     const r = checkL1([f], new Map([['iter-arch', entries]]))
@@ -760,26 +760,26 @@ describe('L1: stale-active-iteration (advisory — info, never fail)', () => {
 // ---------- L2: premature-archive --------------------------------------------
 
 describe('L2: premature-archive (advisory — info, never fail)', () => {
-  it('info + finding — archived iteration with open task issue', () => {
-    const f = makeIterationFile('iter-arch', true)
+  it('info + finding — archived tranche with open task issue', () => {
+    const f = makeTrancheFile('iter-arch', true)
     const entries = [makeEntry('iter-arch', '1', 101, makeFacts({ issueState: 'open' }), true)]
     const entriesBySlug = new Map([['iter-arch', entries]])
     const r = checkL2([f], entriesBySlug)
     expect(r.status).toBe('info')
-    expect(r.failures[0]!.iteration).toBe('iter-arch')
+    expect(r.failures[0]!.tranche).toBe('iter-arch')
     expect(r.failures[0]!.reason).toMatch(/premature archive/)
   })
 
-  it('info + no findings — archived iteration with all issues closed', () => {
-    const f = makeIterationFile('iter-arch', true)
+  it('info + no findings — archived tranche with all issues closed', () => {
+    const f = makeTrancheFile('iter-arch', true)
     const entries = [makeEntry('iter-arch', '1', 101, makeFacts({ issueState: 'closed' }), true)]
     const r = checkL2([f], new Map([['iter-arch', entries]]))
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(0)
   })
 
-  it('info + no findings — active iteration is not an L2 concern', () => {
-    const f = makeIterationFile('iter-active', false)
+  it('info + no findings — active tranche is not an L2 concern', () => {
+    const f = makeTrancheFile('iter-active', false)
     const entries = [makeEntry('iter-active', '1', 101, makeFacts({ issueState: 'open' }), false)]
     const r = checkL2([f], new Map([['iter-active', entries]]))
     expect(r.status).toBe('info')
@@ -787,15 +787,11 @@ describe('L2: premature-archive (advisory — info, never fail)', () => {
   })
 })
 
-// ---------- L3: active-iteration-count (informational) -----------------------
+// ---------- L3: active-tranche-count (informational) -----------------------
 
-describe('L3: active-iteration-count', () => {
-  it('info — lists active iterations by name', () => {
-    const files = [
-      makeIterationFile('alpha', false),
-      makeIterationFile('beta', false),
-      makeIterationFile('archived', true)
-    ]
+describe('L3: active-tranche-count', () => {
+  it('info — lists active tranches by name', () => {
+    const files = [makeTrancheFile('alpha', false), makeTrancheFile('beta', false), makeTrancheFile('archived', true)]
     const r = checkL3(files)
     expect(r.status).toBe('info')
     expect(r.note).toMatch(/2 active/)
@@ -804,8 +800,8 @@ describe('L3: active-iteration-count', () => {
     expect(r.note).not.toMatch(/archived/)
   })
 
-  it('info — zero active iterations', () => {
-    const r = checkL3([makeIterationFile('arch', true)])
+  it('info — zero active tranches', () => {
+    const r = checkL3([makeTrancheFile('arch', true)])
     expect(r.status).toBe('info')
     expect(r.note).toMatch(/0 active/)
   })
@@ -814,23 +810,23 @@ describe('L3: active-iteration-count', () => {
 // ---------- L4: Issue-level Milestone-attachment drift (advisory) ------------
 
 describe('L4: Issue-level Milestone-attachment drift', () => {
-  it('info, clean — every open Issue in an active iteration is attached to the matching Milestone', () => {
+  it('info, clean — every open Issue in an active tranche is attached to the matching Milestone', () => {
     const r = checkL4(
       ['aeg-review-gate-v1'],
-      [{ iteration: 'aeg-review-gate-v1', issue: 1, milestoneTitle: 'aeg-review-gate-v1' }]
+      [{ tranche: 'aeg-review-gate-v1', issue: 1, milestoneTitle: 'aeg-review-gate-v1' }]
     )
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(0)
     expect(r.note).toBeUndefined()
   })
 
-  it('flags an Issue in an active iteration with no milestone attached at all', () => {
+  it('flags an Issue in an active tranche with no milestone attached at all', () => {
     const r = checkL4(
       ['vinaya-studio-v1'],
       [
-        { iteration: 'vinaya-studio-v1', issue: 10, milestoneTitle: null },
-        { iteration: 'vinaya-studio-v1', issue: 11, milestoneTitle: null },
-        { iteration: 'vinaya-studio-v1', issue: 12, milestoneTitle: null }
+        { tranche: 'vinaya-studio-v1', issue: 10, milestoneTitle: null },
+        { tranche: 'vinaya-studio-v1', issue: 11, milestoneTitle: null },
+        { tranche: 'vinaya-studio-v1', issue: 12, milestoneTitle: null }
       ]
     )
     expect(r.status).toBe('info')
@@ -842,24 +838,24 @@ describe('L4: Issue-level Milestone-attachment drift', () => {
   it('flags an Issue attached to the WRONG Milestone, naming which one', () => {
     const r = checkL4(
       ['aeg-review-gate-v1'],
-      [{ iteration: 'aeg-review-gate-v1', issue: 5, milestoneTitle: 'some-other-iteration' }]
+      [{ tranche: 'aeg-review-gate-v1', issue: 5, milestoneTitle: 'some-other-tranche' }]
     )
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(1)
-    expect(r.failures[0]?.reason).toMatch(/attached to Milestone "some-other-iteration" instead/)
+    expect(r.failures[0]?.reason).toMatch(/attached to Milestone "some-other-tranche" instead/)
   })
 
-  it('never flags an Issue in a NON-active iteration (no open Milestone) — closed/archived iterations are out of scope', () => {
+  it('never flags an Issue in a NON-active tranche (no open Milestone) — closed/archived tranches are out of scope', () => {
     const r = checkL4(
       ['aeg-review-gate-v1'], // only this one is active
-      [{ iteration: 'aeg-forge-state-v1', issue: 99, milestoneTitle: null }]
+      [{ tranche: 'aeg-forge-state-v1', issue: 99, milestoneTitle: null }]
     )
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(0)
   })
 
   it('status is always info — never fails CI, matching L1/L2 advisory framing', () => {
-    const r = checkL4(['x'], [{ iteration: 'x', issue: 1, milestoneTitle: null }])
+    const r = checkL4(['x'], [{ tranche: 'x', issue: 1, milestoneTitle: null }])
     expect(r.status).toBe('info')
   })
 })
@@ -875,7 +871,7 @@ describe('L5: open-Milestone-all-closed (advisory — info, never fail)', () => 
     const r = checkL5(['iter-5'], new Map([['iter-5', entries]]))
     expect(r.status).toBe('info')
     expect(r.failures).toHaveLength(1)
-    expect(r.failures[0]?.iteration).toBe('iter-5')
+    expect(r.failures[0]?.tranche).toBe('iter-5')
     expect(r.failures[0]?.reason).toMatch(/Milestone still open but every task Issue is closed/)
   })
 

@@ -48,7 +48,7 @@ describe('readTierFromPrBody', () => {
   })
 
   it('finds the field inline in a metadata line, not anchored to line-start', () => {
-    expect(readTierFromPrBody('Iteration: x · Task: 1 · **Tier:** 3 · Project: y')).toBe(3)
+    expect(readTierFromPrBody('Tranche: x · Task: 1 · **Tier:** 3 · Project: y')).toBe(3)
   })
 
   it('returns null when no Tier field is present', () => {

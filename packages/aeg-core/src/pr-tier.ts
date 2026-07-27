@@ -34,7 +34,7 @@ export function deriveTierFromDiff(changed: string[]): 0 | 1 {
  *   - bold label:   `**Tier**: 3`   (the `**` wraps only `Tier`)
  *
  * The field may appear inline in a metadata line (e.g.
- * `Iteration: x · Task: 1 · **Tier:** 3 · Project: y`), so it is NOT anchored
+ * `Tranche: x · Task: 1 · **Tier:** 3 · Project: y`), so it is NOT anchored
  * to line-start. Returns null when no Tier field is present at all — the caller
  * decides what a missing tier means (PR mode treats it as an explicit error,
  * NOT a silent default).
