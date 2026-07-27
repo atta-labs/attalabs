@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./gh', () => ({
-  ghIssueListByLabel: vi.fn()
+  ghIssueListByAnyLabel: vi.fn()
 }))
 
-const { ghIssueListByLabel } = await import('./gh')
+const { ghIssueListByAnyLabel } = await import('./gh')
 const { listIssueMilestonesForSlug } = await import('./list-issue-milestones')
 
 describe('listIssueMilestonesForSlug', () => {
   it('maps each open Issue to its milestone title, or null when unattached', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: '[iter] 1 — a',
@@ -35,7 +35,7 @@ describe('listIssueMilestonesForSlug', () => {
   })
 
   it('excludes closed Issues — only open Issues are in scope for the active-tranche drift check', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: '[iter] 1 — a',

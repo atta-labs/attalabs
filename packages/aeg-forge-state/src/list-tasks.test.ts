@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./gh', () => ({
-  ghIssueListByLabel: vi.fn()
+  ghIssueListByAnyLabel: vi.fn()
 }))
 
-const { ghIssueListByLabel } = await import('./gh')
+const { ghIssueListByAnyLabel } = await import('./gh')
 const { listTasksForSlug } = await import('./list-tasks')
 
 describe('listTasksForSlug', () => {
   it('parses id/title from the `[<slug>] <id> — <title>` convention and projects from the body field', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 425,
         title: '[aeg-forge-state-v1] 1 — Generic forge-reading adapter (packages/forge-state)',
@@ -37,7 +37,7 @@ describe('listTasksForSlug', () => {
   })
 
   it('derives projects from the **Project:** field alone (post-#614 / state-machine-v1)', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 614,
         title: '[state-machine-v1] 2 — Migrate labels to the vinaya/ namespace',
@@ -54,7 +54,7 @@ describe('listTasksForSlug', () => {
   })
 
   it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 700,
         title: '[iter] 1 — a stale project label lingers on the Issue',
@@ -74,7 +74,7 @@ describe('listTasksForSlug', () => {
     // The whole `vada-production-v1` cohort and the `aeg-forge-state-v1`
     // fixture are authored this way. Accepting only the bold form dropped
     // their project the moment #614 deleted the `project:*` labels.
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 431,
         title: '[iter] 7 — plain-form header',
@@ -90,7 +90,7 @@ describe('listTasksForSlug', () => {
   })
 
   it('still ignores the `**Project(s) + blast radius**` prose heading', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 800,
         title: '[iter] 1 — heading only, no field',
@@ -111,7 +111,7 @@ describe('listTasksForSlug', () => {
     // project label and built a board link that 404s — strictly worse than
     // the board-less row it replaced. Regression pin: fails without the
     // slug-shape guard in `parseProjectField`.
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 554,
         title: '[admin-ui-library-picker-v1] 1 — Add per-app Library picker to tools/admin',
@@ -128,7 +128,7 @@ describe('listTasksForSlug', () => {
   })
 
   it('sorts numeric ids ahead of alpha suffix, e.g. 7 before 7a', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 2,
         title: '[iter] 7a — split B',
@@ -160,7 +160,7 @@ describe('listTasksForSlug', () => {
   })
 
   it('drops Issues whose title does not match the `[slug] id — title` convention', () => {
-    vi.mocked(ghIssueListByLabel).mockReturnValue([
+    vi.mocked(ghIssueListByAnyLabel).mockReturnValue([
       {
         number: 1,
         title: 'A malformed title with no brackets',

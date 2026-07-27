@@ -108,3 +108,32 @@ export function ghIssueListByLabel(owner: string, repo: string, label: string): 
 export async function ghIssueListByLabelAsync(owner: string, repo: string, label: string): Promise<GhIssue[]> {
   return JSON.parse(await runAsync(issueListByLabelArgs(owner, repo, label))) as GhIssue[]
 }
+
+/** Deduping union of `issues`, keyed by Issue number, preserving first-seen order. */
+function dedupeByNumber(issues: GhIssue[]): GhIssue[] {
+  const byNumber = new Map<number, GhIssue>()
+  for (const issue of issues) if (!byNumber.has(issue.number)) byNumber.set(issue.number, issue)
+  return [...byNumber.values()]
+}
+
+/**
+ * Issues carrying ANY of `labels` — one query per label, unioned and deduped.
+ *
+ * `gh issue list` treats repeated `--label` flags as AND, so an OR needs
+ * separate calls. The caller that needs this is a label rename in flight: the
+ * same tranche's Issues can be split across a canonical and a superseded name
+ * (`trancheLabelsToQuery`), and either half alone is a wrong answer.
+ */
+export function ghIssueListByAnyLabel(owner: string, repo: string, labels: readonly string[]): GhIssue[] {
+  return dedupeByNumber(labels.flatMap((l) => ghIssueListByLabel(owner, repo, l)))
+}
+
+/** Async twin of `ghIssueListByAnyLabel` — queries run concurrently. */
+export async function ghIssueListByAnyLabelAsync(
+  owner: string,
+  repo: string,
+  labels: readonly string[]
+): Promise<GhIssue[]> {
+  const perLabel = await Promise.all(labels.map((l) => ghIssueListByLabelAsync(owner, repo, l)))
+  return dedupeByNumber(perLabel.flat())
+}

@@ -309,6 +309,26 @@ export function trancheLabel(slug: string): string {
 }
 
 /**
+ * Every full label `slug`'s Issues may currently carry — the canonical one
+ * first, then any id in `SUPERSEDED_IDS` still live on the forge.
+ *
+ * `trancheLabel()` is for CONSTRUCTION: the one name a new Issue is given.
+ * This is for QUERYING, and the two cannot be the same function during a
+ * rename. A forge query names a label and the server matches it exactly, so a
+ * query built from the canonical id alone returns nothing at all while the
+ * objects still carry the old name — silently, as an empty result rather than
+ * an error, which reads to every gate as "this tranche has no tasks".
+ * Reading has to span the migration window in both directions; only writing
+ * stays canonical.
+ *
+ * Callers must union the results and dedupe by Issue number: an Issue mid-
+ * migration can legitimately carry both labels.
+ */
+export function trancheLabelsToQuery(slug: string): string[] {
+  return acceptedIds(entry('tranche')).map((prefix) => `${prefix}${slug}`)
+}
+
+/**
  * Whether `name` is this label — exact match for a literal, prefix match for a
  * prefix family.
  */

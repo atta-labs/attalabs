@@ -34,7 +34,7 @@ import type {
   TaskRef
 } from '@atta/aeg-types'
 import { resolveGithubToken } from './github-token'
-import { trancheLabel } from './labels'
+import { trancheLabelsToQuery } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
 /** Branch ref convention: `task/<tranche>/<id>` (tranche-model.md). */
@@ -63,26 +63,34 @@ export async function fetchForgeTasksByLabel(input: {
   if (!token) return []
 
   const client = graphql.defaults({ headers: { authorization: `bearer ${token}` } })
-  const trancheLabelName = trancheLabel(input.trancheSlug)
 
-  let response: LabelIssuesResponse
-  try {
-    response = await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
-      owner: input.owner,
-      repo: input.repo,
-      label: trancheLabelName
+  // One query per accepted label, unioned: mid-rename a tranche's Issues can be
+  // split across the canonical and the superseded name, and either half alone
+  // is a wrong answer that reads as "this tranche has no tasks".
+  const responses = await Promise.all(
+    trancheLabelsToQuery(input.trancheSlug).map(async (labelName) => {
+      try {
+        return await client<LabelIssuesResponse>(LABEL_ISSUES_QUERY, {
+          owner: input.owner,
+          repo: input.repo,
+          label: labelName
+        })
+      } catch {
+        return null
+      }
     })
-  } catch {
-    return []
-  }
-
-  const nodes = response.repository?.issues?.nodes
-  if (!nodes) return []
+  )
 
   const refs: Array<{ id: string; issue: number }> = []
-  for (const node of nodes) {
-    const taskId = parseTaskIdFromTitle(node.title, input.trancheSlug)
-    if (taskId !== null) refs.push({ id: taskId, issue: node.number })
+  const seen = new Set<number>()
+  for (const response of responses) {
+    for (const node of response?.repository?.issues?.nodes ?? []) {
+      if (seen.has(node.number)) continue
+      const taskId = parseTaskIdFromTitle(node.title, input.trancheSlug)
+      if (taskId === null) continue
+      seen.add(node.number)
+      refs.push({ id: taskId, issue: node.number })
+    }
   }
   return refs
 }

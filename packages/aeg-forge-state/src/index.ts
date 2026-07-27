@@ -17,6 +17,7 @@ export {
   findTrancheSlug,
   hasLabel,
   trancheLabel,
+  trancheLabelsToQuery,
   trancheSlugLengthError,
   trancheSlugOf,
   LABEL_MAX_LENGTH,

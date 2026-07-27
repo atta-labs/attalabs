@@ -73,6 +73,7 @@ import {
   deriveTrancheFromForge,
   fetchProvenance,
   trancheLabel,
+  trancheLabelsToQuery,
   listActiveTrancheSlugs,
   resolveGithubToken,
   resolveRepo,
@@ -294,10 +295,14 @@ async function resolvePriorIterationArchival(
       const touchesProject = candidateIteration.tasks.some((t) => t.projects.includes(project))
       if (!touchesProject) continue
 
-      const openIssues =
-        shJson<Array<{ number: number }>>(
-          `gh issue list -R ${repo.owner}/${repo.repo} --label "${trancheLabel(slug)}" --state open --json number --limit 100`
-        ) ?? []
+      // One query per accepted label — `--label` is an AND filter, and mid-
+      // rename the slug's Issues can be split across canonical and superseded.
+      const openIssues = trancheLabelsToQuery(slug).flatMap(
+        (labelName) =>
+          shJson<Array<{ number: number }>>(
+            `gh issue list -R ${repo.owner}/${repo.repo} --label "${labelName}" --state open --json number --limit 100`
+          ) ?? []
+      )
       if (openIssues.length === 0) {
         found = { project, priorIterationSlug: slug, archived: false }
         break

@@ -5,6 +5,7 @@ import {
   findTrancheSlug,
   hasLabel,
   trancheLabel,
+  trancheLabelsToQuery,
   trancheSlugLengthError,
   trancheSlugOf,
   type Label,
@@ -248,6 +249,23 @@ describe('trancheSlugOf() / findTrancheSlug()', () => {
 
   it('still constructs under the canonical prefix only', () => {
     expect(trancheLabel('iter')).toBe('vinaya/tranche:iter')
+  })
+})
+
+describe('trancheLabelsToQuery() — reading spans the migration window', () => {
+  it('names the canonical label first, then every superseded one', () => {
+    expect(trancheLabelsToQuery('iter')).toEqual(['vinaya/tranche:iter', 'vinaya/iteration:iter'])
+  })
+
+  it('always contains what trancheLabel() would construct', () => {
+    expect(trancheLabelsToQuery('state-machine-v1')).toContain(trancheLabel('state-machine-v1'))
+  })
+
+  it('is what a forge query must use — the canonical id alone misses an un-renamed forge', () => {
+    // The failure this guards is silent: a `--label` query for a name no Issue
+    // carries yet returns an empty list, not an error, and every gate reads
+    // that as "this tranche has no tasks".
+    expect(trancheLabelsToQuery('iter').length).toBeGreaterThan(1)
   })
 })
 
