@@ -59,7 +59,7 @@ The hard part of loop engineering — "when does a pass stop?" — is already so
 
 ## Vocabulary the loop forces (the rename: done)
 
-Adding loops made the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would otherwise both claim the word "iteration". That rename has landed (tranche `tranche-rename-v1`, Issue #669): the batch of tasks is a `tranche` everywhere in code, doctrine and the forge, and `iteration` is free for the sense below. The three-way split this table describes is the vocabulary the loop work now builds on, not a precondition it is waiting for:
+Adding loops made the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would otherwise both claim the word "iteration". That rename has landed (tranche `tranche-rename-v1`, Issue #669): the batch of tasks is a `tranche` throughout the code and the doctrine, and `iteration` is free for the sense below. The forge labels are renamed from `vinaya/iteration:*` to `vinaya/tranche:*` as a separate act once that work merges — the code reads both names across that window, so the vocabulary below is settled either side of it. The three-way split this table describes is the vocabulary the loop work now builds on, not a precondition it is waiting for:
 
 | Concept | Name | Note |
 |---------|------|------|
