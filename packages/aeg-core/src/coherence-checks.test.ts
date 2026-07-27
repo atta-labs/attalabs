@@ -248,6 +248,22 @@ describe('A1: closed-without-merge', () => {
     expect(r.status).toBe('fail')
     expect(r.failures[0]!.grandfathered).toBe(false)
   })
+
+  it('pass — closed NOT_PLANNED with no merged PR is a dropped task, not a failure', () => {
+    const entries = [
+      makeEntry('iter-1', '1', 101, makeFacts({ issueState: 'closed', prState: 'none', stateReason: 'not_planned' }))
+    ]
+    passesWithNoFailures(checkA1(entries))
+  })
+
+  it('fail — closed COMPLETED with no merged PR still fails (done-but-unprovable)', () => {
+    const entries = [
+      makeEntry('iter-1', '1', 101, makeFacts({ issueState: 'closed', prState: 'none', stateReason: 'completed' }))
+    ]
+    const r = checkA1(entries)
+    expect(r.status).toBe('fail')
+    expect(r.failures).toHaveLength(1)
+  })
 })
 
 // ---------- A2: archived-without-provenance ----------------------------------
