@@ -86,11 +86,18 @@ export type TrancheFile = {
  * A1: Every closed task-Issue has a merged closing PR.
  * Fail class: `closed-without-merge`
  * Terminal event date: `issueClosedAt` — grandfathered when before `COHERENCE_ENFORCED_FROM`.
+ *
+ * Excludes `stateReason: 'not_planned'`: a task closed that way with no merged
+ * PR is `dropped` — legitimately abandoned, never done, never `todo` — a valid
+ * terminal state, not a coherence failure. `stateReason: 'completed'` (or
+ * `null`) with no merged PR stays flagged: that is done-but-unprovable, or a
+ * broken close, exactly the class this check exists to catch.
  */
 export function checkA1(entries: TaskEntry[]): CheckResult {
   const failures: CheckFailure[] = []
   for (const e of entries) {
     if (!e.facts) continue
+    if (e.facts.stateReason === 'not_planned') continue
     if (e.facts.issueState === 'closed' && e.facts.prState !== 'merged') {
       failures.push({
         issue: e.task.issue,

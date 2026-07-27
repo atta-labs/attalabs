@@ -506,7 +506,7 @@ Sibling to `verify-docs.ts`, both in `packages/aeg-core/bin/`. Runnable as CLI (
 
 | Check | Fail class | What it asserts |
 |---|---|---|
-| A1 | `closed-without-merge` | Every closed task-Issue has a merged closing PR |
+| A1 | `closed-without-merge` | Every closed task-Issue has a merged closing PR, excluding `stateReason: 'not_planned'` closes (`dropped` — a valid terminal state, not a failure) |
 | A2 | `archived-without-provenance` | That closing PR carries an Archivist `### AEG provenance` comment |
 | A3 | `auto-close-misfire` | Every Issue whose closing PR merged is itself closed (**headline check** — #174 class) |
 | T1 | `phantom-issue-ref` | Every topology row's Issue ref resolves to a real Issue |
