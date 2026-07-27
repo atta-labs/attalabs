@@ -1,11 +1,10 @@
 // `vinaya doctor` — diagnose the full installation. Reads the records `init`
 // wrote (see lib/artifacts.ts, lib/ops.ts) and reports drift against them.
 //
-// Contract (D-089): doctor NEVER mutates. Every code path in this file is
+// Contract: doctor NEVER mutates. Every code path in this file is
 // read-only — no fs write, no `gh` write, no forge mutation. It exists
 // precisely because a doctor that "fixes" silently destroys the support
-// story; `vinaya upgrade` is the only sanctioned path back to a clean state
-// (D-093).
+// story; `vinaya upgrade` is the only sanctioned path back to a clean state.
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'

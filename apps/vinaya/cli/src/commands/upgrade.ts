@@ -1,5 +1,5 @@
 // `vinaya upgrade` — regenerate vinaya-owned artifacts to the installed
-// package's current generators. The only sanctioned migration path (D-093):
+// package's current generators. The only sanctioned migration path: the
 // same detect → plan → render diff → confirm → apply engine `init` uses, but
 // inverted in intent — where init never touches an already-owned file,
 // upgrade's whole job is bringing an owned-but-stale artifact current.
