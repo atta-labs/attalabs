@@ -130,7 +130,7 @@ When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "
 | **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
 | **Vitakka** | Focused-thinking product. Not yet built. Standalone + focus layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
 | **Sati** | Memory layer inside Atta. Standalone surface deferred. Pāli for "mindfulness, recollection." | TBD |
-| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. Supersedes both Cetana (retired) and the old AEG Studio app (deleted). NOT part of Atta. | `vinaya.attalabs.dev` |
+| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. NOT part of Atta. | `vinaya.attalabs.dev` |
 | **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
 
 ### Naming convention — no `-AI` suffix on any product brand

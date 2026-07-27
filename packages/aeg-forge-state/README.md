@@ -21,7 +21,7 @@ octokit-based access path.
 ## Two consumers
 
 1. **This repo's own migration** (`aeg-forge-state-v1` tasks 3/4/5) — the live
-   AEG gates and AEG Studio cut over from reading `aeg-root/iterations/*.md`
+   The gates and Vinaya Studio cut over from reading `aeg-root/iterations/*.md`
    files to calling this package directly.
 2. **`vinaya-cli-v1`'s shippable CLI** (task 2, #382) — imports or re-homes
    this package as the forge-backed half of Vinaya's `StateSource` seam, for
