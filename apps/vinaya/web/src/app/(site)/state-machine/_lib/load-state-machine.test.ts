@@ -10,9 +10,17 @@ vi.mock('server-only', () => ({}))
 const { deriveDiagramGroups, loadStateMachineModel } = await import('./load-state-machine')
 
 /**
- * The invariant this whole route exists for: the page renders FROM the model,
- * so every table's row count is the model array's length and nothing is
- * hand-authored. A literal row added to the page later breaks these counts.
+ * What these tests pin: the loader is a faithful passthrough of the model
+ * arrays — same elements, same order, same length — so what the page maps over
+ * is the model itself and not a copy of it.
+ *
+ * What they do NOT pin: what the components render. This app has no
+ * React-render infrastructure (every suite here exercises pure `_lib`
+ * functions), so a hand-authored `<TableRow>` pasted into
+ * `StateMachineTables.tsx` would pass this suite. The render-from-model
+ * discipline in the components is held by review and by their own doc
+ * comments, not by a test — do not read these assertions as a guard over the
+ * JSX.
  */
 describe('loadStateMachineModel', () => {
   it('returns one row per model element, in model order', () => {
@@ -54,9 +62,11 @@ describe('loadStateMachineModel', () => {
 })
 
 /**
- * Same invariant, one level up: the intro diagram summarises the four arrays,
- * so each of its counts must BE an array length. A literal typed into the
- * diagram — the failure this page exists to remove — fails here.
+ * Same passthrough property for the diagram's shape: each count returned here
+ * IS an array length and each name IS an array element. A literal typed into
+ * `deriveDiagramGroups` fails these assertions — a literal typed directly into
+ * `StateMachineDiagram.tsx`'s JSX does not, for the reason given above, which
+ * is why the derivation lives in this module rather than in the component.
  */
 describe('deriveDiagramGroups', () => {
   const groups = deriveDiagramGroups(loadStateMachineModel())

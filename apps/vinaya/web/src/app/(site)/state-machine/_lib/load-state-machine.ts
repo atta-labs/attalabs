@@ -86,8 +86,11 @@ export type DiagramInputGroup = {
  * so the diagram cannot drift from the tables beneath it or from the model
  * beneath them both. A literal `9` typed into the diagram is the failure this
  * page exists to remove, which is why the derivation lives here as a pure
- * function over the model rather than inline in the component: it is unit
- * testable, so a hardcoded number fails a test.
+ * function rather than inline in the component: here it is unit tested
+ * (`load-state-machine.test.ts`), so a hardcoded number in THIS function fails
+ * a test. A number typed straight into the component's JSX would not — this
+ * app has no render tests — so the component's own rule against literals is
+ * held by review, not by the suite.
  */
 export type DiagramGroups = {
   facts: DiagramInputGroup

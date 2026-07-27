@@ -1,5 +1,5 @@
 import { Badge, Card, CardContent } from '@atta/ui/components'
-import { Heading, Text } from '@atta/ui/shared'
+import { Text } from '@atta/ui/shared'
 import { ArrowDown } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { DiagramGroups, DiagramInputGroup } from '../_lib/load-state-machine'
@@ -33,10 +33,16 @@ function Group({ title, count, children }: { title: string; count: number; child
 }
 
 function SampleGroup({ group }: { group: DiagramInputGroup }) {
+  // The ellipsis is a claim that more exists than is shown, so it is derived
+  // too: if a model array ever shrank to the sample size, the samples ARE the
+  // group and saying otherwise would be the page telling its one lie.
+  const hasMore = group.count > group.samples.length
+
   return (
     <Group title={group.label} count={group.count}>
       <Text as='span' className='font-mono text-xs text-muted-foreground'>
-        {group.samples.join(' · ')} …
+        {group.samples.join(' · ')}
+        {hasMore ? ' …' : ''}
       </Text>
     </Group>
   )
@@ -54,9 +60,12 @@ export function StateMachineDiagram({ groups }: { groups: DiagramGroups }) {
   return (
     <Card>
       <CardContent className='flex flex-col gap-1'>
-        <Heading level={2} className='pb-2 font-sans text-xs uppercase tracking-wider text-muted-foreground'>
+        {/* A card eyebrow, not a section heading — the four real `h2`s belong
+            to the table sections. A heading here would announce this card as
+            their peer in the document outline, which it is not. */}
+        <Text as='span' className='pb-2 font-sans text-xs uppercase tracking-wider text-muted-foreground'>
           What derivation reads, and what it concludes
-        </Heading>
+        </Text>
 
         <div className='flex flex-col gap-2'>
           <SampleGroup group={groups.facts} />

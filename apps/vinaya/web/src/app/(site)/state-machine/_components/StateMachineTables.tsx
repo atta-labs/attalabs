@@ -122,7 +122,14 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
         title='Derivation rules'
         lead='The ordered chain, in the order it executes — first match wins, and the last rule matches unconditionally so derivation always concludes. Order is load-bearing: blocked must beat every other conclusion, and the reopened-after-merge rules must precede the plain merged rule or a reopened Issue would read merged forever.'
       >
-        <Table stickyHeader className='min-w-[880px]'>
+        {/* 760, not the 880 this five-column table would prefer: `stickyHeader`
+            flips the installed container to `overflow-visible` at a container
+            width of 780px (`lib/scrollable-table.tsx`), on the assumption the
+            table fits by then. An 880px min-width breaks that assumption in the
+            780–879px band — the table would spill its box and scroll the whole
+            page column sideways instead of itself. Staying under the threshold,
+            like every other Vinaya table, is the contract. */}
+        <Table stickyHeader className='min-w-[760px]'>
           <TableHeader>
             <TableRow>
               <TableHead className='font-semibold text-foreground'>Rule</TableHead>
