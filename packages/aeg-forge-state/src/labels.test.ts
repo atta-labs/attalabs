@@ -217,9 +217,9 @@ describe('matchesLabel() / hasLabel()', () => {
     expect(hasLabel('tranche', [])).toBe(false)
   })
 
-  it('accepts the superseded vinaya/iteration: prefix — the migration window is OPEN', () => {
-    expect(matchesLabel('tranche', 'vinaya/iteration:anything-at-all')).toBe(true)
-    expect(hasLabel('tranche', ['bug', 'vinaya/iteration:iter'])).toBe(true)
+  it('rejects the superseded vinaya/iteration: prefix — the migration window is closed', () => {
+    expect(matchesLabel('tranche', 'vinaya/iteration:anything-at-all')).toBe(false)
+    expect(hasLabel('tranche', ['bug', 'vinaya/iteration:iter'])).toBe(false)
   })
 })
 
@@ -242,9 +242,9 @@ describe('trancheSlugOf() / findTrancheSlug()', () => {
     expect(findTrancheSlug(['bug', 'vinaya/tier:1'])).toBeNull()
   })
 
-  it('reads a slug from the superseded vinaya/iteration: prefix too, so the rename is invisible here', () => {
-    expect(trancheSlugOf('vinaya/iteration:state-machine-v1')).toBe('state-machine-v1')
-    expect(findTrancheSlug(['bug', 'vinaya/iteration:iter'])).toBe('iter')
+  it('returns null for the superseded vinaya/iteration: prefix too — the migration window is closed', () => {
+    expect(trancheSlugOf('vinaya/iteration:state-machine-v1')).toBeNull()
+    expect(findTrancheSlug(['bug', 'vinaya/iteration:iter'])).toBeNull()
   })
 
   it('still constructs under the canonical prefix only', () => {
@@ -252,20 +252,13 @@ describe('trancheSlugOf() / findTrancheSlug()', () => {
   })
 })
 
-describe('trancheLabelsToQuery() — reading spans the migration window', () => {
-  it('names the canonical label first, then every superseded one', () => {
-    expect(trancheLabelsToQuery('iter')).toEqual(['vinaya/tranche:iter', 'vinaya/iteration:iter'])
+describe('trancheLabelsToQuery() — the migration window is closed', () => {
+  it('returns just the canonical label now that the migration window is closed', () => {
+    expect(trancheLabelsToQuery('iter')).toEqual(['vinaya/tranche:iter'])
   })
 
   it('always contains what trancheLabel() would construct', () => {
     expect(trancheLabelsToQuery('state-machine-v1')).toContain(trancheLabel('state-machine-v1'))
-  })
-
-  it('is what a forge query must use — the canonical id alone misses an un-renamed forge', () => {
-    // The failure this guards is silent: a `--label` query for a name no Issue
-    // carries yet returns an empty list, not an error, and every gate reads
-    // that as "this tranche has no tasks".
-    expect(trancheLabelsToQuery('iter').length).toBeGreaterThan(1)
   })
 })
 
