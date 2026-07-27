@@ -16,6 +16,21 @@ import { describe, expect, it } from 'vitest'
  * `EXEMPT` is the honest, enumerated list of places a mention is legitimate —
  * frozen archives, historical records, and this file. Anything else is a
  * failure with the file and line printed.
+ *
+ * A second, related class joined this suite later: `RETIRED_IN_PRODUCT` also
+ * bans a forge number (`#294`) and an internal tranche slug
+ * (`aeg-forge-state-v1`) cited bare in the doctrine `aeg-root/**` publishes.
+ * Neither is retired — both are the product's live vocabulary — but citing
+ * one as an unexplained doctrine reference is exactly the residue the ruling
+ * that ended the decision log already named: "a decision id, a retired
+ * mechanism's vocabulary, an internal tranche slug — none of it means
+ * anything to someone who was not here, and a tool meant to be adopted
+ * cannot ship the residue of the monorepo it grew in." That ruling's
+ * enforcement covered `D-###` and stopped; forge numbers and slugs survived
+ * unwatched until this pair of patterns closed the gap. Both are scoped to
+ * `aeg-root` only via `PATTERN_SCOPE`, not the full `PRODUCT` surface — see
+ * the comment on `PATTERN_SCOPE` for why a repo-wide ban would be wrong for
+ * this specific class, unlike the ones above it.
  */
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -59,8 +74,42 @@ const RETIRED_IN_PRODUCT = [
   // survived seven rounds that way.
   'decisions-legacy',
   'CONTRADICTION',
-  'assumes Tier 3'
+  'assumes Tier 3',
+  // A pull-request or Issue number cited as an unexplained parenthetical —
+  // `#294`, `(#365)` — inside the doctrine `aeg-root/**` publishes. It
+  // resolves only inside this repo's own tracker; an adopter reading the
+  // installed doc has no forge to look it up in. Scoped to `aeg-root` only
+  // via `PATTERN_SCOPE` below, not the full `PRODUCT` surface: the same
+  // digit shape is the live PR/Issue-number grammar the product's own code
+  // parses everywhere else (`Closes #N`, golden fixtures, coherence
+  // checks) — banning it repo-wide would flag the mechanism itself, not
+  // the citation habit this class exists to stop.
+  '#[0-9]{2,4}',
+  // An internal tranche slug — `aeg-forge-state-v1`, `vinaya-studio-v1` —
+  // cited in doctrine prose as a bare pointer to "the tranche that did
+  // this," with no reason restated. Same `aeg-root`-only scoping as the
+  // pattern above, for the identical reason: tranche slugs are the
+  // product's live naming scheme (Milestone titles, fixture filenames,
+  // test data across `aeg-core` and `aeg-forge-state`), not a retired
+  // vocabulary — only their use as an unexplained doctrine citation is
+  // banned.
+  '[a-z][a-z-]+-v[0-9]'
 ]
+
+/**
+ * Scopes a `RETIRED_IN_PRODUCT` pattern narrower than the full `PRODUCT`
+ * surface. Unlike `D-###`/`decision log` — genuinely retired concepts that
+ * appear nowhere live — a forge number or tranche slug is the product's own
+ * working vocabulary: it appears legitimately in fixtures, tests, and
+ * source across every `PRODUCT` path. What's banned is narrower than the
+ * string: citing one as an unexplained doctrine reference. Scoping to the
+ * doctrine surface says that precisely, in one static declaration per
+ * pattern — not a list that grows every time a new tranche ships.
+ */
+const PATTERN_SCOPE: Record<string, string[]> = {
+  '#[0-9]{2,4}': ['aeg-root'],
+  '[a-z][a-z-]+-v[0-9]': ['aeg-root']
+}
 
 /**
  * Paths a single pattern may legitimately mention, on top of `EXEMPT`.
@@ -225,7 +274,7 @@ describe('the product carries no trace of a history the adopter lacks', () => {
   for (const pattern of RETIRED_IN_PRODUCT) {
     it(`absent from the installed surfaces: ${pattern}`, () => {
       const exempt = [...EXEMPT, ...(PATTERN_EXEMPT[pattern] ?? [])]
-      const hits = grep(pattern, PRODUCT).filter((line) => {
+      const hits = grep(pattern, PATTERN_SCOPE[pattern] ?? PRODUCT).filter((line) => {
         const path = line.slice(0, line.indexOf(':'))
         return !exempt.some((e) => path.includes(e))
       })
@@ -262,6 +311,8 @@ const SAMPLES: Record<string, string> = {
   checkDecisionNumbersFresh: 'checkDecisionNumbersFresh refuses the branch',
   'roles/team-leader\\.md': 'see roles/team-leader.md',
   'decision logic': 'NEGATIVE — all decision logic lives in the evaluator',
+  '#[0-9]{2,4}': 'fixed the gap (task 3, #365)',
+  '[a-z][a-z-]+-v[0-9]': 'landed in aeg-coherence-v1 task 3',
   // The strip-wreckage shapes, each written as the artifact itself.
   '\\(,': 'a rationale block (, point-of-power principle) shipped once',
   ',\\)': 'the seam contract (planner-brief contract,) named here',
