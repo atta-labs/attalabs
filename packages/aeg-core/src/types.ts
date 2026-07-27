@@ -60,7 +60,7 @@ export type { ForgeFacts }
  * same list.
  *
  * `backlog` remains a member because it is a project-level concept consumers
- * still render; derivation never emits it inside an tranche.
+ * still render; derivation never emits it inside a tranche.
  *
  * `dropped` and `incoherent` are the two **honest terminal** statuses.
  * A closed Issue with no merged PR must never resolve to `todo` (which implies

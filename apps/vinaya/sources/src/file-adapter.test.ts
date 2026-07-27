@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { createFileSource } from './file-adapter'
 
-const FIXTURE_MD = `# Iteration: synthetic-fixture — July 2026
+const FIXTURE_MD = `# Tranche: synthetic-fixture — July 2026
 Lifecycle: active
 
 Goal: Prove the file adapter reads from a configured root, not a hardcoded path.

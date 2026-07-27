@@ -238,7 +238,7 @@ jobs:
         run: bun packages/aeg-core/bin/verify-docs.ts --pr
 
       # ── No new on-disk state (#512) ─────────────────────────────────────
-      # Blocks a diff that adds/edits a live `aeg-root/iterations/*.md`
+      # Blocks a diff that adds/edits a live `aeg-root/tranches/*.md`
       # topology file (other than README.md) or any new `*.tokens.md` file
       # anywhere — the residue classes this task's own Part B proved
       # unnecessary. Existing `completed/**` files are exempt (D-117); this

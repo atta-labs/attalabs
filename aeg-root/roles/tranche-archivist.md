@@ -52,7 +52,7 @@ Hard preconditions, all forge-derived. Refuse with a specific message if any are
 
 2. **The Principal has explicitly declared this tranche done.** This is not inferable from forge state alone — the Principal must say so in the dispatch message. If you were dispatched without that context: *"I need explicit Principal confirmation that this tranche is closed. Please confirm before I proceed."*
 
-3. **The tranche's Milestone is open (not yet closed).** Forge-native by default — there is no topology file to check for most tranches. If a legacy topology file still exists at `aeg-root/iterations/<name>.md`, confirm it's not already in `completed/`. If the Milestone is already closed (or the legacy file is already archived): *"This tranche appears already archived. Nothing to do."*
+3. **The tranche's Milestone is open (not yet closed).** Forge-native by default — there is no topology file to check for most tranches. If a legacy topology file still exists at `aeg-root/tranches/<name>.md`, confirm it's not already in `completed/`. If the Milestone is already closed (or the legacy file is already archived): *"This tranche appears already archived. Nothing to do."*
 
 ---
 
@@ -109,7 +109,7 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 - `gh` has no built-in `milestone` subcommand — resolve the Milestone's number by title, then close it via the REST API directly: `gh api "repos/{owner}/{repo}/milestones?state=open" --jq '.[] | select(.title=="<slug>") | .number'`, then `gh api repos/{owner}/{repo}/milestones/<number> -X PATCH -f state=closed`. Closing the Milestone IS the tranche's lifecycle transition to `complete`. This is a forge action, not a repo commit.
 - The Issues themselves are already closed (verified in step 1) and stay attached to the closed Milestone — that attachment is the durable historical record; nothing needs to be moved or archived as a file.
-- **Legacy exception:** if this tranche still has a pre-cutover topology file at `aeg-root/iterations/<name>.md` (rare — the forge-native cutover is complete for every tranche created after `aeg-forge-state-v1`), archive it as before: add `Lifecycle: complete` as the first line after the `# Tranche:` heading, then `git mv aeg-root/iterations/<name>.md aeg-root/iterations/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
+- **Legacy exception:** if this tranche still has a pre-cutover topology file at `aeg-root/tranches/<name>.md` (rare — the forge-native cutover is complete for every tranche created after `aeg-forge-state-v1`), archive it as before: add `Lifecycle: complete` as the first line after the `# Tranche:` heading, then `git mv aeg-root/tranches/<name>.md aeg-root/tranches/completed/<name>.md`. Do NOT delete it — the rationale is durable history. Confirm the move landed and the source path no longer exists.
 
 ### 4. Update the pinned state Issue
 
@@ -143,7 +143,7 @@ Post a comment on the **last merged task PR of the tranche** (the most recent me
 
 - Tasks completed: N/N
 - Duration: <first merge date> → <last merge date>
-- Milestone: closed (forge-native — or "tranches file moved to `aeg-root/iterations/completed/<name>.md`" for a legacy pre-cutover tranche)
+- Milestone: closed (forge-native — or "tranches file moved to `aeg-root/tranches/completed/<name>.md`" for a legacy pre-cutover tranche)
 - Retrospective: posted to the pinned lessons Issue
 - Pending Type 1 ratifications: [list, or "none"]
 - Dangling items: [list or "none"]
@@ -188,7 +188,7 @@ FORGE VERIFICATION:
 
 RETROSPECTIVE: posted to pinned lessons Issue ✓ | INCOMPLETE (reason)
 
-ARCHIVED: aeg-root/iterations/completed/<name>.md ✓ | FAILED (reason)
+ARCHIVED: aeg-root/tranches/completed/<name>.md ✓ | FAILED (reason)
 
 STATE:
 - pinned state Issue(s) updated ✓ (current-focus pointer, pending-manual-ops, recently-shipped entry)
@@ -235,7 +235,7 @@ When you run in Claude Code, fill numeric cells with exact session meter values.
 
 **Trigger:** explicit Principal declaration. The command is: *"Run the Tranche Archivist for tranche <name>."* Nothing else triggers you. Not a CI event. Not a merge event. Not a post-checkout hook. The Principal makes a deliberate statement.
 
-**Dispatch:** the Principal pastes the Tranche Archivist brief (or the Principal's Brief Author pastes it). The brief must include the tranche name and the explicit declaration. An Tranche Archivist without a declaration refuses at the entry gate.
+**Dispatch:** the Principal pastes the Tranche Archivist brief (or the Principal's Brief Author pastes it). The brief must include the tranche name and the explicit declaration. A Tranche Archivist without a declaration refuses at the entry gate.
 
 **Why this design:** Tranche close involves a retrospective (which requires reflection) and a "what's next" declaration (which requires judgment). These are not mechanical operations. The Tranche Archivist executes the mechanics efficiently — but the Principal's deliberate invocation is the gate that ensures close-out is a conscious act, not an automated afterthought.
 

@@ -4,7 +4,7 @@
  * check-first-push-dispatch — thin CLI/I/O shim for the first-push dispatch
  * gate wired into `.husky/pre-push` (aeg-governance-hardening task 25,
  * #365). Runs the UNCHANGED `verify-dispatch.ts` gate mode once, on a
- * `task/<iteration>/<n>` branch's first push (no PR yet), and classifies its
+ * `task/<tranche>/<n>` branch's first push (no PR yet), and classifies its
  * exit/output into a `READY`/`NOT_READY`/`UNKNOWN` fact for the pure
  * evaluator `checkFirstPushDispatchGate` (@atta/aeg-core). No
  * dispatch-readiness logic lives here — `verify-dispatch.ts`'s own

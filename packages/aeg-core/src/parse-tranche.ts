@@ -2,10 +2,10 @@ import { readMarkdownTable } from './parse-registry'
 import type { Tranche, Lifecycle, Task } from './types'
 
 /**
- * Parse `aeg-root/iterations/<name>.md` into a typed `Tranche`.
+ * Parse `aeg-root/tranches/<name>.md` into a typed `Tranche`.
  *
  * Captures:
- *   - the tranche's name (from `# Iteration: <name> — <timeframe>`)
+ *   - the tranche's name (from `# Tranche: <name> — <timeframe>`)
  *   - the lifecycle marker (`Lifecycle: active|complete`, defaulting to
  *     `'active'` when absent — pre-§11 files have no marker)
  *   - the first goal paragraph
@@ -28,10 +28,10 @@ export function parseTranche(md: string): Tranche {
 }
 
 function parseName(md: string): string {
-  // The H1 is `# Iteration: <slug> — <timeframe>`. The slug may contain
+  // The H1 is `# Tranche: <slug> — <timeframe>`. The slug may contain
   // hyphens (e.g. `herald-onto-engine`, `aeg-ui-v1`), so capture the first
   // non-whitespace run — the space before the em-dash is the delimiter.
-  const m = md.match(/^#\s+Iteration:\s+(\S+)/m)
+  const m = md.match(/^#\s+Tranche:\s+(\S+)/m)
   return m?.[1] ? m[1].trim() : ''
 }
 

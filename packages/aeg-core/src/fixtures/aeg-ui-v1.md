@@ -1,4 +1,4 @@
-# Iteration: aeg-ui-v1 — June 2026
+# Tranche: aeg-ui-v1 — June 2026
 
 Lifecycle: active
 
@@ -42,7 +42,7 @@ Lifecycle: active
 ### Task 1 — `@atta/aeg-core`: AEG-artifact parser + `deriveTranche` (pure) · Issue #94
 **Project(s):** aeg-core · **Depends-on:** — · **Conflicts-with:** —
 
-- **Boundary:** a new shared package `packages/aeg-core` (`@atta/aeg-core`). Two pure capabilities: (a) **parse** a repo's AEG artifacts — `aeg-root/projects.md` (the registry), `aeg-root/iterations/*.md` (topology tables + edges + lifecycle marker), and the per-project `aeg-project/` state — into a typed model; (b) **`deriveTranche(parsedFile, forgeFacts)`** → per-task derived status, the dependency/conflict graph, dispatch-eligibility. **Pure: no I/O, no GitHub client, no filesystem reads** (the caller passes file contents + forge facts in). What this is NOT: not the GitHub read (task 3 supplies `forgeFacts`), not the docs renderer (task 7, separate concern in the same package), not any UI.
+- **Boundary:** a new shared package `packages/aeg-core` (`@atta/aeg-core`). Two pure capabilities: (a) **parse** a repo's AEG artifacts — `aeg-root/projects.md` (the registry), `aeg-root/tranches/*.md` (topology tables + edges + lifecycle marker), and the per-project `aeg-project/` state — into a typed model; (b) **`deriveTranche(parsedFile, forgeFacts)`** → per-task derived status, the dependency/conflict graph, dispatch-eligibility. **Pure: no I/O, no GitHub client, no filesystem reads** (the caller passes file contents + forge facts in). What this is NOT: not the GitHub read (task 3 supplies `forgeFacts`), not the docs renderer (task 7, separate concern in the same package), not any UI.
 - **Sizing:** passes the four tests — one verification story (given fixture files + a forge-fact snapshot, the typed model + derived statuses are correct), one agent can hold it (pure functions + types + tests), bounded file surface (the new package only), single failure mode (a parse or a derivation is wrong). It is the cleanest, most testable unit and everything depends on it, so it is wave-1 lead.
 - **Project(s) + blast radius:** new package `aeg-core`, no consumers yet → zero blast radius. (Studio becomes the first consumer in later tasks; the Portal later. Designing it pure + standalone now is what lets both consume it.)
 - **Dependency rationale:** none. Foundation.
@@ -64,7 +64,7 @@ Lifecycle: active
 ### Task 3 — Local GitHub read adapter → forge facts for `deriveTranche` · Issue #97
 **Project(s):** aeg, aeg-core · **Depends-on:** 1 · **Conflicts-with:** —
 
-- **Boundary:** the thin adapter that, running locally with the operator's own GitHub auth (the `gh` CLI token or a `GITHUB_TOKEN` env), fetches the **forge facts** `deriveTranche` consumes — Issue state/assignment, branch existence (`task/<iteration>/<n>`), PR state, review decision, merge — for this repo, and maps them to the `forgeFacts` type task 1 defined. Read-only. What this is NOT: not `deriveTranche` itself (task 1), not the UI that displays the result (tasks 4–6), not a GitHub App / vault / webhook cache (deferred, hosted-only, D-001 §3.2–3.3).
+- **Boundary:** the thin adapter that, running locally with the operator's own GitHub auth (the `gh` CLI token or a `GITHUB_TOKEN` env), fetches the **forge facts** `deriveTranche` consumes — Issue state/assignment, branch existence (`task/<tranche>/<n>`), PR state, review decision, merge — for this repo, and maps them to the `forgeFacts` type task 1 defined. Read-only. What this is NOT: not `deriveTranche` itself (task 1), not the UI that displays the result (tasks 4–6), not a GitHub App / vault / webhook cache (deferred, hosted-only, D-001 §3.2–3.3).
 - **Sizing:** passes the four tests — one verification story (against this real repo, the adapter returns correct current forge facts that drive correct derived statuses), one agent can hold it (one read module + its types), bounded file surface (the adapter, likely in `aeg-core` or a thin `studio` lib calling `aeg-core` types), single failure mode (a forge read is wrong/missing).
 - **Project(s) + blast radius:** `aeg` + `aeg-core` (the fact-shape may live in `aeg-core` as a type, the fetch in the app). No other consumers.
 - **Dependency rationale:** **depends-on 1** — it produces the `forgeFacts` shape task 1 defined; that type must exist first.
@@ -76,7 +76,7 @@ Lifecycle: active
 **Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 5, 6
 
 - **Boundary:** populate the **sidebar** with the repo's projects (from `aeg-core`'s parse), and build the **project page** → its **tranches** (active/archived, from the lifecycle marker) → the **tranche topology table** (the parsed table). This is the navigational spine: root project → projects → tranches → (table). What this is NOT: not the kanban/task-detail (task 5), not the graph (task 6).
-- **Sizing:** passes the four tests — one verification story (launch on this repo → sidebar lists the real projects → drill to an tranche → its real topology table renders), one agent can hold it (the nav + table pages), bounded file surface (these routes + sidebar wiring), single failure mode (nav/table doesn't render the parsed model).
+- **Sizing:** passes the four tests — one verification story (launch on this repo → sidebar lists the real projects → drill to a tranche → its real topology table renders), one agent can hold it (the nav + table pages), bounded file surface (these routes + sidebar wiring), single failure mode (nav/table doesn't render the parsed model).
 - **Project(s) + blast radius:** `aeg` only.
 - **Dependency rationale:** **depends-on 1** (the parsed model) **and 2** (the shell to render inside). **Conflicts-with 5 and 6** — all three add pages inside the Studio app and touch shared layout/routing; serialize (this one first — it builds the nav spine the others hang off).
 - **Traps to avoid:** active/archived comes from the **lifecycle marker** + `completed/` location (`tranches/README.md` §11), not from inventing a status. Read topology from `aeg-core`, don't re-parse in the component.
@@ -86,8 +86,8 @@ Lifecycle: active
 ### Task 5 — Kanban + task detail (columns by derived status; brief from PR body) · Issue #100
 **Project(s):** aeg · **Depends-on:** 1, 2, 3 · **Conflicts-with:** 4, 6
 
-- **Boundary:** the **kanban** view of an tranche's tasks — columns = derived statuses (`todo`/`in-flight`/`in-review`/`changes-requested`/`merged`/`blocked`), each task placed in its column by **live** status (from task 3). Click a task → **task detail**: read the **brief** (from the **PR body** — the model's home for the brief), show status/progress, link to the Issue/PR. What this is NOT: not the graph (task 6), not the nav/table (task 4).
-- **Sizing:** passes the four tests — one verification story (an tranche's real tasks land in the right columns by live status; opening one shows its real brief from the PR body), one agent can hold it (the kanban + detail views), bounded file surface (these routes/components), single failure mode (wrong column placement or brief not fetched).
+- **Boundary:** the **kanban** view of a tranche's tasks — columns = derived statuses (`todo`/`in-flight`/`in-review`/`changes-requested`/`merged`/`blocked`), each task placed in its column by **live** status (from task 3). Click a task → **task detail**: read the **brief** (from the **PR body** — the model's home for the brief), show status/progress, link to the Issue/PR. What this is NOT: not the graph (task 6), not the nav/table (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real tasks land in the right columns by live status; opening one shows its real brief from the PR body), one agent can hold it (the kanban + detail views), bounded file surface (these routes/components), single failure mode (wrong column placement or brief not fetched).
 - **Project(s) + blast radius:** `aeg` only.
 - **Dependency rationale:** **depends-on 1** (derived status), **2** (shell), **3** (live forge facts + the PR-body fetch for the brief). It is the richest task and the most dependency-laden, so it runs **last** in the app-surface wave. **Conflicts-with 4 and 6** (shared app shell).
 - **Traps to avoid:** the **brief lives in the PR body** (`tranches/README.md` §7) — fetch it from the PR, not the Issue (the Issue holds the rationale, not the brief). Derived status must come from `aeg-core`'s `deriveTranche`, not re-derived in the component. Handle the no-PR-yet / no-token cases (a `backlog`/`todo` task has no brief yet).
@@ -97,8 +97,8 @@ Lifecycle: active
 ### Task 6 — Task-dependency-graph view (`@atta/ui/engine-flow`) · Issue #99
 **Project(s):** aeg · **Depends-on:** 1, 2 · **Conflicts-with:** 4, 5
 
-- **Boundary:** render an tranche's tasks as a **graph** (UI label: **"task dependency graph"**) using `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — nodes = tasks, **depends-on = directed arrows**, **conflicts-with = dashed/undirected links**. Optional per-node live-status tint if task 3's data is present (additive, not required for V1). What this is NOT: not the kanban (task 5), not the nav (task 4).
-- **Sizing:** passes the four tests — one verification story (an tranche's real depends-on/conflicts-with edges render as a correct directed graph), one agent can hold it (one graph view reusing engine-flow), bounded file surface (the graph route/component), single failure mode (graph/edges render wrong).
+- **Boundary:** render a tranche's tasks as a **graph** (UI label: **"task dependency graph"**) using `@atta/ui/engine-flow` (React Flow / `@xyflow/react`) — nodes = tasks, **depends-on = directed arrows**, **conflicts-with = dashed/undirected links**. Optional per-node live-status tint if task 3's data is present (additive, not required for V1). What this is NOT: not the kanban (task 5), not the nav (task 4).
+- **Sizing:** passes the four tests — one verification story (a tranche's real depends-on/conflicts-with edges render as a correct directed graph), one agent can hold it (one graph view reusing engine-flow), bounded file surface (the graph route/component), single failure mode (graph/edges render wrong).
 - **Project(s) + blast radius:** `aeg` only. **Reuses `@atta/ui/engine-flow` as-is** — verify no change needed to the shared renderer (if a change *is* needed, Vāda enters scope → escalate).
 - **Dependency rationale:** **depends-on 1** (the graph structure from the parse) **and 2** (shell). **Conflicts-with 4 and 5** (shared app shell). Independent of task 3 (structure is file-derived; live tint is optional).
 - **Traps to avoid:** the two edge types are different (directed depends-on = a DAG; undirected conflicts-with = symmetric) — render them distinctly. Reuse engine-flow's existing node/edge components; **do not** fork or modify `@atta/ui/engine-flow`.

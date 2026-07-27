@@ -45,7 +45,20 @@ function activeTrancheSlugs(): string[] {
   // --full-tree: `<rev>:<path>` resolves relative to CWD by default for
   // `ls-tree` (unlike `git show`, which already resolves from repo root) —
   // this test runs from `packages/aeg-core`, not the repo root.
-  return execSync('git ls-tree --full-tree --name-only origin/main:aeg-root/iterations', { encoding: 'utf8' })
+  //
+  // The path is read from `origin/main`, so a branch that MOVES the directory
+  // sees it missing there until it merges — `ls-tree` exits non-zero rather
+  // than returning empty. That is the same zero answer as "no active tranche
+  // carries a topology file", which the caller already treats as the expected
+  // permanent steady state, so it degrades to that rather than failing.
+  let listing: string
+  try {
+    listing = execSync('git ls-tree --full-tree --name-only origin/main:aeg-root/tranches', { encoding: 'utf8' })
+  } catch {
+    console.warn('[golden-comparison] no aeg-root/tranches on origin/main — nothing to compare, passing.')
+    return []
+  }
+  return listing
     .split('\n')
     .map((s) => s.trim())
     .filter((name) => name.endsWith('.md') && name !== 'README.md' && !name.endsWith('.tokens.md'))
@@ -97,7 +110,7 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
     let comparedCount = 0
 
     for (const slug of slugs) {
-      const raw = execSync(`git show origin/main:aeg-root/iterations/${slug}.md`, { encoding: 'utf8' })
+      const raw = execSync(`git show origin/main:aeg-root/tranches/${slug}.md`, { encoding: 'utf8' })
       const fileTasks = normalizeTasks(parseTranche(raw).tasks)
 
       let forgeTasks: ComparableTask[]

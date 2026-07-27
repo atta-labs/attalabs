@@ -1,9 +1,9 @@
-# Iteration: herald-agents-v2 — June–July 2026
+# Tranche: herald-agents-v2 — June–July 2026
 Lifecycle: complete
 
 Goal: Extract forensic-hiring-auditor intelligence into `packages/agents/forensic-hiring-auditor/`
 (D-046 first execution), make Herald a thin consumer, overhaul Bulk Audit UX, improve report
-quality, expose Herald MCP, close housekeeping debt from two completed iterations.
+quality, expose Herald MCP, close housekeeping debt from two completed tranches.
 
 Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 
@@ -20,12 +20,12 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 7 | Deploy verification — `herald.attalabs.dev` Phase 2 flows (avatar, CV upload, bio save, onboarding, Bulk Audit with real BYOK)      | #173  | herald              | #168       | —                        |
 | 8 | Owner `/ui` + `/settings` relocated under `/[username]` (owner-gated, build-time library per D-035) + topbar Palette/Settings icon buttons via `extraActions` + Bulk Audit excluded from profile layout. Supersedes D-036 route/nav (→ D-060). | #210 | herald | — | — |
 
-## Backlog (this iteration, not yet dispatched)
+## Backlog (this tranche, not yet dispatched)
 
 - Per-audit (one-off) vendor + model override on Bulk Audit — deferred post-V1, not in scope.
 - Herald Phase 4 (recruiter as distinct B2B surface) — future, not in scope.
 
-## Cross-iteration dependencies
+## Cross-tranche dependencies
 
 - Task 1 (#167) must merge before herald-agents-v2 task 2 (#168) can dispatch AND before
   vada-production-v1 task 1 (#175) can dispatch (Planner readiness gate on both).

@@ -3,9 +3,9 @@ sidebar_title: Tokens (aeg-gov-ui-v2)
 ---
 # Token ledger — aeg-governance-ui-v2
 
-Append-only per-iteration token/cost ledger. Format + rationale: `aeg-root/iterations/README.md` §12. Append-only artifact class: `aeg-root/state-machine.md` §13.
+Append-only per-tranche token/cost ledger. Format + rationale: `aeg-root/tranches/README.md` §12. Append-only artifact class: `aeg-root/state-machine.md` §13.
 
-**The rule:** at the end of a role's turn, append one row; never edit a row; re-entry appends another row; the iteration total is `sum(rows)`, derived at read time, never stored.
+**The rule:** at the end of a role's turn, append one row; never edit a row; re-entry appends another row; the tranche total is `sum(rows)`, derived at read time, never stored.
 
 **Capture sources:** terminal roles run in Claude Code (Developer; Archivist when automated) and self-report exact tokens via `/cost`. claude.ai roles (Planner; Brief Author; Reviewer; Security) cannot read their own token count and append the row with numeric cells as `—`; the Principal fills them later from the claude.ai UI usage figure.
 
@@ -15,4 +15,4 @@ Append-only per-iteration token/cost ledger. Format + rationale: `aeg-root/itera
 |-------|------|-------------|-----------|------------|------|------|
 | theme: brief | Brief Author | gemini-3.5-flash (chat) | — | — | — | 2026-06-20 |
 | theme: develop | Developer | gemini-3.5-flash (chat) | — | — | — | 2026-06-20 |
-| iteration-close | Iteration Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-21 |
+| tranche-close | Tranche Archivist | claude-sonnet-4-6 | — | — | — | 2026-06-21 |

@@ -34,7 +34,7 @@ export type Task = {
 }
 
 export type Tranche = {
-  /** Slug from `# Iteration: <name> — <timeframe>`. */
+  /** Slug from `# Tranche: <name> — <timeframe>`. */
   name: string
   /**
    * Lifecycle marker per §4 / §11. Defaults to `'active'` when absent — the
@@ -76,7 +76,7 @@ export type ForgeFacts = {
   issueState: 'open' | 'closed'
   /** Issue assignee present. No longer affects `todo` derivation (D-059). */
   assigned: boolean
-  /** A `task/<iteration>/<n>` branch exists on the forge. */
+  /** A `task/<tranche>/<n>` branch exists on the forge. */
   branchExists: boolean
   prState: 'none' | 'open' | 'merged'
   /**
@@ -125,7 +125,7 @@ export type TaskRef = {
 export type FetchForgeFactsInput = {
   owner: string
   repo: string
-  /** Tranche slug — used to build the `task/<iteration>/<id>` branch ref. */
+  /** Tranche slug — used to build the `task/<tranche>/<id>` branch ref. */
   tranche: string
   tasks: TaskRef[]
   /**
@@ -188,7 +188,7 @@ export type RawTaskFacts = {
     assigneesCount: number
     labels: string[]
   } | null
-  /** Presence of `refs/heads/task/<iteration>/<id>` on the forge. */
+  /** Presence of `refs/heads/task/<tranche>/<id>` on the forge. */
   refExists: boolean
   /** Most recent PR (any state) whose head branch matches the task ref. */
   pullRequest: {

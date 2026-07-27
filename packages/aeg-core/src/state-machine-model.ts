@@ -66,7 +66,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
   },
   {
     fact: 'branchExists',
-    readsFrom: 'Ref refs/heads/task/<iteration>/<id>',
+    readsFrom: 'Ref refs/heads/task/<tranche>/<id>',
     meaning: 'A task branch has been published — the todo → in-flight transition, written by git push, not by hand.'
   },
   {
@@ -105,7 +105,7 @@ export const FORGE_FACT_INPUTS: ForgeFactInput[] = [
 
 /**
  * Every value `DerivedStatus` admits. `backlog` is a project-level concept and
- * is never emitted by derivation inside an tranche — tranche tasks
+ * is never emitted by derivation inside a tranche — tranche tasks
  * are committed work, so their floor is `todo`. It stays in the set because
  * the type still admits it and consumers still render it.
  */
@@ -161,7 +161,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'No forge facts for this task',
     matches: (facts) => !facts,
     status: 'todo',
-    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside an tranche.'
+    why: 'A task absent from the forge snapshot is committed work not yet started — never backlog, inside a tranche.'
   },
   {
     id: 'blocked-label',
@@ -225,7 +225,7 @@ export const DERIVATION_RULES: DerivationRule[] = [
     when: 'The Issue is open, with no branch and no PR',
     matches: (facts) => facts?.issueState === 'open',
     status: 'todo',
-    why: 'Not started. Assigned or not, both are todo inside an tranche.'
+    why: 'Not started. Assigned or not, both are todo inside a tranche.'
   },
   {
     id: 'closed-not-planned',

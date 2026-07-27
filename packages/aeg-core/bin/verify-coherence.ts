@@ -118,8 +118,8 @@ export { fetchProvenance }
 
 // ---------- tranche file loader --------------------------------------------
 
-const TRANCHES_RELDIR = 'aeg-root/iterations'
-const COMPLETED_RELDIR = 'aeg-root/iterations/completed'
+const TRANCHES_RELDIR = 'aeg-root/tranches'
+const COMPLETED_RELDIR = 'aeg-root/tranches/completed'
 
 function isTrancheFile(name: string): boolean {
   return name.endsWith('.md') && name !== 'README.md' && !name.endsWith('.tokens.md')
@@ -292,7 +292,7 @@ export async function loadTrancheFiles(prContext: PrReadContext = null, onlySlug
 
   // Forge-native tranches with no topology file at all (the forge-native cutover:
   // vinaya-studio-v1, vinaya-cli-v1, herald-hardening-v1 all had their
-  // aeg-root/iterations/*.md deleted once their Milestone-derived replacement
+  // aeg-root/tranches/*.md deleted once their Milestone-derived replacement
   // was proven safe) are structurally invisible to the directory-listing
   // enumeration above — there is no filename for a slug with zero file to
   // ever appear in `mainNames`/`prNames`, so `deriveOrFallback` is never even
@@ -304,7 +304,7 @@ export async function loadTrancheFiles(prContext: PrReadContext = null, onlySlug
   // already found via files. Gated on an explicit Milestone existence check
   // so an unrecognized branch slug (typo, deleted tranche with no
   // Milestone either) still reports "no topology found" rather than silently
-  // synthesizing an tranche.
+  // synthesizing a tranche.
   if (onlySlug && repo && !files.some((f) => f.slug === onlySlug)) {
     const milestone = findMilestoneForSlug(repo.owner, repo.repo, onlySlug)
     if (milestone) {
@@ -345,7 +345,7 @@ export type RunCoherenceChecksOptions = {
   prContext?: PrReadContext
   /**
    * T2 relocation: `true` ONLY for a CI run against a plan PR whose
-   * own diff touches an tranche topology file — the only PR kind that can
+   * own diff touches a tranche topology file — the only PR kind that can
    * cause or cure a T2 gap. Defaults to `false` (info-only, never blocking)
    * for every other context: task-PR CI, local dev, `--json` audit mode,
    * daily-drift — matching the brief's "surfaced never blocking" rule.
@@ -534,7 +534,7 @@ export async function runCoherenceChecks(
   // L4 — Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
   // follow-up). Active = forge Milestone open, the same authority
   // `verify-dispatch.ts`'s Milestone-aware discovery uses — not `!f.archived`
-  // (file location), so this never flags an tranche whose file predates
+  // (file location), so this never flags a tranche whose file predates
   // the Milestone birth rule but has no live Milestone yet.
   const milestoneActiveSlugs = listActiveTrancheSlugs(owner, repoName).map((m) => m.slug)
   const issueMilestones = milestoneActiveSlugs.flatMap((slug) =>

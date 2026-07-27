@@ -37,7 +37,7 @@ if (import.meta.main) {
     process.exit(0)
   }
 
-  const topoPath = `aeg-root/iterations/${fields.tranche}.md`
+  const topoPath = `aeg-root/tranches/${fields.tranche}.md`
 
   const repo = await resolveRepo()
   if (!repo) {

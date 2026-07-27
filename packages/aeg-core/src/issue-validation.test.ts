@@ -13,7 +13,7 @@ import {
 
 // Bold-inline style, as on Issue #309.
 const BOLD_STYLE = `
-**Iteration:** aeg-governance-hardening · **Task:** 5d · **Project(s):** aeg
+**Tranche:** aeg-governance-hardening · **Task:** 5d · **Project(s):** aeg
 
 ## Planner's rationale
 
@@ -99,7 +99,7 @@ describe('checkIssueRationale', () => {
 })
 
 describe('isTaskIssueLabelSet', () => {
-  it('is true when an tranche label is present', () => {
+  it('is true when a tranche label is present', () => {
     expect(isTaskIssueLabelSet(['vinaya/tranche:aeg-governance-hardening', 'vinaya/tier:3'])).toBe(true)
   })
   it('is false for non-tranche labels', () => {

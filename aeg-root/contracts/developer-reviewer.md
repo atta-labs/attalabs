@@ -78,7 +78,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 - The diff must touch only files in the brief's Technical Surface Map. Files outside it are a stop-and-escalate before opening the PR, not a finding for the Reviewer to catch.
 - The Task Done checklist must be ticked — all items, with actual verification evidence for each.
 - Every `[agent]` Test Plan item must have an evidence comment posted on the PR — the actual command output, not a paraphrase.
-- One row appended to the iteration's token ledger before opening the PR.
+- One row appended to the tranche's token ledger before opening the PR.
 
 ## Consumer obligations (the Reviewer)
 
@@ -89,7 +89,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 - **Judge correctness of `.vinaya/doc-owners` coverage.** Coverage *presence* is mechanical — `verify-docs` C5 has already enforced it (or the PR would not be green). Your job is to read each in-diff doc update that satisfied a C5 binding and confirm it actually reflects the code change, not a no-op edit or misleading rewrite that silenced the gate. A passing C5 + an incorrect doc update is a BLOCKER. A doc-coverage waiver is no longer a body field you weigh: it exists only as an actor-verified `vinaya/waiver:docs` label applied by a principal, which is a forge-authenticated human act rather than a parseable string.
 - Produce a structured verdict per `roles/reviewer.md` output format — with severity tags on every finding. A verdict without severity tags is malformed.
 - Do not edit the code. Do not expand scope. Do not approve to be agreeable.
-- Append one row to the iteration's token ledger after posting the verdict (and again on each re-review after `CHANGES_REQUESTED`).
+- Append one row to the tranche's token ledger after posting the verdict (and again on each re-review after `CHANGES_REQUESTED`).
 
 ---
 

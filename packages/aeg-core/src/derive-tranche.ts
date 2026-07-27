@@ -61,7 +61,7 @@ export function deriveTranche(tranche: Tranche, forgeFacts: Map<string, ForgeFac
  * Map a single task's forge facts to its derived status. Mirrors the §3 table
  *: `blocked` wins over everything else, then `merged`, then
  * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for the
- * open-issue cases (assigned or not — both are `todo` inside an tranche per
+ * open-issue cases (assigned or not — both are `todo` inside a tranche per
  *), then the honest terminal cases for a closed-without-merge Issue.
  *
  * Reopened-after-merge exception: a reopened Issue can carry a stale

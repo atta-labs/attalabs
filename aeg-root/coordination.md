@@ -6,7 +6,7 @@ sidebar_title: Coordination
 **This file lives in the repo at `aeg-root/coordination.md`.**
 **All agents read this at session start.**
 
-This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `iteration-model.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
+This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `tranche-model.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
 
 Dani works with multiple agents across a chat/planning surface and a coding-agent surface. This file tells each agent who it is, how to orient, and what the rules are.
 
@@ -23,17 +23,17 @@ If you are starting a fresh session and need to orient:
 1. `aeg-root/coordination.md` — this file (start here)
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Planner / Brief Author (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
-4. `aeg-root/iteration-model.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
+4. `aeg-root/tranche-model.md` — the tranche model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
 5. **Per-project state (pinned Issues)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
-7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). **No active iteration carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`iteration-model.md` §4); `completed/` iterations keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
+7. `aeg-root/tranches/<name>.md` — the current tranche's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active tranches no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `tranche:<slug>`-labeled Issues). **No active tranche carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`tranche-model.md` §4); `completed/` tranches keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
 8. **Lessons log (pinned Issue #453)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
 
 ### One AEG model, at the root. Always orient from there.
 
-There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, and the active iteration there. It never expects a per-project copy of the model.
+There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, and the active tranche there. It never expects a per-project copy of the model.
 
 Living **state** is held in pinned forge Issues (lessons, per-project operational state, since `aeg-forge-state-v1` task 4): one root ecosystem-wide pinned Issue (#451, covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg` #447, `vada` #448, `herald` #449, `cetana` #450). A task updates the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
 
@@ -42,21 +42,21 @@ For deeper context on the operational model design:
 - `aeg-root/process.md` — the thirteen-phase walkthrough from idea to merged code
 - `aeg-root/diagrams/` — process and architecture diagrams (note: being brought in line with the forge-derived-status model; if a diagram shows agents writing status, the prose docs are canonical)
 
-Do not generate strategy, plan an iteration, or author briefs until you have read `state-machine.md` and the spec for any project in scope.
+Do not generate strategy, plan a tranche, or author briefs until you have read `state-machine.md` and the spec for any project in scope.
 
 ### Session-start forge queries — deriving current state
 
 `now.md` is retired. Current execution state is **derived from the forge**, not read from a file. Run these queries to answer the three orientation questions:
 
-**"What's active?"** — open Issues with an `iteration:<slug>` label, or check open PRs:
+**"What's active?"** — open Issues with an `tranche:<slug>` label, or check open PRs:
 ```bash
-gh issue list --label "iteration:<slug>" --state open
+gh issue list --label "tranche:<slug>" --state open
 gh pr list --state open
 ```
 
-**"What's next?"** — open Issues in the current iteration that have no open PR (unassigned branch):
+**"What's next?"** — open Issues in the current tranche that have no open PR (unassigned branch):
 ```bash
-gh issue list --label "iteration:<slug>" --state open --assignee ""
+gh issue list --label "tranche:<slug>" --state open --assignee ""
 # Then for each: gh pr list --state open | grep "task/<slug>/"
 ```
 
@@ -65,7 +65,7 @@ gh issue list --label "iteration:<slug>" --state open --assignee ""
 gh issue list --label "aeg:blocked" --state open
 ```
 
-**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active iteration file at `aeg-root/iterations/<name>.md`.
+**"What's the current focus?"** — read the ecosystem pinned state Issue (#451, "Current focus" section) and the active tranche file at `aeg-root/tranches/<name>.md`.
 
 **"What merged recently?"** — `gh pr list --state merged --limit 20`
 
@@ -75,10 +75,10 @@ No brief, no audit finding, no "next steps" recommendation is valid without this
 
 ## The coordination model — four truth domains
 
-Every fact lives in exactly one place (see `iteration-model.md` §1):
+Every fact lives in exactly one place (see `tranche-model.md` §1):
 
 - **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, derived not stored.** Authoritative for task status and merge state. A task *is* a forge Issue.
-- **Repo** = code, specs, skills, PM docs, role docs, the thin iteration topology files, design decisions. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *plan and governance* (not live status).
+- **Repo** = code, specs, skills, PM docs, role docs, the thin tranche topology files, design decisions. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *plan and governance* (not live status).
 - **The PR body** = the just-in-time brief — a task's full execution context. The brief is pasted here at PR-open, never committed separately, never in the Issue.
 - **Local filesystem** = orchestration-tool runtime state, worktrees, dev servers. Ephemeral. Never canonical.
 
@@ -90,7 +90,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 |------|---------|----------------|
 | `aeg-root/coordination.md` | This file. Rules, names, how to work. | Rare (system changes only) |
 | Per-project state (pinned Issue) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
-| `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
+| `aeg-root/tranches/<name>.md` | The current tranche's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | Lessons log (pinned Issue #453) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
@@ -150,9 +150,9 @@ Role is determined by environment and context — not by which agent you are. Re
 ### If you are the Planner / Brief Author (a chat/planning surface, talking strategy/planning)
 
 1. **Read `state-machine.md`** — confirm the authority matrix and decision schema.
-2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which of the two you are. Planning an iteration is the Planner; authoring one task's brief is the Brief Author.
-3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `iterations/<name>.md` for in-flight task topology.
-4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `iteration:<slug>`, open PRs, `aeg:blocked` labels.
+2. **Read `roles/planner.md` or `roles/brief-author.md`** — confirm which of the two you are. Planning a tranche is the Planner; authoring one task's brief is the Brief Author.
+3. **Read the ecosystem pinned state Issue (#451)** — orient on current ecosystem state, known production issues, and pending manual ops; read the relevant per-project pinned Issue too if scoped to one project. Read the current `tranches/<name>.md` for in-flight task topology.
+4. **Derive live execution state from the forge** — run the session-start forge queries above: open Issues by `tranche:<slug>`, open PRs, `aeg:blocked` labels.
 5. **Check the `needs:principal-input` label** — any labeled Issues/PRs for today's window? (`gh issue list --label needs:principal-input --state open`, `gh pr list --label needs:principal-input --state open` retired the `ratification-queue.md` file in favor of this label query — historical entries preserved on pinned Issue #452.)
 6. **Determine the project in scope** — apply the spec-check gate (below) before anything substantive.
 
@@ -161,9 +161,9 @@ Role is determined by environment and context — not by which agent you are. Re
 1. **Read the brief completely** before writing any code.
 2. **Read `roles/developer.md`** — confirm the entry gate, tier, stop conditions, verification checklist.
 3. **Check the dispatch gates against the forge** — is every `depends-on` task's PR merged? Is any `conflicts-with` sibling's PR open? If a gate isn't satisfied, STOP (the task serializes).
-4. **Create the worktree** — Step 0, branch `task/<iteration>/<n>` from `origin/main`. Do this before anything else:
+4. **Create the worktree** — Step 0, branch `task/<tranche>/<n>` from `origin/main`. Do this before anything else:
    ```
-   git worktree add .worktrees/task/<iteration>/<n> -b task/<iteration>/<n> origin/main && cd .worktrees/task/<iteration>/<n> && bun install --frozen-lockfile --silent
+   git worktree add .worktrees/task/<tranche>/<n> -b task/<tranche>/<n> origin/main && cd .worktrees/task/<tranche>/<n> && bun install --frozen-lockfile --silent
    ```
    The `bun install` step initializes Husky, which fires the post-checkout hook (`tools/sync-env-from-main.sh`) to symlink `.env*.local` files from the main checkout.
 5. **Run remaining pre-flight** — `git status`, `git log --oneline -3`, confirm the branch.
@@ -188,7 +188,7 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 ### Mandatory forge check (before any brief, audit, or recommendation)
 
 Run or fetch before producing output that depends on knowing what's in flight:
-- Open Issues (current iteration): `gh issue list --label "iteration:<slug>" --state open`
+- Open Issues (current tranche): `gh issue list --label "tranche:<slug>" --state open`
 - Open PRs: `gh pr list --state open`
 - Blocked Issues: `gh issue list --label "aeg:blocked" --state open`
 - Recent merges: `gh pr list --state merged --limit 20`
@@ -224,7 +224,7 @@ Locked. Spec filenames are `{product}-spec.md` or `{component}-spec.md` — no `
 
 ### Every repo-file change goes through a worktree + PR — no direct commits to `main`
 
-**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
+**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the tranche topology — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the tranche file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
 
 This is **mechanically enforced**, not merely asked:
 - `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
@@ -242,7 +242,7 @@ Active work, next candidates, and blocked tasks are **derived from the forge** �
 
 ### When the plan changes, update the appropriate file
 
-- **The execution plan changes** (a task's edges, a new task, iteration scope) → the current `iterations/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
+- **The execution plan changes** (a task's edges, a new task, tranche scope) → the current `tranches/<name>.md` (Planner, at plan time). Live task *status* is never written — it's derived from the forge.
 - **Held/future project items change** → the relevant per-project backlog (`apps/<project>/specs/<project>-backlog.md`) — out of the flow.
 - **Lesson learned / anti-pattern** → post a new comment on the pinned lessons Issue — never edit an existing comment
 
@@ -263,12 +263,12 @@ State the decision in the pull request that carries the work, during the convers
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/`) |
 | A project spec, ecosystem vision, naming decision | Repo only |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue: `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
-| The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
+| The execution plan (task topology, edges) | `aeg-root/tranches/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project); cross-cutting items are cut as backlog Issues |
 | Completed work history | `git log` / merged-PR history (redundant with a committed changelog, so none is kept) |
 | Calibration lessons + anti-patterns | Pinned Issue #453, one new comment per lesson |
 | Items awaiting Principal ratification | `needs:principal-input` label on the relevant Issue/PR; historical record on pinned Issue #452 |
-| Live task status (what's active, blocked, next) | **Nowhere — derived from the forge** (`gh issue list --label "iteration:<slug>"`, `gh pr list`, Issues view) |
+| Live task status (what's active, blocked, next) | **Nowhere — derived from the forge** (`gh issue list --label "tranche:<slug>"`, `gh pr list`, Issues view) |
 | Adding/removing/renaming a repo file | Repo + `bun docs:index` |
 | Fundamental coordination rules | This file |
 
@@ -276,13 +276,13 @@ State the decision in the pull request that carries the work, during the convers
 
 ## Anti-patterns
 
-- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / backlogs (`apps/*/specs/*-backlog.md`)
+- ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the tranche file, the product roadmap is the company's tool / backlogs (`apps/*/specs/*-backlog.md`)
 - ❌ Putting a backlog anywhere but a `specs/` folder — the plan lives in `specs/`; `aeg-root/` is the model, flow + governance only, and living state is the per-project pinned Issue
-- ❌ Writing task status anywhere (a file, the iteration topology, an Issue field) — status is derived from the forge; storing it recreates the racing status model the design eliminated
-- ❌ Adding execution metadata (status, PR #, dates) to the iteration topology file — it is plan topology only (`iteration-model.md` §9)
+- ❌ Writing task status anywhere (a file, the tranche topology, an Issue field) — status is derived from the forge; storing it recreates the racing status model the design eliminated
+- ❌ Adding execution metadata (status, PR #, dates) to the tranche topology file — it is plan topology only (`tranche-model.md` §9)
 - ❌ Putting the brief in the Issue — the brief is just-in-time and lives in the PR body; the Issue is task identity + metadata only
 - ❌ Putting planning metadata (priority, estimates, points) on an Issue — that's the company's roadmap, not AEG
-- ❌ Building a dynamic conflict scanner — declare conflicts conservatively and serialize (`iteration-model.md` §9)
+- ❌ Building a dynamic conflict scanner — declare conflicts conservatively and serialize (`tranche-model.md` §9)
 - ❌ Putting tactical day-to-day plans in project specs (commit churn)
 - ❌ Pretending to have read a spec that isn't in context — ask Dani by exact path, or use GitHub MCP
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta; AttaLabs is only the public URL
@@ -291,7 +291,7 @@ State the decision in the pull request that carries the work, during the convers
 - ❌ Treating "Pāli name = built by Atta" as structural (demoted to elective aesthetic)
 - ❌ Treating Herald or Vinaya as part of Atta — both are sibling AttaLabs products
 - ❌ Letting the Developer review its own work — review/security passes are separate fresh-context invocations
-- ❌ Generating strategy or planning an iteration before reading the specs (spec-check gate)
+- ❌ Generating strategy or planning a tranche before reading the specs (spec-check gate)
 - ❌ Adding version suffixes to spec filenames (locked)
 - ❌ Making a Type 1 decision in the Brief Author's absence without flagging PENDING
 - ❌ Logging decisions at session end instead of at the moment of decision

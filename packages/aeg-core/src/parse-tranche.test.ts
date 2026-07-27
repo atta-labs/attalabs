@@ -108,13 +108,13 @@ describe('parseTranche: aeg-ui-v1', () => {
 describe('parseTranche: lifecycle marker', () => {
   it('reads Lifecycle: complete', () => {
     const md =
-      '# Iteration: x — June 2026\n\nLifecycle: complete\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n'
+      '# Tranche: x — June 2026\n\nLifecycle: complete\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n'
     expect(parseTranche(md).lifecycle).toBe('complete')
   })
 
   it('reads a bold-wrapped Lifecycle marker', () => {
     const md =
-      '# Iteration: x — June 2026\n\n**Lifecycle:** complete\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n'
+      '# Tranche: x — June 2026\n\n**Lifecycle:** complete\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n'
     expect(parseTranche(md).lifecycle).toBe('complete')
   })
 })
@@ -122,7 +122,7 @@ describe('parseTranche: lifecycle marker', () => {
 describe('parseTranche: optional backlog section', () => {
   it('captures bullets under ## Backlog when present (per §4 template)', () => {
     const md =
-      '# Iteration: x — June 2026\n\nLifecycle: active\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n| 1 | t | #1 | x | — | — |\n\n## Backlog (this tranche, not yet ready to dispatch)\n- Item one (issue #91)\n- Item two\n'
+      '# Tranche: x — June 2026\n\nLifecycle: active\n\n## Tasks (topology)\n\n| # | Task | Issue | Project(s) | Depends-on | Conflicts-with |\n|---|------|-------|-----------|------------|----------------|\n| 1 | t | #1 | x | — | — |\n\n## Backlog (this tranche, not yet ready to dispatch)\n- Item one (issue #91)\n- Item two\n'
     expect(parseTranche(md).backlog).toEqual(['Item one (issue #91)', 'Item two'])
   })
 })

@@ -30,7 +30,7 @@ function loadTree(name: 'broken' | 'clean'): DocsCoherenceEntry[] {
 // mechanism (reachability, parent refs, cross-doc links), so they pass the
 // set that a model WOULD produce for each tree directly — the docs a node
 // points at. The `surfaced` frontmatter override still wins over it in both
-// directions (`roles/planner.md` = false, `iterations/hidden-but-surfaced.md`
+// directions (`roles/planner.md` = false, `tranches/hidden-but-surfaced.md`
 // = true in the broken tree), independent of what the set contains.
 const SURFACED_BROKEN = new Set(['process.md', 'roles/verifier.md'])
 const SURFACED_CLEAN = new Set(['process.md', 'roles/developer.md', 'roles/reviewer.md'])
@@ -50,14 +50,14 @@ describe('evaluateDocsCoherence: broken tree', () => {
   })
 
   it('does not flag the dangling link inside an excluded tranche file', () => {
-    expect(result.errors.some((e) => e.includes('roles/does-not-exist.md" in "iterations/aeg-fake.md"'))).toBe(false)
+    expect(result.errors.some((e) => e.includes('roles/does-not-exist.md" in "tranches/aeg-fake.md"'))).toBe(false)
   })
 
   it('does not flag the dangling link inside a doc excluded via surfaced: false override', () => {
     expect(result.errors.some((e) => e.includes('roles/planner.md'))).toBe(false)
   })
 
-  it('surfaces iterations/hidden-but-surfaced.md via its surfaced: true override, with no errors of its own', () => {
+  it('surfaces tranches/hidden-but-surfaced.md via its surfaced: true override, with no errors of its own', () => {
     expect(result.errors.some((e) => e.includes('hidden-but-surfaced'))).toBe(false)
   })
 

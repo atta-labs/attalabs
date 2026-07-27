@@ -6,7 +6,7 @@
  * passes it in here.
  *
  * Exists to answer, deterministically, "is it safe to push more commits to
- * this `task/<iteration>/<n>` branch?" — closing the live-fire incident
+ * this `task/<tranche>/<n>` branch?" — closing the live-fire incident
  * class where stale local work landed on a branch whose PR had already
  * merged, silently reopening/confusing forge state with no push-time signal.
  *
@@ -20,7 +20,7 @@
 export type PrStateFact = 'MERGED' | 'CLOSED' | 'OPEN' | 'NONE' | 'UNKNOWN'
 
 export type DeadBranchPushInput = {
-  /** The `task/<iteration>/<n>` branch being pushed. */
+  /** The `task/<tranche>/<n>` branch being pushed. */
   branch: string
   /** State of the branch's most recent PR (any state), or the fact that none/forge-unreachable applies. */
   prState: PrStateFact

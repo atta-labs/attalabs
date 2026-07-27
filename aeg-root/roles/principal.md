@@ -16,7 +16,7 @@ performs:
 refuses_when: >
   No self-refusal gate — this doc describes the Principal's seat from the
   perspective of agents interacting with it. The corresponding constraint is
-  on those agents: they must not write code, author briefs, plan iterations,
+  on those agents: they must not write code, author briefs, plan tranches,
   execute tasks, merge PRs, or close Issues out of band on the Principal's
   behalf.
 summary: Who's actually accountable for what merges?
@@ -31,7 +31,7 @@ You are the one seat in the harness a mechanism cannot fill: a person, accountab
 
 **You refuse** — a direction, at any point in its life: an idea, a plan, a brief, an open pull request, or something already merged. A merge, when what is in front of you is not ready. A ratification, which is refused by not being granted. The harness takes all three without pushback: an agent may state a concern once, concretely, but it may not overrule you, and it may not manufacture your agreement by proceeding.
 
-**You never** write the code, author the briefs, decompose the iterations, execute the tasks, or keep the day-to-day records current — each has a role that does. The boundary binds the other way too: no agent may merge on your behalf, close a task's issue out of band, treat an unratified decision as final because you were absent, or widen the scope it was given. An agent that is unsure asks.
+**You never** write the code, author the briefs, decompose the tranches, execute the tasks, or keep the day-to-day records current — each has a role that does. The boundary binds the other way too: no agent may merge on your behalf, close a task's issue out of band, treat an unratified decision as final because you were absent, or widen the scope it was given. An agent that is unsure asks.
 
 **How it physically runs** — you work through the forge and through conversation, not through a tool this harness owns. You dispatch a task by handing its brief to a coding agent, and read the work as pull requests. The merge completes it: it closes the task's issue and, being a fact on the forge, is itself the record that the work is done. Nothing records status for you to read — the branches, the pull requests and the merges are the status. Work waiting on you is marked on the forge, so a review window is a list you open rather than a memory you keep.
 
@@ -60,9 +60,9 @@ The Principal holds final authority over:
 
 - **Write code.** The Developer does this.
 - **Author briefs.** The Brief Author does this. The Principal approves briefs but does not draft them.
-- **Plan iterations.** The Planner does this. The Principal approves the iteration but does not decompose it.
+- **Plan tranches.** The Planner does this. The Principal approves the tranche but does not decompose it.
 - **Execute tasks.** The Developer executes. The Principal dispatches (by hand, or via an automation layer) but does not do the work.
-- **Manage day-to-day PM docs.** The Brief Author maintains the iteration files, `thinking.md`, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
+- **Manage day-to-day PM docs.** The Brief Author maintains the tranche files, `thinking.md`, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
 - **Monitor every blocked task.** The Planner and Brief Author watch `vinaya/needs:execution-input` and `vinaya/needs:strategy-input`. The Principal monitors `vinaya/needs:principal-input` only.
 
 ---
@@ -73,7 +73,7 @@ In a typical working period:
 
 1. Opens a chat/planning surface. Talks to the Planner or Brief Author.
 2. That role reports status, surfaces decisions that need the Principal's call.
-3. Principal makes decisions, approves briefs and iterations, asks for spec review.
+3. Principal makes decisions, approves briefs and tranches, asks for spec review.
 4. Principal dispatches tasks — by hand (pasting a brief into the coding agent) or via an automation layer if one is connected.
 5. At ratification windows: reads the `vinaya/needs:principal-input`-labeled Issues/PRs, resolves pending items.
 6. Reviews PRs on the forge. Code review for correctness and scope compliance.

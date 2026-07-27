@@ -2,7 +2,7 @@
  * First-push dispatch gate (aeg-governance-hardening task 25, #365). Pure —
  * no `fs`, no `gh`/`git` shell-outs. The CLI shim (`bin/check-first-push-
  * dispatch.ts`, wired into `.husky/pre-push`) runs the UNCHANGED
- * `verify-dispatch.ts` gate mode once on a `task/<iteration>/<n>` branch's
+ * `verify-dispatch.ts` gate mode once on a `task/<tranche>/<n>` branch's
  * first push, maps its exit/output to a `DispatchReadinessFact`, and passes
  * it in here.
  *
@@ -21,7 +21,7 @@
  * `aeg-root/enforcement.md`.
  */
 
-/** A `task/<iteration>/<n>` branch parses to its two topology coordinates; anything else does not. */
+/** A `task/<tranche>/<n>` branch parses to its two topology coordinates; anything else does not. */
 export function parseTaskBranch(branch: string): { tranche: string; taskId: string } | null {
   const m = /^task\/([^/]+)\/([^/]+)$/.exec(branch)
   return m ? { tranche: m[1] as string, taskId: m[2] as string } : null
@@ -48,7 +48,7 @@ export function checkFirstPushDispatchGate(input: FirstPushDispatchGateInput): F
   if (parseTaskBranch(branch) === null) {
     return {
       verdict: 'allow',
-      reason: `Branch \`${branch}\` is not a task/<iteration>/<n> branch — the first-push dispatch gate only applies to task branches.`
+      reason: `Branch \`${branch}\` is not a task/<tranche>/<n> branch — the first-push dispatch gate only applies to task branches.`
     }
   }
 

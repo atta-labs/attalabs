@@ -1,6 +1,6 @@
 Lifecycle: complete
 
-# Iteration: vada-agents-v2 — June–July 2026
+# Tranche: vada-agents-v2 — June–July 2026
 
 Goal: Migrate all Vāda YAMLs into `packages/agents/` (following the pattern established by
 herald-agents-v2), make Vāda a thin consumer, fix known bugs, refine Reviewers prompt,
@@ -20,7 +20,7 @@ Repo: daniboomerang/attalabs · Team Leader: Claude (web)
 | 5 | SmartTextInput — extract generic multi-kind input pattern (tabs: paste text / URL / file upload) from `apps/herald-ai/web/src/components/audit/{JdInputControl,CvInputControl}.tsx` into `@atta/ui` as a domain-neutral component; wire into Vāda `/deliberate` input | #TBD | vada, herald | 1 | herald-agents-v2/4 |
 | 6 | Reviewers prompt iteration — B-3b (Reviewer system-prompt) + B-3c (Synthesizer system-prompt); Principal-driven judgment loop: run vada__consult, read responses, judge, tweak, re-run | #TBD | vada | 1 | — |
 | 7 | Agent tools + MCP support — deliberation UI refactor to support tool-equipped YAMLs; context-completeness validation (YAML declares required inputs, UI validates before dispatch); `forensic-hiring-auditor` callable as a tool from a Vāda deliberation agent | #TBD | vada, engine, aeg-core | 1, 5 | — |
-| 8 | First benchmark run — B-4: six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross); manual judging; per-question-type breakdown; validates the whole iteration's refactor | #TBD | vada | 6 | — |
+| 8 | First benchmark run — B-4: six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross); manual judging; per-question-type breakdown; validates the whole tranche's refactor | #TBD | vada | 6 | — |
 
 ## Planner's rationale
 
@@ -171,7 +171,7 @@ what the agent needs); (b) pass tool handlers to the adapter for custom tools. W
 `forensic-hiring-auditor` as a callable tool from a Vāda deliberation agent (a new
 demonstration YAML that uses it). This is the realization of the "Vāda agents can use MCP
 tools" vision.
-**Sizing:** Large. One PR. This is the most complex task in the iteration — it touches the
+**Sizing:** Large. One PR. This is the most complex task in the tranche — it touches the
 UI input layer, the adapter wiring, and requires a new demonstration YAML.
 **Project(s) + blast radius:** vada (deliberation UI + new YAML), engine (in blast radius —
 the tool dispatch path goes through the adapter), aeg-core (if YAML schema changes for
@@ -195,24 +195,24 @@ a new YAML schema field not currently in `@atta/engine`'s flow-schema, escalate
 Reviewers no synthesis), VR-S-same (synthesis, same-vendor), VR-S-cross (synthesis, cross-
 vendor), MW-where-available (multi-round where available). Manual judging by Claude in fresh
 context; Dani final arbiter. Per-question-type breakdown required. Documents whether the
-iteration's refactor (YAML migration + bug fixes + prompt iteration) improved output quality.
-This is the validation layer for the whole iteration.
+tranche's refactor (YAML migration + bug fixes + prompt iteration) improved output quality.
+This is the validation layer for the whole tranche.
 **Sizing:** Research + benchmark execution. One PR (results doc). Principal-in-the-loop.
 **Project(s) + blast radius:** vada only.
 **Dependency rationale:** Depends on task 6 (prompt iteration must complete first — benchmarking
-against an un-iterated prompt gives no meaningful signal about whether the iteration improved
+against an un-iterated prompt gives no meaningful signal about whether the tranche improved
 quality).
 **Suggested agent-class:** high — judgment, synthesis, multi-model evaluation.
 **Stop-and-escalate:** If the OpenAI + xAI keys are not yet added to Vercel (pending manual op in `aeg-project/state.md` or the per-product `apps/vada-ai/aeg-project/state.md`), the cross-vendor benchmark conditions cannot run. Stop and flag — the Principal must add the keys before dispatch.
 
-## Backlog (this iteration, not yet dispatched)
+## Backlog (this tranche, not yet dispatched)
 
 - vada-reviewers-spec.md §8 patch (phantom consensus not in locked decisions) — patch
   opportunistically if touched, otherwise defer.
 - Fate of experimental YAMLs (crucible, sparring, war-room) — decide after benchmark data.
 - Hosted MCP hardening (E8-E12) — deferred, post-benchmark.
 
-## Cross-iteration dependencies
+## Cross-tranche dependencies
 
 - Task 1 here depends on herald-agents-v2/2 (package structure established first).
 - Task 5 here conflicts-with herald-agents-v2/4. Serialize: vada-agents-v2/5 merges first,

@@ -21,7 +21,7 @@ function grepAccepts(topoFile: string, id: string): boolean {
 // whitespace/suffix shape the bash regex tolerated: no-space cells, wide
 // spaces, a tab-padded cell, a letter-suffixed id, and a numeric row (320)
 // that shares a prefix with a non-row id (32).
-const TOPOLOGY_MD = `# Iteration: parity-fixture — test
+const TOPOLOGY_MD = `# Tranche: parity-fixture — test
 
 Lifecycle: active
 
@@ -53,7 +53,7 @@ function evaluatorAccepts(id: string, md: string | null = TOPOLOGY_MD): boolean 
     branch: `task/parity-fixture/${id}`,
     tranche: 'parity-fixture',
     taskId: id,
-    topoPath: 'aeg-root/iterations/parity-fixture.md',
+    topoPath: 'aeg-root/tranches/parity-fixture.md',
     topology: md === null ? null : parseTranche(md)
   })
   return result.verdict === 'allow'
@@ -84,12 +84,12 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       branch: 'task/ghost-iter/5',
       tranche: 'ghost-iter',
       taskId: '5',
-      topoPath: 'aeg-root/iterations/ghost-iter.md',
+      topoPath: 'aeg-root/tranches/ghost-iter.md',
       topology: null
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
-      '✖ pre-push: branch `task/ghost-iter/5` names tranche `ghost-iter`, but aeg-root/iterations/ghost-iter.md does not exist.\n' +
+      '✖ pre-push: branch `task/ghost-iter/5` names tranche `ghost-iter`, but aeg-root/tranches/ghost-iter.md does not exist.\n' +
         '  A task branch must belong to a real tranche.'
     )
   })
@@ -99,12 +99,12 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       branch: 'task/parity-fixture/999',
       tranche: 'parity-fixture',
       taskId: '999',
-      topoPath: 'aeg-root/iterations/parity-fixture.md',
+      topoPath: 'aeg-root/tranches/parity-fixture.md',
       topology: parseTranche(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('refuse')
     expect(result.reason).toBe(
-      '✖ pre-push: branch `task/parity-fixture/999` — no row with `#` = `999` in aeg-root/iterations/parity-fixture.md.\n' +
+      '✖ pre-push: branch `task/parity-fixture/999` — no row with `#` = `999` in aeg-root/tranches/parity-fixture.md.\n' +
         "  The branch suffix must literal-match the topology's # column.\n" +
         "  If the plan PR adding this row hasn't merged yet, merge it first."
     )
@@ -115,7 +115,7 @@ describe('checkBranchTopology refusal messages are byte-identical to the old hoo
       branch: 'task/parity-fixture/7a',
       tranche: 'parity-fixture',
       taskId: '7a',
-      topoPath: 'aeg-root/iterations/parity-fixture.md',
+      topoPath: 'aeg-root/tranches/parity-fixture.md',
       topology: parseTranche(TOPOLOGY_MD)
     })
     expect(result.verdict).toBe('allow')

@@ -11,13 +11,13 @@
  */
 
 /**
- * Parses an tranche slug from a touched file path, when that path is an
+ * Parses a tranche slug from a touched file path, when that path is an
  * active (non-`completed/`) tranche topology file. Returns `null` for
  * everything else — including `README.md` and `*.tokens.md`, neither of
  * which is a topology file the single-plan-PR guard (below) cares about.
  */
 export function trancheSlugFromTopologyPath(path: string): string | null {
-  const m = path.match(/^aeg-root\/iterations\/([^/]+)\.md$/)
+  const m = path.match(/^aeg-root\/tranches\/([^/]+)\.md$/)
   if (!m) return null
   const slug = m[1] as string
   if (slug === 'README' || slug.endsWith('.tokens')) return null
@@ -28,7 +28,7 @@ export type OpenPrFiles = { number: number; files: string[] }
 
 /**
  * Single-plan-PR guard (task 19 / #336): refuses a plan-branch diff
- * that touches an tranche's topology file when another OPEN PR's diff
+ * that touches a tranche's topology file when another OPEN PR's diff
  * already touches that SAME tranche's topology file. Ends the plan-PR
  * race that produced two concurrent plan PRs for `aeg-governance-hardening`
  * itself (#352/#354) — each cut from `origin/main` unaware of the other's
@@ -37,7 +37,7 @@ export type OpenPrFiles = { number: number; files: string[] }
  * `branchFiles` is this branch's diff vs `origin/main` (or vs the PR's
  * base); `otherOpenPrs` is every other currently-open PR's touched files
  * (the caller excludes this PR's own number when editing). An ordinary
- * Dormant where plans are forge objects: with an tranche held as a
+ * Dormant where plans are forge objects: with a tranche held as a
  * Milestone plus labeled Issues, no plan diff touches a topology file and
  * this predicate has nothing to compare. It stays because it is still the
  * right guard for a repo that keeps plans as files — a dormant check that

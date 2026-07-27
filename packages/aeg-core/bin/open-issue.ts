@@ -221,7 +221,7 @@ function hasExplicitMilestoneFlag(args: string[]): boolean {
  * only, by design: `edit` never force-attaches retroactively (an unrelated
  * body edit must not silently reassign an Issue's milestone).
  *
- * Not a hard failure when no matching Milestone exists yet — an tranche's
+ * Not a hard failure when no matching Milestone exists yet — a tranche's
  * Milestone may not exist yet at first-Issue-cut time (task 5/#429 backfilled
  * Milestones after the fact for the first cohort; a brand-new tranche's
  * very first Issue necessarily precedes its own Milestone in some workflows).
@@ -538,7 +538,7 @@ export function main(): void {
 
   if (isTaskIssueLabelSet(labels)) {
     // GitHub caps a label name at 50 characters and `vinaya/tranche:` spends
-    // 17 of them, so a slug that reads fine in prose can be one the forge
+    // 15 of them, so a slug that reads fine in prose can be one the forge
     // refuses to create. Caught here — the first place a new tranche's label
     // reaches the forge — rather than as an opaque `gh` 422 later.
     const labelSlug = trancheSlugFromLabels(labels)

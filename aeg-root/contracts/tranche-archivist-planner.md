@@ -41,7 +41,7 @@ The Planner starts a new tranche by reading the current state of a product. If t
 
 This is the failure that actually happened: two earlier tranches completed without the Tranche Archivist running. The Planner then started three new tranches against state docs still describing the pre-completion product. The root cause was a missing gate: the Planner's readiness gate had no item that checked whether the previous tranche on each product was archived.
 
-This contract formalizes the close-out outputs the Tranche Archivist must produce, and the physical check the Planner must perform on them. The check is not a checklist item the Planner reviews — it is a filesystem fact: does `aeg-root/iterations/completed/<name>.md` exist? If no, the gate fails.
+This contract formalizes the close-out outputs the Tranche Archivist must produce, and the physical check the Planner must perform on them. The check is not a checklist item the Planner reviews — it is a filesystem fact: does `aeg-root/tranches/completed/<name>.md` exist? If no, the gate fails.
 
 ---
 
@@ -49,7 +49,7 @@ This contract formalizes the close-out outputs the Tranche Archivist must produc
 
 Four artifacts, all produced by the Tranche Archivist at close-out:
 
-1. The **archived tranche file** at `aeg-root/iterations/completed/<name>.md` — the physical signal.
+1. The **archived tranche file** at `aeg-root/tranches/completed/<name>.md` — the physical signal.
 2. The updated **pinned state Issue** (one per product, plus an ecosystem-wide bucket) — the authoritative current-state snapshot for the product (current-focus pointer, resolved pending-manual-ops, recently-shipped entry).
 3. The **retrospective** posted as a new comment on the pinned lessons Issue — the durable failure-mode record.
 
@@ -63,7 +63,7 @@ Every artifact the Tranche Archivist produces (left) has exactly one obligation 
 
 | Tranche Archivist produces | Planner consumes at | What the consumption means |
 |---|---|---|
-| **Archived tranche file** at `aeg-root/iterations/completed/<name>.md` | Readiness gate item 8 | The Planner MUST confirm this file exists before planning any new tranche on the same product. Absence means the Tranche Archivist has not run — planning is blocked. |
+| **Archived tranche file** at `aeg-root/tranches/completed/<name>.md` | Readiness gate item 8 | The Planner MUST confirm this file exists before planning any new tranche on the same product. Absence means the Tranche Archivist has not run — planning is blocked. |
 | **Updated pinned state Issue** reflecting current product state (current-focus pointer updated, pending-manual-ops current, recently-shipped entry added) | Readiness gate item 2 (specs reachable) | The Planner reads the updated state Issue as the authoritative current-state snapshot. A state Issue not updated by the Tranche Archivist means the plan is built on wrong assumptions about what the product looks like post-tranche. |
 | **Retrospective** posted as a comment on the pinned lessons Issue | Readiness gate item 5 (prior decisions known) | The Planner reads lessons since the last tranche to avoid re-litigating resolved decisions or repeating known failure modes. A missing retrospective means the Planner plans blind to the tranche's carry-forward lessons. |
 
@@ -82,8 +82,8 @@ Every artifact the Tranche Archivist produces (left) has exactly one obligation 
 
 ## Consumer obligations (the Planner)
 
-- Run readiness gate item 8 before planning any tranche that includes a product: confirm `aeg-root/iterations/completed/<name>.md` exists for the previous tranche on each product in scope.
-- If any prior tranche on an in-scope product exists in `aeg-root/iterations/` but NOT in `completed/`, STOP: *"The previous tranche `<name>` on `<product>` has not been archived — the Tranche Archivist has not run. Dispatch the Tranche Archivist for `<name>` before planning proceeds."*
+- Run readiness gate item 8 before planning any tranche that includes a product: confirm `aeg-root/tranches/completed/<name>.md` exists for the previous tranche on each product in scope.
+- If any prior tranche on an in-scope product exists in `aeg-root/tranches/` but NOT in `completed/`, STOP: *"The previous tranche `<name>` on `<product>` has not been archived — the Tranche Archivist has not run. Dispatch the Tranche Archivist for `<name>` before planning proceeds."*
 - Do not improvise around a missing close-out. "The Tranche Archivist probably ran" is not a passed gate. The filesystem check is the gate. If the file isn't there, stop.
 - Read the updated pinned state Issue and lessons Issue as the authoritative current-state snapshot — not a previous session's memory, not an earlier planning pass. These reflect what the tranche actually shipped; planning against anything else is planning against stale reality.
 - Derive "what's next" from the forge: `gh issue list --label "vinaya/tranche:<slug>" --state open` filtered to Issues without an assigned open PR. Do not look for a `now.md` — it no longer exists.
@@ -96,7 +96,7 @@ The normal seam is **archive → then plan**: the Tranche Archivist closes tranc
 
 When the new tranche the Planner is cutting **supersedes** an existing, still-active tranche — absorbing its `todo`/backlog tasks — the ordering **inverts** for that one source vinaya/tranche:
 
-1. **Planner refactor-and-plan first.** The Planner plans the destination, relabels the moved Issues (`vinaya/tranche:<src>` → `vinaya/tranche:<dest>` + provenance comment), and annotates the source topology (`Moved out → <dest>`) — all while the source is still in `aeg-root/iterations/`. Moving tasks is the Planner's power; the Archivist neither moves them nor decides the destination.
+1. **Planner refactor-and-plan first.** The Planner plans the destination, relabels the moved Issues (`vinaya/tranche:<src>` → `vinaya/tranche:<dest>` + provenance comment), and annotates the source topology (`Moved out → <dest>`) — all while the source is still in `aeg-root/tranches/`. Moving tasks is the Planner's power; the Archivist neither moves them nor decides the destination.
 2. **Then the Tranche Archivist closes the source.** By now the source has **no open task work** (entry-gate item 1: every task `merged`/`dropped`/`moved`), so the close-out proceeds normally and records the moved tasks under the retrospective's "Tasks moved out" field.
 
 The Planner's readiness-gate item 8 is **carved out** for this one superseded source (it would otherwise deadlock: item 8 wants it archived before planning, but planning is what empties it). Item 8 still fully applies to every *unrelated* prior tranche. This carve-out lives in `planner.md` item 8 and is mirrored here; the two must stay in sync.

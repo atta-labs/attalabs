@@ -119,7 +119,7 @@ const EXEMPT = [
   'docs/decisions-legacy.md',
   'apps/herald-ai/docs/',
   'apps/vada-ai/docs/',
-  'aeg-root/iterations/completed/',
+  'aeg-root/tranches/completed/',
   'packages/aeg-core/src/docs/published-prose',
   'packages/aeg-core/src/retired-vocabulary.test.ts',
   '/fixtures/',

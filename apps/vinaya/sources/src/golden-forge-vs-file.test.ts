@@ -9,7 +9,7 @@ import { describe, expect, it } from 'bun:test'
  * forge-backed and file-backed StateSource designs produce equivalent
  * `Tranche` shapes for the same real tranche, `aeg-forge-state-v1`.
  *
- * `aeg-root/iterations/completed/aeg-forge-state-v1.md` was deleted today by
+ * `aeg-root/tranches/completed/aeg-forge-state-v1.md` was deleted today by
  * PR #521 (part of the archived-tranche-reads-migrate-to-forge work) — the
  * live working-tree path has nothing to parse. The file's last content
  * before deletion is recoverable from git history and is still a genuine
@@ -21,7 +21,7 @@ const OWNER = 'daniboomerang'
 const REPO = 'attalabs'
 const SLUG = 'aeg-forge-state-v1'
 const PINNED_COMMIT = '8112a295'
-const PINNED_PATH = 'aeg-root/iterations/completed/aeg-forge-state-v1.md'
+const PINNED_PATH = 'aeg-root/tranches/completed/aeg-forge-state-v1.md'
 
 /** Fields that matter to the pure evaluators (`deriveTranche`, `sumLedger`
  * consumers): id, title, issue, projects, and the dependency graph.

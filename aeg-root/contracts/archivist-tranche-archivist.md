@@ -39,13 +39,13 @@ This seam sits between closing out one task and closing out the tranche that con
 
 The per-task Archivist closes out individual tasks; the Tranche Archivist closes out the whole tranche. The Tranche Archivist's close-out is only honest if every per-task Archivist ran correctly — a missing provenance block means a task's history is incomplete, and an incomplete history means the retrospective is assembled from gaps rather than facts. This contract specifies exactly what the per-task Archivist must produce before the Tranche Archivist is authorized to begin, and exactly what the Tranche Archivist reads from those outputs.
 
-The failure mode this prevents: an Tranche Archivist who begins close-out before verifying that every task's per-task Archivist ran, and then assembles a retrospective and tranche provenance block that silently omits a task's history or fabricates fields whose source facts were never produced.
+The failure mode this prevents: a Tranche Archivist who begins close-out before verifying that every task's per-task Archivist ran, and then assembles a retrospective and tranche provenance block that silently omits a task's history or fabricates fields whose source facts were never produced.
 
 ---
 
 ## The hand-off carrier
 
-The **set of merged PRs**, each bearing a per-task provenance block comment, plus the **tranche file** at `aeg-root/iterations/<name>.md` which provides the task topology the Tranche Archivist checks against. Every task in the topology must have a merged PR with a provenance block; the absence of either is a gap the Tranche Archivist must flag before proceeding.
+The **set of merged PRs**, each bearing a per-task provenance block comment, plus the **tranche file** at `aeg-root/tranches/<name>.md` which provides the task topology the Tranche Archivist checks against. Every task in the topology must have a merged PR with a provenance block; the absence of either is a gap the Tranche Archivist must flag before proceeding.
 
 ---
 

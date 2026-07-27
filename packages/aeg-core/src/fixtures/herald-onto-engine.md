@@ -1,4 +1,4 @@
-# Iteration: herald-onto-engine — June 2026
+# Tranche: herald-onto-engine — June 2026
 
 **Goal (execution, not product-why):** onboard **Herald onto `@atta/engine`** — express Herald's auditor as a **flow YAML the engine runs** (exactly as Vāda's agents are YAMLs the engine runs), then build **Bulk Audit** (N CVs × M JDs → one forensic report per pair) on top, and finally make the auditor a **tool-using YAML agent** (it gathers its own GitHub evidence) — which requires first **building custom client-side tool execution into the shared engine.** The durable, multi-project win is Herald stopping being special: one engine runs every product's agents, defined declaratively in YAML — including their tools.
 

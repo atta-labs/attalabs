@@ -3,7 +3,7 @@
 /**
  * assign-task-issue — thin CLI/I/O shim for first-push Issue self-assignment
  * (aeg-governance-hardening task 33, #401), wired into `.husky/pre-push`.
- * On a `task/<iteration>/<n>` branch's genuinely first push (the remote ref
+ * On a `task/<tranche>/<n>` branch's genuinely first push (the remote ref
  * does not exist yet), assigns the task's Issue to the authenticated `gh`
  * user — the actual pusher — so Studio's dispatch-visibility chip (task 26,
  * #368) always has a real signal to render instead of depending on the

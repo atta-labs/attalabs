@@ -34,7 +34,7 @@ describe('checkFirstPushDispatchGate — branch-type scoping', () => {
       readiness: 'NOT_READY'
     })
     expect(result.verdict).toBe('allow')
-    expect(result.reason).toContain('not a task/<iteration>/<n> branch')
+    expect(result.reason).toContain('not a task/<tranche>/<n> branch')
   })
 
   it('allows an archive branch regardless of readiness', () => {

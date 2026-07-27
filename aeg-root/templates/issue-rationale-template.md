@@ -7,7 +7,7 @@ sidebar_title: "Template: Issue rationale"
 
 ---
 
-[iteration-slug] [n] — [task title, repeated from the Issue title]
+[tranche-slug] [n] — [task title, repeated from the Issue title]
 
 ## Planner's rationale
 

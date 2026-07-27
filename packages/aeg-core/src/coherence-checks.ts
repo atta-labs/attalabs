@@ -248,7 +248,7 @@ export function checkT2(
  * correctly reddened same-tranche task PR #363's CI, which could neither
  * have caused nor fixed the topology gap. `checkT2`'s own assertion logic
  * (above) is untouched; this only demotes its CI-blocking status when the
- * current PR is NOT a plan PR (i.e. its diff doesn't touch an tranche
+ * current PR is NOT a plan PR (i.e. its diff doesn't touch a tranche
  * topology file) — the only PR kind that can actually close a T2 gap. The
  * underlying findings stay visible (`status: 'info'`, never omitted) for
  * every other context: task-PR CI, `--json`/audit mode, and daily-drift.
@@ -701,7 +701,7 @@ export function checkClosesN(
   if (!iterFile) {
     return {
       ok: false,
-      message: `closes-n: branch "${branch}" references tranche "${iterSlug}" but no topology file found at aeg-root/iterations/${iterSlug}.md. Ensure the tranche file exists before opening the PR.`
+      message: `closes-n: branch "${branch}" references tranche "${iterSlug}" but no topology file found at aeg-root/tranches/${iterSlug}.md. Ensure the tranche file exists before opening the PR.`
     }
   }
 

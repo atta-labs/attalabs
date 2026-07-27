@@ -14,7 +14,7 @@ while read -r _localref _localsha remoteref remotesha; do
   fi
 
   # D-073/D-078: a task/<tranche>/<id> branch may only be pushed when its
-  # <id> literal-matches a row in aeg-root/iterations/<tranche>.md's `#`
+  # <id> literal-matches a row in aeg-root/tranches/<tranche>.md's `#`
   # column. Catches wrong-branch-name pushes (the T-prefix epidemic) at the
   # earliest possible moment instead of leaving them to die at PR-open.
   # Delegates to `parseTranche` via check-branch-topology.ts (task 32,

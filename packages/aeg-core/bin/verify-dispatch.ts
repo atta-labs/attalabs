@@ -154,7 +154,7 @@ function fetchTrancheBranchPrs(trancheSlug: string, repo: RepoRef): Map<string, 
 
 /**
  * Forge-derived (task aeg-forge-state-v1 3a) — no longer reads
- * `aeg-root/iterations/<slug>.md` off `origin/main`; the forge (Milestone +
+ * `aeg-root/tranches/<slug>.md` off `origin/main`; the forge (Milestone +
  * `vinaya/tranche:<slug>`-labeled Issues) is inherently live, so there is no
  * separate "freshly-fetched" version to read. `null` now means the forge
  * call itself failed (network/gh unreachable), not "file absent" — a real,
@@ -264,8 +264,8 @@ function resolvePriorTask(
  * `readOtherActiveTranches` (`apps/vinaya/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.
- * Previously read the local `aeg-root/iterations/*.md` file listing —
- * file-based and unaware of Milestone state, so closing an tranche's
+ * Previously read the local `aeg-root/tranches/*.md` file listing —
+ * file-based and unaware of Milestone state, so closing a tranche's
  * topology file to `completed/` WITHOUT also closing its Milestone left this
  * CLI saying READY while Studio correctly said BLOCKED (reproduced live on
  * `aeg-forge-state-v1`/`aeg-review-gate-v1`, 2026-07-08).

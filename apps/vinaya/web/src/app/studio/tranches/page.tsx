@@ -26,7 +26,7 @@ export default async function TranchesPage() {
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>Tranches</h1>
         <p className='font-sans text-sm text-muted-foreground'>
           All tranches across every project — active from open GitHub Milestones, archived from closed ones (plus a
-          small, closed legacy set from <span className='font-mono'>aeg-root/iterations/completed/</span>).
+          small, closed legacy set from <span className='font-mono'>aeg-root/tranches/completed/</span>).
         </p>
       </header>
 

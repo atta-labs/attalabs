@@ -77,7 +77,7 @@ describe('isSurfacedDoc: model-backed rule', () => {
       'aeg-manual-flow.md',
       'reviewer-prompt.md',
       'documentation-coherence.md',
-      'iteration-model.md',
+      'tranche-model.md',
       'skills/aeg/SKILL.md',
       'templates/brief-template.md'
     ]) {
@@ -98,7 +98,7 @@ describe('isSurfacedDoc: frontmatter override wins both ways', () => {
 
   it('surfaced: true shows a doc no node points at', () => {
     expect(isSurfacedDoc('coordination.md', { surfaced: true }, SURFACED)).toBe(true)
-    expect(isSurfacedDoc('iterations/aeg-consolidation.md', { surfaced: true }, SURFACED)).toBe(true)
+    expect(isSurfacedDoc('tranches/aeg-consolidation.md', { surfaced: true }, SURFACED)).toBe(true)
   })
 })
 

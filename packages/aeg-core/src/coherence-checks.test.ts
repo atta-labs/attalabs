@@ -407,7 +407,7 @@ describe('T2: orphan-task', () => {
     expect(r.failures[0]!.reason).toMatch(/does not appear in the topology/)
   })
 
-  it('pass — empty open issues for an tranche', () => {
+  it('pass — empty open issues for a tranche', () => {
     const openIssues = new Map([['iter-1', []]])
     const topology = new Map([['iter-1', new Set([101])]])
     passesWithNoFailures(checkT2(openIssues, topology))
@@ -621,7 +621,7 @@ describe('T3: tbd-in-active-tranche', () => {
     expect(r.failures[0]!.grandfathered).toBe(false)
   })
 
-  it('info (never fail) — #TBD in an tranche whose forge snapshot fetch failed entirely', () => {
+  it('info (never fail) — #TBD in a tranche whose forge snapshot fetch failed entirely', () => {
     // Simulates total forge failure: every entry in the tranche has facts: undefined,
     // and the tranche's slug is in forgeUnavailableSlugs (snapshotsBySlug never had it).
     const tbdEntry = makeEntry('down-iter', '1', null, undefined, false)
@@ -633,7 +633,7 @@ describe('T3: tbd-in-active-tranche', () => {
     expect(r.failures[0]!.reason).toMatch(/forge data.*unavailable/)
   })
 
-  it('fail — #TBD in an tranche whose forge WAS available, with no pre-cutoff activity (regression guard)', () => {
+  it('fail — #TBD in a tranche whose forge WAS available, with no pre-cutoff activity (regression guard)', () => {
     // Same undefined-facts shape as the case above, but the tranche is NOT in
     // forgeUnavailableSlugs (forge was available; there just happened to be no
     // pre-cutoff activity). Must still fail — the carve-out must not leak here.
@@ -646,7 +646,7 @@ describe('T3: tbd-in-active-tranche', () => {
   })
 
   it("BUG (preserved, not fixed): T3 grandfather proxy uses ANY task in the tranche, not the specific #TBD task's own history", () => {
-    // A #TBD task in an tranche is grandfathered as long as *some other task*
+    // A #TBD task in a tranche is grandfathered as long as *some other task*
     // in the same tranche has a pre-cutoff date — even if the #TBD task
     // itself was added long after COHERENCE_ENFORCED_FROM. This is the
     // "branch-scoping proxy" the brief calls out as a known bug to preserve,

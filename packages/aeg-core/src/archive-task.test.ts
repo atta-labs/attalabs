@@ -68,7 +68,7 @@ describe('taskRefFromBranch', () => {
   })
 })
 
-// #524/#530 regression: a task PR can close an tranche-labeled Issue from a
+// #524/#530 regression: a task PR can close a tranche-labeled Issue from a
 // non-task branch. `extractIssue` is the bin shim's second eligibility signal
 // (alongside `taskRefFromBranch`) — it must find the closing Issue number so
 // the shim can check that Issue's own `vinaya/tranche:*` label.

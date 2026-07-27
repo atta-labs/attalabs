@@ -9,8 +9,8 @@
  * (`checkSinglePlanPr`, `@atta/aeg-core`) forge-side, in CI, on every PR —
  * one implementation per fact (§11 constraint), never a second copy.
  *
- * No-ops (exit 0) for any PR whose diff doesn't touch an tranche topology
- * file — an ordinary task-branch PR never touches `aeg-root/iterations/*.md`,
+ * No-ops (exit 0) for any PR whose diff doesn't touch a tranche topology
+ * file — an ordinary task-branch PR never touches `aeg-root/tranches/*.md`,
  * so this never fires for one (asserted in `verify-single-plan-pr.test.ts`).
  *
  * Usage (CI): PR_NUMBER=<n> bun packages/aeg-core/bin/verify-single-plan-pr.ts

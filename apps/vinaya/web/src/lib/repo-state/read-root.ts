@@ -25,7 +25,7 @@
  * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
  * `deriveTrancheFromForge`, the same adapter the CLI gates use.
  * `dependsOn`/`conflictsWith` for an ACTIVE tranche derive from the forge
- * like everything else. A legacy `aeg-root/iterations/<slug>.md` topology
+ * like everything else. A legacy `aeg-root/tranches/<slug>.md` topology
  * table was once merged in as best-effort enrichment for pre-cutover files;
  * that path was removed by `deprecation-v1` task 1 once it was
  * provably unreachable — no live tranche has carried such a file since
@@ -304,7 +304,7 @@ async function readCompletedFile(fileSlug: string): Promise<Tranche | null> {
 /**
  * Enumerates every archived tranche from the forge (closed Milestones),
  * deriving each one's full `Tranche` via `deriveTrancheFromForge` — then
- * supplements with any `aeg-root/iterations/completed/*.md` file whose slug
+ * supplements with any `aeg-root/tranches/completed/*.md` file whose slug
  * wasn't already resolved via a Milestone. That supplement is the permanent
  * home of the small, closed, non-growing set of pre-Milestone-era legacy
  * tranches (`aeg-forge-state-v1` task 5, #515) — no Milestone exists for

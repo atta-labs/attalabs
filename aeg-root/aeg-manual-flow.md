@@ -5,7 +5,7 @@ sidebar_title: Manual Flow
 
 **Agentic Execution Governance (AEG)**, manual mode. The playbook for running the flow with nothing but a coding agent, a Git forge, and this repo — no orchestration tool required.
 
-Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (the constitution), `iteration-model.md` (the iteration + task model), and the `roles/` docs. This file is the operator's guide: what a human does, in what order, calling which agent, with what in hand.
+Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (the constitution), `tranche-model.md` (the tranche + task model), and the `roles/` docs. This file is the operator's guide: what a human does, in what order, calling which agent, with what in hand.
 
 > **AEG is forge-native, orchestrator-independent.** It depends on a Git forge (GitHub/GitLab) the way it depends on git — the forge is its source of truth for execution state. It does **not** depend on any orchestration tool; a human or a thin dispatch script invokes roles. Knowledge flows one way: a tool may know AEG; AEG does not know the tool.
 
@@ -15,21 +15,21 @@ Companion to `process.md` (the eleven-phase walkthrough), `state-machine.md` (th
 
 AEG "init" is not software — it is a **state the repo is in**. A repo is running AEG when **everything the flow references is present**:
 
-1. **The model layer** — `aeg-root/` scaffold (exists ONCE, at the repo root only): `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `iteration-model.md`, `roles/`, `skills/` (the AEG skills — canonical home); plus `projects.md` only once multi-project.
+1. **The model layer** — `aeg-root/` scaffold (exists ONCE, at the repo root only): `state-machine.md`, `coordination.md`, `process.md`, `aeg-manual-flow.md`, `tranche-model.md`, `roles/`, `skills/` (the AEG skills — canonical home); plus `projects.md` only once multi-project.
 2. **The living-state layer** — forge-native. State only, never the model: active/blocked/next is derived from Issue/branch/PR state, and completed-work history, lessons, per-project operational state, and ratification items live in `git log`/PR history, pinned Issues, and the `needs:principal-input` label respectively.
 3. **The enforcement layer (referenced by the model, so it must travel with it):**
-   - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `iteration-model.md` §5).
+   - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `tranche-model.md` §5).
    - the `verify-docs` script (`packages/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate. The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
-   - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`iteration-model.md` §9.3).
+   - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`tranche-model.md` §9.3).
    - the generated agent-surface skill view (e.g. `.claude/skills/`) — derived from `aeg-root/skills/`.
-4. At least one iteration file exists, and the role docs are reachable.
+4. At least one tranche file exists, and the role docs are reachable.
 
 You can create that by hand, or use **`aeg.sh`** — one self-contained, downloadable shell script (from the AEG site). It is a **dumb scaffolder**: it writes files, nothing else. It does not dispatch agents, query the forge, or reason — that's a tool's or a human's job. Self-contained (scaffold embedded, no network) so you can read every byte first. It lays down **all four layers above** — not just `aeg-root/` + `aeg-project/` — so the unit it produces is complete: nothing the model references is missing. Subcommands:
 
 ```
 aeg init [folder]                       # scaffold the repo (once): model + state + enforcement + skills
 aeg add-project <name> --path <folder>  # register a project (creates/appends projects.md + stubs)
-aeg new-iteration <name>                # create a thin iteration topology file
+aeg new-tranche <name>                # create a thin tranche topology file
 aeg generate-skills                     # regenerate the agent-surface skill view from aeg-root/skills/
 ```
 
@@ -51,14 +51,18 @@ A **task is a forge Issue.** Its status is never written anywhere — it is **de
 
 | Status | Forge fact |
 |--------|-----------|
-| `todo` | Issue open (assigned or unassigned), no branch — all open iteration tasks are minimum `todo`; `backlog` is project-level only |
-| `in-flight` | branch `task/<iteration>/<n>` exists, no PR |
+| `todo` | Issue open (assigned or unassigned), no branch — all open tranche tasks are minimum `todo`; `backlog` is project-level only |
+| `in-flight` | branch `task/<tranche>/<n>` exists, no PR |
 | `in-review` | PR open |
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
 | `merged` | PR merged (Issue auto-closes) |
-| `blocked` | `aeg:blocked` label present |
+| `blocked` | `vinaya/blocked` label present — wins over every other conclusion |
+| `dropped` | Issue closed `NOT_PLANNED` — decided against, not done |
+| `incoherent` | Issue closed `COMPLETED` with no merged PR — done-but-unprovable, surfaced for a human |
 
-So **no role ever writes status.** Opening the PR *is* the in-review signal; merging *is* the done signal. To see the board you query the forge (`gh pr list`, the Issues view, a project board) — you never read status from a file. The thin iteration file holds only topology (task→issue, dependency/conflict edges); see `iteration-model.md`.
+This table is a **reader's summary, not the source.** The authoritative list is `DERIVED_STATUSES` + the ordered `DERIVATION_RULES` in `packages/aeg-core/src/state-machine-model.ts`, rendered live at `/state-machine`; order is load-bearing there in ways a flat table cannot show.
+
+So **no role ever writes status.** Opening the PR *is* the in-review signal; merging *is* the done signal. To see the board you query the forge (`gh pr list`, the Issues view, a project board) — you never read status from a file. The thin tranche file holds only topology (task→issue, dependency/conflict edges); see `tranche-model.md`.
 
 ---
 
@@ -74,7 +78,7 @@ So **no role ever writes status.** Opening the PR *is* the in-review signal; mer
 
 When invoked, an agent does not trust that you called it correctly. It checks two things first: **is this my phase?** (given forge state) and **is my input well-formed?** If either fails, it **refuses or redirects.** Every role has an entry gate.
 
-**Shared state = the forge** (Issue / branch / PR / review / merge) **+ the thin iteration file** (topology). The gates read state that exists whether or not any tool runs. **The PR is the state machine:** no PR yet = not ready to review; open PR = ready to review; merged PR = ready to close out. That's what makes the gates work identically with or without a tool — and why no agent needs to write status.
+**Shared state = the forge** (Issue / branch / PR / review / merge) **+ the thin tranche file** (topology). The gates read state that exists whether or not any tool runs. **The PR is the state machine:** no PR yet = not ready to review; open PR = ready to review; merged PR = ready to close out. That's what makes the gates work identically with or without a tool — and why no agent needs to write status.
 
 ---
 
@@ -84,7 +88,7 @@ Self-location (§4) is *what* an agent verifies before acting. The **conversatio
 
 This is a **shared, model-level protocol**. Each role specializes it in its own role doc (the Planner's specialization is in `roles/planner.md` — the first written; Brief Author, Developer, and Reviewer specializations follow as each is modeled). The shared spine, which no role overrides:
 
-1. **Announce the role on entry.** Open by naming who you are and what you're about to do. The Principal should never be unsure which role/mode they're talking to. *"I'm the Planner. I'll turn this intent into an iteration — readiness gate first, then sizing, then the topology and the Issues."*
+1. **Announce the role on entry.** Open by naming who you are and what you're about to do. The Principal should never be unsure which role/mode they're talking to. *"I'm the Planner. I'll turn this intent into a tranche — readiness gate first, then sizing, then the topology and the Issues."*
 
 2. **Name the stages, and always say which one you're in.** State the stages up front; at each transition, say where you are. The Principal should be able to point at any moment and know the stage. *"Readiness — running it now."* … *"Readiness passed. Moving to sizing."*
 
@@ -108,7 +112,7 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 | Step | Role | You hand it | It produces | Entry gate (refuses if…) |
 |------|------|-------------|-------------|--------------------------|
-| 0 | **Planner** (Brief Author mode) | intent + a ticket slice | an iteration: Issues + thin topology file | asked to write one brief / to implement |
+| 0 | **Planner** (Brief Author mode) | intent + a ticket slice | a tranche: Issues + thin topology file | asked to write one brief / to implement |
 | 1 | **Principal** (you) | an intent / goal | a decision to proceed, a tier | — |
 | 2 | **Brief Author** (Brief Author mode) | the intent + the task's Issue | a brief, all sections | asked to write code instead of a brief |
 | 3 | **Developer** | the brief | a worktree, the work, an open PR (brief in body) | input isn't a well-formed brief; a `depends-on` isn't merged; a `conflicts-with` sibling's PR is open |
@@ -120,17 +124,17 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 | 8 | **Principal** (you) | a PR with all Test Plan checkboxes ticked AND review verdicts clean | the merge | any Test Plan checkbox unticked, or review/security verdict unresolved |
 | 9 | **Archivist** | "close out the PR for task N" | a close-out report + provenance block | **PR is not merged** |
 
-Each agent finds the task's PR via the branch convention `task/<iteration>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
+Each agent finds the task's PR via the branch convention `task/<tranche>/<n>` and self-locates from forge state. Nobody writes status — the forge already reflects every transition. Every conversational role in this table follows the conversational protocol (§4.5): it announces itself, signposts its stage, and closes out clearly.
 
 > **Verification is a phase, not a new actor.** Steps 7a and 7b are different halves of the **Verification phase** (`roles/developer.md` § Verification), split by who can structurally execute each test-plan item: the Developer-agent runs `[agent]` items because they don't require auth/keys/eyes-on-render; the Principal runs `[principal]` items because they do. Mirror of the chat-vs-terminal token-capture asymmetry. **Doctrine: CI green ≠ app boots ≠ feature works** — a passed review is not a green light to merge; a ticked-checkbox Test Plan is. A brief whose §4 surface is pure-logic declares `Test Plan: unit-tests-only` (a first-class allowed value) and Phase 11 is satisfied by the CI unit-test gate alone — no runtime execution needed.
 
-### Iteration-close trigger
+### Tranche-close trigger
 
-**When the last open task branch for an iteration is merged, the iteration enters Iteration Close** (Phase 13 in `process.md`). Detect this by querying the forge: `gh pr list --state open --json number,headRefName` filtered to branches matching `task/<iteration>/*` — if nothing returns, the iteration's last task has merged.
+**When the last open task branch for a tranche is merged, the tranche enters Tranche Close** (Phase 13 in `process.md`). Detect this by querying the forge: `gh pr list --state open --json number,headRefName` filtered to branches matching `task/<tranche>/*` — if nothing returns, the tranche's last task has merged.
 
-The Principal **initiates** iteration close explicitly (declares "we're closing this iteration" and hands off to the Planner / Brief Author). The Archivist **may detect** it automatically in future versions — when all task PRs merged and no open branches remain for the iteration. Until then, the Principal's explicit call is the gate.
+The Principal **initiates** tranche close explicitly (declares "we're closing this tranche" and hands off to the Planner / Brief Author). The Archivist **may detect** it automatically in future versions — when all task PRs merged and no open branches remain for the tranche. Until then, the Principal's explicit call is the gate.
 
-See `process.md` Phase 13 for the full close-out steps: verify all tasks merged, run a brief retrospective, archive the iteration file, update state docs, ratify pending Type 1 decisions, declare what's next.
+See `process.md` Phase 13 for the full close-out steps: verify all tasks merged, run a brief retrospective, archive the tranche file, update state docs, ratify pending Type 1 decisions, declare what's next.
 
 ### Pre-merge gate (Step 8 prerequisite)
 
@@ -146,7 +150,7 @@ Before the Principal merges (Step 8), any Developer helping merge or pushing a "
 
 If any fails: post a comment listing the exact items missing. The Principal decides whether to proceed.
 
-> **At the end of every role's turn: report your tokens — you do not append your own row** to the iteration's token/cost ledger (`aeg-root/iterations/<name>.tokens.md`). No role writes its own row on a task branch: terminal roles (Developer; Archivist when automated) report exact figures from `/cost` in the PR body; chat roles (Planner, Brief Author, Reviewer, Security) report in their verdict comment or planning report, numeric cells `—` if unknown. The per-task **Archivist** collects every report and appends the rows — Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — post-merge at close-out; never edits a row; re-entry appends. See `iteration-model.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
+> **At the end of every role's turn: report your tokens — you do not append your own row** to the tranche's token/cost ledger (`aeg-root/tranches/<name>.tokens.md`). No role writes its own row on a task branch: terminal roles (Developer; Archivist when automated) report exact figures from `/cost` in the PR body; chat roles (Planner, Brief Author, Reviewer, Security) report in their verdict comment or planning report, numeric cells `—` if unknown. The per-task **Archivist** collects every report and appends the rows — Phase, Role, Agent/Model, Tokens in, Tokens out, Cost, Date — post-merge at close-out; never edits a row; re-entry appends. See `tranche-model.md` §12 for the canonical format and the rationale; the file is a §13 append-only artifact.
 
 ---
 
@@ -176,7 +180,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 **Archivist** (close-out)
 - Requires a **merged** PR. Refuses: not merged → *"Nothing to close out; merge first."*
-- Confirms: Issue closed (the merge auto-closes it if linked), docs updated, per-project pinned state Issue updated for every project the task listed. Sets the iteration's `Lifecycle: complete` marker and moves the file to `iterations/completed/` when every task is merged (`iteration-model.md` §11). (`now.md` no longer exists.)
+- Confirms: Issue closed (the merge auto-closes it if linked), docs updated, per-project pinned state Issue updated for every project the task listed. Sets the tranche's `Lifecycle: complete` marker and moves the file to `tranches/completed/` when every task is merged (`tranche-model.md` §11). (`now.md` no longer exists.)
 - Assembles the **provenance block** from frozen facts (brief, PR reviews, merge metadata) and posts it to the merged PR (append-only, never a status field) — see `roles/archivist.md`.
 - Flags — does not perform — orphaned branches (branch with no/stale PR) and local worktree removal as cleanup candidates for the human. Writes no status (the merge already is the status).
 - Produces a close-out report listing anything dangling.
@@ -187,7 +191,7 @@ If any fails: post a comment listing the exact items missing. The Principal deci
 
 ## 7. What an automation layer adds (and doesn't change)
 
-A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock escalations, and enforce the dependency/conflict gates in code at dispatch. It does **not** change the gates, roles, brief rules, iteration model, task-as-Issue model, or order. If the tool is unavailable, you run the same flow by hand against the forge. The flow is primary; the tool is convenience — and AEG never names it.
+A tool can automate the steps 2→6 hand-offs: spawn the Developer in a fresh worktree from a brief, stream its work, unblock escalations, and enforce the dependency/conflict gates in code at dispatch. It does **not** change the gates, roles, brief rules, tranche model, task-as-Issue model, or order. If the tool is unavailable, you run the same flow by hand against the forge. The flow is primary; the tool is convenience — and AEG never names it.
 
 ---
 
@@ -197,7 +201,7 @@ A team will not bet a production repo on a new governance model on day one. So A
 
 In observe mode:
 - The team keeps its existing workflow untouched — its Jira/Linear, its branching, its PR habits. AEG sits *beside* it, not in front of it.
-- The roles run in **advisory** posture: the Reviewer and Security passes produce their verdicts, the Planner can map existing work into an iteration's topology, the Archivist can assemble provenance — but **none of it blocks a merge.** A finding is a comment, not a gate.
+- The roles run in **advisory** posture: the Reviewer and Security passes produce their verdicts, the Planner can map existing work into a tranche's topology, the Archivist can assemble provenance — but **none of it blocks a merge.** A finding is a comment, not a gate.
 - **Status is still derived** from the forge (read-only) — the board (`gh pr list`, the future AEG UI) renders what's already happening. AEG writes nothing.
 - `verify-docs` and the dispatch gates run in **report-only** mode (surfacing what *would* fail), not blocking.
 
@@ -209,4 +213,4 @@ A team can sit in observe mode indefinitely and still get the audit-by-construct
 
 ---
 
-For the iteration / task / conflict model, see `iteration-model.md`. For the Planner's gates and conversational protocol, see `roles/planner.md`. For authority, tiers, and the advisory→enforced gradient, see `state-machine.md`. For the registry, see `projects.md`. For provenance, see `roles/archivist.md`.
+For the tranche / task / conflict model, see `tranche-model.md`. For the Planner's gates and conversational protocol, see `roles/planner.md`. For authority, tiers, and the advisory→enforced gradient, see `state-machine.md`. For the registry, see `projects.md`. For provenance, see `roles/archivist.md`.
