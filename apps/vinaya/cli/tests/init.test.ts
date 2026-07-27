@@ -197,6 +197,52 @@ describe('vinaya init', () => {
   })
 })
 
+describe('remoteless graceful-skip (spec D3)', () => {
+  it('warns, skips labels, and still installs + prints the summary — no gh-auth requirement either', async () => {
+    let ghAuthCalled = false
+    const deps = makeDeps({
+      detectRepo: async () => ({ repoRoot: root, owner: '', repo: '' }),
+      checkGhAuth: async () => {
+        ghAuthCalled = true
+        return false // would fail the run if it were ever consulted
+      }
+    })
+
+    let rc = -1
+    const out = await captureStdout(async () => {
+      rc = await runInit(['--yes'], deps)
+    })
+
+    expect(ghAuthCalled).toBe(false)
+    expect(rc).toBe(0)
+    expect(out).toContain('Vinaya installed')
+    expect(out).not.toContain('vinaya/tier:0') // no label ops rendered
+
+    // everything except labels still installed
+    for (const p of [
+      CONFIG_PATH,
+      DOCTRINE_POINTER_PATH,
+      CHECKS_WORKFLOW_PATH,
+      REVIEW_WORKFLOW_PATH,
+      '.husky/pre-commit'
+    ]) {
+      expect(existsSync(join(root, p))).toBe(true)
+    }
+    expect(createdLabels).toEqual([])
+  })
+
+  it('init product scaffolds nothing (its only op is a label) but still exits clean', async () => {
+    await runInit(['--yes'], makeDeps())
+    createdLabels = []
+    const rc = await runInitProduct(
+      ['mobile', '--yes'],
+      makeDeps({ detectRepo: async () => ({ repoRoot: root, owner: '', repo: '' }) })
+    )
+    expect(rc).toBe(0)
+    expect(createdLabels).toEqual([])
+  })
+})
+
 describe('never-clobber', () => {
   it('appends to a pre-existing hook and REFUSES a foreign workflow + root VINAYA.md', async () => {
     mkdirSync(join(root, '.husky'), { recursive: true })
