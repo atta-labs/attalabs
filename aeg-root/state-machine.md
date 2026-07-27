@@ -354,12 +354,6 @@ Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED
 
 **Exception:** filling `Superseded by:` / `Ratified by:` on an existing entry (and flipping its `Status:` to match) is permitted — narrow forward-reference edits that preserve the append-only intent.
 
-**Carve-out — the `iteration` → `tranche` migration rewrote the archive.** The archived tranche files and their token ledgers (`aeg-root/tranches/completed/**`, moved from `aeg-root/iterations/completed/**`) were rewritten in place when the batch-of-tasks concept was renamed. That is a deliberate departure from the rule above, taken by Principal ruling, and it is recorded here rather than left to contradict the rule silently.
-
-The reasoning: a rename is not new understanding of what happened. Every fact in those files — which tasks shipped, in what order, at what cost — is untouched; only the noun naming the batch changed. Leaving the archive on the old word would have split the vocabulary permanently in the one place a reader goes to learn what the vocabulary *was*, and made the completeness grep that proves the rename total impossible to satisfy without an ever-growing allow-list. Append-only protects the record from being edited to suit a new story; it is not a reason to keep two names for one thing.
-
-This carve-out is **not** a precedent for editing history to match new understanding. It licenses exactly one class of edit — a pure, repo-wide vocabulary substitution that changes no asserted fact — and only when the substitution is applied everywhere at once.
-
 ---
 
 ## Section 14: Label Vocabulary

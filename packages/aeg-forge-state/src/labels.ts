@@ -251,38 +251,6 @@ export const LABELS: Label[] = [
   }
 ]
 
-/**
- * Superseded label ids a key still MATCHES but never CONSTRUCTS — the migration
- * seam that lets code and forge disagree for a bounded window.
- *
- * A label rename is two writes that cannot be atomic: the code that names the
- * label ships in a merge commit, the ~170 Issues carrying it are renamed by a
- * separate `gh label edit` pass. Whichever goes first, there is an interval in
- * which one side knows a name the other does not — and a matcher that knows
- * only the new name stops every gate at once during it. Accepting both names
- * removes the interval: the code merges reading either, the forge is renamed
- * afterwards at leisure, and no gate ever sees a label it cannot classify.
- *
- * Read by `matchesLabel` and `trancheSlugOf` only. Construction (`label()`,
- * `trancheLabel()`, the length check) always uses the canonical `id`, so
- * nothing new is ever written under a superseded name.
- *
- * **This map is temporary by construction.** Each entry is deleted once its
- * forge objects carry the canonical id — deleting it is the last step of the
- * migration that added it, not optional cleanup.
- */
-const SUPERSEDED_IDS: Partial<Record<LabelKey, readonly string[]>> = {
-  // `iteration` → `tranche` (this migration). Drop once every
-  // `vinaya/iteration:*` label has been renamed on the forge.
-  tranche: ['vinaya/iteration:']
-}
-
-/** Every id `key` accepts when matching — canonical first, then superseded. */
-function acceptedIds(l: Label): readonly string[] {
-  const superseded = SUPERSEDED_IDS[l.key]
-  return superseded ? [l.id, ...superseded] : [l.id]
-}
-
 const BY_KEY = new Map<LabelKey, Label>(LABELS.map((l) => [l.key, l]))
 
 function entry(key: LabelKey): Label {
@@ -309,33 +277,13 @@ export function trancheLabel(slug: string): string {
 }
 
 /**
- * Every full label `slug`'s Issues may currently carry — the canonical one
- * first, then any id in `SUPERSEDED_IDS` still live on the forge.
- *
- * `trancheLabel()` is for CONSTRUCTION: the one name a new Issue is given.
- * This is for QUERYING, and the two cannot be the same function during a
- * rename. A forge query names a label and the server matches it exactly, so a
- * query built from the canonical id alone returns nothing at all while the
- * objects still carry the old name — silently, as an empty result rather than
- * an error, which reads to every gate as "this tranche has no tasks".
- * Reading has to span the migration window in both directions; only writing
- * stays canonical.
- *
- * Callers must union the results and dedupe by Issue number: an Issue mid-
- * migration can legitimately carry both labels.
- */
-export function trancheLabelsToQuery(slug: string): string[] {
-  return acceptedIds(entry('tranche')).map((prefix) => `${prefix}${slug}`)
-}
-
-/**
  * Whether `name` is this label — exact match for a literal, prefix match for a
  * prefix family.
  */
 export function matchesLabel(key: LabelKey, name: string): boolean {
   const l = entry(key)
-  if (l.form === 'prefix') return acceptedIds(l).some((id) => name.startsWith(id))
-  return acceptedIds(l).some((id) => name === id)
+  if (l.form === 'prefix') return name.startsWith(l.id)
+  return name === l.id
 }
 
 /** Whether any label in `names` matches `key`. */
@@ -345,14 +293,11 @@ export function hasLabel(key: LabelKey, names: readonly string[]): boolean {
 
 /**
  * The tranche slug carried by `name`, or `null` when it is not a tranche
- * label. Accepts every id in `SUPERSEDED_IDS` alongside the canonical prefix,
- * so a slug reads the same either side of a label rename.
+ * label.
  */
 export function trancheSlugOf(name: string): string | null {
-  for (const prefix of acceptedIds(entry('tranche'))) {
-    if (name.startsWith(prefix)) return name.slice(prefix.length)
-  }
-  return null
+  const prefix = entry('tranche').id
+  return name.startsWith(prefix) ? name.slice(prefix.length) : null
 }
 
 /** The first tranche slug in `names`, or `null` when none carries one. */

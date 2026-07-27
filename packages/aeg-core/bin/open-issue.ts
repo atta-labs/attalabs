@@ -45,7 +45,7 @@ import {
   amendRationaleDeps,
   findTrancheSlug,
   findMilestoneForSlug,
-  trancheLabelsToQuery,
+  trancheLabel,
   trancheSlugLengthError,
   type MilestoneFacts,
   parseRationaleDeps
@@ -454,7 +454,7 @@ function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssue
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }
     )
     return (JSON.parse(out) as Array<{ number: number; body: string; labels: Array<{ name: string }> }>)
-      .filter((i) => i.labels.some((l) => trancheLabelsToQuery(slug).includes(l.name)))
+      .filter((i) => i.labels.some((l) => l.name === trancheLabel(slug)))
       .filter((i) => String(i.number) !== String(selfRef ?? '').replace(/^#/, ''))
       .map((i) => ({
         ref: `#${i.number}`,

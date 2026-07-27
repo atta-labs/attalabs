@@ -120,9 +120,8 @@ function dedupeByNumber(issues: GhIssue[]): GhIssue[] {
  * Issues carrying ANY of `labels` — one query per label, unioned and deduped.
  *
  * `gh issue list` treats repeated `--label` flags as AND, so an OR needs
- * separate calls. The caller that needs this is a label rename in flight: the
- * same tranche's Issues can be split across a canonical and a superseded name
- * (`trancheLabelsToQuery`), and either half alone is a wrong answer.
+ * separate calls — the general primitive any multi-label query needs,
+ * independent of why the caller is passing more than one label.
  */
 export function ghIssueListByAnyLabel(owner: string, repo: string, labels: readonly string[]): GhIssue[] {
   return dedupeByNumber(labels.flatMap((l) => ghIssueListByLabel(owner, repo, l)))

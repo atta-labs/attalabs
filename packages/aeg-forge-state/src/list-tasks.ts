@@ -1,6 +1,6 @@
 import type { Task, TaskIssueRef } from '@atta/aeg-types'
 import { type GhIssue, ghIssueListByAnyLabel, ghIssueListByAnyLabelAsync } from './gh'
-import { findTrancheSlug, trancheLabelsToQuery } from './labels'
+import { findTrancheSlug, trancheLabel } from './labels'
 import { parseRationaleDeps } from './parse-rationale-deps'
 
 /** Issue title convention: `[<tranche-slug>] <task-id> — <title>`, the same
@@ -98,12 +98,12 @@ function tasksFromIssues(issues: GhIssue[]): Task[] {
  * `slug` — the `vinaya/tranche:<slug>` label is the authoritative membership
  * signal; a title typo should not silently drop a real task. */
 export function listTasksForSlug(owner: string, repo: string, slug: string): Task[] {
-  return tasksFromIssues(ghIssueListByAnyLabel(owner, repo, trancheLabelsToQuery(slug)))
+  return tasksFromIssues(ghIssueListByAnyLabel(owner, repo, [trancheLabel(slug)]))
 }
 
 /** Async twin of `listTasksForSlug` — non-blocking `gh` exec, same transform. */
 export async function listTasksForSlugAsync(owner: string, repo: string, slug: string): Promise<Task[]> {
-  return tasksFromIssues(await ghIssueListByAnyLabelAsync(owner, repo, trancheLabelsToQuery(slug)))
+  return tasksFromIssues(await ghIssueListByAnyLabelAsync(owner, repo, [trancheLabel(slug)]))
 }
 
 /**
