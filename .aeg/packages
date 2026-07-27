@@ -2,11 +2,11 @@
 #
 # Named as canonical by three governance docs that never had a file to point
 # at: `.vinaya/projects.md` ("Routing vs. conflicts"),
-# `aeg-root/iterations/README.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
+# `aeg-root/iteration-model.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
 # This file is that missing artifact.
 #
 # WHAT A LINE MEANS. One collision domain per line: a repo-relative path
-# prefix. Two tasks conflict if they touch the same domain (README §5) — the
+# prefix. Two tasks conflict if they touch the same domain (§5 of that doc) — the
 # domains are declared and static; there is no dynamic path-overlap scanner
 # (forbidden, §9/§10).
 #

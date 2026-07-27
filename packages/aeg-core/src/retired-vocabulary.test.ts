@@ -147,8 +147,15 @@ const PRODUCT = [
   '.claude/skills/aeg-roles'
 ]
 
-/** Everything an agent in this repo reads. */
+/**
+ * Everything an agent in this repo reads.
+ *
+ * `.aeg` is here because `.aeg/packages` is live config — `checkBlastRadiusScope`
+ * reads it — and it was the one governance artifact in neither list, which is
+ * how it came to cite a doc that had been renamed out from under it.
+ */
 const SCOPE = [
+  '.aeg',
   'aeg-root',
   '.claude',
   '.github',
@@ -170,7 +177,10 @@ function grep(pattern: string, scope: string[] = SCOPE): string[] {
         '--include=*.ts',
         '--include=*.tsx',
         '--include=*.yml',
-        '--include=doc-owners'
+        // Both extensionless governance files: the doc-ownership manifest and
+        // the collision-domain list. A glob-only include cannot see either.
+        '--include=doc-owners',
+        '--include=packages'
       ],
       { cwd: REPO_ROOT, encoding: 'utf8' }
     )
