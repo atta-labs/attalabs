@@ -6,10 +6,8 @@ sidebar_title: Enforcement Map
 # substitute: this repo's docs renderer (react-markdown, no rehype-raw)
 # surfaces them as literal text on the page — verified live.
 provenance: >
-  The architectural reasoning behind each gate lives in
-  docs/decisions-legacy.md; the normative registry of every gate lives
-  in aeg-root/state-machine.md. Both are unpublished, so neither is named in
-  this file's reader-facing prose.
+  The normative registry of every gate lives in aeg-root/state-machine.md.
+  It is unpublished, so it is not named in this file's reader-facing prose.
 ---
 # Enforcement Map — how the forge stays valid
 

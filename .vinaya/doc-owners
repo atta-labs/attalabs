@@ -20,7 +20,7 @@
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
 #     - dangling pointer → in-repo pointer that does not exist on disk: FAIL
-#   Escape (D-097):
+#   Escape:
 #     A PR-wide `vinaya/waiver:docs` label whose labeling timeline event's actor is a
 #     configured principal suppresses every fired binding for that PR — a
 #     forge-authenticated human act, never a parseable string. There is no
@@ -30,7 +30,7 @@
 #   This file absent, OR no glob matches any changed code file → silent no-op.
 #   The gate has no opinion until you teach it one.
 #
-# ── No-doc allow-list (D-063) ───────────────────────────────────────────────
+# ── No-doc allow-list ───────────────────────────────────────────────────────
 # Surfaces that legitimately need no bound doc are listed below.  Format:
 #   # no-doc: <glob> — <reason>
 # These lines exempt the matching directory from the completeness scoreboard
@@ -66,8 +66,8 @@ packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md
 
 # ── Bind-all pass (aeg-governance-hardening task 3, 2026-07-02) ────────────
-# Populates doc-owners to scoreboard completeness (D-069 conformance; backlog
-# T4 named in state-machine.md Section 15). See
+# Populates doc-owners to scoreboard completeness (backlog T4, named in
+# state-machine.md Section 15). See
 # aeg-root/iterations/aeg-governance-hardening.audit.md for the full audit
 # table and rationale per binding.
 
@@ -96,10 +96,10 @@ apps/herald-ai/web/src/app/api/audit/**               .claude/skills/herald-engi
 apps/*/web/src/app/api/**                             .claude/skills/ui-api-routes/SKILL.md
 
 # packages/atta-agents note: this is the physical home of the `@atta/agents`
-# package (Agent/CustomToolSpec primitives) per D-051 — distinct from
+# package (Agent/CustomToolSpec primitives) — distinct from
 # packages/agents/<name>/ (per-agent implementation packages, already bound
 # above). Bound to atta-engine's SKILL.md, which documents the Agent-type
 # contract in depth. CLAUDE.md's package table row ("@atta/agents |
-# packages/agents/") is stale against D-051 — see audit artifact; out of this
+# packages/agents/") is stale — see audit artifact; out of this
 # task's edit surface (root CLAUDE.md is not in the audited 23-skill +
 # 97-spec universe).

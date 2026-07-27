@@ -7,13 +7,13 @@
  * rate-limit-friendly and avoids aggregating REST `/reviews` for
  * `reviewDecision`.
  *
- * Read-only, always (AEG D-029). No writes, no labels, no comments.
+ * Read-only, always. No writes, no labels, no comments.
  *
  * Graceful degradation contract:
  *   - No token discoverable → returns `{ facts: empty, unavailable: true }`.
  *   - Network error / 401 / 403 / 5xx → same.
  *   - Tasks with no Issue number (`null`) are omitted from the query and the
- *     map; `deriveIteration` treats absent entries as `todo` (D-059).
+ *     map; `deriveIteration` treats absent entries as `todo`.
  *
  * SERVER-ONLY. Pulls `node:child_process` transitively via
  * `resolveGithubToken`.

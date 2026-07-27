@@ -3,7 +3,7 @@ sidebar_title: Documentation Coherence
 ---
 # Documentation Coherence — who reads, who writes, and when
 
-Documentation coherence is not one obligation — it is a relay across every role in the flow, each leg governed by a role-seam contract. This page indexes that relay: what each role reads before it acts, what it writes as it hands off, and the two enforcement tracks (judgment vs. mechanical) that keep the relay from silently dropping a doc. It does not restate the authoritative sources — `docs/decisions-legacy.md`, the seam contracts, `state-machine.md` §15, and `enforcement.md` remain canonical; this page cross-links them.
+Documentation coherence is not one obligation — it is a relay across every role in the flow, each leg governed by a role-seam contract. This page indexes that relay: what each role reads before it acts, what it writes as it hands off, and the two enforcement tracks (judgment vs. mechanical) that keep the relay from silently dropping a doc. It does not restate the authoritative sources — the seam contracts, `state-machine.md` §15, and `enforcement.md` remain canonical; this page cross-links them.
 
 ---
 

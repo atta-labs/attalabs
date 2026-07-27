@@ -1,6 +1,6 @@
 /**
- * Batched resolver for `checkClosesN`'s reverse-direction check (D-069
- * Layer 1 reverse, `@atta/aeg-core`'s `coherence-checks.ts`) — given the
+ * Batched resolver for `checkClosesN`'s reverse-direction check (Layer 1
+ * reverse, `@atta/aeg-core`'s `coherence-checks.ts`) — given the
  * Issue numbers a PR body's `Closes #N` references, resolves each to its
  * AEG task identity (`resolveTaskIssueRef`) if it's a real task Issue, or
  * `null` if it's an ordinary (non-task) Issue.

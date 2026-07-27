@@ -42,7 +42,7 @@ The conversational role set is: **Principal, Planner / Brief Author, Developer, 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, contracts, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, and the active iteration there. It never expects a per-project copy of the model.
 
-Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the root `docs/decisions-legacy.md` (governance is global) **plus** the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `.vinaya/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules. (.)
+Living **state** is held in `aeg-project/` folders: one at the repo root (for monorepo-level tasks) and one per project (`apps/<x>/aeg-project/`, `packages/<y>/aeg-project/`). A task updates the `aeg-project/` slice of each project it touches (one for a single-project task, several for a cross-project task — resolve which via `.vinaya/projects.md`). An `aeg-project/` folder holds state only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
 
 ---
 
@@ -116,14 +116,13 @@ Rows = artifact types. Columns = roles. "—" means no authority. The Reviewer i
 
 | Artifact | Principal | Planner / Brief Author | Developer | Archivist |
 |----------|-----------|-------------|-----------|-----------|
-| **Conversation logs** | Promotes decisions to log, flags for retention | Writes during chat, proposes promotions to D-### | Reads only | Cannot mutate |
+| **Conversation logs** | Flags for retention | Writes during chat; proposes what belongs in the pull request | Reads only | Cannot mutate |
 | **Iteration topology files** (`iterations/*.md`) | Approves PR | Writes (Planner mode) at plan time — task→issue map + edges + grouping; **no status, no PR numbers, no dates** | — | Flags execution-metadata creep in drift cron |
 | **Role-seam contracts** (`contracts/*.md`) | Approves PR; Type 1 ratification (a contract is a cross-role interface) | Proposes via PR; changes producer + consumer sides together (Tier 3) | — | Flags a role doc that contradicts its contract in drift cron |
 | **Task Issues** (identity + metadata) | Approves merge | Creates (Planner mode); metadata + Planner's rationale — no brief, no status, no planning fields | Reads; references via `Closes #N` | Validates template (no forbidden fields) |
 | **Briefs (dispatched)** | Can amend via reply to escalation | Can amend via reply to escalation — logged as an event, NOT a brief edit | Reads only — brief is frozen after dispatch; escalate if wrong | Cannot mutate |
 | **Briefs (pre-dispatch)** | Approves the brief | Writes the brief just-in-time per the `brief-authoring` skill, consuming the planner-brief contract; pastes to Developer (lands in PR body) | — | Validates structure; flags malformed (`vinaya/needs:brief-correction`) |
-| **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies via D-### if spec-only | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
-| **Decision logs** (per-project + global) | Approves Type 1 entries; ratifies PENDING Type 2 at windows | Appends Type 2 entries; labels Type 1 entries `vinaya/needs:principal-input` | Appends in PR per brief scope | Validates D-### sequence and supersession integrity |
+| **Specs** (`apps/*/specs/*.md`) | Approves PR; ratifies a spec-only change | Coherence review on PR; can open spec-only PRs | Writes in PR per brief scope | Validates cross-references; flags stale specs in drift cron |
 | **Skills** (canonical `aeg-root/skills/*/SKILL.md`) | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale skill references in drift cron |
 | **Agent defs** | Approves PR | Coherence review | Writes in PR per brief scope | Flags stale agent references in drift cron |
 | **`state.md`** | Approves PR | Writes in PR | Flags state changes needed in PR description | Updates per-project state at close-out, for every project the task listed |
@@ -463,7 +462,7 @@ The tier system (Section 9) is class-level — "what kind of work is this, and w
 
 ### `Doc-ack:` — the one remaining PR-body field; the waiver is a label, not a field
 
-`Doc-ack:` is a **PR-body field**, parsed from the body text — *not* a GitHub label. It lives alongside `Conforms-to: D-###` and `Tier:` in the canonical PR body (form in `roles/developer.md` § PR body — canonical form).
+`Doc-ack:` is a **PR-body field**, parsed from the body text — *not* a GitHub label. It lives alongside `Tier:` in the canonical PR body (form in `roles/developer.md` § PR body — canonical form).
 
 - `Doc-ack: <pointer> — <note>` — acknowledgment for URL bindings. Unaffected — an acknowledgment, not a bypass.
 

@@ -68,13 +68,13 @@ describe('LABELS — shape', () => {
     }
   })
 
-  it('every id lives under the vinaya/ product namespace (D-123)', () => {
+  it('every id lives under the vinaya/ product namespace', () => {
     for (const l of LABELS) {
       expect(l.id.startsWith(LABEL_NAMESPACE), `'${l.id}' is not namespaced`).toBe(true)
     }
   })
 
-  it('no id carries the retired aeg name (D-123)', () => {
+  it('no id carries the retired aeg name', () => {
     for (const l of LABELS) {
       expect(l.id.includes('aeg')).toBe(false)
     }
@@ -92,7 +92,7 @@ describe('LABELS — shape', () => {
     }
   })
 
-  it('carries no status:* label — execution status is derived, never written (D-059/D-069)', () => {
+  it('carries no status:* label — execution status is derived, never written', () => {
     expect(LABELS.some((l) => l.id.includes('status:'))).toBe(false)
   })
 
@@ -155,7 +155,7 @@ describe('LABELS — shape', () => {
 describe('label() — the only sanctioned constructor', () => {
   it('names the labels the detection bins MINT on first fire — never a literal in the bin', () => {
     // Both bins create their own label the first time they fire. A literal
-    // there would have minted a retired `aeg:`-named label (D-123).
+    // there would have minted a retired `aeg:`-named label.
     expect(label('direct-main-push')).toBe('vinaya/direct-main-push')
     expect(label('dead-branch-push')).toBe('vinaya/dead-branch-push')
   })
@@ -257,7 +257,7 @@ describe('iterationSlugLengthError() — GitHub’s 50-character cap', () => {
 })
 
 describe('AEG_BLOCKED_LABEL — tied to its LABELS entry', () => {
-  it("resolves to the namespaced 'vinaya/blocked' (D-123 retires the aeg: name)", () => {
+  it("resolves to the namespaced 'vinaya/blocked' — the aeg: name is retired", () => {
     expect(AEG_BLOCKED_LABEL).toBe('vinaya/blocked')
     expect(AEG_BLOCKED_LABEL).toBe(label('blocked'))
   })

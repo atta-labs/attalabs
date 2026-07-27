@@ -151,7 +151,7 @@ describe('mapForgeFacts', () => {
     })
   })
 
-  describe('stateReason projection (D-069 — honest terminal derivation)', () => {
+  describe('stateReason projection — honest terminal derivation', () => {
     it("COMPLETED → 'completed'", () => {
       const facts = mapForgeFacts(
         rawBase({ issue: { state: 'CLOSED', stateReason: 'COMPLETED', assigneesCount: 1, labels: [] } })

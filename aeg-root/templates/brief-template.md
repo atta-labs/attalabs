@@ -22,7 +22,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 
 - **Iteration:** [`iteration-slug`], task [n], Issue #[N]. Branch `task/[iteration-slug]/[n]`. `Depends-on: [—|ids]`, `Conflicts-with: [—|ids]`. Confirm `READY TO DISPATCH` at your own Step 0.
 - **Read Issue #[N] in full** for the complete rationale — do not re-derive it.
-- [CONTEXT — the Planner's rationale carried forward (boundary, blast radius, traps), what was previously validated, what's locked (D-### references), and everything your own Dig confirmed about the current surface. If it isn't in the brief, it doesn't exist.]
+- [CONTEXT — the Planner's rationale carried forward (boundary, blast radius, traps), what was previously validated, what is settled and must not be re-litigated, and everything your own Dig confirmed about the current surface. If it isn't in the brief, it doesn't exist.]
 
 ## 3. Technical dependencies
 

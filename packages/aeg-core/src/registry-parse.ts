@@ -37,7 +37,7 @@ export type GateRow = {
    * three ring tables and resolved by header name (see the lookup below).
    *
    * The counterpart to `spec`, and not interchangeable with it — `spec` is
-   * written to ENFORCE: 17 of the 31 real rows cite a `D-###`, a `#NNN`, a
+   * written to ENFORCE: 17 of the 31 real rows cite an Issue number, a
    * task number or a file path, and the longest runs 2708 chars. That is
    * correct for a gate and unreadable on a page. This column is the same fact
    * addressed to a person, and is what a row's `summary` question gets

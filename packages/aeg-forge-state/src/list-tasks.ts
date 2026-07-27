@@ -7,8 +7,8 @@ import { parseRationaleDeps } from './parse-rationale-deps'
  * shape every Vinaya Issue is opened with (`open-issue.ts`, brief-authoring). */
 export const TITLE_PATTERN = /^\[([^\]]+)]\s*(\S+)\s*—\s*(.+)$/
 
-/** Reads the `**Project:**` field from a task Issue's rationale body (the D-078
- * grammar). Project is a **field, not a label** (doctrine): `state-machine-v1`
+/** Reads the `**Project:**` field from a task Issue's rationale body (the
+ * Planner-rationale grammar). Project is a **field, not a label** (doctrine): `state-machine-v1`
  * task 2 / #614 dropped the `project:*` labels outright, so the field is the
  * only source. It also resolves a forge-native task Issue that carries only the
  * field and never got a label (the `state-machine-v1` dead-board case). Matches
@@ -118,7 +118,7 @@ export async function listTasksForSlugAsync(owner: string, repo: string, slug: s
  * shape closely enough to yield a task id; a bracket/label slug mismatch
  * (title typo) doesn't invalidate the label's membership signal.
  *
- * Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1 reverse,
+ * Used by `checkClosesN`'s reverse-direction check (Layer 1 reverse,
  * `@atta/aeg-core`'s `coherence-checks.ts`).
  */
 export function resolveTaskIssueRef(title: string, labels: string[]): TaskIssueRef | null {

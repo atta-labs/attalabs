@@ -102,8 +102,8 @@ function rewriteField(section: string, field: FieldKey, ids: string[], date: str
  * that five live incidents this session drifted apart (#429/#431, #388 twice,
  * #382) because nothing forced them to change together. Both happen in this one
  * function; there is no way to do one without the other (Issue #481, drift
- * class #1; the Ring 0 shape modeled on D-097's "the sanctioned path is the
- * only path").
+ * class #1; the Ring 0 shape follows the rule that "the sanctioned path is
+ * the only path").
  *
  * Deterministic and pure — `date` is injected. The amendment paragraph is
  * appended at the very END of the body, which keeps it structurally OUTSIDE the

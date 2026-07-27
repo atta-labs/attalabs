@@ -39,8 +39,8 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  *
  * The name is `shortLabel(humanLabel(...))`: `humanLabel` strips a `G1 —`..
  * "G5 —" prefix and stray backticks for display, `shortLabel` cuts a doctrine
- * `Action` cell down to its first clause — 29% carry a parenthetical or a
- * D-###/#NNN citation, and a name is not a citation. `node.label` keeps the
+ * `Action` cell down to its first clause — 29% carry a parenthetical or an
+ * Issue citation, and a name is not a citation. `node.label` keeps the
  * full string as the stable id everywhere else.
  *
  * The badge is one flat fill for every value, never keyed to WHICH category

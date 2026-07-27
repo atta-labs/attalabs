@@ -130,7 +130,7 @@ Before a brief is dispatchable, confirm **every one of the seven Planner fields 
 - [ ] **Stop-and-escalate** → are the Planner's stop conditions copied into the brief's **Stop conditions (§10)**, substance-verbatim?
 - [ ] **No instruction contradicts the surface map** → if the brief tells the executor to **delete or rename a shared symbol** (a constant, type, export, function), confirm **every importer is inside the §4 surface.** If an importer is out-of-surface, the "delete it" instruction and the "don't touch that file" boundary contradict — defer the deletion to the task that owns the importer, and say so in the brief. (See the **shared-symbol importer check** in §4.)
 - [ ] **Row-existence and Issue-existence preconditions** → does the task's row exist at all in the iteration topology file, read from a freshly-fetched `origin/main`? If not, the plan PR hasn't merged — **STOP** and do not author the brief. If the row exists, does its Issue column carry a real GitHub Issue number (not `#TBD`, not blank)? If not, the task is backlog — **STOP** and surface the need for the Planner to cut the Issue before proceeding. A brief cannot carry `Closes #N` without a real N. (Mirrors Developer entry gate items 3 and 7; catches it one stage earlier, during Dig.)
-- [ ] ~~**Task-status coherence precondition** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED ** — no longer a checklist item item 1 is removed as a hard-STOP. See `docs/decisions-legacy.md`. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
+- [ ] ~~**Task-status coherence precondition** → for every in-scope prior task, do all three predicates hold: Issue closed, PR merged to main, provenance block present?~~ **SUPERSEDED** — no longer a checklist item; the prior-task archival bar is removed as a hard-STOP. (Mirrors Developer entry gate item 5, prior-iteration-archival, which remains live; item 4 is the superseded one.)
 - [ ] **Read obligation + §7 populated from reading** → did you identify and read the relevant specs/skills/docs for this task's code surface during the Dig? Does §7 name every doc this task will make incoherent (or state "No doc updates required" if none)? A §7 populated from memory rather than from reading is malformed — the Brief Author's reading is what makes the DoD obligation trustworthy.
 
 Plus the brief's own structural gates: worktree Step 0 present; `Tier:` declared; doc-update list non-empty for Tier 1+; **Test Plan (§9) present and tagged** — either `Test Plan: unit-tests-only` (and §4 has no runtime surface) or a checkbox list with at least one `[agent]` or `[principal]` item per reachable surface kind; the standing autonomy clause present in §11; no `[NEEDS CLARIFICATION]` left unresolved. When all boxes tick, announce it (protocol step 4/6) and the brief is dispatchable.
@@ -305,7 +305,7 @@ A discrete top-level section between §8 (Verification before claiming done) and
 
 #### Why it is its own gate, not just part of §8
 
-Across the `aeg-ui-v1` iteration, four features merged CI-green and were broken at runtime — missing DB migration, missing env var, missing IdentityProvider, an unexecuted polymorphic-input test plan. The structural cause: §8's static gates ran (and passed), and the test plan in the brief was *read* by the code-reviewer but never *executed* against the booted app. A separate, named, mandatory Test Plan section + the Verification phase that consumes it is what closes the gap. (.)
+Across the `aeg-ui-v1` iteration, four features merged CI-green and were broken at runtime — missing DB migration, missing env var, missing IdentityProvider, an unexecuted polymorphic-input test plan. The structural cause: §8's static gates ran (and passed), and the test plan in the brief was *read* by the code-reviewer but never *executed* against the booted app. A separate, named, mandatory Test Plan section + the Verification phase that consumes it is what closes the gap.
 
 ### 10. Stop conditions
 
@@ -419,7 +419,7 @@ Exploratory briefs only. Reduces to typecheck + lint + a pull-request record of 
 If the brief executes a Type 1 (irreversible) decision:
 
 ```
-**Executes Type 1 decision:** D-### — [one-line description]
+**Executes Type 1 decision:** [one-line description]
 **Ratified:** [date, or "PENDING — do not dispatch until ratified"]
 ```
 

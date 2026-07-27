@@ -2,10 +2,10 @@
  * labels.ts — the canonical, code-owned enumeration of every Vinaya label that
  * carries meaning to the mechanism. Pure data, zero I/O, zero imports beyond
  * its own types — the same discipline as `actions.ts` and `waiver-label.ts`
- * (D-119: one pure-data list, read by both the logic and the rendered docs,
- * so the two can never drift).
+ * (one pure-data list, read by both the logic and the rendered docs, so the
+ * two can never drift).
  *
- * ## The `vinaya/` namespace (D-123)
+ * ## The `vinaya/` namespace
  *
  * Every label the mechanism reads lives under the `vinaya/` product namespace.
  * The grammar is three separators, each with one job:
@@ -18,7 +18,7 @@
  * `iteration` axis, the `state-machine-v1` value. The namespace makes every
  * Vinaya label sortable and filterable as one group in a repo it shares with
  * an adopter's own labels — the reason a product namespace exists at all.
- * D-123 retired `aeg` as a public name, so no `aeg:*` label survives:
+ * retired `aeg` as a public name, so no `aeg:*` label survives:
  * `aeg:blocked` became `vinaya/blocked`, and the forge's `aeg:incoherent` /
  * `aeg:stale-blocker` were renamed in place (history preserved).
  *
@@ -50,7 +50,7 @@
  * waived are independent axes, and no code should infer one from another.
  *
  * **Status is not in here, and must never be.** Execution status is derived
- * from forge objects (`state-machine-model.ts`, D-059/D-069), never written
+ * from forge objects (`state-machine-model.ts`,), never written
  * as a label — a `status:*` label would recreate the racing status store the
  * derivation model exists to eliminate. **Project is not in here either**: a
  * task's project is a `**Project:**` field in its Issue body, never a label.
@@ -163,7 +163,7 @@ export const LABELS: Label[] = [
     id: 'vinaya/tier:3',
     category: 'tier',
     form: 'literal',
-    carries: 'Tier 1 plus a decision-log anchor — a new decision, or Conforms-to on an existing one.'
+    carries: 'Tier 1 plus the reasoning for the change, stated in the pull request that makes it.'
   },
   {
     key: 'iteration',
@@ -205,14 +205,14 @@ export const LABELS: Label[] = [
     id: 'vinaya/waiver:docs',
     category: 'waiver',
     form: 'literal',
-    carries: 'Doc-coverage gate excused for this PR — honored only when a principal applied it (D-097).'
+    carries: 'Doc-coverage gate excused for this PR — honored only when a principal applied it.'
   },
   {
     key: 'waiver-review',
     id: 'vinaya/waiver:review',
     category: 'waiver',
     form: 'literal',
-    carries: 'Review gate excused for this PR — honored only when a principal applied it (D-097).'
+    carries: 'Review gate excused for this PR — honored only when a principal applied it.'
   },
   {
     key: 'override-docs',
@@ -226,7 +226,7 @@ export const LABELS: Label[] = [
     id: 'vinaya/incoherent',
     category: 'flag',
     form: 'literal',
-    carries: 'Closed COMPLETED with no merged-PR link — done-but-unprovable, surfaced for a human (D-069).'
+    carries: 'Closed COMPLETED with no merged-PR link — done-but-unprovable, surfaced for a human.'
   },
   {
     key: 'direct-main-push',
@@ -247,7 +247,7 @@ export const LABELS: Label[] = [
     id: 'vinaya/state-object',
     category: 'kind',
     form: 'literal',
-    carries: 'A permanent forge-native storage object (D-110), never actionable work — excluded from every backlog.'
+    carries: 'A permanent forge-native storage object, never actionable work — excluded from every backlog.'
   }
 ]
 
@@ -331,7 +331,7 @@ export function iterationSlugLengthError(slug: string): string | null {
  *
  * The export name keeps its `AEG_` prefix on purpose: it is a code symbol, not
  * a label string, and renaming it is a consumer-wide churn this migration does
- * not need. What D-123 retires is the *label* — its value is `vinaya/blocked`.
+ * not need. What retires is the *label* — its value is `vinaya/blocked`.
  * Prefer `hasLabel('blocked', labels)` for matching; this constant is for
  * construction.
  */

@@ -1,8 +1,11 @@
 # Decisions — legacy archive (frozen 2026-07-26)
 
 **History, not machinery.** No check reads this file. No gate requires an entry.
-It is kept because thousands of `D-###` citations across code, specs, skills and
-doctrine resolve here.
+It is kept for two reasons: several hundred `D-###` citations still resolve here
+from this monorepo's other products and its own tooling, and it is the record of
+how this repo reached its current shape. The harness itself no longer cites it —
+`aeg-root`, `packages/aeg-core` and `apps/vinaya` carry none, deliberately: they
+are what an adopter installs, and an adopter has none of this history.
 
 Do not add entries. A decision that still binds belongs in the spec for the
 surface it governs, where a `doc-owners` binding keeps it current. A decision

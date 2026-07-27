@@ -87,7 +87,7 @@ if (import.meta.main) {
     console.error(
       `check-no-disk-state FAILED: ${offenders.length} file(s) create new on-disk state that must instead derive from the forge:\n` +
         offenders.map((f) => `  - ${f.path} (${f.status})`).join('\n') +
-        '\n\nSee docs/decisions-legacy.md — no live file duplicates forge state.'
+        '\n\nNo live file duplicates forge state.'
     )
     process.exit(1)
   }

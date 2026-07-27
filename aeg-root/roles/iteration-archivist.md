@@ -91,7 +91,7 @@ Post a new comment on the pinned lessons Issue — never edit an existing commen
 <Distilled as rules. E.g. "Schema-change PRs must list drizzle-kit push and new env vars in the PR body — they are not done at merge without those steps.">
 
 ### Decisions made this iteration (Type 1, ratified)
-<List D-### entries created. Status: ratified/pending.>
+<List each decision and the pull request that carries it. Status: ratified/pending.>
 
 ### Unbuilt tasks
 <Any tasks planned but not built, with current status: deferred to next iteration / backlogged / abandoned.>
@@ -146,7 +146,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - Duration: <first merge date> → <last merge date>
 - Milestone: closed (forge-native — or "iterations file moved to `aeg-root/iterations/completed/<name>.md`" for a legacy pre-cutover iteration)
 - Retrospective: posted to the pinned lessons Issue
-- Pending Type 1 ratifications: [list D-### or "none"]
+- Pending Type 1 ratifications: [list, or "none"]
 - Dangling items: [list or "none"]
 - Principal declaration: [quote or "dispatched without explicit quote — Principal to confirm"]
 - Closed by: this Iteration Archivist run, <date>
@@ -194,7 +194,7 @@ ARCHIVED: aeg-root/iterations/completed/<name>.md ✓ | FAILED (reason)
 STATE:
 - pinned state Issue(s) updated ✓ (current-focus pointer, pending-manual-ops, recently-shipped entry)
 
-PENDING RATIFICATIONS: [list D-### with one-line description] | none
+PENDING RATIFICATIONS: [list with one-line description] | none
 
 DANGLING (requires Principal action):
 - Worktrees to remove: [list git worktree remove commands]

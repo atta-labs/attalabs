@@ -4,7 +4,7 @@ export type ParsedRationaleDeps = {
 }
 
 /**
- * The one grammar (D-078). These four constants ARE the "Dependency rationale"
+ * The one grammar. These four constants ARE the "Dependency rationale"
  * grammar; `parseRationaleDeps` (reader) and `amendRationaleDeps` (writer, in
  * `amend-rationale-deps.ts`) are the only two functions allowed to read them —
  * never a second copy of the regexes. Exported so the writer shares this exact
