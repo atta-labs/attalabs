@@ -1,5 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { DOC_OWNERS_PATH, evaluateC5, globToRegex, isUrlPointer, parseDocOwners, pointerToPath } from './doc-owners'
+import {
+  classifyDocOwnersManifest,
+  DOC_OWNERS_PATH,
+  evaluateC5,
+  globToRegex,
+  isUrlPointer,
+  parseDocOwners,
+  pointerToPath
+} from './doc-owners'
+
+/**
+ * `verify-dispatch --surfaces` must distinguish a repo that never configured
+ * doc ownership from one whose manifest resolved to nothing — the second is a
+ * broken derivation reporting success, which is the failure a silent `exit 0`
+ * used to hide. Four review rounds flagged this branch as untested; it was
+ * untestable while it lived inside a command that chdirs to the repo root.
+ */
+describe('classifyDocOwnersManifest', () => {
+  it('absent — no manifest at all is dormant, never a failure', () => {
+    expect(classifyDocOwnersManifest(null)).toBe('absent')
+  })
+
+  it('empty — a manifest that exists but says nothing must never read as success', () => {
+    expect(classifyDocOwnersManifest('')).toBe('empty')
+    expect(classifyDocOwnersManifest('   \n\n  \t\n')).toBe('empty')
+  })
+
+  it('present — any real content, including comment-only, is parsed rather than assumed', () => {
+    expect(classifyDocOwnersManifest('packages/ui/**  docs/ui.md')).toBe('present')
+    // A comment-only manifest is a deliberate, configured state: it parses to
+    // zero bindings, which the caller reports as "no mechanical floor" — a
+    // different outcome from "the file was not there."
+    expect(classifyDocOwnersManifest('# bindings intentionally removed\n')).toBe('present')
+  })
+})
 
 describe('globToRegex (doc-owners glob → regex)', () => {
   it('** matches across slashes; * does not', () => {

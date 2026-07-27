@@ -23,6 +23,11 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 /** Claims that a removed mechanism is current. */
 const RETIRED_IN_PRODUCT = [
   String.raw`\bD-\d{3}\b`,
+  // The placeholder forms too. A doc that says `D-###` or `## D-NNN` is
+  // teaching the grammar of a record that no longer exists, which is the same
+  // failure as citing a real one — and it is the form four sweeps missed,
+  // because a census for digits never sees a hash.
+  String.raw`\bD-(###|NNN|nnn|xxx)\b`,
   // `decision log`, in every inflection, but never `decision logic` — the
   // latter is ordinary English about where branching lives, and has nothing to
   // do with the retired record. Written without a lookahead: `grep -E` is POSIX
@@ -30,6 +35,10 @@ const RETIRED_IN_PRODUCT = [
   'decision log(s|ged|ging)?([^a-z]|$)',
   'decision-log',
   'decision entr',
+  // The verb forms a noun-phrase census steps over: "decisions are logged",
+  // "logged as a", "without log entries".
+  'decisions? (are |is )?logged',
+  'log entries',
   String.raw`decisions\.md`,
   'CONTRADICTION',
   'assumes Tier 3'

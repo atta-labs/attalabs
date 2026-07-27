@@ -41,7 +41,7 @@ aeg generate-skills                     # regenerate the agent-surface skill vie
 
 AEG is the flow. A tool may *automate the orchestration slice* — collapsing the hand-offs between roles into commands — but it is not the flow, and the flow does not depend on it. Everything below runs by hand: you open your coding agent, name the role, the agent reads its role doc, checks whether it should act now (against forge state), and does the work.
 
-**Manual mode is the teaching mode.** Companies fear AI because work happens invisibly. AEG's hand-offs make the invisible visible: each is a checkpoint where a human sees a risk automation hides — why review is separate from authorship, why the brief is frozen into the PR, why nothing merges without a human, why decisions are logged. Running it by hand once teaches the *why* of every gate.
+**Manual mode is the teaching mode.** Companies fear AI because work happens invisibly. AEG's hand-offs make the invisible visible: each is a checkpoint where a human sees a risk automation hides — why review is separate from authorship, why the brief is frozen into the PR, why nothing merges without a human, why the reasoning is frozen with the change. Running it by hand once teaches the *why* of every gate.
 
 ---
 

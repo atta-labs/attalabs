@@ -11,6 +11,26 @@ export const DOC_OWNERS_PATH = '.vinaya/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
 
+/**
+ * What a caller found where the manifest should be.
+ *
+ * `absent` — a repo that never configured doc ownership. Legitimately dormant.
+ * `empty` — a manifest that exists but has nothing in it. This is the shape a
+ *   misresolved repo root produces, and reporting it as success is how a broken
+ *   derivation passes for a real one. It is a refusal, not a dormancy.
+ * `present` — parse it.
+ *
+ * Split out of `verify-dispatch --surfaces` so the three-way decision is
+ * testable: the CLI chdirs to the repo root before reading, so the branch is
+ * unreachable from a test as long as it lives inside the command.
+ */
+export type DocOwnersManifestState = 'absent' | 'empty' | 'present'
+
+export function classifyDocOwnersManifest(content: string | null): DocOwnersManifestState {
+  if (content === null) return 'absent'
+  return content.trim() === '' ? 'empty' : 'present'
+}
+
 export type C5Result = { errors: string[]; notes: string[] }
 
 /**

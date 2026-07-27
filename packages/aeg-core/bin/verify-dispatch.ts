@@ -91,6 +91,7 @@ import {
   type DispatchPriorIterationFact,
   type DispatchPriorTaskFact,
   deriveSection7,
+  classifyDocOwnersManifest,
   DOC_OWNERS_PATH,
   parsePremiseBlock
 } from '../src/index'
@@ -485,20 +486,22 @@ function runSurfacesMode(surfacesArg: string): void {
   // reporting success — the failure mode a silent `exit 0` used to hide. The
   // two are distinguished by whether the manifest exists where config says.
   const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  if (docOwnersContent === null) {
+  const manifestState = classifyDocOwnersManifest(docOwnersContent)
+  if (manifestState === 'absent') {
     console.log(
       `verify-dispatch --surfaces: no doc-ownership manifest at ${DOC_OWNERS_PATH} — dormant, no bindings to check.`
     )
     process.exit(0)
   }
-  if (docOwnersContent.trim() === '') {
+  if (manifestState === 'empty') {
     console.error(
       `verify-dispatch --surfaces: ${DOC_OWNERS_PATH} is empty — refusing to report an empty derivation as success.`
     )
     process.exit(1)
   }
 
-  const { pointers, matches, errors } = deriveSection7(surfaces, docOwnersContent)
+  // `present` is the only state that reaches here, so the content is a string.
+  const { pointers, matches, errors } = deriveSection7(surfaces, docOwnersContent as string)
   if (errors.length > 0) {
     console.error(`verify-dispatch --surfaces: ${DOC_OWNERS_PATH} parse error(s):`)
     for (const e of errors) console.error(`  ✗ ${e}`)

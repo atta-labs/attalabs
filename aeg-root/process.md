@@ -57,7 +57,7 @@ The Principal brings an idea. The Brief Author pressure-tests, pushes back, surf
 
 If already locked or specced, the conversation ends here. If genuinely new, it produces a shared understanding of what the work is, why now, its tier, and its decision profile — which the Planner then turns into Issues (the iteration).
 
-**Artifacts:** usually none (conversation is ephemeral). A significant decision is logged as a D-### during the chat.
+**Artifacts:** usually none (conversation is ephemeral). A significant decision is stated in the pull request that carries the work.
 
 **Exit:** the idea dies, or it's worth planning into an iteration.
 

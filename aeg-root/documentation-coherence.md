@@ -47,7 +47,7 @@ Some of these docs are read by strangers, not only by agents that carry this rep
 
 > **A reader-facing published doc contains no token that requires insider knowledge — no decision ids, section refs, Issue/PR numbers, iteration slugs, or internal paths; state facts in plain words. Machine fields and named references to other published docs are exempt.**
 
-State the fact in plain words and delete the token; the sentence must stay true and complete for a stranger. Exempt: machine fields a parser/build reads (`Conforms-to:`, `## D-NNN` headings, frontmatter keys), and named references to other **published** docs a reader can open.
+State the fact in plain words and delete the token; the sentence must stay true and complete for a stranger. Exempt: machine fields a parser/build reads (frontmatter keys), and named references to other **published** docs a reader can open.
 
 **This rule is mechanized — C7, in `verify-docs`.** It scans the text that actually reaches a reader and nothing else: for a role or contract that is the `## The short version` section (the binding opener each one now carries), and for the enforcement map it is the introduction plus the four columns the page renders — the row's own name, `Summary`, `Category`, `Description`. The enforcing columns are never scanned; they exist to gate, not to read. C7 also asserts the structure of that section: all four blocks present, in order, inside the word band. It runs **blocking at the pull-request gate**, scoped to the doctrine files the diff touched, and again repo-wide in full mode. Protocol mechanics an adopter must learn — the isolated-worktree path and the task branch convention — are explicit, tested exemptions rather than accidental passes.
 

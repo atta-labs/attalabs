@@ -201,7 +201,7 @@ DANGLING (requires Principal action):
 - Branches to delete: [list]
 - Unbuilt tasks: [list with Issue numbers]
 - Missing provenance blocks: [list]
-- Type 1 decisions without log entries: [list]
+- Type 1 decisions awaiting ratification: [list]
 
 PROVENANCE BLOCK: posted to PR #N ✓ | INCOMPLETE (missing: [fields])
 
