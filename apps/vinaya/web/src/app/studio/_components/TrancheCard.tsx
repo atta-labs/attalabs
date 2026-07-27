@@ -3,12 +3,14 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
 import type { TrancheSummary } from '@/lib/repo-state'
 import { NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
+import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
 
 type TaskProgressProps = {
   counts: TrancheSummary['taskCounts']
+  archived: boolean
 }
 
-function TaskProgress({ counts }: TaskProgressProps) {
+function TaskProgress({ counts, archived }: TaskProgressProps) {
   const { total, done, ongoing, todo, blocked, forgeAvailable } = counts
 
   if (!forgeAvailable) {
@@ -19,7 +21,10 @@ function TaskProgress({ counts }: TaskProgressProps) {
     )
   }
 
-  if (done === total) {
+  // An archived tranche's counts are forced to done === total (`read-root.ts`),
+  // so this chip already covered both `archived` and `awaiting-archive` before
+  // the shared derivation existed — "not active" preserves that, unchanged.
+  if (deriveTrancheStatus(counts, archived) !== 'active') {
     return (
       <span className='inline-block rounded border border-success/50 px-1.5 py-0.5 font-mono text-xs font-medium uppercase tracking-wider text-success'>
         done
@@ -73,7 +78,7 @@ export function TrancheCard({ tranche: it, href, showProjects = false }: Tranche
         {showProjects && it.projects.length > 0 && <p>projects · {it.projects.join(' · ')}</p>}
         {!href && <p className='font-sans text-xs text-muted-foreground/70'>{NO_BOARD_REASON}</p>}
         {it.goal && <p className='line-clamp-2 font-sans text-xs'>{it.goal}</p>}
-        <TaskProgress counts={it.taskCounts} />
+        <TaskProgress counts={it.taskCounts} archived={it.archived} />
       </CardContent>
     </Card>
   )
