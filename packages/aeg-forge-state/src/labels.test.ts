@@ -215,6 +215,11 @@ describe('matchesLabel() / hasLabel()', () => {
     expect(hasLabel('tier-1', ['bug', 'vinaya/tier:3'])).toBe(false)
     expect(hasLabel('iteration', [])).toBe(false)
   })
+
+  it('accepts the superseded tranche prefix — the migration window is OPEN', () => {
+    expect(matchesLabel('iteration', 'vinaya/tranche:anything-at-all')).toBe(true)
+    expect(hasLabel('iteration', ['bug', 'vinaya/tranche:iter'])).toBe(true)
+  })
 })
 
 describe('iterationSlugOf() / findIterationSlug()', () => {
@@ -234,6 +239,15 @@ describe('iterationSlugOf() / findIterationSlug()', () => {
   it('findIterationSlug() returns the first slug in a label set', () => {
     expect(findIterationSlug(['bug', 'vinaya/tier:1', 'vinaya/iteration:iter'])).toBe('iter')
     expect(findIterationSlug(['bug', 'vinaya/tier:1'])).toBeNull()
+  })
+
+  it('reads a slug from the superseded tranche prefix too, so a rename is invisible here', () => {
+    expect(iterationSlugOf('vinaya/tranche:state-machine-v1')).toBe('state-machine-v1')
+    expect(findIterationSlug(['bug', 'vinaya/tranche:iter'])).toBe('iter')
+  })
+
+  it('still constructs under the canonical prefix only', () => {
+    expect(iterationLabel('iter')).toBe('vinaya/iteration:iter')
   })
 })
 

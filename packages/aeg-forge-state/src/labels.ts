@@ -251,6 +251,38 @@ export const LABELS: Label[] = [
   }
 ]
 
+/**
+ * Superseded label ids a key still MATCHES but never CONSTRUCTS — the migration
+ * seam that lets code and forge disagree for a bounded window.
+ *
+ * A label rename is two writes that cannot be atomic: the code that names the
+ * label ships in a merge commit, the ~170 Issues carrying it are renamed by a
+ * separate `gh label edit` pass. Whichever goes first, there is an interval in
+ * which one side knows a name the other does not — and a matcher that knows
+ * only the new name stops every gate at once during it. Accepting both names
+ * removes the interval: the code merges reading either, the forge is renamed
+ * afterwards at leisure, and no gate ever sees a label it cannot classify.
+ *
+ * Read by `matchesLabel` and `iterationSlugOf` only. Construction (`label()`,
+ * `iterationLabel()`, the length check) always uses the canonical `id`, so
+ * nothing new is ever written under a superseded name.
+ *
+ * **This map is temporary by construction.** Each entry is deleted once its
+ * forge objects carry the canonical id — deleting it is the last step of the
+ * migration that added it, not optional cleanup.
+ */
+const SUPERSEDED_IDS: Partial<Record<LabelKey, readonly string[]>> = {
+  // `iteration` → `tranche` (this migration). Drop once every
+  // `vinaya/iteration:*` label has been renamed on the forge.
+  iteration: ['vinaya/tranche:']
+}
+
+/** Every id `key` accepts when matching — canonical first, then superseded. */
+function acceptedIds(l: Label): readonly string[] {
+  const superseded = SUPERSEDED_IDS[l.key]
+  return superseded ? [l.id, ...superseded] : [l.id]
+}
+
 const BY_KEY = new Map<LabelKey, Label>(LABELS.map((l) => [l.key, l]))
 
 function entry(key: LabelKey): Label {
@@ -282,8 +314,8 @@ export function iterationLabel(slug: string): string {
  */
 export function matchesLabel(key: LabelKey, name: string): boolean {
   const l = entry(key)
-  if (l.form === 'prefix') return name.startsWith(l.id)
-  return name === l.id
+  if (l.form === 'prefix') return acceptedIds(l).some((id) => name.startsWith(id))
+  return acceptedIds(l).some((id) => name === id)
 }
 
 /** Whether any label in `names` matches `key`. */
@@ -293,11 +325,14 @@ export function hasLabel(key: LabelKey, names: readonly string[]): boolean {
 
 /**
  * The iteration slug carried by `name`, or `null` when it is not an iteration
- * label.
+ * label. Accepts every id in `SUPERSEDED_IDS` alongside the canonical prefix,
+ * so a slug reads the same either side of a label rename.
  */
 export function iterationSlugOf(name: string): string | null {
-  const prefix = label('iteration')
-  return name.startsWith(prefix) ? name.slice(prefix.length) : null
+  for (const prefix of acceptedIds(entry('iteration'))) {
+    if (name.startsWith(prefix)) return name.slice(prefix.length)
+  }
+  return null
 }
 
 /** The first iteration slug in `names`, or `null` when none carries one. */
