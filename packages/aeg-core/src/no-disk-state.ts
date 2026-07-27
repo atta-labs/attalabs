@@ -5,16 +5,16 @@
  * — it already did):
  *
  * (a) A live iteration topology file directly under `aeg-root/iterations/`
- *     (not a subdirectory), other than `README.md` — the residue class
- *     this task's own Part B proved unnecessary (forge derivation already
- *     covers it, see `aeg-drift-prevention-v1.md`'s deletion). Fails on
- *     `added` OR `modified`: this file class shouldn't exist at all
- *     post-cutover, whether newly created or resurrected via an edit.
+ *     (not a subdirectory) — the residue class this task's own Part B proved
+ *     unnecessary (forge derivation already covers it, see
+ *     `aeg-drift-prevention-v1.md`'s deletion). Fails on `added` OR
+ *     `modified`: this file class shouldn't exist at all post-cutover,
+ *     whether newly created or resurrected via an edit.
  *
  * (b) Any `.md` file anywhere under `aeg-root/iterations/` (any depth,
- *     including `completed/**`), other than `README.md` — but ONLY when
+ *     including `completed/**`) — but ONLY when
  *     `added`. `completed/**`'s existing files are legacy archive
- * (explicitly excludes them, per `iterations/README.md` §4/§11 —
+ * (explicitly excludes them, per `iteration-model.md` §4/§11 —
  *     they're never deleted or migrated, and editing one to fix a typo
  *     must stay legal); this rule instead closes the gap a path-shape-only
  *     exemption would leave open — a BRAND NEW file smuggled directly into
@@ -35,11 +35,13 @@ export type DiskStateFileStatus = 'added' | 'modified'
 const TOP_LEVEL_TOPOLOGY_FILE = /^aeg-root\/iterations\/[^/]+\.md$/
 const ANY_DEPTH_ITERATIONS_MD = /^aeg-root\/iterations\/.*\.md$/
 const TOKENS_FILE = /\.tokens\.md$/
-const README = 'aeg-root/iterations/README.md'
 
 export function isNewDiskStateFile(path: string, status: DiskStateFileStatus): boolean {
-  if (path === README) return false
-
+  // The iteration model doc used to live at `aeg-root/iterations/README.md`
+  // and needed an explicit carve-out here so editing it never read as new disk
+  // state. It is now `aeg-root/iteration-model.md`, outside the directory this
+  // guard watches, so the carve-out is gone rather than left as a line that
+  // can never fire.
   if (TOP_LEVEL_TOPOLOGY_FILE.test(path)) return true
 
   if (status !== 'added') return false

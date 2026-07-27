@@ -1,5 +1,5 @@
 /**
- * Typed model for AEG artifacts. See `aeg-root/iterations/README.md` for the
+ * Typed model for AEG artifacts. See `aeg-root/iteration-model.md` for the
  * canonical specification (§3 status table, §4 thin-file template).
  *
  * This module is pure: no I/O. The parser produces these shapes from file
@@ -126,7 +126,7 @@ export type DerivedIteration = {
 
 /**
  * One row of the append-only per-iteration token/cost ledger. See
- * `aeg-root/iterations/README.md` §12 for the canonical format. Each role
+ * `aeg-root/iteration-model.md` §12 for the canonical format. Each role
  * appends one row at the end of its turn; re-entry appends another row.
  * The iteration total is `sum(rows)`, derived at read time — never stored.
  *

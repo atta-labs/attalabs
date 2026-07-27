@@ -10,9 +10,19 @@ describe('isNewDiskStateFile', () => {
     expect(isNewDiskStateFile('aeg-root/iterations/aeg-drift-prevention-v1.md', 'modified')).toBe(true)
   })
 
-  it('does not flag README.md, added or modified', () => {
-    expect(isNewDiskStateFile('aeg-root/iterations/README.md', 'added')).toBe(false)
-    expect(isNewDiskStateFile('aeg-root/iterations/README.md', 'modified')).toBe(false)
+  it('does not flag a model doc that sits outside aeg-root/iterations/', () => {
+    // The iteration model moved out of the watched directory, so this passes
+    // by path shape rather than by an explicit carve-out. Asserted with a
+    // second model doc so it cannot quietly become a one-file special case.
+    expect(isNewDiskStateFile('aeg-root/iteration-model.md', 'added')).toBe(false)
+    expect(isNewDiskStateFile('aeg-root/iteration-model.md', 'modified')).toBe(false)
+    expect(isNewDiskStateFile('aeg-root/state-machine.md', 'added')).toBe(false)
+  })
+
+  it('still flags a NEW README.md smuggled into aeg-root/iterations/', () => {
+    // The old carve-out keyed on this exact filename; nothing may re-enter
+    // the archive directory under a name that used to be exempt.
+    expect(isNewDiskStateFile('aeg-root/iterations/README.md', 'added')).toBe(true)
   })
 
   it('does not flag an EXISTING completed/ archive file being edited', () => {

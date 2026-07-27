@@ -13,7 +13,7 @@ describe('iterationSlugFromTopologyPath', () => {
   })
 
   it('returns null for README.md', () => {
-    expect(iterationSlugFromTopologyPath('aeg-root/iterations/README.md')).toBeNull()
+    expect(iterationSlugFromTopologyPath('aeg-root/iteration-model.md')).toBeNull()
   })
 
   it('returns null for a .tokens.md ledger file', () => {

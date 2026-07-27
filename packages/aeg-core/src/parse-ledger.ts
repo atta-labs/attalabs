@@ -3,7 +3,7 @@ import type { LedgerRow } from './types'
 
 /**
  * Parse the append-only token/cost ledger for an iteration. See
- * `aeg-root/iterations/README.md` §12 for the canonical format.
+ * `aeg-root/iteration-model.md` §12 for the canonical format.
  *
  * The ledger lives in a sibling file `aeg-root/iterations/<name>.tokens.md`
  * (the recommended home, since two roles appending rows do not collide with

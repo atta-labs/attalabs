@@ -6,7 +6,7 @@ sidebar_title: Coordination
 **This file lives in the repo at `aeg-root/coordination.md`.**
 **All agents read this at session start.**
 
-This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `iterations/README.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
+This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `iteration-model.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
 
 Dani works with multiple agents across a chat/planning surface and a coding-agent surface. This file tells each agent who it is, how to orient, and what the rules are.
 
@@ -23,10 +23,10 @@ If you are starting a fresh session and need to orient:
 1. `aeg-root/coordination.md` — this file (start here)
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Planner / Brief Author (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
-4. `aeg-root/iterations/README.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
+4. `aeg-root/iteration-model.md` — the iteration model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
 5. **Per-project state (pinned Issues)** — what is true right now, per project (`aeg` #447, `vada` #448, `herald` #449) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, #451). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
-7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). **No active iteration carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`iterations/README.md` §4); `completed/` iterations keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
+7. `aeg-root/iterations/<name>.md` — the current iteration's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover (`aeg-forge-state-v1` task 7, #431):** most active iterations no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `iteration:<slug>`-labeled Issues). **No active iteration carries this file at all today** — `vada-production-v1` was the last tracked exception, and its file was deleted once the backfill completed (`iteration-model.md` §4); `completed/` iterations keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
 8. **Lessons log (pinned Issue #453)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
 
 The AEG model front door is the **`aeg`** skill (the model in one read) → the **`aeg-roles`** skill (routes you to your role doc). Load those first; this file is the repo-specific companion.
@@ -75,7 +75,7 @@ No brief, no audit finding, no "next steps" recommendation is valid without this
 
 ## The coordination model — four truth domains
 
-Every fact lives in exactly one place (see `iterations/README.md` §1):
+Every fact lives in exactly one place (see `iteration-model.md` §1):
 
 - **The Git forge** (Issue / branch / PR / review / merge state) = **all live execution status, derived not stored.** Authoritative for task status and merge state. A task *is* a forge Issue.
 - **Repo** = code, specs, skills, PM docs, role docs, the thin iteration topology files, design decisions. Git-tracked, long-lived, changed by commits/PRs. The source of truth for *plan and governance* (not live status).
@@ -279,10 +279,10 @@ State the decision in the pull request that carries the work, during the convers
 - ❌ Reading or writing `roadmap.md` — it's retired; the execution plan is the iteration file, the product roadmap is the company's tool / backlogs (`apps/*/specs/*-backlog.md`)
 - ❌ Putting a backlog anywhere but a `specs/` folder — the plan lives in `specs/`; `aeg-root/` is the model, flow + governance only, and living state is the per-project pinned Issue
 - ❌ Writing task status anywhere (a file, the iteration topology, an Issue field) — status is derived from the forge; storing it recreates the racing status model the design eliminated
-- ❌ Adding execution metadata (status, PR #, dates) to the iteration topology file — it is plan topology only (`iterations/README.md` §9)
+- ❌ Adding execution metadata (status, PR #, dates) to the iteration topology file — it is plan topology only (`iteration-model.md` §9)
 - ❌ Putting the brief in the Issue — the brief is just-in-time and lives in the PR body; the Issue is task identity + metadata only
 - ❌ Putting planning metadata (priority, estimates, points) on an Issue — that's the company's roadmap, not AEG
-- ❌ Building a dynamic conflict scanner — declare conflicts conservatively and serialize (`iterations/README.md` §9)
+- ❌ Building a dynamic conflict scanner — declare conflicts conservatively and serialize (`iteration-model.md` §9)
 - ❌ Putting tactical day-to-day plans in project specs (commit churn)
 - ❌ Pretending to have read a spec that isn't in context — ask Dani by exact path, or use GitHub MCP
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta; AttaLabs is only the public URL

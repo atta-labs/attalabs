@@ -11,7 +11,7 @@
  *      Issue number.
  *   4. Hands the raw `iteration` + facts map to `@atta/aeg-core`'s
  *      `deriveIteration` — derived status is **read from aeg-core, never
- *      re-derived in components** (`iterations/README.md` §3 + task 5 brief).
+ *      re-derived in components** (`iteration-model.md` §3 + task 5 brief).
  *
  * Degrades gracefully when:
  *   - The git remote can't be resolved (`resolveRepo` returns `null`).

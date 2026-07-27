@@ -5,7 +5,7 @@ sidebar_title: Process
 
 This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs and skills updated.
 
-It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iterations/README.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
+It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iteration-model.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
 
 If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any project-specific specs.
 
@@ -13,7 +13,7 @@ If you are starting a new session and need to understand the workflow, read this
 
 ## Where tasks come from: the iteration
 
-The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Planner / Brief Author mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
+The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Planner / Brief Author mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iteration-model.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
 
 **Status is never stored.** Throughout every phase, a task's status is *derived* from the forge — Issue open/assigned, branch existence, PR open, review decision, merge — never written to a label or a file. When a phase below says a task "becomes in-review," it means *a PR was opened*, not that anyone set a status field.
 
@@ -311,7 +311,7 @@ The Principal eventually removes the worktree (`git worktree remove …`) — de
 Skips Phase 2; short brief; minimal checklist; light Phase 10 (a code-reviewer pass is cheap insurance, but the security pass and Brief Author spec review can be skipped when there's no config/auth surface and no spec change). Declare `Tier: 0` in the PR body so verify-docs doesn't require doc updates.
 
 ### Multi-developer parallel work
-Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`iterations/README.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the iteration's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
+Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`iteration-model.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the iteration's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
 
 ### Cross-project tasks
 A task may legitimately span multiple projects (one branch, one PR, `Project: a, b`) when the change is only verifiable as a unit (e.g. generalize a shared engine + migrate the first consumer). Review fans out across each project's lens; close-out updates each project's state. See `projects.md` and `roles/planner.md`.
@@ -335,13 +335,13 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 - **Treating "review passed" as "ready to merge"** — review reads the diff; verification runs the booted app. CI green ≠ app boots ≠ feature works. An unticked Test Plan box is the merge gate even when the reviews are clean.
 - **Inventing a Test Plan at verification time when the brief omitted one** — that is the Brief Author's job by design; verification *executes* the plan, it does not author it. A missing Test Plan is a brief-validation failure (`needs:brief-correction`).
 - **Mis-tagging a `[principal]` Test Plan item as `[agent]`** to make the agent half look complete — the asymmetry is structural (the agent surface lacks auth/keys/eyes); reclassifying loses the point of the split.
-- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iterations/README.md` §9).
+- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iteration-model.md` §9).
 
 ---
 
 ## How this process maps to file artifacts
 
-For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `roles/planner.md`, `roles/brief-author.md`, `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
+For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `roles/planner.md`, `roles/brief-author.md`, `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iteration-model.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
 
 ---
 

@@ -3,7 +3,7 @@ import type { DerivedIteration, DerivedStatus, DerivedTask, ForgeFacts, Iteratio
 
 /**
  * Compute each task's derived status, the resolved depends-on / conflicts-with
- * graph, and dispatch-eligibility per `iterations/README.md` §3 (status table)
+ * graph, and dispatch-eligibility per `iteration-model.md` §3 (status table)
  * and §8 (dispatch gates).
  *
  * The function is pure: `iteration` + `forgeFacts` in, `DerivedIteration` out.

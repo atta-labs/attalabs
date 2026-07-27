@@ -1,5 +1,5 @@
 ---
-sidebar_title: Iterations Overview
+sidebar_title: The Iteration Model
 section: Overview
 ---
 # Iterations — the top of AEG
@@ -86,13 +86,15 @@ So: there is **no status column anywhere.** The Developer does not "flip to in-r
 
 ---
 
-## 4. The thin iteration file — topology only
+## 4. The thin iteration file — retired, and what survives it
 
-One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→Issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows. It contains no task prose, no boundary descriptions, no rationale — nothing that belongs on the Issue.** Its task topology is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends.
+**A plan is a Milestone plus labeled Issues. There is no topology file, and `aeg-root/iterations/` holds nothing but the archive.** This section is kept because the *rules* the file encoded still bind — they simply bind the forge objects now. Read it as the reasoning behind the shape, not as a file to create.
 
-**`#TBD` rows are forbidden.** Every task row must carry a real forge Issue number. An iteration that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act. **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** The thin file row carries only the Issue link and edges; it does not contain or repeat the rationale. Brief Authors read the rationale from the Issue, not from this file.
+The file held **only** what the forge models poorly: the task→Issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows. It contains no task prose, no boundary descriptions, no rationale — nothing that belongs on the Issue.** Its task topology was edited only by the Planner, at plan time, so it could not race and could not drift on status (it stored none). The same rule now binds the Milestone and its Issues: the Planner cuts them, and nothing downstream writes status back. The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends.
 
-**Cutover status (`aeg-forge-state-v1` task 7, #431) — complete.** The birth rule above ("gates read files until the migration flips the config in one deliberate act") has now flipped for every active iteration, with no exceptions left. The last holdout, `vada-production-v1`, kept its thin file past task 7 because 9 of its Issues predated the "Dependency rationale" grammar — deleting the file would have silently blanked `dependsOn` for those tasks in every gate and in Studio. Those 9 Issues were backfilled with real, per-task rationale (not a mechanical append), `verify-coherence` was re-run live against the forge to confirm a clean read, and `vada-production-v1.md` + `.tokens.md` were then deleted — the same disposition every other active iteration's topology file (`herald-hardening-v1.md`, `vinaya-cli-v1.md`, `vinaya-studio-v1.md`) already went through. `dependsOn`/`conflictsWith` for every active iteration is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
+**`#TBD` is still forbidden, wherever a task is recorded.** Every task must carry a real forge Issue number. An iteration that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act. **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** Nothing outside the Issue repeats the rationale. Brief Authors read it from the Issue, which is now its only home.
+
+**How the cutover finished (`aeg-forge-state-v1` task 7, #431), for the record.** The birth rule above ("gates read files until the migration flips the config in one deliberate act") has now flipped for every active iteration, with no exceptions left. The last holdout, `vada-production-v1`, kept its thin file past task 7 because 9 of its Issues predated the "Dependency rationale" grammar — deleting the file would have silently blanked `dependsOn` for those tasks in every gate and in Studio. Those 9 Issues were backfilled with real, per-task rationale (not a mechanical append), `verify-coherence` was re-run live against the forge to confirm a clean read, and `vada-production-v1.md` + `.tokens.md` were then deleted — the same disposition every other active iteration's topology file (`herald-hardening-v1.md`, `vinaya-cli-v1.md`, `vinaya-studio-v1.md`) already went through. `dependsOn`/`conflictsWith` for every active iteration is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
 
 Template:
 
@@ -244,9 +246,9 @@ Every role that runs in an iteration reports its **token spend and cost**; the p
 
 ### Where it lives
 
-One sibling file per iteration: `aeg-root/iterations/<name>.tokens.md` (next to `<name>.md`).
+**Historically**, one sibling file per iteration at `aeg-root/iterations/<name>.tokens.md`, next to the topology file. Both went with the forge-native cutover; the four that remain sit in `completed/` and are read, never written.
 
-The sibling form is chosen deliberately over an inline `## Token ledger` section in the iteration file: two roles appending rows at the same time on the same file is exactly the kind of merge-collision the topology file's "Planner-only at plan time" rule was set up to avoid. Keeping the ledger in its own append-only file makes a Planner editing the topology and a Developer reporting a turn-end never touch the same bytes. The parser (`@atta/aeg-core`'s `parseLedger`) also accepts the inline form for any iteration that chose it.
+The sibling form was chosen over an inline `## Token ledger` section for a reason worth keeping: two roles appending rows to one file at the same time is exactly the merge-collision the topology file's "Planner-only at plan time" rule existed to avoid. A ledger in its own append-only file meant a Planner editing topology and a Developer reporting a turn-end never touched the same bytes. `@atta/aeg-core`'s `parseLedger` still reads both forms, which is what keeps the archived ledgers legible.
 
 ### Format
 

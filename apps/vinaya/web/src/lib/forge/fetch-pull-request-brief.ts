@@ -1,6 +1,6 @@
 /**
  * Read-only fetch of the latest PR's identity + body for a given task. The
- * **brief lives in the PR body** (`iterations/README.md` §7 — not in the Issue,
+ * **brief lives in the PR body** (`iteration-model.md` §7 — not in the Issue,
  * which holds the Planner's rationale + metadata only). Studio's task-detail
  * view reads it here so the model's "where briefs live" rule is honoured.
  *

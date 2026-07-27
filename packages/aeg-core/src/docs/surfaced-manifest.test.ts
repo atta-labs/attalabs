@@ -77,7 +77,7 @@ describe('isSurfacedDoc: model-backed rule', () => {
       'aeg-manual-flow.md',
       'reviewer-prompt.md',
       'documentation-coherence.md',
-      'iterations/README.md',
+      'iteration-model.md',
       'skills/aeg/SKILL.md',
       'templates/brief-template.md'
     ]) {

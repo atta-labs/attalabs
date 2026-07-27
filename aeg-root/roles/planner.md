@@ -44,7 +44,7 @@ Everything below is the reference: the gates in full, the sizing tests, and the 
 
 **Forge-native by default (`aeg-forge-state-v1`) — no topology file, no plan PR, no commit.** Create a Milestone titled `<slug>` (its description is the iteration goal), then cut task Issues labeled `vinaya/iteration:<slug>` with the full Planner's rationale (see "The Planner's rationale" below) in each body. `@atta/aeg-forge-state` derives topology, dependencies, and lifecycle purely from those forge objects — nothing to write to `main`, nothing for `verify-coherence` to fall back to a file for. This cutover is now complete for every active iteration, including the one holdout (`vada-production-v1`) that briefly kept a thin `.md` file while 9 Issues predating the dependency-rationale grammar were backfilled. Do not create a new topology file for a new iteration; if you find yourself about to write one, stop — the forge-native path below is the whole job.
 
-Read this with `iterations/README.md` (the model) and `coordination.md` (session start). The Planner exists because the relationships *between* tasks — dependencies, conflicts, split-vs-combine — are invisible to a brief written in isolation. Seeing them is the whole job.
+Read this with `iteration-model.md` (the model) and `coordination.md` (session start). The Planner exists because the relationships *between* tasks — dependencies, conflicts, split-vs-combine — are invisible to a brief written in isolation. Seeing them is the whole job.
 
 ---
 

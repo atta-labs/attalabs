@@ -37,7 +37,7 @@ import { resolveGithubToken } from './github-token'
 import { iterationLabel } from './labels'
 import { mapForgeFacts } from './map-forge-facts'
 
-/** Branch ref convention: `task/<iteration>/<id>` (iterations/README.md). */
+/** Branch ref convention: `task/<iteration>/<id>` (iteration-model.md). */
 export function buildBranchName(iteration: string, taskId: string): string {
   return `task/${iteration}/${taskId}`
 }

@@ -51,7 +51,7 @@ The model layer exists **once**, at repo-root `aeg-root/`. A unit's `aeg-project
 
 ## 5. The iteration — AEG's top-level artifact
 
-An iteration (`aeg-root/iterations/<name>.md`) is a **thin topology file**: task→Issue map, `depends-on` / `conflicts-with` edges, grouping. **No status, no PR numbers, no dates, no priority, no estimates.** It is the active slice of work the Planner pulled from a backlog. The link from backlog → iteration is a *human* (the Planner), not a file. (Full model: `aeg-root/iterations/README.md`.)
+An iteration (`aeg-root/iterations/<name>.md`) is a **thin topology file**: task→Issue map, `depends-on` / `conflicts-with` edges, grouping. **No status, no PR numbers, no dates, no priority, no estimates.** It is the active slice of work the Planner pulled from a backlog. The link from backlog → iteration is a *human* (the Planner), not a file. (Full model: `aeg-root/iteration-model.md`.)
 
 ## 6. Conflicts and the two dispatch gates
 
@@ -87,4 +87,4 @@ Principal → Planner → Brief Author → Developer → Reviewer (code + securi
 
 ## 11. What to do next (the reading order)
 
-After this skill, load in order: **`aeg-roles`** (routes you to your role doc) → your **`aeg-root/roles/<role>.md`** → **`aeg-root/iterations/README.md`** (if planning or executing) → **`aeg-project/state.md`** (non-derivable operational facts) + **forge queries** (active tasks, blocked, next — see `coordination.md` "Session-start forge queries") → the active **`iterations/<name>.md`** if one exists. The canonical session-start protocol is `aeg-root/coordination.md`; this skill is its fast front-door summary, not a replacement. When the two disagree, `coordination.md` and `state-machine.md` win.
+After this skill, load in order: **`aeg-roles`** (routes you to your role doc) → your **`aeg-root/roles/<role>.md`** → **`aeg-root/iteration-model.md`** (if planning or executing) → **`aeg-project/state.md`** (non-derivable operational facts) + **forge queries** (active tasks, blocked, next — see `coordination.md` "Session-start forge queries") → the active **`iterations/<name>.md`** if one exists. The canonical session-start protocol is `aeg-root/coordination.md`; this skill is its fast front-door summary, not a replacement. When the two disagree, `coordination.md` and `state-machine.md` win.
