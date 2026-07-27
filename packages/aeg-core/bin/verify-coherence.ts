@@ -31,12 +31,12 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  deriveIterationFromForge,
+  deriveTrancheFromForge,
   fetchProvenance,
   fetchTaskIssueRefs,
   findMilestoneForSlug,
-  listActiveIterationSlugs,
-  listArchivedIterationSlugs,
+  listActiveTrancheSlugs,
+  listArchivedTrancheSlugs,
   listIssueMilestonesForSlug,
   resolveGithubToken,
   resolveRepo
@@ -174,7 +174,7 @@ function readFileAtRef(ref: string, relPath: string): string | null {
 
 /**
  * Reads one non-PR-touched iteration file's content: `id`/`issue` come from
- * the forge (`@atta/aeg-forge-state`'s `deriveIterationFromForge`, task
+ * the forge (`@atta/aeg-forge-state`'s `deriveTrancheFromForge`, task
  * aeg-forge-state-v1 3b, #437) when a repo resolves and the forge call
  * succeeds — the golden comparison (Issue #437) confirmed these two fields
  * match the file-parsed topology table exactly for every task that HAS a
@@ -190,7 +190,7 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * task, not a blocker for this cutover.
  *
  * A `#TBD` topology row (no Issue cut yet, `issue: null`) has no forge
- * representation at all — `deriveIterationFromForge` can only ever list
+ * representation at all — `deriveTrancheFromForge` can only ever list
  * tasks it finds via a labeled Issue, so a row with no Issue is structurally
  * invisible to it. T3 (`tbd-in-active-iteration`) exists specifically to
  * catch these — silently dropping them here would blind the one check whose
@@ -220,7 +220,7 @@ async function deriveOrFallback(
 
   let forgeIteration: Iteration
   try {
-    forgeIteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
+    forgeIteration = await deriveTrancheFromForge(repo.owner, repo.repo, slug)
   } catch (err) {
     console.warn(
       `[verify-coherence] forge derivation failed for iteration "${slug}" — falling back to file read: ${(err as Error).message}`
@@ -322,8 +322,8 @@ export async function loadIterationFiles(prContext: PrReadContext = null, onlySl
   // whose slug DOES still have a legacy file gets its dependsOn/conflictsWith
   // merged in exactly as before.
   if (!onlySlug && repo) {
-    const activeRefs = listActiveIterationSlugs(repo.owner, repo.repo)
-    const archivedRefs = listArchivedIterationSlugs(repo.owner, repo.repo)
+    const activeRefs = listActiveTrancheSlugs(repo.owner, repo.repo)
+    const archivedRefs = listArchivedTrancheSlugs(repo.owner, repo.repo)
     for (const { slug, archived } of [
       ...activeRefs.map((r) => ({ slug: r.slug, archived: false })),
       ...archivedRefs.map((r) => ({ slug: r.slug, archived: true }))
@@ -536,7 +536,7 @@ export async function runCoherenceChecks(
   // `verify-dispatch.ts`'s Milestone-aware discovery uses — not `!f.archived`
   // (file location), so this never flags an iteration whose file predates
   // the Milestone birth rule but has no live Milestone yet.
-  const milestoneActiveSlugs = listActiveIterationSlugs(owner, repoName).map((m) => m.slug)
+  const milestoneActiveSlugs = listActiveTrancheSlugs(owner, repoName).map((m) => m.slug)
   const issueMilestones = milestoneActiveSlugs.flatMap((slug) =>
     listIssueMilestonesForSlug(owner, repoName, slug).map((f) => ({ iteration: slug, ...f }))
   )

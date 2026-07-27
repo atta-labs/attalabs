@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { parseIteration } from '@atta/aeg-core'
-import { deriveIterationFromForge, resolveGithubToken } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge, resolveGithubToken } from '@atta/aeg-forge-state'
 import type { Task } from '@atta/aeg-types'
 import { describe, expect, it } from 'bun:test'
 
@@ -51,7 +51,7 @@ describe.skipIf(!token)('golden forge-vs-file comparison — aeg-forge-state-v1'
       encoding: 'utf-8'
     })
     const fileIteration = parseIteration(fileContent)
-    const forgeIteration = await deriveIterationFromForge(OWNER, REPO, SLUG)
+    const forgeIteration = await deriveTrancheFromForge(OWNER, REPO, SLUG)
 
     expect(forgeIteration.name).toBe(fileIteration.name)
     expect(forgeIteration.lifecycle).toBe(fileIteration.lifecycle)

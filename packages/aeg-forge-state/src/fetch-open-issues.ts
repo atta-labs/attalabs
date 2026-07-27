@@ -1,6 +1,6 @@
 /**
- * Open-issues-by-iteration-label fetch — the single implementation of the
- * "which Issues are still open under `vinaya/iteration:<slug>`?" fact.
+ * Open-issues-by-tranche-label fetch — the single implementation of the
+ * "which Issues are still open under `vinaya/tranche:<slug>`?" fact.
  *
  * One implementation per fact (discipline); do not re-implement.
  *
@@ -14,7 +14,7 @@
 
 import { graphql } from '@octokit/graphql'
 import type { ForgeIssue } from '@atta/aeg-types'
-import { iterationLabel } from './labels'
+import { trancheLabel } from './labels'
 
 type LabeledIssuesResponse = {
   repository: Record<
@@ -24,7 +24,7 @@ type LabeledIssuesResponse = {
 }
 
 /**
- * Fetch open issues (number + body + labels) for each active iteration slug
+ * Fetch open issues (number + body + labels) for each active tranche slug
  * in one batched query. Returns a Map from slug → ForgeIssue[].
  *
  * Extended for R1 (the rationale-completeness gate — aeg-governance-hardening
@@ -49,7 +49,7 @@ export async function fetchOpenIssuesByLabel(
   const perSlug = slugs
     .map(
       (slug) => `
-    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(iterationLabel(slug))}], first: 100) {
+    ${toAlias(slug)}: issues(states: [OPEN], labels: [${JSON.stringify(trancheLabel(slug))}], first: 100) {
       nodes { number body labels(first: 20) { nodes { name } } }
     }`
     )

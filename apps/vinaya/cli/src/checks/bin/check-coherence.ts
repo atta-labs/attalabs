@@ -17,7 +17,7 @@
  * T3, D1, R1, L1 (and the always-info L3) — the checks whose required facts
  * are obtainable from the two forge primitives above. It does NOT run A2
  * (needs `fetchProvenance`, not re-exported), or L2/L4/L5 (need
- * `listActiveIterationSlugs`/`listIssueMilestonesForSlug`, not re-exported).
+ * `listActiveTrancheSlugs`/`listIssueMilestonesForSlug`, not re-exported).
  * A2/L2/L4/L5 are genuinely unavailable to this check's dependency boundary,
  * not re-derived — a narrower but honest scope versus `verify-coherence.ts`.
  *

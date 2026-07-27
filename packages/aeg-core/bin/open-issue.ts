@@ -43,10 +43,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   amendRationaleDeps,
-  findIterationSlug,
+  findTrancheSlug,
   findMilestoneForSlug,
-  iterationLabel,
-  iterationSlugLengthError,
+  trancheLabel,
+  trancheSlugLengthError,
   type MilestoneFacts,
   parseRationaleDeps
 } from '@atta/aeg-forge-state'
@@ -203,7 +203,7 @@ function fetchForgeLabels(issueRef: string): string[] {
 
 /** First `vinaya/iteration:<slug>` label's slug, or `null` when the set carries none. */
 function iterationSlugFromLabels(labels: string[]): string | null {
-  return findIterationSlug(labels)
+  return findTrancheSlug(labels)
 }
 
 /** True when argv already carries an explicit `--milestone`/`-m` flag — the caller's choice always wins. */
@@ -213,7 +213,7 @@ function hasExplicitMilestoneFlag(args: string[]): boolean {
 
 /**
  * Milestone auto-attach on Issue CREATE (aeg-review-gate-v1 task 1 follow-up).
- * `deriveIterationFromForge`/`listActiveIterationSlugs` (`@atta/aeg-forge-state`)
+ * `deriveTrancheFromForge`/`listActiveTrancheSlugs` (`@atta/aeg-forge-state`)
  * never read an Issue's GitHub-native milestone field — only the
  * `vinaya/iteration:<slug>` label — so this drift was never functionally
  * load-pathing; it is pure GitHub-view hygiene (a Milestone showing
@@ -454,7 +454,7 @@ function fetchSiblingTaskIssues(slug: string, selfRef: string | null): TaskIssue
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }
     )
     return (JSON.parse(out) as Array<{ number: number; body: string; labels: Array<{ name: string }> }>)
-      .filter((i) => i.labels.some((l) => l.name === iterationLabel(slug)))
+      .filter((i) => i.labels.some((l) => l.name === trancheLabel(slug)))
       .filter((i) => String(i.number) !== String(selfRef ?? '').replace(/^#/, ''))
       .map((i) => ({
         ref: `#${i.number}`,
@@ -543,7 +543,7 @@ export function main(): void {
     // reaches the forge — rather than as an opaque `gh` 422 later.
     const labelSlug = iterationSlugFromLabels(labels)
     if (labelSlug !== null) {
-      const lengthError = iterationSlugLengthError(labelSlug)
+      const lengthError = trancheSlugLengthError(labelSlug)
       if (lengthError) fail(`open-issue label-length: ${lengthError}`)
     }
 

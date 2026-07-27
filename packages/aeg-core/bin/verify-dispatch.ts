@@ -14,7 +14,7 @@
  * `classifyLeftover`, `captureBaseline`/`compareToBaseline`,
  * `parsePremiseBlock`/`checkPremises`). No check logic lives here.
  *
- * One implementation per fact (§11 constraint) — reuses `deriveIterationFromForge`,
+ * One implementation per fact (§11 constraint) — reuses `deriveTrancheFromForge`,
  * `hasProvenance`, `taskRefFromBranch`, `checkIssueRationale`, and
  * `fetchProvenance` (imported from `verify-coherence.ts`, where it is already
  * exported — not re-implemented here).
@@ -70,10 +70,10 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  deriveIterationFromForge,
+  deriveTrancheFromForge,
   fetchProvenance,
-  iterationLabel,
-  listActiveIterationSlugs,
+  trancheLabel,
+  listActiveTrancheSlugs,
   resolveGithubToken,
   resolveRepo,
   type RepoRef
@@ -161,7 +161,7 @@ function fetchIterationBranchPrs(iterationSlug: string, repo: RepoRef): Map<stri
  */
 async function readIterationFromOrigin(iterationSlug: string, repo: RepoRef): Promise<Iteration | null> {
   try {
-    return await deriveIterationFromForge(repo.owner, repo.repo, iterationSlug)
+    return await deriveTrancheFromForge(repo.owner, repo.repo, iterationSlug)
   } catch {
     return null
   }
@@ -259,7 +259,7 @@ function resolvePriorTask(
 /**
  * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
  * amendment): "active" is a GitHub Milestone titled exactly the iteration
- * slug, open — the SAME `listActiveIterationSlugs` Studio's
+ * slug, open — the SAME `listActiveTrancheSlugs` Studio's
  * `readOtherActiveIterations` (`apps/vinaya/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.
@@ -270,7 +270,7 @@ function resolvePriorTask(
  * `aeg-forge-state-v1`/`aeg-review-gate-v1`, 2026-07-08).
  */
 function otherActiveIterationSlugs(excludeSlug: string, repo: RepoRef): string[] {
-  return listActiveIterationSlugs(repo.owner, repo.repo)
+  return listActiveTrancheSlugs(repo.owner, repo.repo)
     .map((m) => m.slug)
     .filter((slug) => slug !== excludeSlug)
 }
@@ -290,13 +290,13 @@ async function resolvePriorIterationArchival(
   for (const project of projects) {
     let found: DispatchPriorIterationFact | null = null
     for (const slug of candidates) {
-      const candidateIteration = await deriveIterationFromForge(repo.owner, repo.repo, slug)
+      const candidateIteration = await deriveTrancheFromForge(repo.owner, repo.repo, slug)
       const touchesProject = candidateIteration.tasks.some((t) => t.projects.includes(project))
       if (!touchesProject) continue
 
       const openIssues =
         shJson<Array<{ number: number }>>(
-          `gh issue list -R ${repo.owner}/${repo.repo} --label "${iterationLabel(slug)}" --state open --json number --limit 100`
+          `gh issue list -R ${repo.owner}/${repo.repo} --label "${trancheLabel(slug)}" --state open --json number --limit 100`
         ) ?? []
       if (openIssues.length === 0) {
         found = { project, priorIterationSlug: slug, archived: false }
@@ -581,7 +581,7 @@ async function runGateMode(iterationSlug: string, taskId: string): Promise<void>
   const task = (iteration as Iteration).tasks.find((t) => t.id === taskId)
   if (!task) {
     console.error(
-      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`${iterationLabel(iterationSlug)}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
+      `verify-dispatch row-existence: task "${taskId}" is not present in iteration \`${iterationSlug}\`'s forge-derived task list (no \`${trancheLabel(iterationSlug)}\`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does.`
     )
     process.exit(1)
   }

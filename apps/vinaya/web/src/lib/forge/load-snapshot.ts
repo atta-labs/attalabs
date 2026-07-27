@@ -213,7 +213,7 @@ async function resolveRefs(
   const forgeRefs = await fetchForgeTasksByLabel({
     owner: repo.owner,
     repo: repo.repo,
-    iterationSlug: slug
+    trancheSlug: slug
   })
   if (forgeRefs.length === 0) return topologyRefs
 

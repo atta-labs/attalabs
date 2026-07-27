@@ -15,7 +15,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 1 — a',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: { title: 'iter' }
       },
       {
@@ -23,7 +23,7 @@ describe('listIssueMilestonesForSlug', () => {
         title: '[iter] 2 — b',
         body: '',
         state: 'OPEN',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: null
       }
     ])
@@ -34,14 +34,14 @@ describe('listIssueMilestonesForSlug', () => {
     ])
   })
 
-  it('excludes closed Issues — only open Issues are in scope for the active-iteration drift check', () => {
+  it('excludes closed Issues — only open Issues are in scope for the active-tranche drift check', () => {
     vi.mocked(ghIssueListByLabel).mockReturnValue([
       {
         number: 1,
         title: '[iter] 1 — a',
         body: '',
         state: 'CLOSED',
-        labels: [{ name: 'vinaya/iteration:iter' }],
+        labels: [{ name: 'vinaya/tranche:iter' }],
         milestone: null
       }
     ])

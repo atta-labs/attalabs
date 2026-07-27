@@ -16,7 +16,7 @@
  * (timeout, spawn failure) is NOT cached — it returns `null` and warns, and
  * the next call retries. Otherwise one transient failure during a dev-server
  * startup burst would poison the cache for the whole process, making Studio
- * render "No active iterations" indistinguishably from truth.
+ * render "No active tranches" indistinguishably from truth.
  *
  * SERVER-ONLY. Pulls `node:child_process` to invoke `git`.
  */

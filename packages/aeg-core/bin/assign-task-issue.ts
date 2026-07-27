@@ -29,7 +29,7 @@
 
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { decideIssueAssignment, parseTaskBranch } from '../src/index'
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
@@ -47,7 +47,7 @@ function sh(cmd: string): string | null {
  * to a skip), same discipline as `sh()` above — this bin never throws. */
 async function resolveIssue(owner: string, repo: string, iteration: string, taskId: string): Promise<number | null> {
   try {
-    const derived = await deriveIterationFromForge(owner, repo, iteration)
+    const derived = await deriveTrancheFromForge(owner, repo, iteration)
     return derived.tasks.find((t) => t.id === taskId)?.issue ?? null
   } catch {
     return null

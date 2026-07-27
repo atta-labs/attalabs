@@ -23,7 +23,7 @@
  * both derive purely from the forge — a GitHub Milestone
  * titled exactly the iteration slug (open = active, closed = archived).
  * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
- * `deriveIterationFromForge`, the same adapter the CLI gates use.
+ * `deriveTrancheFromForge`, the same adapter the CLI gates use.
  * `dependsOn`/`conflictsWith` for an ACTIVE iteration derive from the forge
  * like everything else. A legacy `aeg-root/iterations/<slug>.md` topology
  * table was once merged in as best-effort enrichment for pre-cutover files;
@@ -55,10 +55,10 @@ import {
   type Registry
 } from '@atta/aeg-core'
 import {
-  deriveIterationFromForge,
+  deriveTrancheFromForge,
   findMilestoneForSlug,
-  listActiveIterationSlugsAsync,
-  listArchivedIterationSlugsAsync,
+  listActiveTrancheSlugsAsync,
+  listArchivedTrancheSlugsAsync,
   resolveRepo
 } from '@atta/aeg-forge-state'
 import { loadIterationProgress } from '@/lib/forge/load-snapshot'
@@ -93,12 +93,12 @@ import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-
  *     re-reads it). Primitive keys dedup correctly; skipping the redundant
  *     per-slug `findMilestoneForSlug` re-fetch is the whole point of the split.
  */
-const cachedListActiveIterationSlugs = cache(listActiveIterationSlugsAsync)
-const cachedListArchivedIterationSlugs = cache(listArchivedIterationSlugsAsync)
-const cachedDeriveIterationFromForge = cache(deriveIterationFromForge)
+const cachedListActiveIterationSlugs = cache(listActiveTrancheSlugsAsync)
+const cachedListArchivedIterationSlugs = cache(listArchivedTrancheSlugsAsync)
+const cachedDeriveIterationFromForge = cache(deriveTrancheFromForge)
 const cachedDeriveIterationFromForgeKnown = cache(
   (owner: string, repo: string, slug: string, goal: string, lifecycle: Lifecycle) =>
-    deriveIterationFromForge(owner, repo, slug, { goal, lifecycle })
+    deriveTrancheFromForge(owner, repo, slug, { goal, lifecycle })
 )
 
 const ITERATIONS_DIR = 'iterations'
@@ -208,7 +208,7 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
 
 /**
  * Enumerates every active iteration from the forge (open Milestones) and
- * derives each one's full `Iteration` via `deriveIterationFromForge` — the
+ * derives each one's full `Iteration` via `deriveTrancheFromForge` — the
  * same adapter 3a/3b already proved against this repo's real data. Returns
  * `[]` when the forge can't be reached at all (no repo resolvable, or the
  * forge call throws — no token/`gh` unavailable/network) — there is no
@@ -238,7 +238,7 @@ async function loadActiveIterationsWithStatus(): Promise<LoadedIterations> {
     return { items: [], status: { kind: 'unreachable' } }
   }
 
-  let refs: Awaited<ReturnType<typeof listActiveIterationSlugsAsync>>
+  let refs: Awaited<ReturnType<typeof listActiveTrancheSlugsAsync>>
   try {
     refs = await cachedListActiveIterationSlugs(repo.owner, repo.repo)
   } catch (err) {
@@ -310,7 +310,7 @@ async function readCompletedFile(fileSlug: string): Promise<Iteration | null> {
 
 /**
  * Enumerates every archived iteration from the forge (closed Milestones),
- * deriving each one's full `Iteration` via `deriveIterationFromForge` — then
+ * deriving each one's full `Iteration` via `deriveTrancheFromForge` — then
  * supplements with any `aeg-root/iterations/completed/*.md` file whose slug
  * wasn't already resolved via a Milestone. That supplement is the permanent
  * home of the small, closed, non-growing set of pre-Milestone-era legacy
@@ -325,7 +325,7 @@ async function loadArchivedIterationsWithStatus(): Promise<LoadedIterations> {
   let status: ForgeStatus = { kind: 'unreachable' }
 
   if (repo) {
-    let refs: Awaited<ReturnType<typeof listArchivedIterationSlugsAsync>> | null = null
+    let refs: Awaited<ReturnType<typeof listArchivedTrancheSlugsAsync>> | null = null
     try {
       refs = await cachedListArchivedIterationSlugs(repo.owner, repo.repo)
     } catch (err) {

@@ -64,7 +64,7 @@ export function isEligibleForProvenance(
   issueLabels: string[]
 ): boolean {
   if (ref !== null) return true
-  return hasLabel('iteration', issueLabels)
+  return hasLabel('tranche', issueLabels)
 }
 
 const PROVENANCE_HEADING = '### AEG provenance'

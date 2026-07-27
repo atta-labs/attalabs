@@ -5,10 +5,10 @@ import { listTasksForSlugAsync } from './list-tasks'
 /**
  * Derives an `@atta/aeg-types` `Iteration` purely from forge objects:
  *   - a Milestone titled exactly `slug` → `goal` + `lifecycle` (absent when no
- *     Milestone exists yet for this iteration — a real transitional state,
+ *     Milestone exists yet for this tranche — a real transitional state,
  *     not an error; `goal`/`lifecycle` then degrade to `''`/`'active'`,
- *     mirroring `parseIteration`'s own no-marker default)
- *   - `vinaya/iteration:<slug>`-labeled Issues → the task list, including
+ *     mirroring `parseTranche`'s own no-marker default)
+ *   - `vinaya/tranche:<slug>`-labeled Issues → the task list, including
  *     `Depends-on`/`Conflicts-with` edges parsed from each Issue's
  *     "Dependency rationale" section
  *
@@ -25,7 +25,7 @@ import { listTasksForSlugAsync } from './list-tasks'
  * so the fan-outs that call this genuinely parallelize; the signature is
  * unchanged for existing 3-arg callers (already `async`, already awaited).
  */
-export async function deriveIterationFromForge(
+export async function deriveTrancheFromForge(
   owner: string,
   repo: string,
   slug: string,

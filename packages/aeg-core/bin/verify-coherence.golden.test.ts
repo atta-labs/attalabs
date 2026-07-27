@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
 import { describe, it } from 'vitest'
-import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { parseIteration } from '../src/index'
 
 /**
@@ -56,7 +56,7 @@ type ComparableTask = { id: string; issue: number | null }
 
 /**
  * `#TBD` rows (`issue: null`) are excluded before comparing: they have no
- * Issue to derive from, so `deriveIterationFromForge` structurally cannot
+ * Issue to derive from, so `deriveTrancheFromForge` structurally cannot
  * ever list them (confirmed live: `vada-production-v1`'s 6a/6b/6c) — that's
  * an expected, by-design gap in forge derivation itself, not a data-quality
  * divergence this test exists to catch. `loadIterationFiles` handles it
@@ -102,7 +102,7 @@ describe('golden comparison: forge-derived vs file-derived id/issue (aeg-forge-s
 
       let forgeTasks: ComparableTask[]
       try {
-        forgeTasks = normalizeTasks((await deriveIterationFromForge(repo.owner, repo.repo, slug)).tasks)
+        forgeTasks = normalizeTasks((await deriveTrancheFromForge(repo.owner, repo.repo, slug)).tasks)
       } catch (err) {
         console.warn(
           `[golden-comparison] forge derivation failed for "${slug}" — skipping this slug: ${(err as Error).message}`

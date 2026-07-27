@@ -58,7 +58,7 @@ export function checkIssueRationale(body: string): IssueSectionResult {
 
 /** true when any label marks this as a task Issue (the rationale contract applies). */
 export function isTaskIssueLabelSet(labels: string[]): boolean {
-  return hasLabel('iteration', labels)
+  return hasLabel('tranche', labels)
 }
 
 // ---------------------------------------------------------------------------

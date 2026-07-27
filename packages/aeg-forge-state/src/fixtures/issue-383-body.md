@@ -1,5 +1,5 @@
 Project: vinaya
-Iteration: vinaya-cli-v1 · task 3
+Tranche: vinaya-cli-v1 · task 3
 
 **Boundary** — The check engine: `vinaya check <name> | --all` with `--json` (versioned envelope), `--diff-only` (change-surface scope; the ring-1 default), `--parallel` (concurrency-capped); the error-output contract on ALL checks — structured JSON lines on stderr, exit 0/1, per-check timeout enforced by the RUNNER, no-network-by-default, every error carrying `agent_recovery_prompt` (D-100); the core AEG gates (doc coverage, brief shape, coherence, dispatch readiness) expressed through the SAME interface as custom checks — no privileged API (D-092/D-104); custom-check registration via `vinaya.config.json` (any executable honoring the contract; glob scoping allowed, conditionals forbidden — D-109); and `vinaya new check` scaffolding from a worked template. NOT: the CI workflow install (task 4's `vinaya.yml`); NOT edits to `packages/aeg-core/bin/*`; NOT the shim.
 

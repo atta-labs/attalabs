@@ -16,7 +16,7 @@ describe('listTasksForSlug', () => {
         body: '**Project:** aeg-core\n\n**Dependency rationale** — `Depends-on: —`. First task.\n\n**Traps to avoid** — none.',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:aeg-forge-state-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/tranche:aeg-forge-state-v1' }]
       }
     ])
 
@@ -44,7 +44,7 @@ describe('listTasksForSlug', () => {
         body: '**Boundary** — ...\n\n**Project(s) + blast radius** — `Project: aeg-core`.\n\n**Tier:** 3\n**Project:** aeg-core, vinaya',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/iteration:state-machine-v1' }]
+        labels: [{ name: 'vinaya/tier:3' }, { name: 'vinaya/tranche:state-machine-v1' }]
       }
     ])
 
@@ -61,7 +61,7 @@ describe('listTasksForSlug', () => {
         body: '**Project:** herald',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'project:vinaya' }, { name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'project:vinaya' }, { name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -78,10 +78,10 @@ describe('listTasksForSlug', () => {
       {
         number: 431,
         title: '[iter] 7 — plain-form header',
-        body: 'Project: aeg, aeg-core\nIteration: iter · task 7\n\n**Boundary** — x',
+        body: 'Project: aeg, aeg-core\nTranche: iter · task 7\n\n**Boundary** — x',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -97,7 +97,7 @@ describe('listTasksForSlug', () => {
         body: '**Project(s) + blast radius** — reaches packages/ui.\n\n**Boundary** — x',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -118,7 +118,7 @@ describe('listTasksForSlug', () => {
         body: '**Project:** (none — tools/admin is unregistered; see Project(s) + blast radius above)',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:admin-ui-library-picker-v1' }]
+        labels: [{ name: 'vinaya/tranche:admin-ui-library-picker-v1' }]
       }
     ])
 
@@ -135,7 +135,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       },
       {
         number: 1,
@@ -143,7 +143,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       },
       {
         number: 3,
@@ -151,7 +151,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 
@@ -167,7 +167,7 @@ describe('listTasksForSlug', () => {
         body: '',
         state: 'OPEN',
         milestone: null,
-        labels: [{ name: 'vinaya/iteration:iter' }]
+        labels: [{ name: 'vinaya/tranche:iter' }]
       }
     ])
 

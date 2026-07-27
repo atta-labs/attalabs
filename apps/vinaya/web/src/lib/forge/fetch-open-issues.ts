@@ -90,6 +90,6 @@ export async function fetchOpenIssuesWithoutIterationLabel(
       labels: n.labels?.nodes?.map((l) => l.name) ?? [],
       projects: projectsFromBody(n.body ?? '')
     }))
-    .filter((issue) => !hasLabel('iteration', issue.labels) && !hasLabel('state-object', issue.labels))
+    .filter((issue) => !hasLabel('tranche', issue.labels) && !hasLabel('state-object', issue.labels))
   return { issues, forge: { kind: 'ok' } }
 }

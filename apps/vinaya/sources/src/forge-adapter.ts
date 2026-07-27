@@ -1,4 +1,4 @@
-import { deriveIterationFromForge } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge } from '@atta/aeg-forge-state'
 import type { StateSource } from './contract'
 
 export type ForgeSourceConfig = {
@@ -8,7 +8,7 @@ export type ForgeSourceConfig = {
 
 /**
  * Primary StateSource design. Wires `@atta/aeg-forge-state`'s
- * `deriveIterationFromForge` behind the contract — imported as a workspace
+ * `deriveTrancheFromForge` behind the contract — imported as a workspace
  * dependency rather than re-homed. `@atta/aeg-forge-state` is already a
  * clean, general-purpose, repo/owner-parameterized package with no
  * vinaya-specific coupling and existing consumers of its own
@@ -19,7 +19,7 @@ export type ForgeSourceConfig = {
 export function createForgeSource(config: ForgeSourceConfig): StateSource {
   return {
     async getIteration(slug: string) {
-      return deriveIterationFromForge(config.owner, config.repo, slug)
+      return deriveTrancheFromForge(config.owner, config.repo, slug)
     }
   }
 }

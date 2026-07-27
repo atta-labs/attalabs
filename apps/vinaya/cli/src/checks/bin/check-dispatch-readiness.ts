@@ -23,7 +23,7 @@
  *
  * Known scope gap (recorded in the PR body): `priorIterationArchival` is
  * always reported empty. Resolving it for real requires
- * `listActiveIterationSlugs` to discover candidate prior iterations per
+ * `listActiveTrancheSlugs` to discover candidate prior iterations per
  * project — not among the forge primitives this task's boundary re-exports.
  * Passing an empty list makes that one predicate trivially pass rather than
  * re-typing the fact via a second implementation; it is a real (if narrow)

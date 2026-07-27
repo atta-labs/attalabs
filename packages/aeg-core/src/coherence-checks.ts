@@ -6,7 +6,7 @@
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
  */
 
-import { iterationLabel, label } from '@atta/aeg-forge-state'
+import { trancheLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion, stripCode } from './anchored-region'
 import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
@@ -232,7 +232,7 @@ export function checkT2(
         failures.push({
           issue: num,
           iteration: slug,
-          reason: `Issue #${num} is open and labeled ${iterationLabel(slug)} but does not appear in the topology file`
+          reason: `Issue #${num} is open and labeled ${trancheLabel(slug)} but does not appear in the topology file`
         })
       }
     }
@@ -529,8 +529,8 @@ export function checkL3(files: IterationFile[]): CheckResult {
  * `milestone` field doesn't match that same Milestone.
  *
  * **Advisory (info-only)**, same framing as L1/L2 (`state-machine.md` §12):
- * confirmed NOT functionally load-bearing — `deriveIterationFromForge`/
- * `listActiveIterationSlugs` never read an Issue's milestone field, only the
+ * confirmed NOT functionally load-bearing — `deriveTrancheFromForge`/
+ * `listActiveTrancheSlugs` never read an Issue's milestone field, only the
  * `vinaya/iteration:<slug>` label, which remains the sole, sufficient membership
  * signal. This is real drift between GitHub's own Milestone view (e.g.
  * `open_issues`/`closed_issues` counts) and reality — cosmetic, not a gate,
@@ -553,8 +553,8 @@ export function checkL4(
       iteration: f.iteration,
       reason:
         f.milestoneTitle === null
-          ? `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but has no GitHub-native milestone attached`
-          : `Issue #${f.issue} carries ${iterationLabel(f.iteration)} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
+          ? `Issue #${f.issue} carries ${trancheLabel(f.iteration)} (active) but has no GitHub-native milestone attached`
+          : `Issue #${f.issue} carries ${trancheLabel(f.iteration)} (active) but is attached to Milestone "${f.milestoneTitle}" instead`
     })
   }
   return {
@@ -563,7 +563,7 @@ export function checkL4(
     failures,
     note:
       failures.length > 0
-        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their ${label('iteration')}<slug> label (cosmetic drift, advisory)`
+        ? `${failures.length} open task-Issue(s) in an active iteration whose GitHub-native milestone doesn't match their ${label('tranche')}<slug> label (cosmetic drift, advisory)`
         : undefined
   }
 }
@@ -577,7 +577,7 @@ export function checkL4(
  * This is the FORGE-NATIVE analogue of file-based L1: L1 reads `IterationFile[]`
  * (a `!f.archived` file location), but post-cutover most iterations have no
  * topology file at all, so their Milestone-object drift is invisible to L1.
- * L5 keys off `listActiveIterationSlugs` (open Milestones — the
+ * L5 keys off `listActiveTrancheSlugs` (open Milestones — the
  * authority) instead, so it sees exactly the iterations L1 no longer can.
  *
  * **Advisory (info-only)**, same framing as L1/L2/L4 (`state-machine.md` §12):

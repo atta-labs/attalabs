@@ -15,7 +15,7 @@ export const NEXT_HEADER = /\*\*[A-Z][^*]*\*\*/
 export const FIELD_LABEL = /^(Depends-on|Conflicts-with)\s*:\s*(.*)$/i
 
 /** A valid edge id: a bare task id (`1`, `7a`), a bare Issue ref (`#372`), or
- * a cross-iteration reference (`<slug> #372` / `<slug> 25`). Rejects plain
+ * a cross-tranche reference (`<slug> #372` / `<slug> 25`). Rejects plain
  * prose that happens to share a backtick span with a labeled field — e.g. a
  * `` `vinaya check` `` command-name mention inside the same "Dependency
  * rationale" paragraph (found in Issue #384's real body). */
@@ -55,13 +55,13 @@ function splitIds(raw: string): string[] {
  * Resolves each id in a comma-joined list against `lastSlug` (mutable,
  * carried across spans by the caller): a bare id (no slug of its own)
  * inherits the last-seen slug qualifier FOR THIS FIELD, then that
- * inheritance resets — a plain bare id (same-iteration reference) must not
- * silently pick up a stale cross-iteration slug from several spans back.
+ * inheritance resets — a plain bare id (same-tranche reference) must not
+ * silently pick up a stale cross-tranche slug from several spans back.
  * Confirmed real shape: Issue #388's body had a fully-qualified label span
  * (`` `Depends-on: aeg-governance-hardening #368` ``) followed by a bare
  * continuation span (`` `#372` ``) that was ALSO a same-slug reference — the
  * parser silently dropped the qualifier, which could misresolve `#372` as
- * this iteration's own issue instead of `aeg-governance-hardening`'s.
+ * this tranche's own issue instead of `aeg-governance-hardening`'s.
  */
 function resolveIds(raw: string, lastSlug: { current: string | null }): string[] {
   const ids = splitIds(raw)

@@ -20,7 +20,7 @@
  * Exit code: 0 = allow (push proceeds), 1 = refuse.
  */
 
-import { deriveIterationFromForge, resolveRepo } from '@atta/aeg-forge-state'
+import { deriveTrancheFromForge, resolveRepo } from '@atta/aeg-forge-state'
 import { checkBranchTopology, taskBranchTopologyFields } from '../src/index'
 
 if (import.meta.main) {
@@ -47,9 +47,9 @@ if (import.meta.main) {
     process.exit(1)
   }
 
-  let topology: Awaited<ReturnType<typeof deriveIterationFromForge>> | null
+  let topology: Awaited<ReturnType<typeof deriveTrancheFromForge>> | null
   try {
-    topology = await deriveIterationFromForge(repo.owner, repo.repo, fields.iteration)
+    topology = await deriveTrancheFromForge(repo.owner, repo.repo, fields.iteration)
   } catch (err) {
     console.error(
       `✖ pre-push: check-branch-topology could not reach the forge for iteration \`${fields.iteration}\`: ${(err as Error).message}`
