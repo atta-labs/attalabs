@@ -69,3 +69,50 @@ export function loadStateMachineModel(): StateMachineModel {
     }))
   }
 }
+
+/** How many ids each input group shows as a sample of what it holds. */
+const SAMPLE_SIZE = 3
+
+/** One input group of the diagram — its live size, and a sample of what it holds. */
+export type DiagramInputGroup = {
+  label: string
+  count: number
+  samples: string[]
+}
+
+/**
+ * The diagram's own shape, derived from the same loaded model the tables
+ * render — every count is an array length and every name is an array element,
+ * so the diagram cannot drift from the tables beneath it or from the model
+ * beneath them both. A literal `9` typed into the diagram is the failure this
+ * page exists to remove, which is why the derivation lives here as a pure
+ * function over the model rather than inline in the component: it is unit
+ * testable, so a hardcoded number fails a test.
+ */
+export type DiagramGroups = {
+  facts: DiagramInputGroup
+  labels: DiagramInputGroup
+  rules: { label: string; count: number }
+  statuses: { label: string; count: number; names: DerivedStatus[] }
+}
+
+export function deriveDiagramGroups(model: StateMachineModel): DiagramGroups {
+  return {
+    facts: {
+      label: 'Forge facts',
+      count: model.factInputs.length,
+      samples: model.factInputs.slice(0, SAMPLE_SIZE).map((input) => input.fact)
+    },
+    labels: {
+      label: 'Labels',
+      count: model.labels.length,
+      samples: model.labels.slice(0, SAMPLE_SIZE).map((label) => label.id)
+    },
+    rules: { label: 'Ordered rules', count: model.rules.length },
+    statuses: {
+      label: 'Derived statuses',
+      count: model.statuses.length,
+      names: model.statuses.map((row) => row.status)
+    }
+  }
+}
