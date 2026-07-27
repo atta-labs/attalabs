@@ -3,9 +3,12 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 
 /**
- * Walks up from process.cwd() to find the monorepo root — the same marker
- * `lib/repo-state/read-root.ts` uses, so both agree on what "the repo root"
- * means regardless of which surface is running.
+ * Walks up from process.cwd() to find the monorepo root.
+ *
+ * NOTE: `lib/repo-state/read-root.ts` resolves the same root by a different
+ * marker — it looks for the project registry under the config directory. Both
+ * land on the same directory in this repo, but they are not the same test:
+ * a repo with a config and no registry resolves here and not there.
  *
  * The marker is the Vinaya config, not a governance file: `vinaya.config.json`
  * is what `vinaya init` installs and `eject` removes, so it exists in every

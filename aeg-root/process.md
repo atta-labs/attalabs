@@ -262,7 +262,7 @@ The test plan is split by who can structurally execute each item:
 
 The Principal merges. Tier 3 work merges during a ratification window (`coordination.md`); Tier 0/1 anytime. The merge **auto-closes the linked Issue** (via `Closes #N`) — and the merge *is* the `merged` status; nobody writes a label. An automation layer may surface a completion notification.
 
-**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110), `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
+**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110), `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
 
 **Exit:** code is in main, Issue closed, close-out done.
 

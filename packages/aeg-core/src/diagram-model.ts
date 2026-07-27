@@ -57,7 +57,7 @@ export type DiagramNode = {
   crosses?: 'into-github' | 'none'
   /** The node's name **for a reader**, when its `label` is an identifier rather
    * than words. `role`/`contract` nodes label themselves with their doctrine id
-   * (`team-leader`, `archivist-iteration-archivist`) because that id is the
+   * (`brief-author`, `archivist-iteration-archivist`) because that id is the
    * node's identity — routes, doc paths and edge endpoints all key off it, so
    * it cannot be prettified in place. This carries the doc's own `title:`
    * frontmatter instead, and every renderer showing a name to a person prefers

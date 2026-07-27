@@ -480,10 +480,22 @@ function runSurfacesMode(surfacesArg: string): void {
     process.exit(0)
   }
 
+  // A repo that never configured doc ownership is legitimately dormant. A repo
+  // that HAS a manifest but resolves the wrong path is a broken derivation
+  // reporting success — the failure mode a silent `exit 0` used to hide. The
+  // two are distinguished by whether the manifest exists where config says.
   const docOwnersContent = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
   if (docOwnersContent === null) {
-    console.log(`verify-dispatch --surfaces: ${DOC_OWNERS_PATH} not found — dormant, no bindings to check.`)
+    console.log(
+      `verify-dispatch --surfaces: no doc-ownership manifest at ${DOC_OWNERS_PATH} — dormant, no bindings to check.`
+    )
     process.exit(0)
+  }
+  if (docOwnersContent.trim() === '') {
+    console.error(
+      `verify-dispatch --surfaces: ${DOC_OWNERS_PATH} is empty — refusing to report an empty derivation as success.`
+    )
+    process.exit(1)
   }
 
   const { pointers, matches, errors } = deriveSection7(surfaces, docOwnersContent)

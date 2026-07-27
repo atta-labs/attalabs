@@ -55,8 +55,7 @@ describe('the frozen decision archives are not documentation', () => {
   // touching a file nobody reads. History is not a doc update.
   it('excludes the legacy archives from the doc set', () => {
     expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
-    expect(isDocFile('apps/herald-ai/specs/herald-decisions-legacy.md')).toBe(false)
-    expect(isDocFile('apps/vada-ai/specs/vada-decisions-legacy.md')).toBe(false)
+    expect(isDocFile('docs/other-legacy.md')).toBe(false)
   })
 
   it('still counts real docs in the same directories', () => {

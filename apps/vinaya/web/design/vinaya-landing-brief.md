@@ -49,7 +49,7 @@ This is the substantial page. Purely mechanical/technical content, structured ar
    - **Ring 1 — Detect** (CI, "the guarantee"): catches everything regardless of what wrote it; merge is blocked until green.
    - **Ring 2 — Audit** (post-merge, continuous): catches drift between what shipped and what was decided; never blocks, writes the permanent record.
 3. **A commit walkthrough** — the actual sequence a single change goes through: write → Ring 0 (local hook) → push/PR → Ring 1 (CI) → human review (judgment, not compliance) → merge → Ring 2 (audit record).
-4. **The roles**, stated plainly, each tagged human or agent: Principal (human — ratifies irreversible decisions), Team Leader (agent — plans, writes briefs), Developer (agent — executes, opens PRs), Reviewer (agent — independent judgment, fresh context), Archivist (agent — closes out, writes the permanent record).
+4. **The roles**, stated plainly, each tagged human or agent: Principal (human — ratifies irreversible decisions), Planner and Brief Author (agents — plan the work, then write each task's brief), Developer (agent — executes, opens PRs), Reviewer (agent — independent judgment, fresh context), Archivist (agent — closes out, writes the permanent record).
 5. **Why GitHub specifically** — the "derived status" idea: no status field anywhere is hand-written by a human or agent; status is read fresh from what actually happened (branch exists → in progress; PR open → in review; CI red → blocked; PR merged → done). Nothing can drift because nothing stores it.
 
 ## Design reference — already mocked up, use as the visual direction

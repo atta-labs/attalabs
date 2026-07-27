@@ -155,4 +155,4 @@ The design intent, stated plainly: **nothing in AEG's contracts assumes any part
 
 ---
 
-*Change discipline: this map describes installed mechanisms only. A change that adds, removes, or weakens a gate must update this page in the same change set (the gate code is bound to this page by the document-ownership rule), and the tool-layer gates are a locked decision — weakening them requires a superseding decision-log entry, never a quiet edit.*
+*Change discipline: this map describes installed mechanisms only. A change that adds, removes, or weakens a gate must update this page in the same change set (the gate code is bound to this page by the document-ownership rule), and the tool-layer gates are a locked decision — weakening them is a reviewed change with its reasoning in the pull request, never a quiet edit.*

@@ -38,7 +38,7 @@
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
  *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
  *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
- *                     mode. C0/C1/C3 are PR-body contracts and stay at the PR gates.
+ *                     mode. C1/C3 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
  *   (full)            Repo-wide structural checks. Catches unstatused specs, manifest
  *                     validity, the completeness scoreboard,

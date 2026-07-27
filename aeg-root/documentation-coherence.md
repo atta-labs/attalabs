@@ -59,7 +59,7 @@ The Reviewer's judgment now sits **on top of** the check rather than instead of 
 
 ## Cross-references
 
-- **Decisions** (`docs/decisions-legacy.md`): D-058 (bidirectional read/write obligation), D-062 (`doc-owners` + C5 mechanical coverage gate), D-076 (§7 mechanical derivation from `doc-owners`).
+- The read/write obligation, the `doc-owners` coverage gate, and the mechanical derivation of the doc-update list are all stated above; the seam contracts carry the per-role halves.
 - **Seam contracts** (`aeg-root/contracts/`): `planner-brief.md`, `brief-developer.md`, `developer-reviewer.md`, `reviewer-archivist.md`, `archivist-iteration-archivist.md`, `iteration-archivist-planner.md`.
 - **`state-machine.md` §15** — Coherence Seam: Doc Coverage — the C5 mechanics in full.
 - **`enforcement.md`** — the three-ring enforcement map; documentation coverage is called out there as enforced at both push and PR-open.

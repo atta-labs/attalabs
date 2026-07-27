@@ -92,7 +92,6 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 | Per-project state (pinned Issue, D-110) | Non-derivable operational facts: known production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer. | Whenever state changes |
 | `aeg-root/iterations/<name>.md` | The current iteration's task topology (edges, grouping). Plan only — no status. | At plan time (Planner) |
 | Lessons log (pinned Issue #453, D-110) | Calibration lessons + anti-patterns. One new comment per lesson. | Monthly review |
-| `docs/decisions-legacy.md` | Global cross-project decision log. | When decisions are made |
 | `docs-index.md` | Discovery map of repo content. Auto-generated. | When repo files added/removed/renamed |
 
 > **`now.md` is retired (D-057).** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
@@ -184,7 +183,7 @@ You were invoked specifically to review a PR. You run with fresh context on purp
 
 1. **Confirm the PR is merged** — your only hard precondition (forge-derived). If not merged, refuse.
 2. **Read `roles/archivist.md`** — the close-out checklist.
-3. **Work the checklist** — Issue closed, decision logged if Tier 3, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110; remove stale operational notes; `now.md` no longer exists — D-057), provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
+3. **Work the checklist** — Issue closed, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110; remove stale operational notes; `now.md` no longer exists — D-057), provenance block posted to the merged PR. Flag (don't perform) orphaned branches and worktree removal. Write no task status — the merge is the status.
 
 ### Mandatory forge check (before any brief, audit, or recommendation)
 
@@ -207,7 +206,7 @@ If Dani asks a strategic, architectural, or product-shape question about a named
 
 1-2 daily sessions where the Principal resolves items requiring his final authority. Per D-110, there is no queue file — the Brief Author applies the `needs:principal-input` label to whichever Issue/PR needs ratification and batches the labeled set (`gh issue list --label needs:principal-input`, `gh pr list --label needs:principal-input`) before each window. Historical entries predating this mechanism are preserved on pinned Issue #452.
 
-**Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
+**Batches at windows:** Type 1 decisions (irreversible; PENDING until window); Tier 3 PR merges; `severity: product` escalations; PENDING Type 2 decisions.
 
 **Does NOT wait:** Type 2 decisions the Brief Author makes in Strategist mode (ACTIVE immediately); Tier 0/1 PR merges (after CI + Brief Author spec review); `severity: execution`/`strategy` escalations (Brief Author handles); already-ratified items.
 
@@ -225,7 +224,7 @@ Locked (D-013). Spec filenames are `{product}-spec.md` or `{component}-spec.md` 
 
 ### Every repo-file change goes through a worktree + PR — no direct commits to `main`
 
-**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology, decision logs — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
+**Universal rule, every role.** Any change to a repo-tracked file — code, specs, skills, role docs, the iteration topology — reaches `main` through a worktree branch + PR + green merge. **No role commits or pushes directly to `main`.** This applies to the Planner editing the iteration file just as much as the Developer editing code: "I only touched a doc" is not an exemption. The drift that produced this rule was a plan commit landing on `main` with no worktree and nothing stopping it (lessons log, pinned Issue #453, entry L‑006).
 
 This is **mechanically enforced**, not merely asked:
 - `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
@@ -263,8 +262,6 @@ Log to `decisions.md` (global) or the per-project log during the conversation. A
 |----------------------|-------|
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/` — D-039) |
 | A project spec, ecosystem vision, naming decision | Repo only |
-| Global decision log | `docs/decisions-legacy.md` |
-| Per-project decision log | `apps/{project}/specs/{project}-decisions.md` |
 | Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue (D-110): `aeg` #447, `vada` #448, `herald` #449, `cetana` #450, ecosystem-wide `aeg-core`/`atta`/`desktop`/`attalabs` #451 |
 | The execution plan (task topology, edges) | `aeg-root/iterations/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project); cross-cutting items are cut as backlog Issues |

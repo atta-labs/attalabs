@@ -400,9 +400,7 @@ Write the Tier **last**, after the surface map is fully defined. Never declare T
 
 - **Tier 0** — trivial. Checklist: typecheck, lint, tests, PR description.
 - **Tier 1** — implementation. Checklist: Tier 0 + specs updated + `verify-docs` passes.
-- **Tier 3** — project/roadmap change. Checklist: Tier 1 + state docs updated. No decision-log entry is required: the harness requires no decision log, and the reasoning for the change lives in the pull-request body, which is where a reviewer and the close-out both read it.
-
-When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body has no `Tier:` field, so always declare it explicitly. The `Tier:` in the PR body is the **binding source of truth**; the `tier:*` label on the Issue is its synced projection (`state-machine.md` §14 — field wins on conflict).
+- **Tier 3** — project/roadmap change. Checklist: Tier 1 + state docs updated. When in doubt, assign Tier 3. verify-docs defaults to Tier 3 when the PR body has no `Tier:` field, so always declare it explicitly. The `Tier:` in the PR body is the **binding source of truth**; the `tier:*` label on the Issue is its synced projection (`state-machine.md` §14 — field wins on conflict).
 
 ```
 **Conforms-to:** [D-### — the existing decision this work implements]

@@ -7,7 +7,7 @@ describe('deriveTierFromDiff', () => {
     // special tier meaning. A doc-only diff derives Tier 1 like any other.
     // The archives are history, not docs — they carry no tier signal at all.
     expect(deriveTierFromDiff(['docs/decisions-legacy.md'])).toBe(0)
-    expect(deriveTierFromDiff(['apps/herald-ai/specs/herald-decisions-legacy.md'])).toBe(0)
+    expect(deriveTierFromDiff(['docs/other-legacy.md'])).toBe(0)
   })
 
   it('code-only diff → tier 0 (passes without Tier: field in PR body)', () => {

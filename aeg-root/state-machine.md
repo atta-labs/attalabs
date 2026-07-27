@@ -212,32 +212,16 @@ Most specs are `draft` — no deliberate ratification pass has been done. Future
 
 ---
 
-## Section 6: Decision Log Schema
+## Section 6: Recording why
 
-```markdown
-## D-NNN — One-line title
+The harness requires no decision log. A change's reasoning lives in the pull
+request that makes it — frozen at merge, dated, attributed, and read by both
+the reviewer and the close-out. A rule that still binds belongs in the spec
+for the surface it governs, where a doc-ownership binding keeps it current.
 
-**Date:** YYYY-MM-DD
-**Status:** ACTIVE | SUPERSEDED | RETIRED | EXPIRED | PENDING
-**Type:** 1 (irreversible — Principal must ratify) | 2 (reversible — Brief Author can ratify)
-**Supersedes:** D-NNN (if applicable)
-**Superseded by:** D-NNN (if applicable)
-**Ratifies:** <path to spec> (if this decision ratified a spec)
-**Authored by:** Principal | Brief Author
-**Ratified by:** Principal | Brief Author (delegated, if Type 2)
-**Context:** 1-3 sentences.
-**Decision:** 1-3 sentences.
-**Alternatives rejected:** bullet list.
-**Consequences:** what this implies.
-```
-
-**Status semantics:** ACTIVE (current canonical), SUPERSEDED (replaced — fill `Superseded by:`), RETIRED (retired without replacement), EXPIRED (context-bound assumptions no longer apply), PENDING (Type 2 made in a solo Brief Author session, in effect but awaiting Principal ratification — cannot be acted on as ACTIVE for Type 1 matters).
-
-**Append-only invariant:** logs are never edited in place. Status changes are new entries referencing the old via `Supersedes:`; the original gets `Superseded by:` filled and its `Status:` flipped to SUPERSEDED, body otherwise unchanged.
-
-**Numbering is per-log, not globally unique.** Each log carries its own `D-###` sequence; numbers collide across logs deliberately. The legacy Vāda log (`apps/vada-ai/specs/vada-decisions.md`) runs its own sequence, as did Cetana's before that product was retired and deleted (D-095/D-132). There is a Vāda D-025 and a global D-025 and they are different decisions. **Always disambiguate by naming the log** (e.g. "global D-026", "vada-decisions D-033"). The global log has apparent gaps because some early v3 decisions were filed in project logs. Within any single log, numbers are sequential and append-only; the Archivist validates within-log sequencing (Section 12).
-
----
+A team that wants a standing record of past choices is free to keep one in
+whatever form suits it. Nothing here reads it, requires it, numbers it, or
+checks its shape.
 
 ## Section 7: Escalation Paths
 
@@ -263,25 +247,6 @@ If the brief itself is wrong in a way that blocks all paths, the Developer escal
 
 ---
 
-## Section 8: Lock Mechanism — REMOVED
-
-The `Lock: YES` marker and every mechanism that read it are gone.
-
-**Why.** The check fired only when a diff *added* a `Lock: YES` line to a
-decision log. It therefore could not fire when a locked entry was edited, when
-one was deleted, or when code contradicted it — every event a lock exists to
-catch happens outside the log file, which is the only place the trigger looked.
-It was structurally incapable of being the thing that stopped a violation, and
-across the twenty-seven locked entries no case was found where it was.
-
-**What replaces it.** Nothing, deliberately. Every invariant in this repo that
-genuinely holds is held by a purpose-built check — the no-disk-state guard, the
-forge tool-gates, the doc-coverage seam. A rule that must hold gets a check; a
-rule that does not deserve a check was never protected by a marker either.
-
-The historical entries keep their `Lock: YES` lines; the archive is not
-rewritten. They record what was decided, not what is enforced.
-
 ## Section 9: Tiered Documentation
 
 Every piece of work is assigned an impact tier; the tier determines required documentation before the PR is ready. The tier is declared two ways that must agree — the `Tier:` field in the PR body (the binding source of truth, read by verify-docs) and the `vinaya/tier:*` label on the Issue (the scannable projection). Section 14 defines the field-vs-label rule and the sync obligation.
@@ -290,9 +255,9 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 **Tier 1 — Implementation.** A meaningful feature/fix within existing architectural contracts. Required: Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes.
 
-**Tier 3 — Project/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts (including a role-seam contract in `contracts/`); changes roadmap sequencing or project direction; creates/modifies ACTIVE locks; requires Type 1 decisions; affects more than one project boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), state docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
+**Tier 3 — Project/roadmap.** No Tier 2 (deliberately eliminated; disputes go to Tier 3). Qualifies when ANY of: introduces/breaks public contracts (including a role-seam contract in `contracts/`); changes roadmap sequencing or project direction; requires Type 1 decisions; affects more than one project boundary; changes persistence/storage semantics; changes escalation/governance rules; requires Principal ratification to continue. Required: Tier 1 + decision entry (status, type, rationale, alternatives), state docs updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated. Merge during a ratification window.
 
-**Spike exception:** `spike: true` reduces docs to typecheck + lint + a decision entry capturing what was tried/learned. Spike code does not merge.
+**Spike exception:** `spike: true` reduces docs to typecheck + lint, with what was tried and learned recorded in the pull request. Spike code does not merge.
 
 **Tier detection:** when in doubt between 1 and 3, choose 3 — the cost of excess docs is low; under-documented architectural change is how the BYOK gap happened. verify-docs assumes Tier 3 when a PR declares no tier.
 
@@ -306,7 +271,7 @@ Every piece of work is assigned an impact tier; the tier determines required doc
 
 1-2 daily windows batch governance decisions so the Principal isn't continuously interrupted.
 
-**Batches at a window:** Type 1 decisions; Tier 3 PR merges; lock approvals; `severity: product` escalations; PENDING Type 2 decisions.
+**Batches at a window:** Type 1 decisions; Tier 3 PR merges; `severity: product` escalations; PENDING Type 2 decisions.
 
 **Does NOT wait:** Tier 0/1 merges (anytime); `severity: execution`/`strategy` escalations (Brief Author resolves); Type 2 decisions made with the Principal present.
 
@@ -348,7 +313,7 @@ The lowest-commitment way to run AEG: read-only over a team's existing process. 
 - *(The practitioner-facing map of every enforcement mechanism — prevention, detection, audit — lives in `aeg-root/enforcement.md`; this section remains the normative gate registry.)*
 - **Tool-layer forge gates (D-078)** — the earliest enforcement point: a PreToolUse hook (`.claude/hooks/check-forge-gates.sh`, wired in `.claude/settings.json`) denies raw `gh pr create`/`gh pr edit --body*`/`gh issue create`/`gh issue edit --body*` (and `gh api` creation POSTs), directing agents to the validated wrappers `packages/aeg-core/bin/open-pr.ts` (runs verify-brief + verify-docs `--pr` + the Closes #N gate locally, calls `gh` only on green) and `bin/open-issue.ts` (a task Issue with a `vinaya/iteration:*` label must carry the full eight-field Planner rationale — `checkIssueRationale`, planner-brief contract, D-055 — **and pass three content checks on what those fields say, D-130: `checkBlastRadiusScope` (the declared surface may not reach a shared collision domain from `.aeg/packages` that no declared project owns, absent a second project or a `blast-radius-ack:` line), `checkNoBriefContent` (no brief-shaped section in the Issue), `checkRationaleNamesDocs` (the rationale names a concrete doc/skill path, or the `no-doc-surface` sentinel). `checkConflictCompleteness` warns on an undeclared collision-domain overlap and never blocks**). Prevention, not detection: a malformed PR/Issue body is refused at the agent's own tool call and never reaches the forge; the CI gates below re-run the identical aeg-core checks purely as a backstop for non-hook writers. Also enforced at the same layer: title grammar (`checkForgeTitle`, both wrappers), decision-number freshness (a branch adding a `## D-NNN` at or below origin/main's max is refused), the single-plan-PR guard (`checkSinglePlanPr` — a diff touching an iteration's topology file is refused when another OPEN PR already touches that same iteration's topology file, D-069 task 19 / #336), `gh api` PATCH/curl write-method denies, and a `.husky/pre-push` gate refusing `task/<iter>/<id>` pushes whose id has no topology row (D-073 mechanical). Operational rule: restart running agent sessions after merging hook/settings changes — hooks load at session start. Same mechanism as skill-check enforcement and the T9 merge gate.
 - **Single-plan-PR CI backstop (aeg-governance-hardening task 24, #364, D-082's sibling item 3)** — `checkSinglePlanPr` (`packages/aeg-core/src/single-plan-pr.ts`) was extracted from `open-pr.ts` (previously private to that wrapper) so the identical predicate could also run forge-side: `.github/workflows/forge-lifecycle.yml::single-plan-pr-gate` re-fetches this PR's touched files plus every other open PR's touched files and fails CI on the same violation the ring-0 hook refuses locally. Closes the gap where a PR opened directly via the GitHub web UI bypasses `open-pr.ts` entirely. No-ops (never fires) for an ordinary task-branch PR, since its diff never touches an iteration topology file. One implementation, two enforcement points — no second copy of the predicate.
-- **Coherence oracle (A1/A2/A3/T1/T2/T3/D1/M1/M3)** — `packages/aeg-core/bin/verify-coherence.ts` runs against every PR and genuinely blocks CI (D-069 task 3 / #220 re-armed the gate from advisory to blocking — the CLI's own exit code, non-zero on any `fail`-status check, is now what the `coherence-gate` job exits with). Failures in A1 (closed-without-merge), A2 (archived-without-provenance), A3 (auto-close-misfire), T1 (phantom-issue-ref), T2 (orphan-task — **plan PRs only as of D-082, see below**), T3 (tbd-in-active-iteration), D1 (dispatched-on-unmet-deps), **T2 and T3 are both scoped to the PR's own iteration in CI (`ciIterationSlug`, D-069 task 19 for T2's half — see "T2 branch scoping" below)** — the full repo-wide picture stays visible in `--json`/audit mode. L1/L2/L4/L5/N2/M2 are advisory (info-only) — `checkL2`/`checkL3`/`checkL4`/`checkL5` return `status: info`, so a premature-archive, lifecycle-hygiene, Milestone-attachment-drift, or open-Milestone-all-closed finding is surfaced for a human to investigate but never fails CI. On A1 failures the relevant Issues receive the `vinaya/incoherent` label (Section 14). Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::coherence-gate`. Same enforcement substrate as above. **The job's repo-state inputs (topology files, iteration list) are read from a freshly-fetched `origin/main` (D-082, item 5) — not the checkout's `refs/pull/N/merge`, which GitHub materializes lazily and can lag behind main (5+ false-red cycles, 2026-07-03/04). A plan PR's own topology diff still reads from its head ref.**
+- **Coherence oracle (A1/A2/A3/T1/T2/T3/D1/M1/M3)** — `packages/aeg-core/bin/verify-coherence.ts` runs against every PR and genuinely blocks CI (D-069 task 3 / #220 re-armed the gate from advisory to blocking — the CLI's own exit code, non-zero on any `fail`-status check, is now what the `coherence-gate` job exits with). Failures in A1 (closed-without-merge), A2 (archived-without-provenance), A3 (auto-close-misfire), T1 (phantom-issue-ref), T2 (orphan-task — **plan PRs only as of D-082, see below**), T3 (tbd-in-active-iteration), D1 (dispatched-on-unmet-deps), M1 (manifest-dangling), and M3 (manifest-duplicate-glob) fail CI. L1/L2/L4/L5//M2 are advisory (info-only) — `checkL2`/`checkL3`/`checkL4`/`checkL5` return `status: info`, so a premature-archive, lifecycle-hygiene, Milestone-attachment-drift, or open-Milestone-all-closed finding is surfaced for a human to investigate but never fails CI. On A1 failures the relevant Issues receive the `vinaya/incoherent` label (Section 14). Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::coherence-gate`. Same enforcement substrate as above. **The job's repo-state inputs (topology files, iteration list) are read from a freshly-fetched `origin/main` (D-082, item 5) — not the checkout's `refs/pull/N/merge`, which GitHub materializes lazily and can lag behind main (5+ false-red cycles, 2026-07-03/04). A plan PR's own topology diff still reads from its head ref.**
 - **Planner→Brief rationale completeness (R1, D-078)** — the same coherence oracle's **R1** check re-runs `checkIssueRationale` (`packages/aeg-core`) against every open task Issue's body, batched per active iteration alongside T2. A non-grandfathered Issue missing any of the eight `contracts/planner-brief.md` rationale fields fails CI. Paired with the ring-0 creation gate (`bin/open-issue.ts`, same tool-layer-forge-gates row above) — R1 is the continuous half, the hook is the point-of-creation half; one grammar, two enforcement points (`aeg-root/enforcement.md`). Pre-D-078 Issues are grandfathered by explicit Issue number (`R1_GRANDFATHERED_ISSUES`), reported `info`, never blocking — see Section 15b. **Real (D-069, D-078), aeg-governance-hardening task 1 (#251).** Moves this seam's rationale-completeness half from Trusted (below) to Enforced; the "role doc matches contract prose" half of contract conformance remains Trusted.
 - **Review gate — code-review + security-review verdicts (aeg-review-gate-v1 task 1, #474)** — `packages/aeg-core/bin/verify-review-gate.ts`, a step of the AEG gate suite job, blocks merge on a task-branch PR unless a clean code-reviewer `APPROVE` verdict comment AND a clean security-review `PASS` verdict comment both exist — `REQUEST CHANGES`, `FAIL`, a missing verdict, or an unclear one all fail CI. Reuses `extractCodeReviewVerdict`/`extractSecurityReviewVerdict` (`verdict-extraction.ts`) — the exact detection the post-merge Archivist's provenance assembly already ran, previously advisory-only (a DANGLING note on the merged PR, never a block). A principal can waive it for one PR with an actor-verified `vinaya/waiver:review` label (D-097's exact `isWaiverLabelActorVerified` pattern, parameterized by label — see the waiver-label-actor row above); label presence alone is never sufficient. **Real (D-069), installed at `.github/workflows/forge-lifecycle.yml::aeg-gate-suite`.** Closes the gap where 7 of 9 `aeg-forge-state-v1` task PRs merged with no review pass at all. **What remains Trusted, not Enforced: *dispatching* the code-reviewer/security-reviewer subagents in the first place** — see below; this gate only verifies a dispatched review's verdict is clean, it cannot make a review happen.
 - **Registry load-bearing checks G3/G4/G5 (enforcement-derivation-v1 task 3, #504)** — `packages/aeg-core/bin/verify-registry.ts`, a step of the AEG gate suite job, blocks merge on: G3 (a file making the exact class of GitHub-mutating call `check-forge-gates.sh` gates — PR/Issue create, PR/Issue body/title edit, `gh api` create/edit, raw curl/wget writes — with no guarding Ring-0 row); G4 (a `#NNN` cited anywhere in `aeg-root/enforcement.md`'s body that does not resolve to a real Issue or PR in the forge); G5 (a contract's `producer`/`consumer` that is not a real `role_id`, or a role with an empty `performs`/`refuses_when`). **G1 (implementation-exists) and G2 (no-orphan-hook/CLI) are report-only this iteration (D-116)** — they run in the same step and print `info` findings but never affect the exit code, since flipping them to blocking immediately would retroactively fail in-flight work against a pre-existing orphan backlog; G1 flips to blocking in a later, separately-dispatched task. Pure evaluators in `packages/aeg-core/src/registry-checks.ts`, parsing `packages/aeg-core/src/registry-parse.ts` — same D-092 shape (pure predicate + thin I/O shim) as `coherence-checks.ts`/`verify-coherence.ts`, deliberately a separate mechanism (different registry: `enforcement.md`'s own ring tables, not the iteration/forge state coherence-checks.ts reads). `registry-parse.ts`'s `GateRow` additionally carries `summary`/`category` (vinaya-pages-v1 task 3, #551) and `description`/`spec` (task 4, #553, D-122) — purely descriptive fields consumed by the Vinaya `/how-it-works` page, not read by any G-check; G1–G5's pass/fail behavior is unaffected. `description` is the row's plain-language sentence and is resolved by header name, not column index; `spec` is the enforcement column it must never be confused with (the "what must be true"/"Re-verifies"/"Catches" slot before `implementation`).
@@ -383,7 +348,6 @@ Every override is logged (verify-docs prints that the override was active; the A
 
 Append-only; never edited in place except to add `SUPERSEDED`/`RETIRED`/`EXPIRED` status or fill forward-reference fields:
 
-- All decision logs (per-project `*-decisions.md` + global `decisions.md`)
 - `aeg-project/retrospectives/*.md` (when created)
 - **The provenance block on a merged PR** (D-030) — assembled once at close-out from frozen facts, posted as a PR comment, never updated. Append-only by construction: a record of what shipped, not a status to maintain.
 - **The per-iteration token/cost ledger** (`aeg-root/iterations/<name>.tokens.md`) — every role reports its tokens at the end of its turn (PR body, verdict comment, or planning report); the per-task Archivist is the sole writer, appending one row per role-turn at close-out (D-071); re-entry appends another row; the iteration total is `sum(rows)`, derived at read time, never stored. Same philosophy as derived task status: don't store the aggregate, sum the immutable entries. See `iterations/README.md` §12.
