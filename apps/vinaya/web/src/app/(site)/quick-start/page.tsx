@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
+import { Card, CardContent, CardHeader, CardTitle, Code } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -9,6 +9,24 @@ import { PackageManagerTabs } from './_components/PackageManagerTabs'
 
 export const metadata: Metadata = {
   title: 'Quick Start · Vinaya'
+}
+
+// The step prose below is authored with backtick-delimited spans (the
+// convention every other doc on this site writes in) but this page renders
+// no markdown — plain `Text` would print the backticks as literal characters
+// instead of styling them. This splits on `` ` `` and wraps the odd segments
+// in `Code`, the same chip `DocPage`'s markdown pipeline produces for inline
+// code, without pulling in `react-markdown` for five paragraphs of prose.
+function renderProse(paragraph: string): ReactNode[] {
+  return paragraph.split('`').map((segment, index) =>
+    index % 2 === 1 ? (
+      <Code key={index} className='mx-0.5'>
+        {segment}
+      </Code>
+    ) : (
+      segment
+    )
+  )
 }
 
 // Hand-authored product page — five fixed steps, deliberately NOT derived
@@ -22,7 +40,9 @@ const STEPS: { number: number; title: string; body: string[]; render: () => Reac
   {
     number: 1,
     title: 'Install',
-    body: ['Placeholder prose — replaced in Part 3.'],
+    body: [
+      'Pick your package manager. Each command installs Vinaya and runs `init` in the same breath — nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff in the next step.'
+    ],
     render: () => (
       <PackageManagerTabs
         commands={{
@@ -37,25 +57,37 @@ const STEPS: { number: number; title: string; body: string[]; render: () => Reac
   {
     number: 2,
     title: 'Govern your repo',
-    body: ['Placeholder prose — replaced in Part 3.'],
+    body: [
+      "`vinaya init` is the product's signature moment. It reads your repo, prints the complete diff of every file it intends to add or change — the CI workflow, the git-hook blocks, `vinaya.config.json`, the labels — and waits. Nothing is written until you say yes.",
+      'Not ready to commit? `vinaya init --dry-run` prints that same diff and installs nothing at all.'
+    ],
     render: () => <CommandLine command='vinaya init' />
   },
   {
     number: 3,
     title: 'Watch a gate fire',
-    body: ['Placeholder prose — replaced in Part 3.'],
+    body: [
+      "`vinaya check --all` runs every registered gate — the same gates that sit in front of every pull request. On a clean tree it's fast and quiet. Break a rule it cares about and it doesn't warn: it refuses, names the exact rule, and stops you before a human ever sees the mistake.",
+      "Below is a real refusal, shown twice: once the way you'd read it in a terminal, and once the way a coding agent reads it — the `agent_recovery_prompt` field is what turns a wall of red text into a fixable instruction."
+    ],
     render: () => <GateRefusalDemo />
   },
   {
     number: 4,
     title: 'Point your agent at it',
-    body: ['Placeholder prose — replaced in Part 3.'],
+    body: [
+      "Copy this straight into your coding agent. It's written as instructions to the agent, not to you — paste it into a fresh session pointed at your repo, and it becomes the agent's own plan for how to work under Vinaya.",
+      'The prompt asks your agent to read `VINAYA.md` and `vinaya.config.json` — the two files `init` actually wrote into your repo root. `VINAYA.md` points at the full doctrine, which ships as versioned reference content inside the `vinaya` package itself; `vinaya.config.json` is the ruleset every gate enforces.',
+      'From there the loop repeats: plan a tranche, brief the task, work it in a worktree, open a pull request — and `vinaya check --all` has to pass before that PR is real.'
+    ],
     render: () => <AgentPromptBlock />
   },
   {
     number: 5,
     title: 'Watch it run',
-    body: ['Placeholder prose — replaced in Part 3.'],
+    body: [
+      '`vinaya studio` opens a live view of everything above — tasks moving through the loop, gates passing or refusing, an agent at work — with no status file anywhere to go stale. What you see is derived from the forge in real time, the same way every check above was.'
+    ],
     render: () => <CommandLine command='vinaya studio' />
   }
 ]
@@ -90,7 +122,7 @@ export default function QuickStartPage() {
             <CardContent className='flex flex-col gap-4'>
               {step.body.map((paragraph) => (
                 <Text key={paragraph} as='p' className='font-sans text-sm text-muted-foreground'>
-                  {paragraph}
+                  {renderProse(paragraph)}
                 </Text>
               ))}
               {step.render()}
