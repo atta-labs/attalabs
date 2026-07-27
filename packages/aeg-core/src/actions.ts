@@ -25,7 +25,7 @@
  * machine — it is `git push` (`publish-the-branch`) that reaches the
  * GitHub-hosted remote. `enforcement.md`'s own Ring-0 table lists them as
  * separate rows (`.husky/pre-commit` vs `.husky/pre-push`) for exactly this
- * reason. See D-119.
+ * reason..
  *
  * The only valid `performedBy` values are the 9 `role_id`s under
  * `aeg-root/roles/*.md` (task 2, #522) — asserted by the real-file test.
@@ -104,7 +104,7 @@ export const ACTIONS: Action[] = [
     id: 'author-the-brief',
     label: 'author the brief',
     crosses: 'none',
-    performedBy: ['team-leader'],
+    performedBy: ['brief-author'],
     summary: 'Ever started a task with no clear idea of what "done" means?',
     description:
       'Turning one intent into instructions someone can execute: what to build, what is out of scope, and what done means.'
@@ -145,7 +145,7 @@ export const ACTIONS: Action[] = [
 //
 // Consumed by both `actions.test.ts` (the crossing tripwire) and
 // `diagram-model.ts` (the `guards` gate→action edges), so the one keyword map
-// can never drift between them (D-119, same no-drift principle as ACTIONS).
+// can never drift between them (same no-drift principle as ACTIONS).
 export const CROSSING_KEYWORDS: Record<string, string> = {
   'publish-the-branch': 'git push',
   'create-a-task-issue': 'task issue',

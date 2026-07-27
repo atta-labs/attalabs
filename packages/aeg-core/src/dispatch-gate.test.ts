@@ -48,7 +48,7 @@ describe('checkDispatchReadiness', () => {
     expect(result.blockers[0]).toContain('phantom reference')
   })
 
-  it('blocks when the Issue fails the D-078 rationale gate', () => {
+  it('blocks when the Issue fails the rationale gate', () => {
     const result = checkDispatchReadiness(makeInput({ issueRationalePass: false }))
     expect(result.ready).toBe(false)
     expect(result.blockers[0]).toContain('rationale')
@@ -90,7 +90,7 @@ describe('checkDispatchReadiness', () => {
     expect(result.ready).toBe(true)
   })
 
-  it('D-120: no longer blocks when prior task fails every archival predicate (row-adjacency gate removed)', () => {
+  it('no longer blocks when prior task fails every archival predicate (row-adjacency gate removed)', () => {
     const result = checkDispatchReadiness(
       makeInput({
         priorTask: { id: '10', issue: 282, issueClosed: false, prMerged: false, hasProvenance: false }

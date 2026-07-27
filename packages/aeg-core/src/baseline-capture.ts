@@ -12,7 +12,7 @@
  * (aeg-governance-hardening's own dispatch wave) asserted "verify-docs full
  * mode must be green" as a pre-flight precondition without ever running it;
  * full mode had 44 pre-existing, unrelated findings and was never green.
- * Baseline data is capture-at-run only, never a committed file (D-074).
+ * Baseline data is capture-at-run only, never a committed file.
  */
 
 export type BaselineEntry = {

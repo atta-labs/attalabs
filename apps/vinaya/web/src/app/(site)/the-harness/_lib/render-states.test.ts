@@ -7,7 +7,7 @@ const ring1: DiagramNode = { id: 'ring:1', kind: 'ring', label: 'Ring 1', ringIn
 const ring2: DiagramNode = { id: 'ring:2', kind: 'ring', label: 'Ring 2', ringIndex: 2, renderState: 'active' }
 
 /**
- * D-087's "cannot lie by omission," proven at the render layer: a fixture
+ * The "cannot lie by omission" rule, proven at the render layer: a fixture
  * with one `disabled` gate (config turned it off) and one `locked` gate
  * (doctrine pins a lock — config tried to disable it too, and lost, exactly
  * mirroring `deriveDiagramModel`'s own precedence: lock is checked before
@@ -34,7 +34,7 @@ describe('render-state fixture proof', () => {
         label: 'commit-msg',
         ringIndex: 0,
         renderState: 'locked',
-        lock: 'D-999',
+        lock: '',
         category: 'hook'
       }
     ],
@@ -60,7 +60,7 @@ describe('render-state fixture proof', () => {
     const lockedGate = ring0?.children.find((n) => n.id === 'gate:commit-msg')
     expect(lockedGate).toBeDefined()
     expect(lockedGate?.renderState).toBe('locked')
-    expect(lockedGate?.lock).toBe('D-999')
+    expect(lockedGate?.lock).toBe('')
   })
 
   it('both gates share the same ring0 group — child count is 2, not 1 or 0', () => {

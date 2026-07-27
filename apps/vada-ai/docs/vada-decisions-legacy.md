@@ -1,12 +1,19 @@
+# Vāda decisions — legacy archive (frozen 2026-07-27)
+
+**History, not machinery.** No check reads this file. No gate requires an entry.
+It is kept because `D-###` citations across code, specs and skills resolve here.
+
+Do not add entries. A decision that still binds belongs in the spec for the
+surface it governs, where a doc-ownership binding keeps it current. A decision
+about one change belongs in that change's pull request.
+
+---
+
 # Vāda — Architectural Decision Log
 
 **Status:** ratified
 
-**Format:** Append-only. Each entry has a unique ID, date, decision summary, alternatives considered, rationale, and consequences.
-
 **Purpose:** Capture WHY architectural decisions were made, not just what was decided. Future contributors (human or AI) can understand the reasoning rather than re-deriving it.
-
-**How to add an entry:** Append to the bottom. Use the next sequential ID. Don't modify existing entries — if a decision is later reversed or refined, add a new entry that references the original.
 
 ---
 
@@ -726,30 +733,6 @@ The decision NOT to build `account.attalabs.dev` as a redirect hub is deliberate
 - Future products that want a Settings page can adopt the shared components without a separate hub; cross-product navigation between Settings surfaces is via the SSO cookie scope already in place (auth/SKILL.md RULE #2)
 
 ---
-
-## How to add an entry
-
-When adding a new decision:
-
-1. Use the next sequential ID (D-020, D-021, ...)
-2. Date format: Month Day, Year (e.g., "April 25, 2026")
-3. Status: Active / Superseded / Reversed / Deprecated
-4. Required sections: Decision summary (1-2 sentences), Alternatives considered (bullet list), Rationale (paragraph), Consequences (bullet list)
-5. If the decision references or affects other entries, link them by ID
-6. Append to the bottom — do not insert in the middle
-
-When superseding an existing decision:
-
-1. Add a new entry with the new decision
-2. Reference the old entry's ID in the rationale
-3. Update the old entry's Status to "Superseded by D-XXX" or "Reversed by D-XXX"
-4. Do not modify the old entry's content otherwise — the historical record matters
-
-When the rationale of an existing entry is wrong but the decision still holds:
-
-1. Add a brief "Date revised:" note at the bottom of the entry
-2. Note what was wrong and what's now understood
-3. Don't rewrite the original rationale — preserve the historical reasoning
 
 ## D-031: Reviewer prompt rev 5 — Persona+Goal+Posture+Output structure, verification block, phantom consensus detection
 

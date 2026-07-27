@@ -1,14 +1,33 @@
 ---
-sidebar_title: Planner → Brief
+sidebar_title: Planner → Brief Author
+title: Planner → Brief Author
+order: 1
 contract_id: planner-brief
 description: Carries an iteration’s plan down to a single task’s brief, so a task keeps the reasoning that shaped it.
 status: active
 producer: planner
-consumer: team-leader
+consumer: brief-author
 carrier: issue-body
 summary: Ever had a plan's key details get lost the moment someone else picked it up?
 ---
 # Contract: Planner → Brief Author
+
+## The short version
+
+This seam sits between planning an iteration and writing one task's brief. It exists because a role boundary is where work is lost: the planner does a deep technical pass, and without a contract its conclusions quietly fail to arrive.
+
+**What crosses** — the planner's rationale for one task, written into that task's issue: what the task is and deliberately is not; why it is one task rather than three; every project and shared-package consumer in its blast radius; why each dependency and conflict edge exists; the traps the dig already found; the class of agent the work needs; when the executing agent must stop rather than improvise; and the documents this work will make incoherent. Each has exactly one named home in the brief that consumes it, so a conclusion cannot arrive without a place to land.
+
+**The hand-off is malformed when** — a rationale is missing any of those parts, in which case the planner does not emit it; or when a brief drops one on the floor, in which case the brief is wrong rather than merely thin. It is malformed too when the rationale carries detail that cannot survive the wait — exact signatures, precise file lists — which goes stale between planning and dispatch; re-deriving that fresh is the brief author's half. And when the brief author's own dig contradicts the rationale, that is escalated back, never silently overridden.
+
+**What it does not carry** — the brief itself, which is written later and lives elsewhere; any statement of status, which is derived from the forge and never written down; scheduling or estimates, which belong to whatever tool plans the roadmap; and the freshly pinned facts a brief asserts about current code, which belong entirely to the next seam.
+
+**How it physically runs** — the carrier is the task's issue body. The planner writes the rationale there in a fixed grammar, readable by a person and checkable by a machine alike; an issue whose body does not carry every part is refused at creation, and the same check re-runs against issues already open. The brief author reads it there and writes the brief, which lands in the pull-request body at dispatch. The issue holds the reasoning; the pull request holds the instruction.
+
+
+---
+
+## Reference
 
 **Status:** active
 **Seam:** the hand-off from the Planner (producer) to the Brief Author (consumer).
@@ -45,7 +64,7 @@ Every field the Planner emits in the rationale (left) has exactly one named home
 | **Traps to avoid** (concrete pitfalls the dig surfaced) | Context + Constraints | The trap becomes an explicit "do NOT do X; do Y instead" the executing agent cannot miss. Highest-value field — never drop it. |
 | **Suggested agent-class** (high/mid/fast + one-line reason) | `For:` + `Reason:` header | The Brief Author confirms or deviates (with stated reason) and makes the **final** model pick. Class is the planner's; pick is the brief's. |
 | **Stop-and-escalate** (when the agent must stop, not improvise) | Stop conditions | The planner's stop conditions are copied into the brief's stop-condition list verbatim in substance. |
-| **Docs to keep coherent** (which specs/skills/docs this task will make incoherent) | the documentation-update list | The Brief Author turns the Planner's named list into the explicit doc-update items. Conditional: if the Planner stated "No docs touched," the list is "No doc updates required (Tier 0)." If the Planner named docs, they are all in the list. Presence-**and-correctness** of the list is the Planner's mechanical obligation, not naming docs from memory: the Planner names intended surfaces and the Brief Author derives the floor at brief-authoring time by matching those surfaces against `packages/governance/doc-owners` (`deriveSection7`), then supplements from the read obligation. Any override of the derived floor (added doc, or a derived pointer marked out of scope) must carry a one-line reason in the brief — silent overrides are a regression. |
+| **Docs to keep coherent** (which specs/skills/docs this task will make incoherent) | the documentation-update list | The Brief Author turns the Planner's named list into the explicit doc-update items. Conditional: if the Planner stated "No docs touched," the list is "No doc updates required (Tier 0)." If the Planner named docs, they are all in the list. Presence-**and-correctness** of the list is the Planner's mechanical obligation, not naming docs from memory: the Planner names intended surfaces and the Brief Author derives the floor at brief-authoring time by matching those surfaces against `.vinaya/doc-owners` (`deriveSection7`), then supplements from the read obligation. Any override of the derived floor (added doc, or a derived pointer marked out of scope) must carry a one-line reason in the brief — silent overrides are a regression. |
 
 **Reading the table:** left is the producer obligation (Planner role doc enforces it), right is the consumer obligation (brief-authoring skill enforces it). The two role docs must not contradict this table; if either needs to change what it emits or consumes, it changes *here*, and both sides update together.
 
@@ -66,8 +85,8 @@ A ready-to-fill skeleton of the full eight-field rationale lives at `aeg-root/te
 
 A task Issue's body must carry all eight fields in one of these two forms. **Canonical implementation:** `packages/aeg-core/src/issue-validation.ts` (`checkIssueRationale`, `isTaskIssueLabelSet`) — the single grammar/parser, consumed at two enforcement points per `aeg-root/enforcement.md`'s ring model:
 
-- **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `iteration:<slug>`) whose body fails `checkIssueRationale`. **It also refuses on three content checks (D-130), which grade what the fields *say* rather than that they exist:**
-  - `checkBlastRadiusScope` — if **Boundary** or **Project(s) + blast radius** names a path under a collision domain in `.aeg/packages` that none of the declared projects owns (ownership resolves against `packages/governance/projects.md`), the Issue must declare a second project or carry a `blast-radius-ack: <why one lens is enough>` line. `Project(s)` drives the review fan-out, so an under-declared blast radius under-governs the change. Dormant when `.aeg/packages` is absent.
+- **Ring 0 (creation gate):** `packages/aeg-core/bin/open-issue.ts` refuses to create or edit a task Issue (any Issue labeled `vinaya/iteration:<slug>`) whose body fails `checkIssueRationale`. **It also refuses on three content checks, which grade what the fields *say* rather than that they exist:**
+  - `checkBlastRadiusScope` — if **Boundary** or **Project(s) + blast radius** names a path under a collision domain in `.aeg/packages` that none of the declared projects owns (ownership resolves against `.vinaya/projects.md`), the Issue must declare a second project or carry a `blast-radius-ack: <why one lens is enough>` line. `Project(s)` drives the review fan-out, so an under-declared blast radius under-governs the change. Dormant when `.aeg/packages` is absent.
   - `checkNoBriefContent` — the body must carry no `## References`, `Technical surface map`, `Premise`, `Step 0`, or `Test Plan` section. Those are Brief-Author artifacts; an Issue is not a brief's home (it would go stale before work starts).
   - `checkRationaleNamesDocs` — **Docs to keep coherent** and/or **Traps to avoid** must name at least one concrete doc path (`aeg-root/…`, `.claude/skills/…`, `.claude/rules/…`, `apps/<x>/CLAUDE.md`, `apps/<x>/specs/…`, a repo-level `*.md`). A genuinely doc-less surface uses the explicit `no-doc-surface` sentinel — the same shape as `Test Plan: unit-tests-only`. This is the only read-obligation signal a forge write leaves: the skill-check hook fires on file edits, and cutting an Issue edits no file.
 
@@ -100,7 +119,7 @@ R1 checks **presence/structure only**; whether the content is correct (sizing ac
 
 A contract changes **as a unit**. You may not change what the Planner emits without, in the same change, updating what the Brief Author consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
 
-- A change to this file is a **Tier 3** change (it alters a cross-role contract) and requires a decision-log entry.
+- A change to this file is a **Tier 3** change: it alters a cross-role contract, so the reasoning belongs in the pull request that makes it, where the reviewer and the close-out both read it.
 - The same PR that edits this contract must verify both `planner.md` and `brief-authoring/SKILL.md` still point here and still match the table (they should need no field-level edits, since the fields live here — but their references must stay valid).
 - Never edit one side's role doc to add/drop a hand-off field directly. Add/drop it **here**; the role docs inherit it by reference.
 

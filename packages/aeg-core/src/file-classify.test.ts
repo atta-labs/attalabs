@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isCodeFile, isDecisionLog, isDocFile, isSpecFile } from './file-classify'
+import { isCodeFile, isDocFile, isSpecFile } from './file-classify'
 
 describe('isDocFile', () => {
   it('matches aeg-root, aeg-project, spec, and skill markdown', () => {
     expect(isDocFile('aeg-root/roles/developer.md')).toBe(true)
     expect(isDocFile('aeg-project/state.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/aeg-project/state.md')).toBe(true)
-    expect(isDocFile('packages/governance/projects.md')).toBe(true)
+    expect(isDocFile('.vinaya/projects.md')).toBe(true)
+    expect(isDocFile('docs/some-guide.md')).toBe(true)
     expect(isDocFile('apps/herald-ai/specs/herald-spec.md')).toBe(true)
     expect(isDocFile('.claude/skills/brief-authoring/SKILL.md')).toBe(true)
     expect(isDocFile('docs-index.md')).toBe(true)
@@ -48,13 +49,32 @@ describe('isSpecFile', () => {
   })
 })
 
-describe('isDecisionLog', () => {
-  it('matches the global log and per-project *-decisions.md', () => {
-    expect(isDecisionLog('packages/governance/decisions.md')).toBe(true)
-    expect(isDecisionLog('apps/vada-ai/specs/vada-decisions.md')).toBe(true)
+describe('the frozen decision archives are not documentation', () => {
+  // Review finding: `isDocFile` was widened to `docs/**.md` when the archive
+  // moved there, which made C3's code-requires-docs pairing satisfiable by
+  // touching a file nobody reads. History is not a doc update.
+  it('excludes the legacy archives from the doc set', () => {
+    expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
+    expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/herald-ai/docs/herald-decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/vada-ai/docs/vada-decisions-legacy.md')).toBe(false)
   })
 
-  it('rejects other markdown', () => {
-    expect(isDecisionLog('aeg-project/state.md')).toBe(false)
+  it('still counts real docs in the same directories', () => {
+    expect(isDocFile('docs/some-guide.md')).toBe(true)
+    expect(isDocFile('apps/vinaya/specs/vinaya-spec.md')).toBe(true)
+  })
+})
+
+describe('the restored per-product logs are still archives', () => {
+  // Review round 5: renaming these back to their original names silently
+  // defeated a suffix-based exclusion, and the assertions that would have
+  // caught it had been repointed at a synthetic path. Both real files are
+  // named here so the predicate cannot stop applying without a test failing.
+  it('excludes them from the doc set, the spec set, and tier derivation', () => {
+    for (const p of ['apps/herald-ai/docs/herald-decisions-legacy.md', 'apps/vada-ai/docs/vada-decisions-legacy.md']) {
+      expect(isDocFile(p), p).toBe(false)
+      expect(isSpecFile(p), p).toBe(false)
+    }
   })
 })

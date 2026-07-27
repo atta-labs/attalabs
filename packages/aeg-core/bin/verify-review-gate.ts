@@ -4,11 +4,11 @@
  * verify-review-gate — required pre-merge CI check (aeg-review-gate-v1 task 1,
  * #474). Blocks a task-branch PR from merging unless a code-reviewer
  * `APPROVE` verdict AND a security-review `PASS` verdict both exist on the
- * PR, or an actor-verified `vinaya/waiver:review` label is present (D-097's exact
+ * PR, or an actor-verified `vinaya/waiver:review` label is present (the exact
  * pattern — `isWaiverLabelActorVerified`, reused not duplicated).
  *
  * Only `plan/*` branches bypass (`isReviewGateExemptBranch`) — a plan PR
- * touches only topology/decision-log docs, never code. Every other branch,
+ * touches only topology docs, never code. Every other branch,
  * INCLUDING `fix/*`, is held to the gate: `fix/*` carries real code despite
  * not matching `task/<iteration>/<id>`, so it must not be waved through the
  * same way a genuinely code-free `plan/*` branch is. This is a going-forward
@@ -96,7 +96,7 @@ if (import.meta.main) {
   const branch = process.env.BRANCH ?? ''
   if (isReviewGateExemptBranch(branch)) {
     console.log(
-      `verify-review-gate: branch "${branch}" is a plan branch — bypass (topology/decision-log docs only, no code to review).`
+      `verify-review-gate: branch "${branch}" is a plan branch — bypass (topology docs only, no code to review).`
     )
     process.exit(0)
   }

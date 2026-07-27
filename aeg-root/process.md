@@ -3,9 +3,9 @@ sidebar_title: Process
 ---
 # Process: From idea to merged code
 
-This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs, skills, and decision logs updated.
+This document describes how work flows through the AEG operational model — from the moment the Principal has an idea to the moment that work merges to `main` with all specs and skills updated.
 
-It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iterations/README.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
+It is the canonical "how do we actually work?" document. Every other PM doc (`coordination.md`, `state-machine.md`, `iteration-model.md`, role docs, `brief-authoring` skill) describes a slice of this process. This document stitches them together into a single readable walkthrough.
 
 If you are starting a new session and need to understand the workflow, read this first. Then `coordination.md` for session protocol, then the role doc that applies to you, then any project-specific specs.
 
@@ -13,7 +13,7 @@ If you are starting a new session and need to understand the workflow, read this
 
 ## Where tasks come from: the iteration
 
-The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Team Leader mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iterations/README.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
+The thirteen phases below are the **per-task** flow. Tasks do not appear from nowhere — they are produced by the **Planner** (a Planner / Brief Author mode) when an iteration is planned: the Planner turns an intent plus a slice of tickets into a set of **forge Issues** (one per task) plus a thin topology file declaring their `depends-on` / `conflicts-with` edges (`iteration-model.md`, `roles/planner.md`). Each Issue that enters the flow below is a task the Planner already shaped.
 
 **Status is never stored.** Throughout every phase, a task's status is *derived* from the forge — Issue open/assigned, branch existence, PR open, review decision, merge — never written to a label or a file. When a phase below says a task "becomes in-review," it means *a PR was opened*, not that anyone set a status field.
 
@@ -39,7 +39,7 @@ Every piece of work moves through some subset of these. Trivial work (Tier 0) sk
 13. Iteration Close
 ```
 
-> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/verifier.md` and D-049).
+> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/developer.md` § Verification and).
 
 After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the final step of the flow.
 
@@ -47,17 +47,17 @@ After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the
 
 ## Phase 1: Idea origination
 
-**Who:** Principal and Team Leader (Strategist mode).
+**Who:** Principal and Planner.
 
-The Principal brings an idea. The TL pressure-tests, pushes back, surfaces related decisions, checks whether it's already specced. The TL's job is **not** to immediately agree and plan — it's to:
-- Read relevant specs and decision logs to confirm the idea isn't already settled
+The Principal brings an idea. The Brief Author pressure-tests, pushes back, surfaces related decisions, checks whether it's already specced. The Brief Author's job is **not** to immediately agree and plan — it's to:
+- Read the relevant specs to confirm the idea isn't already settled
 - Push back if it's wrong, premature, or duplicative
 - Identify the impact tier (0 / 1 / 3) — this drives everything downstream
-- Identify the Type 1 (irreversible — Principal ratifies) vs Type 2 (reversible — TL ratifies) profile
+- Identify the Type 1 (irreversible — Principal ratifies) vs Type 2 (reversible — Brief Author ratifies) profile
 
 If already locked or specced, the conversation ends here. If genuinely new, it produces a shared understanding of what the work is, why now, its tier, and its decision profile — which the Planner then turns into Issues (the iteration).
 
-**Artifacts:** usually none (conversation is ephemeral). A significant decision is logged as a D-### during the chat.
+**Artifacts:** usually none (conversation is ephemeral). A significant decision is stated in the pull request that carries the work.
 
 **Exit:** the idea dies, or it's worth planning into an iteration.
 
@@ -65,23 +65,23 @@ If already locked or specced, the conversation ends here. If genuinely new, it p
 
 ## Phase 2: Pressure-testing (optional)
 
-**When:** high-stakes only — architectural locks, project-direction shifts, decisions blocking weeks of downstream work, or when the Principal's instinct and the TL's read disagree. **Not** for tactical decisions, naming, or style. The Principal may waive it and ratify in-session (the decision log notes the skip, for audit honesty).
+**When:** high-stakes only — architectural locks, project-direction shifts, decisions blocking weeks of downstream work, or when the Principal's instinct and the Brief Author's read disagree. **Not** for tactical decisions, naming, or style. The Principal may waive it and ratify in-session (the pull request notes the skip, for audit honesty).
 
-**Who:** TL orchestrates; external AI reviewers (vendor-diverse — e.g. Gemini, Grok, DeepSeek, ChatGPT) participate via pasted briefs.
+**Who:** Brief Author orchestrates; external AI reviewers (vendor-diverse — e.g. Gemini, Grok, DeepSeek, ChatGPT) participate via pasted briefs.
 
-The TL writes a brainstorming brief (idea, sketch, alternatives, what to pushback on), pairs it with `reviewer-prompt.md`, and pastes to each reviewer. The TL synthesizes. Converge on a flaw → back to Phase 1. Validate → proceed. **Max two rounds** — if two don't converge, the issue is framing, not a third round.
+The Brief Author writes a brainstorming brief (idea, sketch, alternatives, what to pushback on), pairs it with `reviewer-prompt.md`, and pastes to each reviewer. The Brief Author synthesizes. Converge on a flaw → back to Phase 1. Validate → proceed. **Max two rounds** — if two don't converge, the issue is framing, not a third round.
 
 This phase pressure-tests an *idea*; Phase 10 reviews *shipped code*. Different things.
 
-**Exit:** TL and Principal agree the direction holds.
+**Exit:** Brief Author and Principal agree the direction holds.
 
 ---
 
 ## Phase 3: Brief authoring (just-in-time)
 
-**Who:** Team Leader in Brief Author mode.
+**Who:** Planner / Brief Author in Brief Author mode.
 
-When a task is picked up for execution, the TL writes its brief — **just-in-time, not at plan time** — following the `brief-authoring` skill. The brief MUST include:
+When a task is picked up for execution, the Brief Author writes its brief — **just-in-time, not at plan time** — following the `brief-authoring` skill. The brief MUST include:
 - Impact tier (0 / 1 / 3)
 - Type 1 / Type 2 declaration if architectural decisions are expected
 - `principal_delegate:` if the work runs while the Principal is offline
@@ -109,12 +109,11 @@ A brief is self-contained and executable without further conversation. If it nee
 Before work begins, the brief is checked for well-formedness:
 - `tier:` present and valid; brief structure follows the skill (scope, stop conditions, deliverable)
 - `principal_delegate:` valid if declared
-- A `Challenges lock: D-###` block with reasoning if it challenges an active Lock
 - `Project:` (if present) resolves against the registry
-- No obvious contradiction with active decision logs (string-match heuristic)
+- No obvious contradiction with the ratified specs (string-match heuristic)
 - The task's Issue carries only execution metadata — **no** planning fields (priority/estimates/points), which the required Issue template + a CI check reject
 
-If it fails, it's not dispatchable until fixed. The Developer also re-checks well-formedness as its entry gate (`roles/developer.md`) — a malformed brief is refused, not guessed at. (Brief Validation is a real blocking gate — the `Brief Validation` step (9/9) of the `aeg-gate-suite` job, D-069; see `state-machine.md` for mechanically-enforced vs trusted.)
+If it fails, it's not dispatchable until fixed. The Developer also re-checks well-formedness as its entry gate (`roles/developer.md`) — a malformed brief is refused, not guessed at. (Brief Validation is a real blocking gate — the `Brief Validation` step (9/9) of the `aeg-gate-suite` job; see `state-machine.md` for mechanically-enforced vs trusted.)
 
 **Exit:** the brief is well-formed and dispatchable.
 
@@ -122,7 +121,7 @@ If it fails, it's not dispatchable until fixed. The Developer also re-checks wel
 
 ## Phase 5: Dispatch
 
-**Who:** Principal (or delegated TL within ratification-window scope), by hand or via an automation layer.
+**Who:** Principal (or delegated Brief Author within ratification-window scope), by hand or via an automation layer.
 
 Dispatch starts the task. There are two equivalent routes:
 
@@ -157,15 +156,15 @@ The Developer cannot author its own briefs, expand scope without escalation, mod
 
 The Developer escalates through the escalation mechanism — a manual escalation note, or, if dispatched by an automation layer, its request-input mechanism — tagged with a `severity` that routes it:
 
-- `severity: execution` → TL (Brief Author mode). Most common: a deprecated dependency, an unanticipated flag, a "null or throw?" call.
-- `severity: strategy` → TL (Strategist mode). Less common: the brief's approach has a structural problem; the work touches an undiscussed area.
+- `severity: execution` → Brief Author. Most common: a deprecated dependency, an unanticipated flag, a "null or throw?" call.
+- `severity: strategy` → Brief Author. Less common: the brief's approach has a structural problem; the work touches an undiscussed area.
 - `severity: product` → Principal. Rare: user-visible behavior the brief didn't address; a Type 1 decision is required.
 
-The task is marked `blocked` (an `aeg:blocked` label — the one status with no native forge fact) until a reply arrives. The responder (TL or Principal) formulates a reply and the Developer resumes.
+The task is marked `blocked` (an `aeg:blocked` label — the one status with no native forge fact) until a reply arrives. The responder (Planner or Principal) formulates a reply and the Developer resumes.
 
-**Type 1 during execution:** if the question needs an irreversible decision and the Principal isn't available, the Issue/PR stays labeled `needs:principal-input` (D-110); the next window resolves it. The Developer may terminate and resume via a follow-up dispatch after the window.
+**Type 1 during execution:** if the question needs an irreversible decision and the Principal isn't available, the Issue/PR stays labeled `needs:principal-input`; the next window resolves it. The Developer may terminate and resume via a follow-up dispatch after the window.
 
-**Brief amendment:** if the brief itself is wrong in a way that blocks all paths, the TL issues an amendment (logged as a separate event, not a brief edit — briefs are frozen after dispatch) or kills the task.
+**Brief amendment:** if the brief itself is wrong in a way that blocks all paths, the Brief Author issues an amendment (logged as a separate event, not a brief edit — briefs are frozen after dispatch) or kills the task.
 
 **Exit:** the Developer is unblocked and resumes.
 
@@ -178,9 +177,9 @@ The task is marked `blocked` (an `aeg:blocked` label — the one status with no 
 Before opening the PR, the Developer runs the tier-appropriate Task Done checklist (`roles/developer.md`). The commands below are this repo's instances (Bun/JS) — substitute your repo's declared equivalents:
 - **Tier 0:** typecheck + lint, tests if applicable, PR description follows template (and will carry the brief)
 - **Tier 1:** Tier 0 + specs updated, skills updated if conventions shifted, `verify-docs --pr` passes
-- **Tier 3:** Tier 1 + decision log entry (status, type, rationale), per-project PM updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated
+- **Tier 3:** Tier 1 + per-project PM updated if state changed, Lock entry if irreversible, `docs-index.md` regenerated
 
-`verify-docs --pr` is a **real gate** (D-027), the same script CI runs. If any item fails, the Developer fixes or escalates — the PR does not open.
+`verify-docs --pr` is a **real gate**, the same script CI runs. If any item fails, the Developer fixes or escalates — the PR does not open.
 
 **Exit:** all Task Done items pass.
 
@@ -199,7 +198,7 @@ The Developer opens a PR with:
 
 **Opening the PR is itself the `in-flight → in-review` transition** — derived from the PR's existence, not written anywhere.
 
-CI runs typecheck, lint, tests, `verify-docs` (the load-bearing doc gate — D-027 — fails if tier-appropriate updates are missing), and pre-commit hooks. The Archivist posts advisory comments (synthesis hints, related-decision surfacing, hygiene) — advisory, not blocking.
+CI runs typecheck, lint, tests, `verify-docs` (the load-bearing doc gate — fails if tier-appropriate updates are missing), and pre-commit hooks. The Archivist posts advisory comments (synthesis hints, related-decision surfacing, hygiene) — advisory, not blocking.
 
 **Exit:** PR is open, CI green (including verify-docs), advisory comments addressed or dismissed.
 
@@ -207,30 +206,30 @@ CI runs typecheck, lint, tests, `verify-docs` (the load-bearing doc gate — D-0
 
 ## Phase 10: Review
 
-Two stages: independent **agent passes** (fresh-context), then **human reviews** (Principal + TL). Agent passes run first and feed the human reviews — they do not replace them.
+Two stages: independent **agent passes** (fresh-context), then **human reviews** (Principal + Brief Author). Agent passes run first and feed the human reviews — they do not replace them.
 
 ```
-code-reviewer pass → security pass → Principal code review → TL spec review → merge
+code-reviewer pass → security pass → Principal code review → Brief Author spec review → merge
 ```
 
 ### Stage A — Agent review passes
 
-Each pass is a **separate fresh-context invocation** with no memory of writing the code (the independence rule, D-026). Manual: the Principal pastes the review prompt. Automated: the automation layer dispatches the `code-reviewer` and `security-reviewer` passes. The agent reads its role doc + the PR diff + **the brief in the PR body**, and emits a structured verdict. Review agents do not edit code, do not merge, and do not write status.
+Each pass is a **separate fresh-context invocation** with no memory of writing the code (the independence rule). Manual: the Principal pastes the review prompt. Automated: the automation layer dispatches the `code-reviewer` and `security-reviewer` passes. The agent reads its role doc + the PR diff + **the brief in the PR body**, and emits a structured verdict. Review agents do not edit code, do not merge, and do not write status.
 
 1. **Code-reviewer pass** — `roles/reviewer.md`. Brief conformance, scope violations, test honesty, code quality, doc coupling, lock awareness, multi-project reach. Emits `VERDICT: APPROVE | REQUEST CHANGES` (BLOCKER / MAJOR / MINOR).
-2. **Security pass** — `roles/security.md`. Secret leakage, BYOK/crypto, auth/permissions, MCP/agent-tooling exposure, injection surfaces, dependency risk. Runs a config-security scan over the agent/MCP/hook config when that config is touched (D-028). Emits `VERDICT: PASS | FAIL` (CRITICAL / HIGH / MEDIUM / LOW).
+2. **Security pass** — `roles/security.md`. Secret leakage, BYOK/crypto, auth/permissions, MCP/agent-tooling exposure, injection surfaces, dependency risk. Runs a config-security scan over the agent/MCP/hook config when that config is touched. Emits `VERDICT: PASS | FAIL` (CRITICAL / HIGH / MEDIUM / LOW).
 
-A BLOCKER (code) or CRITICAL/HIGH (security) returns the PR to the Developer, who fixes on the **same branch**; the pass re-runs. (Pushing fixes returns the PR's review decision to open — the `changes-requested → in-review` transition, derived.) An `[ESCALATE]` finding routes to TL (strategy) or Principal (`severity: product`).
+A BLOCKER (code) or CRITICAL/HIGH (security) returns the PR to the Developer, who fixes on the **same branch**; the pass re-runs. (Pushing fixes returns the PR's review decision to open — the `changes-requested → in-review` transition, derived.) An `[ESCALATE]` finding routes to Brief Author (strategy) or Principal (`severity: product`).
 
 ### Stage B — Human reviews
 
 **Code review (Principal).** The Principal reviews the diff — does it match the brief, scope violations, honest tests, spot-check quality. The agent verdict is an input, not a substitute; the Principal can overrule either way.
 
-**Spec review (TL).** Do the specs describe what was built? Are decisions logged in the right files? Is the decision log honest? Coherence, not technical correctness (that's the Principal's code review).
+**Spec review (Brief Author).** Do the specs describe what was built? Is the pull request's stated reasoning honest about what changed? Coherence, not technical correctness (that's the Principal's code review).
 
 If both pass (and agent verdicts are APPROVE/PASS or their findings resolved) → merge. If issues are found → back to the Developer with specific feedback. Loops, but three cycles signals a deeper issue.
 
-**Enforcement note:** the agent passes are **trusted discipline** today — Phase 10 requires them, but no CI bot dispatches them automatically yet (D-026). The mechanical CI gate is `verify-docs` (Phase 9). Automating review-agent dispatch is future work.
+**Enforcement note:** the agent passes are **trusted discipline** today — Phase 10 requires them, but no CI bot dispatches them automatically yet. The mechanical CI gate is `verify-docs` (Phase 9). Automating review-agent dispatch is future work.
 
 **Exit:** agent passes complete, both human reviews pass.
 
@@ -238,14 +237,14 @@ If both pass (and agent verdicts are APPROVE/PASS or their findings resolved) �
 
 ## Phase 11: Verification (runtime test plan)
 
-**Who:** the Developer-agent (for `[agent]` items) and the Principal (for `[principal]` items). Verification is a *phase*, not a new actor — see `roles/verifier.md`.
+**Who:** the Developer-agent (for `[agent]` items) and the Principal (for `[principal]` items). Verification is a *phase*, not a new actor — see `roles/developer.md` § Verification.
 
 A PR that has passed code review and security review still has not been run. The reviews read the diff; the static gates of Phase 8 prove the code compiles and types and tests; CI does not boot the app. Phase 11 boots it, executes the brief's **Test Plan** (a required brief field, `brief-authoring/SKILL.md` §9), and posts the results onto the PR. Doctrine: **CI green ≠ app boots ≠ feature works** — runtime verification is its own gate.
 
 The test plan is split by who can structurally execute each item:
 
 - **`[agent]` items** (non-auth, scriptable — SSRF rejections, parse checks, route responses, render smoke). The Developer-agent boots the relevant dev server(s) from the PR's branch, runs each `[agent]` item, and posts the actual output as evidence on the PR. Paraphrase is not evidence; the command + the response body is.
-- **`[principal]` items** (auth-gated, key-dependent, visual — a signed-in BYOK audit, a ModelPicker render behind Clerk, a card landing in the right column). The Principal runs each item in a browser with the dev server up and ticks the box on the PR. The agent **cannot** tick `[principal]` boxes and the Principal does **not** tick `[agent]` boxes — the asymmetry is the whole shape of the gate (mirror of D-048's chat-vs-terminal token capture).
+- **`[principal]` items** (auth-gated, key-dependent, visual — a signed-in BYOK audit, a ModelPicker render behind Clerk, a card landing in the right column). The Principal runs each item in a browser with the dev server up and ticks the box on the PR. The agent **cannot** tick `[principal]` boxes and the Principal does **not** tick `[agent]` boxes — the asymmetry is the whole shape of the gate (mirror of the chat-vs-terminal token capture).
 
 **`Test Plan: unit-tests-only`** is a first-class allowed value for pure-logic briefs (a parser, a sum function, a markdown normaliser — nothing the §4 Technical Surface Map lists as a runtime path). When the brief declares it, Phase 11 is satisfied by the CI unit-test gate alone; no runtime execution is required. Brief Validation rejects `unit-tests-only` on a brief whose §4 surface includes a runtime path.
 
@@ -259,11 +258,11 @@ The test plan is split by who can structurally execute each item:
 
 ## Phase 12: Merge
 
-**Who:** Principal (or TL if explicit per-PR delegation was set in the brief).
+**Who:** Principal (or Brief Author if explicit per-PR delegation was set in the brief).
 
 The Principal merges. Tier 3 work merges during a ratification window (`coordination.md`); Tier 0/1 anytime. The merge **auto-closes the linked Issue** (via `Closes #N`) — and the merge *is* the `merged` status; nobody writes a label. An automation layer may surface a completion notification.
 
-**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, decision logged if Tier 3, docs coherent, per-project pinned state Issue updated for every project the task listed (D-110), `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
+**Post-merge: the Archivist closes out** (`roles/archivist.md`) — confirms the Issue closed, docs coherent, per-project pinned state Issue updated for every project the task listed, `docs-index.md` regenerated. It **flags** (does not perform) orphaned branches and worktree removal. It writes no task status.
 
 **Exit:** code is in main, Issue closed, close-out done.
 
@@ -279,13 +278,13 @@ When the last task of an iteration has merged, the Principal declares it done an
 
 1. **Verify the forge** — confirm all task PRs are merged, all task Issues are closed, no orphaned branches remain.
 
-2. **Write the retrospective** — append a new section to `aeg-project/lessons.md` with observations on what went well, what stalled, carry-forward lessons, decisions made, and unbuilt tasks. Assembled from merged PR summaries, decision log, and topology — not invented.
+2. **Write the retrospective** — append a new section to `aeg-project/lessons.md` with observations on what went well, what stalled, carry-forward lessons, decisions made, and unbuilt tasks. Assembled from merged PR summaries and topology — not invented.
 
 3. **Archive the iteration** — set `Lifecycle: complete` as the first line after the iteration file's heading, move the file from `aeg-root/iterations/` to `aeg-root/iterations/completed/` (one commit: `git mv`). This signals to the AEG Studio and any reader that the iteration is no longer active.
 
-4. **Update state docs** — refresh `aeg-project/state.md` (last-updated date, current focus pointer, recently shipped section, clear any resolved pending-manual-ops). Active-work state is derived from the forge — no `now.md` (D-057).
+4. **Update state docs** — refresh `aeg-project/state.md` (last-updated date, current focus pointer, recently shipped section, clear any resolved pending-manual-ops). Active-work state is derived from the forge — no `now.md`.
 
-5. **Surface pending Type 1 decisions** — query the decision log for entries from this iteration with `Status: PENDING`. List them explicitly; the Principal ratifies at the next ratification window.
+5. **Surface pending Type 1 decisions** — query the `needs:principal-input` label for this iteration's open items. List them explicitly; the Principal ratifies at the next ratification window.
 
 6. **Update docs-index.md** — if iteration tasks added, removed, or renamed files tracked in the index, confirm it reflects the current state.
 
@@ -299,26 +298,26 @@ When the last task of an iteration has merged, the Principal declares it done an
 
 ## What happens after merge and iteration close
 
-The Principal eventually removes the worktree (`git worktree remove …`) — deliberate friction; the worktree is sometimes useful for post-merge inspection. The decision logs, specs, and skills are now canonical repo state that future sessions read. If the work introduced a Lock, future briefs touching that area must reference or explicitly challenge it.
+The Principal eventually removes the worktree (`git worktree remove …`) — deliberate friction; the worktree is sometimes useful for post-merge inspection. The specs and skills are now canonical repo state that future sessions read.
 
 ---
 
 ## Variations and special cases
 
 ### Spike work
-`spike: true` → reduced Task Done (typecheck + lint, decision log entry capturing what was tried/learned). Spike code does not merge — it rebases away or converts to a full Tier 1+ task in a separate brief.
+`spike: true` → reduced Task Done (typecheck + lint, with what was tried and learned recorded in the pull request). Spike code does not merge — it rebases away or converts to a full Tier 1+ task in a separate brief.
 
 ### Tier 0 work (trivial)
-Skips Phase 2; short brief; minimal checklist; light Phase 10 (a code-reviewer pass is cheap insurance, but the security pass and TL spec review can be skipped when there's no config/auth surface and no spec change). Declare `Tier: 0` in the PR body so verify-docs doesn't require doc updates.
+Skips Phase 2; short brief; minimal checklist; light Phase 10 (a code-reviewer pass is cheap insurance, but the security pass and Brief Author spec review can be skipped when there's no config/auth surface and no spec change). Declare `Tier: 0` in the PR body so verify-docs doesn't require doc updates.
 
 ### Multi-developer parallel work
-Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`iterations/README.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the iteration's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
+Each Developer gets its own worktree, branched from `origin/main`. Parallel safety is the dispatch gates: a task does not start while a `conflicts-with` sibling's PR is open, or before a `depends-on`'s PR merges (`iteration-model.md` §8). Conflicts are declared at planning time as package-level collision domains — the coordination lives in the iteration's edges, not in ad-hoc scope-checking. When unsure two tasks collide, the Planner declares the conflict and serializes.
 
 ### Cross-project tasks
 A task may legitimately span multiple projects (one branch, one PR, `Project: a, b`) when the change is only verifiable as a unit (e.g. generalize a shared engine + migrate the first consumer). Review fans out across each project's lens; close-out updates each project's state. See `projects.md` and `roles/planner.md`.
 
 ### Rollback
-A rollback is its own task with its own brief. The decision to roll back is a Type 1 decision (ratification window). The decision log gets a SUPERSEDED / RETIRED entry pointing to the new state.
+A rollback is its own task with its own brief. The decision to roll back is a Type 1 decision (ratification window). The spec for the affected surface is updated to describe the state rolled back to.
 
 ---
 
@@ -326,23 +325,23 @@ A rollback is its own task with its own brief. The decision to roll back is a Ty
 
 - **Going straight to brief authoring without Phase 1** — produces briefs that solve the wrong problem.
 - **Dispatching an unvalidated or malformed brief** — the Developer's entry gate refuses it; bypassing the gate manually defeats the model.
-- **Letting the Developer review its own work** — the Phase 10 agent passes are separate fresh-context invocations for a reason (D-026).
+- **Letting the Developer review its own work** — the Phase 10 agent passes are separate fresh-context invocations for a reason.
 - **Writing status anywhere** — status is derived from the forge. Setting a label or editing the iteration file to record state recreates the racing status model the design eliminated.
 - **Putting the brief in the Issue** — it lives in the PR body, just-in-time. The Issue is task identity only.
 - **Developer scope creep** — "while I'm here…" is a new task and a new brief.
-- **TL self-ratifying Type 1 decisions in solo sessions** — they queue as PENDING for a ratification window.
+- **Brief Author self-ratifying Type 1 decisions in solo sessions** — they queue as PENDING for a ratification window.
 - **Skipping the Task Done checklist under deadline pressure** — it's the load-bearing discipline; skipping it is how the BYOK gap happened.
 - **Treating "PR opened" as "done"** — done is "passed Phase 11 verification" (which requires Phase 10 review to have already passed).
 - **Treating "review passed" as "ready to merge"** — review reads the diff; verification runs the booted app. CI green ≠ app boots ≠ feature works. An unticked Test Plan box is the merge gate even when the reviews are clean.
 - **Inventing a Test Plan at verification time when the brief omitted one** — that is the Brief Author's job by design; verification *executes* the plan, it does not author it. A missing Test Plan is a brief-validation failure (`needs:brief-correction`).
-- **Mis-tagging a `[principal]` Test Plan item as `[agent]`** to make the agent half look complete — the asymmetry is structural (the agent surface lacks auth/keys/eyes); reclassifying loses the point of the split (D-049).
-- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iterations/README.md` §9).
+- **Mis-tagging a `[principal]` Test Plan item as `[agent]`** to make the agent half look complete — the asymmetry is structural (the agent surface lacks auth/keys/eyes); reclassifying loses the point of the split.
+- **Building a dynamic conflict scanner** to catch what the Planner missed — declare conflicts conservatively and serialize instead (`iteration-model.md` §9).
 
 ---
 
 ## How this process maps to file artifacts
 
-For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `team-leader.md` (incl. Planner mode), `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iterations/README.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
+For which files get mutated in which phase by which actor, see `state-machine.md` (the artifact + mutation matrix). For the roles, see `roles/principal.md`, `roles/planner.md`, `roles/brief-author.md`, `developer.md`, `reviewer.md`, `security.md`, `archivist.md`. For the iteration/task model, see `iteration-model.md` and `roles/planner.md`. For brief authoring, see the `brief-authoring` skill.
 
 ---
 
@@ -363,10 +362,10 @@ Specs produced during process phases follow this format. Adopted from GitHub Spe
 **5. `[NEEDS CLARIFICATION]` markers** — wherever there's a real ambiguity, mark it inline; do not silently guess. Each is a candidate escalation point.
 
 ### When this format applies
-New project specs and major feature specs (Tier 1 / Tier 3); the "Goal" section of dispatch briefs. NOT for Tier 0 tasks, decision log entries (D-NNN schema), or narrative lessons/anti-patterns.
+New project specs and major feature specs (Tier 1 / Tier 3); the "Goal" section of dispatch briefs. NOT for Tier 0 tasks or narrative lessons/anti-patterns.
 
 ### Retroactive migration
 Existing specs are not migrated wholesale; a spec adopts this format when it's next rewritten for other reasons.
 
 ### Why
-Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool. (The open question of whether an orchestrator eventually wraps Spec Kit templates as MCP tools was Cetana's; it retired with that product, D-095/D-132.)
+Spec Kit's evaluation found the template produces measurably better-structured artifacts — explicit priority, visible ambiguities, success tied to user-observable outcomes. The repo adopts the format without adopting Spec Kit the tool. (The open question of whether an orchestrator eventually wraps Spec Kit templates as MCP tools was Cetana's; it retired with that product.)

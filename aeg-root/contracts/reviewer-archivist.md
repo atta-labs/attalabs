@@ -1,5 +1,7 @@
 ---
 sidebar_title: Reviewer → Archivist
+title: Reviewer → Archivist
+order: 4
 contract_id: reviewer-archivist
 description: Carries a review’s actual findings into the permanent record, so a verdict says what was checked, not just that it passed.
 status: active
@@ -9,6 +11,23 @@ carrier: pr-verdict-comment
 summary: Ever had a vague "looks good" review that told you nothing about what was checked?
 ---
 # Contract: Reviewer → per-task Archivist
+
+## The short version
+
+This seam sits between a review and the permanent record of the work it reviewed. It exists because close-out can only be honest if the verdict it reads says what was actually checked.
+
+**What crosses** — the reviewer's verdict, and the merged pull request that carries it. The verdict itself: approved, or changes requested. The findings, each with a severity, so the record can tell a note from a blocker. And the result of the check against the product's own specification — whether the change conforms to it, drifts from it, contradicts it, or reveals that the specification itself is now stale.
+
+**The hand-off is malformed when** — the verdict is absent or unclear, when a finding carries no severity, or when the specification check is simply not stated. A verdict comment missing any of the three is not posted; the reviewer revises it first. "Looks good" is the failure this seam was written against: it tells the record nothing about what was examined, and close-out then has the choice of inventing a field or leaving a hole.
+
+**What it does not carry** — permission to close out an unmerged change. The verdict is not the authorisation; the merge is. Nor does it carry any obligation to re-review: close-out is bookkeeping, not a second opinion, and a merged change is not reopened because the record-keeper would have judged it differently.
+
+**How it physically runs** — the carrier is the verdict comment on the pull request, which becomes a frozen fact once that pull request merges. The verdict line is written bare, on its own line, because it is read by machine as well as by people, and the merge gate requires a clean one. After the merge, close-out reads it from the pull request's own history and copies it into the provenance record. A serious finding that was raised and merged anyway means a deviation was consciously accepted — it is recorded as such, not quietly dropped. A finding that the specification has gone stale becomes a follow-up issue, because it is not a reason to block the merge and must not vanish either.
+
+
+---
+
+## Reference
 
 **Status:** active
 **Seam:** the hand-off from the Reviewer (producer) to the per-task Archivist (consumer).
@@ -68,7 +87,7 @@ Every item the Reviewer produces in the verdict (left) has exactly one obligatio
 
 A contract changes **as a unit**. You may not change what the Reviewer produces without, in the same change, updating what the per-task Archivist consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
 
-- A change to this file is a **Tier 3** change (it alters a cross-role contract) and requires a decision-log entry.
+- A change to this file is a **Tier 3** change: it alters a cross-role contract, so the reasoning belongs in the pull request that makes it, where the reviewer and the close-out both read it.
 - The same PR that edits this contract must verify both `aeg-root/roles/reviewer.md` and `aeg-root/roles/archivist.md` still point here and still match the table.
 - Never edit one side's role doc to add/drop a hand-off field directly. Add/drop it **here**; the role docs inherit it by reference.
 

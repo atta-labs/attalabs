@@ -33,8 +33,8 @@ export type ActiveIterationRef = { slug: string; goal: string }
 
 /**
  * Lists every OPEN Milestone as an active-iteration slug — the forge-native
- * enumeration of "which iterations are currently active" (D-110: an
- * iteration's Goal/Lifecycle lives on a Milestone titled exactly its slug).
+ * enumeration of "which iterations are currently active" — an
+ * iteration's Goal/Lifecycle lives on a Milestone titled exactly its slug.
  */
 export function listActiveIterationSlugs(owner: string, repo: string): ActiveIterationRef[] {
   const milestones = ghApiGet<GhMilestone[]>(`repos/${owner}/${repo}/milestones?state=open&per_page=100`)

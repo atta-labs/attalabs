@@ -9,13 +9,13 @@ description: How to create and register v2 YAML deliberation specs. Load when ad
 
 A YAML spec is a complete, self-contained deliberation configuration. It defines agents (with system prompts, tools, classifier behavior) and a sequence of rounds (each with agents, layout, optional repeats, optional declarative revision). The engine converts the spec to a compiled Plan via `compileFlow`; the adapter executes the Plan.
 
-As of D-033 (vada-decisions.md, May 12-13, 2026), all flows use **schema version 2.0** — the universal round-based model. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one schema. The compiler detects which shape a YAML expresses from its topology and emits matching Plan node ids.
+As of D-033 (apps/vada-ai/docs/vada-decisions-legacy.md, May 12-13, 2026), all flows use **schema version 2.0** — the universal round-based model. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one schema. The compiler detects which shape a YAML expresses from its topology and emits matching Plan node ids.
 
-File location: `packages/agents/vada-deliberation/yamls/<spec-id>.yaml` (no version suffix — see global D-013 + vada-decisions.md D-025).
+File location: `packages/agents/vada-deliberation/yamls/<spec-id>.yaml` (no version suffix — see global D-013 + apps/vada-ai/docs/vada-decisions-legacy.md D-025).
 
 Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`.
 
-Design rationale: `apps/vada-ai/specs/generic-flow-refactor.md` and vada-decisions.md D-033.
+Design rationale: `apps/vada-ai/specs/generic-flow-refactor.md` and apps/vada-ai/docs/vada-decisions-legacy.md D-033.
 
 ---
 
@@ -447,7 +447,7 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 - ❌ Omitting `classifier` on a tool-enabled agent — be explicit. Implicit `skip` means tools are silently dropped.
 - ❌ Adding `tools` to `agents[]` without verifying the tool name exists in the relevant per-vendor registry (`ANTHROPIC_TOOL_REGISTRY`, `GOOGLE_TOOL_REGISTRY`, or `OPENAI_COMPAT_TOOL_REGISTRY` in `packages/adapter-langgraph/src/tools.ts`). Unknown names are skipped with a warning, not a throw — silent no-ops are hard to debug.
 - ❌ Targeting `on_failure.target` to the same round or a later round — Rule 3 rejects this. Audit rounds must come after their revision target.
-- ❌ Adding `-v1` / `-v2` suffix to a filename or `id` — global D-013 + vada-decisions.md D-025 keep filenames unversioned. Version history lives in git + decision logs.
+- ❌ Adding `-v1` / `-v2` suffix to a filename or `id` — global D-013 + apps/vada-ai/docs/vada-decisions-legacy.md D-025 keep filenames unversioned. Version history lives in git + decision logs.
 - ❌ Not writing a verify script — silent regressions are the enemy.
 
 ---
@@ -460,4 +460,4 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 - Classifier behavior + SDK-shape dispatch: **atta-adapter-langgraph** skill
 - Architecture overview + locked decisions: **vada-architecture** skill
 - Design rationale for the universal round-based schema: `apps/vada-ai/specs/generic-flow-refactor.md`
-- vada-decisions.md D-033 + D-034 (engine vocabulary + signal type cleanup)
+- apps/vada-ai/docs/vada-decisions-legacy.md D-033 + D-034 (engine vocabulary + signal type cleanup)

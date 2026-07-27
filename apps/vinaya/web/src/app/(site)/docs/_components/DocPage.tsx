@@ -21,7 +21,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react'
 import { stripLeadingH1 } from '@atta/aeg-core/docs'
 import type { Doc } from '@atta/aeg-core/docs'
 import { StickyDocHeader } from './StickyDocHeader'
@@ -37,6 +37,13 @@ export type DocPageProps = {
    * for the 16 model-backed docs, all doc-model-sourced — the page hand-writes
    * none of it. The raw markdown below is framed as the machine artifact it is. */
   frame?: { kindTag: string; badges: string[] }
+  /** A contract's seam in words — the role that fills it, and the role that
+   * drains it. Model-derived; absent for roles and for synthetic pages. */
+  seam?: { producer?: string; consumer?: string }
+  /** The full source file on GitHub. A role/contract page publishes only the
+   * binding short version, so the reference it sits on is linked rather than
+   * hidden — public, just not the page. */
+  sourceHref?: string
 }
 
 const markdownComponents = {
@@ -149,7 +156,7 @@ const markdownComponents = {
   em: (props: React.HTMLAttributes<HTMLElement>) => <em className='italic' {...props} />
 }
 
-export function DocPage({ doc, body, next, prev, basePath = '/docs', frame }: DocPageProps) {
+export function DocPage({ doc, body, next, prev, basePath = '/docs', frame, seam, sourceHref }: DocPageProps) {
   const content = stripLeadingH1(body)
 
   return (
@@ -177,13 +184,18 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs', frame }: Do
               ))}
             </div>
           )}
+          {seam && (seam.producer || seam.consumer) && (
+            <Text as='p' size='sm' muted className='font-mono'>
+              {seam.producer ?? '—'} → {seam.consumer ?? '—'}
+            </Text>
+          )}
         </header>
 
         <Separator className='opacity-60' />
 
         {frame && (
           <Text as='p' size='xs' muted className='font-mono uppercase tracking-widest'>
-            The doctrine below, as agents read it
+            Binding — the same words the agents are given
           </Text>
         )}
 
@@ -192,6 +204,17 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs', frame }: Do
             {content}
           </ReactMarkdown>
         </div>
+
+        {sourceHref && (
+          <NextLink
+            href={sourceHref}
+            variant='unstyled'
+            className='inline-flex items-center gap-1.5 text-primary text-sm underline-offset-4 hover:underline'
+          >
+            <span>Read the full reference on GitHub</span>
+            <ExternalLink className='size-3.5' />
+          </NextLink>
+        )}
 
         {(prev || next) && (
           <>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * archive-task — post-merge Archivist automation (D-077, aeg-governance-hardening
+ * archive-task — post-merge Archivist automation (aeg-governance-hardening
  * task 5d, #309). Thin I/O shim: resolves the merged PR from `MERGE_SHA` via
  * `gh`, gathers `MergedPrFacts`, and calls the pure `buildProvenanceBlock` /
  * `taskRefFromBranch` / `hasProvenance` homed in `@atta/aeg-core`. Mirrors
@@ -14,7 +14,7 @@
  * Branch-name-only detection silently skipped a real task closure once
  * (#524/#530 — a tracked Issue closed by an ad-hoc `fix/*`-branch PR).
  *
- * Fail-loud discipline (D-069/#305 live-fire, Planner trap 6): no step here
+ * Fail-loud discipline (/#305 live-fire, Planner trap 6): no step here
  * catches and swallows a `gh`/API error into a silent success. A `gh` call
  * throwing propagates as an uncaught exception — non-zero exit, the error
  * printed. A red post-merge job on `main` is a signal; it can never block a

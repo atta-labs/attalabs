@@ -1,5 +1,7 @@
 ---
 sidebar_title: Archivist → Iteration Archivist
+title: Archivist → Iteration Archivist
+order: 5
 contract_id: archivist-iteration-archivist
 description: Carries each task’s close-out record up to the iteration close-out, so a phase can only be called finished once its parts genuinely are.
 status: active
@@ -9,6 +11,23 @@ carrier: pr-provenance-comments, iteration-file
 summary: Ever closed out a big project only to find smaller pieces were never really finished?
 ---
 # Contract: per-task Archivist → Iteration Archivist
+
+## The short version
+
+This seam sits between closing out one task and closing out the iteration that contained it. It exists because an iteration's history is only honest if each task's history was completed first.
+
+**What crosses** — the set of merged pull requests, each carrying its own provenance record. That record is what proves a task was genuinely closed out rather than merely merged. Alongside it: a note on the standing lessons thread for any serious finding that was raised in review and merged anyway, so a consciously accepted deviation is available as a pattern later; and a follow-up issue for every finding that the product's specification has gone stale, so the gap outlives the task that found it.
+
+**The hand-off is malformed when** — a merged pull request carries no provenance record. That means the task's close-out never ran, and the iteration's retrospective would then be assembled from a gap rather than a fact. It is malformed in the same way when an accepted deviation left no note, or when a stale-specification finding left no follow-up: in each case something real happened and nothing durable records it.
+
+**What it does not carry** — permission to proceed on partial evidence. A partial close-out is worse than none, because it produces a record that looks complete and is not. It also carries no new judgement: nothing here re-opens, re-reviews or re-decides a merged task; both roles assemble from facts, and neither authors one.
+
+**How it physically runs** — the carrier is the merged pull requests themselves, each with its provenance comment, plus the standing lessons thread and any follow-up issues. Iteration close-out reads them and stops if one is missing, flagging exactly which task's record is incomplete rather than working around it. The retrospective it then writes is a structured projection of those facts — assembled from merged work, recorded lessons and the decisions of the period, never generated from memory.
+
+
+---
+
+## Reference
 
 **Status:** active
 **Seam:** the hand-off from the per-task Archivist (producer) to the Iteration Archivist (consumer).
@@ -64,7 +83,7 @@ Every output the per-task Archivist produces (left) has exactly one obligation f
 
 A contract changes **as a unit**. You may not change what the per-task Archivist produces without, in the same change, updating what the Iteration Archivist consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
 
-- A change to this file is a **Tier 3** change (it alters a cross-role contract) and requires a decision-log entry.
+- A change to this file is a **Tier 3** change: it alters a cross-role contract, so the reasoning belongs in the pull request that makes it, where the reviewer and the close-out both read it.
 - The same PR that edits this contract must verify both `aeg-root/roles/archivist.md` and `aeg-root/roles/iteration-archivist.md` still point here and still match the table.
 - Never edit one side's role doc to add/drop a hand-off field directly. Add/drop it **here**; the role docs inherit it by reference.
 

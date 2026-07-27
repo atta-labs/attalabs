@@ -7,9 +7,9 @@
  * in that CLI's top-level `process.chdir` side effect. The CLIs
  * (`verify-coherence.ts`, `verify-dispatch.ts`) import it from here — same
  * direction as their existing `fetchForgeFacts`/`resolveRepo` imports. One
- * implementation per fact (D-081 discipline); do not re-implement.
+ * implementation per fact (discipline); do not re-implement.
  *
- * Read-only, always (AEG D-029). No writes, no labels, no comments.
+ * Read-only, always. No writes, no labels, no comments.
  */
 
 import { graphql } from '@octokit/graphql'
@@ -51,7 +51,7 @@ type CrossRefResponse = {
 /**
  * Fallback for issues whose most-recent `ClosedEvent` has no PR `closer` —
  * the confirmed case for Issues closed via an explicit `gh issue close`
- * (D-056's manual-close path, live case: Issue #170), where the primary
+ * (the manual-close path, live case: Issue #170), where the primary
  * fallback would return `false` for all three.
  *
  * Instead this searches `CROSS_REFERENCED_EVENT` timeline items, which

@@ -3,8 +3,7 @@
 /**
  * verify-docs — tier-appropriate documentation gate.
  *
- * Per D-010, this is the HARD enforcement mechanism (the Archivist is advisory).
- * Per D-027, this is the first real implementation; it replaces the V0.7 stub.
+ * This is the HARD enforcement mechanism — the Archivist is advisory.
  * Per aeg-consolidation task 1, the check logic below is a thin CLI shim: it
  * resolves args/env, reads the filesystem/git, and calls the pure, tested
  * functions homed in `@atta/aeg-core`. The checks themselves — including their
@@ -12,40 +11,38 @@
  *
  * Modes:
  *   --pr              Diff-based. Enforces that a PR carries the docs its impact tier requires.
- *                     C5's waiver is, since D-097, a PR-wide `vinaya/waiver:docs` label whose labeling
+ *                     C5's waiver is a PR-wide `vinaya/waiver:docs` label whose labeling
  *                     timeline event's actor is a configured principal — never a parseable
  *                     string. Label presence alone is never sufficient. CI resolves the actor
  *                     via GraphQL into WAIVER_LABEL_ACTOR; `runC5` verifies it with
  *                     `isWaiverLabelActorVerified` before calling `evaluateC5`. The prior
- *                     `Doc-waiver:` PR-body/commit-trailer grammar (D-080) is gone — it is no
+ *                     `Doc-waiver:` PR-body/commit-trailer grammar is gone — it is no
  *                     longer parsed anywhere. `Doc-ack:` (URL-pointer acknowledgment) is
- *                     unaffected by D-097 — still a PR-body field, still an acknowledgment, not
+ *                     unaffected — still a PR-body field, still an acknowledgment, not
  *                     a bypass.
- *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push` (D-078): the
+ *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push`: the
  *                     branch's cumulative diff vs origin/main is checked against doc-owners
- *                     coverage. Since D-097, an owned-doc violation on push is
+ *                     coverage. An owned-doc violation on push is
  *                     warn-with-declared-intent, not a hard block: the push is always allowed,
  *                     and the printed message states plainly that ring 1 (the PR, once opened)
  *                     stays red until a principal applies the `vinaya/waiver:docs` label or the bound
- *                     doc is updated. This replaces D-080's first-push commit-trailer
- *                     self-service — there is no first-push waiver self-service anymore, only an
+ *                     doc is updated. There is no first-push waiver self-service — only an
  *                     informative warning; ring 1 is where the waiver is actually granted.
  *                     PR_BODY (when the branch already has an open PR) still supplies `Doc-ack:`
  *                     lines; on a first push (no PR yet), the hook still falls back to this
- *                     branch's own commit-message trailers as PR_BODY, since `Doc-ack:` (D-097
- *                     does not touch it) still needs that source. For a pre-authoring dry run
+ *                     branch's own commit-message trailers as PR_BODY, since `Doc-ack:` still
+ *                     needs that source. For a pre-authoring dry run,
  *                     via `verify-dispatch --simulate`, before any commit exists at all,
  *                     PR_BODY_FILE — a local path to a drafted-but-not-yet-committed PR body —
- *                     is an equally valid source for the same `Doc-ack:` lines (D-081).
+ *                     is an equally valid source for the same `Doc-ack:` lines.
  *                     `vinaya/override:docs`/`OVERRIDE_DOCS=1` is honored here identically to `--pr`
- *                     mode. C0-C4 are PR-body contracts and stay at the PR gates.
+ *                     mode. C1/C3 are PR-body contracts and stay at the PR gates.
  *                     Used by the verify-docs CI workflow and by Developers locally.
- *   (full)            Repo-wide structural checks. Catches unstatused specs, malformed
- *                     decision-log entries, manifest validity, the completeness scoreboard,
+ *   (full)            Repo-wide structural checks. Catches unstatused specs, manifest
+ *                     validity, the completeness scoreboard,
  *                     and the surfaced-doc manifest coherence check (C6 — state-machine.md
  *                     Section 15c): every surfaced doc under `aeg-root/` must be reachable
  *                     in the doc-nav tree, with no orphans and no dangling cross-references.
- *   --next-decision   Helper: print the next free D-NNN for packages/governance/decisions.md and exit.
  *
  * Runs in AUDIT mode (state-machine.md Section 4): it asks "is what shipped consistent
  * with what the docs say?", not "is the design good?".
@@ -53,7 +50,7 @@
  * The checks are deliberately MECHANICAL and slightly blunt. They cannot judge whether
  * a doc is *correct* — that is the Reviewer's job (roles/reviewer.md). They only judge
  * whether tier-required docs are *present and well-formed*. Blunt-but-enforced beats
- * subtle-but-trusted; that distinction is the whole point of D-010.
+ * subtle-but-trusted; that distinction is the whole point of this gate.
  *
  * Escape hatch (state-machine.md Section 12): label `vinaya/override:docs` on the PR, or set
  * env OVERRIDE_DOCS=1, skips the gate. Visible in the check log.
@@ -69,11 +66,17 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { type DocsCoherenceEntry, evaluateDocsCoherence, modelBackedDocPaths, parseDocFrontmatter } from '../src/docs'
+import {
+  type DocsCoherenceEntry,
+  evaluateDocsCoherence,
+  evaluatePublishedProse,
+  modelBackedDocPaths,
+  parseDocFrontmatter,
+  type PublishedProseEntry
+} from '../src/docs'
 import {
   type DoctrineContent,
   deriveDiagramModel,
-  checkDecisionNumbers,
   checkManifestValidity,
   DOC_OWNERS_PATH,
   deriveTierFromDiff,
@@ -82,11 +85,9 @@ import {
   globToRegex,
   hasStatusBlock,
   isCodeFile,
-  isDecisionLog,
   isDocFile,
   isSpecFile,
   isWaiverLabelActorVerified,
-  malformedDecisionEntries,
   type NoDocRule,
   overrideActive,
   parseDocOwners,
@@ -99,7 +100,6 @@ const REPO_ROOT = join(import.meta.dir, '../../..')
 process.chdir(REPO_ROOT)
 
 const args = process.argv.slice(2)
-const isNextDecision = args.includes('--next-decision')
 const mode: 'pr' | 'push' | 'full' = args.includes('--pr') ? 'pr' : args.includes('--push') ? 'push' : 'full'
 
 const errors: string[] = []
@@ -118,9 +118,8 @@ function sh(cmd: string): string {
 /**
  * PR_BODY takes precedence when set (the PR-mode caller always sets it).
  * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
- * local path to the drafted PR body, so `Doc-ack:` lines (D-097 does not
- * touch that grammar) are available deterministically before the PR exists
- * (D-324/task 11).
+ * local path to the drafted PR body, so `Doc-ack:` lines are available
+ * deterministically before the PR exists.
  */
 function resolvePrBody(): string {
   if (process.env.PR_BODY) return process.env.PR_BODY
@@ -135,7 +134,7 @@ function resolvePrBody(): string {
 }
 
 /**
- * D-097: a waiver is honored only when the `vinaya/waiver:docs` label is present AND
+ * A waiver is honored only when the `vinaya/waiver:docs` label is present AND
  * the actor of its labeling timeline event is a configured principal.
  * WAIVER_LABEL_ACTOR is resolved by CI (the GraphQL step ahead of this gate)
  * or is empty/unset locally — an empty/unset actor never verifies.
@@ -199,15 +198,6 @@ function runPrMode(): void {
     effectiveTier = tierFromBody
   } else {
     const derived = deriveTierFromDiff(changed)
-    if (derived === 3) {
-      // Decision-log in diff — Tier 3 has lock/irreversibility implications.
-      // Auto-derive is blocked; the author must confirm with an explicit declaration.
-      errors.push(
-        'C0 tier-required: No `Tier:` field found in the PR body, and the diff includes a decision log — Tier 3 work requires an explicit `Tier: 3` declaration (lock/irreversibility implications a human must confirm). The canonical PR-body form lives in `aeg-root/roles/developer.md` § PR body — canonical form. (state-machine.md Section 9)'
-      )
-      finish()
-      return
-    }
     notes.push(`no Tier field in PR body; derived Tier ${derived} from diff`)
     effectiveTier = derived
   }
@@ -215,7 +205,6 @@ function runPrMode(): void {
   const codeFiles = changed.filter(isCodeFile)
   const docFiles = changed.filter(isDocFile)
   const specFiles = changed.filter(isSpecFile)
-  const decisionLogs = changed.filter(isDecisionLog)
 
   // C1 — changed spec files must carry a Status block.
   for (const p of specFiles) {
@@ -227,17 +216,6 @@ function runPrMode(): void {
     }
   }
 
-  // C2 — changed decision logs must have well-formed entries.
-  for (const p of decisionLogs) {
-    if (!existsSync(p)) continue
-    const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
-    if (bad.length) {
-      errors.push(
-        `C2 decision-shape: ${p} has entries missing Status/Type: ${bad.join(', ')}. See state-machine.md Section 6.`
-      )
-    }
-  }
-
   // C3 — code changes (tier 1+) must be accompanied by at least one doc change.
   if (effectiveTier !== 0 && codeFiles.length > 0 && docFiles.length === 0) {
     errors.push(
@@ -245,24 +223,16 @@ function runPrMode(): void {
     )
   }
 
-  // C4 — Tier 3 must carry either a new decision log entry OR a reference to an
-  // existing decision this work conforms to. The conformance path exists for PRs
-  // that implement work under an already-recorded decision without introducing a
-  // new architectural choice (e.g. adding contracts under the decision that
-  // established the contract system). A `Conforms-to: D-###` or
-  // `Conforms-to-lock: D-###` field in the PR body satisfies this path.
-  const conformsToDecision = /Conforms-to(?:-lock)?\s*:\s*\*{0,2}\s*D-\d+/i.test(process.env.PR_BODY || '')
-  if (effectiveTier === 3 && decisionLogs.length === 0 && !conformsToDecision) {
-    errors.push(
-      'C4 tier3-decision-log: Tier 3 work requires either (a) a decision log entry (global decisions.md or a per-project *-decisions.md), or (b) a `Conforms-to: D-###` or `Conforms-to-lock: D-###` field in the PR body for conforming work. Neither found. (state-machine.md Section 9)'
-    )
-  }
-
-  // C5 — code→doc coverage via packages/governance/doc-owners (dormant when absent).
+  // C5 — code→doc coverage via .vinaya/doc-owners (dormant when absent).
   runC5(changed)
+
+  // C7 — published prose, scoped to the doctrine files this PR actually
+  // changed. Blocking here (this is the gate CI runs); the repo-wide sweep is
+  // full mode's job.
+  runC7(new Set(changed.filter((p) => p.startsWith(AEG_ROOT_PREFIX) && p.endsWith('.md'))))
 }
 
-// ---- push mode (C5 only — D-078 ring-0 pre-push gate) -----------------------
+// ---- push mode (C5 only — ring-0 pre-push gate) -----------------------
 
 function runPushMode(): void {
   if (
@@ -289,7 +259,7 @@ function runPushMode(): void {
 
   for (const n of notes) console.log(`verify-docs note: ${n}`)
 
-  // D-097 ring 0: warn-with-declared-intent, never a hard block. The push always
+  // Ring 0: warn-with-declared-intent, never a hard block. The push always
   // succeeds; ring 1 (the PR, once opened) is where a waiver is actually granted.
   if (errors.length) {
     console.error(
@@ -304,20 +274,13 @@ function runPushMode(): void {
 
 // ---- full mode -------------------------------------------------------------
 
-function findDecisionLogs(): string[] {
-  return sh("git ls-files 'packages/governance/decisions.md' 'apps/**/*-decisions.md'")
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
 const AEG_ROOT_PREFIX = 'aeg-root/'
 
 /**
  * The doctrine the `DiagramModel` derives from — raw `enforcement.md` + the
  * `roles/*.md` and `contracts/*.md` files, read here (a bin script does I/O)
  * and handed to the pure `deriveDiagramModel`. The surfaced-doc allowlist C6
- * checks against is model-backed (D-079/D-087), so C6 needs the same model
+ * checks against is model-backed, so C6 needs the same model
  * `/docs` and `/the-harness` render.
  */
 function loadDoctrine(): DoctrineContent {
@@ -357,6 +320,37 @@ function runC6(): void {
   for (const n of result.notes) notes.push(n)
 }
 
+/**
+ * C7 — published-prose. The doctrine files under `aeg-root/` whose paths are
+ * in `only` (PR mode: this diff's own changed files; full mode: every one) are
+ * parsed and handed to the pure check together with the same model-backed
+ * allowlist C6 uses, so the gate governs exactly what `/docs` publishes.
+ */
+function runC7(only?: ReadonlySet<string>): void {
+  const files = sh("git ls-files 'aeg-root/*.md' 'aeg-root/roles/*.md' 'aeg-root/contracts/*.md'")
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((filePath) => (only ? only.has(filePath) : true))
+
+  if (files.length === 0) return
+
+  const entries: PublishedProseEntry[] = files.map((filePath) => {
+    const raw = existsSync(filePath) ? readFileSync(filePath, 'utf8') : ''
+    const parsed = parseDocFrontmatter(raw)
+    return {
+      relPath: filePath.slice(AEG_ROOT_PREFIX.length),
+      frontmatter: parsed.frontmatter,
+      body: parsed.body
+    }
+  })
+
+  const surfacedPaths = modelBackedDocPaths(deriveDiagramModel(loadDoctrine(), null, null))
+  const result = evaluatePublishedProse(entries, surfacedPaths)
+  for (const e of result.errors) errors.push(e)
+  for (const n of result.notes) notes.push(n)
+}
+
 function runFullMode(): void {
   // F1 — every spec carries a Status block.
   const specs = sh("git ls-files 'apps/**/specs/*.md'")
@@ -368,24 +362,6 @@ function runFullMode(): void {
     if (!hasStatusBlock(readFileSync(p, 'utf8'))) {
       errors.push(`F1 spec-status: ${p} is missing a \`Status:\` block.`)
     }
-  }
-
-  // F2 — decision-log entries well-formed.
-  const logPaths = findDecisionLogs()
-  for (const p of logPaths) {
-    if (!existsSync(p)) continue
-    const bad = malformedDecisionEntries(readFileSync(p, 'utf8'))
-    if (bad.length) {
-      errors.push(`F2 decision-shape: ${p} entries missing Status/Type: ${bad.join(', ')}.`)
-    }
-  }
-
-  // N1/N2 — decision-number integrity within each log.
-  for (const p of logPaths) {
-    if (!existsSync(p)) continue
-    const { n1Errors, n2Notes } = checkDecisionNumbers(readFileSync(p, 'utf8'), p)
-    for (const e of n1Errors) errors.push(e)
-    for (const n of n2Notes) notes.push(n)
   }
 
   // M1/M2/M3 — doc-owners manifest validity.
@@ -403,6 +379,9 @@ function runFullMode(): void {
 
   // C6 — surfaced-doc manifest coherence (state-machine.md Section 15c).
   runC6()
+
+  // C7 — published prose: repo-wide sweep of every surfaced doctrine doc.
+  runC7()
 }
 
 function runCompletenessScoreboard(bindings: DocOwnersBinding[], noDocRules: NoDocRule[]): void {
@@ -459,19 +438,6 @@ function finish(): void {
 // ---- run -------------------------------------------------------------------
 
 if (import.meta.main) {
-  if (isNextDecision) {
-    // --next-decision: print the next free D-NNN for packages/governance/decisions.md and exit.
-    const logPath = 'packages/governance/decisions.md'
-    if (!existsSync(logPath)) {
-      console.log(`${logPath} not found; next free number: D-001`)
-      process.exit(0)
-    }
-    const { numbers } = checkDecisionNumbers(readFileSync(logPath, 'utf8'), logPath)
-    const next = numbers.length === 0 ? 1 : ((numbers[numbers.length - 1] ?? 0) as number) + 1
-    console.log(`Next free D-number in ${logPath}: D-${String(next).padStart(3, '0')}`)
-    process.exit(0)
-  }
-
   if (mode === 'pr') runPrMode()
   else if (mode === 'push') runPushMode()
   else runFullMode()

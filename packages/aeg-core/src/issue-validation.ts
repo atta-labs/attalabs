@@ -1,12 +1,12 @@
 /**
- * Planner→Brief Issue-rationale grammar (D-078). Pure — no `fs`, no `fetch`,
+ * Planner→Brief Issue-rationale grammar. Pure — no `fs`, no `fetch`,
  * no `process.env`. The tool-layer gate (`bin/open-issue.ts`, invoked because
  * the `check-forge-gates.sh` hook denies raw `gh issue create`) calls
  * `checkIssueRationale` before any task Issue can reach the forge.
  *
  * A task Issue's body must carry every producer field of the
  * `aeg-root/contracts/planner-brief.md` contract — the eight Planner's
- * rationale fields. D-055 makes cutting the Issue with its rationale the
+ * rationale fields. makes cutting the Issue with its rationale the
  * canonical plan act; an Issue without the full rationale forces the Brief
  * Author to re-derive the Planner's dig cold, the exact loss the contract
  * exists to prevent. Presence-only, like `brief-validation.ts`: content
@@ -51,7 +51,7 @@ const RATIONALE_FIELDS: Array<{ name: string; pattern: string }> = [
 export function checkIssueRationale(body: string): IssueSectionResult {
   const errors = RATIONALE_FIELDS.filter((f) => !hasRationaleField(body, f.pattern)).map(
     (f) =>
-      `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md, D-055).`
+      `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md).`
   )
   return { status: errors.length > 0 ? 'fail' : 'pass', errors }
 }
@@ -135,7 +135,7 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
  * `packages/ui-next`.
  *
  * **A cited document is not a touched domain.** Every rationale points at docs
- * for provenance — "the registry row in `packages/governance/projects.md`",
+ * for provenance — "the registry row in `.vinaya/projects.md`",
  * "per `packages/ui/README.md`" — and counting those as edits fails correct
  * plans wholesale (it fired on all three of #621/#622/#626 for a projects.md
  * citation none of them edits). So an occurrence whose full path token ends in
@@ -219,7 +219,7 @@ export function checkBlastRadiusScope(
   return {
     status: 'fail',
     errors: [
-      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (packages/governance/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
+      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (.vinaya/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
     ]
   }
 }
@@ -355,7 +355,7 @@ function edgesNameEachOther(a: TaskIssueFacts, b: TaskIssueFacts): boolean {
  * so this prints and never blocks. It is also why AEG's conflict rule is
  * declared-and-static in the first place: a real answer needs a live
  * task→changed-files map, the mutable state the model eliminates
- * (`iterations/README.md` §5).
+ * (`iteration-model.md` §5).
  */
 export function checkConflictCompleteness(
   subject: TaskIssueFacts,
@@ -376,7 +376,7 @@ export function checkConflictCompleteness(
     if (shared.length === 0) continue
     if (edgesNameEachOther(subject, sibling)) continue
     warnings.push(
-      `issue-validation conflict completeness: this Issue and ${sibling.ref} both name ${shared.join(', ')} but neither declares the other in Conflicts-with. If they can run in parallel, say so; otherwise declare the edge (aeg-root/iterations/README.md §5).`
+      `issue-validation conflict completeness: this Issue and ${sibling.ref} both name ${shared.join(', ')} but neither declares the other in Conflicts-with. If they can run in parallel, say so; otherwise declare the edge (aeg-root/iteration-model.md §5).`
     )
   }
   return warnings

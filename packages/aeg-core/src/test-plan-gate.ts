@@ -1,5 +1,5 @@
 /**
- * Test Plan checkbox-state gate evaluator (D-049; aeg-governance-hardening
+ * Test Plan checkbox-state gate evaluator (aeg-governance-hardening
  * task 25, #365). Pure — no `fs`, no `gh`/`git`. The CLI shim
  * (`bin/verify-test-plan.ts`) reads `PR_BODY`/`BRANCH` from env and prints
  * this function's messages.
@@ -8,7 +8,7 @@
  * inline `**Test Plan:**` marker and the `## N. Test Plan` heading form).
  * This module owns the checkbox tick-state decision built on top of it:
  *
- *   - No section found, task branch → `fail` (D-049: a task PR without a
+ * - No section found, task branch → `fail` (a task PR without a
  *     Test Plan is malformed, not exempt — the exact #377 live-fire gap).
  *   - No section found, non-task branch (or no BRANCH) → `pass` (advisory).
  *   - `Test Plan: unit-tests-only` sentinel → `pass`.
@@ -43,7 +43,7 @@ export function evaluateTestPlanGate(body: string, branch: string): TestPlanGate
         messages: [
           `FAIL — no Test Plan section found in the PR body for task branch \`${branch}\`.`,
           'Searched for a `## Test Plan` / `## N. Test Plan` heading and an inline `**Test Plan:**`/`Test Plan:` marker — neither was found.',
-          'Per D-049, a task PR without a Test Plan is malformed, not exempt — add one (or `Test Plan: unit-tests-only` for a pure-logic brief with no runtime surface).'
+          'Per, a task PR without a Test Plan is malformed, not exempt — add one (or `Test Plan: unit-tests-only` for a pure-logic brief with no runtime surface).'
         ]
       }
     }
@@ -51,7 +51,7 @@ export function evaluateTestPlanGate(body: string, branch: string): TestPlanGate
       verdict: 'pass',
       messages: [
         'No Test Plan section in PR body.',
-        'PASS (advisory) — see aeg-root/roles/verifier.md and aeg-root/skills/brief-authoring/SKILL.md §9.',
+        'PASS (advisory) — see aeg-root/roles/developer.md (Verification) and aeg-root/skills/brief-authoring/SKILL.md §9.',
         'Non-task branch (or BRANCH unset) — a brief that touches a runtime surface and has no Test Plan is malformed on a task branch; Brief Validation catches that case pre-dispatch.'
       ]
     }
@@ -91,7 +91,7 @@ export function evaluateTestPlanGate(body: string, branch: string): TestPlanGate
     for (const line of unchecked) messages.push(`  ${line}`)
     messages.push(
       '',
-      'Per D-049 and aeg-root/roles/verifier.md, a PR is not mergeable while any Test Plan box is unticked.',
+      'Per aeg-root/roles/developer.md (Verification), a PR is not mergeable while any Test Plan box is unticked.',
       '- [agent] items: the Developer-agent posts the actual command output as evidence and ticks the box.',
       '- [principal] items: the Principal runs the item in a real signed-in browser and ticks the box.',
       'Note: editing the PR body does not retrigger most workflows. If your PR body changes do not surface here, push an empty commit to re-run.'

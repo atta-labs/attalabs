@@ -6,7 +6,7 @@ Schema version: `2.0`
 
 This document is the canonical reference for the v2 YAML schema used by Vāda. The schema collapses the three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) into a single universal model: **a flow is a sequence of rounds**. Every deliberation pattern is expressed as round structure plus optional declarative revision via `on_failure`. The engine has one compiler — `compileFlow` — that walks rounds and emits the Plan graph.
 
-For the architectural rationale behind v2, see `generic-flow-refactor.md` and D-033 in `vada-decisions.md`. For implementation status, see `vada-state.md`.
+For the architectural rationale behind v2, see `generic-flow-refactor.md` and D-033 in `apps/vada-ai/docs/vada-decisions-legacy.md`. For implementation status, see `vada-state.md`.
 
 ---
 

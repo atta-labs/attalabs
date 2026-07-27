@@ -1,5 +1,5 @@
 /**
- * Single-plan-PR guard predicate (D-069 task 19 / #336). Extracted from
+ * Single-plan-PR guard predicate (task 19 / #336). Extracted from
  * `bin/open-pr.ts` (aeg-governance-hardening task 24, #364, Part 1) so the
  * exact same implementation can be consumed by both the ring-0 local wrapper
  * (`open-pr.ts`, prevention) and a ring-1 CI check (detection, for PRs opened
@@ -27,7 +27,7 @@ export function iterationSlugFromTopologyPath(path: string): string | null {
 export type OpenPrFiles = { number: number; files: string[] }
 
 /**
- * Single-plan-PR guard (D-069 task 19 / #336): refuses a plan-branch diff
+ * Single-plan-PR guard (task 19 / #336): refuses a plan-branch diff
  * that touches an iteration's topology file when another OPEN PR's diff
  * already touches that SAME iteration's topology file. Ends the plan-PR
  * race that produced two concurrent plan PRs for `aeg-governance-hardening`
@@ -37,6 +37,12 @@ export type OpenPrFiles = { number: number; files: string[] }
  * `branchFiles` is this branch's diff vs `origin/main` (or vs the PR's
  * base); `otherOpenPrs` is every other currently-open PR's touched files
  * (the caller excludes this PR's own number when editing). An ordinary
+ * Dormant where plans are forge objects: with an iteration held as a
+ * Milestone plus labeled Issues, no plan diff touches a topology file and
+ * this predicate has nothing to compare. It stays because it is still the
+ * right guard for a repo that keeps plans as files — a dormant check that
+ * says so is honest; one that reads as live protection is not.
+ *
  * task-branch PR touches no topology file at all, so `branchFiles` yields
  * no slugs and this passes trivially without even needing `otherOpenPrs`.
  */

@@ -13,13 +13,13 @@
  *
  * Vinaya's Studio runs from `apps/vinaya/web/src/app/studio`; `aeg-root/`
  * lives at the repo root. `findAegRoot` walks up from `process.cwd()` until
- * it finds a directory containing `packages/governance/projects.md` (the
- * project registry — relocated from `aeg-root/projects.md`,
- * `aeg-forge-state-v1` task 2), then returns that directory's `aeg-root/`.
+ * it finds a directory containing `.vinaya/projects.md` (the project
+ * registry — configuration since the governance package was removed), then
+ * returns that directory's `aeg-root/`.
  * Worktrees work the same way — each worktree carries its own checkout of
- * `aeg-root/` and `packages/governance/`.
+ * `aeg-root/` and `.vinaya/`.
  *
- * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, per D-110):
+ * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, ):
  * both derive purely from the forge — a GitHub Milestone
  * titled exactly the iteration slug (open = active, closed = archived).
  * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
@@ -27,7 +27,7 @@
  * `dependsOn`/`conflictsWith` for an ACTIVE iteration derive from the forge
  * like everything else. A legacy `aeg-root/iterations/<slug>.md` topology
  * table was once merged in as best-effort enrichment for pre-cutover files;
- * that path was removed by `deprecation-v1` task 1 (D-132) once it was
+ * that path was removed by `deprecation-v1` task 1 once it was
  * provably unreachable — no live iteration has carried such a file since
  * #512/#517 deleted the last one (`aeg-drift-prevention-v1.md`), and
  * `check-no-disk-state.ts` now CI-blocks adding a new active topology file
@@ -68,7 +68,7 @@ import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-
  * Request-scoped memoization (React 19 `cache()`) so one request never
  * re-fires an identical forge lookup — e.g. `listIterations()` plus a detail
  * read in the same render tree. Request-scoped ONLY: no module-level TTL, no
- * cross-request store (D-087, Studio stores nothing). `@atta/aeg-forge-state`'s
+ * cross-request store (Studio stores nothing). `@atta/aeg-forge-state`'s
  * own exports stay unwrapped; these wrappers are local to this module.
  *
  * The enumeration path uses the ASYNC `gh` twins: `execFileSync` blocks the
@@ -103,7 +103,7 @@ const cachedDeriveIterationFromForgeKnown = cache(
 
 const ITERATIONS_DIR = 'iterations'
 const REGISTRY_FILE = 'projects.md'
-const GOVERNANCE_DIR = 'packages/governance'
+const CONFIG_DIR = '.vinaya'
 
 export type IterationSummary = {
   /** Slug from the Milestone title. */
@@ -141,7 +141,7 @@ export function findAegRoot(): string {
   if (cachedRoot) return cachedRoot
   let dir = process.cwd()
   for (let i = 0; i < 8; i++) {
-    const candidate = path.join(dir, GOVERNANCE_DIR, REGISTRY_FILE)
+    const candidate = path.join(dir, CONFIG_DIR, REGISTRY_FILE)
     if (existsSync(candidate)) {
       cachedRoot = path.join(dir, 'aeg-root')
       return cachedRoot
@@ -156,7 +156,7 @@ export function findAegRoot(): string {
 export async function readRegistry(): Promise<Registry> {
   const root = findAegRoot()
   const repoRoot = path.dirname(root)
-  const raw = await fs.readFile(path.join(repoRoot, GOVERNANCE_DIR, REGISTRY_FILE), 'utf8')
+  const raw = await fs.readFile(path.join(repoRoot, CONFIG_DIR, REGISTRY_FILE), 'utf8')
   return parseRegistry(raw)
 }
 
@@ -189,7 +189,7 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
   }
 
   // Active: use loadIterationProgress, which resolves #TBD issue numbers via
-  // the iteration:<slug> label (D-055) before fetching forge facts.
+  // the iteration:<slug> label before fetching forge facts.
   const progress = await loadIterationProgress(base.taskRefs, fileSlug)
   return {
     ...base,
@@ -221,7 +221,7 @@ async function toSummary(fileSlug: string, iteration: Iteration, archived: boole
  * this type replaces: one transient per-slug failure used to discard every
  * surviving iteration). The caller degrades *visibly and granularly* (an
  * explicit banner naming the failed subset) instead of rendering a failure as
- * truth-shaped emptiness (D-087: Studio stores nothing, so it must not lie by
+ * truth-shaped emptiness (Studio stores nothing, so it must not lie by
  * omission). The legacy `completed/*.md` supplement never affects status.
  */
 type LoadedIterations = {

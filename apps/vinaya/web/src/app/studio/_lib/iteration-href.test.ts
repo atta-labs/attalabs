@@ -18,7 +18,7 @@ describe('boardHref', () => {
   })
 
   it('skips a retired project name and links to the first registered one', () => {
-    // `aeg` is retired (its `projects.md` row was deleted, D-132) but still
+    // `aeg` is retired (its `projects.md` row was deleted) but still
     // rides on archived Issues — link to the registered project, not the 404.
     expect(boardHref(['aeg', 'desktop'], 'deprecation-v1', REGISTERED)).toBe(
       '/studio/projects/desktop/iterations/deprecation-v1'

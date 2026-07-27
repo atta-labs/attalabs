@@ -118,7 +118,7 @@ describe('config', () => {
 
   it('repo-local config overrides global config when both are present', () => {
     // Local config wins over a same-directory-hierarchy global-style file,
-    // matching Cetana's file-selection precedence (D-081's ported behavior).
+    // matching the ported file-selection precedence.
     const localPath = join(tmpDir, 'vinaya.config.json')
     writeFileSync(
       localPath,

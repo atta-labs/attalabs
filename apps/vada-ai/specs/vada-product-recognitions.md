@@ -265,6 +265,6 @@ Examples of when to update:
 Examples of when NOT to update:
 - New phase ships (update `vada-state.md` instead)
 - New YAML created (update YAML catalog references)
-- Open questions resolved (update `vada-decisions.md` or `vada-state.md`)
+- Open questions resolved (update `apps/vada-ai/docs/vada-decisions-legacy.md` or `vada-state.md`)
 
 When updating: add a "Date revised" entry under the affected recognition with a one-paragraph note on what changed and why. Keep the original text unless it's outright wrong; recognitions evolve, and the evolution itself is signal.

@@ -10,9 +10,10 @@ export { parseLedger, rowFromCells } from './parse-ledger'
 export { sumLedger } from './sum-ledger'
 export { aggregateTaskTokenRows, parseTokenReportEntries, parseTokensLines } from './parse-token-report'
 export type { TokenSourcePr } from './parse-token-report'
-export { isCodeFile, isDecisionLog, isDocFile, isSpecFile } from './file-classify'
-export { checkDecisionNumbers, hasStatusBlock, malformedDecisionEntries } from './decision-log'
+export { isCodeFile, isDocFile, isSpecFile } from './file-classify'
+export { hasStatusBlock } from './status-block'
 export {
+  classifyDocOwnersManifest,
   DOC_OWNERS_PATH,
   evaluateC5,
   globToRegex,
@@ -21,7 +22,7 @@ export {
   pointerToPath,
   readDocAcks
 } from './doc-owners'
-export type { C5Result, DocAck, DocOwnersBinding } from './doc-owners'
+export type { C5Result, DocAck, DocOwnersBinding, DocOwnersManifestState } from './doc-owners'
 export { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL, WAIVER_LABEL_REVIEW } from './waiver-label'
 export { deriveSection7, globsOverlap } from './derive-section7'
 export type { Section7Match } from './derive-section7'
@@ -35,7 +36,6 @@ export {
   checkDocUpdateList,
   checkForField,
   checkForgeTitle,
-  checkLockAck,
   checkPlanPrNoCloses,
   checkPremiseCoverage,
   checkPrincipalPlaceholder,

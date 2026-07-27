@@ -30,14 +30,12 @@ const PR_SECTIONS: BriefSection[] = [
   { builtin: 'project' },
   { builtin: 'for' },
   { builtin: 'closesN' },
-  { builtin: 'lockAck' },
   { builtin: 'premiseCoverage' }
 ]
 
 const base = {
   title: null,
   changedFiles: [] as string[],
-  touchesLock: false,
   retryCommand: 'vinaya pr create --validate-only …'
 }
 
@@ -53,7 +51,7 @@ describe('validateForgeWrite — brief-schema gate', () => {
     const [e] = errors
     expect(e?.check).toBe('brief-schema')
     expect(e?.schema).toBe(1)
-    // The recovery prompt names the corrective command, and is NOT the diagnosis restated (D-100).
+    // The recovery prompt names the corrective command, and is NOT the diagnosis restated.
     expect(e?.agent_recovery_prompt).toContain('vinaya pr create')
     expect(e?.agent_recovery_prompt).not.toBe(e?.message)
   })

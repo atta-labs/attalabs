@@ -4,7 +4,7 @@ import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 /**
  * Shown when live forge enumeration failed or partially failed this request.
  * Makes the degradation visible instead of letting a failure render as a
- * truth-shaped empty list (D-087: Studio stores nothing, so it must not lie
+ * truth-shaped empty list (Studio stores nothing, so it must not lie
  * by omission) — and, per Issue #543, granularly: a `partial` status names
  * the failed subset instead of collapsing one transient per-slug failure into
  * apparent total outage. The underlying `Error.message` stays in

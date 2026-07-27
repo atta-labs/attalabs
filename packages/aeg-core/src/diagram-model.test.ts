@@ -91,12 +91,6 @@ describe('deriveDiagramModel — fixture', () => {
     expect(byId('gate:creating-a-pull-request')?.renderState).toBe('disabled')
   })
 
-  it('marks a locked gate as locked EVEN when config also disables it', () => {
-    const node = byId('gate:git-push')
-    expect(node?.lock).toBe('principal')
-    expect(node?.renderState).toBe('locked') // config gates['git-push']=false is ignored
-  })
-
   it('disables a ring-1 check via the ring-level switch', () => {
     expect(byId('check:brief-validation')?.renderState).toBe('disabled')
     expect(byId('ring:1')?.renderState).toBe('disabled')
@@ -189,13 +183,13 @@ function loadRealDoctrine(): DoctrineContent {
 describe('deriveDiagramModel — real aeg-root/ cross-check', () => {
   const model = deriveDiagramModel(loadRealDoctrine(), null, null)
 
-  it('derives 3 rings, some gates, some checks, all 10 actions, 9 roles, some contracts', () => {
+  it('derives 3 rings, some gates, some checks, all 10 actions, 8 roles, some contracts', () => {
     const count = (kind: string) => model.nodes.filter((n) => n.kind === kind).length
     expect(count('ring')).toBe(3)
     expect(count('gate')).toBeGreaterThan(0)
     expect(count('check')).toBeGreaterThan(0)
     expect(count('action')).toBe(10)
-    expect(count('role')).toBe(9)
+    expect(count('role')).toBe(8)
     expect(count('contract')).toBeGreaterThan(0)
   })
 

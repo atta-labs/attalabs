@@ -18,19 +18,19 @@
  *                    (Only `'changes_requested'` flips status per aeg-types.)
  *   stateReason    ← issue.stateReason: 'COMPLETED' → 'completed',
  *                    'NOT_PLANNED' → 'not_planned', 'REOPENED' / null → null.
- *                    Drives honest terminal derivation (D-069): a closed-no-
+ *                    Drives honest terminal derivation: a closed-no-
  *                    merge issue derives `dropped` (not_planned) or
  *                    `incoherent` (completed / null), never `todo`.
  *
  * Missing issue → return `null` (caller omits the task from the map, which
- * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo` per D-059).
+ * `deriveIteration` treats as `todo` — iteration tasks are minimum `todo`).
  */
 
 import type { ForgeFacts, RawTaskFacts } from '@atta/aeg-types'
 import { AEG_BLOCKED_LABEL, hasLabel } from './labels'
 
 // The constant's home is now `labels.ts` (the code-owned label vocabulary,
-// D-119) — re-exported here because this module is its original import path
+// re-exported here because this module is its original import path
 // and several call sites, including this package's own tests, still reach for
 // it at `./map-forge-facts`. Re-export rather than move-and-break: same value,
 // same export surface, no consumer edit.
@@ -56,7 +56,7 @@ function mapStateReason(reason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null)
   if (reason === 'COMPLETED') return 'completed'
   if (reason === 'NOT_PLANNED') return 'not_planned'
   // 'REOPENED' and null map to null — no terminal close reason recorded.
-  // A closed-no-merge issue with null stateReason derives `incoherent` (D-069).
+  // A closed-no-merge issue with null stateReason derives `incoherent`.
   return null
 }
 

@@ -18,7 +18,7 @@ export default async function config(): Promise<NextConfig> {
     // the same mechanism vada (`../yamls/**`) and herald use. `projects.md` is
     // the marker `findRepoRoot()` walks up to, so it must be present too.
     outputFileTracingIncludes: {
-      '/**': ['../../../aeg-root/**', '../../../packages/governance/projects.md']
+      '/**': ['../../../aeg-root/**', '../../../.vinaya/projects.md']
     },
     turbopack: {
       root: resolve(__dirname, '../../..'),

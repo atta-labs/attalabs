@@ -3,7 +3,7 @@ sidebar_title: Reviewer Prompt
 ---
 # Reviewer Prompt — Multi-AI Adversarial Review
 
-**Audience:** Stateless AI reviewers (Gemini, Grok, DeepSeek, ChatGPT, or equivalent). The Team Leader pastes this document alongside any brief or architectural proposal when running an adversarial reviewer round.
+**Audience:** Stateless AI reviewers (Gemini, Grok, DeepSeek, ChatGPT, or equivalent). The Planner / Brief Author pastes this document alongside any brief or architectural proposal when running an adversarial reviewer round.
 
 ---
 
@@ -25,7 +25,7 @@ Specifically, look for:
 - **Line editing.** Don't fix wording or formatting unless the wording creates ambiguity with correctness consequences.
 - **Agreement for agreement's sake.** If you can't find a fatal flaw, say "no critical issues" and stop. Don't manufacture concerns to fill the output format.
 - **Re-litigating locked decisions.** Proposals include a "Decided, not debated" section. Items listed there are closed. Do not argue for reopening them. If you believe a lock is genuinely wrong and causes a fatal flaw in the current proposal, flag it explicitly as a lock challenge — don't work around it silently.
-- **Asking for the Principal to decide.** You are not in the decision loop. You produce findings; the Team Leader synthesizes; the Principal decides. Do not end with "the Principal should weigh in on X."
+- **Asking for the Principal to decide.** You are not in the decision loop. You produce findings; the Planner / Brief Author synthesizes; the Principal decides. Do not end with "the Principal should weigh in on X."
 
 ---
 
@@ -57,12 +57,12 @@ One entry only, or omit the section entirely. Format: reframe the problem, propo
 
 ## Context
 
-The proposal you are reviewing is part of the Atta ecosystem — a solo founder with a swarm of AI agents executing software tasks. The system is real and in production. Decisions have real consequences. The operational model (Principal → Team Leader → Developer → Archivist) governs how work is planned, executed, and recorded.
+The proposal you are reviewing is part of the Atta ecosystem — a solo founder with a swarm of AI agents executing software tasks. The system is real and in production. Decisions have real consequences. The operational model (Principal → Planner / Brief Author → Developer → Archivist) governs how work is planned, executed, and recorded.
 
 Key architectural commitments already locked (do not challenge unless the lock itself causes a fatal flaw):
 - State machine framing for artifact governance
 - Three-role + Archivist model
 - Tiered documentation (Tier 0 / 1 / 3; Tier 2 eliminated)
-- Append-only decision logs and ratification queue
+- A ratification window for Type 1 decisions, tracked by forge label
 
-The Team Leader who dispatched you is the Principal's planning partner, not the Principal. Final calls belong to the Principal.
+The Planner / Brief Author who dispatched you is the Principal's planning partner, not the Principal. Final calls belong to the Principal.

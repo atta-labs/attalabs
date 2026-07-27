@@ -13,7 +13,7 @@ The brief itself carries no anchor comments: it rides into the PR body as the *r
 **Reason:** [why this capability level fits this task — real reasoning against the task, not "because it's good"]
 **Owner:** [who owns the task — the Principal, by default]
 **Goal:** [one sentence: what ships]
-**Project:** [project(s), comma-separated, resolving against `packages/governance/projects.md` — required in a multi-project repo]
+**Project:** [project(s), comma-separated, resolving against `.vinaya/projects.md` — required in a multi-project repo]
 **Tier:** [0 | 1 | 3 — declare last, after §4 is complete]
 
 You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the host repo's own execution-discipline skill, e.g. `.claude/skills/executor-protocol/SKILL.md`]. Both mandatory.
@@ -22,7 +22,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 
 - **Iteration:** [`iteration-slug`], task [n], Issue #[N]. Branch `task/[iteration-slug]/[n]`. `Depends-on: [—|ids]`, `Conflicts-with: [—|ids]`. Confirm `READY TO DISPATCH` at your own Step 0.
 - **Read Issue #[N] in full** for the complete rationale — do not re-derive it.
-- [CONTEXT — the Planner's rationale carried forward (boundary, blast radius, traps), what was previously validated, what's locked (D-### references), and everything your own Dig confirmed about the current surface. If it isn't in the brief, it doesn't exist.]
+- [CONTEXT — the Planner's rationale carried forward (boundary, blast radius, traps), what was previously validated, what is settled and must not be re-litigated, and everything your own Dig confirmed about the current surface. If it isn't in the brief, it doesn't exist.]
 
 ## 3. Technical dependencies
 
@@ -52,7 +52,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 git worktree add .worktrees/task/[iteration-slug]/[n] -b task/[iteration-slug]/[n] origin/main && cd .worktrees/task/[iteration-slug]/[n] && bun install --frozen-lockfile --silent
 ```
 
-1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`) (D-073).
+1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`).
 2. `bun packages/aeg-core/bin/verify-dispatch.ts [iteration-slug] [n]` → `READY TO DISPATCH` required; else STOP.
 3. [any task-specific pre-flight checks — required tools present, reference files readable, re-digs to confirm the §2 citations]
 
@@ -65,7 +65,7 @@ On any failure: STOP and report.
 
 ## 7. Documentation-update list
 
-[DOC LIST — every doc artifact this brief must touch, by file name — or "No doc updates required (Tier 0)." A Tier 1+ brief with an empty list is malformed. Never list a new file for a one-off report/finding (D-074).]
+[DOC LIST — every doc artifact this brief must touch, by file name — or "No doc updates required (Tier 0)." A Tier 1+ brief with an empty list is malformed. Never list a new file for a one-off report/finding.]
 
 ## 8. Verification before claiming done
 
@@ -99,5 +99,5 @@ STOP and report if: pre-flight fails; [the Planner's stop-and-escalate condition
 - PR body = the Developer's PR report (start from `aeg-root/templates/pr-report-template.md`), with this entire brief pasted as the reference copy inside a collapsed `<details>` block, and `Closes #[N]` at the top of the header block.
 - [what to state in the PR body: decisions made, confirmations required by §8]
 - Pre-open gate: `PR_BODY="$(cat <body-file>)" bun packages/aeg-core/bin/verify-docs.ts --pr` green.
-- Include `git diff main --stat` and a token report (D-071; if unavailable, state so).
+- Include `git diff main --stat` and a token report (if unavailable, state so).
 - Then STOP. Review and Verification are separate invocations.

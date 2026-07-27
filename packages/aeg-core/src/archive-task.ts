@@ -1,5 +1,5 @@
 /**
- * Post-merge Archivist provenance assembly (D-077, aeg-governance-hardening
+ * Post-merge Archivist provenance assembly (aeg-governance-hardening
  * task 5d, #309). Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
  * (`bin/archive-task.ts`) resolves the merged PR via `gh`, gathers
  * `MergedPrFacts`, and calls these functions.
@@ -142,21 +142,6 @@ export function extractIssue(body: string): { issue: number | null; extraIssues:
   return { issue, extraIssues: bodyNums.filter((n) => n !== issue), outsideHeader: headerNums.length === 0 }
 }
 
-function extractDecision(body: string, tier: 0 | 1 | 3 | null): { decision: string; danglingNote: string | null } {
-  // Strip whole, then slice — same rule as `extractIssue`; see the note there.
-  const m = headerRegion(stripCode(body)).match(/Conforms-to(?:-lock)?\s*:\s*(D-\d+)/i)
-  if (m) return { decision: `${m[1]} (conforms to existing decision)`, danglingNote: null }
-  if (tier === 3) {
-    return {
-      decision:
-        'DANGLING — Tier 3 but no `Conforms-to:` field found and no new decision entry detectable from the PR body',
-      danglingNote:
-        'Tier 3 PR carries no `Conforms-to: D-###` field — verify a new decision entry was added and reference it manually'
-    }
-  }
-  return { decision: 'none', danglingNote: null }
-}
-
 /** Assemble the block purely from frozen facts; absent facts become DANGLING entries. */
 export function buildProvenanceBlock(facts: MergedPrFacts): {
   block: string
@@ -190,9 +175,6 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
   const forField = extractField(facts.body, 'For')
   if (!forField) dangling.push('no `For:` field found in PR body — Model/agent field is DANGLING')
 
-  const { decision, danglingNote: decisionDangling } = extractDecision(facts.body, tier)
-  if (decisionDangling) dangling.push(decisionDangling)
-
   const codeReview = extractCodeReviewVerdict(facts.comments)
   if (codeReview.danglingNote) dangling.push(codeReview.danglingNote)
 
@@ -212,7 +194,6 @@ export function buildProvenanceBlock(facts: MergedPrFacts): {
     `- Model/agent:  ${forField ?? 'DANGLING — no For field in PR body'}`,
     `- Code review:  ${codeReview.value}`,
     `- Security:     ${security.value}`,
-    `- Decision:     ${decision}`,
     `- Ticket:       ${ticket}`,
     `- Merged:       ${facts.mergeSha} at ${facts.mergedAt}`
   ]

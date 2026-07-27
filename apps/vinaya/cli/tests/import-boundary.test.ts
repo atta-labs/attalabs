@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 /**
- * D-087 one-way import boundary: cli must never import web internals.
+ * One-way import boundary: cli must never import web internals.
  * Matches import/export module specifiers only — never raw file text.
  */
 

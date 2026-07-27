@@ -1,17 +1,16 @@
 /**
- * diagram-model.ts — the pure derivation at the heart of D-087: one library
+ * diagram-model.ts — the pure derivation at the heart of one library
  * turns doctrine (`enforcement.md` rings/gates/checks + role/contract
  * frontmatter + the canonical `ACTIONS` set) plus declarative config plus
  * live status into a renderer-agnostic `DiagramModel`. Every diagram consumer
  * (Studio, the Vinaya portal, a CLI visualizer) reads THIS model; none
- * re-implements the governance logic (D-087). Zero I/O, zero `fs`/`node:`
- * imports — doctrine arrives already-read through `DoctrineContent` (D-111);
+ * re-implements the governance logic. Zero I/O, zero `fs`/`node:`
+ * imports — doctrine arrives already-read through `DoctrineContent`;
  * the file reads live behind `DoctrineSource` in `@atta/vinaya-sources`.
  *
  * What is NOT here: geometry. Radius, angle, colour, coordinates are the
  * renderer's job (a ring index and a render-state are structural facts; a
- * pixel is not). Render-state is DERIVED, never authored: `locked` when the
- * doctrine row carries a lock (config can never override it), `disabled` when
+ * pixel is not). Render-state is DERIVED, never authored: `disabled` when
  * config disables it, else `active`.
  */
 
@@ -23,7 +22,7 @@ import { parseEnforcementRegistry } from './registry-parse'
 import type { Iteration } from './types'
 
 export type DiagramNodeKind = 'ring' | 'gate' | 'check' | 'action' | 'role' | 'contract'
-export type RenderState = 'active' | 'disabled' | 'locked'
+export type RenderState = 'active' | 'disabled'
 
 export type DiagramNode = {
   id: string
@@ -31,7 +30,6 @@ export type DiagramNode = {
   label: string
   ringIndex?: 0 | 1 | 2
   renderState: RenderState
-  lock?: string | null
   sourceLine?: number
   summary?: string
   /** What this node actually does, in one plain sentence — every kind carries
@@ -49,7 +47,7 @@ export type DiagramNode = {
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
   /** Whether this action reaches GitHub — `action` nodes only, straight from
-   * its `ACTIONS` entry (D-119's canonical set). On the node because a
+   * its `ACTIONS` entry (the canonical set). On the node because a
    * renderer cannot get it any other way: `ACTIONS` is a value export, and
    * importing it into a client component drags `@atta/aeg-forge-state`'s
    * `node:child_process` into the browser bundle. The distinction is
@@ -57,6 +55,28 @@ export type DiagramNode = {
    * G3 exists to prove there is no unguarded one — so it must survive to the
    * render rather than being implied by which ring a node was filed under. */
   crosses?: 'into-github' | 'none'
+  /** The node's name **for a reader**, when its `label` is an identifier rather
+   * than words. `role`/`contract` nodes label themselves with their doctrine id
+   * (`brief-author`, `archivist-iteration-archivist`) because that id is the
+   * node's identity — routes, doc paths and edge endpoints all key off it, so
+   * it cannot be prettified in place. This carries the doc's own `title:`
+   * frontmatter instead, and every renderer showing a name to a person prefers
+   * it, falling back to `label` when absent.
+   *
+   * Deliberately NOT `sidebar_title`: that field is the docs nav's own caption,
+   * and sourcing a doctrine node's name from a nav hint would let a caption
+   * edit silently rename the node. `title:` is the document's own name, which
+   * is what a display name should be. */
+  displayLabel?: string
+  /** Where this node sits in the process, from its doc's `order:` frontmatter
+   * — `role`/`contract` nodes only. Doctrine files are read in filename order,
+   * which is alphabetical and therefore meaningless to a reader; the process
+   * runs plan → brief → build → review → verify → merge → archive, and that is
+   * the order every surface listing these nodes should present them in. Kept on
+   * the node rather than re-derived per renderer so the docs nav and the map
+   * cannot disagree about the sequence. Absent means unordered — a renderer
+   * sorting by it must treat that as "last", never as zero. */
+  order?: number
 }
 
 export type DiagramEdge = {
@@ -116,6 +136,8 @@ function ringLabels(enforcement: string): Record<0 | 1 | 2, string> {
 
 type RoleFrontmatter = {
   roleId: string
+  title?: string
+  order?: number
   description?: string
   summary?: string
   actorType?: 'agent' | 'human' | 'either'
@@ -126,6 +148,8 @@ function extractRole(content: string): RoleFrontmatter | null {
   if (typeof data.role_id !== 'string') return null
   return {
     roleId: data.role_id,
+    title: typeof data.title === 'string' ? data.title : undefined,
+    order: typeof data.order === 'number' ? data.order : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     summary: typeof data.summary === 'string' ? data.summary : undefined,
     actorType: data.actor === 'agent' || data.actor === 'human' || data.actor === 'either' ? data.actor : undefined
@@ -134,6 +158,8 @@ function extractRole(content: string): RoleFrontmatter | null {
 
 type ContractFrontmatter = {
   contractId: string
+  title?: string
+  order?: number
   description?: string
   producer?: string
   consumer?: string
@@ -145,6 +171,8 @@ function extractContract(content: string): ContractFrontmatter | null {
   if (typeof data.contract_id !== 'string') return null
   return {
     contractId: data.contract_id,
+    title: typeof data.title === 'string' ? data.title : undefined,
+    order: typeof data.order === 'number' ? data.order : undefined,
     description: typeof data.description === 'string' ? data.description : undefined,
     producer: typeof data.producer === 'string' ? data.producer : undefined,
     consumer: typeof data.consumer === 'string' ? data.consumer : undefined,
@@ -171,7 +199,7 @@ export function deriveDiagramModel(
   const ring1Disabled = config?.rings?.ring1_forgeWriteInterception === false
   const ring2Disabled = config?.rings?.ring2_asyncAudits === false
 
-  // --- Ring nodes (Ring 0 has no ring-level switch, D-117) ---
+  // --- Ring nodes (Ring 0 has no ring-level switch) ---
   nodes.push({ id: 'ring:0', kind: 'ring', label: labels[0], ringIndex: 0, renderState: 'active' })
   nodes.push({
     id: 'ring:1',
@@ -203,12 +231,9 @@ export function deriveDiagramModel(
     usedSlugs.add(slug)
     gateCheckSlugs.add(slug)
     const id = `${kind}:${slug}`
-    const lock = row.lock.trim() === '' ? null : row.lock.trim()
 
     let renderState: RenderState
-    if (lock !== null) {
-      renderState = 'locked' // config can never override a lock
-    } else if (config?.gates?.[slug] === false) {
+    if (config?.gates?.[slug] === false) {
       renderState = 'disabled'
     } else if (ringIndex === 1 && ring1Disabled) {
       renderState = 'disabled'
@@ -224,7 +249,6 @@ export function deriveDiagramModel(
       label: row.action,
       ringIndex,
       renderState,
-      lock,
       sourceLine: row.line,
       summary: row.summary,
       detail: row.description,
@@ -257,6 +281,8 @@ export function deriveDiagramModel(
       id: `role:${role.roleId}`,
       kind: 'role',
       label: role.roleId,
+      displayLabel: role.title,
+      order: role.order,
       renderState: 'active',
       summary: role.summary,
       detail: role.description,
@@ -274,6 +300,8 @@ export function deriveDiagramModel(
       id: `contract:${contract.contractId}`,
       kind: 'contract',
       label: contract.contractId,
+      displayLabel: contract.title,
+      order: contract.order,
       renderState: 'active',
       summary: contract.summary,
       detail: contract.description
@@ -300,7 +328,7 @@ export function deriveDiagramModel(
 
   // performs: role → action for every ACTIONS.performedBy entry (the canonical
   // single source — the role's own `performs` frontmatter is intentionally not
-  // re-read, so the two lists can never drift; D-119).
+  // re-read, so the two lists can never drift).
   for (const action of ACTIONS) {
     for (const roleId of action.performedBy) {
       edges.push({

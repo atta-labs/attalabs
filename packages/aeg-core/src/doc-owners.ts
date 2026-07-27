@@ -1,5 +1,5 @@
 /**
- * The `packages/governance/doc-owners` manifest parser and the C5 code→doc
+ * The `.vinaya/doc-owners` manifest parser and the C5 code→doc
  * coverage evaluator (state-machine.md Section 15). Pure — I/O (reading the
  * manifest off disk, checking pointer existence) is injected by the caller.
  */
@@ -7,9 +7,29 @@
 import { isCodeFile } from './file-classify'
 import { WAIVER_LABEL } from './waiver-label'
 
-export const DOC_OWNERS_PATH = 'packages/governance/doc-owners'
+export const DOC_OWNERS_PATH = '.vinaya/doc-owners'
 
 export type DocOwnersBinding = { glob: string; pointer: string; lineNum: number }
+
+/**
+ * What a caller found where the manifest should be.
+ *
+ * `absent` — a repo that never configured doc ownership. Legitimately dormant.
+ * `empty` — a manifest that exists but has nothing in it. This is the shape a
+ *   misresolved repo root produces, and reporting it as success is how a broken
+ *   derivation passes for a real one. It is a refusal, not a dormancy.
+ * `present` — parse it.
+ *
+ * Split out of `verify-dispatch --surfaces` so the three-way decision is
+ * testable: the CLI chdirs to the repo root before reading, so the branch is
+ * unreachable from a test as long as it lives inside the command.
+ */
+export type DocOwnersManifestState = 'absent' | 'empty' | 'present'
+
+export function classifyDocOwnersManifest(content: string | null): DocOwnersManifestState {
+  if (content === null) return 'absent'
+  return content.trim() === '' ? 'empty' : 'present'
+}
 
 export type C5Result = { errors: string[]; notes: string[] }
 
@@ -103,13 +123,13 @@ export function readDocAcks(body: string): DocAck[] {
 
 /**
  * Pure evaluator for the C5 doc-coverage check. The runtime wrapper reads
- * `packages/governance/doc-owners` from disk and `PR_BODY` from env; this
+ * `.vinaya/doc-owners` from disk and `PR_BODY` from env; this
  * function takes both as inputs and an injectable file-exists for unit tests.
  *
  * Dormancy: a null `docOwnersContent` (absent file) OR no glob matching any
  * changed code file produces an empty result — no errors, no notes.
  *
- * `waiverActive` (D-097) is a single PR-wide boolean, not a per-binding
+ * `waiverActive` is a single PR-wide boolean, not a per-binding
  * pointer/reason lookup — it's the caller-resolved result of
  * `isWaiverLabelActorVerified`, itself a mechanized read of a forge fact.
  * There is no agent-emittable `Doc-waiver:` string anymore; a waiver is

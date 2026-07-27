@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ACTIONS, type DiagramModel, type DiagramNode } from '@atta/aeg-core'
-import { findDoc, getNextDoc, getPrevDoc, nodeDocRoute } from '@atta/aeg-core/docs'
+import { findDoc, getNextDoc, getPrevDoc, nodeDocRoute, publishedDoctrineBody } from '@atta/aeg-core/docs'
 import { badgeLabels, humanLabel } from '../../the-harness/_lib/display-label'
 import { loadDiagramModel } from '../../the-harness/_lib/load-diagram'
 import { githubBlobUrl } from '@/lib/github-links'
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 /**
  * The model frame for a file-sized doc slug: the node that points at it
- * (D-079). `role`/`contract` docs each back exactly one node — its
+ *. `role`/`contract` docs each back exactly one node — its
  * `category`/`actorType` is the frame.
  */
 function frameForSlug(slug: string, model: DiagramModel): { kindTag: string; badges: string[] } | undefined {
@@ -42,6 +42,28 @@ function frameForSlug(slug: string, model: DiagramModel): { kindTag: string; bad
     return node ? { kindTag: 'contract', badges: badgeLabels(node) } : undefined
   }
   return undefined
+}
+
+/**
+ * A contract's seam, as words: the role that fills it and the role that drains
+ * it. Read from the model's own `produces`/`consumes` edges (which are derived
+ * from the contract's `producer:`/`consumer:` frontmatter) and named with the
+ * same `displayLabel` the map cards use, so the two surfaces can never call a
+ * role different things. `carrier:` is deliberately not rendered — its values
+ * are identifiers, and the short version already states the carrier in words.
+ */
+function seamForSlug(slug: string, model: DiagramModel): { producer?: string; consumer?: string } | undefined {
+  if (!slug.startsWith('contracts/')) return undefined
+  const contractNodeId = `contract:${slug.slice('contracts/'.length)}`
+  const roleName = (nodeId: string | undefined): string | undefined => {
+    const node = model.nodes.find((n) => n.id === nodeId)
+    return node ? (node.displayLabel ?? humanLabel(node.label)) : undefined
+  }
+  const edgeFrom = (kind: 'produces' | 'consumes') =>
+    model.edges.find((e) => e.kind === kind && e.to === contractNodeId)?.from
+  const producer = roleName(edgeFrom('produces'))
+  const consumer = roleName(edgeFrom('consumes'))
+  return producer || consumer ? { producer, consumer } : undefined
 }
 
 /** `enforcement.md`'s intro — everything before the first per-ring detail
@@ -85,12 +107,19 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
  * the two `/docs/actions#reaches-github` / `#stays-local` sidebar entries. The
  * crossing is the group heading, so no redundant per-action badge.
  */
-function actionGroups(): HarnessSectionGroup[] {
+function actionGroups(model: DiagramModel): HarnessSectionGroup[] {
+  // `ACTIONS.performedBy` carries role IDS (`brief-author`), which are identity,
+  // not names. Resolve each through the model's own role node so this line
+  // reads as words — the same `displayLabel` the map cards use, so the two
+  // surfaces can never name the same role differently.
+  const roleName = new Map(
+    model.nodes.filter((n) => n.kind === 'role').map((n) => [n.label, n.displayLabel ?? n.label])
+  )
   const toSection = (a: (typeof ACTIONS)[number]): HarnessSection => ({
     slug: a.id,
     heading: humanLabel(a.label),
     badges: [],
-    performedBy: a.performedBy,
+    performedBy: a.performedBy.map((id) => roleName.get(id) ?? id),
     summary: a.summary,
     detail: a.description,
     viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts')
@@ -139,12 +168,27 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
     )
   }
   if (joined === 'actions') {
-    return <HarnessSectionsPage doc={doc} groups={actionGroups()} next={next} prev={prev} basePath={basePath} />
+    return <HarnessSectionsPage doc={doc} groups={actionGroups(model)} next={next} prev={prev} basePath={basePath} />
   }
 
-  // --- File-sized pages (roles / contracts): raw markdown under the frame ---
+  // --- File-sized pages (roles / contracts): the short version under the
+  // frame. The published page is the binding short version, never the
+  // reference beneath it — `publishedDoctrineBody` is the same extraction the
+  // C7 gate checks, so the page and the gate can never disagree about what
+  // publishes. The full file is linked, not inlined.
   const body = bodyBySlug.get(joined)
   if (body === undefined) notFound()
   const frame = frameForSlug(joined, model)
-  return <DocPage doc={doc} body={body} next={next} prev={prev} basePath={basePath} frame={frame} />
+  return (
+    <DocPage
+      doc={doc}
+      body={publishedDoctrineBody(body)}
+      next={next}
+      prev={prev}
+      basePath={basePath}
+      frame={frame}
+      seam={seamForSlug(joined, model)}
+      sourceHref={githubBlobUrl(`aeg-root/${joined}.md`)}
+    />
+  )
 }

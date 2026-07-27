@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { isDecisionLog } from '@atta/aeg-core'
 import { printJson } from '../lib/envelope'
 import {
   type BodyResult,
@@ -38,15 +37,6 @@ function localChangedFiles(): string[] {
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)
-}
-
-/** True iff this branch's diff ADDS a `Lock: YES` line to a decision-log file (drives `lockAck`). */
-function localTouchesLock(changed: string[]): boolean {
-  const base = process.env.BASE_SHA || 'origin/main'
-  return changed.filter(isDecisionLog).some((file) => {
-    const diff = git(['diff', `${base}...HEAD`, '--', file])
-    return diff.split('\n').some((l) => l.startsWith('+') && !l.startsWith('+++') && /Lock:\s*YES/.test(l))
-  })
 }
 
 function locateBodyOrRefuse(ghArgs: string[], retryCommand: string): BodyResult | null {
@@ -88,7 +78,7 @@ function runGhWrite(ghCmd: string[], ghArgs: string[], bodyResult: BodyResult | 
  * #417) and its changed files (premise coverage). A failed fetch is a HARD
  * refusal, never a fall-back to the local checkout's diff.
  */
-function fetchPrForgeContext(prRef: string, needLock: boolean): { changedFiles: string[]; touchesLock: boolean } {
+function fetchPrForgeContext(prRef: string): { changedFiles: string[] } {
   let viewOut: string
   try {
     viewOut = execFileSync('gh', ['pr', 'view', prRef, '--json', 'headRefName,files'], {
@@ -127,39 +117,7 @@ function fetchPrForgeContext(prRef: string, needLock: boolean): { changedFiles: 
   }
   const changedFiles = (parsed.files ?? []).map((f) => f.path)
 
-  let touchesLock = false
-  if (needLock) {
-    let diff: string
-    try {
-      diff = execFileSync('gh', ['pr', 'diff', prRef], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-    } catch {
-      refuse([
-        makeCheckError(
-          'forge-fetch',
-          `Could not fetch PR ${prRef}'s diff (\`gh pr diff\`) — the lock-ack gate cannot decide whether it applies.`,
-          `Check \`gh auth status\` and network, then re-run \`${RETRY_EDIT}\`.`
-        )
-      ])
-    }
-    touchesLock = diffTouchesLock(diff)
-  }
-  return { changedFiles, touchesLock }
-}
-
-/** Scans a unified diff for a `Lock: YES` line added under a decision-log file. */
-function diffTouchesLock(diff: string): boolean {
-  let currentFile: string | null = null
-  for (const line of diff.split('\n')) {
-    const header = line.match(/^\+\+\+ b\/(.+)$/)
-    if (header) {
-      currentFile = header[1] as string
-      continue
-    }
-    if (currentFile && isDecisionLog(currentFile) && line.startsWith('+') && !line.startsWith('+++')) {
-      if (/Lock:\s*YES/.test(line)) return true
-    }
-  }
-  return false
+  return { changedFiles }
 }
 
 // --- commands ----------------------------------------------------------------
@@ -185,14 +143,12 @@ export function prCreateCommand(args: string[]): void {
 
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
-  const touchesLock = localTouchesLock(changedFiles)
 
   const errors = validateForgeWrite({
     body,
     title,
     sections,
     changedFiles,
-    touchesLock,
     retryCommand: RETRY_CREATE
   })
   if (errors.length > 0) refuse(errors)
@@ -237,12 +193,9 @@ export function prEditCommand(args: string[]): void {
 
   const sections = resolveSections('pr', RETRY_EDIT)
   let changedFiles: string[] = []
-  let touchesLock = false
   if (body !== null) {
-    const needLock = sections.some((s) => 'builtin' in s && s.builtin === 'lockAck')
-    const ctx = fetchPrForgeContext(prRef, needLock)
+    const ctx = fetchPrForgeContext(prRef)
     changedFiles = ctx.changedFiles
-    touchesLock = ctx.touchesLock
   }
 
   const errors = validateForgeWrite({
@@ -250,7 +203,6 @@ export function prEditCommand(args: string[]): void {
     title,
     sections: body === null ? [] : sections,
     changedFiles,
-    touchesLock,
     retryCommand: RETRY_EDIT
   })
   if (errors.length > 0) refuse(errors)

@@ -2,7 +2,7 @@
 
 /**
  * open-pr — the ONLY sanctioned way to open or body-edit a PR in this repo
- * (D-078). The `check-forge-gates.sh` PreToolUse hook denies raw
+ *. The `check-forge-gates.sh` PreToolUse hook denies raw
  * `gh pr create` / `gh pr edit --body*`, directing every agent here. This
  * wrapper runs the full deterministic contract gate LOCALLY, before anything
  * reaches the forge — prevention, not detection. A malformed PR body is
@@ -24,12 +24,10 @@
  * fallback to the local branch.
  *
  * Gates (all must pass, in order):
- *   0. decision-numbers — every `## D-NNN` this branch adds must exceed the
- *                       highest number already on `origin/main` in that log.
  *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
  *                       iteration's topology file when another OPEN PR's
  *                       diff already touches that SAME iteration's topology
- *                       file (D-069 task 19 / #336). Ordinary task-branch
+ * file (task 19 / #336). Ordinary task-branch
  *                       PRs touch no topology file, so this passes trivially.
  *   1. verify-brief   — brief-section grammar vs the current branch (task
  *                       branches: full contract; plan branches: no-Closes
@@ -37,7 +35,7 @@
  *   2. verify-docs    — tier-appropriate documentation gate (--pr mode).
  *   3. closes-n       — task branches only: the branch must resolve to a real
  *                       topology row and the body's Closes #N must name that
- *                       row's Issue (D-073/D-069).
+ * row's Issue.
  *   4. verify-task    — task branches only (aeg-governance-hardening task 25,
  *                       #365): the Developer's full exit composite
  *                       (typecheck/lint/test/build/verify-docs --pr/premise
@@ -229,38 +227,6 @@ function extractTitle(args: string[]): string | null {
   return null
 }
 
-/**
- * D-number staleness gate (D-078): every `## D-NNN` heading this branch ADDS
- * to a decision log must be strictly greater than the highest number already
- * on origin/main in that log. Catches the parallel-dispatch collision class
- * live twice tonight (two PRs both claiming D-075; a brief pre-writing D-074
- * after it was taken) — locally, before the PR exists, instead of at CI's N1.
- */
-function checkDecisionNumbersFresh(): void {
-  const changed = execSync('git diff --name-only origin/main...HEAD', { encoding: 'utf8' })
-    .split('\n')
-    .map((f) => f.trim())
-    .filter((f) => /(^|\/)decisions\.md$|-decisions\.md$/.test(f))
-  for (const file of changed) {
-    let baseline = ''
-    try {
-      baseline = execSync(`git show origin/main:${file}`, { encoding: 'utf8' })
-    } catch {
-      // new file on this branch — no baseline, nothing to collide with
-    }
-    const maxBase = Math.max(0, ...[...baseline.matchAll(/^## D-(\d+)/gm)].map((m) => Number(m[1])))
-    const diff = execSync(`git diff origin/main...HEAD -- ${file}`, { encoding: 'utf8' })
-    const added = [...diff.matchAll(/^\+## D-(\d+)/gm)].map((m) => Number(m[1]))
-    for (const n of added) {
-      if (n <= maxBase) {
-        fail(
-          `decision-number gate: this branch adds D-${String(n).padStart(3, '0')} to ${file}, but origin/main already has entries up to D-${String(maxBase).padStart(3, '0')} — the number is stale or colliding. Fetch origin/main, renumber to the next free D-number, and retry (D-078).`
-        )
-      }
-    }
-  }
-}
-
 export function main(): void {
   const argv = process.argv.slice(2)
   const validateOnly = argv.includes('--validate-only')
@@ -303,7 +269,6 @@ export function main(): void {
   }
 
   console.log(`[open-pr] validating against branch \`${branch}\`…`)
-  checkDecisionNumbersFresh()
   checkSinglePlanPrGate(editPrNumber)
   if (body !== null) {
     for (const step of gatePlanForBranch(branch)) {

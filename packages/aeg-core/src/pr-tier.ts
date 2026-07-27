@@ -8,18 +8,19 @@
 
 import { hasLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion } from './anchored-region'
-import { isDecisionLog, isDocFile, isSpecFile } from './file-classify'
+import { isDocFile, isSpecFile } from './file-classify'
 
 /**
  * Derive a tier from the changed-file list when no `Tier:` field is in the PR body.
  *
  * Rules (in priority order):
- *   1. Decision log in diff       → Tier 3  (caller must still emit C0 — explicit declaration required)
- *   2. Spec or doc file in diff   → Tier 1
- *   3. Otherwise (code/config…)   → Tier 0
+ *   1. Spec or doc file in diff   → Tier 1
+ *   2. Otherwise (code/config…)   → Tier 0
+ *
+ * A frozen archive carries no tier signal: nothing reads it, so touching one
+ * says nothing about a change's impact.
  */
-export function deriveTierFromDiff(changed: string[]): 0 | 1 | 3 {
-  if (changed.some(isDecisionLog)) return 3
+export function deriveTierFromDiff(changed: string[]): 0 | 1 {
   if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1
   return 0
 }

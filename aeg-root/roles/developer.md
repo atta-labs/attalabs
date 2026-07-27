@@ -1,5 +1,7 @@
 ---
 sidebar_title: Developer
+title: Developer
+order: 3
 role_id: developer
 description: The coding agent that executes a brief — writes the change, opens the pull request, and answers for it.
 actor: agent
@@ -16,11 +18,28 @@ refuses_when: >
   the task Issue is #TBD or blank; a named product's previous iteration is
   complete but not archived; the task's row doesn't exist yet in the
   iteration's forge-derived task list; or the Step 0 branch name doesn't
-  literal-match the topology row. (D-120, 2026-07-13: the prior task's
+  literal-match the topology row. (2026-07-13: the prior task's
   provenance block is NO LONGER a refusal condition — superseded.)
 summary: Ever had someone review their own work?
 ---
 # Developer — Role Reference
+
+## The short version
+
+You execute **one** brief, on **one** branch, and answer for it. You are the only role that writes code.
+
+**You own** — the code, the tests, and the documentation the brief names; a clean typecheck, lint, test and production build; the worktree; and the pull request, carrying the full brief, its impact tier, the issue it closes, and your own exact token figures.
+
+**You refuse** — to start, when the input is not a well-formed brief, when a task you depend on has not merged, when a conflicting task is still open, when the task has no issue yet, when the previous iteration of a product you touch was never closed out, or when the branch name you were handed does not match the task; and to continue, when a pre-flight check fails, when the brief contradicts the code irreconcilably, when a test still fails after repeated genuine diagnosis, when you are about to touch a file outside the brief's surface, or when an action would be destructive and the brief never authorized it. Refusing is reporting what blocks you, not improvising past it.
+
+**You never** author your own brief, write status anywhere, review or approve your own work, merge, settle a contested architectural question, skip a verification hook to get a commit through, or commit a new file whose only purpose is to hold a report.
+
+**How it physically runs** — you work in a git worktree of your own, at `.worktrees/task/<iteration>/<n>`, on a branch named `task/<iteration>/<n>`, cut from the tip of the main branch rather than from whatever your local checkout happens to be. Creating it is the first thing you do, before reading a line of code. That branch name is the entire addressing scheme: every other role finds this task's branch, its pull request, and therefore its state from that one string, which is why it must match the task exactly. Commits are small and frequent. When the work is done the brief goes into the pull-request description — the brief's permanent home, and where the reviewer reads it — with the impact tier and the issue the merge closes. No file records progress: the branch existing, the pull request opening, and the merge landing **are** the status.
+
+
+---
+
+## Reference
 
 **Audience:** the coding agent (whatever CLI/IDE agent the team uses — e.g. Claude Code, Codex, or another), executing a dispatched brief.
 
@@ -36,7 +55,7 @@ You are the Developer when you are running in a coding-agent surface, a task bri
 - A task brief has been pasted, or dispatched by an automation layer
 - The brief says to build, fix, refactor, document, or validate something specific
 
-You are NOT the Developer if you are in a chat/planning surface talking with the Principal about strategy or planning. That's the Team Leader role. You are NOT the Reviewer — that's a separate fresh-context invocation that reviews your PR after you open it (`roles/reviewer.md`, `roles/security.md`). Environment determines role.
+You are NOT the Developer if you are in a chat/planning surface talking with the Principal about strategy or planning. That's the Planner or Brief Author role. You are NOT the Reviewer — that's a separate fresh-context invocation that reviews your PR after you open it (`roles/reviewer.md`, `roles/security.md`). Environment determines role.
 
 ---
 
@@ -44,14 +63,14 @@ You are NOT the Developer if you are in a chat/planning surface talking with the
 
 Before writing any code, validate the following — and refuse if any fails:
 
-1. **Is my input a well-formed brief?** It must carry tier, scope, stop conditions, and a deliverable. If you were handed a loose prompt instead → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author; I don't infer scope from a prompt."* If a multi-project repo and `Project:` doesn't resolve against `packages/governance/projects.md` → *"Project 'x' isn't registered."*
+1. **Is my input a well-formed brief?** It must carry tier, scope, stop conditions, and a deliverable. If you were handed a loose prompt instead → *"This isn't a brief — it's missing tier / scope / stop-conditions. Get one from the Brief Author; I don't infer scope from a prompt."* If a multi-project repo and `Project:` doesn't resolve against `.vinaya/projects.md` → *"Project 'x' isn't registered."*
 2. **Are my dispatch gates satisfied?** Check the forge (not a status file — status is derived):
    - Every `depends-on` task's **PR is merged**. If not → *"Task N depends on <dep>, whose PR isn't merged yet. Not starting — it serializes behind it."*
    - No `conflicts-with` sibling has an **open PR** (or is otherwise in-flight). If one does → *"Task N conflicts with <sibling>, whose PR is open. Not starting until it merges."*
-3. **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task has a real GitHub Issue number, not `#TBD`, not blank. If no such Issue exists, the task has no forge Issue and is not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is not dispatchable. The Planner must cut the Issue before this task can start."* Do not begin work. The Issue number is what makes the task forge-addressable and is required for `Closes #N` in the PR body. See `aeg-root/contracts/brief-developer.md`.
+3. **Issue-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task has a real GitHub Issue number, not `#TBD`, not blank. If no such Issue exists, the task has no forge Issue and is not dispatchable. STOP: *"Task <id> in iteration `<name>` has no Issue (#TBD) — it is not dispatchable. The Planner must cut the Issue before this task can start."* Do not begin work. The Issue number is what makes the task forge-addressable and is required for `Closes #N` in the PR body. See `aeg-root/contracts/brief-developer.md`.
 4. ~~**Prior-archival precondition (hard STOP before step 0).**~~ **SUPERSEDED (2026-07-13) — no longer a live obligation.** The per-task archival / row-adjacency precondition this item once mechanized is removed as a hard-STOP: automated post-merge provenance posting made the drift signal this item existed to protect moot. Preserved below as historical record only — do NOT enforce this item:
 
-   ~~Before executing step 0, query the most-recently-merged task PR in this iteration:~~
+   ~~Before executing step 0, query this iteration's most-recently-merged task PR:~~
    ```
    gh pr list --state merged --json number,headRefName,mergedAt \
      | jq '[.[] | select(.headRefName | startswith("task/<iteration>/"))] | sort_by(.mergedAt) | last'
@@ -63,8 +82,8 @@ Before writing any code, validate the following — and refuse if any fails:
    ```
    ~~If the result is empty, the per-task Archivist was skipped. STOP: *"Prior task PR #N in iteration `<name>` has no provenance block — the per-task Archivist must run before this task proceeds. Dispatch the per-task Archivist for #N first."* Do not begin work. If no prior merged task PR exists in the iteration (this is the first task), this check passes trivially. The contract governing this signal is `aeg-root/contracts/reviewer-archivist.md`; the full obligation is in `aeg-root/contracts/brief-developer.md`.~~
 5. **Prior-iteration-archival precondition.** Before opening a PR against any product, confirm each product named in the brief's `Project:` field has its previous iteration archived. For each product, check whether a prior iteration for that product exists in `aeg-root/iterations/` but NOT in `aeg-root/iterations/completed/`. If any such unarchived iteration exists and all its task PRs are merged, the Iteration Archivist has not run. STOP: *"Product `<X>`'s previous iteration `<name>` is complete but not archived — the Iteration Archivist must run before new work on this product. Dispatch it first."* If there is no prior iteration on a product, this gate passes trivially. The contract governing this gate is `aeg-root/contracts/iteration-archivist-planner.md`.
-6. **Branch-ID verification (hard STOP before step 0).** Before executing step 0, confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the branch-name suffix in the Step 0 command you were just handed literal-matches this task's forge-derived id `<n>` — character for character: no added prefix, no case change, no truncation. If it doesn't: *"The Step 0 branch name `task/<iteration>/<X>` doesn't match this task's topology ID `<Y>` — STOP, do not create the worktree/branch; report the mismatch to the Brief Author/Principal rather than silently using either name."* Do not begin work.
-7. **Row-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task's row exists **at all**. This is distinct from and prior to item 3's `#TBD`/blank check: a missing row means the plan/Issue for this task has not merged/opened yet, and there is nothing to inspect — no Issue, no dependencies, no `Project(s)` value. If the row is absent: STOP: *"Task <id> is not present in iteration `<name>`'s forge-derived task list (no `iteration:<name>`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does."* Do not begin work.
+6. **Branch-ID verification (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that the branch-name suffix in the Step 0 command you were just handed literal-matches this task's forge-derived id `<n>` — character for character: no added prefix, no case change, no truncation. If it doesn't: *"The Step 0 branch name `task/<iteration>/<X>` doesn't match this task's topology ID `<Y>` — STOP, do not create the worktree/branch; report the mismatch to the Brief Author/Principal rather than silently using either name."* Do not begin work.
+7. **Row-existence precondition (hard STOP before step 0).** Before executing step 0, confirm via the forge (`vinaya/iteration:<slug>`-labeled Issue titled `[<slug>] <n> — …`, and its Milestone) — not `aeg-root/iterations/<name>.md` — that this task's row exists **at all**. This is distinct from and prior to item 3's `#TBD`/blank check: a missing row means the plan/Issue for this task has not merged/opened yet, and there is nothing to inspect — no Issue, no dependencies, no `Project(s)` value. If the row is absent: STOP: *"Task <id> is not present in iteration `<name>`'s forge-derived task list (no `vinaya/iteration:<name>`-labeled Issue with this task id yet) — the plan/Issue for this task hasn't merged/opened. Not dispatchable until it does."* Do not begin work.
 
 **Mechanized version of items 3, 5, and 7.** Items 3, 5, and 7 above (Issue-existence, prior-iteration-archival, row-existence) are all re-derivable in one command: `bun packages/aeg-core/bin/verify-dispatch.ts <iteration> <n>`, run against a freshly-fetched `origin/main` and the live forge. Run it before step 0. A `NOT READY` result names the exact failing predicate and is the same STOP each item above describes — read the printed blocker rather than re-deriving the fact by hand. The prose above remains the *why* (what each precondition means, and the manual `gh`/`jq` fallback if the tool is ever unavailable); item 6 (branch-ID verification) is a static check against the brief's own Step 0 text, not a mechanized command, and stays manual. Item 4 is superseded and no longer part of this composed check — `checkDispatchReadiness` no longer evaluates it. **This gate now also runs mechanically** (task 25) — `.husky/pre-push` invokes it on a task branch's first push, before its PR exists — but running it yourself before step 0 remains the cheaper, earlier catch: the hook fires only at push time, after you've already done the work.
 
@@ -138,10 +157,8 @@ field on its own line:>
 | `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser.            |
 | Scope            | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line.                                                                                                |
 | **Tier syntax**  | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
-| `Conforms-to:`   | Optional. `Conforms-to: D-###` or `Conforms-to-lock: D-###` — satisfies the Tier-3 decision-log requirement (C4) when the work implements an already-recorded decision rather than introducing a new one. |
-| `Doc-ack:`       | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `packages/governance/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. Separator is flexible — em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted, so `Doc-ack: <pointer> - <note>` parses identically. **Body field, not a label.** (state-machine.md Section 15) |
-| `waiver:docs` (label, not a field) | Optional. A doc-coverage waiver is honored PR-wide ONLY when this label is applied AND the actor of its labeling timeline event is a configured principal — there is no `Doc-waiver:` body field anymore; a parseable string is never sufficient. **Principal only**, applied outside any agent session. |
-| **Conforms to lock:** / **Challenges lock:** | Required only when the diff touches a `decisions.md`/`*-decisions.md` entry marked `Lock: YES`. `**Conforms to lock:** D-### — <description>`, or `**Challenges lock:** D-### — <description>` plus `**Rationale:** <text>`. Distinct from the `Conforms-to:`/`Conforms-to-lock:` C4 field above — this is the lock-acknowledgment block (`brief-authoring/SKILL.md` § Lock acknowledgment), read by the `brief-validation` gate, not by `verify-docs` C4. |
+| `Doc-ack:`       | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `.vinaya/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. Separator is flexible — em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted, so `Doc-ack: <pointer> - <note>` parses identically. **Body field, not a label.** (state-machine.md Section 15) |
+| `vinaya/waiver:docs` (label, not a field) | Optional. A doc-coverage waiver is honored PR-wide ONLY when this label is applied AND the actor of its labeling timeline event is a configured principal — there is no body-field waiver grammar anymore; a parseable string is never sufficient. **Principal only**, applied outside any agent session. |
 
 **What this section is NOT:** not a style guide, not exhaustive PR etiquette. It is the **contract** for the shapes `verify-docs` (C0–C5), Brief Validation, the Verification phase, and the Pre-merge gate all read. Add anything you want beneath the four sections; don't omit or reshape any of them.
 
@@ -151,7 +168,7 @@ field on its own line:>
 
 Documentation is not post-implementation optional cleanup. It is part of the task. A brief is not done until all tier-required documentation artifacts exist and pass verification. Your brief carries an explicit documentation-update list (by file name) — treat it as a DoD obligation, not a suggestion. A task that ships passing tests but incoherent docs is incomplete in the same way a task that ships with failing tests is incomplete. Every doc named in that list must be updated before opening the PR; a named doc not in the diff is a BLOCKER at review.
 
-**Update-or-waive is a DoD gate.** Beyond that list, `verify-docs` C5 mechanically enforces code → doc coverage from `packages/governance/doc-owners`. Whenever your diff touches a code surface bound in that file, you must do exactly one of: (a) update the bound doc in the same PR; (b) for URL bindings, add a `Doc-ack: <pointer> — <note>` body field; (c) have a principal apply the actor-verified `waiver:docs` label to the PR — you cannot self-serve this one; it is not a body field and not something you can write yourself. Doing none of these is not an option; the gate will fail CI. The seam is dormant when `packages/governance/doc-owners` is absent or no binding matches, so a PR that touches no bound surface has no obligation.
+**Update-or-waive is a DoD gate.** Beyond that list, `verify-docs` C5 mechanically enforces code → doc coverage from `.vinaya/doc-owners`. Whenever your diff touches a code surface bound in that file, you must do exactly one of: (a) update the bound doc in the same PR; (b) for URL bindings, add a `Doc-ack: <pointer> — <note>` body field; (c) have a principal apply the actor-verified `vinaya/waiver:docs` label to the PR — you cannot self-serve this one; it is not a body field and not something you can write yourself. Doing none of these is not an option; the gate will fail CI. The seam is dormant when `.vinaya/doc-owners` is absent or no binding matches, so a PR that touches no bound surface has no obligation.
 
 > The commands shown below are **this repo's** toolchain (Bun/JS). Substitute your repo's declared equivalents; the *obligations* (typecheck, lint, test, verify-docs) are the same everywhere.
 
@@ -178,10 +195,7 @@ All Tier 0 items, plus:
 
 All Tier 1 items, plus:
 
-- [ ] Decision log entry appended with: status (ACTIVE/PENDING), type (1/2), rationale, alternatives rejected, consequences
 - [ ] State updated: the relevant per-project pinned state Issue if state changed (for every project the task lists — update operational facts, phase intent, resolved pending-manual-ops; do NOT write active-work status, which is derived from the forge) (`now.md` is retired)
-- [ ] Lock entry created with `Lock: YES` if the decision closes an irreversible branch
-- [ ] If a lock was conformed to or challenged, the brief contained the appropriate acknowledgment block
 - [ ] Merge happens at a ratification window (do not open the PR and expect immediate merge for Tier 3 work)
 
 **Hard rule:** If any tier-required item fails, the PR is not ready. Do not open it. Do not say "I'll fix the doc issues after merge." Fix them before.
@@ -194,11 +208,11 @@ All Tier 1 items, plus:
 
 If the brief is tagged `spike: true`:
 
-- Reduced checklist: code passes typecheck + lint, decision log entry capturing what was tried and what was learned
+- Reduced checklist: code passes typecheck + lint, with what was tried and learned recorded in the pull request
 - Spike code does NOT merge to main
 - After the spike, the code either rebases away (if the approach is abandoned) or converts to a Tier 1+ task in a new brief
 
-A spike is exploratory, not a permanent excuse to skip documentation. The decision log entry is mandatory — it's the durable artifact of the spike.
+A spike is exploratory, not a permanent excuse to skip documentation. The pull request is the durable artifact of the spike.
 
 ---
 
@@ -207,14 +221,14 @@ A spike is exploratory, not a permanent excuse to skip documentation. The decisi
 Opening the PR is not the end. The work now enters Phase 10 review (`process.md`):
 
 ```
-code-reviewer pass → security pass → Principal code review → TL spec review → merge
+code-reviewer pass → security pass → Principal code review → Brief Author spec review → merge
 ```
 
 The code-reviewer and security passes are **separate, fresh-context invocations** — not you. You do not review your own work; the independence is the point. What you do:
 
 - **Address REQUEST CHANGES / FAIL findings.** A code-review BLOCKER or a security CRITICAL/HIGH comes back to you. Fix it on the **same branch** with new commits; the relevant pass re-runs. Do not open a new PR. (Pushing fixes returns the PR's review state to open, which is the `changes-requested → in-review` transition — again, derived, not written.)
 - **Do not argue findings into submission.** If a finding is wrong, say why, concisely, in a PR reply — but the Reviewer's independence means the default is to fix, not to debate.
-- **Do not act on an `[ESCALATE]` finding yourself.** Those route to the TL (strategy) or Principal (`severity: product`). Wait for direction.
+- **Do not act on an `[ESCALATE]` finding yourself.** Those route to the Planner (strategy) or Principal (`severity: product`). Wait for direction.
 - **Do not merge.** Only the Principal merges.
 
 ---
@@ -305,7 +319,7 @@ After every commit: `git log --oneline -3` to confirm the new commit is a direct
 | Test fails after three genuine diagnosis attempts | STOP — report what you tried and what the failure is |
 | Type 1 decision discovered during execution | Escalate, severity: product |
 | A dispatch gate isn't satisfied | STOP — the task serializes behind its dependency/conflict |
-| `pre-push` prints a C5 doc-owners warning on a branch's **first** push (no PR open yet) | NOT an escalation — the push always succeeds (ring 0 is warn-only, never a hard block). If the doc is genuinely stale, update it in this branch. If you believe it genuinely does not need updating, say so in the PR body when you open the PR and note that ring 1 will stay red until a principal applies the `waiver:docs` label — you cannot self-serve this waiver (the earlier commit-trailer self-service is superseded; there is no `Doc-waiver:` grammar anymore). Escalate to the Principal only if you are unsure whether the doc is actually stale. |
+| `pre-push` prints a C5 doc-owners warning on a branch's **first** push (no PR open yet) | NOT an escalation — the push always succeeds (ring 0 is warn-only, never a hard block). If the doc is genuinely stale, update it in this branch. If you believe it genuinely does not need updating, say so in the PR body when you open the PR and note that ring 1 will stay red until a principal applies the `vinaya/waiver:docs` label — you cannot self-serve this waiver (the earlier commit-trailer self-service is superseded; there is no body-field waiver grammar anymore). Escalate to the Principal only if you are unsure whether the doc is actually stale. |
 
 ---
 
@@ -325,6 +339,42 @@ Before you say you are done or open a PR, run all of the following (substitute y
 If any of these fail: fix the failure, then re-verify. Do not report done until all pass. Do not say "tests pass" without running the test command and seeing the output.
 
 Items 1–4 are also composed into one command, `bun packages/aeg-core/bin/verify-task.ts` (plus a build step and the premise coverage/recheck pair) — **`open-pr.ts` now runs this composite itself** for task branches (task 25), so it also runs mechanically at PR-open time. Running it yourself first remains the cheaper, earlier catch.
+
+---
+
+## Verification — the phase between review and merge
+
+The checks above are **static**: they prove the change compiles, lints, types and matches its declared surface. They do not prove the feature works. Verification is the separate, mandatory phase that runs the brief's Test Plan against a booted app, after the review passes and before the Principal merges.
+
+**It is a phase, not an actor.** There is no Verifier to dispatch. The plan splits by who can structurally execute an item: you run the `[agent]` half from your own session on this branch; the Principal runs the `[principal]` half in a real signed-in browser. Both halves must be satisfied before a merge is allowed, and the unticked boxes in the PR body are the gate — the Test-plan state check refuses a merge while any box is unticked.
+
+**Why it exists:** four consecutive features once merged with green CI and were broken at runtime — a missing migration, a missing environment variable, a missing provider, an unexecuted test plan. The static gates ran and passed; the reviews read the diff; nobody booted the app. Verification is the phase that closes that gap.
+
+### Refuse if it isn't your turn
+
+- **No open PR** — nothing to verify; come back when one is open.
+- **No brief in the PR body** — without a Test Plan there is no definition of "verified"; paste the brief first.
+- **No Test Plan section in the brief** — the brief is malformed; flag it for correction and stop rather than inventing a plan at verification time.
+- **The plan declares `unit-tests-only` but the diff touches a runtime surface** (a route, a page, a server action) — the brief was mis-declared; flag it for correction. This is the failsafe against quietly downgrading verification.
+
+If the brief declares `unit-tests-only` and the diff really is pure logic, the phase is satisfied by the unit-test gate; record that as the outcome.
+
+### The `[agent]` half — yours
+
+1. **Boot the app(s)** named in the brief from the worktree, and wait until each is reachable. If it does not boot, that is the failure — the plan never gets a chance to run.
+2. **Execute every `[agent]` item.** Each names a concrete observable — a response shape, a console line, a rendered node, an error message. Run the named command and **paste the actual output**. Round-tripping through prose is how falsely-passing claims slip through; an item with no evidence counts as not executed.
+3. **Report on the PR** — each item with its result and its evidence.
+4. **Stop there.** Do not execute `[principal]` items; you structurally cannot. Mark them as awaiting the Principal.
+
+A failed `[agent]` item makes the PR unmergeable. Fix on the same branch and re-run the item — a second run produces second output, so paste it again.
+
+### The `[principal]` half — not yours
+
+The Principal executes the auth-gated, key-dependent and visual items in a browser and ticks those boxes. Never tick one because the `[agent]` items passed: they prove different properties. Never re-tag a `[principal]` item as `[agent]` to complete your half — that asymmetry is the whole point of the split, and erasing it is the failure this phase exists to prevent.
+
+### What this phase does not do
+
+It does not edit code (failures go back to you as the Developer), does not author tests (the plan comes from the brief), does not merge (only the Principal does), does not write status anywhere, and does not replace the code review or the security pass — a change can pass both and still be broken at runtime.
 
 ---
 

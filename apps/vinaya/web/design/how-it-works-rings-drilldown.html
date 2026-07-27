@@ -247,7 +247,7 @@
     children:[
       leaf('brief','the brief','the unit of context', [
         row('Defines','Every section an agent needs to execute — tier, scope, stop-conditions, test plan. If it isn’t in the brief, it doesn’t exist.'),
-        trow('Produced by','Team Leader','agent'),
+        trow('Produced by','Brief Author','agent'),
         row('Consumed by','Developer, Reviewer, Archivist — pasted into the PR body, its one permanent home, never committed as a file.')
       ]),
       leaf('brief-in-pr','brief-in-PR-body','where the brief actually lives', [
@@ -272,7 +272,7 @@
       ]),
       leaf('issue-template','issue template','the only fields an Issue is allowed', [
         row('Defines','Deps / conflicts / project label / ticket link only — CI rejects any other planning field written onto it.'),
-        trow('Produced by','Team Leader, opening the Issue','agent'),
+        trow('Produced by','Brief Author, opening the Issue','agent'),
         row('Consumed by','Every role that self-locates against forge state.')
       ])
     ]
@@ -287,7 +287,7 @@
         row('Touches','Ring 1 — the merge decision · Ring 2 — Tier 3 ratification'),
         row('Refuses when','— final authority; nothing sits above it to refuse to.')
       ], 'human'),
-      leaf('team-leader','Team Leader','plans, then writes the brief', [
+      leaf('brief-author','Brief Author','plans, then writes the brief', [
         row('Does','Turns intent into an iteration (Planner mode); writes the brief a Developer executes against (Brief Author mode).'),
         row('Touches','Before Ring 0 — the brief exists before any commit does.'),
         row('Refuses when','Asked to write code instead of a brief, or to implement directly.')

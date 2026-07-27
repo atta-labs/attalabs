@@ -35,7 +35,7 @@ Agent display metadata (`VadaAgentVisual` type + per-agent configs) lives in `we
 | Product spec | [specs/vada-product-spec.md](specs/vada-product-spec.md) | Full product truth — positioning, features, launch requirements |
 | Product recognitions | [specs/vada-product-recognitions.md](specs/vada-product-recognitions.md) | Foundational recognitions about what Vāda is (YAML-driven runtime, not closed app) |
 | Current state | [specs/vada-state.md](specs/vada-state.md) | Current phase, completed milestones, next work |
-| Decisions log | [specs/vada-decisions.md](specs/vada-decisions.md) | Append-only log of architectural decisions and rationale |
+| Decisions log | [docs/vada-decisions-legacy.md](docs/vada-decisions-legacy.md) | Frozen archive of architectural decisions and rationale |
 | YAML immutability | [specs/vada-yaml-immutability-principle.md](specs/vada-yaml-immutability-principle.md) | Foundational principle: YAML files are immutable once benchmarked |
 | Science of deliberation | [specs/vada-science-of-deliberation.md](specs/vada-science-of-deliberation.md) | Foundational deliberation theory |
 | BYOK principles | [specs/vada-byok-principles.md](specs/vada-byok-principles.md) | BYOK architecture principles |

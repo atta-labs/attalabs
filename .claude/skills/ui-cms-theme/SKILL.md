@@ -370,7 +370,7 @@ bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 
 ### What You Configure Where
 
-Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25, `Lock: YES`), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vinaya, Herald, Attā).
+Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vinaya, Herald, Attā).
 
 | Document Type | Where it's edited | Purpose |
 |--------------|--------------------|---------|

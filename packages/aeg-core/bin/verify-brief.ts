@@ -2,18 +2,15 @@
 
 /**
  * verify-brief — real, CI-enforced check that a PR-body brief carries every
- * required section (D-069, aeg-governance-hardening task 2). Replaces the
+ * required section (aeg-governance-hardening task 2). Replaces the
  * `brief-validation` stub in `.github/workflows/archivist.yml`.
  *
  * Thin CLI/Action shim: reads `PR_BODY` from env, derives whether the diff
- * touches a `Lock: YES` decision, and calls the pure `checkBriefSections`
  * homed in `@atta/aeg-core`. The grammar itself — including exact wording —
  * lives in `src/brief-validation.ts`, not here. Follows `bin/verify-docs.ts`'s
  * exact shape (chdir to repo root; read env; call pure function; print
  * failures; exit).
  *
- * Lock-touch derivation: scans `git diff <base>...HEAD` for changed decision-log
- * files (`isDecisionLog`) and checks whether the diff adds a `Lock: YES` line to
  * any of them. Chosen over a manual `TOUCHES_LOCK` env var because it can't be
  * forgotten by whoever wires the CI step — the signal is derived from the diff
  * itself, the same way `verify-docs.ts` derives tier from the diff when no
@@ -38,12 +35,11 @@
  * `git worktree add … -b <branch>` line, which is where a brief declares what it
  * is going to be.
  *
- * Plan-PR Closes guard (D-077): runs BEFORE the non-task-branch bypass above,
+ * Plan-PR Closes guard: runs BEFORE the non-task-branch bypass above,
  * since a `plan/*` branch is itself non-task and would otherwise never reach
  * a brief-shape check at all. See `checkPlanPrNoCloses` in `src/brief-validation.ts`.
  */
 
-import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
@@ -52,7 +48,6 @@ import {
   checkPlanPrNoCloses,
   inferBranchFromBody,
   isBriefShaped,
-  isDecisionLog,
   readTierFromPrBody
 } from '../src/index'
 
@@ -61,33 +56,6 @@ const REPO_ROOT = join(import.meta.dir, '../../..')
 // where the author ran the command, not to the repo root this script moves to.
 const INVOCATION_CWD = process.cwd()
 process.chdir(REPO_ROOT)
-
-function sh(cmd: string): string {
-  try {
-    return execSync(cmd, { encoding: 'utf8' }).trim()
-  } catch {
-    return ''
-  }
-}
-
-function changedFiles(base: string): string[] {
-  return sh(`git diff --name-only ${base}...HEAD`)
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-function diffAddsLockYes(base: string, file: string): boolean {
-  const diff = sh(`git diff ${base}...HEAD -- ${file}`)
-  return diff.split('\n').some((line) => line.startsWith('+') && !line.startsWith('+++') && /Lock:\s*YES/.test(line))
-}
-
-export function deriveTouchesLock(base: string): boolean {
-  let changed = changedFiles(base)
-  if (changed.length === 0) changed = changedFiles('main')
-  const decisionLogs = changed.filter(isDecisionLog)
-  return decisionLogs.some((f) => diffAddsLockYes(base, f))
-}
 
 const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
 
@@ -183,12 +151,8 @@ export function main(): void {
     process.exit(0)
   }
 
-  const base = process.env.BASE_SHA || 'origin/main'
-  const touchesLock = deriveTouchesLock(base)
+  const { errors } = checkBriefSections(prBody, readTierFromPrBody, { requireClosesN: isTaskBranch })
 
-  const { errors } = checkBriefSections(prBody, touchesLock, readTierFromPrBody, { requireClosesN: isTaskBranch })
-
-  if (touchesLock) console.log('[verify-brief] diff touches a Lock: YES decision — lock-ack is required.')
   if (!isTaskBranch) {
     console.log(
       `[verify-brief] brief-shaped body on a non-task branch (${branch || 'none'}) — validating sections; \`Closes #N\` not required.`

@@ -2,7 +2,7 @@ import type { DiagramNode } from '@atta/aeg-core'
 import { Badge } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowUpRight, Lock } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { badgeLabels, humanLabel, shortLabel } from '../_lib/display-label'
 import type { GroupKey } from '../_lib/groupings'
 
@@ -39,8 +39,8 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  *
  * The name is `shortLabel(humanLabel(...))`: `humanLabel` strips a `G1 —`..
  * "G5 —" prefix and stray backticks for display, `shortLabel` cuts a doctrine
- * `Action` cell down to its first clause — 29% carry a parenthetical or a
- * D-###/#NNN citation, and a name is not a citation. `node.label` keeps the
+ * `Action` cell down to its first clause — 29% carry a parenthetical or an
+ * Issue citation, and a name is not a citation. `node.label` keeps the
  * full string as the stable id everywhere else.
  *
  * The badge is one flat fill for every value, never keyed to WHICH category
@@ -110,9 +110,8 @@ export function LeafPanel({
 
       {node.renderState !== 'active' && (
         <div className='flex items-center gap-1.5 text-muted-foreground text-xs'>
-          {node.renderState === 'locked' && <Lock className='h-3 w-3' />}
           <Text as='span' className='font-mono uppercase tracking-[0.08em]'>
-            {node.renderState === 'locked' ? `locked${node.lock ? ` — ${node.lock}` : ''}` : 'disabled'}
+            disabled
           </Text>
         </div>
       )}

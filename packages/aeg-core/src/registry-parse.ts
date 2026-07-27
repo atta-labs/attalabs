@@ -1,21 +1,21 @@
 /**
  * registry-parse.ts — pure, no-I/O parser for `aeg-root/enforcement.md`'s
  * three ring markdown tables (Ring 0/1/2). enforcement.md's tables ARE the
- * gate registry (D-117/D-118: no live file duplicates forge state); this
+ * gate registry (no live file duplicates forge state); this
  * parses them rather than maintaining a second copy.
  *
  * The generic markdown-table extraction lives in `./markdown-table` — the one
- * aeg-core-owned parser every doctrine consumer shares (D-087). This module
+ * aeg-core-owned parser every doctrine consumer shares. This module
  * imports `findTable`/`findHeadingLine` from there rather than re-deriving
  * them; it adds only the enforcement-specific normalization on top (the
  * ring-heading list, `stripBackticks`, and the last-two-columns rule).
  *
  * Each ring's table has a different header wording (Ring 0: Action/Gate/...;
- * Ring 1: CI check/Re-verifies; Ring 2: Mechanism/Runs/Catches) but always
- * ends in the same two columns: implementation, then lock. The FIRST column
- * is always the row's identifying label. This parser normalizes on that
- * structural shape rather than header text — necessarily, since the rings
- * agree on almost no header wording.
+ * Ring 1: CI check/Re-verifies; Ring 2: Mechanism/Runs/Catches). The FIRST
+ * column is always the row's identifying label; `implementation` and
+ * `description` are resolved BY HEADER NAME, since those two are spelled
+ * identically in all three tables. Positional reads are used only where no
+ * shared header name exists.
  *
  * The one exception is `Description`, which IS looked up by header name: it is
  * the only column spelled identically in all three tables, and the only one a
@@ -37,7 +37,7 @@ export type GateRow = {
    * three ring tables and resolved by header name (see the lookup below).
    *
    * The counterpart to `spec`, and not interchangeable with it — `spec` is
-   * written to ENFORCE: 17 of the 31 real rows cite a `D-###`, a `#NNN`, a
+   * written to ENFORCE: 17 of the 31 real rows cite an Issue number, a
    * task number or a file path, and the longest runs 2708 chars. That is
    * correct for a gate and unreadable on a page. This column is the same fact
    * addressed to a person, and is what a row's `summary` question gets
@@ -57,7 +57,6 @@ export type GateRow = {
    * no such column. */
   spec?: string
   implementation: string
-  lock: string
   line: number
 }
 
@@ -91,8 +90,8 @@ function stripBold(cell: string): string {
 /**
  * Parses the three ring tables out of `enforcement.md`'s raw content into a
  * flat, normalized `GateRow[]`. Each row's `action` is its table's first
- * column; `implementation`/`lock` are always its last two columns,
- * regardless of the differing middle columns per ring.
+ * column; `implementation` is resolved by header name, falling back to the
+ * last column.
  */
 export function parseEnforcementRegistry(content: string): GateRow[] {
   const lines = content.split('\n')
@@ -116,18 +115,20 @@ export function parseEnforcementRegistry(content: string): GateRow[] {
     // another, and the parser cannot tell which. -1 here simply means the
     // table doesn't have one.
     const descriptionIndex = table.headers.findIndex((h) => h.trim().toLowerCase() === 'description')
+    const implementationIndex = table.headers.findIndex((h) => h.trim().toLowerCase() === 'implementation')
     for (const row of table.rows) {
       const cells = row.cells
       if (cells.length < 3) continue
       const action = stripBold(cells[0] ?? '')
       const summary = stripBackticks(cells[1] ?? '')
       const category = stripBackticks(cells[2] ?? '') as GateRow['category']
-      const implementation = stripBackticks(cells[cells.length - 2] ?? '')
-      const lock = (cells[cells.length - 1] ?? '').trim()
+      const implementation = stripBackticks(
+        (implementationIndex === -1 ? cells[cells.length - 1] : cells[implementationIndex]) ?? ''
+      )
       const description =
         descriptionIndex === -1 ? undefined : stripBackticks(cells[descriptionIndex] ?? '') || undefined
-      const spec = cells.length > 5 ? stripBackticks(cells[cells.length - 3] ?? '') : undefined
-      result.push({ ring, action, summary, category, description, spec, implementation, lock, line: row.line })
+      const spec = cells.length > 4 ? stripBackticks(cells[cells.length - 2] ?? '') : undefined
+      result.push({ ring, action, summary, category, description, spec, implementation, line: row.line })
     }
   }
 

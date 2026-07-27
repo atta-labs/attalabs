@@ -6,13 +6,13 @@
  * `README.md`, at any depth including `completed/**` when newly added) —
  * the residue class this task's Part B proved unnecessary
  * (`aeg-drift-prevention-v1.md` deleted, forge derivation covers it) — or
- * any newly-added `*.tokens.md` file, anywhere in the repo (D-071: tokens
+ * any newly-added `*.tokens.md` file, anywhere in the repo (tokens
  * live in the PR body, not a committed ledger). Pure predicate lives in
  * `isNewDiskStateFile` (`@atta/aeg-core`) — this is a thin CLI/I/O shim.
  *
  * Status-aware (`git diff --name-status`), not path-shape-only: editing an
  * EXISTING file under `aeg-root/iterations/completed/**` (the 15 legacy
- * archive files, D-117) stays legal — only genuinely NEW files there are
+ * archive files) stays legal — only genuinely NEW files there are
  * refused, closing the gap a path-shape-only exemption would leave open (a
  * brand-new file smuggled into `completed/` to dodge the top-level check).
  * A top-level active topology file (directly under `aeg-root/iterations/`,
@@ -87,7 +87,7 @@ if (import.meta.main) {
     console.error(
       `check-no-disk-state FAILED: ${offenders.length} file(s) create new on-disk state that must instead derive from the forge:\n` +
         offenders.map((f) => `  - ${f.path} (${f.status})`).join('\n') +
-        '\n\nSee packages/governance/decisions.md D-117 — no live file duplicates forge state.'
+        '\n\nNo live file duplicates forge state.'
     )
     process.exit(1)
   }

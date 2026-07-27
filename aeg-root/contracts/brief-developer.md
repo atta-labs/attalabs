@@ -1,14 +1,33 @@
 ---
-sidebar_title: Brief → Developer
+sidebar_title: Brief Author → Developer
+title: Brief Author → Developer
+order: 2
 contract_id: brief-developer
 description: Carries a brief to the agent that executes it, so nothing the author knew is left implicit.
 status: active
-producer: team-leader
+producer: brief-author
 consumer: developer
 carrier: pr-body
 summary: Ever handed someone a task and they missed something you thought was obvious?
 ---
 # Contract: Brief Author → Developer
+
+## The short version
+
+This seam sits between the brief and the agent that executes it. It exists to close the gap where an author assumes something is obvious and an executor never sees it stated.
+
+**What crosses** — one brief, complete. The exact command that creates the isolated working copy and branch, to be run before anything else. The impact tier, which decides how much documentation and record-keeping the work owes. The projects it touches. The context: what the task is not, and the traps already found. What must exist and be merged before it can start. The bounded file surface it may touch. Pinned assertions about the current code, so a brief written yesterday cannot be executed against a surface that has moved. The documents it must update. The checklist it satisfies before opening a pull request. A test plan, each item marked as one an agent can run or one only a person can. The conditions that stop it. The constraints it may not weigh against convenience.
+
+**The hand-off is malformed when** — any of those is missing. A brief without stop conditions is not a terse brief; it is one whose executor will invent them. A file surface described as "wherever else turns out to need it" is not bounded. A documentation list assembled from memory rather than reading is not a list. It is equally malformed to skim rather than read it, to treat a stop condition as advice, to execute past the file surface because nothing blocked it, or to paraphrase a verification result instead of pasting what the command printed.
+
+**What it does not carry** — status, which is derived from branches and pull requests and never written; the planner's durable reasoning, which crossed the previous seam and lives on the issue; and any authority to amend the brief. The brief is frozen at dispatch; a change to it is an escalation, not an edit.
+
+**How it physically runs** — the carrier is the pull-request body, which holds the brief verbatim. That is the brief's permanent home: the executing agent reads it there, the reviewer reads it there to judge intent against outcome, and the close-out reads it there as evidence. It is never committed into the repository and never stored in the issue, which holds task identity only — a brief kept anywhere durable goes stale before the work starts.
+
+
+---
+
+## Reference
 
 **Status:** active
 **Seam:** the hand-off from the Brief Author (producer) to the Developer (consumer).
@@ -37,8 +56,8 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | Brief Author emits | Developer consumes at | What the consumption means |
 |---|---|---|
 | **Worktree step 0** (verbatim `git worktree add` command) | First action before any other command | The Developer must execute this exact command first. No exceptions. Never assume the right branch exists. Before executing it, the Developer independently re-verifies the branch-name suffix literal-matches the topology's `#` column — the same check the Brief Author already ran before writing the command. |
-| **Tier:** field | PR-open checklist + `tier:*` label | The Developer sets the matching `tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
-| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `packages/governance/projects.md`. |
+| **Tier:** field | PR-open checklist + `vinaya/tier:*` label | The Developer sets the matching `vinaya/tier:*` label on the Issue at PR open. The field is binding; the label is the scannable projection. |
+| **Project:** field | PR description + `verify-docs` | The Developer confirms the project resolves against `.vinaya/projects.md`. |
 | **Context** including boundary + traps | Mental model before any code | The Developer reads the boundary ("what this task is NOT") to know what to refuse to build, and the traps to know what not to do. |
 | **Technical Dependencies** | Verify all depends-on are merged | The Developer confirms every named dependency is on `main` before starting. A depends-on not yet merged is a hard stop. |
 | **Technical Surface Map** | Bounds the diff | The Developer touches only files in the surface map. Files outside it are a stop-and-escalate. |
@@ -48,7 +67,6 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 | **Test Plan** tagged `[agent]` / `[principal]` | Runs `[agent]` items; leaves `[principal]` for Principal | The Developer runs every `[agent]` item and posts evidence. Does not tick `[principal]` boxes. |
 | **Stop conditions** | Halt triggers | The Developer stops and posts a blocker comment on the Issue when any condition is met. Never improvises past a stop condition. |
 | **Constraints** | Hard rules during execution | The Developer treats these as absolute — not "guidelines." A violated constraint is a PR that must not merge. |
-| **Lock acknowledgment** (when the brief touches a `decisions.md`/`*-decisions.md` entry marked `Lock: YES`) | PR body, as `**Conforms to lock:** D-### — <description>` or `**Challenges lock:** D-### — <description>` + `**Rationale:** <text>` | The Developer includes the acknowledgment block verbatim in the PR body. `brief-validation` (the Brief→Developer gate) fails the PR if the diff touches a locked decision and neither form is present, or if the challenge form lacks a `Rationale:` field. |
 
 **Reading the table:** left is the producer obligation (Brief Author enforces it by refusing to dispatch a malformed brief), right is the consumer obligation (Developer role doc and executor protocol enforce it). The two role docs must not contradict this table.
 
@@ -79,7 +97,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 
 **Scope of "prior task" — verify all three predicates for each:**
 - **Mid-iteration task:** every earlier task in the same iteration that this task depends on (direct `depends-on` edges).
-- **First task of an iteration:** the entire previous iteration of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, iteration file in `aeg-root/iterations/completed/`.
+- **First task of an vinaya/iteration:** the entire previous iteration of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, iteration file in `aeg-root/iterations/completed/`.
 - **ALL tasks:** every cross-iteration dependency declared in the topology (e.g. a vada task that depends on a herald task from another iteration) must also satisfy all three predicates.
 
 **Hard STOP language:** *"Prior task [Y] does not pass the coherence gate: Issue #N is [open/closed], PR #M is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out task [Y] before this task can proceed. Here is what is owed: [list]."*
@@ -113,7 +131,7 @@ The Brief Author's enforcement is at Dig stage, item (c) (see `aeg-root/skills/b
 
 A contract changes **as a unit**. You may not change what the Brief Author emits without, in the same change, updating what the Developer consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
 
-- A change to this file is a **Tier 3** change (it alters a cross-role contract) and requires a decision-log entry.
+- A change to this file is a **Tier 3** change: it alters a cross-role contract, so the reasoning belongs in the pull request that makes it, where the reviewer and the close-out both read it.
 - The same PR that edits this contract must verify both `aeg-root/skills/brief-authoring/SKILL.md` and `aeg-root/roles/developer.md` still point here and still match the table.
 - Never edit one side's role doc to add/drop a hand-off field directly. Add/drop it **here**; the role docs inherit it by reference.
 

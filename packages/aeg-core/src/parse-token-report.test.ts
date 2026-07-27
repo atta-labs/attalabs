@@ -9,7 +9,7 @@ const PR_454_BODY = `**Token report**
 |---|---|---|---|---|---|---|
 | 4: develop | Developer | claude-sonnet-5 (Claude Code) | — | — | — | 2026-07-07 |
 
-Exact token/cost figures are unavailable in this session (no \`/cost\`-equivalent tool call surfaced to this agent in this environment) — reported as \`—\` per D-071 rather than estimated.`
+Exact token/cost figures are unavailable in this session (no \`/cost\`-equivalent tool call surfaced to this agent in this environment) — reported as \`—\` rather than estimated.`
 
 // Real PR body text — the \`## Token report\` heading-level form.
 const PR_412_BODY = `## Token report
@@ -18,14 +18,14 @@ const PR_412_BODY = `## Token report
 |---|---|---|---|---|---|---|
 | 30: develop | Developer | Sonnet (Claude Code, dispatched) | — | — | — | 2026-07-05 |
 
-Tokens: exact figures unavailable in this dispatched session (no \`/cost\` access from the automation surface) — stated per D-071 rather than guessed.`
+Tokens: exact figures unavailable in this dispatched session (no \`/cost\` access from the automation surface) — stated rather than guessed.`
 
 // Real PR body text — the inline field-list drift (\`### Token report\`).
 const PR_374_BODY = `### Token report
 
 Phase: 23: develop | Role: Developer | Agent/Model: Sonnet 5 (Claude Code CLI) | Tokens in: — | Tokens out: — | Cost: — | Date: 2026-07-04
 
-Tokens unavailable — this execution environment does not expose a \`/cost\`-equivalent readout to this session (per D-071, stated rather than fabricated).`
+Tokens unavailable — this execution environment does not expose a \`/cost\`-equivalent readout to this session (stated rather than fabricated).`
 
 describe('parseTokenReportEntries: real PR body shapes', () => {
   it('parses the bold-inline `**Token report**` table form (PR #454)', () => {

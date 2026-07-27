@@ -298,7 +298,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
       </g>
 
       {/* Static hub — "main" is the literal git branch this whole mechanism
-          protects; framing only, not a DiagramNode (D-087: no fabricated node).
+          protects; framing only, not a DiagramNode (no fabricated node).
           Drilled radius is way bigger than the +16 it used to be — with
           DRILL_R_IN at 400, a 146px hub left a huge dead ring of empty space
           between it and the wedges; 380 actually uses that space. */}

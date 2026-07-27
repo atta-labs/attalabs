@@ -167,7 +167,7 @@ Specs live at the product level (`apps/vada-ai/specs/`), not the surface level.
 | Product spec | [../specs/vada-product-spec.md](../specs/vada-product-spec.md) | Full product truth |
 | Product recognitions | [../specs/vada-product-recognitions.md](../specs/vada-product-recognitions.md) | Foundational architecture insights |
 | Current state | [../specs/vada-state.md](../specs/vada-state.md) | Project status and milestones |
-| Decisions log | [../specs/vada-decisions.md](../specs/vada-decisions.md) | Architectural decision rationale |
+| Decisions log | [../docs/vada-decisions-legacy.md](../docs/vada-decisions-legacy.md) | Architectural decision rationale |
 | Science of deliberation | [../specs/vada-science-of-deliberation.md](../specs/vada-science-of-deliberation.md) | Deliberation theory |
 | Brokered deliberation | [../specs/brokered-deliberation/](../specs/brokered-deliberation/) | `vada__consult` MCP tool spec (00–06) |
 | Engine design decisions | [../specs/engine/design-decisions.md](../specs/engine/design-decisions.md) | Architectural decisions with rationale |

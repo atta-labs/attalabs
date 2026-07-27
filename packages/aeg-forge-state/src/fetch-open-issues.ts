@@ -2,9 +2,9 @@
  * Open-issues-by-iteration-label fetch — the single implementation of the
  * "which Issues are still open under `vinaya/iteration:<slug>`?" fact.
  *
- * One implementation per fact (D-081 discipline); do not re-implement.
+ * One implementation per fact (discipline); do not re-implement.
  *
- * Read-only, always (AEG D-029). No writes, no labels, no comments.
+ * Read-only, always. No writes, no labels, no comments.
  *
  * Lives in `@atta/aeg-forge-state`, not `@atta/aeg-core` (aeg-core-purity
  * fix, #521) — `@atta/aeg-core/src` is zero-I/O (#372, #382, #506) and this
@@ -27,7 +27,7 @@ type LabeledIssuesResponse = {
  * Fetch open issues (number + body + labels) for each active iteration slug
  * in one batched query. Returns a Map from slug → ForgeIssue[].
  *
- * Extended for R1 (D-078 rationale-completeness gate — aeg-governance-hardening
+ * Extended for R1 (the rationale-completeness gate — aeg-governance-hardening
  * task 1) to carry `body`/`labels` alongside `number`; T2 (orphan-task) only
  * needs the number, R1 needs the body to run `checkIssueRationale` against.
  * One batched query, no per-issue round-trips, for both checks.

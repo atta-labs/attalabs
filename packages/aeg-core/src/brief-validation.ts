@@ -1,13 +1,13 @@
 /**
- * Brief→Developer brief-validation grammar (D-069, aeg-governance-hardening
+ * Brief→Developer brief-validation grammar (aeg-governance-hardening
  * task 2). Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
- * (`bin/verify-brief.ts`) reads `PR_BODY` and derives `touchesLock`, then
+ * (`bin/verify-brief.ts`) reads `PR_BODY`, then
  * calls `checkBriefSections`.
  *
  * Scope is presence-only (per the Planner's trap): this gate cannot judge
  * whether a Test Plan item is truly scriptable, whether `unit-tests-only` is
  * justified by the surface map, or whether a doc-update entry is factually
- * correct — those remain Reviewer + Verifier judgment. It only confirms each
+ * correct — those remain Reviewer + Verification judgment. It only confirms each
  * required brief section exists in the PR body, in the shape the
  * `brief-authoring` skill and `brief-developer` contract define.
  */
@@ -20,7 +20,7 @@ export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 /**
  * The PR body's header block: everything before the first h2+ heading. The
  * canonical PR-body form (`roles/developer.md`) puts the metadata fields
- * (Tier, For, Project, Closes, lock-ack) at the top, before `## Summary`.
+ * (Tier, For, Project, Closes) at the top, before `## Summary`.
  * Anchoring field extraction here — shared with `archive-task.ts` — is what
  * stops prose in later sections that merely *mentions* a field name (e.g. a
  * "Decisions made" paragraph discussing the `Ticket:` field) from being
@@ -302,39 +302,7 @@ export function checkClosesN(prBody: string): BriefSectionResult {
 }
 
 /**
- * Lock-ack — pass trivially when the diff doesn't touch a `Lock: YES` decision.
- * Otherwise require `Conforms to lock: D-###` or `Challenges lock: D-###`; the
- * challenge form additionally requires a `**Rationale:**` field. This is the
- * format this task defines (none existed before) — see `brief-developer.md`.
- */
-export function checkLockAck(prBody: string, touchesLock: boolean): BriefSectionResult {
-  if (!touchesLock) return { status: 'pass', errors: [] }
-
-  const conforms = /\*{0,2}\s*Conforms to lock\s*:\*{0,2}\s*D-\d+/i.test(prBody)
-  if (conforms) return { status: 'pass', errors: [] }
-
-  const challenges = /\*{0,2}\s*Challenges lock\s*:\*{0,2}\s*D-\d+/i.test(prBody)
-  if (challenges) {
-    const hasRationale = /\*{0,2}\s*Rationale\s*:\*{0,2}/i.test(prBody)
-    if (hasRationale) return { status: 'pass', errors: [] }
-    return {
-      status: 'fail',
-      errors: [
-        'brief-validation lock-ack: `Challenges lock: D-###` found but no `**Rationale:**` field accompanies it.'
-      ]
-    }
-  }
-
-  return {
-    status: 'fail',
-    errors: [
-      'brief-validation lock-ack: this PR touches a `Lock: YES` decision but has no `Conforms to lock: D-###` or `Challenges lock: D-###` field.'
-    ]
-  }
-}
-
-/**
- * Forge-title grammar (D-078) — the two title forms this repo actually uses:
+ * Forge-title grammar — the two title forms this repo actually uses:
  *   1. Commit-style: `Type: description` or `Type(scope): description`, with
  *      the commitlint type set plus `Plan` (plan PRs).
  *   2. Task-style: `[iteration] id — description` (task Issues and task PRs).
@@ -355,7 +323,7 @@ export function checkForgeTitle(title: string): BriefSectionResult {
 }
 
 /**
- * Plan-PR Closes guard (D-077) — a `plan/*` PR body must never carry a
+ * Plan-PR Closes guard — a `plan/*` PR body must never carry a
  * `Closes #N` reference. Three confirmed live incidents (#294→#293,
  * #298→#297, #288→#287) show a plan PR's `Closes #N` prematurely closing
  * the task Issue when the *plan* merged — before the task itself ever ran.
@@ -373,7 +341,7 @@ export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectio
   return {
     status: 'fail',
     errors: [
-      'brief-validation plan-PR guard: a `plan/*` PR must not carry `Closes #N` — a plan PR creates Issues, it does not resolve one (roles/planner.md, D-077). Remove the `Closes #N` reference; the task Issue closes from the task PR that does the work.'
+      'brief-validation plan-PR guard: a `plan/*` PR must not carry `Closes #N` — a plan PR creates Issues, it does not resolve one (roles/planner.md). Remove the `Closes #N` reference; the task Issue closes from the task PR that does the work.'
     ]
   }
 }
@@ -445,7 +413,7 @@ export type BriefSectionsOptions = {
    * A task PR must close its Issue, so `verify-brief` leaves this on for
    * `task/<iter>/<n>`. A brief-shaped body on a non-task branch must not: a
    * standalone fix brief has no task Issue to close, and a `plan/*` PR is
-   * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` (D-077) — so
+   * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` — so
    * requiring it there would make the two gates jointly unsatisfiable. Issue
    * linkage is a task-branch obligation; brief completeness is not.
    */
@@ -459,7 +427,6 @@ export type BriefSectionsOptions = {
  */
 export function checkBriefSections(
   prBody: string,
-  touchesLock: boolean,
   readTier: (body: string) => 0 | 1 | 3 | null,
   options: BriefSectionsOptions = {}
 ): { errors: string[] } {
@@ -476,8 +443,7 @@ export function checkBriefSections(
     checkAutonomyClause(prBody),
     checkProjectField(prBody),
     checkForField(prBody),
-    ...(requireClosesN ? [checkClosesN(prBody)] : []),
-    checkLockAck(prBody, touchesLock)
+    ...(requireClosesN ? [checkClosesN(prBody)] : [])
   ]
   return { errors: results.flatMap((r) => r.errors) }
 }

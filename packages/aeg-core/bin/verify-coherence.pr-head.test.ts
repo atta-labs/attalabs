@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { loadIterationFiles } from './verify-coherence'
 
 /**
- * Part 4 (aeg-forge-state-v1 3b, #437): proves the D-082 plan-PR-scoping
+ * Part 4 (aeg-forge-state-v1 3b, #437): proves the plan-PR-scoping
  * path (a PR's own diff touches an iteration topology file) is UNCHANGED by
  * either the id/issue forge cutover or the dependsOn/conflictsWith merge —
  * it must keep reading the PR's own uncommitted content via
@@ -73,7 +73,7 @@ function buildSyntheticPrHeadCommit(slug: string, taskId: string, taskTitle: str
   return commitSha
 }
 
-describe('PR-head-SHA path (D-082 plan-PR scoping) — unchanged by the forge cutover', () => {
+describe('PR-head-SHA path (plan-PR scoping) — unchanged by the forge cutover', () => {
   it("reads a synthetic iteration file's task from the constructed commit, not the forge or origin/main", async () => {
     const slug = 'zzz-pr-head-fixture-test'
     const relPath = `aeg-root/iterations/${slug}.md`

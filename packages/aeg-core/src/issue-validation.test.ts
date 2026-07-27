@@ -115,7 +115,7 @@ describe('isTaskIssueLabelSet', () => {
 // ---------------------------------------------------------------------------
 
 /** The real collision-domain shape; the live list is read from `.aeg/packages` by `open-issue.ts`. */
-const SHARED = ['packages/ui', 'packages/aeg-core', 'packages/governance']
+const SHARED = ['packages/ui', 'packages/aeg-core', '.vinaya']
 
 /** Registry rows as `parseRegistry` returns them — `vinaya` is an app, `aeg-core` IS a shared package. */
 const REGISTRY = [
@@ -198,7 +198,7 @@ describe('checkBlastRadiusScope (A)', () => {
   })
 
   it('does not count a cited document as a touched domain', () => {
-    const body = rationale({ boundary: 'Resolve the registry row in `packages/governance/projects.md`.' })
+    const body = rationale({ boundary: 'Resolve the registry row in `.vinaya/projects.md`.' })
     expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
   })
 

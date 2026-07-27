@@ -7,7 +7,7 @@ export type ForgeSourceConfig = {
 }
 
 /**
- * Primary StateSource design (D-110/D-112). Wires `@atta/aeg-forge-state`'s
+ * Primary StateSource design. Wires `@atta/aeg-forge-state`'s
  * `deriveIterationFromForge` behind the contract — imported as a workspace
  * dependency rather than re-homed. `@atta/aeg-forge-state` is already a
  * clean, general-purpose, repo/owner-parameterized package with no

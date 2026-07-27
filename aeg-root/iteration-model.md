@@ -1,5 +1,5 @@
 ---
-sidebar_title: Iterations Overview
+sidebar_title: The Iteration Model
 section: Overview
 ---
 # Iterations — the top of AEG
@@ -7,7 +7,7 @@ section: Overview
 **Status:** ratified
 **Ratified on:** 2026-06-04
 **Ratified by:** Principal
-**Ratifies via:** D-029 (global decisions.md)
+**Ratifies via:** the `needs:principal-input` label
 
 This design was reviewed in three rounds by an external panel (Gemini, DeepSeek, ChatGPT) and unanimously endorsed after the corrections below.
 
@@ -38,11 +38,11 @@ The cardinal rule, stated once and enforced everywhere below: **the forge holds 
 
 The roadmap — what to build, why, in what priority — belongs to the company and lives in the company's tool (Jira, Linear, a doc they own). **AEG never holds it.** The moment AEG stores a roadmap it competes with Jira, loses, and creates a second rotting source of truth.
 
-What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Team Leader translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
+What AEG holds is the **iteration**: the bounded set of tasks currently being turned into merged code. The link from roadmap → iteration is a **human** — the Planner / Brief Author translating tickets into agent-shaped tasks. There is no file for that link, because the link is a person's judgment.
 
 ```
 Company roadmap / Jira / project backlog   ← NOT in AEG. Reference only. The human reads it.
-        │  (human translation — Team Leader / Planner)
+        │  (human translation — Planner / Brief Author / Planner)
         ▼
 Iteration  =  a set of forge Issues  +  a thin topology file        ← TOP of AEG.
    ├─ Task (Issue) ── brief written just-in-time → lands in its PR body
@@ -53,7 +53,7 @@ Iteration  =  a set of forge Issues  +  a thin topology file        ← TOP of A
 Per task: branch → PR → Reviewer + Security → merge → close-out
 ```
 
-**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-unit backlogs (`<unit>/specs/<unit>-backlog.md`) and the repo-level `specs/<repo>-backlog.md`, all out of the flow (D-037).
+**`roadmap.md` is retired.** Its executable slice became the first iteration; its held/vision content moved to per-unit backlogs (`<unit>/specs/<unit>-backlog.md`) and the repo-level `specs/<repo>-backlog.md`, all out of the flow.
 
 **The backlog is the seam with your planning tool — and AEG is indifferent to it.** The backlog can be these markdown files, or it can be Jira, Linear, a spreadsheet, or a conversation in someone's head. AEG does not care which, because **AEG never reads the backlog as part of the flow** — it only requires that *a well-formed brief exists* when a task is dispatched. The Planner *may* read the backlog to compose an iteration (a useful input), but it does **not depend** on one: hand the Planner intent directly ("build the dashboard") and it produces an iteration with no backlog at all. So the backlog is an *optional upstream input*, never a flow dependency. This is exactly what lets AEG drop into a team that already lives in Jira without fighting it — Jira stays the plan; AEG picks up at the iteration. The seam is the only point the two ever touch, and only a human (the Planner) stands on it.
 
@@ -65,18 +65,18 @@ A task **is** a forge Issue. Its status is not a field anyone writes — it is *
 
 | Status | Derived from (the forge fact) |
 |--------|-------------------------------|
-| `todo` | Issue open (assigned or unassigned), no branch yet; or no forge facts known — iteration tasks are committed work, minimum `todo` (D-059) |
+| `todo` | Issue open (assigned or unassigned), no branch yet; or no forge facts known — iteration tasks are committed work, minimum `todo` |
 | `in-flight` | A branch `task/<iteration>/<n>` exists, **no PR** open |
 | `in-review` | PR open |
 | `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
 | `merged` | PR merged (Issue auto-closes) |
 | `blocked` | An `aeg:blocked` label is present |
-| `dropped` | Issue **closed `NOT_PLANNED`**, no merged PR — legitimately abandoned, never done, never `todo` (D-069) |
-| `incoherent` | Issue **closed `COMPLETED`** (or with no recorded close reason), no merged-PR link — done-but-unprovable or a broken close; surfaced for a human, never auto-reopened (D-069) |
+| `dropped` | Issue **closed `NOT_PLANNED`**, no merged PR — legitimately abandoned, never done, never `todo` |
+| `incoherent` | Issue **closed `COMPLETED`** (or with no recorded close reason), no merged-PR link — done-but-unprovable or a broken close; surfaced for a human, never auto-reopened |
 
-`backlog` is a **project-level concept only** — ideas/maybe-tasks in markdown that live outside the iteration flow (`specs/<unit>-backlog.md`, Jira, etc.). Once a task is placed in a launched iteration it is committed work and derives `todo` at minimum, never `backlog`. See D-059.
+`backlog` is a **project-level concept only** — ideas/maybe-tasks in markdown that live outside the iteration flow (`specs/<unit>-backlog.md`, Jira, etc.). Once a task is placed in a launched iteration it is committed work and derives `todo` at minimum, never `backlog`..
 
-**A closed-without-merge Issue never resolves to `todo`** (D-069). `todo` implies not-started; a closed Issue is terminal. The derivation reads GitHub's native `stateReason`: `NOT_PLANNED` → `dropped`; anything else (`COMPLETED`, or no reason) → `incoherent`. The one law: a task-Issue reaches *done* only via a merged PR that names it (`Closes #N`); a `COMPLETED` close without that merge is incoherent, not done.
+**A closed-without-merge Issue never resolves to `todo`**. `todo` implies not-started; a closed Issue is terminal. The derivation reads GitHub's native `stateReason`: `NOT_PLANNED` → `dropped`; anything else (`COMPLETED`, or no reason) → `incoherent`. The one law: a task-Issue reaches *done* only via a merged PR that names it (`Closes #N`); a `COMPLETED` close without that merge is incoherent, not done.
 
 So: there is **no status column anywhere.** The Developer does not "flip to in-review" — *opening the PR is the in-review signal*. The close-out does not "flip to merged" — *the merge is that signal*. The branch-name convention `task/<iteration>/<n>` is what links a task number to its branch and PR, so any role finds a task's live status with one forge query and writes nothing. `blocked` is the one state with no native forge fact, so it is a label (cheap, native, doesn't race).
 
@@ -86,13 +86,15 @@ So: there is **no status column anywhere.** The Developer does not "flip to in-r
 
 ---
 
-## 4. The thin iteration file — topology only
+## 4. The thin iteration file — retired, and what survives it
 
-One file per iteration at `aeg-root/iterations/<name>.md`. It holds **only** what the forge models poorly: the task→Issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows. It contains no task prose, no boundary descriptions, no rationale — nothing that belongs on the Issue.** Its task topology is edited only by the Planner, at plan time, so it cannot race and cannot drift on status (it stores none). The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends.
+**A plan is a Milestone plus labeled Issues. There is no topology file, and `aeg-root/iterations/` holds nothing but the archive.** This section is kept because the *rules* the file encoded still bind — they simply bind the forge objects now. Read it as the reasoning behind the shape, not as a file to create.
 
-**`#TBD` rows are forbidden.** Every task row must carry a real forge Issue number. An iteration that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act (D-055). **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** The thin file row carries only the Issue link and edges; it does not contain or repeat the rationale. Brief Authors read the rationale from the Issue, not from this file.
+The file held **only** what the forge models poorly: the task→Issue mapping and the dependency/conflict graph. It contains **no status, no PR numbers, no merge dates, no timestamps — nothing the forge already knows. It contains no task prose, no boundary descriptions, no rationale — nothing that belongs on the Issue.** Its task topology was edited only by the Planner, at plan time, so it could not race and could not drift on status (it stored none). The same rule now binds the Milestone and its Issues: the Planner cuts them, and nothing downstream writes status back. The one exception is the iteration's own **lifecycle marker** (active/complete — §12), a single header line the Archivist sets at close-out; this is the iteration's lifecycle, not per-task execution status, and it is set once when the whole iteration ends.
 
-**Cutover status (`aeg-forge-state-v1` task 7, #431) — complete.** The birth rule above ("gates read files until the migration flips the config in one deliberate act") has now flipped for every active iteration, with no exceptions left. The last holdout, `vada-production-v1`, kept its thin file past task 7 because 9 of its Issues (#183 #184 #185 #186 #187 #188 #240 #241 #244) predated the D-078 "Dependency rationale" grammar — deleting the file would have silently blanked `dependsOn` for those tasks in every gate and in Studio. Those 9 Issues were backfilled with real, per-task rationale (not a mechanical append), `verify-coherence` was re-run live against the forge to confirm a clean read, and `vada-production-v1.md` + `.tokens.md` were then deleted — the same disposition every other active iteration's topology file (`herald-hardening-v1.md`, `vinaya-cli-v1.md`, `vinaya-studio-v1.md`) already went through. `dependsOn`/`conflictsWith` for every active iteration is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
+**`#TBD` is still forbidden, wherever a task is recorded.** Every task must carry a real forge Issue number. An iteration that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act. **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** Nothing outside the Issue repeats the rationale. Brief Authors read it from the Issue, which is now its only home.
+
+**How the cutover finished (`aeg-forge-state-v1` task 7, #431), for the record.** The birth rule above ("gates read files until the migration flips the config in one deliberate act") has now flipped for every active iteration, with no exceptions left. The last holdout, `vada-production-v1`, kept its thin file past task 7 because 9 of its Issues predated the "Dependency rationale" grammar — deleting the file would have silently blanked `dependsOn` for those tasks in every gate and in Studio. Those 9 Issues were backfilled with real, per-task rationale (not a mechanical append), `verify-coherence` was re-run live against the forge to confirm a clean read, and `vada-production-v1.md` + `.tokens.md` were then deleted — the same disposition every other active iteration's topology file (`herald-hardening-v1.md`, `vinaya-cli-v1.md`, `vinaya-studio-v1.md`) already went through. `dependsOn`/`conflictsWith` for every active iteration is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
 
 Template:
 
@@ -101,7 +103,7 @@ Template:
 Lifecycle: active            ← active | complete (§12). Set to complete by the Archivist when every task is merged.
 
 Goal (execution, not roadmap-why): <what ships, end to end>
-Repo: <repo>   ·   Team Leader: <name>
+Repo: <repo>   ·   Planner / Brief Author: <name>
 
 ## Tasks (topology)
 | # | Task                          | Issue | Project(s)      | Depends-on | Conflicts-with |
@@ -145,7 +147,7 @@ Two tasks conflict if they touch the same **collision domain** and therefore mus
 
 ## 6. The Planner
 
-The **Planner** is a mode of the Team Leader — same intelligence as Brief Author, one altitude up. Brief Author: intent → one brief. Planner: intent + a slice of tickets → a whole iteration (a set of Issues + the thin topology file).
+The **Planner** is a mode of the Planner / Brief Author — same intelligence as Brief Author, one altitude up. Brief Author: intent → one brief. Planner: intent + a slice of tickets → a whole iteration (a set of Issues + the thin topology file).
 
 The Planner's job — the reason the iteration exists — is the relationships a brief-in-isolation can't see: decompose the ticket slice into agent-sized tasks (Issues), declare `depends-on` and `conflicts-with` edges, and decide **split vs. combine** by the **verification-coupling** test:
 
@@ -189,7 +191,7 @@ The review panel predicted, unanimously, two of the ways teams will accidentally
 1. **No execution metadata in the thin file or the Issue.** Never add `status`, `PR #`, `merged date`, `current state`, `assignee history`, or generated collision data to the iteration file. The reason is always reasonable ("just to glance without querying") and it is always wrong — the forge already holds these, and copying them in recreates the racing, drifting, lying status store. **Thin file = topology. Forge = state.** The line is bright; keep it bright. (The iteration's own active/complete lifecycle marker in §12 is **not** an exception to this: it is the iteration's lifecycle set once at close-out, not per-task execution status, and the forge has no native fact for "this whole iteration is done.")
 2. **No dynamic conflict scanner.** Do not build a script that checks out in-flight branches and diffs them to "catch conflicts the Planner missed." It cannot work without a live task→changed-files map — the mutable state we removed. When unsure two tasks collide, **declare the conflict and serialize** (§5). Conservative declaration is the sanctioned answer; a scanner is not.
 3. **No planning metadata on Issues.** No priority, estimates, points, or roadmap fields. Enforced mechanically: a required Issue template (deps, conflicts, project label, ticket link — and nothing else) + a CI check that rejects forbidden fields/labels. Discipline alone will not hold this; the *place to put planning info is removed*, not just discouraged.
-4. **No committed report/scratch files.** Never commit a new repo file whose sole purpose is a one-off report, audit finding, coverage summary, or working brief. The reason is always reasonable ("it's a big deliverable, it deserves its own file," "there's no prior convention, I'll set one") and it is always wrong — that content belongs in the PR body (task-scoped findings) or an Issue/PR comment (findings with no task PR of their own), exactly like a brief's permanent home is the PR body, never the Issue or a repo file (§7). A committed scratch file recreates the racing, drifting problem the other three rules already forbid, one layer up: it is a fifth truth domain nobody asked for, competing with the forge for where "what happened" lives. This is not hypothetical — it has already happened twice: a 120-row audit deliverable committed as `aeg-root/iterations/<name>.audit.md` broke AEG Studio's iteration loader (which globs every `.md` file in this directory as an iteration), and a full task brief was committed as a permanent file under `aeg-project/briefs/`, contradicting §7's own rule that a brief is pasted, not committed (D-074). **Thin file = topology. Forge = state. PR body / Issue comment = findings and briefs.** Sanctioned exceptions: durable reference artifacts (specs, skills, role docs, contracts, decision logs) and the `.tokens.md` sibling ledgers (§12, D-071) — these are pre-existing, separately-governed, durable-by-design; a one-off report is neither.
+4. **No committed report/scratch files.** Never commit a new repo file whose sole purpose is a one-off report, audit finding, coverage summary, or working brief. The reason is always reasonable ("it's a big deliverable, it deserves its own file," "there's no prior convention, I'll set one") and it is always wrong — that content belongs in the PR body (task-scoped findings) or an Issue/PR comment (findings with no task PR of their own), exactly like a brief's permanent home is the PR body, never the Issue or a repo file (§7). A committed scratch file recreates the racing, drifting problem the other three rules already forbid, one layer up: it is a fifth truth domain nobody asked for, competing with the forge for where "what happened" lives. This is not hypothetical — it has already happened twice: a 120-row audit deliverable committed as `aeg-root/iterations/<name>.audit.md` broke AEG Studio's iteration loader (which globs every `.md` file in this directory as an iteration), and a full task brief was committed as a permanent file under `aeg-project/briefs/`, contradicting §7's own rule that a brief is pasted, not committed. **Thin file = topology. Forge = state. PR body / Issue comment = findings and briefs.** Sanctioned exceptions: durable reference artifacts (specs, skills, role docs, contracts) and the `.tokens.md` sibling ledgers (§12) — these are pre-existing, separately-governed, durable-by-design; a one-off report is neither.
 
 ---
 
@@ -212,14 +214,14 @@ The earlier sections describe a single iteration's *internals*. This section cov
 
 ### The lifecycle: planned → active → complete → archived
 
-- **planned** — the thin file exists and the Issues are cut, but no work has started. Every task is `todo` (open, unassigned — committed iteration work, minimum `todo` per D-059). The iteration is a plan ready to execute.
+- **planned** — the thin file exists and the Issues are cut, but no work has started. Every task is `todo` (open, unassigned — committed iteration work, minimum `todo`). The iteration is a plan ready to execute.
 - **active** — at least one task has an open branch (`in-flight`) or is further along. The iteration is in flight. `Lifecycle: active` in the header.
-- **complete** — **every task's PR is merged** (every task derives to `merged` from the forge). The work is done. At this point — and only this point — the **Archivist** sets `Lifecycle: complete` in the header (one line; the single lifecycle mutation the file ever takes after plan time) and assembles the per-task provenance blocks on the merged PRs (D-030). "Complete" is itself **derived** from the forge (all linked PRs merged); the header marker is a convenience flag the Archivist writes once, not a status anyone maintains.
+- **complete** — **every task's PR is merged** (every task derives to `merged` from the forge). The work is done. At this point — and only this point — the **Archivist** sets `Lifecycle: complete` in the header (one line; the single lifecycle mutation the file ever takes after plan time) and assembles the per-task provenance blocks on the merged PRs. "Complete" is itself **derived** from the forge (all linked PRs merged); the header marker is a convenience flag the Archivist writes once, not a status anyone maintains.
 - **archived** — a complete iteration's file **moves to `aeg-root/iterations/completed/<name>.md`**. It is **not deleted.**
 
 ### Iterations are never deleted — they are durable history
 
-A completed iteration file is **kept, moved, never removed.** The **Issues** carry the Planner's rationale for each task — the durable architectural reasoning that decided each boundary, blast radius, and trap (D-055). The archived iteration file carries the **topology** — which tasks were planned, their grouping, and their dependency/conflict edges. Neither artifact is deleted: the file moves to `completed/` (human-browsable topology archive); the Issues remain on the forge (frozen forge artifacts with the full rationale). Paired with the provenance blocks on the merged PRs, the archived file + Issues together are the **forensic record of why the work was shaped the way it was**: what was split from what, which traps were foreseen, what the blast radius was. `completed/` is an archive, not a graveyard; `git` retains full history regardless, and the moved file keeps the topology human-browsable.
+A completed iteration file is **kept, moved, never removed.** The **Issues** carry the Planner's rationale for each task — the durable architectural reasoning that decided each boundary, blast radius, and trap. The archived iteration file carries the **topology** — which tasks were planned, their grouping, and their dependency/conflict edges. Neither artifact is deleted: the file moves to `completed/` (human-browsable topology archive); the Issues remain on the forge (frozen forge artifacts with the full rationale). Paired with the provenance blocks on the merged PRs, the archived file + Issues together are the **forensic record of why the work was shaped the way it was**: what was split from what, which traps were foreseen, what the blast radius was. `completed/` is an archive, not a graveyard; `git` retains full history regardless, and the moved file keeps the topology human-browsable.
 
 (The Archivist also flags merged-but-undeleted **worktrees** and orphaned branches at this point — those *are* ephemeral and get cleaned up, §3. The iteration *file* is not ephemeral; the worktrees are. Don't confuse the two.)
 
@@ -240,13 +242,13 @@ There is no single "current iteration." `aeg-root/iterations/` holds every activ
 
 ## 12. The per-iteration token/cost ledger — append-only, derived total
 
-Every role that runs in an iteration reports its **token spend and cost**; the per-task **Archivist** is the sole writer of the per-iteration ledger, appending one row per role-turn at task close-out (D-071). The ledger is the cost-legibility counterpart to derived task status: the forge tells you *what happened*, the ledger tells you *what it cost*. Per-phase agent spend is something neither raw GitHub nor most "agentic" tools surface; AEG does, by giving it the same shape as everything else here — append-only, immutable rows, no stored aggregate.
+Every role that runs in an iteration reports its **token spend and cost**; the per-task **Archivist** is the sole writer of the per-iteration ledger, appending one row per role-turn at task close-out. The ledger is the cost-legibility counterpart to derived task status: the forge tells you *what happened*, the ledger tells you *what it cost*. Per-phase agent spend is something neither raw GitHub nor most "agentic" tools surface; AEG does, by giving it the same shape as everything else here — append-only, immutable rows, no stored aggregate.
 
 ### Where it lives
 
-One sibling file per iteration: `aeg-root/iterations/<name>.tokens.md` (next to `<name>.md`).
+**Historically**, one sibling file per iteration at `aeg-root/iterations/<name>.tokens.md`, next to the topology file. Both went with the forge-native cutover; the four that remain sit in `completed/` and are read, never written.
 
-The sibling form is chosen deliberately over an inline `## Token ledger` section in the iteration file: two roles appending rows at the same time on the same file is exactly the kind of merge-collision the topology file's "Planner-only at plan time" rule was set up to avoid. Keeping the ledger in its own append-only file makes a Planner editing the topology and a Developer reporting a turn-end never touch the same bytes. The parser (`@atta/aeg-core`'s `parseLedger`) also accepts the inline form for any iteration that chose it.
+The sibling form was chosen over an inline `## Token ledger` section for a reason worth keeping: two roles appending rows to one file at the same time is exactly the merge-collision the topology file's "Planner-only at plan time" rule existed to avoid. A ledger in its own append-only file meant a Planner editing topology and a Developer reporting a turn-end never touched the same bytes. `@atta/aeg-core`'s `parseLedger` still reads both forms, which is what keeps the archived ledgers legible.
 
 ### Format
 
@@ -274,10 +276,10 @@ Append-only. Each row records one role's turn at a phase. Re-entry appends a **n
 
 ### The append rule (read this exactly the way you read derived status)
 
-- **No role appends its own row on a task branch (D-071).** Two live-fire incidents forced this: chat/read-only roles (Reviewer, Security, Planner, Brief Author) structurally cannot append — they hold no task branch, and some never touch the repo's filesystem at all; and parallel Developer sessions on different tasks collided appending to the same shared `tokens.md` file (concretely, tasks #255 and #258 raced on the same file). Instead, every role **reports** its token spend in the artifact its turn already produces — the PR body ("Token report" section) for terminal roles, the verdict comment for chat roles doing review, the plan PR or planning report for the Planner — and the per-task **Archivist appends every row at task close-out**, one row per role-turn, including its own.
+- **No role appends its own row on a task branch.** Two live-fire incidents forced this: chat/read-only roles (Reviewer, Security, Planner, Brief Author) structurally cannot append — they hold no task branch, and some never touch the repo's filesystem at all; and parallel Developer sessions on different tasks collided appending to the same shared `tokens.md` file (concretely, tasks #255 and #258 raced on the same file). Instead, every role **reports** its token spend in the artifact its turn already produces — the PR body ("Token report" section) for terminal roles, the verdict comment for chat roles doing review, the plan PR or planning report for the Planner — and the per-task **Archivist appends every row at task close-out**, one row per role-turn, including its own.
 - **Never edit** an existing row. If you discover a mistake, append a new row that supersedes it in prose (or fix the source file in a separate, declared edit — same exception that `state-machine.md` §13 carves for forward-reference fields).
 - **Re-entry appends.** A Developer dispatched for `9: develop`, asked for changes, and re-running for `9: develop` again produces a **second** `9: develop` report, which the Archivist appends as a **second** row — never a sum, never an overwrite. The two rows both count.
-- The **iteration total is `sum(rows)`**, derived at read time, never stored. This is the same philosophy as forge-derived status (don't store the aggregate; sum the immutable entries) and the append-only decision log. A stored total reintroduces the merge-collision + stale-aggregate problem.
+- The **iteration total is `sum(rows)`**, derived at read time, never stored. This is the same philosophy as forge-derived status (don't store the aggregate; sum the immutable entries). A stored total reintroduces the merge-collision + stale-aggregate problem.
 
 ### Two capture sources (the design constraint, not a bug)
 
@@ -286,11 +288,11 @@ Token reporting is asymmetric — and any honest design has to encode that, beca
 - **Terminal roles run in Claude Code (Developer; Archivist when automated).** The session knows its tokens. The role reports exact numbers from `/cost` in its PR body. The Archivist copies these numbers verbatim into the row it appends at close-out.
 - **claude.ai roles run in chat (Planner; Brief Author; Reviewer; Security).** A claude.ai conversation **cannot read its own token count** via tool or API. The role still reports at turn-end — phase, role, model, date, in its verdict comment or planning report — but leaves the numeric cells as `—`. The Archivist copies the report as-is; the **Principal** may later supply the real figures from the claude.ai UI usage figure, filling a previously-`—` cell (the one narrow forward-reference exception `state-machine.md` §13 allows).
 
-V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today. **Known gap (flagged, not solved by D-071):** iteration-wide chat-role turns with no task PR to report into — a Planner session outside a plan PR, a Brief Author session — have no established recording path; see `roles/planner.md` "Plan-PR close-out."
+V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today. **Known gap (flagged, not solved):** iteration-wide chat-role turns with no task PR to report into — a Planner session outside a plan PR, a Brief Author session — have no established recording path; see `roles/planner.md` "Plan-PR close-out."
 
 ### Live reads (Studio) — a second, narrower read path (`aeg-forge-state-v1` task 4b, #445)
 
-AEG Studio's iteration page no longer reads `<name>.tokens.md` off disk to render token totals — it re-derives the same row shape live off the forge: every MERGED PR on a task's own branch (`task/<iteration>/<id>`), parsing the Developer's "Token report" entries from the PR body (every one, including re-push entries) and the Reviewer's/Security's `Tokens: …` lines from that PR's comments (`packages/aeg-core/src/parse-token-report.ts`'s `aggregateTaskTokenRows`, fetched by `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`). Same row shape, same `sumLedger` totals math (`parse-ledger.ts`) — different source.
+Vinaya Studio's iteration page no longer reads `<name>.tokens.md` off disk to render token totals — it re-derives the same row shape live off the forge: every MERGED PR on a task's own branch (`task/<iteration>/<id>`), parsing the Developer's "Token report" entries from the PR body (every one, including re-push entries) and the Reviewer's/Security's `Tokens: …` lines from that PR's comments (`packages/aeg-core/src/parse-token-report.ts`'s `aggregateTaskTokenRows`, fetched by `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`). Same row shape, same `sumLedger` totals math (`parse-ledger.ts`) — different source.
 
 This is deliberately **narrower** than what the Archivist collects into the file: it cannot recover the Archivist's own `<task-id>: archive` row (no PR carries it — the file itself is that row's only record) or the Planner's `Tokens: planning …` report (no reliable way to attribute a plan PR to one task from the forge alone without false-positive cross-task matches, confirmed live during 4b's build — a task Issue's cross-reference timeline picks up ANY PR that merely mentions its number in passing prose, not just its own plan PR). Both remain recoverable only from `.tokens.md`, which is why the file is not deleted here (task 7's job, once the live mechanism is proven in wider use). A task's report that's missing or malformed (e.g. a "Token report" heading with no table and no parseable text after it) yields no row for that report, never a fabricated one — same discipline as the Archivist's own DANGLING convention.
 

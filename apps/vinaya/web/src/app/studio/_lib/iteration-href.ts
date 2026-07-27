@@ -14,10 +14,10 @@
  * says the project is none.
  *
  * **A declared project must also be registered.** `projects` carries whatever
- * name the Issue declares, but only names in `packages/governance/projects.md`
+ * name the Issue declares, but only names in `.vinaya/projects.md`
  * have a project page (`readProject(name)` `notFound()`s otherwise). A retired
  * project name — e.g. `aeg`, whose registry row was deleted when the old AEG
- * Studio was ported to Vinaya (D-132) — still rides on its archived iterations'
+ * Studio was ported to Vinaya — still rides on its archived iterations'
  * Issues, so `deprecation-v1` declares `Project: aeg` yet `/studio/projects/aeg`
  * 404s. `boardHref` therefore takes the set of registered names and links only
  * to a project in it, picking the first *registered* project (an iteration may
@@ -32,7 +32,7 @@
  * Both halves live here because the href derivation was duplicated verbatim in
  * `studio/page.tsx` and `studio/iterations/IterationsTabs.tsx`, and the reason
  * has to match wherever a board-less row renders. A row that is silently
- * non-clickable reads as a broken link; it must say why (D-087 — the Studio
+ * non-clickable reads as a broken link; it must say why (the Studio
  * does not lie by omission, including by omitting an explanation).
  */
 
@@ -51,7 +51,7 @@ export const NO_BOARD_REASON = 'No board — no registered project for this iter
  * The one board-route builder. Takes the project list rather than a summary so
  * the Tasks card — which resolves a board href per *task* (`task.projects`),
  * not per iteration summary — shares this exact rule instead of re-deriving it.
- * `registered` is the set of project names in `packages/governance/projects.md`;
+ * `registered` is the set of project names in `.vinaya/projects.md`;
  * the href points at the first project that is in it. An empty or unregistered
  * name is skipped (a `project:` label with no name would otherwise build
  * `/studio/projects//iterations/<slug>`; a retired one, a 404ing route).
