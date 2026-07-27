@@ -64,7 +64,7 @@ describe('parseEnforcementRegistry', () => {
     expect(ring2Rows[1]?.implementation).toBe('')
   })
 
-  it('parses the real enforcement.md — 31 rows (32 minus the D-120-retired stale-blocker ring-2 row), only non-deterministic rows carry an empty implementation', () => {
+  it('parses the real enforcement.md — 31 rows (32 minus the retired stale-blocker ring-2 row), only non-deterministic rows carry an empty implementation', () => {
     const content = readFileSync(ENFORCEMENT_PATH, 'utf8')
     const rows = parseEnforcementRegistry(content)
 

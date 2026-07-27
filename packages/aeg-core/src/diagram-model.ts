@@ -1,11 +1,11 @@
 /**
- * diagram-model.ts — the pure derivation at the heart of D-087: one library
+ * diagram-model.ts — the pure derivation at the heart of one library
  * turns doctrine (`enforcement.md` rings/gates/checks + role/contract
  * frontmatter + the canonical `ACTIONS` set) plus declarative config plus
  * live status into a renderer-agnostic `DiagramModel`. Every diagram consumer
  * (Studio, the Vinaya portal, a CLI visualizer) reads THIS model; none
- * re-implements the governance logic (D-087). Zero I/O, zero `fs`/`node:`
- * imports — doctrine arrives already-read through `DoctrineContent` (D-111);
+ * re-implements the governance logic. Zero I/O, zero `fs`/`node:`
+ * imports — doctrine arrives already-read through `DoctrineContent`;
  * the file reads live behind `DoctrineSource` in `@atta/vinaya-sources`.
  *
  * What is NOT here: geometry. Radius, angle, colour, coordinates are the
@@ -47,7 +47,7 @@ export type DiagramNode = {
   category?: 'ci' | 'hook' | 'event'
   actorType?: 'agent' | 'human' | 'either'
   /** Whether this action reaches GitHub — `action` nodes only, straight from
-   * its `ACTIONS` entry (D-119's canonical set). On the node because a
+   * its `ACTIONS` entry (the canonical set). On the node because a
    * renderer cannot get it any other way: `ACTIONS` is a value export, and
    * importing it into a client component drags `@atta/aeg-forge-state`'s
    * `node:child_process` into the browser bundle. The distinction is
@@ -199,7 +199,7 @@ export function deriveDiagramModel(
   const ring1Disabled = config?.rings?.ring1_forgeWriteInterception === false
   const ring2Disabled = config?.rings?.ring2_asyncAudits === false
 
-  // --- Ring nodes (Ring 0 has no ring-level switch, D-117) ---
+  // --- Ring nodes (Ring 0 has no ring-level switch,) ---
   nodes.push({ id: 'ring:0', kind: 'ring', label: labels[0], ringIndex: 0, renderState: 'active' })
   nodes.push({
     id: 'ring:1',
@@ -328,7 +328,7 @@ export function deriveDiagramModel(
 
   // performs: role → action for every ACTIONS.performedBy entry (the canonical
   // single source — the role's own `performs` frontmatter is intentionally not
-  // re-read, so the two lists can never drift; D-119).
+  // re-read, so the two lists can never drift).
   for (const action of ACTIONS) {
     for (const roleId of action.performedBy) {
       edges.push({

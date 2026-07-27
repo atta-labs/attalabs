@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tier'
 
 describe('deriveTierFromDiff', () => {
-  it('a decision log is an ordinary doc — no auto-Tier-3 inference', () => {
+  it('a frozen archive is an ordinary doc — no auto-Tier-3 inference', () => {
     // The log is no longer a gated artifact, so touching one carries no
     // special tier meaning. A doc-only diff derives Tier 1 like any other.
     // The archives are history, not docs — they carry no tier signal at all.

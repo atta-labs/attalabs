@@ -54,7 +54,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
     : await loadDispatchReadiness(iteration, slug, snapshot)
 
   // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
-  // (D-059 excludes it from derivation). Rendered as a subordinate chip on
+  // (excludes it from derivation). Rendered as a subordinate chip on
   // `todo` rows so a dispatched-but-not-yet-pushed task is visibly distinct.
   const taskAssignedMap = new Map<string, boolean>()
   for (const [taskId, facts] of snapshot.facts) {
@@ -79,7 +79,7 @@ export default async function IterationPage({ params }: { params: Promise<Params
   const issueUrl = (n: number): string | null =>
     snapshot.repo ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${n}` : null
 
-  // Live-fetched off merged PRs + verdict comments (D-071 / task 4b, #445) —
+  // Live-fetched off merged PRs + verdict comments (task 4b, #445) —
   // no longer the `<slug>.tokens.md` file read. `.tokens.md` itself is not
   // deleted here (task 7's job, once this is proven).
   const tokenLedger = snapshot.repo

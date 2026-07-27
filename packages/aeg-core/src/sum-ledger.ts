@@ -5,7 +5,7 @@ import type { LedgerRow, LedgerTotals } from './types'
  * rows — never stored — so re-entry (a role appending a second row for the
  * same phase) naturally adds to the total without any "replace existing"
  * semantics. This is the same philosophy as derived task status and the
- * append-only decision log: don't store the aggregate, sum the immutable
+ * append-only ledger: don't store the aggregate, sum the immutable
  * entries.
  *
  * Null cells contribute zero — a claude.ai row the Principal has not yet

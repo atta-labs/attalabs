@@ -3,7 +3,7 @@
  *
  * Produces the `Map<TaskId, ForgeFacts>` snapshot `@atta/aeg-core`'s
  * `deriveIteration` consumes — running locally with the operator's own
- * GitHub auth. Read-only (AEG D-029). Server-only. Degrades gracefully
+ * GitHub auth. Read-only (AEG). Server-only. Degrades gracefully
  * when no token is available.
  *
  * Public surface:

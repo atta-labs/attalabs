@@ -21,20 +21,34 @@ import { describe, expect, it } from 'vitest'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
 /** Claims that a removed mechanism is current. */
+const RETIRED_IN_PRODUCT = [
+  String.raw`\bD-\d{3}\b`,
+  // `decision log`, in every inflection, but never `decision logic` — the
+  // latter is ordinary English about where branching lives, and has nothing to
+  // do with the retired record. Written without a lookahead: `grep -E` is POSIX
+  // ERE, where `(?!…)` is not a negation but a literal.
+  'decision log(s|ged|ging)?([^a-z]|$)',
+  'decision-log',
+  'decision entr',
+  String.raw`decisions\.md`,
+  'CONTRADICTION',
+  'assumes Tier 3'
+]
+
 const RETIRED = [
-  // the decision log as a live, writable, required artifact
-  String.raw`decision (entry|logged)`,
-  String.raw`decision-log entry`,
-  String.raw`decision log entry`,
+  // the retired record as a live, writable, required artifact
+  'decision (entry|logged)',
+  'decision-log entry',
+  'decision log entry',
   // the lock
-  String.raw`Lock: ?YES`,
-  String.raw`Lock: ?NO`,
-  String.raw`lock approvals?`,
-  String.raw`approves locks`,
-  String.raw`Conforms to lock`,
-  String.raw`Challenges lock`,
+  'Lock: ?YES',
+  'Lock: ?NO',
+  'lock approvals?',
+  'approves locks',
+  'Conforms to lock',
+  'Challenges lock',
   // checks deleted with the machinery
-  String.raw`checkDecisionNumbersFresh`,
+  'checkDecisionNumbersFresh',
   // the role that no longer exists
   String.raw`roles/team-leader\.md`
 ]
@@ -48,7 +62,8 @@ const RETIRED = [
  */
 const EXEMPT = [
   'docs/decisions-legacy.md',
-  '-decisions.md',
+  'apps/herald-ai/docs/',
+  'apps/vada-ai/docs/',
   'aeg-root/iterations/completed/',
   'packages/aeg-core/src/docs/published-prose',
   'packages/aeg-core/src/retired-vocabulary.test.ts',
@@ -58,14 +73,17 @@ const EXEMPT = [
   '/.turbo/'
 ]
 
-/** Surfaces an agent or an adopter actually reads. */
-const SCOPE = ['aeg-root', '.claude/skills', '.github', 'packages/aeg-core/src', 'packages/aeg-core/bin', 'apps/vinaya']
+/** The surfaces an adopter installs and reads. */
+const PRODUCT = ['aeg-root', 'packages/aeg-core', 'apps/vinaya', '.claude/skills/aeg', '.claude/skills/aeg-roles']
 
-function grep(pattern: string): string[] {
+/** Everything an agent in this repo reads. */
+const SCOPE = ['aeg-root', '.claude', '.github', 'packages/aeg-core', 'apps/vinaya', 'packages/aeg-forge-state']
+
+function grep(pattern: string, scope: string[] = SCOPE): string[] {
   try {
     const out = execFileSync(
       'grep',
-      ['-rnE', pattern, ...SCOPE, '--include=*.md', '--include=*.ts', '--include=*.tsx', '--include=*.yml'],
+      ['-rnE', pattern, ...scope, '--include=*.md', '--include=*.ts', '--include=*.tsx', '--include=*.yml'],
       { cwd: REPO_ROOT, encoding: 'utf8' }
     )
     return out.split('\n').filter(Boolean)
@@ -77,8 +95,23 @@ function grep(pattern: string): string[] {
 describe('retired vocabulary stays retired', () => {
   for (const pattern of RETIRED) {
     it(`no live surface claims: ${pattern}`, () => {
-      const hits = grep(pattern).filter((line) => !EXEMPT.some((e) => line.includes(e)))
+      const hits = grep(pattern).filter((line) => {
+        const path = line.slice(0, line.indexOf(':')) // PATH ONLY — never the content
+        return !EXEMPT.some((e) => path.includes(e))
+      })
       expect(hits, `\n${hits.join('\n')}\n`).toEqual([])
+    })
+  }
+})
+
+describe('the product carries no trace of a history the adopter lacks', () => {
+  for (const pattern of RETIRED_IN_PRODUCT) {
+    it(`absent from the installed surfaces: ${pattern}`, () => {
+      const hits = grep(pattern, PRODUCT).filter((line) => {
+        const path = line.slice(0, line.indexOf(':'))
+        return !EXEMPT.some((e) => path.includes(e))
+      })
+      expect(hits, `\n${hits.slice(0, 30).join('\n')}\n(${hits.length} total)\n`).toEqual([])
     })
   }
 })

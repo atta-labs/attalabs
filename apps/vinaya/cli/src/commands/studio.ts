@@ -8,7 +8,7 @@ export type StudioTarget =
   | { kind: 'missing' }
 
 /**
- * THE resolution seam (D-098). One function, three outcomes, in this order:
+ * THE resolution seam. One function, three outcomes, in this order:
  *   1. workspace — walk up from `cwd` for `apps/vinaya/web/package.json`
  *      whose `name` is `@atta/vinaya-web`. In-monorepo, this is the answer.
  *   2. package  — the published shape: an installed `@vinaya/studio`.
@@ -36,7 +36,7 @@ export function resolveStudioTarget(cwd: string): StudioTarget {
     dir = parent
   }
 
-  // D-098: the published-package branch is a publish-time shape that does
+  // The published-package branch is a publish-time shape that does
   // not exist yet. Stub only — do not implement `@vinaya/studio` detection.
   return { kind: 'missing' }
 }

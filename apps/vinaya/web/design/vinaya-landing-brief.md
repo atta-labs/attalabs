@@ -1,4 +1,4 @@
-> **Historical record.** This is the original handoff brief that produced `apps/vinaya/web`; it is kept as written and describes the repo as it stood at authoring time. The old AEG Studio app it refers to was deleted outright by `deprecation-v1` task 1 (D-132), so its path citations have been dropped — nothing else here has been restated.
+> **Historical record.** This is the original handoff brief that produced `apps/vinaya/web`; it is kept as written and describes the repo as it stood at authoring time. The old AEG Studio app it refers to was deleted outright by `deprecation-v1` task 1, so its path citations have been dropped — nothing else here has been restated.
 
 **Zero-context handoff — build the public Vinaya site (`vinaya.attalabs.dev`).** You are picking this up cold; everything you need is below. This is a NEW build in the `daniboomerang/attalabs` monorepo — `apps/vinaya/web` does not exist yet.
 

@@ -5,10 +5,10 @@
  *
  * Pure — no `fs`, no `git`/`gh` I/O, no `fetch`. All forge/filesystem facts
  * are injected by the caller (`bin/verify-registry.ts`, the I/O shim),
- * mirroring `coherence-checks.ts`'s shape exactly (D-092: plain executables,
+ * mirroring `coherence-checks.ts`'s shape exactly (plain executables,
  * deterministic pass/fail, no config conditionals).
  *
- * Rollout policy (D-116): G1/G2 ship report-only this iteration — they can
+ * Rollout policy: G1/G2 ship report-only this iteration — they can
  * only ever report `'info'`, never `'fail'`, so they never affect CI's exit
  * code. G3–G5 are blocking (`'fail'` on any violation). G1 flips to blocking
  * in a later, separately-dispatched task; this task does not do that.
@@ -32,8 +32,8 @@ export type RegistryCheckResult = {
 
 /**
  * G1 — every row's non-empty `implementation` resolves on disk.
- * Report-only this iteration (D-116): a missing path is always `'info'`,
- * never `'fail'`.
+ * Report-only this iteration: a missing path is always `'info'`,
+ * Never `'fail'`.
  */
 export function checkG1(rows: GateRow[], existsFn: (path: string) => boolean): RegistryCheckResult {
   const findings: RegistryFinding[] = []
@@ -54,7 +54,7 @@ export function checkG1(rows: GateRow[], existsFn: (path: string) => boolean): R
  * G2 — every candidate hook/CLI file is named by SOME row's `implementation`.
  * `candidateFiles` is already-globbed by the caller (`.husky/*`,
  * `.claude/hooks/*.sh`, `packages/aeg-core/bin/*.ts`, excluding `.husky/_`).
- * Report-only this iteration (D-116) — same as G1, never `'fail'`.
+ * Report-only this iteration — same as G1, never `'fail'`.
  */
 export function checkG2(rows: GateRow[], candidateFiles: string[]): RegistryCheckResult {
   const implementations = new Set(rows.map((r) => r.implementation).filter((p) => p !== ''))
@@ -92,7 +92,7 @@ export function checkG3(ring0Rows: GateRow[], crossingFiles: string[]): Registry
 /**
  * G4 — every `#NNN` cited in enforcement.md's body resolves in the forge.
  * `resolveFn` wraps `gh issue view`/`gh pr view` (caller injects). Blocking.
- * Broad reading (D-116 brief): every `#`-prefixed 3-or-more-digit number
+ * Broad reading (brief): every `#`-prefixed 3-or-more-digit number
  * occurring anywhere in the body is checked, not just ones near keywords
  * like "incident" — an incomplete keyword net would create a
  * false-negative gap. The current repo's real citations are all 3-4

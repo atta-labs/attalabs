@@ -6,11 +6,11 @@
  * (`verdict-extraction.ts`) the post-merge Archivist automation already runs,
  * now gated pre-merge and blocking instead of post-merge and advisory-only.
  *
- * A verified `vinaya/waiver:review` label (D-097's exact actor-verification pattern,
+ * A verified `vinaya/waiver:review` label (the exact actor-verification pattern,
  * `isWaiverLabelActorVerified` reused directly and parameterized by label —
  * see `waiver-label.ts`) lets a principal explicitly skip the requirement for
  * one PR. Label presence alone is never sufficient — only an actor-verified
- * label waives the gate, mirroring D-097 exactly.
+ * label waives the gate, mirroring exactly.
  *
  * Pure — no `fs`, no `fetch`, no `process.env`. The CLI shim
  * (`bin/verify-review-gate.ts`) resolves the PR's comments/labels/label-actor
@@ -38,7 +38,7 @@ export type ReviewGateInput = {
 }
 
 /**
- * True only for `plan/*` branches — topology/decision-log docs only, ever,
+ * True only for `plan/*` branches — topology docs only, ever,
  * by contract (roles/planner.md Step 0): a plan PR has no code to review.
  * Every other branch, INCLUDING `fix/*`, is held to the review gate — `fix/*`
  * carries real code despite not matching `task/<iteration>/<id>`, so reusing

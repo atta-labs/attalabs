@@ -2,7 +2,7 @@
 
 /**
  * open-pr — the ONLY sanctioned way to open or body-edit a PR in this repo
- * (D-078). The `check-forge-gates.sh` PreToolUse hook denies raw
+ *. The `check-forge-gates.sh` PreToolUse hook denies raw
  * `gh pr create` / `gh pr edit --body*`, directing every agent here. This
  * wrapper runs the full deterministic contract gate LOCALLY, before anything
  * reaches the forge — prevention, not detection. A malformed PR body is
@@ -27,7 +27,7 @@
  *   0b. single-plan-pr — plan branches only: refuses a diff that touches an
  *                       iteration's topology file when another OPEN PR's
  *                       diff already touches that SAME iteration's topology
- *                       file (D-069 task 19 / #336). Ordinary task-branch
+ * file (task 19 / #336). Ordinary task-branch
  *                       PRs touch no topology file, so this passes trivially.
  *   1. verify-brief   — brief-section grammar vs the current branch (task
  *                       branches: full contract; plan branches: no-Closes
@@ -35,7 +35,7 @@
  *   2. verify-docs    — tier-appropriate documentation gate (--pr mode).
  *   3. closes-n       — task branches only: the branch must resolve to a real
  *                       topology row and the body's Closes #N must name that
- *                       row's Issue (D-073/D-069).
+ * row's Issue.
  *   4. verify-task    — task branches only (aeg-governance-hardening task 25,
  *                       #365): the Developer's full exit composite
  *                       (typecheck/lint/test/build/verify-docs --pr/premise

@@ -17,7 +17,7 @@ export default async function IterationsPage() {
   const [{ active, archived, forge }, registry] = await Promise.all([listIterations(), readRegistry()])
   // Registered project names — a board link resolves only to one of these
   // (`readProject` 404s on a retired name like `aeg`); passed to the client
-  // tabs so `iterationHref` skips unregistered projects (D-087).
+  // tabs so `iterationHref` skips unregistered projects.
   const registeredProjects = registry.map((p) => p.name)
 
   return (

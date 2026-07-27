@@ -9,7 +9,7 @@ import { fetchProvenance } from './verify-coherence'
  *
  * 1. `timelineItems(first: 1, ...)` fetched the FIRST `ClosedEvent`, not the
  *    most recent, missing provenance on a reopened-then-reclosed issue.
- * 2. Issues closed via explicit `gh issue close` (D-056) never populate
+ * 2. Issues closed via explicit `gh issue close` never populate
  *    GitHub's `closer` field, even when a real merged PR did the work.
  *
  * The mock below fakes `@octokit/graphql`'s `graphql.defaults(...)` client,

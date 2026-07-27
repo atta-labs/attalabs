@@ -4,14 +4,14 @@
  * (`@atta/aeg-core` — "under iteration X" vs. "under no iteration"): GitHub's
  * GraphQL `labels:` filter argument has no pattern-exclusion capability, so
  * this is a repo-wide query filtered client-side, not a parameterization of
- * the existing per-slug function (D-081 — one implementation per fact).
+ * the existing per-slug function (one implementation per fact).
  *
  * `first: 100`, no pagination — this repo's open-issue count (~30 at
  * authoring time) is well within a single page; re-evaluate if it grows into
  * the hundreds.
  *
  * Also excludes `vinaya/state-object` (task 2 addendum, PR #499 review) —
- * D-110's pinned per-project/root-ecosystem state, ratification queue, and
+ * The pinned per-project/root-ecosystem state, ratification queue, and
  * lessons-log Issues (#447-#453) are permanent forge-native storage objects,
  * never meant to be closed and carrying no actionable work, so they don't
  * belong in a backlog-of-open-work view alongside real Issues like #497.
@@ -35,7 +35,7 @@ export type BacklogIssue = { number: number; title: string; url: string; labels:
  * consumer can distinguish a genuinely empty backlog (`ok`, `[]`) from a forge
  * failure that produced an empty list (`unreachable`). Without it, a page can't
  * tell "everything is tracked" from "GitHub was unreachable" and would render a
- * failure as truth-shaped emptiness (D-087: Studio must not lie by omission).
+ * failure as truth-shaped emptiness (Studio must not lie by omission).
  *
  * Only `ok` / `unreachable` ever appear here — this is one repo-wide query, not
  * a per-slug fan-out, so there is no `partial` (that state belongs to

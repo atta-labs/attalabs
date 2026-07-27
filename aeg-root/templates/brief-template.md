@@ -52,7 +52,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first[, then the h
 git worktree add .worktrees/task/[iteration-slug]/[n] -b task/[iteration-slug]/[n] origin/main && cd .worktrees/task/[iteration-slug]/[n] && bun install --frozen-lockfile --silent
 ```
 
-1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`) (D-073).
+1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`).
 2. `bun packages/aeg-core/bin/verify-dispatch.ts [iteration-slug] [n]` → `READY TO DISPATCH` required; else STOP.
 3. [any task-specific pre-flight checks — required tools present, reference files readable, re-digs to confirm the §2 citations]
 
@@ -65,7 +65,7 @@ On any failure: STOP and report.
 
 ## 7. Documentation-update list
 
-[DOC LIST — every doc artifact this brief must touch, by file name — or "No doc updates required (Tier 0)." A Tier 1+ brief with an empty list is malformed. Never list a new file for a one-off report/finding (D-074).]
+[DOC LIST — every doc artifact this brief must touch, by file name — or "No doc updates required (Tier 0)." A Tier 1+ brief with an empty list is malformed. Never list a new file for a one-off report/finding.]
 
 ## 8. Verification before claiming done
 
@@ -99,5 +99,5 @@ STOP and report if: pre-flight fails; [the Planner's stop-and-escalate condition
 - PR body = the Developer's PR report (start from `aeg-root/templates/pr-report-template.md`), with this entire brief pasted as the reference copy inside a collapsed `<details>` block, and `Closes #[N]` at the top of the header block.
 - [what to state in the PR body: decisions made, confirmations required by §8]
 - Pre-open gate: `PR_BODY="$(cat <body-file>)" bun packages/aeg-core/bin/verify-docs.ts --pr` green.
-- Include `git diff main --stat` and a token report (D-071; if unavailable, state so).
+- Include `git diff main --stat` and a token report (if unavailable, state so).
 - Then STOP. Review and Verification are separate invocations.

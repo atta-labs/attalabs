@@ -5,7 +5,7 @@ import { CHECK_SCHEMA_VERSION, type CheckError, type CheckOutcome, type CheckSpe
 export type RunOptions = {
   /** Concurrency cap; excess checks queue. */
   parallel: number
-  /** D-099: ring-1 default is diff-scoped. */
+  /** ring-1 default is diff-scoped. */
   diffOnly: boolean
   /** null = full scope (no skip logic applies, regardless of `diffOnly`). */
   changedFiles: string[] | null
@@ -119,7 +119,7 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
 
 /**
  * Runs every spec through exactly one spawn path — this IS the no-privileged-
- * API invariant (D-092). `runChecks` never branches on whether a
+ * API invariant. `runChecks` never branches on whether a
  * `CheckSpec` came from the built-in registry or from `vinaya.config.json`;
  * see `tests/checks/no-privileged-api.test.ts` for the mechanical proof.
  *

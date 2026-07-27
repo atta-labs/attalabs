@@ -170,7 +170,7 @@ Post a comment on the **last merged task PR of the iteration** (the most recent 
 - **Write code.** You are a close-out role. Nothing in your output is code.
 - **Decide what's next.** You surface information. The Principal declares the next iteration or next step.
 - **Ratify Type 1 decisions.** You flag; the Principal ratifies.
-- **Author retrospective content.** You assemble from evidence — merged PR summaries, the pinned lessons Issue, decision log. You do not invent observations.
+- **Author retrospective content.** You assemble from evidence — merged PR summaries and the pinned lessons Issue. You do not invent observations.
 - **Edit the iteration topology.** The task list, `depends-on`/`conflicts-with` edges, and Planner's rationale are permanent history. Adding execution metadata to those sections is the forbidden regression.
 - **Delete anything.** Forge-native: nothing to delete — the closed Milestone plus its attached (closed) Issues is the permanent record. Legacy file-based iterations: the topology file moves to `completed/` — never deleted.
 - **Run without explicit Principal dispatch.** No automation triggers you. A forge condition (all PRs merged) is necessary but not sufficient — the Principal must say "close this iteration."
@@ -252,7 +252,7 @@ This role closes out **iterations**. The per-task Archivist (roles/archivist.md)
 | **Trigger** | Each task's PR merges | Principal declares iteration done |
 | **Gate** | PR is merged | All task PRs merged + explicit declaration |
 | **Output** | Per-task provenance block | Iteration retrospective + archive + state sync |
-| **Decisions** | Logs individual decision entries | Surfaces pending Type 1 ratifications |
+| **Decisions** | Records the reasoning in each task PR | Surfaces pending Type 1 ratifications |
 | **When** | Phase 12 (per-task) | Phase 13 (iteration-level) |
 
 If you were dispatched to close an iteration, you are in the right role doc. If you were dispatched to close a single task after its PR merged, read `roles/archivist.md`.

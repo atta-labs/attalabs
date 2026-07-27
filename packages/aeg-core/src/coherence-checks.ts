@@ -1,6 +1,6 @@
 /**
  * verify-coherence pure check evaluators — deterministic plan↔forge coherence
- * oracle logic (A1/A2/A3, T1/T2/T3, D1, L1/L2/L3/L4, closes-N). Per D-067.
+ * oracle logic (A1/A2/A3, T1/T2/T3, D1, L1/L2/L3/L4, closes-N)..
  *
  * Pure — no `fs`, no `fetch`, no `process.env`. All forge facts and iteration
  * topology are injected by the caller (`bin/verify-coherence.ts`, the I/O shim).
@@ -33,7 +33,7 @@ export function isGrandfathered(isoDate: string | null | undefined): boolean {
 
 /**
  * R1 grandfather — explicit, data-declared Issue numbers whose body predates
- * the D-078 rationale grammar (or predates R1 enforcement) and is therefore
+ * the rationale grammar (or predates R1 enforcement) and is therefore
  * exempted from blocking. Unlike A1/A2/A3/T3's date-based cutoff, an Issue
  * body carries no reliable "authored under which grammar" timestamp, so this
  * is an explicit number set rather than a date proxy — populated once, at
@@ -42,9 +42,9 @@ export function isGrandfathered(isoDate: string | null | undefined): boolean {
  * live forge (see the task's PR body for the list + counts).
  *
  * New/edited task Issues are already gated at ring 0 (`bin/open-issue.ts`,
- * D-078) — this list is visible debt for the pre-gate stock, not a standing
+ *) — this list is visible debt for the pre-gate stock, not a standing
  * exemption mechanism. Do not add to it going forward; fix the Issue body
- * instead (D-055's rationale contract).
+ * instead (the planner-brief rationale contract).
  */
 export const R1_GRANDFATHERED_ISSUES: ReadonlySet<number> = new Set([279, 280, 281, 282])
 
@@ -242,7 +242,7 @@ export function checkT2(
 
 /**
  * T2 point-of-power relocation (aeg-governance-hardening task 24, #364,
- * Part 2 — D-082; supersedes half of task 19's T2-in-task-PR-CI placement).
+ * Part 2; supersedes half of task 19's T2-in-task-PR-CI placement).
  * A gate may only red a PR that could cause or cure the violation it
  * reports — live incident #363 (2026-07-04): registering Issues #364/#365
  * correctly reddened same-iteration task PR #363's CI, which could neither
@@ -260,7 +260,7 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
     status: 'info',
     note:
       result.note ??
-      'T2 findings are non-blocking outside plan PRs (D-082, point-of-power principle) — see aeg-root/enforcement.md.'
+      'T2 findings are non-blocking outside plan PRs (point-of-power principle) — see aeg-root/enforcement.md.'
   }
 }
 
@@ -324,7 +324,7 @@ export function checkT3(
         issue: null,
         iteration: e.iterationSlug,
         task: e.task.id,
-        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — D-055 requires all active tasks to have Issue numbers`,
+        reason: `Task ${e.task.id} in active iteration has no Issue ref (#TBD or empty) — the model requires all active tasks to have Issue numbers`,
         grandfathered: preEnforcement.has(e.iterationSlug)
       })
     }
@@ -398,18 +398,18 @@ export type { ForgeIssue }
 
 /**
  * R1: Every active-iteration task Issue's body carries the full eight-field
- * Planner's rationale (D-078, `aeg-root/contracts/planner-brief.md`).
+ * Planner's rationale (`aeg-root/contracts/planner-brief.md`).
  * Fail class: `missing-rationale-field`
  *
  * Presence-only — delegates entirely to `checkIssueRationale` (the same
  * grammar/parser `bin/open-issue.ts` enforces at ring 0 on new/edited
  * Issues). This is the ring-1/2 half: continuous re-checking of the stock.
- * One grammar, one parser (D-078) — this function does not re-implement it.
+ * One grammar, one parser — this function does not re-implement it.
  *
  * `issuesBySlug`: open Issues per active iteration slug, from the same
  * batched label-scoped query T2 uses (`fetchOpenIssuesByLabel`), extended to
  * carry `body` + `labels`.
- * `grandfatheredIssues`: `R1_GRANDFATHERED_ISSUES` — pre-D-078 stock,
+ * `grandfatheredIssues`: `R1_GRANDFATHERED_ISSUES` — pre- stock,
  * reported as `info`, never `fail`.
  */
 export function checkR1(
@@ -425,7 +425,7 @@ export function checkR1(
       failures.push({
         issue: issue.number,
         iteration: slug,
-        reason: `Issue #${issue.number} fails the D-078 rationale gate: ${errors.join(' | ')}`,
+        reason: `Issue #${issue.number} fails the rationale gate: ${errors.join(' | ')}`,
         grandfathered: grandfatheredIssues.has(issue.number)
       })
     }
@@ -436,10 +436,7 @@ export function checkR1(
     check: 'R1',
     status,
     failures,
-    note:
-      status === 'info'
-        ? `${failures.length} grandfathered task Issue(s) predate the D-078 rationale grammar`
-        : undefined
+    note: status === 'info' ? `${failures.length} grandfathered task Issue(s) predate the rationale grammar` : undefined
   }
 }
 
@@ -528,7 +525,7 @@ export function checkL3(files: IterationFile[]): CheckResult {
 /**
  * L4: Issue-level Milestone-attachment drift (aeg-review-gate-v1 task 1
  * follow-up). An open task-Issue carrying `vinaya/iteration:<slug>` for an ACTIVE
- * iteration (open Milestone titled the slug, D-110) whose GitHub-native
+ * iteration (open Milestone titled the slug) whose GitHub-native
  * `milestone` field doesn't match that same Milestone.
  *
  * **Advisory (info-only)**, same framing as L1/L2 (`state-machine.md` §12):
@@ -580,7 +577,7 @@ export function checkL4(
  * This is the FORGE-NATIVE analogue of file-based L1: L1 reads `IterationFile[]`
  * (a `!f.archived` file location), but post-cutover most iterations have no
  * topology file at all, so their Milestone-object drift is invisible to L1.
- * L5 keys off `listActiveIterationSlugs` (open Milestones — the D-110
+ * L5 keys off `listActiveIterationSlugs` (open Milestones — the
  * authority) instead, so it sees exactly the iterations L1 no longer can.
  *
  * **Advisory (info-only)**, same framing as L1/L2/L4 (`state-machine.md` §12):
@@ -619,7 +616,7 @@ export function checkL5(activeIterationSlugs: string[], entriesBySlug: Map<strin
  * Resolves synonyms) references. Shared by `checkClosesN`'s forward and
  * reverse directions, and by the CI wiring script that must resolve each
  * referenced Issue's task identity *before* calling `checkClosesN` — one
- * grammar, not a second copy of the pattern (D-078 discipline). Honors the
+ * grammar, not a second copy of the pattern (discipline). Honors the
  * AEG:CLOSES anchor pair (`anchored-region.ts`, task 30) when present: only
  * references inside the pair count, so a Closes-shaped line in a pasted
  * reference brief elsewhere in the PR body isn't picked up. The searched region
@@ -650,7 +647,7 @@ export function extractClosesReferences(prBody: string): Set<number> {
 }
 
 /**
- * Closes #N gate — Layer 1 of D-069's forge-lifecycle enforcement.
+ * Closes #N gate — Layer 1 of forge-lifecycle enforcement.
  *
  * Forward direction: a task PR (branch `task/<iter>/<n>`) must carry
  * `Closes #<its-issue>` in the body. Non-task branches are silently

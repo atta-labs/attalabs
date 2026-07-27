@@ -27,7 +27,7 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  * The generated reference view of the harness. `/docs` used to redirect into a
  * raw-markdown dump that published ~60% of `aeg-root/` — most of it backing no
  * node a reader could reach. It is now the other renderer of the same
- * `DiagramModel` `/the-harness` draws (D-087): every part of the harness,
+ * `DiagramModel` `/the-harness` draws: every part of the harness,
  * grouped by its ring, each carrying the model's own plain-English `detail`,
  * its `category`/`actorType` badges, and — for a ring-0 gate — the action it
  * guards. A part that backs an `aeg-root/**` doc links to it; that doc page

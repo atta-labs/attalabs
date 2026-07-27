@@ -5,7 +5,7 @@ import { createForgeSource } from './forge-adapter'
 
 /**
  * Mirrors `apps/vinaya/cli/src/lib/config.ts`'s schema-first shape: a plain
- * zod object validated at load time, no conditional logic (D-092/D-109).
+ * zod object validated at load time, no conditional logic.
  */
 export const StateSourceConfigSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('forge'), owner: z.string(), repo: z.string() }),

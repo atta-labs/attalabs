@@ -4,7 +4,7 @@
  * through — the Vinaya `/aeg` renderer, `registry-parse.ts`, and the
  * DiagramModel derivation all sit on this one implementation, so no consumer
  * can silently drift from the real file the moment a row's wording changes
- * (D-087: one parser, N consumers).
+ * (one parser, N consumers).
  */
 
 export type TableRow = {

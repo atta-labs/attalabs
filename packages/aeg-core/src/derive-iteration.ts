@@ -59,10 +59,10 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
 
 /**
  * Map a single task's forge facts to its derived status. Mirrors the §3 table
- * (D-059): `blocked` wins over everything else, then `merged`, then
+ *: `blocked` wins over everything else, then `merged`, then
  * `changes-requested`, then `in-review`, then `in-flight`, then `todo` for the
  * open-issue cases (assigned or not — both are `todo` inside an iteration per
- * D-059), then the honest terminal cases for a closed-without-merge Issue.
+ *), then the honest terminal cases for a closed-without-merge Issue.
  *
  * Reopened-after-merge exception: a reopened Issue can carry a stale
  * `prState: 'merged'` fact from a closing PR that predates the reopen —
@@ -72,7 +72,7 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
  * it names was never actually done. Checked before the `prState === 'merged'`
  * branch below so a currently-open Issue always wins over a historical merge.
  *
- * Honest terminal derivation (D-069): a closed Issue with no merged PR must
+ * Honest terminal derivation: a closed Issue with no merged PR must
  * never resolve to `todo` (which would imply not-started — a lie). It reads
  * GitHub's native `stateReason`: closed `NOT_PLANNED` → `dropped` (legitimately
  * abandoned); anything else (closed `COMPLETED` or no reason recorded) →
@@ -80,10 +80,10 @@ export function deriveIteration(iteration: Iteration, forgeFacts: Map<string, Fo
  * `Closes #N` law was built to surface).
  *
  * A missing `forgeFacts` entry → `todo`. Iteration tasks are committed work;
- * `backlog` is a project-level concept only and is never emitted here (D-059).
+ * `backlog` is a project-level concept only and is never emitted here.
  *
  * The rules themselves are no longer written here. They live as an ordered,
- * pure-data list in `state-machine-model.ts` (D-119, the `actions.ts`
+ * pure-data list in `state-machine-model.ts` (the `actions.ts`
  * discipline): one list, executed by this function and rendered by the docs,
  * so the two cannot drift. Each rule carries the prose and the reason its
  * position matters — change the order there, and this function's behavior

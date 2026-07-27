@@ -2,7 +2,7 @@
 
 /**
  * verify-brief — real, CI-enforced check that a PR-body brief carries every
- * required section (D-069, aeg-governance-hardening task 2). Replaces the
+ * required section (aeg-governance-hardening task 2). Replaces the
  * `brief-validation` stub in `.github/workflows/archivist.yml`.
  *
  * Thin CLI/Action shim: reads `PR_BODY` from env, derives whether the diff
@@ -35,7 +35,7 @@
  * `git worktree add … -b <branch>` line, which is where a brief declares what it
  * is going to be.
  *
- * Plan-PR Closes guard (D-077): runs BEFORE the non-task-branch bypass above,
+ * Plan-PR Closes guard: runs BEFORE the non-task-branch bypass above,
  * since a `plan/*` branch is itself non-task and would otherwise never reach
  * a brief-shape check at all. See `checkPlanPrNoCloses` in `src/brief-validation.ts`.
  */

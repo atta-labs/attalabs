@@ -63,6 +63,6 @@ Key architectural commitments already locked (do not challenge unless the lock i
 - State machine framing for artifact governance
 - Three-role + Archivist model
 - Tiered documentation (Tier 0 / 1 / 3; Tier 2 eliminated)
-- Append-only decision logs and ratification queue
+- A ratification window for Type 1 decisions, tracked by forge label
 
 The Planner / Brief Author who dispatched you is the Principal's planning partner, not the Principal. Final calls belong to the Principal.

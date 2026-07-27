@@ -59,7 +59,7 @@ describe('checkReviewGate', () => {
     expect(result.verdict).toBe('pass')
   })
 
-  describe('vinaya/waiver:review actor verification (D-097 pattern)', () => {
+  describe('vinaya/waiver:review actor verification', () => {
     it('label absent → gate still evaluates verdicts normally (fails on empty comments)', () => {
       const result = checkReviewGate({ comments: [], labels: ['vinaya/tier:1'], waiverLabelActor: 'daniboomerang' })
       expect(result.verdict).toBe('fail')
@@ -105,7 +105,7 @@ describe('checkReviewGate', () => {
 })
 
 describe('isReviewGateExemptBranch', () => {
-  it('exempts a plan branch — topology/decision-log docs only, no code', () => {
+  it('exempts a plan branch — topology docs only, no code', () => {
     expect(isReviewGateExemptBranch('plan/vinaya-v1')).toBe(true)
   })
 

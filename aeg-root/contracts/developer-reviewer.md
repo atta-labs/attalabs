@@ -57,7 +57,7 @@ Every item the Developer produces in the open PR (left) has exactly one obligati
 | Developer produces in the PR | Reviewer consumes at | What the consumption means |
 |---|---|---|
 | **Brief in PR body** (the frozen brief, pasted verbatim) | Entry — read before looking at the diff | The Reviewer reads the brief first to understand intent, boundary, surface map, and traps. Reviewing a diff without the brief is not a valid review pass. |
-| **Tier:** field in PR body | Determines review depth | Tier 0 → light pass; Tier 1 → standard including spec-conformance; Tier 3 → full including decision log and state doc verification. |
+| **Tier:** field in PR body | Determines review depth | Tier 0 → light pass; Tier 1 → standard including spec-conformance; Tier 3 → full including spec and state doc verification. |
 | **CI green** (typecheck, lint, tests, `verify-docs`) | Entry gate | The Reviewer does not start if CI is red. A red CI is a Developer problem, not a Reviewer finding. |
 | **Surface map respected** (diff touches only files named in the brief's surface map) | First diff check | If the diff touches files outside the surface map, that is a BLOCKER finding before reading any logic. |
 | **Task Done checklist ticked** | Confirms Developer self-checked | The Reviewer verifies the checklist is present and ticked. An unticked item that the Reviewer then finds broken is a MAJOR finding. |

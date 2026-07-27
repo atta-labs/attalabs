@@ -65,7 +65,7 @@ describe('DERIVED_STATUSES', () => {
     expect(new Set(DERIVED_STATUSES).size).toBe(9)
   })
 
-  it('keeps backlog in the set but out of the derivable subset (D-059)', () => {
+  it('keeps backlog in the set but out of the derivable subset', () => {
     expect(DERIVED_STATUSES).toContain('backlog')
     expect(DERIVABLE_STATUSES).not.toContain('backlog')
     expect(DERIVABLE_STATUSES).toHaveLength(8)
@@ -84,7 +84,7 @@ describe('DERIVATION_RULES — shape', () => {
     }
   })
 
-  it('no rule concludes backlog — it is never emitted by derivation (D-059)', () => {
+  it('no rule concludes backlog — it is never emitted by derivation', () => {
     expect(DERIVATION_RULES.some((r) => r.status === 'backlog')).toBe(false)
   })
 

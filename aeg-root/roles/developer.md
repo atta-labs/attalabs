@@ -18,7 +18,7 @@ refuses_when: >
   the task Issue is #TBD or blank; a named product's previous iteration is
   complete but not archived; the task's row doesn't exist yet in the
   iteration's forge-derived task list; or the Step 0 branch name doesn't
-  literal-match the topology row. (D-120, 2026-07-13: the prior task's
+  literal-match the topology row. (2026-07-13: the prior task's
   provenance block is NO LONGER a refusal condition — superseded.)
 summary: Ever had someone review their own work?
 ---

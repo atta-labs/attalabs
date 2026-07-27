@@ -6,7 +6,7 @@
  * discipline: this is the thin I/O shim; the pure evaluators live in
  * `../src/registry-parse.ts` / `../src/registry-checks.ts`).
  *
- * Rollout policy (D-116): G1/G2 are report-only this iteration — they can
+ * Rollout policy: G1/G2 are report-only this iteration — they can
  * only print `info`, never affect the exit code. G3/G4/G5 are blocking:
  * the process exits non-zero if any of them returns `'fail'`.
  *

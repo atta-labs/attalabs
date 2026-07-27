@@ -4,7 +4,7 @@
  *
  *   1. Resolves `{ owner, repo }` from the local git remote (`resolveRepo`).
  *   2. Resolves issue numbers for tasks: tries the `vinaya/iteration:<slug>` label
- *      query first (canonical forge source per D-029); falls back to topology
+ * query first (canonical forge source ); falls back to topology
  *      refs when the label returns nothing (e.g. archived iterations that
  *      pre-date the labeling convention).
  *   3. Calls `fetchForgeFacts` for every task in the iteration that has an
@@ -17,7 +17,7 @@
  *   - The git remote can't be resolved (`resolveRepo` returns `null`).
  *   - The forge adapter returns `unavailable: true`.
  *   In both cases the derived statuses fall back to `todo` — iteration tasks
- *   are committed work; `deriveIteration` emits `todo` when no facts are known (D-059).
+ * are committed work; `deriveIteration` emits `todo` when no facts are known.
  *
  * SERVER-ONLY.
  */
@@ -41,7 +41,7 @@ export type IterationSnapshot = {
    * Raw per-task forge facts, keyed by task id. `deriveIteration` already
    * consumed these to produce `derived` — surfaced here too so callers can
    * read facts `deriveIteration` doesn't project into `DerivedStatus` (e.g.
-   * `assigned`, which D-059 deliberately excludes from status derivation).
+   * `assigned`, which the state model deliberately excludes from status derivation).
    */
   facts: Map<string, ForgeFacts>
   /**

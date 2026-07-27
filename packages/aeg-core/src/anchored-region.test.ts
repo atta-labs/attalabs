@@ -154,7 +154,7 @@ describe('anchor recognition is additive — PR #407 freeform round-trip', () =>
       'no security-review verdict comment found on this PR'
     ])
     // Re-pinned when the provenance block's `Decision:` line was removed with
-    // the decision-log machinery. The pin exists to catch *accidental* drift in
+    // the machinery behind it. The pin exists to catch *accidental* drift in
     // block assembly; this change was deliberate.
     expect(sha256(block)).toBe('66b89fe7d0f6a8fc191bebc23e7824a9c630033d335bbaef90afc39fc828b111')
   })

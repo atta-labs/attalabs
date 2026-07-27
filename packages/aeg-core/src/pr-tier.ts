@@ -17,8 +17,8 @@ import { isDocFile, isSpecFile } from './file-classify'
  *   1. Spec or doc file in diff   → Tier 1
  *   2. Otherwise (code/config…)   → Tier 0
  *
- * A decision log carries no tier signal: the log is a frozen archive that no
- * gate reads, so touching one says nothing about a change's impact.
+ * A frozen archive carries no tier signal: nothing reads it, so touching one
+ * says nothing about a change's impact.
  */
 export function deriveTierFromDiff(changed: string[]): 0 | 1 {
   if (changed.some((p) => isSpecFile(p) || isDocFile(p))) return 1

@@ -11,7 +11,7 @@ export { sumLedger } from './sum-ledger'
 export { aggregateTaskTokenRows, parseTokenReportEntries, parseTokensLines } from './parse-token-report'
 export type { TokenSourcePr } from './parse-token-report'
 export { isCodeFile, isDocFile, isSpecFile } from './file-classify'
-export { hasStatusBlock } from './decision-log'
+export { hasStatusBlock } from './status-block'
 export {
   DOC_OWNERS_PATH,
   evaluateC5,

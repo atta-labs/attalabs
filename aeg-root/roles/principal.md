@@ -63,7 +63,7 @@ The Principal holds final authority over:
 - **Author briefs.** The Brief Author does this. The Principal approves briefs but does not draft them.
 - **Plan iterations.** The Planner does this. The Principal approves the iteration but does not decompose it.
 - **Execute tasks.** The Developer executes. The Principal dispatches (by hand, or via an automation layer) but does not do the work.
-- **Manage day-to-day PM docs.** The Brief Author maintains the iteration files, `thinking.md`, decision logs, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
+- **Manage day-to-day PM docs.** The Brief Author maintains the iteration files, `thinking.md`, and each project's pinned operational-state Issue during working sessions. The Principal approves and merges. (`state.md` and `now.md` are both retired — per-project state moved onto a pinned GitHub Issue per project and `now.md` was dropped; active-work state is derived from the forge.)
 - **Monitor every blocked task.** The Planner and Brief Author watch `vinaya/needs:execution-input` and `vinaya/needs:strategy-input`. The Principal monitors `vinaya/needs:principal-input` only.
 
 ---
@@ -95,7 +95,7 @@ These rules apply to any agent talking to the Principal — on any chat or codin
 - **Push back when warranted.** If a direction is wrong, architecturally risky, or contradicts a prior decision, say so concretely. Don't manufacture agreement to avoid friction.
 - **Diagnose before iterating.** Identify the root cause before proposing a fix. "The issue is X because Y; the fix is Z" beats "Let me try A, then B, then C."
 - **Match length to substance.** Don't pad.
-- **Project files are authoritative.** When memory conflicts with current repo state, trust the file. Say "I see in `decisions.md` that..." not "I recall that..."
+- **Project files are authoritative.** When memory conflicts with current repo state, trust the file. Say "I see in the spec that..." not "I recall that..."
 
 ---
 

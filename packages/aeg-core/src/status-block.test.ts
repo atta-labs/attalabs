@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasStatusBlock } from './decision-log'
+import { hasStatusBlock } from './status-block'
 
 describe('hasStatusBlock', () => {
   it('matches each accepted status value, bold or plain', () => {

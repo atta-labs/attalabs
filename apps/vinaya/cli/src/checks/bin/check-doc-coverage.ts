@@ -61,7 +61,7 @@ function resolvePrBody(): string {
   return ''
 }
 
-/** D-097: a waiver is honored only when the label is present AND its actor is a configured principal — resolved by CI ahead of this check, never derived here. */
+/** a waiver is honored only when the label is present AND its actor is a configured principal — resolved by CI ahead of this check, never derived here. */
 function waiverActiveFromEnv(): boolean {
   const labels = (process.env.PR_LABELS || '')
     .split(',')

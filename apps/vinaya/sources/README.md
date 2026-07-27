@@ -27,13 +27,13 @@ zod-validated config object.
   (`DoctrineFileSourceConfig.root`, default `DEFAULT_GOVERNANCE_ROOT`), never a
   hardcoded literal — same rule as `createFileSource`. This keeps `aeg-core`'s
   derivation pure: doctrine arrives as already-read `DoctrineContent`, so the
-  library can be packaged for adopters whose repos have no `aeg-root/` (D-111).
+  library can be packaged for adopters whose repos have no `aeg-root/`.
 
 ## Open question — publish-time packaging (LAUNCH-iteration, not resolved here)
 
 Whether this package ships inside the CLI's published package boundary or
 stays dev-only is a launch-time decision, not a build-time one. The CLI's
-"surgically small" published footprint (D-084/D-104) argues for keeping
+"surgically small" published footprint argues for keeping
 `sources` out of the npm tarball if end users never invoke the forge-backed
 path directly (e.g. Studio and internal tooling are the only real
 consumers) — but that's a launch-readiness call, made when the CLI's actual
