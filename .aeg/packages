@@ -19,7 +19,7 @@
 # DERIVATION, NOT INVENTION. Every `packages/*` workspace is a shared
 # collision domain by construction (CLAUDE.md: "Shared infrastructure lives in
 # packages"). The non-package entries below are the cross-cutting paths
-# projects.md and README §5 both name verbatim — lockfiles, migrations, codegen
+# projects.md and iteration-model.md §5 both name verbatim — lockfiles, migrations, codegen
 # output, monorepo config — which couple tasks *across* package boundaries.
 #
 # A domain being listed here does NOT by itself mean cross-product reach: a
@@ -46,7 +46,7 @@ packages/storage
 packages/typescript-config
 packages/ui
 
-# ---- cross-cutting paths (projects.md / README §5, named verbatim) -----------
+# ---- cross-cutting paths (projects.md / iteration-model.md §5) ---------------
 bun.lock
 turbo.json
 biome.json
