@@ -1687,7 +1687,7 @@ Inside a launched iteration, the only task states are:
 - `api/admin/profile/route.ts` `revalidatePath` calls updated to `/{username}/ui` + `/{username}/settings`.
 - `components/audit/BulkAudit.tsx` + `components/envoy/JDInput.tsx`: the two `/settings?tab=api-keys` links now consume a username-bearing href passed from their respective pages (`bulk-audit/page.tsx`, `EnvoyFlow.tsx`).
 - `apps/herald-ai/specs/herald-app-architecture.md` §2 / §3 / §4 rewritten; §4 verification recipe extended to cover the owner-segment routes.
-- `apps/herald-ai/specs/herald-decisions.md`: D-061 entry (Herald-local detail; this entry is the cross-product source of truth).
+- `docs/herald-decisions-legacy.md`: D-061 entry (Herald-local detail; this entry is the cross-product source of truth).
 - Reversible. Reversal cost: re-create `app/(app)/ui/` + `app/(app)/settings/`, fold `(profile)` + `(owner)` layouts back, restore `signedInLinks` + delete `extraActions`. The relocation is a routing refactor; the locked invariant under it (D-035) does not move.
 - Username reservation: `ui` and `settings` are now unusable as vanity slugs under `/[username]`. The onboarding `check-username` API gains them as reserved values in a small follow-up; both are unlikely vanity URLs and not a blocker.
 

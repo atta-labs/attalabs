@@ -84,7 +84,7 @@ Agent definitions live in the YAML spec loaded via `lookupSpec` (auto-discovered
 - Refused with structured `missing_provider_key` error if `providerKeys[vendorId]` is absent server-side
 - Errors include resolved `vendorId`, `modelId`, and `agentName` for client-side reporting
 
-The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). See D-032 in `vada-decisions.md`.
+The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). See D-032 in `apps/vada-ai/docs/vada-decisions-legacy.md`.
 
 ### `vada__deliberate` — Rounds-Based Team Deliberation
 
@@ -175,7 +175,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
-- Vendor registry + SDK-shape dispatch: D-032 in `apps/vada-ai/specs/vada-decisions.md` + `packages/models/src/vendors.ts`
+- Vendor registry + SDK-shape dispatch: D-032 in `apps/vada-ai/docs/vada-decisions-legacy.md` + `packages/models/src/vendors.ts`
 
 ---
 

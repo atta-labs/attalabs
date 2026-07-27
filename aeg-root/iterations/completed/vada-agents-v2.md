@@ -87,7 +87,7 @@ patching it into a spec.
 ### Task 3 — Trust page rewrite
 **Boundary:** Rewrite `apps/vada-ai/web/src/app/(main)/trust/` content. Replace the browser-
 only BYOK framing (pre-May 4) with the current server-side at-rest model (AES-256-GCM,
-envelope-encrypted, AAD-bound to clerkId, per vada-decisions.md D-028 + D-029). Pure
+envelope-encrypted, AAD-bound to clerkId, per apps/vada-ai/docs/vada-decisions-legacy.md D-028 + D-029). Pure
 content rewrite — no route changes, no component architecture changes.
 **Sizing:** Small. One PR. Content only.
 **Project(s) + blast radius:** vada only. No dependencies.

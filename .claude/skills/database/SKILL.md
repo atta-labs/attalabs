@@ -7,7 +7,7 @@ description: Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fi
 
 ## Context
 
-Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP (D-029) and the shared keys UI extraction (D-030) — see `vada-decisions.md` for rationale.
+Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP (D-029) and the shared keys UI extraction (D-030) — see `apps/vada-ai/docs/vada-decisions-legacy.md` for rationale.
 
 ---
 

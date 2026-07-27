@@ -1,7 +1,7 @@
 # Vāda · BYOK Architecture (Current State)
 
 **Status:** ratified
-**Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `vada-decisions.md` for the architectural decision history.
+**Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `apps/vada-ai/docs/vada-decisions-legacy.md` for the architectural decision history.
 
 This document describes how BYOK actually works in Vāda today.
 
@@ -142,7 +142,7 @@ These are V2 work, not V1 commitments.
 
 ## Related documents
 
-- `vada-decisions.md` — D-028 (single-source-keys reversal), D-029 (hosted MCP architecture), D-030 (shared `@atta/ui/account` + ecosystem-shared schemas)
+- `apps/vada-ai/docs/vada-decisions-legacy.md` — D-028 (single-source-keys reversal), D-029 (hosted MCP architecture), D-030 (shared `@atta/ui/account` + ecosystem-shared schemas)
 - `mcp-architecture.md` — full hosted MCP architecture spec
 - `vada-byok-gap-report.md` — historical gap analysis from April 30; mostly superseded by D-028
 - `.claude/skills/auth/SKILL.md` — Clerk auth model

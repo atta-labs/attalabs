@@ -15,7 +15,7 @@ Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP serv
 - **Atta-the-product** is a separate composed product (Vāda + Vitakka + Sati) targeting `atta.ai` when ready. Not yet deployed.
 - Vāda has two permanent surfaces: standalone at `vada.attalabs.dev` (current) and as the deliberation layer inside Atta-the-product (future).
 
-The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026, vada-decisions.md), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
+The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of D-033 (May 12-13, 2026, apps/vada-ai/docs/vada-decisions-legacy.md), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
 **Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture. (Confirmed for herald-hardening-v1 Task 11: the additive `Conclusion.estimatedCostUsd` / `MatchReport.estimatedCostUsd` field is Herald/adapter-level, not a Vāda deliberation-catalog change. Same for Task 13, #520: the additive `MatchReport.githubSignals` field and its per-invocation capture live entirely in `forensic-hiring-auditor`, Herald-only content.)
 
@@ -30,7 +30,7 @@ Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta 
 | `vada__deliberate` | Compiles a YAML spec and runs the full flow end-to-end. Returns synthesized output + structured field when the spec declares one. | Variable per spec | MOAT-A (audit trail) |
 | `vada__consult` | Routes to a YAML spec via `spec_id`; constructs a Flow in-memory with role-selected reviewers; runs and returns reviewer responses. | Lower | Acquisition surface |
 
-Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` (vada-decisions.md D-032) mirroring the web UI's per-slot model configurability, validated against the vendor registry.
+Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Record<agentName, modelId>` (apps/vada-ai/docs/vada-decisions-legacy.md D-032) mirroring the web UI's per-slot model configurability, validated against the vendor registry.
 
 | Catalog YAML | Display name | Shape (v2) | Status |
 |---|---|---|---|
@@ -58,7 +58,7 @@ USER CHAT CLIENT            (Claude.ai web, Claude Desktop, Claude Code CLI, Cur
   (YAML → loadFlow → compileFlow → Plan)
         ↓ Plan (JSON DAG)
 @atta/adapter-langgraph     CAP-1     → see skill: atta-adapter-langgraph
-  (includes cognitive router nodes; SDK-shape dispatch per vada-decisions.md D-032 vendor registry)
+  (includes cognitive router nodes; SDK-shape dispatch per apps/vada-ai/docs/vada-decisions-legacy.md D-032 vendor registry)
         ↓ per-turn dispatch
 YAML specs + agent visuals  MOAT-B    → see skill: vada-yaml-authoring
   (v2 deliberation YAML files in packages/agents/vada-deliberation/yamls/; agent UI types in web/src/components/agents/visuals/)
@@ -81,7 +81,7 @@ Prior to D-033, the engine supported three structurally distinct YAML shapes (br
 - **Template variables** in v2 YAMLs still use the v1 `TemplateState` shape (`outputsByRound`, `lastOutputByAgent`, `conclusion`, etc.) — the adapter was not refactored as part of D-033. See OQ-H in `vada-state.md`.
 - **Workflow types deleted**: `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, and the `Workflow` discriminated union are gone. The Plan graph types (`Plan`, `PlanNode`, `PlanEdge`, `PlanGraph`, `PlanNodeRole`, `PlanNodeKind`, `PlanEdgeKind`) survive — they describe the compiled output, not the input.
 
-For the full schema documentation, see `apps/vada-ai/specs/yaml-schema-reference.md`. For the design rationale, see `apps/vada-ai/specs/generic-flow-refactor.md` and vada-decisions.md D-033.
+For the full schema documentation, see `apps/vada-ai/specs/yaml-schema-reference.md`. For the design rationale, see `apps/vada-ai/specs/generic-flow-refactor.md` and apps/vada-ai/docs/vada-decisions-legacy.md D-033.
 
 ---
 
@@ -123,9 +123,9 @@ Use this framework when labeling new work. Do NOT call something a moat unless i
 | 10 | Single-source-keys reversal | ✅ complete (May 4) |
 | 11 | Shared keys UI + ecosystem schemas | ✅ complete (May 5) |
 | 12 | Doc audit pass | ✅ complete (May 6) |
-| 13 | Vendor registry consolidation (vada-decisions.md D-032) | ✅ complete (May 11) |
+| 13 | Vendor registry consolidation (apps/vada-ai/docs/vada-decisions-legacy.md D-032) | ✅ complete (May 11) |
 | 14 | D-033 generic flow refactor + D-034 cleanup | ✅ complete (May 12-13) |
-| 15 | Per-vendor tool substrate — GOOGLE_TOOL_REGISTRY + OPENAI_COMPAT_TOOL_REGISTRY + openai-compat custom tool loop (vada-decisions.md D-053) | ✅ complete (Jun 23) |
+| 15 | Per-vendor tool substrate — GOOGLE_TOOL_REGISTRY + OPENAI_COMPAT_TOOL_REGISTRY + openai-compat custom tool loop (apps/vada-ai/docs/vada-decisions-legacy.md D-053) | ✅ complete (Jun 23) |
 | 16 | Reviewer prompt iteration (Track B Item 3b) | queued |
 | 17 | Synthesizer prompt iteration (Track B Item 3c) | queued |
 | 18 | First Vāda Reviewers benchmark run (Track B Item 4) | queued |
@@ -154,7 +154,7 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 
 ## Locked Architectural Decisions
 
-D-### references below name their log: `vada-decisions.md` for Vāda-internal, `decisions.md` for global.
+D-### references below name their log: `apps/vada-ai/docs/vada-decisions-legacy.md` for Vāda-internal, `decisions.md` for global.
 
 | Decision | Reason | Reference |
 |----------|--------|-----------|
@@ -167,13 +167,13 @@ D-### references below name their log: `vada-decisions.md` for Vāda-internal, `
 | Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient | — |
 | Spec ratification via explicit metadata block (not assumption) | Prevents spec/implementation drift like the BYOK gap | global D-005 |
 | Decision logs are append-only | Audit trail preserved across supersession events | global D-006 |
-| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + decision logs; filenames are stable | global D-013, vada-decisions.md D-025 |
+| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + decision logs; filenames are stable | global D-013, apps/vada-ai/docs/vada-decisions-legacy.md D-025 |
 | v2 naming framing (AttaLabs vs Atta; no -AI suffix; Pāli rule demoted) | Three rounds of multi-reviewer pressure-testing converged on v2 | global D-025 |
-| Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged | vada-decisions.md D-032 |
-| Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable | vada-decisions.md D-032 |
-| Universal round-based YAML schema (v2) | One model expresses every deliberation pattern; engine compiler treats them uniformly | vada-decisions.md D-033 |
-| `compileFlow` shape detection preserves v1 Plan node ids | Adapter and route handler depend on the ids; deliberate pragmatic weakening of "zero branches" | vada-decisions.md D-033 |
-| `RevisionCondition` single-variant (`type: 'contains'`); engine throws on `equals`/`matches` | Honest engine surface; schema reserves the types for future extensibility | vada-decisions.md D-034 |
+| Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged | apps/vada-ai/docs/vada-decisions-legacy.md D-032 |
+| Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable | apps/vada-ai/docs/vada-decisions-legacy.md D-032 |
+| Universal round-based YAML schema (v2) | One model expresses every deliberation pattern; engine compiler treats them uniformly | apps/vada-ai/docs/vada-decisions-legacy.md D-033 |
+| `compileFlow` shape detection preserves v1 Plan node ids | Adapter and route handler depend on the ids; deliberate pragmatic weakening of "zero branches" | apps/vada-ai/docs/vada-decisions-legacy.md D-033 |
+| `RevisionCondition` single-variant (`type: 'contains'`); engine throws on `equals`/`matches` | Honest engine surface; schema reserves the types for future extensibility | apps/vada-ai/docs/vada-decisions-legacy.md D-034 |
 
 ---
 
@@ -229,7 +229,7 @@ Vāda-internal:
 - `apps/vada-ai/specs/vada-product-spec.md` — full product truth
 - `apps/vada-ai/specs/yaml-schema-reference.md` — v2 YAML schema definitive reference
 - `apps/vada-ai/specs/generic-flow-refactor.md` — D-033 design document
-- `apps/vada-ai/specs/vada-decisions.md` — Vāda-internal architectural decision log
+- `apps/vada-ai/docs/vada-decisions-legacy.md` — Vāda-internal architectural decision log
 - `apps/vada-ai/specs/vada-state.md` — current implementation state and open questions
 - `apps/vada-ai/specs/vada-science-of-deliberation.md` — foundational theory
 - `apps/vada-ai/specs/engine/v2-results/` — reviewer rounds

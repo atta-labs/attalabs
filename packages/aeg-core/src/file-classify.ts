@@ -17,8 +17,8 @@
  */
 const FROZEN_ARCHIVES: ReadonlySet<string> = new Set([
   'docs/decisions-legacy.md',
-  'apps/herald-ai/specs/herald-decisions.md',
-  'apps/vada-ai/specs/vada-decisions.md'
+  'apps/herald-ai/docs/herald-decisions-legacy.md',
+  'apps/vada-ai/docs/vada-decisions-legacy.md'
 ])
 
 export function isFrozenArchive(p: string): boolean {

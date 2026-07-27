@@ -56,8 +56,8 @@ describe('the frozen decision archives are not documentation', () => {
   it('excludes the legacy archives from the doc set', () => {
     expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
     expect(isDocFile('docs/decisions-legacy.md')).toBe(false)
-    expect(isDocFile('apps/herald-ai/specs/herald-decisions.md')).toBe(false)
-    expect(isDocFile('apps/vada-ai/specs/vada-decisions.md')).toBe(false)
+    expect(isDocFile('apps/herald-ai/docs/herald-decisions-legacy.md')).toBe(false)
+    expect(isDocFile('apps/vada-ai/docs/vada-decisions-legacy.md')).toBe(false)
   })
 
   it('still counts real docs in the same directories', () => {
@@ -72,7 +72,7 @@ describe('the restored per-product logs are still archives', () => {
   // caught it had been repointed at a synthetic path. Both real files are
   // named here so the predicate cannot stop applying without a test failing.
   it('excludes them from the doc set, the spec set, and tier derivation', () => {
-    for (const p of ['apps/herald-ai/specs/herald-decisions.md', 'apps/vada-ai/specs/vada-decisions.md']) {
+    for (const p of ['apps/herald-ai/docs/herald-decisions-legacy.md', 'apps/vada-ai/docs/vada-decisions-legacy.md']) {
       expect(isDocFile(p), p).toBe(false)
       expect(isSpecFile(p), p).toBe(false)
     }

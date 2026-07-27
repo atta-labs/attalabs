@@ -248,7 +248,7 @@ For the full YAML examples by shape, see `apps/vada-ai/specs/yaml-schema-referen
 ### Web route handler — PARTIALLY SHIPPED (PR #47)
 
 - Reads new schema via `loadFromCatalog` (delegates to `loadFlow`). Shipped.
-- Same `agentVendorOverrides` construction as today (vada-decisions.md D-032 vendor registry stays). Shipped.
+- Same `agentVendorOverrides` construction as today (apps/vada-ai/docs/vada-decisions-legacy.md D-032 vendor registry stays). Shipped.
 - Calls `compileFlow` instead of the old per-workflow compilers. Shipped.
 - SSE event names unchanged (still v1 vocabulary). PR 3 work.
 
@@ -271,7 +271,7 @@ What did land in PR #47 for the UI: `flow-helpers.ts` (39 lines, shared shape de
 
 ### Decision log entry — SHIPPED
 
-D-033 ("Universal round-based YAML schema") is in `apps/vada-ai/specs/vada-decisions.md`. D-034 ("Signal-type rejection + RevisionCondition tighten") is the cleanup follow-up, also in `vada-decisions.md`. The global `decisions.md` does not have a corresponding entry — D-033 is Vāda-internal even though it touches multiple consumer files in the Vāda codebase. The global log only gets entries for cross-product ecosystem-level decisions (the global D-025 is the v2 naming framing, which qualifies; the engine refactor is Vāda's own concern).
+D-033 ("Universal round-based YAML schema") is in `apps/vada-ai/docs/vada-decisions-legacy.md`. D-034 ("Signal-type rejection + RevisionCondition tighten") is the cleanup follow-up, also in `apps/vada-ai/docs/vada-decisions-legacy.md`. The global `decisions.md` does not have a corresponding entry — D-033 is Vāda-internal even though it touches multiple consumer files in the Vāda codebase. The global log only gets entries for cross-product ecosystem-level decisions (the global D-025 is the v2 naming framing, which qualifies; the engine refactor is Vāda's own concern).
 
 ## Rollout — 4 PRs sequenced on a feature branch
 
@@ -321,5 +321,5 @@ All 7 items resolved at the design review on May 12 prior to PR #41 dispatch. Ca
 3. ✅ Within-round input model confirmed (round-level default, per-agent override)
 4. ✅ OQ-1 through OQ-10 resolved
 5. ✅ Rollout sequencing confirmed (4 PRs)
-6. ✅ Docs trail confirmed (design doc + D-033 in vada-decisions.md + briefs sequenced)
+6. ✅ Docs trail confirmed (design doc + D-033 in apps/vada-ai/docs/vada-decisions-legacy.md + briefs sequenced)
 7. ✅ Nothing additional flagged

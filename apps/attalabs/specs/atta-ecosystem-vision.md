@@ -361,7 +361,7 @@ When this document conflicts with what's been built or what's about to be built,
 - `atta-finetuning-research.md` — technical research for Sati's eventual fine-tuning layer
 - `vitakka-human.md` — the substantial middle layer described in human terms (corrected May 3)
 - `apps/cetana-ai/specs/cetana-spec.md` — current Cetana V0 architecture (May 9-10 lock)
-- `vada-state.md`, `vada-product-spec.md`, `vada-decisions.md` — Vāda internal documentation
+- `vada-state.md`, `vada-product-spec.md`, `apps/vada-ai/docs/vada-decisions-legacy.md` — Vāda internal documentation
 
 ---
 

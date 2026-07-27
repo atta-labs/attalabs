@@ -1,3 +1,14 @@
+# Herald decisions — legacy archive (frozen 2026-07-27)
+
+**History, not machinery.** No check reads this file. No gate requires an entry.
+It is kept because `D-###` citations across code, specs and skills resolve here.
+
+Do not add entries. A decision that still binds belongs in the spec for the
+surface it governs, where a doc-ownership binding keeps it current. A decision
+about one change belongs in that change's pull request.
+
+---
+
 # Herald Decisions
 
 **Status:** draft
