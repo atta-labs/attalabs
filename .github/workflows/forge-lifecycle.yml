@@ -95,7 +95,7 @@ jobs:
 
       # ── 2/9 · Coherence oracle ──────────────────────────────────────────
       # Stateless coherence oracle (verify-coherence.ts). A1/A2/A3/T1/T2/T3/
-      # D1/R1/N1/M1/M3 failures → red (the CLI exits non-zero on ANY check
+      # D1/R1/M1/M3 failures → red (the CLI exits non-zero on ANY check
       # with status:'fail' — see coherence-checks.ts for each check's exact
       # fail/info semantics; several grandfather via COHERENCE_ENFORCED_FROM /
       # R1_GRANDFATHERED_ISSUES). T2/T3 are scoped to the PR's own iteration

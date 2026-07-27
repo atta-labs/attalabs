@@ -387,7 +387,7 @@ Every brief includes the following metadata. These fields gate dispatch and rati
 Look at the surface map. Then:
 - Code only, no spec files, no decision log → **Tier 0** (unless it introduces a meaningful new capability)
 - Code + at least one spec file updated → **Tier 1**
-- Code + decision log entry → **Tier 3**
+- Code + a project-level change → **Tier 3**
 - If Tier 0: C3 does not apply. No doc file needed.
 
 Write the Tier **last**, after the surface map is fully defined. Never declare Tier before the surface map is complete.
@@ -420,7 +420,7 @@ Present only when the Principal explicitly delegates a decision. Without it, con
 ```
 **spike:** true
 ```
-Exploratory briefs only. Reduces to typecheck + lint + a decision log entry capturing what was tried and learned. Spike code does not merge.
+Exploratory briefs only. Reduces to typecheck + lint + a pull-request record of what was tried and learned. Spike code does not merge.
 
 ### Type 1/2 declaration
 

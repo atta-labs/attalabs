@@ -158,7 +158,6 @@ field on its own line:>
 | `[principal]` items | Items only the Principal can run (auth-gated, vendor-key-dependent, visual). The agent **does not tick these** — the Principal does, after running in a real browser.            |
 | Scope            | One paragraph + the Tier field. Ends with `**Tier:** 0 \| 1 \| 3` on its own line.                                                                                                |
 | **Tier syntax**  | Exactly `Tier: 0`, `Tier: 1`, `Tier: 3` (plain) — or `**Tier:** 0`, `**Tier:** 1`, `**Tier:** 3` (bold). `Tier 1` (no colon), `Tier-1`, `Tier:1` (no space) are **rejected** by CI. |
-| `Conforms-to:`   | Optional. `Conforms-to: D-###` or `Conforms-to-lock: D-###` — satisfies the Tier-3 decision-log requirement (C4) when the work implements an already-recorded decision rather than introducing a new one. |
 | `Doc-ack:`       | Optional. `Doc-ack: <pointer> — <note>` — acknowledges an external (URL) binding in `.vinaya/doc-owners` that fired on this PR. `<pointer>` must exactly match the binding URL. Separator is flexible — em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted, so `Doc-ack: <pointer> - <note>` parses identically. **Body field, not a label.** (state-machine.md Section 15) |
 | `vinaya/waiver:docs` (label, not a field) | Optional. A doc-coverage waiver is honored PR-wide ONLY when this label is applied AND the actor of its labeling timeline event is a configured principal — there is no body-field waiver grammar anymore; a parseable string is never sufficient. **Principal only**, applied outside any agent session. |
 
@@ -210,11 +209,11 @@ All Tier 1 items, plus:
 
 If the brief is tagged `spike: true`:
 
-- Reduced checklist: code passes typecheck + lint, decision log entry capturing what was tried and what was learned
+- Reduced checklist: code passes typecheck + lint, with what was tried and learned recorded in the pull request
 - Spike code does NOT merge to main
 - After the spike, the code either rebases away (if the approach is abandoned) or converts to a Tier 1+ task in a new brief
 
-A spike is exploratory, not a permanent excuse to skip documentation. The decision log entry is mandatory — it's the durable artifact of the spike.
+A spike is exploratory, not a permanent excuse to skip documentation. The pull request is the durable artifact of the spike.
 
 ---
 

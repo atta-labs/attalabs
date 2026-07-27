@@ -84,7 +84,7 @@ Every output the per-task Archivist produces (left) has exactly one obligation f
 
 A contract changes **as a unit**. You may not change what the per-task Archivist produces without, in the same change, updating what the Iteration Archivist consumes — because the property that makes the seam sound is that the producer's output side is *identical* to the consumer's input side. Concretely:
 
-- A change to this file is a **Tier 3** change (it alters a cross-role contract) and requires a decision-log entry.
+- A change to this file is a **Tier 3** change: it alters a cross-role contract, so the reasoning belongs in the pull request that makes it, where the reviewer and the close-out both read it.
 - The same PR that edits this contract must verify both `aeg-root/roles/archivist.md` and `aeg-root/roles/iteration-archivist.md` still point here and still match the table.
 - Never edit one side's role doc to add/drop a hand-off field directly. Add/drop it **here**; the role docs inherit it by reference.
 

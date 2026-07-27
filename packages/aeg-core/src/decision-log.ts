@@ -1,5 +1,5 @@
 /**
- * Decision-log shape and numbering checks (C1/C2/F1/F2/N1/N2). Pure — takes file
+ * Spec status-block check (C1/F1). Pure — takes file
  * content as a string, returns findings. No filesystem, no git.
  */
 

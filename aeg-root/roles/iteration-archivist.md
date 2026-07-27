@@ -130,7 +130,7 @@ Query `docs/decisions-legacy.md` (and per-project decision files if relevant) fo
 
 For each: list it explicitly in your output as `PENDING RATIFICATION — requires Principal action at next ratification window.` Do NOT mark them ratified yourself — ratification is a Principal act. You surface; they decide.
 
-If a Type 1 decision is missing entirely (Tier 3 task merged with no decision entry): flag as `DANGLING — Tier 3 task N has no decision log entry.`
+If a Tier 3 task merged with its reasoning recorded nowhere — not in its pull request, not in the spec it governs — flag as `DANGLING — Tier 3 task N has no durable record of why.`
 
 ### 7. Update `docs-index.md`
 

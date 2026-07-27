@@ -75,7 +75,6 @@ process.chdir(REPO_ROOT)
 /**
  * Implemented by T2 (#217) per D-067; delegates to verify-docs.ts helpers.
  *
- * N2 (info/advisory): skipped D-NNN within a log (cross-log gaps expected — §6).
  * M1 (hard-fail): dangling in-repo pointer in doc-owners.
  * M2 (info/advisory): malformed glob syntax (extremely rare with our simple grammar).
  * M3 (hard-fail): duplicate glob in doc-owners.

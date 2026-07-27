@@ -447,7 +447,7 @@ export function checkR1(
  * L1: Active iteration with zero open task-Issues → should be archived.
  * **Advisory (info-only)** per `state-machine.md` §12 (L1/L2 are lifecycle-hygiene
  * signals, not the done-lifecycle gate). Findings are surfaced for a human to
- * investigate; they never fail CI. Only A1/A2/A3/N1/M1/M3 block.
+ * investigate; they never fail CI. Only A1/A2/A3/M1/M3 block.
  *
  * An active iteration (file not in completed/) where every task with a
  * known issue has `issueState === 'closed'`.
@@ -482,7 +482,7 @@ export function checkL1(files: IterationFile[], entriesBySlug: Map<string, TaskE
  * L2: Archived iteration with any open task-Issue → premature archive.
  * **Advisory (info-only)** per `state-machine.md` §12 (L1/L2 are lifecycle-hygiene
  * signals, not the done-lifecycle gate). Findings are surfaced for a human to
- * investigate; they never fail CI. Only A1/A2/A3/N1/M1/M3 block.
+ * investigate; they never fail CI. Only A1/A2/A3/M1/M3 block.
  */
 export function checkL2(files: IterationFile[], entriesBySlug: Map<string, TaskEntry[]>): CheckResult {
   const failures: CheckFailure[] = []
@@ -585,7 +585,7 @@ export function checkL4(
  *
  * **Advisory (info-only)**, same framing as L1/L2/L4 (`state-machine.md` §12):
  * a real completion may simply not be archived yet, so this never fails CI —
- * only A1/A2/A3/N1/M1/M3 block. Slugs whose facts are unavailable (forge
+ * only A1/A2/A3/M1/M3 block. Slugs whose facts are unavailable (forge
  * outage) are skipped, mirroring L1's `withFacts.length === 0` guard — an
  * outage is not a finding.
  */

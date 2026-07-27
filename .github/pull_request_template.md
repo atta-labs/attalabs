@@ -12,4 +12,3 @@
 <one-paragraph summary of blast radius — projects touched, packages edited, shared-package consumers affected, non-goals.>
 
 **Tier:** 
-**Conforms-to:** <!-- required for Tier 3 when no decision log entry is in the diff; delete for Tier 0/1 -->

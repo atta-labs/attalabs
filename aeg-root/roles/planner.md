@@ -260,9 +260,9 @@ Once an Issue is assigned (`todo`), a Developer picks it up: reads the rationale
 
 ## Step 0 — creating the iteration itself needs no worktree, no PR, no commit
 
-**Creating a Milestone and cutting labeled Issues are forge actions, not repo-file changes — there is nothing to commit.** The old requirement to open a `plan/<iteration>` worktree + PR existed because the topology file and decision-log entries were repo files, and every repo-file change reaches `main` through a worktree branch + PR + green merge, same as a Developer's. That still applies **only if this planning act also writes an actual repo file** — most commonly a decision-log entry (`docs/decisions-legacy.md`, `apps/*/specs/*-decisions.md`) for a Type 1 ratification. If your plan produces no repo-file change at all (the common case — Milestone + Issues only), skip this section entirely: no worktree, no plan PR, nothing for `.husky` or `check-pr-green.sh` to gate.
+**Creating a Milestone and cutting labeled Issues are forge actions, not repo-file changes — there is nothing to commit.** The old requirement to open a `plan/<iteration>` worktree + PR existed because the topology file and decision-log entries were repo files, and every repo-file change reaches `main` through a worktree branch + PR + green merge, same as a Developer's. That still applies **only if this planning act also writes an actual repo file** — most commonly a spec change. If your plan produces no repo-file change at all (the common case — Milestone + Issues only), skip this section entirely: no worktree, no plan PR, nothing for `.husky` or `check-pr-green.sh` to gate.
 
-When a plan **does** need a decision-log entry, open it the same way any doc change does — a worktree off `origin/main`, commit, PR:
+When a plan **does** write a repo file — a spec change, most often — open it the same way any doc change does: a worktree off the main branch, commit, pull request:
 
 ```
 git worktree add .worktrees/plan/<iteration> -b plan/<iteration> origin/main && cd .worktrees/plan/<iteration> && bun install --frozen-lockfile --silent
