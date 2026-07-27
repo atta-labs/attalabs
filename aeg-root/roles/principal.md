@@ -1,7 +1,7 @@
 ---
 sidebar_title: Principal
 title: Principal
-order: 6
+order: 8
 role_id: principal
 description: The person accountable for what merges — the one seat holding authority the mechanism never grants an agent.
 actor: human

@@ -1,7 +1,7 @@
 ---
 sidebar_title: Iteration Archivist
 title: Iteration Archivist
-order: 8
+order: 7
 role_id: iteration-archivist
 description: Closes out a finished iteration, so the next one starts from what is true now rather than what was true before.
 actor: either
