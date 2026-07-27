@@ -9,7 +9,7 @@
  * pure function; print; exit).
  *
  * Task-PR eligibility is an OR of two signals, not branch-name-only: a
- * `task/<iter>/<id>` branch, OR the closed Issue itself carrying an
+ * `task/<tranche>/<id>` branch, OR the closed Issue itself carrying an
  * `vinaya/tranche:*` label (checked live via `gh issue view --json labels`).
  * Branch-name-only detection silently skipped a real task closure once
  * (#524/#530 — a tracked Issue closed by an ad-hoc `fix/*`-branch PR).

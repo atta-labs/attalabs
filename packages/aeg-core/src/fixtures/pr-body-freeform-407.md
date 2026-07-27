@@ -119,7 +119,7 @@ You are the AEG Developer. Read `aeg-root/roles/developer.md` first, then `.clau
 ## 2. Context — read before doing anything
 
 - **Iteration:** `aeg-governance-hardening`. ONE topology row: task 31 (Issue #395, branch `task/aeg-governance-hardening/31`). Row order is `28 → 31 → 29 → 30 → 32 → 33` — 31 immediately follows 28.
-- **Consolidation history (read, don't re-derive):** this task originally started as two separate rows (31 and a since-closed task 34/#404). Before either dispatched, they were folded into one Issue/task after confirming from source (`fetchTrancheBranchPrs`, `packages/aeg-core/bin/verify-dispatch.ts:118-131`) that the dispatch gate maps a task's PR by stripping `task/<tranche>/` off the PR's branch name — bundling two task rows under one branch name would leave the other row's PR-lookup permanently unmatched, blocking every later task forever. One task, one branch, one PR avoids that entirely. Issue #404 is closed as superseded; its content is preserved verbatim as item 3 on #395.
+- **Consolidation history (read, don't re-derive):** this task originally started as two separate rows (31 and a since-closed task 34/#404). Before either dispatched, they were folded into one Issue/task after confirming from source (`fetchIterationBranchPrs`, `packages/aeg-core/bin/verify-dispatch.ts:118-131`) that the dispatch gate maps a task's PR by stripping `task/<iteration>/` off the PR's branch name — bundling two task rows under one branch name would leave the other row's PR-lookup permanently unmatched, blocking every later task forever. One task, one branch, one PR avoids that entirely. Issue #404 is closed as superseded; its content is preserved verbatim as item 3 on #395.
 - **Read Issue #395 in full** — it now contains all three fixes' complete rationale (items 1-3) after the consolidation above. Do not re-derive any of it; all three root causes are already confirmed.
 - **Pre-flight, mandatory before Step 0:** `bun packages/aeg-core/bin/verify-dispatch.ts aeg-governance-hardening 31` must report `READY TO DISPATCH` (this confirms task 28/#372 has actually merged) — if `NOT READY`, STOP, do not proceed, report verbatim.
 
@@ -199,7 +199,7 @@ STOP and report if: pre-flight fails; the Vercel git-history fix cannot be verif
 - Same gates, same strictness — Part C changes packaging only, never pass/fail criteria.
 - Do not remove `--fallback=main` from any `vercel.json`.
 - Do not touch `ci.yml` or `claude-code-review.yml`.
-- Never write status anywhere; never add execution metadata to the tranche file.
+- Never write status anywhere; never add execution metadata to the iteration file.
 - Follow §6's execution model — this is a binding part of this brief, not a suggestion.
 
 > **Autonomy:** Do not stop to ask clarifying questions. For any ambiguity not covered by a Section 10 stop condition, choose the most reasonable option consistent with this brief, record the choice in the PR body, and continue. Halt only for the explicit Section 10 stop conditions — and when you halt, record the blocker in the PR body or an Issue comment rather than waiting interactively for input.

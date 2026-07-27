@@ -238,7 +238,7 @@ describe('buildProvenanceBlock', () => {
     expect(dangling).toContain('no security-review verdict comment found on this PR')
   })
 
-  it('labels the task from the branch when headRefName does not match task/<iter>/<n>', () => {
+  it('labels the task from the branch when headRefName does not match task/<tranche>/<n>', () => {
     const { block } = buildProvenanceBlock(facts({ body: FULL_BODY, headRefName: 'fix/some-branch' }))
     expect(block.split('\n')[0]).toBe('### AEG provenance — task (branch fix/some-branch)')
   })

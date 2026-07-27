@@ -80,7 +80,7 @@ The Brief Author's stages — name them, and say which you're in:
    bun packages/aeg-core/bin/verify-brief.ts --body-file <path-to-brief.md>
    ```
 
-   Same validator CI runs at PR time, one stage earlier — a missing section costs a re-draft here instead of a red gate after the Developer has already done the work. Exits non-zero and names each missing section. The branch is read from the brief's own Step 0 `git worktree add … -b <branch>` line, so `Closes #N` is required only when that line declares a `task/<iter>/<n>` branch.
+   Same validator CI runs at PR time, one stage earlier — a missing section costs a re-draft here instead of a red gate after the Developer has already done the work. Exits non-zero and names each missing section. The branch is read from the brief's own Step 0 `git worktree add … -b <branch>` line, so `Closes #N` is required only when that line declares a `task/<tranche>/<n>` branch.
 
 5. **Clarifications** — if any `[NEEDS CLARIFICATION]` markers remain, present them as a numbered list and **wait** — never dispatch with unresolved markers.
 

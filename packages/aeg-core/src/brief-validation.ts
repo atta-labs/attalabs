@@ -365,7 +365,7 @@ const BRIEF_SHAPE_MARKERS = [checkSurfaceMap, checkDocUpdateList, checkStopCondi
  * Is this PR body a brief? — the predicate that replaces the branch name as
  * `verify-brief`'s trigger for running `checkBriefSections`.
  *
- * The old rule was "validate iff the branch is `task/<iter>/<n>`", which meant a
+ * The old rule was "validate iff the branch is `task/<tranche>/<n>`", which meant a
  * standalone `fix/*` brief bypassed **every** section check. Confirmed live: a
  * fix brief on `fix/studio-tranche-href` shipped with no §7
  * documentation-update list, and `checkDocUpdateList` — the checker that exists
@@ -411,7 +411,7 @@ export type BriefSectionsOptions = {
    * existing caller keeps today's behavior).
    *
    * A task PR must close its Issue, so `verify-brief` leaves this on for
-   * `task/<iter>/<n>`. A brief-shaped body on a non-task branch must not: a
+   * `task/<tranche>/<n>`. A brief-shaped body on a non-task branch must not: a
    * standalone fix brief has no task Issue to close, and a `plan/*` PR is
    * *forbidden* to carry `Closes #N` by `checkPlanPrNoCloses` — so
    * requiring it there would make the two gates jointly unsatisfiable. Issue

@@ -189,7 +189,7 @@ export async function fetchForgeFacts(input: FetchForgeFactsInput): Promise<Forg
 /**
  * Build one batched GraphQL query with three aliased sub-queries per task:
  *   <alias>_issue   — issue.state, assignees count, labels, closing PR via timelineItems
- *   <alias>_ref     — ref existence for refs/heads/task/<iter>/<id>
+ *   <alias>_ref     — ref existence for refs/heads/task/<tranche>/<id>
  *   <alias>_prs     — latest PR with that head branch (fallback when no closing PR)
  *
  * The issue sub-query includes timelineItems(CLOSED_EVENT) to surface the PR
@@ -317,7 +317,7 @@ function extractRawFromResponse(repository: NonNullable<BatchResponse['repositor
 
   // Prefer the PR that actually closed the issue (branch-name-independent).
   // Fall back to the branch-named PR for in-flight tasks (open issue, PR open
-  // on the task/<iter>/<id> branch) — and also when a ClosedEvent closer is a
+  // on the task/<tranche>/<id> branch) — and also when a ClosedEvent closer is a
   // Commit, in which case the `... on PullRequest` fragment yields an empty
   // object, not `null`. Guard on `number`/`url` (same shape-check `prRefs`
   // below already applies) so that empty object doesn't win over `branchPr`.

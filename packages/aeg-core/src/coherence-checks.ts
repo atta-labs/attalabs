@@ -649,11 +649,11 @@ export function extractClosesReferences(prBody: string): Set<number> {
 /**
  * Closes #N gate — Layer 1 of forge-lifecycle enforcement.
  *
- * Forward direction: a task PR (branch `task/<iter>/<n>`) must carry
+ * Forward direction: a task PR (branch `task/<tranche>/<n>`) must carry
  * `Closes #<its-issue>` in the body. Non-task branches are silently
  * bypassed for this direction (returns ok:true).
  *
- * Reverse direction (added: a branch NOT named `task/<iter>/<n>` that
+ * Reverse direction (added: a branch NOT named `task/<tranche>/<n>` that
  * nonetheless closes a real AEG task Issue must be named after that task —
  * the gap that let `feat/vinaya-landing-v3` implement Issue #509 with zero
  * forge-visible status. Runs for ANY branch, gated on `taskIssueRefs` being
