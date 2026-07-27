@@ -63,16 +63,7 @@ Per task: branch → PR → Reviewer + Security → merge → close-out
 
 A task **is** a forge Issue. Its status is not a field anyone writes — it is **computed by asking the forge** what is true right now. This is the change that removed the original fatal flaw (a hand-edited status column that raced, drifted, and lied under parallelism).
 
-| Status | Derived from (the forge fact) |
-|--------|-------------------------------|
-| `todo` | Issue open (assigned or unassigned), no branch yet; or no forge facts known — iteration tasks are committed work, minimum `todo` |
-| `in-flight` | A branch `task/<iteration>/<n>` exists, **no PR** open |
-| `in-review` | PR open |
-| `changes-requested` | PR open, `reviewDecision: CHANGES_REQUESTED` |
-| `merged` | PR merged (Issue auto-closes) |
-| `blocked` | An `aeg:blocked` label is present |
-| `dropped` | Issue **closed `NOT_PLANNED`**, no merged PR — legitimately abandoned, never done, never `todo` |
-| `incoherent` | Issue **closed `COMPLETED`** (or with no recorded close reason), no merged-PR link — done-but-unprovable or a broken close; surfaced for a human, never auto-reopened |
+**Which fact produces which status is not written here.** The full machine — every forge fact and the GitHub object it is read from, every label and the one orthogonal fact it carries, every derivable status, and the ordered rule chain that gets from the first to the last — lives at **[`/state-machine`](https://vinaya.attalabs.dev/state-machine)**, rendered from the model the deriver itself executes (`packages/aeg-core/src/state-machine-model.ts`, `packages/aeg-forge-state/src/labels.ts`). A table here would be a second copy of that model, maintained by hand, free to drift from the code that actually decides — which is the failure this whole section describes. So this section keeps the *rules* the machine obeys, and the page carries the machine.
 
 `backlog` is a **project-level concept only** — ideas/maybe-tasks in markdown that live outside the iteration flow (`specs/<unit>-backlog.md`, Jira, etc.). Once a task is placed in a launched iteration it is committed work and derives `todo` at minimum, never `backlog`..
 

@@ -8,6 +8,9 @@ import { ProductSwitch } from '@/app/_components/ProductSwitch'
 const links = [
   { label: 'Home', href: '/', exact: true },
   { label: 'The Harness', href: '/the-harness' },
+  // Beside The Harness: both are code-derived reference pages — that one draws
+  // the enforcement model, this one renders the state machine's own tables.
+  { label: 'State Machine', href: '/state-machine' },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Install', href: '/install' },
   { label: 'Docs', href: '/docs' },
