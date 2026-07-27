@@ -5,7 +5,8 @@ import type { Tranche, Lifecycle, Task } from './types'
  * Parse `aeg-root/tranches/<name>.md` into a typed `Tranche`.
  *
  * Captures:
- *   - the tranche's name (from `# Tranche: <name> — <timeframe>`)
+ *   - the tranche's name (from `# Tranche: <name> — <timeframe>`; the
+ *     superseded `# Iteration:` spelling is still read, see `parseName`)
  *   - the lifecycle marker (`Lifecycle: active|complete`, defaulting to
  *     `'active'` when absent — pre-§11 files have no marker)
  *   - the first goal paragraph
@@ -31,7 +32,15 @@ function parseName(md: string): string {
   // The H1 is `# Tranche: <slug> — <timeframe>`. The slug may contain
   // hyphens (e.g. `herald-onto-engine`, `aeg-ui-v1`), so capture the first
   // non-whitespace run — the space before the em-dash is the delimiter.
-  const m = md.match(/^#\s+Tranche:\s+(\S+)/m)
+  //
+  // `Iteration:` is accepted as the superseded spelling, permanently. This is
+  // a READER of files this repo does not necessarily own: content pulled out
+  // of git history predates the rename and cannot be rewritten, and an
+  // adopter's own topology files are theirs, not ours to migrate. Refusing
+  // the old marker would not fail loudly — `parseName` returns `''`, which
+  // reads downstream as a nameless tranche. The writer side is unaffected:
+  // every file this repo emits or archives carries `# Tranche:`.
+  const m = md.match(/^#\s+(?:Tranche|Iteration):\s+(\S+)/m)
   return m?.[1] ? m[1].trim() : ''
 }
 

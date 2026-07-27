@@ -14,6 +14,14 @@ describe('parseTranche: herald-onto-engine', () => {
     expect(iter.name).toBe('herald-onto-engine')
   })
 
+  it('still reads the superseded `# Iteration:` H1 — history and adopter files keep it', () => {
+    // The rename cannot reach into git history, and an adopter's own topology
+    // files are not ours to migrate. A refused marker would surface as a
+    // nameless tranche, not an error — silence is why this is pinned.
+    expect(parseTranche('# Iteration: aeg-forge-state-v1 — June 2026\n').name).toBe('aeg-forge-state-v1')
+    expect(parseTranche('# Tranche: aeg-forge-state-v1 — June 2026\n').name).toBe('aeg-forge-state-v1')
+  })
+
   it('defaults to active when the lifecycle marker is absent (pre-§11 file)', () => {
     expect(iter.lifecycle).toBe('active')
   })
