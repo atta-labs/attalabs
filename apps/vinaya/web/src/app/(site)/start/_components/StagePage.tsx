@@ -1,9 +1,10 @@
 import { Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { renderProse } from './prose'
+import { START_NAV } from './start-nav'
 
 export type StageQA = {
   tool: string
@@ -13,6 +14,11 @@ export type StageQA = {
 }
 
 export type StagePageProps = {
+  /** This page's own slug in `START_NAV`'s "Ship with Vinaya" section —
+   * `prev`/`next` are derived from that one ordered array rather than
+   * hand-wired per page, so the sidebar order and the footer order can never
+   * drift apart. */
+  slug: string
   title: string
   intro: string[]
   qa: StageQA
@@ -32,17 +38,27 @@ const QUESTIONS: { key: keyof StageQA; label: string }[] = [
   { key: 'studio', label: 'What to look at in Studio' }
 ]
 
+const STAGE_ITEMS = START_NAV.find((section) => section.label === 'Ship with Vinaya')?.items ?? []
+
 /** One shared shape for every "Ship with Vinaya" stage page — the same four
  * questions, in the same order, every time, so the section reads as one
  * narrative rather than eight differently-organized pages. This is
  * deliberately NOT `DocPage`: `/docs` renders the model's own binding text;
  * this renders what the reader does. The rule that keeps the two from
  * merging is one-directional: a stage page links into `/docs` and never
- * restates a rule `/docs` owns. */
-export function StagePage({ title, intro, qa, docsHref, docsLabel, extra }: StagePageProps) {
+ * restates a rule `/docs` owns.
+ *
+ * The chrome below (article/header spacing, the two `Separator`s, the
+ * footer) is deliberately class-for-class identical to `DocPage.tsx`'s —
+ * the two sections read as one site, not two differently-tuned ones. */
+export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }: StagePageProps) {
+  const index = STAGE_ITEMS.findIndex((item) => item.slug === slug)
+  const prev = index > 0 ? STAGE_ITEMS[index - 1] : undefined
+  const next = index >= 0 && index < STAGE_ITEMS.length - 1 ? STAGE_ITEMS[index + 1] : undefined
+
   return (
-    <article className='flex flex-col gap-6 pt-4'>
-      <header className='flex flex-col gap-3'>
+    <article className='space-y-4'>
+      <header className='space-y-3'>
         <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
           Ship with Vinaya
         </Text>
@@ -79,6 +95,38 @@ export function StagePage({ title, intro, qa, docsHref, docsLabel, extra }: Stag
         <span>Read the {docsLabel} role</span>
         <ArrowRight className='size-3.5' />
       </NextLink>
+
+      {(prev || next) && (
+        <>
+          <Separator className='opacity-60' />
+          <footer className='flex items-center justify-between gap-4 pt-2'>
+            {prev ? (
+              <NextLink
+                href={prev.href}
+                variant='nav'
+                className='group flex items-center gap-2 font-serif text-base text-foreground'
+              >
+                <ArrowLeft className='size-4 transition-transform group-hover:-translate-x-0.5' />
+                <span>{prev.title}</span>
+              </NextLink>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <NextLink
+                href={next.href}
+                variant='nav'
+                className='group flex items-center gap-2 font-serif text-base text-foreground'
+              >
+                <span>{next.title}</span>
+                <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
+              </NextLink>
+            ) : (
+              <span />
+            )}
+          </footer>
+        </>
+      )}
     </article>
   )
 }

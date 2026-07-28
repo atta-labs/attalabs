@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartPlanPage() {
   return (
     <StagePage
+      slug='plan'
       title='Plan the work'
       intro={[
         'This is the first thing you do with a governed repo, and the one stage Vinaya cares least about which tool you use for.'

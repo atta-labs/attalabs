@@ -14,7 +14,7 @@ export const metadata: Metadata = {
  * forge dependency, no `@atta/aeg-core` import, so it stays live in prod. */
 export default function StartLandingPage() {
   return (
-    <article className='flex flex-col gap-10 pt-4'>
+    <article className='flex flex-col gap-10'>
       <header className='flex flex-col gap-3'>
         <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
           Start

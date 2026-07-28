@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartBriefPage() {
   return (
     <StagePage
+      slug='brief'
       title='Brief the task'
       intro={[
         'A plan names the work. A brief is the written, exact instructions for one task — what to build, which files, when to stop and ask — handed to whoever writes the code. The same conversation can usually keep going.'

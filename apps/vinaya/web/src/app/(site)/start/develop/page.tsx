@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 export default function StartDevelopPage() {
   return (
     <StagePage
+      slug='develop'
       title='Do the work'
       intro={[
         'This is the one stage where the tool actually matters. Planning and briefing are conversation; this is code, so you need something that can read and write your repo — a local agent, not a browser chat.'

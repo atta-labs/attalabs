@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartReviewPage() {
   return (
     <StagePage
+      slug='review'
       title='Get reviewed'
       intro={[
         'Once your pull request is open, a second agent — one that did not write the code — judges it against the brief.'

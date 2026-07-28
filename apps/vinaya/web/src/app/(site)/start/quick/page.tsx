@@ -105,7 +105,7 @@ const STEPS: {
 
 export default function StartQuickPage() {
   return (
-    <article className='flex flex-col gap-10 pt-4'>
+    <article className='flex flex-col gap-10'>
       <header className='flex flex-col gap-3'>
         <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
           Quick Start

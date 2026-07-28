@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartWrapUpPage() {
   return (
     <StagePage
+      slug='wrap-up'
       title='Close out the tranche'
       intro={['Once every task in a plan has actually finished, someone — you — says the whole tranche is done.']}
       qa={{

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartSecurityPage() {
   return (
     <StagePage
+      slug='security'
       title='Get security-reviewed'
       intro={[
         'Alongside the code review, a second check runs — the one built to catch what a correctness review does not.'

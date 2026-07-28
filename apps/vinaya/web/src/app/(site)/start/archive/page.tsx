@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 export default function StartArchivePage() {
   return (
     <StagePage
+      slug='archive'
       title='Close out the task'
       intro={['Once your pull request merges, this stage runs on its own — there is nothing left for you to prompt.']}
       qa={{
