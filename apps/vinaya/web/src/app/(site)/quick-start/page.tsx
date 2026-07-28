@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, Code } from '@atta/ui/components'
+import { Card, CardContent, Code } from '@atta/ui/components'
 import { Flex, Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
@@ -104,30 +104,32 @@ export default function QuickStartPage() {
         </Text>
       </section>
 
-      <section className='flex flex-col gap-6'>
+      <section className='flex flex-col gap-8'>
         {STEPS.map((step) => (
-          <Card key={step.number}>
-            <CardHeader>
-              <Flex align='center' gap={4}>
-                <Flex
-                  align='center'
-                  justify='center'
-                  className='size-10 shrink-0 rounded-md border border-border bg-accent font-serif text-lg text-accent-foreground'
-                >
-                  {step.number}
-                </Flex>
-                <CardTitle className='font-serif text-xl font-normal text-foreground'>{step.title}</CardTitle>
+          <div key={step.number} className='flex flex-col gap-3'>
+            <Flex align='center' gap={4}>
+              <Flex
+                align='center'
+                justify='center'
+                className='size-10 shrink-0 rounded-md border border-border bg-accent font-serif text-lg text-accent-foreground'
+              >
+                {step.number}
               </Flex>
-            </CardHeader>
-            <CardContent className='flex flex-col gap-4'>
-              {step.body.map((paragraph) => (
-                <Text key={paragraph} as='p' className='font-sans text-sm text-muted-foreground'>
-                  {renderProse(paragraph)}
-                </Text>
-              ))}
-              {step.render()}
-            </CardContent>
-          </Card>
+              <Heading level={2} className='font-serif text-xl font-normal text-foreground'>
+                {step.title}
+              </Heading>
+            </Flex>
+            <Card>
+              <CardContent className='flex flex-col gap-4'>
+                {step.body.map((paragraph) => (
+                  <Text key={paragraph} as='p' className='font-sans text-sm text-muted-foreground'>
+                    {renderProse(paragraph)}
+                  </Text>
+                ))}
+                {step.render()}
+              </CardContent>
+            </Card>
+          </div>
         ))}
       </section>
     </main>
