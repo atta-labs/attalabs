@@ -51,7 +51,7 @@ export default async function DocsReferencePage() {
   }
 
   return (
-    <article className='space-y-8 pt-4'>
+    <article className='space-y-8'>
       <header className='space-y-3'>
         <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
           Reference

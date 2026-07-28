@@ -63,7 +63,16 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
       // (not inset ~9px inside them). Under the flush libraries `ChromeFrame` has
       // no `px-2`, so `-mx-2` there just bleeds the flush bar 9px into `main`'s
       // `px-6`/`lg:px-12` gutter — still inside the scroll box, no overflow.
-      className={`sticky top-2 z-20 -mx-2 transition-opacity duration-300 ${
+      // `h-0 overflow-visible` is unconditional (not toggled by `isSticky`) —
+      // this element's own box never contributes flow height, at rest or
+      // stuck, so its `h-11` `ChromeFrame` child renders as a pure visual
+      // overlay with zero effect on the article's position and no reflow
+      // jump when `isSticky` flips. Without this, `sticky` alone reserves a
+      // permanent ~44px box even at `opacity-0`, which was the real reason
+      // every /docs route (routed through here) read as more heavily padded
+      // than /start (which renders no equivalent element) even after their
+      // `pt-*` values were unified.
+      className={`sticky top-2 z-20 -mx-2 h-0 overflow-visible transition-opacity duration-300 ${
         isSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
