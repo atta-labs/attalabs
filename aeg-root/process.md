@@ -39,7 +39,7 @@ Every piece of work moves through some subset of these. Trivial work (Tier 0) sk
 13. Tranche Close
 ```
 
-> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive `aeg-ui-v1` features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/developer.md` § Verification and).
+> **Doctrine: CI green ≠ app boots ≠ feature works.** Phase 11 (Verification) exists because four consecutive features merged CI-green and were broken at runtime. The static gates of Phase 8 and the diff-reading reviews of Phase 10 cannot exercise an auth-gated / key-dependent / browser-rendered path. Phase 11 closes that gap with a tagged, executed test plan (see `roles/developer.md` § Verification and).
 
 After merge, the **Archivist** runs close-out (`roles/archivist.md`). That's the final step of the flow.
 

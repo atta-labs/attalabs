@@ -85,7 +85,7 @@ The file held **only** what the forge models poorly: the task→Issue mapping an
 
 **`#TBD` is still forbidden, wherever a task is recorded.** Every task must carry a real forge Issue number. A tranche that contains `#TBD` is an incomplete plan — the Planner has not cut the Issues, which is the canonical plan act. **The Planner's rationale (Boundary, Sizing, Project(s)+blast radius, Dependency rationale, Traps to avoid, Suggested agent-class, Stop-and-escalate) lives on the Issue body.** Nothing outside the Issue repeats the rationale. Brief Authors read it from the Issue, which is now its only home.
 
-**How the cutover finished (`aeg-forge-state-v1` task 7, #431), for the record.** The birth rule above ("gates read files until the migration flips the config in one deliberate act") has now flipped for every active tranche, with no exceptions left. The last holdout, `vada-production-v1`, kept its thin file past task 7 because 9 of its Issues predated the "Dependency rationale" grammar — deleting the file would have silently blanked `dependsOn` for those tasks in every gate and in Studio. Those 9 Issues were backfilled with real, per-task rationale (not a mechanical append), `verify-coherence` was re-run live against the forge to confirm a clean read, and `vada-production-v1.md` + `.tokens.md` were then deleted — the same disposition every other active tranche's topology file (`herald-hardening-v1.md`, `vinaya-cli-v1.md`, `vinaya-studio-v1.md`) already went through. `dependsOn`/`conflictsWith` for every active tranche is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
+`dependsOn`/`conflictsWith` for every active tranche is now genuinely forge-derived, no file fallback anywhere. `completed/*.md` files are never deleted, by design (§11) — the birth rule never applied to them.
 
 Template:
 
@@ -99,12 +99,12 @@ Repo: <repo>   ·   Planner / Brief Author: <name>
 ## Tasks (topology)
 | # | Task                          | Issue | Project(s)      | Depends-on | Conflicts-with |
 |---|-------------------------------|-------|-----------------|------------|----------------|
-| 1 | Generalize core + migrate     | #88   | core,service-a  | —          | 3              |
-| 2 | Schema migration              | #89   | service-a       | —          | —              |
-| 3 | service-b tweak (touches core)| #90   | service-b       | —          | 1              |
+| 1 | Generalize core + migrate     | #N1   | core,service-a  | —          | 3              |
+| 2 | Schema migration              | #N2   | service-a       | —          | —              |
+| 3 | service-b tweak (touches core)| #N3   | service-b       | —          | 1              |
 
 ## Backlog (this tranche, not yet ready to dispatch)
-- Rate-limit middleware (issue #91, service-a) — promote once task 1 lands.
+- Rate-limit middleware (issue #N4, service-a) — promote once task 1 lands.
 ```
 
 To see **live status**, you do not read this file — you ask the forge: `gh pr list`, the forge's Issues view, or a project board. The file is the *plan*; the forge is the *board*. (Note task 3: a `service-b` task conflicts with task 1 even though they're different projects — both touch the shared `core` package. Conflicts are package-level, §5.)
@@ -113,7 +113,7 @@ To see **live status**, you do not read this file — you ask the forge: `gh pr 
 
 The filename slug (`<name>` in `aeg-root/tranches/<name>.md`) should name the tranche's **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** The test: *what is the lasting, reusable thing this tranche produces?* Name that.
 
-- When a tranche **onboards a project onto shared infrastructure** (or grows that infra), name the **onboarding / infra**, not the feature that happens to ride on it. The infra work outlives and outscopes the feature, and other projects inherit it. Example: a tranche that migrates Herald onto `@atta/engine` and adds multi-vendor structured output to that shared engine — with "Bulk Audit" as the proximate Herald feature — is named **`herald-onto-engine`**, *not* `herald-bulk-audit`. The engine maturing is the center of gravity; Bulk Audit is one feature on top.
+- When a tranche **onboards a project onto shared infrastructure** (or grows that infra), name the **onboarding / infra**, not the feature that happens to ride on it. The infra work outlives and outscopes the feature, and other projects inherit it. Example: a tranche that migrates a product onto a shared billing engine and adds multi-vendor payment support to that shared engine — with "refund UI" as the proximate feature on that product — is named **`billing-onto-engine`**, *not* `billing-refund-ui`. The engine maturing is the center of gravity; the refund UI is one feature on top.
 - When a tranche is genuinely **one project's self-contained feature** (no shared-infra change, no cross-project blast radius), `<project>-<feature>` is fine (e.g. `vada-reviewers-benchmark`).
 - A name should not imply a narrower scope than the `Project(s)` column reveals. If tasks span `engine, vada, herald`, a filename saying only `herald-…` misleads a reader scanning `tranches/`. When in doubt, name the broadest/most-shared layer the tranche touches.
 
@@ -220,7 +220,7 @@ A completed tranche file is **kept, moved, never removed.** The **Issues** carry
 
 There is **no fixed maximum.** Multiple tranches may be `active` simultaneously. What actually bounds concurrency is two things, neither of them a number:
 
-1. **The conflict rule binds across tranches (§5).** Two concurrent tranches are safe to run fully in parallel **only if their tasks do not share a collision domain.** If tranche A and tranche B both touch `@atta/ui`, their colliding tasks must serialize across the tranche boundary exactly as if they were siblings — the gate doesn't care which file a PR's task belongs to. **The cleanest concurrency is between disjoint tranches** (different projects, no shared package), where nothing can collide by construction. Example: `herald-onto-engine` (herald + engine) and a `vinaya-pages` tranche (the `apps/vinaya/web` app) share no collision domain, so they run fully parallel with zero cross-checks needed.
+1. **The conflict rule binds across tranches (§5).** Two concurrent tranches are safe to run fully in parallel **only if their tasks do not share a collision domain.** If tranche A and tranche B both touch `@atta/ui`, their colliding tasks must serialize across the tranche boundary exactly as if they were siblings — the gate doesn't care which file a PR's task belongs to. **The cleanest concurrency is between disjoint tranches** (different projects, no shared package), where nothing can collide by construction. Example: `billing-onto-engine` (billing + engine) and a `vinaya-pages` tranche (the `apps/vinaya/web` app) share no collision domain, so they run fully parallel with zero cross-checks needed.
 2. **Principal attention.** Every active tranche is a live front the Principal is reviewing, ratifying, and merging. Concurrency is bounded by how many fronts one Principal can hold well — a human limit, not a model limit. The model permits many; judgment sets the real number.
 
 **The second-tranche planning obligation:** when planning a tranche while another is already active, the Planner's readiness gate (`roles/planner.md`) must additionally **read the active tranche(s)' `Project(s)` / collision domains** and confirm disjointness — or, where they overlap, declare the cross-tranche serialization explicitly. This is the cross-tranche case of "when unsure, declare and serialize." Disjoint tranches need only the confirmation; overlapping ones need the serialization plan before either dispatches into the shared domain.
@@ -267,7 +267,7 @@ Append-only. Each row records one role's turn at a phase. Re-entry appends a **n
 
 ### The append rule (read this exactly the way you read derived status)
 
-- **No role appends its own row on a task branch.** Two live-fire incidents forced this: chat/read-only roles (Reviewer, Security, Planner, Brief Author) structurally cannot append — they hold no task branch, and some never touch the repo's filesystem at all; and parallel Developer sessions on different tasks collided appending to the same shared `tokens.md` file (concretely, tasks #255 and #258 raced on the same file). Instead, every role **reports** its token spend in the artifact its turn already produces — the PR body ("Token report" section) for terminal roles, the verdict comment for chat roles doing review, the plan PR or planning report for the Planner — and the per-task **Archivist appends every row at task close-out**, one row per role-turn, including its own.
+- **No role appends its own row on a task branch.** Two live-fire incidents forced this: chat/read-only roles (Reviewer, Security, Planner, Brief Author) structurally cannot append — they hold no task branch, and some never touch the repo's filesystem at all; and parallel Developer sessions on different tasks collided appending to the same shared `tokens.md` file. Instead, every role **reports** its token spend in the artifact its turn already produces — the PR body ("Token report" section) for terminal roles, the verdict comment for chat roles doing review, the plan PR or planning report for the Planner — and the per-task **Archivist appends every row at task close-out**, one row per role-turn, including its own.
 - **Never edit** an existing row. If you discover a mistake, append a new row that supersedes it in prose (or fix the source file in a separate, declared edit — same exception that `state-machine.md` §13 carves for forward-reference fields).
 - **Re-entry appends.** A Developer dispatched for `9: develop`, asked for changes, and re-running for `9: develop` again produces a **second** `9: develop` report, which the Archivist appends as a **second** row — never a sum, never an overwrite. The two rows both count.
 - The **tranche total is `sum(rows)`**, derived at read time, never stored. This is the same philosophy as forge-derived status (don't store the aggregate; sum the immutable entries). A stored total reintroduces the merge-collision + stale-aggregate problem.
@@ -281,7 +281,7 @@ Token reporting is asymmetric — and any honest design has to encode that, beca
 
 V1 accepts the manual seam: chat turns are the cheap ones; coding (terminal) dominates spend and is captured exactly. Auto-capture for terminal roles is the obvious next layer; auto-capture for chat roles depends on the surface giving us a self-token API, which it does not today. **Known gap (flagged, not solved):** tranche-wide chat-role turns with no task PR to report into — a Planner session outside a plan PR, a Brief Author session — have no established recording path; see `roles/planner.md` "Plan-PR close-out."
 
-### Live reads (Studio) — a second, narrower read path (`aeg-forge-state-v1` task 4b, #445)
+### Live reads (Studio) — a second, narrower read path
 
 Vinaya Studio's tranche page no longer reads `<name>.tokens.md` off disk to render token totals — it re-derives the same row shape live off the forge: every MERGED PR on a task's own branch (`task/<tranche>/<id>`), parsing the Developer's "Token report" entries from the PR body (every one, including re-push entries) and the Reviewer's/Security's `Tokens: …` lines from that PR's comments (`packages/aeg-core/src/parse-token-report.ts`'s `aggregateTaskTokenRows`, fetched by `apps/vinaya/web/src/lib/forge/fetch-token-ledger.ts`). Same row shape, same `sumLedger` totals math (`parse-ledger.ts`) — different source.
 
