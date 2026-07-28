@@ -7,6 +7,7 @@ import {
   checkUndefinedVocabulary,
   checkUnresolvableReferences,
   classifyProseFile,
+  legacySlugPattern,
   parseGlossaryTerms,
   stripNonProse
 } from './reader-resolvable-prose'
@@ -88,6 +89,26 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
       slugs
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
+  })
+
+  it('the legacy-slug pattern does NOT fire on a bare substring inside a longer, unrelated token (review finding: MINOR)', () => {
+    const slugs = legacySlugs()
+    expect(slugs.length, 'no legacy slugs on disk to prove this against').toBeGreaterThan(0)
+    const pattern = legacySlugPattern(slugs)
+    expect(pattern).not.toBeNull()
+    // e.g. real slug `aeg-consolidation` must not match inside `xxx-aeg-consolidation-suffixyyy`
+    const embedded = `xxx-${slugs[0]}-suffixyyy`
+    expect((pattern as RegExp).test(embedded)).toBe(false)
+  })
+
+  it('the legacy-slug pattern reports only the slug itself, not the boundary characters around it', () => {
+    const slugs = legacySlugs()
+    const findings = checkUnresolvableReferences(
+      [{ path: 'aeg-root/enforcement.md', content: `(shipped during ${slugs[0]}.)` }],
+      slugs
+    )
+    expect(findings, JSON.stringify(findings)).toHaveLength(1)
+    expect(findings[0]!.message).toContain(`"${slugs[0]}"`)
   })
 
   it('does NOT fire inside a markdown code fence — a quoted example is not prose', () => {
@@ -266,6 +287,36 @@ describe('stripNonProse', () => {
 
   it('leaves other file kinds untouched', () => {
     expect(stripNonProse('apps/vinaya/specs/vinaya-spec.md.txt', '// not stripped')).toBe('// not stripped')
+  })
+
+  it('does NOT treat a URL\'s "//" as a comment start — real prose after it survives (review finding: MAJOR)', () => {
+    const content = '<p>See https://vinaya.dev — every tranche ships here</p>'
+    const stripped = stripNonProse('apps/vinaya/web/src/app/(site)/x/page.tsx', content)
+    expect(stripped).toContain('https://vinaya.dev')
+    expect(stripped).toContain('every tranche ships here')
+  })
+
+  it('still strips a genuine trailing comment that follows a URL on the same line', () => {
+    const content = 'const href = "https://vinaya.dev" // tranche: internal note'
+    const stripped = stripNonProse('apps/vinaya/web/src/app/(site)/x/page.tsx', content)
+    expect(stripped).toContain('https://vinaya.dev')
+    expect(stripped).not.toContain('internal note')
+  })
+})
+
+describe('regression: class 2 still fires on prose that follows a URL on the same line', () => {
+  it('detects a bare coined term after "https://" without the URL eating it (review finding: MAJOR)', () => {
+    const findings = checkUndefinedVocabulary(
+      [
+        {
+          path: 'apps/vinaya/web/src/app/(site)/start/page.tsx',
+          content: '<p>See https://vinaya.dev — every tranche ships here</p>'
+        }
+      ],
+      ['Tranche']
+    )
+    expect(findings, JSON.stringify(findings)).toHaveLength(1)
+    expect(findings[0]!.message).toContain('Tranche')
   })
 })
 

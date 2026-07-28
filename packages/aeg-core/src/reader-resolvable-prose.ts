@@ -104,6 +104,13 @@ const SWEPT_CLASSES: ReadonlySet<ProseFileClass> = new Set(['ships', 'reader-fac
  * as `/roadmap`", are not what a site visitor reads). Line count is
  * preserved (replacements keep their newlines) so reported line numbers stay
  * accurate against the original file.
+ *
+ * The `//` line-comment cut requires the marker not be immediately preceded
+ * by `:` — without that, `https://vinaya.dev` on a reader-facing line reads
+ * as a comment starting at its own `//`, silently blanking every word of
+ * real prose that follows it on the line. No boundary check is needed on
+ * the far side: unlike `//`, the character before it is never itself part
+ * of the marker, so a plain capturing group (not a lookbehind) is enough.
  */
 export function stripNonProse(path: string, content: string): string {
   if (path.endsWith('.md')) {
@@ -114,7 +121,7 @@ export function stripNonProse(path: string, content: string): string {
   if (path.endsWith('.tsx') || path.endsWith('.ts')) {
     return content
       .replace(/\/\*.*?\*\//gs, (m) => m.replace(/[^\n]/g, ''))
-      .replace(/\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ''))
+      .replace(/(^|[^:])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ''))
   }
   return content
 }
@@ -140,11 +147,20 @@ export const TRANCHE_SLUG_VN_PATTERN = /[a-z][a-z-]+-v[0-9]/g
  * Returns `null` when there is nothing left for it to catch (every archived
  * slug now ends `-vN`), matching that file's "no pattern with zero positive
  * samples" rule.
+ *
+ * Boundary-checked like `containsWholeWord` below (character class, not
+ * `\b`) so a real slug cannot match as a bare substring inside a longer,
+ * unrelated token. `retired-vocabulary.test.ts`'s own copy of this pattern
+ * has no such boundary; this one adds it rather than copying the gap.
+ * Group 1 is the leading boundary char (or start-of-string), group 2 is the
+ * slug itself, group 3 the trailing boundary char (or end-of-string) — the
+ * caller reports group 2, not the whole match, so the boundary chars never
+ * leak into a finding's message.
  */
 export function legacySlugPattern(legacySlugs: readonly string[]): RegExp | null {
   if (legacySlugs.length === 0) return null
   const alternation = legacySlugs.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  return new RegExp(`(${alternation})`, 'g')
+  return new RegExp(`(^|[^a-zA-Z0-9\\n-])(${alternation})([^a-zA-Z0-9\\n-]|$)`, 'g')
 }
 
 /**
@@ -158,24 +174,29 @@ export function checkUnresolvableReferences(
 ): ProseFinding[] {
   const findings: ProseFinding[] = []
   const legacyPattern = legacySlugPattern(legacySlugs)
-  const patterns: { pattern: RegExp; what: string }[] = [
+  // `group` names the capture holding the actual cited text — the plain
+  // patterns have none (report the whole match), the boundary-checked
+  // legacy-slug pattern reports its group 2 so the boundary chars around it
+  // never leak into the finding's message.
+  const patterns: { pattern: RegExp; what: string; group?: number }[] = [
     { pattern: FORGE_NUMBER_PATTERN, what: 'a forge number' },
     { pattern: TRANCHE_SLUG_VN_PATTERN, what: 'an internal tranche slug' },
-    ...(legacyPattern ? [{ pattern: legacyPattern, what: 'an internal tranche slug' }] : [])
+    ...(legacyPattern ? [{ pattern: legacyPattern, what: 'an internal tranche slug', group: 2 }] : [])
   ]
 
   for (const file of files) {
     const cls = classifyProseFile(file.path)
     if (!cls || !SWEPT_CLASSES.has(cls)) continue
     const scrubbed = stripNonProse(file.path, file.content)
-    for (const { pattern, what } of patterns) {
+    for (const { pattern, what, group } of patterns) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null = pattern.exec(scrubbed)
       while (match !== null) {
+        const cited = group !== undefined ? (match[group] ?? match[0]) : match[0]
         findings.push({
           file: file.path,
           line: lineAt(scrubbed, match.index),
-          message: `references ${what} ("${match[0]}") a reader outside this repo's tracker cannot resolve`
+          message: `references ${what} ("${cited}") a reader outside this repo's tracker cannot resolve`
         })
         match = pattern.exec(scrubbed)
       }
