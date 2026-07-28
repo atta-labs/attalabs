@@ -90,6 +90,7 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
   const bodyBySlug = new Map<string, string>()
   const roleDocs: Doc[] = []
   const contractDocs: Doc[] = []
+  const glossaryDocs: Doc[] = []
 
   for (const filePath of files) {
     const raw = await fs.readFile(filePath, 'utf8')
@@ -101,24 +102,28 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
 
     const isRole = slug.startsWith('roles/')
     const isContract = slug.startsWith('contracts/')
-    if (!isRole && !isContract) continue // enforcement.md: body kept, no nav entry
+    const isGlossary = slug === 'glossary'
+    if (!isRole && !isContract && !isGlossary) continue // enforcement.md: body kept, no nav entry
 
     const doc: Doc = {
       slug,
       title: deriveTitle(parsed, fallbackTitleFromSlug(slug)),
       sidebarTitle: parsed.frontmatter.sidebarTitle,
       description: parsed.frontmatter.description,
-      section: isRole ? 'Roles' : 'Contracts',
+      section: isRole ? 'Roles' : isContract ? 'Contracts' : 'Glossary',
       order: parsed.frontmatter.order ?? 0,
       href: `${DOCS_BASE_PATH}/${slug}`,
       filePath
     }
-    ;(isRole ? roleDocs : contractDocs).push(doc)
+    if (isRole) roleDocs.push(doc)
+    else if (isContract) contractDocs.push(doc)
+    else glossaryDocs.push(doc)
   }
 
   const byTitle = (a: Doc, b: Doc) => a.order - b.order || a.title.localeCompare(b.title)
   roleDocs.sort(byTitle)
   contractDocs.sort(byTitle)
+  glossaryDocs.sort(byTitle)
 
   // Synthetic, model-derived nav entries. The three rings are flat sidebar
   // items (each its own page) under the "The Rings" section — not a collapsible
@@ -175,16 +180,20 @@ export async function loadAegDocs(): Promise<LoadedDocs> {
   ]
 
   // Order: The Rings first (below the sidebar title), then Roles, Contracts,
-  // Actions. `flat` carries only the routable docs — the anchor-only Action
-  // items are sidebar chrome, not routes.
+  // Actions, Glossary. `flat` carries only the routable docs — the
+  // anchor-only Action items are sidebar chrome, not routes. Glossary is a
+  // one-doc section of its own rather than folded into Roles/Contracts: it
+  // is neither, and giving it a section keeps the nav's section→doc-kind
+  // mapping exhaustive rather than adding a silent exception.
   const sections: DocSection[] = [
     { id: 'the-rings', label: 'The Rings', docs: ringChildren },
     { id: 'roles', label: 'Roles', docs: roleDocs },
     { id: 'contracts', label: 'Contracts', docs: contractDocs },
-    { id: 'actions', label: 'Actions', docs: actionNavItems }
+    { id: 'actions', label: 'Actions', docs: actionNavItems },
+    { id: 'glossary', label: 'Glossary', docs: glossaryDocs }
   ]
 
-  const flat: Doc[] = [...roleDocs, ...contractDocs, actionsDoc, ringsDoc, ...ringChildren]
+  const flat: Doc[] = [...roleDocs, ...contractDocs, actionsDoc, ringsDoc, ...ringChildren, ...glossaryDocs]
 
   cache = { nav: { sections, flat }, bodyBySlug, basePath: DOCS_BASE_PATH }
   return cache
