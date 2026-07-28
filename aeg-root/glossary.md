@@ -9,7 +9,7 @@ Vinaya uses a handful of words in a specific, non-obvious sense — on the pages
 
 **Brief** — A complete, self-contained work order for one task, written before anyone starts coding it. Despite the name, it is the opposite of short: it names the exact files to touch, the tests to run, the questions to stop and ask about rather than guess at, and the exact commands to run first. It ends up pasted in full into a pull request's description, since that is the request a reviewer judges the finished work against.
 
-**Dispatch** — Handing a written brief to whoever will execute it — a coding agent or a person — so they start the work. A task is "dispatchable" once its prerequisites are all true: it has a real tracking number, everything it depends on has already landed, and no conflicting work is in flight. "Not dispatchable" means one of those isn't true yet.
+**Dispatch** — Handing a written work order to whoever will execute it — a coding agent or a person — so they start the work. A task is "dispatchable" once its prerequisites are all true: it has a real tracking number, everything it depends on has already landed, and no conflicting work is in flight. "Not dispatchable" means one of those isn't true yet.
 
 **Forge** — The Git hosting platform (GitHub, here) treated as the one source of truth for a task's state. Nothing in this system writes "in progress" or "done" to a file anywhere; a task's status is read directly off the live issues, pull requests, branches and labels, every time it's asked.
 
@@ -25,7 +25,7 @@ Vinaya uses a handful of words in a specific, non-obvious sense — on the pages
 
 **Step 0** — The literal first command someone runs before touching any code on a task: the one that creates that task's own isolated copy of the repository and its own branch. Nothing else happens until this command has run.
 
-**The Dig** — The research pass someone does before writing a task's brief: reading the actual, current code to confirm exact file names, function signatures and file structure, so the brief that results describes what is really there instead of what was assumed.
+**The Dig** — The research pass someone does before writing a task's work order: reading the actual, current code to confirm exact file names, function signatures and file structure, so the document that results describes what is really there instead of what was assumed.
 
 **Tranche** — A named batch of related tasks, planned and tracked together, numbered starting from 1. Each task in a tranche gets its own tracking issue and its own branch; the tranche as a whole is finished once every task in it has merged.
 
