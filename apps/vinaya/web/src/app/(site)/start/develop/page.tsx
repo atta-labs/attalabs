@@ -32,6 +32,11 @@ export default function StartDevelopPage() {
             )}
           </Text>
           <GateRefusalDemo />
+          <Text as='p' className='text-sm text-muted-foreground'>
+            {renderProse(
+              "The exact wording of a refusal — which template, which command to re-run — comes from your own repo's configuration; yours will name something else, but the shape holds."
+            )}
+          </Text>
         </div>
       }
     />
