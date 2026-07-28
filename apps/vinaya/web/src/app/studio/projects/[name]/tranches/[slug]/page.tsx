@@ -7,6 +7,7 @@ import { readTranche, readProject } from '@/lib/repo-state'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
+import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
 import { CoherencePanel } from './_components/CoherencePanel'
 import { TrancheTabs } from './_components/TrancheTabs'
 import { statusVisual, todoDispatchVisual } from './_lib/status-display'
@@ -45,6 +46,32 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
   }
+
+  // Same status→bucket mapping as `loadTrancheProgress` (the card's counts
+  // source) — kept in step so this page's badge and the card's progress bar
+  // never disagree about what "done" means.
+  const taskCounts = { total: tranche.tasks.length, done: 0, ongoing: 0, todo: 0, blocked: 0 }
+  for (const status of taskStatusMap.values()) {
+    switch (status) {
+      case 'merged':
+        taskCounts.done++
+        break
+      case 'in-flight':
+      case 'in-review':
+      case 'changes-requested':
+        taskCounts.ongoing++
+        break
+      case 'todo':
+        taskCounts.todo++
+        break
+      case 'blocked':
+        taskCounts.blocked++
+        break
+      default:
+        break
+    }
+  }
+  const trancheStatus = deriveTrancheStatus({ ...taskCounts, forgeAvailable: !snapshot.unavailable }, archived)
 
   // Dispatch-readiness sub-state for `todo` rows (#372 bundled finding):
   // `checkDispatchReadiness` computed server-side, display-only — DerivedStatus
@@ -102,8 +129,10 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
       <header className='space-y-3'>
         <div className='flex items-center gap-3'>
           <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Tranche</p>
-          {archived ? (
+          {trancheStatus === 'archived' ? (
             <Badge className='bg-muted/40 text-muted-foreground'>Archived</Badge>
+          ) : trancheStatus === 'awaiting-archive' ? (
+            <Badge className='bg-primary/10 text-primary'>Ready to archive</Badge>
           ) : (
             <Badge className='bg-success/10 text-success'>Active</Badge>
           )}
