@@ -1,24 +1,52 @@
 {
-  "name": "@atta/vinaya-cli",
+  "name": "vinaya",
   "version": "0.1.0",
-  "private": true,
+  "description": "Vinaya — Agentic Engineering Harness. Deterministic checks every AI coding agent must satisfy before merge.",
   "type": "module",
+  "license": "MIT",
   "bin": {
-    "vinaya": "./src/index.ts"
+    "vinaya": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daniboomerang/attalabs.git",
+    "directory": "apps/vinaya/cli"
+  },
+  "homepage": "https://vinaya.attalabs.dev",
+  "keywords": [
+    "cli",
+    "ai-agents",
+    "agentic-engineering",
+    "governance",
+    "checks",
+    "git-hooks",
+    "code-review"
+  ],
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "bun scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests"
+    "lint": "biome check src tests scripts"
   },
   "dependencies": {
-    "@atta/aeg-core": "workspace:*",
-    "@atta/vinaya-sources": "workspace:*",
+    "gray-matter": "^4.0.3",
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@atta/aeg-core": "workspace:*",
     "@atta/typescript-config": "workspace:*",
+    "@atta/vinaya-sources": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5.5.0"
   }

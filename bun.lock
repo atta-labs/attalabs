@@ -257,18 +257,19 @@
       },
     },
     "apps/vinaya/cli": {
-      "name": "@atta/vinaya-cli",
+      "name": "vinaya",
       "version": "0.1.0",
       "bin": {
-        "vinaya": "./src/index.ts",
+        "vinaya": "./dist/index.js",
       },
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/vinaya-sources": "workspace:*",
+        "gray-matter": "^4.0.3",
         "zod": "3.25.76",
       },
       "devDependencies": {
+        "@atta/aeg-core": "workspace:*",
         "@atta/typescript-config": "workspace:*",
+        "@atta/vinaya-sources": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5.5.0",
       },
@@ -822,8 +823,6 @@
     "@atta/vada-fusion": ["@atta/vada-fusion@workspace:packages/agents/vada-fusion"],
 
     "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
-
-    "@atta/vinaya-cli": ["@atta/vinaya-cli@workspace:apps/vinaya/cli"],
 
     "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
@@ -4202,6 +4201,8 @@
     "vfile-matter": ["vfile-matter@5.0.1", "", { "dependencies": { "vfile": "^6.0.0", "yaml": "^2.0.0" } }, "sha512-o6roP82AiX0XfkyTHyRCMXgHfltUNlXSEqCIS80f+mbAyiQBE2fxtDVMtseyytGx75sihiJFo/zR6r/4LTs2Cw=="],
 
     "vfile-message": ["vfile-message@4.0.3", "", { "dependencies": { "@types/unist": "^3.0.0", "unist-util-stringify-position": "^4.0.0" } }, "sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw=="],
+
+    "vinaya": ["vinaya@workspace:apps/vinaya/cli"],
 
     "virtua": ["virtua@0.49.2", "", { "peerDependencies": { "react": ">=16.14.0", "react-dom": ">=16.14.0", "solid-js": ">=1.0", "svelte": ">=5.0", "vue": ">=3.2" }, "optionalPeers": ["react", "react-dom", "solid-js", "svelte", "vue"] }, "sha512-aEp3+6cmIRjHUlQnWdgGXYMYtrIG26QnN9jJDZEE5LRhvo1Z9HzoJwLDgyVULUPWcSdCnZAroQm7raXJyTG0AA=="],
 
