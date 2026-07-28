@@ -18,7 +18,7 @@ export default function StartPlanPage() {
         result:
           'Once you agree, it cuts the Issues for you: a milestone for the piece of work, one Issue per task, each carrying its own rationale for why that task is sized the way it is.',
         studio:
-          'Open Studio and look at the tranche it made — the milestone, the tasks under it, and how they depend on each other.'
+          "Open Studio and look at the tranche it made. (A tranche is a bounded batch of work planned together: one milestone, and the tasks under it.) You'll see that milestone, its tasks, and how they depend on each other."
       }}
       docsHref='/docs/roles/planner'
       docsLabel='Planner'
