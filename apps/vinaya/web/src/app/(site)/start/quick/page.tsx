@@ -163,6 +163,15 @@ export default function StartQuickPage() {
           </div>
         ))}
       </section>
+
+      <NextLink
+        href='/start/plan'
+        variant='unstyled'
+        className='inline-flex w-fit items-center gap-1.5 text-primary text-sm underline-offset-4 hover:underline'
+      >
+        <span>Continue to Ship with Vinaya</span>
+        <ArrowRight className='size-3.5' />
+      </NextLink>
     </article>
   )
 }
