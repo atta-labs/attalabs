@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -31,9 +32,44 @@ import { describe, expect, it } from 'vitest'
  * `aeg-root` only via `PATTERN_SCOPE`, not the full `PRODUCT` surface — see
  * the comment on `PATTERN_SCOPE` for why a repo-wide ban would be wrong for
  * this specific class, unlike the ones above it.
+ *
+ * A third failure mode, found by post-merge review, joined coverage to
+ * vacuity: `[a-z][a-z-]+-v[0-9]` only sees a tranche slug that ends `-vN`.
+ * Four of this repo's own archived tranches — `aeg-governance-hardening`,
+ * `aeg-consolidation`, `aeg-studio-cleanup`, `herald-onto-engine` — predate
+ * that suffix convention, and the shape-based pattern is structurally blind
+ * to them; its self-guard sample (`aeg-coherence-v1`) happened to be drawn
+ * from the class the pattern already covers, so it proved non-vacuity
+ * without ever proving coverage. `LEGACY_SLUG_PATTERN` below closes that:
+ * derived from `aeg-root/tranches/completed/*.md` filenames — the
+ * authoritative list of what a real slug looks like — instead of a
+ * hand-shaped regex guess, so it cannot drift from reality the way the
+ * `-vN` guess did.
  */
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..')
+
+/**
+ * Real archived tranche slugs that predate the `-vN` naming convention,
+ * read live from the one place they're authoritative: the completed-tranche
+ * archive itself. Slugs `TRANCHE_SLUG_VN_PATTERN` already sees are excluded
+ * — no point banning the same string with two patterns.
+ */
+function legacySlugs(): string[] {
+  const dir = join(REPO_ROOT, 'aeg-root/tranches/completed')
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && !f.endsWith('.tokens.md'))
+    .map((f) => f.slice(0, -3))
+    .filter((slug) => !/-v[0-9]+$/.test(slug))
+}
+
+const FORGE_NUMBER_PATTERN = '#[0-9]{2,4}'
+const TRANCHE_SLUG_VN_PATTERN = '[a-z][a-z-]+-v[0-9]'
+const LEGACY_SLUGS = legacySlugs()
+// Empty only if every archived tranche ever adopts the `-vN` suffix — in
+// which case there is nothing left for this pattern to catch, and it is
+// dropped rather than shipped as a pattern with no positive sample.
+const LEGACY_SLUG_PATTERN = LEGACY_SLUGS.length > 0 ? `(${LEGACY_SLUGS.join('|')})` : null
 
 /** Claims that a removed mechanism is current. */
 const RETIRED_IN_PRODUCT = [
@@ -84,7 +120,7 @@ const RETIRED_IN_PRODUCT = [
   // parses everywhere else (`Closes #N`, golden fixtures, coherence
   // checks) — banning it repo-wide would flag the mechanism itself, not
   // the citation habit this class exists to stop.
-  '#[0-9]{2,4}',
+  FORGE_NUMBER_PATTERN,
   // An internal tranche slug — `aeg-forge-state-v1`, `vinaya-studio-v1` —
   // cited in doctrine prose as a bare pointer to "the tranche that did
   // this," with no reason restated. Same `aeg-root`-only scoping as the
@@ -93,7 +129,10 @@ const RETIRED_IN_PRODUCT = [
   // test data across `aeg-core` and `aeg-forge-state`), not a retired
   // vocabulary — only their use as an unexplained doctrine citation is
   // banned.
-  '[a-z][a-z-]+-v[0-9]'
+  TRANCHE_SLUG_VN_PATTERN,
+  // The same citation class, for the slugs that predate `-vN`. See the file
+  // header for why this is a second pattern rather than a broader regex.
+  ...(LEGACY_SLUG_PATTERN ? [LEGACY_SLUG_PATTERN] : [])
 ]
 
 /**
@@ -107,8 +146,9 @@ const RETIRED_IN_PRODUCT = [
  * pattern — not a list that grows every time a new tranche ships.
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
-  '#[0-9]{2,4}': ['aeg-root'],
-  '[a-z][a-z-]+-v[0-9]': ['aeg-root']
+  [FORGE_NUMBER_PATTERN]: ['aeg-root'],
+  [TRANCHE_SLUG_VN_PATTERN]: ['aeg-root'],
+  ...(LEGACY_SLUG_PATTERN ? { [LEGACY_SLUG_PATTERN]: ['aeg-root'] } : {})
 }
 
 /**
@@ -311,8 +351,12 @@ const SAMPLES: Record<string, string> = {
   checkDecisionNumbersFresh: 'checkDecisionNumbersFresh refuses the branch',
   'roles/team-leader\\.md': 'see roles/team-leader.md',
   'decision logic': 'NEGATIVE — all decision logic lives in the evaluator',
-  '#[0-9]{2,4}': 'fixed the gap (task 3, #365)',
-  '[a-z][a-z-]+-v[0-9]': 'landed in aeg-coherence-v1 task 3',
+  [FORGE_NUMBER_PATTERN]: 'fixed the gap (task 3, #365)',
+  [TRANCHE_SLUG_VN_PATTERN]: 'landed in aeg-coherence-v1 task 3',
+  // Drawn from the exact class the `-vN` pattern is blind to (the class
+  // this pattern exists to cover) — not a slug the pattern above already
+  // catches, so this proves coverage, not just non-vacuity.
+  ...(LEGACY_SLUG_PATTERN ? { [LEGACY_SLUG_PATTERN]: `shipped during ${LEGACY_SLUGS[0]}` } : {}),
   // The strip-wreckage shapes, each written as the artifact itself.
   '\\(,': 'a rationale block (, point-of-power principle) shipped once',
   ',\\)': 'the seam contract (planner-brief contract,) named here',
