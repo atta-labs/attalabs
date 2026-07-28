@@ -134,7 +134,7 @@ export default function StartQuickPage() {
               <CardContent className='flex flex-col gap-4'>
                 {step.body.map((item, index) =>
                   item.kind === 'list' ? (
-                    <ul key={index} className='list-disc space-y-1 pl-5 font-sans text-sm text-muted-foreground'>
+                    <ul key={index} className='list-disc space-y-1 pl-5 font-sans text-base text-foreground'>
                       {item.items.map((listItem) => (
                         <li key={listItem} className='leading-relaxed'>
                           {renderProse(listItem)}
@@ -142,7 +142,7 @@ export default function StartQuickPage() {
                       ))}
                     </ul>
                   ) : (
-                    <Text key={item.text} as='p' className='font-sans text-sm text-muted-foreground'>
+                    <Text key={item.text} as='p' className='font-sans text-base leading-relaxed text-foreground'>
                       {renderProse(item.text)}
                     </Text>
                   )
