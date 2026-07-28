@@ -1,6 +1,14 @@
-# @atta/vinaya-cli
+# vinaya
 
-The `vinaya` bin — Vinaya's npm-distributed CLI. This package ships the command router, the hierarchical config loader, the versioned `--json` output envelope, and the check engine (`vinaya check` / `vinaya new check`). `init`, `doctor`, `upgrade`, `eject`, and forge writes remain unbuilt — those land in later `vinaya-cli-v1` tasks.
+The `vinaya` bin — Vinaya's npm-distributed CLI, published to the public npm registry as `vinaya`. This package ships the command router, the hierarchical config loader, the versioned `--json` output envelope, the check engine (`vinaya check` / `vinaya new check`), the install lifecycle (`init` / `doctor` / `upgrade` / `eject`), and validated forge writes (`pr` / `issue`).
+
+## Install
+
+The published artifact is a Node-executable bundle — plain Node ≥ 20 is enough, through any package manager:
+
+```bash
+npx vinaya init        # or: pnpm dlx / yarn dlx / bunx
+```
 
 ## Install (local dev)
 

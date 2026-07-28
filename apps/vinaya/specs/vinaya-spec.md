@@ -69,7 +69,7 @@ Wording refinements are Principal-owned; do not improvise these fields.
 
 ## Architecture
 
-- **Entry point:** `npx vinaya init`; site at `vinaya.attalabs.dev`. No editor extension; GitHub App (deployed Studio / org installs) deferred.
+- **Entry point:** `npx vinaya init`; site at `vinaya.attalabs.dev`. The command resolves for real — the CLI is published to the public npm registry as `vinaya` (see § Distribution). No editor extension; GitHub App (deployed Studio / org installs) deferred.
 - **Vinaya Studio:** visual proof of derived status, not the acquisition hook. One derivation library with N consumers (CLI gates, local Studio, future deployed Studio); Studio renders `check --json`/forge-facts output and never re-implements governance logic; no database. Ships as a separate optional npm package `@vinaya/studio` — in-repo, Studio is `apps/vinaya/web`. Deployment roadmap: Phase 1 (v1.0) local Studio only; Phase 2 generated Projects view; Phase 3 (deferred) deployed self-hosted stateless read-only Studio on a GitHub App token; Phase 3½ dogfood-as-demo over Vinaya's own public repo.
 - **Enforcement hierarchy:** deterministic checks → CI + branch protection (the guarantee) → git hooks (ring 0, universal) → forge-write interception (ring 1, opt-in accelerator only, never load-bearing).
 - **Substrate:** GitHub Issues + labels are machine truth; Projects v2 is an optional generated view, never a source of truth; `init` prints the recommended branch-protection command and never applies it.
@@ -77,7 +77,13 @@ Wording refinements are Principal-owned; do not improvise these fields.
 - **Error contract:** every check error carries `agent_recovery_prompt` — a corrective instruction for the executing model, not a restated diagnosis. The check contract + error schema are a versioned public surface.
 - **State placement:** process/work state lives on the forge (Milestones, labels, comments); low-churn parseable artifacts (project registry, doc-owners) stay plain files wrapped in a code-free workspace package; universal AEG doctrine ships inside the npm package with a scaffolded, visible pointer in the adopter's repo.
 
-## Trust surface
+## Distribution (`vinaya-cli-v1`, task 9, #700)
+
+- **Published name:** `vinaya` — unscoped, public, on the public npm registry (`npm publish --access public` from `apps/vinaya/cli`). The bare name is load-bearing: `/start/quick` and `/cli` print `npx vinaya init` / `pnpm dlx` / `yarn dlx` / `bunx`, so a scoped or suffixed fallback would make the site lie. If the name were ever lost, that is a product decision, not a publish-time improvisation.
+- **Node target, not bun.** The four advertised install commands are package-manager invocations, not runtime choices — npm/pnpm/yarn would happily install a bun-shebang binary and then fail at exec on any machine without bun, after the user already ran the command from the website. The published artifact is therefore a single Node-executable ESM bundle (`dist/index.js`, `#!/usr/bin/env node`, built by `scripts/build.ts` via `bun build --target=node`), `engines.node >= 20`. Bun remains the build toolchain; it is no longer a runtime requirement.
+- **Dependency shape.** The whole `@atta/*` workspace graph (`@atta/aeg-core`, `@atta/aeg-forge-state`, `@atta/aeg-types`, `@atta/vinaya-sources`) is inlined by the bundle; the only declared runtime dependencies are the two genuinely external ones, `zod` and `gray-matter`. The build script derives its externals list from the manifest's non-`workspace:*` dependencies rather than a hand-written list, so a later real dependency cannot be silently inlined.
+- **Tarball contents** are an explicit `files` allowlist: `dist/`, `templates/` (read at runtime by `vinaya new check`), `README.md`. No `src/`, no `tests/`, no `tsconfig.json` — a published version cannot be recalled, only deprecated, so the allowlist is the last line against an over-broad artifact.
+- **Deliberately not published:** `@vinaya/studio` (the `{ kind: 'missing' }` branch in `resolveStudioTarget` stays a stub) and the `@atta/*` packages as standalone registry packages — they ship inlined; their standalone extraction is #546's question. The five core AEG check bins (`src/checks/bin/*.ts`) are also not in the tarball: they are monorepo-bound gates (they read `aeg-root/**` relative to this repo), so outside a Vinaya workspace `vinaya check --all` reports them as `status: 'error'` rather than crashing; that surface also belongs with #546.
 
 `init` is non-destructive by contract (full diff → confirm → install; `--dry-run`); `demo break` is the productized belief moment (refusal → self-correction → pass); `eject` restores stock in one command; `doctor` is treated as a product (diagnoses everything, mutates nothing).
 
