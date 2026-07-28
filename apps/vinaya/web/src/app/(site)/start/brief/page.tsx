@@ -10,7 +10,7 @@ export default function StartBriefPage() {
     <StagePage
       title='Brief the task'
       intro={[
-        'A plan names the work. A brief is what actually gets handed to whoever writes the code — the same conversation can usually keep going.'
+        'A plan names the work. A brief is the written, exact instructions for one task — what to build, which files, when to stop and ask — handed to whoever writes the code. The same conversation can usually keep going.'
       ]}
       qa={{
         tool: 'Still fine in a browser chat — briefing is writing, not filesystem work.',

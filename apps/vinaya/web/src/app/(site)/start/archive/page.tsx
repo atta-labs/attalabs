@@ -11,7 +11,7 @@ export default function StartArchivePage() {
       title='Close out the task'
       intro={['Once your pull request merges, this stage runs on its own — there is nothing left for you to prompt.']}
       qa={{
-        tool: 'Nothing you drive yourself — this stage runs once the merge lands, automatically for its mechanical half, and as a dispatched turn for the rest.',
+        tool: 'Nothing you drive yourself — this stage runs once the merge lands, automatically for its mechanical half, and as a separate turn you run for the rest.',
         say: 'Nothing new. It reads the merged pull request and the brief already inside it.',
         result:
           'The Issue closes, the docs the brief promised are confirmed updated, and a provenance record — a record of what shipped and where it came from — posts to the merged pull request.',
