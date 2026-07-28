@@ -275,6 +275,454 @@ export function NounMark({ noun, className }: NounMarkProps) {
   )
 }
 
+/** The design's one-line in/out summary for each stage — shown beside the
+ * stage title, stating what goes in and what comes out before the diagram
+ * says it in shapes. Copy verbatim from the design's stage headers. */
+export const STAGE_IN_OUT: Record<StageId, string> = {
+  plan: 'an intent in prose goes in — a tranche of reasoned task issues comes out',
+  brief: 'one task issue goes in — the same task, in full depth, comes out',
+  develop: 'a brief goes in — a pull request with that brief still attached comes out',
+  review: 'the open pull request goes in — a verdict comes out; review does not merge',
+  security: 'the same pull request, at the same time — a second, separate verdict comes out',
+  archive: 'a merged pull request goes in — a provenance record on it, and a closed issue, come out',
+  'wrap-up': 'a finished tranche goes in — a retrospective and a closed milestone come out'
+}
+
+/** The seven per-stage diagrams — each an IN column, a labelled
+ * transformation, and an OUT column, built from the noun marks above.
+ * Every path, transform and label is verbatim from the design's stage
+ * articles. Reuse is the story: a stage's output mark IS the next stage's
+ * input mark. */
+const STAGE_DIAGRAMS: Record<StageId, { viewBox: string; content: ReactNode }> = {
+  plan: {
+    viewBox: '0 0 800 340',
+    content: (
+      <>
+        <text x='40' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='452' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-intent' transform='translate(40,140)' />
+        <text x='40' y='252' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Intent
+        </text>
+        <text x='40' y='276' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          one person, describing
+        </text>
+        <text x='40' y='296' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          what they want
+        </text>
+        <path d='M186 168c60 0 60-70 118-70' markerEnd='url(#v-ah)' />
+        <path d='M186 172c70 0 60 46 118 46' markerEnd='url(#v-ah)' />
+        <path d='M186 176c80 0 60 114 118 114' markerEnd='url(#v-ah)' />
+        <text
+          x='252'
+          y='326'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          FANS OUT
+        </text>
+        <use href='#v-tranche' transform='translate(452,42)' />
+        <text x='452' y='292' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Tranche
+        </text>
+        <text x='452' y='314' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          one milestone; each task carries why it is
+        </text>
+        <text x='452' y='332' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          that size, what it touches, what it waits on
+        </text>
+      </>
+    )
+  },
+  brief: {
+    viewBox: '0 0 800 340',
+    content: (
+      <>
+        <text x='40' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='470' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-task' transform='translate(40,116)' />
+        <text x='40' y='240' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Task issue
+        </text>
+        <text x='40' y='264' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          one item from the tranche
+        </text>
+        <path d='M212 160h34' markerEnd='url(#v-ah)' />
+        <path d='M266 116v88' />
+        <path d='M260 116h12' />
+        <path d='M260 204h12' />
+        <path d='M282 160h34' markerEnd='url(#v-ah)' />
+        <path d='M336 40v236' />
+        <path d='M330 40h12' />
+        <path d='M330 276h12' />
+        <path d='M352 160h100' markerEnd='url(#v-ah)' />
+        <text
+          x='300'
+          y='312'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          SAME TASK,
+        </text>
+        <text
+          x='300'
+          y='332'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          MUCH MORE DEPTH
+        </text>
+        <use href='#v-brief' transform='translate(470,40)' />
+        <text x='646' y='120' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          exact files
+        </text>
+        <text x='646' y='182' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          exact tests
+        </text>
+        <text x='646' y='244' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          when to stop
+        </text>
+        <text x='646' y='264' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          and ask
+        </text>
+        <path d='M632 106h-6' />
+        <path d='M632 168h-6' />
+        <path d='M632 230h-6' />
+        <text x='470' y='308' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Brief
+        </text>
+        <text x='470' y='330' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          everything a coding agent works from
+        </text>
+      </>
+    )
+  },
+  develop: {
+    viewBox: '0 0 800 360',
+    content: (
+      <>
+        <text x='40' y='70' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='418' y='70' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-brief' transform='translate(40,86)' />
+        <text x='40' y='348' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Brief
+        </text>
+        <path d='M212 204h164' markerEnd='url(#v-ah)' />
+        <text
+          x='292'
+          y='184'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          AGENT WORKS
+        </text>
+        <path
+          d='M118 78C210 18 480 12 600 96'
+          stroke='var(--muted-foreground)'
+          strokeDasharray='5 6'
+          markerEnd='url(#v-ah-thin)'
+        />
+        <text x='368' y='30' textAnchor='middle' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          the brief rides along — it is not consumed
+        </text>
+        <use href='#v-pr' transform='translate(418,96)' />
+        <text x='418' y='344' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Pull request
+        </text>
+        <text x='556' y='344' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          judgeable against the brief inside it
+        </text>
+      </>
+    )
+  },
+  review: {
+    viewBox: '0 0 800 340',
+    content: (
+      <>
+        <text x='30' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='584' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-pr' transform='translate(30,54)' />
+        <text x='30' y='300' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Pull request
+        </text>
+        <text x='30' y='322' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          open, not merged
+        </text>
+        <path d='M298 118c22 0 26-16 48-16' markerEnd='url(#v-ah-thin)' />
+        <path d='M298 186c22 0 26 34 48 34' markerEnd='url(#v-ah-thin)' />
+        <path d='M362 76h96' />
+        <path d='M362 96h72' />
+        <path d='M362 116h88' />
+        <text x='362' y='60' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          what the code does
+        </text>
+        <path d='M362 216h88' />
+        <path d='M362 236h96' />
+        <path d='M362 256h64' />
+        <text x='362' y='286' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          what the brief asked for
+        </text>
+        <path d='M348 66v54' />
+        <path d='M348 206v54' />
+        <text x='484' y='176' fontSize='30' fill='currentColor' stroke='none'>
+          =?
+        </text>
+        <path d='M530 164h44' markerEnd='url(#v-ah)' />
+        <text
+          x='574'
+          y='150'
+          textAnchor='end'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          FINDINGS
+        </text>
+        <use href='#v-verdict' transform='translate(584,110)' />
+        <text x='584' y='290' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Verdict
+        </text>
+        <text x='584' y='312' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          posted as a comment
+        </text>
+      </>
+    )
+  },
+  security: {
+    viewBox: '0 0 800 400',
+    content: (
+      <>
+        <text x='30' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='424' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-pr' transform='translate(30,54)' />
+        <text x='30' y='300' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Pull request
+        </text>
+        <text x='30' y='322' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          the same one review is reading, at the same moment
+        </text>
+        <path d='M418 92h-92' markerEnd='url(#v-ah-thin)' />
+        <text x='428' y='97' fontSize='15' fill='currentColor' stroke='none'>
+          could this leak a secret?
+        </text>
+        <path d='M418 162h-92' markerEnd='url(#v-ah-thin)' />
+        <text x='428' y='167' fontSize='15' fill='currentColor' stroke='none'>
+          does it widen the attack surface?
+        </text>
+        <path d='M418 232h-92' markerEnd='url(#v-ah-thin)' />
+        <text x='428' y='237' fontSize='15' fill='currentColor' stroke='none'>
+          are permissions misconfigured?
+        </text>
+        <path d='M700 258v20c0 8-6 14-14 14h-72' markerEnd='url(#v-ah)' />
+        <use href='#v-verdict' transform='translate(424,248)' />
+        <text x='424' y='398' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Verdict
+        </text>
+        <text x='530' y='398' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          a second, separate comment
+        </text>
+      </>
+    )
+  },
+  archive: {
+    viewBox: '0 0 800 360',
+    content: (
+      <>
+        <text x='30' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='520' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-pr' transform='translate(30,54)' />
+        <circle cx='56' cy='112' r='15' />
+        <text x='30' y='300' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Pull request, merged
+        </text>
+        <text x='30' y='322' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          the merge is the only precondition
+        </text>
+        <path d='M306 162h56' markerEnd='url(#v-ah)' />
+        <path d='M382 138v48' />
+        <path d='M406 138v48' />
+        <path d='M382 138h24' strokeDasharray='4 5' stroke='var(--muted-foreground)' />
+        <path d='M382 118a24 24 0 0 1 24 20' markerEnd='url(#v-ah-thin)' stroke='var(--muted-foreground)' />
+        <text
+          x='394'
+          y='212'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          GATE OPENS
+        </text>
+        <text
+          x='394'
+          y='232'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          ONLY ON MERGE
+        </text>
+        <path d='M426 162h56' markerEnd='url(#v-ah)' />
+        <use href='#v-record' transform='translate(520,50)' />
+        <text x='520' y='252' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Provenance record
+        </text>
+        <text x='520' y='274' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          assembled from what already happened
+        </text>
+        <use href='#v-task' transform='translate(520,296) scale(0.5)' />
+        <path d='M556 318l7 8 13-16' />
+        <text x='600' y='330' fontSize='15' fill='currentColor' stroke='none'>
+          the task&apos;s issue, closed
+        </text>
+      </>
+    )
+  },
+  'wrap-up': {
+    viewBox: '0 0 800 360',
+    content: (
+      <>
+        <text x='30' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          IN
+        </text>
+        <text x='500' y='34' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+          OUT
+        </text>
+        <use href='#v-task' transform='translate(30,50) scale(0.62,0.5)' />
+        <path d='M124 68l6 7 12-14' />
+        <use href='#v-task' transform='translate(30,116) scale(0.62,0.5)' />
+        <path d='M124 128l18 18' />
+        <use href='#v-task' transform='translate(30,182) scale(0.62,0.5)' />
+        <path d='M124 206h18' markerEnd='url(#v-ah-thin)' />
+        <use href='#v-task' transform='translate(30,248) scale(0.62,0.5)' />
+        <path d='M124 268l6 7 12-14' />
+        <text x='30' y='330' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Every task merged, dropped, or moved
+        </text>
+        <path d='M160 72c60 0 60 92 110 92' markerEnd='url(#v-ah-thin)' />
+        <path d='M160 138c50 0 60 26 110 26' markerEnd='url(#v-ah-thin)' />
+        <path d='M160 204c50 0 60-26 110-26' markerEnd='url(#v-ah-thin)' />
+        <path d='M160 270c60 0 60-92 110-92' markerEnd='url(#v-ah-thin)' />
+        <text
+          x='216'
+          y='300'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          FANS IN
+        </text>
+        <circle cx='308' cy='171' r='24' />
+        <path d='M298 171l7 8 14-17' />
+        <text
+          x='308'
+          y='220'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          A HUMAN SAYS
+        </text>
+        <text
+          x='308'
+          y='240'
+          textAnchor='middle'
+          fontSize='13'
+          letterSpacing='1.2'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          IT IS DONE
+        </text>
+        <path d='M332 171h34' markerEnd='url(#v-ah)' />
+        <use href='#v-retro' transform='translate(500,48)' />
+        <path d='M378 171h122' markerEnd='url(#v-ah)' />
+        <text x='500' y='240' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Retrospective
+        </text>
+        <text x='500' y='262' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          completed, dropped, carried forward
+        </text>
+        <path d='M512 300l13 13-13 13-13-13z' />
+        <path d='M540 313h116' />
+        <path d='M672 306l7 8 13-16' />
+        <text x='500' y='352' fontSize='15' fill='currentColor' stroke='none'>
+          the milestone, closed
+        </text>
+      </>
+    )
+  }
+}
+
+export type StageDiagramProps = {
+  stageId: StageId
+  className?: string
+}
+
+/** One stage's full IN / transformation / OUT picture, verbatim from the
+ * design. Requires `MarkDefs` mounted on the same page. */
+export function StageDiagram({ stageId, className }: StageDiagramProps) {
+  const diagram = STAGE_DIAGRAMS[stageId]
+  return (
+    <svg
+      viewBox={diagram.viewBox}
+      className={className}
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='2'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      aria-hidden
+    >
+      {diagram.content}
+    </svg>
+  )
+}
+
 export type StageGlyphProps = {
   stageId: StageId
   className?: string
