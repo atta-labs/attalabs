@@ -13,7 +13,7 @@ import {
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
-import { START_NAV, START_OVERVIEW, type StartNavItem } from './start-nav'
+import { START_NAV, START_QUICK, type StartNavItem } from './start-nav'
 
 export type StartSidebarProps = { pathname: string }
 
@@ -49,7 +49,7 @@ export function StartSidebarNav({ pathname }: { pathname: string }) {
       <SidebarGroup className='py-1.5'>
         <SidebarGroupContent>
           <SidebarMenu className='gap-0.5'>
-            <FlatStartItem item={START_OVERVIEW} pathname={pathname} />
+            <FlatStartItem item={START_QUICK} pathname={pathname} />
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -61,6 +61,7 @@ export function StartSidebarNav({ pathname }: { pathname: string }) {
           </SidebarGroupLabel>
           <SidebarGroupContent className='mt-1'>
             <SidebarMenu className='gap-0.5'>
+              {section.overview && <FlatStartItem item={section.overview} pathname={pathname} />}
               {section.items.map((item) => (
                 <FlatStartItem key={item.slug} item={item} pathname={pathname} />
               ))}
