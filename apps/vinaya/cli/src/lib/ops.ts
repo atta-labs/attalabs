@@ -495,4 +495,4 @@ export function applyEject(plan: EjectPlan, repoRoot: string): { removedLabelsTo
   }
 }
 
-export { markerLines, renderBlock, stripBlockFromContent }
+export { markerLines, renderBlock, stripBlockFromContent, writeFileWithDirs, appendBlock, createHost, indent }

@@ -99,9 +99,23 @@ export async function runInit(args: string[], deps: InitDeps): Promise<number> {
     return 1
   }
 
+  // No `origin` remote (or it isn't a GitHub URL) — `detectGitRepo` already
+  // tried and left owner/repo blank. Labels are the only op that reaches the
+  // forge, so a remoteless repo can install everything else; warn and skip
+  // label creation (and the gh-auth requirement it exists for) instead of
+  // crashing mid-run on the first `gh label create` (spec D3).
+  const noRemote = !repo.owner || !repo.repo
+  if (noRemote) {
+    console.warn(
+      'Warning: no `origin` remote (or it is not a GitHub URL) — skipping label creation. ' +
+        'Re-run `vinaya init` after adding a GitHub remote to create the recommended labels.'
+    )
+  }
+
   // gh auth is required to create labels; a real install needs it. A dry run
-  // shows the plan without touching the forge, so it does not.
-  if (!dryRun) {
+  // shows the plan without touching the forge, and a remoteless repo has no
+  // labels to create, so neither needs it.
+  if (!dryRun && !noRemote) {
     const authed = await deps.checkGhAuth()
     if (!authed) {
       console.error('Error: GitHub CLI is not authenticated. Run `gh auth login` first (or use --dry-run to preview).')
@@ -110,7 +124,8 @@ export async function runInit(args: string[], deps: InitDeps): Promise<number> {
   }
 
   const ctx: InitContext = { owner: repo.owner, repo: repo.repo, hookDir: deps.hookDirFor(repo.repoRoot) }
-  const ops = buildInitOps(ctx)
+  const allOps = buildInitOps(ctx)
+  const ops = noRemote ? allOps.filter((op) => op.kind !== 'create-label') : allOps
   const owned = new Set(readManifest(repo.repoRoot)?.files ?? [])
   const plan = planInstall(ops, repo.repoRoot, owned)
 
@@ -176,6 +191,18 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
   if (!existing?.files.includes(CONFIG_PATH)) {
     console.error('Error: this repo is not Vinaya-initialized yet. Run `vinaya init` first.')
     return 1
+  }
+
+  // Same remoteless graceful-skip as `vinaya init` (spec D3): the only op
+  // here is a label, so a repo with no GitHub remote has nothing to install.
+  const noRemote = !repo.owner || !repo.repo
+  if (noRemote) {
+    console.warn(
+      'Warning: no `origin` remote (or it is not a GitHub URL) — skipping label creation. ' +
+        `Re-run 'vinaya init product ${name}' after adding a GitHub remote to create it.`
+    )
+    process.stdout.write(`\nNothing to scaffold for '${name}' without a GitHub remote.\n`)
+    return 0
   }
 
   const ops = buildInitProductOps(name)

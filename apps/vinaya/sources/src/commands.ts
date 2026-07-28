@@ -127,12 +127,17 @@ export const COMMANDS: readonly Command[] = [
   {
     name: 'doctor',
     description: 'Diagnose hook, workflow, and config health — report only, never mutates',
-    status: 'planned'
+    flags: [{ flag: '--json', description: 'Enveloped JSON output (schema: 1)' }],
+    status: 'shipped'
   },
   {
     name: 'upgrade',
     description: 'Regenerate hooks, workflow, and config to the current contract version (diff-and-confirm)',
-    status: 'planned'
+    flags: [
+      { flag: '--dry-run', description: 'Print the full diff without regenerating anything' },
+      { flag: '--yes', description: 'Skip the confirmation prompt' }
+    ],
+    status: 'shipped'
   },
   {
     name: 'eject',

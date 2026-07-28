@@ -4,12 +4,14 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkCommand } from './commands/check.js'
+import { doctorCommand } from './commands/doctor.js'
 import { ejectCommand } from './commands/eject.js'
 import { initCommand, initProductCommand } from './commands/init.js'
 import { issueCreateCommand, issueEditCommand } from './commands/issue.js'
 import { newCheckCommand } from './commands/new-check.js'
 import { prCreateCommand, prEditCommand } from './commands/pr.js'
 import { runStudio } from './commands/studio.js'
+import { upgradeCommand } from './commands/upgrade.js'
 import { printJson } from './lib/envelope.js'
 import { printHelp } from './lib/output.js'
 
@@ -54,6 +56,14 @@ try {
     }
     case 'eject': {
       await ejectCommand(args)
+      break
+    }
+    case 'doctor': {
+      await doctorCommand(args)
+      break
+    }
+    case 'upgrade': {
+      await upgradeCommand(args)
       break
     }
     case 'check': {
