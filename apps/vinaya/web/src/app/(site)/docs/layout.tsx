@@ -19,7 +19,7 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
     <Flex className='h-full min-h-0 w-full flex-col overflow-hidden lg:flex-row'>
       <DocSidebarHost nav={nav} />
       <main className='flex-1 min-h-0 overflow-y-auto px-6 pb-10 bg-background lg:px-12'>
-        <div className='mx-auto max-w-4xl pt-4'>{children}</div>
+        <div className='mx-auto max-w-4xl pt-10'>{children}</div>
       </main>
     </Flex>
   )
