@@ -2,7 +2,7 @@ import { Card, CardContent } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Flex, Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { CommandLine } from '../_components/CommandLine'
 import { PackageManagerTabs } from '../_components/PackageManagerTabs'
@@ -127,7 +127,20 @@ export default function StartQuickPage() {
                 {step.number}
               </Flex>
               <Heading level={2} className='font-serif text-xl font-normal text-foreground'>
-                {step.title}
+                {step.cliHref ? (
+                  <NextLink
+                    href={step.cliHref}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    variant='unstyled'
+                    className='group inline-flex items-center gap-1.5 hover:text-primary'
+                  >
+                    <span>{step.title}</span>
+                    <ExternalLink className='size-4 text-muted-foreground transition-colors group-hover:text-primary' />
+                  </NextLink>
+                ) : (
+                  step.title
+                )}
               </Heading>
             </Flex>
             <Card>
@@ -148,16 +161,6 @@ export default function StartQuickPage() {
                   )
                 )}
                 {step.render()}
-                {step.cliHref && (
-                  <NextLink
-                    href={step.cliHref}
-                    variant='unstyled'
-                    className='inline-flex w-fit items-center gap-1.5 text-primary text-sm underline-offset-4 hover:underline'
-                  >
-                    <span>Full command reference</span>
-                    <ArrowRight className='size-3.5' />
-                  </NextLink>
-                )}
               </CardContent>
             </Card>
           </div>
