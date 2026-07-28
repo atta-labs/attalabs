@@ -12,11 +12,11 @@ export const metadata: Metadata = {
   title: 'Quick Start · Vinaya'
 }
 
-// Four steps (Issue #682's Amendment): install / `init` / `init product` /
-// start working. Each of the first three names the real files it touches and
-// links onward to `/cli` for the full command reference — the CLI page
-// (`misc-hardening-v1` task 7) owns command detail, this page owns the path.
-// No forge dependency, same reasoning as `/roadmap` and `/start`.
+// Four fixed steps: install / `init` / `init product` / start working. Each of
+// the first three names the real files it touches and links onward to `/cli`
+// for the full command reference — the CLI page owns command detail, this
+// page owns the path. No forge dependency, same reasoning as `/roadmap` and
+// `/start`.
 const STEPS: { number: number; title: string; body: string[]; render: () => ReactNode; cliHref?: string }[] = [
   {
     number: 1,

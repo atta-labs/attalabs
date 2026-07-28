@@ -6,7 +6,7 @@ export type StartNavSection = { label: string; items: StartNavItem[] }
  * one place. Mirrors `/docs`' `DocNav` shape (`section.label` + `section.docs`)
  * closely enough that `StartSidebar`/`StartSidebarHost` can reuse `/docs`'
  * rail-vs-drawer layout verbatim, but stays a local type — this section has
- * no model to derive from, only two fixed parts (Issue #682's Amendment). */
+ * no model to derive from, only two fixed parts. */
 export const START_OVERVIEW: StartNavItem = { slug: 'overview', title: 'Overview', href: '/start' }
 
 export const START_NAV: StartNavSection[] = [

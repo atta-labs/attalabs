@@ -36,8 +36,9 @@ const QUESTIONS: { key: keyof StageQA; label: string }[] = [
  * questions, in the same order, every time, so the section reads as one
  * narrative rather than eight differently-organized pages. This is
  * deliberately NOT `DocPage`: `/docs` renders the model's own binding text;
- * this renders what the reader does, and links into `/docs` rather than
- * repeating it (Issue #682's one-directional rule). */
+ * this renders what the reader does. The rule that keeps the two from
+ * merging is one-directional: a stage page links into `/docs` and never
+ * restates a rule `/docs` owns. */
 export function StagePage({ title, intro, qa, docsHref, docsLabel, extra }: StagePageProps) {
   return (
     <article className='flex flex-col gap-6 pt-4'>

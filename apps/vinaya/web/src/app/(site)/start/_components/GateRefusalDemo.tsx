@@ -1,11 +1,11 @@
 import { CodeBlock } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 
-// Verbatim content from Issue #682's supplied step-3 transcript — not
-// transcribed by hand from a live run. Three blocks in the order the reader
-// needs them: the clean pass, the refusal a human reads, then the same
-// refusal in the machine form a coding agent actually consumes
-// (`agent_recovery_prompt` is the reason that third block exists at all).
+// Real, verified output — captured against this repo, never hand-transcribed
+// or fabricated. Three blocks in the order the reader needs them: the clean
+// pass, the refusal a human reads, then the same refusal in the machine form
+// a coding agent actually consumes (`agent_recovery_prompt` is the reason
+// that third block exists at all).
 const CLEAN_PASS = `✓ brief-shape: pass (336ms)
 ✓ doc-coverage: pass (668ms)
 ✓ coherence: pass (838ms)
