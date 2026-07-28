@@ -2,8 +2,20 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const CLI_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const TEMPLATE_PATH = join(CLI_ROOT, 'templates', 'custom-check.template.ts')
+// Walk up to the nearest package.json instead of a fixed `../..` — this file
+// runs from src/commands/ in the workspace but from a single-level dist/ in
+// the published bundle, so the depth to the package root is not constant.
+function packageRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url))
+  while (!existsSync(join(dir, 'package.json'))) {
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return dir
+}
+
+const TEMPLATE_PATH = join(packageRoot(), 'templates', 'custom-check.template.ts')
 const CHECKS_DIR = join('scripts', 'vinaya-checks')
 
 const VALID_NAME = /^[a-z0-9][a-z0-9-]*$/
