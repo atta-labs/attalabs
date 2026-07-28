@@ -3,7 +3,9 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { stageById, type StageId } from '../_lib/stages'
 import { renderProse } from './prose'
+import { StageGlyph } from './StageGlyph'
 import { START_NAV } from './start-nav'
 
 export type StageQA = {
@@ -17,8 +19,11 @@ export type StagePageProps = {
   /** This page's own slug in `START_NAV`'s "Ship with Vinaya" section —
    * `prev`/`next` are derived from that one ordered array rather than
    * hand-wired per page, so the sidebar order and the footer order can never
-   * drift apart. */
-  slug: string
+   * drift apart. Typed as `StageId` (not `string`) because it doubles as the
+   * lookup key into `_lib/stages.ts` for this page's glyph and its
+   * receives/produces statement — the seven stage pages need pass nothing
+   * beyond the slug they already pass. */
+  slug: StageId
   title: string
   intro: string[]
   qa: StageQA
@@ -55,6 +60,7 @@ export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }
   const index = STAGE_ITEMS.findIndex((item) => item.slug === slug)
   const prev = index > 0 ? STAGE_ITEMS[index - 1] : undefined
   const next = index >= 0 && index < STAGE_ITEMS.length - 1 ? STAGE_ITEMS[index + 1] : undefined
+  const stage = stageById(slug)
 
   return (
     <article className='space-y-4'>
@@ -72,9 +78,23 @@ export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }
         ))}
       </header>
 
+      <div className='flex justify-center py-2'>
+        <div className='flex size-24 items-center justify-center rounded-md border border-border bg-accent text-accent-foreground'>
+          <StageGlyph stageId={stage.id} className='h-14 w-auto' />
+        </div>
+      </div>
+
       <Separator className='opacity-60' />
 
       <dl className='flex flex-col gap-5'>
+        <div className='flex flex-col gap-1.5'>
+          <dt className='font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground'>Receives</dt>
+          <dd className='font-sans text-base leading-relaxed text-foreground'>{stage.receives}</dd>
+        </div>
+        <div className='flex flex-col gap-1.5'>
+          <dt className='font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground'>Produces</dt>
+          <dd className='font-sans text-base leading-relaxed text-foreground'>{stage.produces}</dd>
+        </div>
         {QUESTIONS.map(({ key, label }) => (
           <div key={key} className='flex flex-col gap-1.5'>
             <dt className='font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground'>{label}</dt>
