@@ -134,6 +134,16 @@ export type {
 } from './dead-branch-push-guard'
 export { captureBaseline, compareToBaseline } from './baseline-capture'
 export type { BaselineComparison, BaselineEntry, BaselineToolComparison } from './baseline-capture'
+export {
+  checkReaderResolvableProse,
+  checkUndefinedVocabulary,
+  checkUnresolvableReferences,
+  classifyProseFile,
+  legacySlugPattern,
+  parseGlossaryTerms,
+  stripNonProse
+} from './reader-resolvable-prose'
+export type { ProseFileClass, ProseFinding, ProseSourceFile } from './reader-resolvable-prose'
 export { checkDispatchReadiness } from './dispatch-gate'
 export type {
   DispatchConflictsWithFact,

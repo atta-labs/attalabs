@@ -6,7 +6,7 @@ const CLI_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const BIN_DIR = join(CLI_ROOT, 'src', 'checks', 'bin')
 
 /**
- * The four core AEG gates, expressed as ordinary `CheckSpec`s — the exact
+ * The five core AEG gates, expressed as ordinary `CheckSpec`s — the exact
  * shape a `vinaya.config.json` entry produces. No extra field, no privileged
  * flag: this IS the no-privileged-API proof, not a stylistic choice.
  * See `tests/checks/no-privileged-api.test.ts`.
@@ -34,6 +34,12 @@ export function coreCheckRegistry(): CheckSpec[] {
     {
       name: 'dispatch-readiness',
       run: join(BIN_DIR, 'check-dispatch-readiness.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'reader-resolvable-prose',
+      run: join(BIN_DIR, 'check-reader-resolvable-prose.ts'),
       scope: 'full',
       timeoutMs: 30_000
     }
