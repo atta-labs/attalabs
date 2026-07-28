@@ -12,17 +12,32 @@ export const metadata: Metadata = {
   title: 'Quick Start · Vinaya'
 }
 
+// A step body is a mix of framing prose and, where a step enumerates a set
+// (what it writes, what it refuses), a bullet list — a reader scanning for
+// "what lands in my repo" gets an answer they can scan, not a sentence they
+// have to parse.
+type StepBodyItem = { kind: 'prose'; text: string } | { kind: 'list'; items: string[] }
+
 // Four fixed steps: install / `init` / `init product` / start working. Each of
 // the first three names the real files it touches and links onward to `/cli`
 // for the full command reference — the CLI page owns command detail, this
 // page owns the path. No forge dependency, same reasoning as `/roadmap` and
 // `/start`.
-const STEPS: { number: number; title: string; body: string[]; render: () => ReactNode; cliHref?: string }[] = [
+const STEPS: {
+  number: number
+  title: string
+  body: StepBodyItem[]
+  render: () => ReactNode
+  cliHref?: string
+}[] = [
   {
     number: 1,
     title: 'Install',
     body: [
-      'Pick your package manager. Each command installs Vinaya and runs `init` in the same breath — nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff in the next step.'
+      {
+        kind: 'prose',
+        text: 'Pick your package manager. Each command installs Vinaya and runs `init` in the same breath — nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff in the next step.'
+      }
     ],
     render: () => (
       <PackageManagerTabs
@@ -39,8 +54,25 @@ const STEPS: { number: number; title: string; body: string[]; render: () => Reac
     number: 2,
     title: 'init',
     body: [
-      '`vinaya init` reads your repo, prints the complete diff of every file it intends to add or change, and waits — nothing is written until you say yes. `--dry-run` prints that same diff and installs nothing at all.',
-      'It writes exactly five things: `vinaya.config.json` (a starter ruleset, empty `checks`), git hook stubs (`.husky/` if present, else raw `.git/hooks`), two GitHub Actions workflows, a root `VINAYA.md` doctrine pointer, and a handful of labels — created only if they do not already exist. A file `init` did not create is never overwritten; a pre-existing hook keeps its own lines and gets an appended block instead.'
+      {
+        kind: 'prose',
+        text: '`vinaya init` reads your repo, prints the complete diff of every file it intends to add or change, and waits — nothing is written until you say yes. `--dry-run` prints that same diff and installs nothing at all.'
+      },
+      { kind: 'prose', text: 'It writes exactly five things:' },
+      {
+        kind: 'list',
+        items: [
+          '`vinaya.config.json` — a starter ruleset, with `checks` empty',
+          "Git hook stubs — `.husky/` if it's present, else raw `.git/hooks`",
+          'Two GitHub Actions workflows',
+          'A root `VINAYA.md` doctrine pointer',
+          'A handful of labels — created only if they do not already exist'
+        ]
+      },
+      {
+        kind: 'prose',
+        text: 'A file `init` did not create is never overwritten; a pre-existing hook keeps its own lines and gets an appended block instead.'
+      }
     ],
     render: () => <CommandLine command='vinaya init' />,
     cliHref: '/cli#command-init'
@@ -49,7 +81,10 @@ const STEPS: { number: number; title: string; body: string[]; render: () => Reac
     number: 3,
     title: 'init product',
     body: [
-      'Working in a monorepo with more than one governed area? `vinaya init product <name>` extends an already-initialized repo with one more — it creates a single `project:<name>` label, create-if-absent, under the same diff-and-confirm contract as `init` itself. It refuses if `init` has not run yet.'
+      {
+        kind: 'prose',
+        text: 'Working in a monorepo with more than one governed area? `vinaya init product <name>` extends an already-initialized repo with one more — it creates a single `project:<name>` label, create-if-absent, under the same diff-and-confirm contract as `init` itself. It refuses if `init` has not run yet.'
+      }
     ],
     render: () => <CommandLine command='vinaya init product <name>' />,
     cliHref: '/cli#command-init-product'
@@ -58,8 +93,11 @@ const STEPS: { number: number; title: string; body: string[]; render: () => Reac
     number: 4,
     title: 'Start working',
     body: [
-      "Connect whatever agentic coding tool you already use — Claude Code, Codex, Antigravity, or another — to this repo, and build your first feature. Vinaya doesn't care which tool; it cares that `vinaya check --all` passes before anything merges.",
-      'What that actually looks like, stage by stage, is the rest of this section.'
+      {
+        kind: 'prose',
+        text: "Connect whatever agentic coding tool you already use — Claude Code, Codex, Antigravity, or another — to this repo, and build your first feature. Vinaya doesn't care which tool; it cares that `vinaya check --all` passes before anything merges."
+      },
+      { kind: 'prose', text: 'What that actually looks like, stage by stage, is the rest of this section.' }
     ],
     render: () => null
   }
@@ -94,11 +132,21 @@ export default function StartQuickPage() {
             </Flex>
             <Card>
               <CardContent className='flex flex-col gap-4'>
-                {step.body.map((paragraph) => (
-                  <Text key={paragraph} as='p' className='font-sans text-sm text-muted-foreground'>
-                    {renderProse(paragraph)}
-                  </Text>
-                ))}
+                {step.body.map((item, index) =>
+                  item.kind === 'list' ? (
+                    <ul key={index} className='list-disc space-y-1 pl-5 font-sans text-sm text-muted-foreground'>
+                      {item.items.map((listItem) => (
+                        <li key={listItem} className='leading-relaxed'>
+                          {renderProse(listItem)}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Text key={item.text} as='p' className='font-sans text-sm text-muted-foreground'>
+                      {renderProse(item.text)}
+                    </Text>
+                  )
+                )}
                 {step.render()}
                 {step.cliHref && (
                   <NextLink
