@@ -3,6 +3,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
+import { LoopComposition } from './_components/LoopComposition'
 import { START_NAV } from './_components/start-nav'
 
 export const metadata: Metadata = {
@@ -10,8 +11,15 @@ export const metadata: Metadata = {
   description: 'The adopter’s path: install Vinaya, then ship your first feature under it.'
 }
 
+const QUICK_START = START_NAV.find((section) => section.label === 'Quick Start')
+
 /** Hand-authored landing for the section, same reasoning as `/roadmap`: no
- * forge dependency, no `@atta/aeg-core` import, so it stays live in prod. */
+ * forge dependency, no `@atta/aeg-core` import, so it stays live in prod.
+ * Quick Start stays a plain card list (out of this task's surface); "Ship
+ * with Vinaya" renders `LoopComposition` in place of the seven identical
+ * cards this replaced — a generic map over `START_NAV`'s sections can't
+ * express the loop's actual shape, so the two sections are handled
+ * separately rather than through one shared loop. */
 export default function StartLandingPage() {
   return (
     <article className='flex flex-col gap-10'>
@@ -24,13 +32,13 @@ export default function StartLandingPage() {
         </Text>
       </header>
 
-      {START_NAV.map((section) => (
-        <section key={section.label} className='flex flex-col gap-4'>
+      {QUICK_START && (
+        <section className='flex flex-col gap-4'>
           <Heading level={2} className='font-serif text-xl font-normal text-foreground'>
-            {section.label}
+            {QUICK_START.label}
           </Heading>
           <div className='flex flex-col gap-3'>
-            {section.items.map((item) => (
+            {QUICK_START.items.map((item) => (
               <Card key={item.slug}>
                 <CardContent>
                   <NextLink
@@ -46,7 +54,14 @@ export default function StartLandingPage() {
             ))}
           </div>
         </section>
-      ))}
+      )}
+
+      <section className='flex flex-col gap-4'>
+        <Heading level={2} className='font-serif text-xl font-normal text-foreground'>
+          Ship with Vinaya
+        </Heading>
+        <LoopComposition />
+      </section>
     </article>
   )
 }
