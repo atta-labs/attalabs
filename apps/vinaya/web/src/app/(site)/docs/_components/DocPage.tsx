@@ -162,7 +162,7 @@ export function DocPage({ doc, body, next, prev, basePath = '/docs', frame, seam
   return (
     <>
       <StickyDocHeader title={doc.title} section={doc.section} />
-      <article className='space-y-4 pt-4'>
+      <article className='space-y-4'>
         <header className='space-y-3'>
           <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
             {frame?.kindTag ?? doc.section}
