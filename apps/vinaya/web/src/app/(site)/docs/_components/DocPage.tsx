@@ -103,8 +103,8 @@ const markdownComponents = {
   ),
   // `Code`/`CodeBlock` from the cross-library contract, not local class
   // strings — their values were copied FROM this file when `vinaya-pages-v1`
-  // task 9 (#569) added them for `/install`, so the chip/block treatments are
-  // the same pixels, now from one source instead of two.
+  // task 9 (#569) added them for `/cli` (then `/install`), so the chip/block
+  // treatments are the same pixels, now from one source instead of two.
   //
   // The `className` branch is not decoration: ReactMarkdown routes BOTH inline
   // code and a fenced block's inner `<code>` through this one entry, and only
