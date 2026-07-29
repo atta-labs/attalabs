@@ -11,10 +11,10 @@ const links = [
   // Beside The Harness: both are code-derived reference pages — that one draws
   // the enforcement model, this one renders the state machine's own tables.
   { label: 'State Machine', href: '/state-machine' },
-  { label: 'Studio', href: '/the-studio' },
   { label: 'Start', href: '/start' },
   { label: 'CLI', href: '/cli' },
   { label: 'Docs', href: '/docs' },
+  { label: 'Studio', href: '/the-studio' },
   { label: 'Roadmap', href: '/roadmap' }
 ]
 
