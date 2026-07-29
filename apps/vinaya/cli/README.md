@@ -10,15 +10,6 @@ The published artifact is a Node-executable bundle — plain Node ≥ 20 is enou
 npx vinaya init        # or: pnpm dlx / yarn dlx / bunx
 ```
 
-## Install (local dev)
-
-`bun link` is not a workspace script — run it directly from this package's directory, not from the repo root:
-
-```bash
-cd apps/vinaya/cli && bun link
-vinaya help
-```
-
 ## Commands
 
 | Command | Description |
@@ -37,9 +28,9 @@ Hierarchical, file-level precedence:
 2. Global `~/.vinaya/config.json`
 3. `null` if neither exists
 
-Whichever file resolves first is used in full — there is no field-by-field merge across the two files, matching the pattern this loader was ported from (Cetana's CLI config loader, since deleted).
+Whichever file resolves first is used in full — there is no field-by-field merge across the two files.
 
-Today the schema carries one surface, added
+Today the schema carries one surface:
 
 ```json
 {
@@ -71,7 +62,7 @@ Glob scoping (`include`) is permitted; conditional logic (`if`/`unless`/`except`
 
 ## Check contract — quick reference
 
-Full field-by-field reference: [`apps/vinaya/specs/vinaya-spec.md` § Check engine](../specs/vinaya-spec.md#check-engine-vinaya-cli-v1-task-3-383). The short version — what an executable must do to be a valid check:
+Full field-by-field reference: [vinaya.attalabs.dev/cli](https://vinaya.attalabs.dev/cli). The short version — what an executable must do to be a valid check:
 
 - Exit `0` to pass, `1` to report findings. Any other exit code reads as `status: 'error'` to the runner.
 - Emit findings as JSON lines on stderr, one per line: `{ schema: 1, check, severity: 'error' | 'warning', message, agent_recovery_prompt, file?, line? }`.
@@ -83,14 +74,16 @@ Full field-by-field reference: [`apps/vinaya/specs/vinaya-spec.md` § Check engi
 
 ## JSON output envelope
 
-Every machine-readable (`--json`) output goes through `src/lib/envelope.ts`, which wraps the payload in `{ schema: 1, data: ... }`. The `schema` field is a public-surface commitment — there is no code path in this package that can emit unversioned machine output.
+Every machine-readable (`--json`) output is wrapped in `{ schema: 1, data: ... }`. The `schema` field is a public-surface commitment — no code path in this package emits unversioned machine output.
 
-## Interactive commands (future)
+## Known limits
 
-None ship in this task. When a later task adds an interactive command with an abort path, it must destroy stdin on abort — Cetana PR #43 hung because an interactive prompt left stdin open after a Ctrl-C. Port that lesson, don't relearn it.
+The five core AEG checks (`coherence`, `dispatch-readiness`, and siblings) are bound to the Vinaya development repository — they read governance documents relative to it. Outside a Vinaya workspace, `vinaya check --all` reports those checks as `status: 'error'` rather than crashing. Custom checks you register yourself are unaffected and work anywhere.
 
-## Architecture
+## Documentation
 
-Ported from Cetana's CLI: the config-loader pattern and its precedence regression tests only. No JSONL, no IPC, no coordinator, no state-sync code came across (local parallel state is the disease Vinaya exists to kill). `@atta/aeg-core` and `@atta/vinaya-sources` are workspace dependencies as of the check engine — every core check consumes their public exports read-only; tranche state is read only through a `StateSource`, never a hardcoded path.
+Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/cli](https://vinaya.attalabs.dev/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
 
-See `apps/vinaya/specs/vinaya-spec.md` for the full product spec and `apps/vinaya/specs/vinaya-backlog.md` for what's still ahead.
+## License
+
+AGPL-3.0-only — see [LICENSE](./LICENSE). You may use, fork and modify Vinaya freely; derivatives must ship their source under the same license.
