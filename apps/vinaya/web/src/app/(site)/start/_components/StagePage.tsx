@@ -1,9 +1,11 @@
-import { Separator } from '@atta/ui/components'
+import { Card, CardContent, Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { stageById, type StageId } from '../_lib/stages'
 import { renderProse } from './prose'
+import { MarkDefs, STAGE_IN_OUT, StageDiagram } from './StageGlyph'
 import { START_NAV } from './start-nav'
 
 export type StageQA = {
@@ -17,8 +19,11 @@ export type StagePageProps = {
   /** This page's own slug in `START_NAV`'s "Ship with Vinaya" section —
    * `prev`/`next` are derived from that one ordered array rather than
    * hand-wired per page, so the sidebar order and the footer order can never
-   * drift apart. */
-  slug: string
+   * drift apart. Typed as `StageId` (not `string`) because it doubles as the
+   * lookup key into `_lib/stages.ts` for this page's stage diagram and its
+   * in/out summary line — the seven stage pages need pass nothing beyond
+   * the slug they already pass. */
+  slug: StageId
   title: string
   intro: string[]
   qa: StageQA
@@ -55,9 +60,11 @@ export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }
   const index = STAGE_ITEMS.findIndex((item) => item.slug === slug)
   const prev = index > 0 ? STAGE_ITEMS[index - 1] : undefined
   const next = index >= 0 && index < STAGE_ITEMS.length - 1 ? STAGE_ITEMS[index + 1] : undefined
+  const stage = stageById(slug)
 
   return (
     <article className='space-y-4'>
+      <MarkDefs />
       <header className='space-y-3'>
         <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
           Ship with Vinaya
@@ -65,12 +72,21 @@ export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }
         <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
           {title}
         </Heading>
+        <Text as='p' muted className='leading-relaxed'>
+          {STAGE_IN_OUT[stage.id]}
+        </Text>
         {intro.map((paragraph) => (
           <Text key={paragraph} as='p' size='lg' muted className='leading-relaxed'>
             {renderProse(paragraph)}
           </Text>
         ))}
       </header>
+
+      <Card>
+        <CardContent>
+          <StageDiagram stageId={stage.id} className='h-auto w-full' />
+        </CardContent>
+      </Card>
 
       <Separator className='opacity-60' />
 
