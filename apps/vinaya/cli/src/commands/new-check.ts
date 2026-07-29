@@ -23,7 +23,7 @@ const VALID_NAME = /^[a-z0-9][a-z0-9-]*$/
 /**
  * `vinaya new check <name>` — scaffolds a worked custom check into
  * `./scripts/vinaya-checks/<name>.ts`. The template is self-contained (no
- * dependency on `@atta/vinaya-cli`'s own source) and honors the check
+ * dependency on `@attalabs/vinaya`'s own source) and honors the check
  * contract out of the box: it runs, emits one real `CheckError`, and passes
  * through the runner unmodified (`tests/new-check.test.ts`).
  */

@@ -6,7 +6,7 @@
  * then exit 0 (pass) or 1 (findings). The RUNNER enforces the timeout —
  * never sleep past it inside this file. This file is standalone (no import
  * from the vinaya CLI's own source tree) because it lives in YOUR repo, not
- * inside `@atta/vinaya-cli`.
+ * inside `@attalabs/vinaya`.
  */
 
 type CheckError = {

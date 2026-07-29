@@ -76,13 +76,20 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
   // runner never prints stdout (Part 6's command owns human output).
   proc.stdout.resume()
 
+  // Retained so the failure can be reported. Resolving `null` alone tells the
+  // caller THAT the spawn failed but never why, which reads identically to a
+  // check that exited non-zero in silence.
+  let spawnError: Error | undefined
   const exitCode = await new Promise<number | null>((resolve) => {
     // 'close', not 'exit' — it fires after the stdio pipes have drained, so
     // stderr is complete before parsing.
     proc.on('close', (code) => resolve(code))
     // A spawn failure (e.g. the executable does not exist) must surface as a
     // loud `status: 'error'` outcome, never an unhandled 'error' crash.
-    proc.on('error', () => resolve(null))
+    proc.on('error', (err: Error) => {
+      spawnError = err
+      resolve(null)
+    })
   })
   clearTimeout(timer)
   clearTimeout(killTimer)
@@ -90,6 +97,34 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
 
   if (timedOut) {
     return { name: spec.name, status: 'timeout', exitCode: null, errors: [], durationMs }
+  }
+
+  // The executable never ran. Synthesize the finding the check itself could
+  // not emit — an empty `errors: []` here would leave `--json` consumers with
+  // a bare `error` status and nothing to act on.
+  if (spawnError) {
+    const code = (spawnError as NodeJS.ErrnoException).code
+    return {
+      name: spec.name,
+      status: 'error',
+      exitCode: null,
+      errors: [
+        {
+          schema: 1,
+          check: spec.name,
+          severity: 'error',
+          message:
+            code === 'ENOENT'
+              ? `Could not run check "${spec.name}": executable \`${spec.run}\` was not found on PATH.`
+              : `Could not run check "${spec.name}": ${spawnError.message}`,
+          agent_recovery_prompt:
+            code === 'ENOENT'
+              ? `Install \`${spec.run}\` or correct the \`run\` field for check "${spec.name}" in vinaya.config.json, then re-run.`
+              : `Inspect the \`run\` and \`args\` fields for check "${spec.name}" in vinaya.config.json, then re-run.`
+        }
+      ],
+      durationMs
+    }
   }
 
   const lines = stderrText

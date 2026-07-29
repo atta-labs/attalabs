@@ -33,7 +33,7 @@ is refused by contract, not caught in review.
 [AttaLabs](../../README.md) ecosystem.
 
 > **Bootstrap status** — landing + install pages are live and the CLI skeleton ships real
-> commands (below). `npx vinaya init` is the planned one-command install; `init` / `doctor` /
+> commands (below). `npx @attalabs/vinaya init` is the planned one-command install; `init` / `doctor` /
 > `upgrade` / `eject` are not implemented yet.
 
 ---
@@ -43,7 +43,7 @@ is refused by contract, not caught in review.
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
 | **Web** | [`web/`](web/) | `@atta/vinaya-web` | 🟢 Landing · `/cli` (command reference) · `/start` (adopter's path — quick start + Ship with Vinaya) · `/docs` · Studio Portal |
-| **CLI** | [`cli/`](cli/) | `@atta/vinaya-cli` | 🟠 Core commands live (below); installer commands pending |
+| **CLI** | [`cli/`](cli/) | `@attalabs/vinaya` | 🟢 Published to npm; core + installer commands live (below) |
 
 ---
 

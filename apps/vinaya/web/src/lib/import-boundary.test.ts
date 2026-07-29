@@ -39,6 +39,11 @@ function extractSpecifiers(source: string): string[] {
 
 /** True if `specifier` reaches into the cli package, by either reach form. */
 function reachesIntoCli(specifier: string): boolean {
+  // Both names: `@attalabs/vinaya` is the published package (vinaya-cli-v1
+  // task 9, #700); `@atta/vinaya-cli` was its workspace name before that
+  // rename and is kept so an import written against the old name is still
+  // caught rather than silently allowed.
+  if (/^@attalabs\/vinaya(\/|$)/.test(specifier)) return true
   if (/^@atta\/vinaya-cli(\/|$)/.test(specifier)) return true
   if (/^(\.\.\/)+cli(\/|$)/.test(specifier)) return true
   return false
@@ -71,11 +76,13 @@ function findViolations(root: string): Violation[] {
 }
 
 describe('import boundary: web must not import cli', () => {
-  it('detects a named workspace import into cli', () => {
+  it('detects a named workspace import into cli, under both the current and former package name', () => {
+    expect(reachesIntoCli('@attalabs/vinaya')).toBe(true)
     expect(reachesIntoCli('@atta/vinaya-cli')).toBe(true)
   })
 
   it('detects a named subpath import into cli', () => {
+    expect(reachesIntoCli('@attalabs/vinaya/lib/config')).toBe(true)
     expect(reachesIntoCli('@atta/vinaya-cli/lib/config')).toBe(true)
   })
 

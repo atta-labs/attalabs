@@ -1,9 +1,10 @@
 {
-  "name": "vinaya",
+  "name": "@attalabs/vinaya",
   "version": "0.1.0",
   "description": "Vinaya — Agentic Engineering Harness. Deterministic checks every AI coding agent must satisfy before merge.",
   "type": "module",
   "license": "AGPL-3.0-only",
+  "author": "Daniel Estevez",
   "bin": {
     "vinaya": "./dist/index.js"
   },
@@ -35,6 +36,7 @@
   },
   "scripts": {
     "build": "bun scripts/build.ts",
+    "prepack": "bun scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src tests scripts"

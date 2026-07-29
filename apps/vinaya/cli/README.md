@@ -1,13 +1,13 @@
-# vinaya
+# @attalabs/vinaya
 
-The `vinaya` bin — Vinaya's npm-distributed CLI, published to the public npm registry as `vinaya`. This package ships the command router, the hierarchical config loader, the versioned `--json` output envelope, the check engine (`vinaya check` / `vinaya new check`), the install lifecycle (`init` / `doctor` / `upgrade` / `eject`), and validated forge writes (`pr` / `issue`).
+The `vinaya` bin — Vinaya's npm-distributed CLI, published to the public npm registry as `@attalabs/vinaya`. The installed command is `vinaya`; only the package name carries the scope. This package ships the command router, the hierarchical config loader, the versioned `--json` output envelope, the check engine (`vinaya check` / `vinaya new check`), the install lifecycle (`init` / `doctor` / `upgrade` / `eject`), and validated forge writes (`pr` / `issue`).
 
 ## Install
 
 The published artifact is a Node-executable bundle — plain Node ≥ 20 is enough, through any package manager:
 
 ```bash
-npx vinaya init        # or: pnpm dlx / yarn dlx / bunx
+npx @attalabs/vinaya init        # or: pnpm dlx / yarn dlx / bunx
 ```
 
 ## Commands
@@ -78,12 +78,16 @@ Every machine-readable (`--json`) output is wrapped in `{ schema: 1, data: ... }
 
 ## Known limits
 
-The five core AEG checks (`coherence`, `dispatch-readiness`, and siblings) are bound to the Vinaya development repository — they read governance documents relative to it. Outside a Vinaya workspace, `vinaya check --all` reports those checks as `status: 'error'` rather than crashing. Custom checks you register yourself are unaffected and work anywhere.
+The five core AEG checks (`coherence`, `dispatch-readiness`, and siblings) are bound to the Vinaya development repository — they read governance documents relative to it. Outside a Vinaya workspace, `vinaya check --all` reports those checks as `status: 'error'` rather than crashing.
+
+Custom checks are any executable you register in `vinaya.config.json`, in any language. Note that the TypeScript file `vinaya new check` scaffolds carries a `#!/usr/bin/env bun` shebang, so **that scaffold requires [bun](https://bun.sh) on your `PATH`** — without it the check reports `status: 'error'`. The CLI itself needs only Node; this applies to the scaffolded template alone. Write the check in a language your machine already runs and it has no such requirement.
 
 ## Documentation
 
 Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/cli](https://vinaya.attalabs.dev/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
 
 ## License
+
+Copyright (C) 2026 Daniel Estevez.
 
 AGPL-3.0-only — see [LICENSE](./LICENSE). You may use, fork and modify Vinaya freely; derivatives must ship their source under the same license.
