@@ -257,18 +257,19 @@
       },
     },
     "apps/vinaya/cli": {
-      "name": "@atta/vinaya-cli",
+      "name": "@attalabs/vinaya",
       "version": "0.1.0",
       "bin": {
-        "vinaya": "./src/index.ts",
+        "vinaya": "./dist/index.js",
       },
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/vinaya-sources": "workspace:*",
+        "gray-matter": "^4.0.3",
         "zod": "3.25.76",
       },
       "devDependencies": {
+        "@atta/aeg-core": "workspace:*",
         "@atta/typescript-config": "workspace:*",
+        "@atta/vinaya-sources": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5.5.0",
       },
@@ -823,8 +824,6 @@
 
     "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
 
-    "@atta/vinaya-cli": ["@atta/vinaya-cli@workspace:apps/vinaya/cli"],
-
     "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
@@ -834,6 +833,8 @@
     "@atta/vitakka-ai-mobile": ["@atta/vitakka-ai-mobile@workspace:apps/vitakka-ai/mobile"],
 
     "@atta/vitakka-ai-web": ["@atta/vitakka-ai-web@workspace:apps/vitakka-ai/web"],
+
+    "@attalabs/vinaya": ["@attalabs/vinaya@workspace:apps/vinaya/cli"],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 

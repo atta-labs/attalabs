@@ -33,10 +33,21 @@ export type DoctorDeps = {
   packageVersion: () => string
 }
 
-const PACKAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+// Walk up to the nearest package.json instead of a fixed `../..` — this file
+// runs from src/commands/ in the workspace but from a single-level dist/ in
+// the published bundle, so the depth to the package root is not constant.
+function packageRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url))
+  while (!existsSync(join(dir, 'package.json'))) {
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return dir
+}
 
 function readVersion(): string {
-  const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf-8'))
+  const pkg = JSON.parse(readFileSync(join(packageRoot(), 'package.json'), 'utf-8'))
   return pkg.version
 }
 

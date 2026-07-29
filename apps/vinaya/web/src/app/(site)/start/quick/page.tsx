@@ -42,10 +42,10 @@ const STEPS: {
     render: () => (
       <PackageManagerTabs
         commands={{
-          npm: 'npx vinaya init',
-          pnpm: 'pnpm dlx vinaya init',
-          yarn: 'yarn dlx vinaya init',
-          bun: 'bunx vinaya init'
+          npm: 'npx @attalabs/vinaya init',
+          pnpm: 'pnpm dlx @attalabs/vinaya init',
+          yarn: 'yarn dlx @attalabs/vinaya init',
+          bun: 'bunx @attalabs/vinaya init'
         }}
       />
     )

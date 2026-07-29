@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { cpus } from 'node:os'
 import { globToRegex } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, type CheckError, type CheckOutcome, type CheckSpec, type CheckStatus } from './contract'
@@ -49,10 +50,10 @@ const KILL_GRACE_MS = 2000
 
 async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome> {
   const start = performance.now()
-  const proc = Bun.spawn([spec.run, ...(spec.args ?? [])], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-    stdin: 'ignore'
+  // Same `node:child_process` shape as `spawnDev` in src/commands/studio.ts —
+  // no `env` override, so the child inherits the full parent environment.
+  const proc = spawn(spec.run, spec.args ?? [], {
+    stdio: ['ignore', 'pipe', 'pipe']
   })
 
   let timedOut = false
@@ -62,23 +63,68 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
     // SIGTERM first; a check that traps/ignores it would otherwise run
     // forever past its declared timeout — escalate to SIGKILL after a
     // grace period so "the runner enforces the timeout" is actually true.
-    proc.kill()
+    proc.kill('SIGTERM')
     killTimer = setTimeout(() => proc.kill('SIGKILL'), KILL_GRACE_MS)
   }, timeoutMs)
 
-  const [stderrText] = await Promise.all([
-    new Response(proc.stderr).text(),
-    // Drain stdout so the child never blocks on a full pipe buffer; the
-    // runner never prints stdout (Part 6's command owns human output).
-    new Response(proc.stdout).text()
-  ])
-  const exitCode = await proc.exited
+  let stderrText = ''
+  proc.stderr.setEncoding('utf-8')
+  proc.stderr.on('data', (chunk: string) => {
+    stderrText += chunk
+  })
+  // Drain stdout so the child never blocks on a full pipe buffer; the
+  // runner never prints stdout (Part 6's command owns human output).
+  proc.stdout.resume()
+
+  // Retained so the failure can be reported. Resolving `null` alone tells the
+  // caller THAT the spawn failed but never why, which reads identically to a
+  // check that exited non-zero in silence.
+  let spawnError: Error | undefined
+  const exitCode = await new Promise<number | null>((resolve) => {
+    // 'close', not 'exit' — it fires after the stdio pipes have drained, so
+    // stderr is complete before parsing.
+    proc.on('close', (code) => resolve(code))
+    // A spawn failure (e.g. the executable does not exist) must surface as a
+    // loud `status: 'error'` outcome, never an unhandled 'error' crash.
+    proc.on('error', (err: Error) => {
+      spawnError = err
+      resolve(null)
+    })
+  })
   clearTimeout(timer)
   clearTimeout(killTimer)
   const durationMs = performance.now() - start
 
   if (timedOut) {
     return { name: spec.name, status: 'timeout', exitCode: null, errors: [], durationMs }
+  }
+
+  // The executable never ran. Synthesize the finding the check itself could
+  // not emit — an empty `errors: []` here would leave `--json` consumers with
+  // a bare `error` status and nothing to act on.
+  if (spawnError) {
+    const code = (spawnError as NodeJS.ErrnoException).code
+    return {
+      name: spec.name,
+      status: 'error',
+      exitCode: null,
+      errors: [
+        {
+          schema: 1,
+          check: spec.name,
+          severity: 'error',
+          message:
+            code === 'ENOENT'
+              ? `Could not run check "${spec.name}": executable \`${spec.run}\` was not found on PATH.`
+              : `Could not run check "${spec.name}": ${spawnError.message}`,
+          agent_recovery_prompt:
+            code === 'ENOENT'
+              ? `Install \`${spec.run}\` or correct the \`run\` field for check "${spec.name}" in vinaya.config.json, then re-run.`
+              : `Inspect the \`run\` and \`args\` fields for check "${spec.name}" in vinaya.config.json, then re-run.`
+        }
+      ],
+      durationMs
+    }
   }
 
   const lines = stderrText
@@ -128,7 +174,7 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
  * cannot be trusted at all.
  *
  * Known hardening gaps, not addressed by this task (documented rather than
- * silently ignored): `Bun.spawn` inherits the full parent environment — the
+ * silently ignored): the spawn inherits the full parent environment — the
  * contract's "no-network-by-default" rule is convention-only, nothing here
  * sandboxes or scrubs a check's network access or secret visibility; and the
  * timeout kill targets only the direct child, not a process group/tree, so a

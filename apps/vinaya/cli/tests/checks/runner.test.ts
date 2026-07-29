@@ -24,6 +24,20 @@ describe('runChecks', () => {
     expect(outcome?.errors).toEqual([])
   })
 
+  it('reports a diagnostic error when the executable does not exist', async () => {
+    const [outcome] = await runChecks(
+      [fullScope({ name: 'missing-bin', run: join(FIXTURES, 'no-such-executable') })],
+      BASE_OPTS
+    )
+    expect(outcome?.status).toBe('error')
+    expect(outcome?.exitCode).toBeNull()
+    // The point of the test: a spawn failure must not resolve to `errors: []`,
+    // which would leave a --json consumer with a bare status and no cause.
+    expect(outcome?.errors).toHaveLength(1)
+    expect(outcome?.errors[0]?.message).toContain('was not found on PATH')
+    expect(outcome?.errors[0]?.agent_recovery_prompt).toContain('vinaya.config.json')
+  })
+
   it('reports fail and parses the CheckError JSON line for a check that exits 1', async () => {
     const [outcome] = await runChecks([fullScope({ name: 'failing', run: FAILING })], BASE_OPTS)
     expect(outcome?.status).toBe('fail')

@@ -32,7 +32,8 @@ export default function CliPage() {
 
           <section className='flex flex-col gap-8'>
             {COMMANDS.map((command) => {
-              const synopsis = command.name === 'init' ? `npx vinaya ${command.name}` : `vinaya ${command.name}`
+              const synopsis =
+                command.name === 'init' ? `npx @attalabs/vinaya ${command.name}` : `vinaya ${command.name}`
               return (
                 // `scroll-mt-6` offsets the anchor target so a click/scroll-spy
                 // jump lands the heading just below the pane's top edge, not flush.
