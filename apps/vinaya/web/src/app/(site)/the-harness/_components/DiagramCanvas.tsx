@@ -266,7 +266,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
                 y={c.y}
                 textAnchor='middle'
                 dominantBaseline='middle'
-                className='pointer-events-none fill-foreground font-mono text-xl font-bold uppercase tracking-wide'
+                className='pointer-events-none fill-foreground font-mono text-2xl font-bold uppercase tracking-wide'
               >
                 {bandLabel(band)}
               </text>
@@ -276,7 +276,10 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
         {drilledGroup?.children.map((node) => {
           const arc = drilledArcs.find((a) => a.id === node.id)
           if (!arc) return null
-          // Tailwind size scale, not an arbitrary px value — `text-xl`.
+          // Tailwind size scale, not an arbitrary px value — `text-2xl`. The
+          // y-offset between lines (31) scales with the font: left at 26 (its
+          // `text-xl` value) or 39 (its `text-3xl` value) the second line of a
+          // wrapped label either overlaps or over-spaces the first.
           const lines = wrapLabel(shortLabel(humanLabel(node.label)), 12)
           return (
             <g key={`drill-label-${node.id}`} className='pointer-events-none'>
@@ -284,10 +287,10 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
                 <text
                   key={`${node.id}-${li}`}
                   x={arc.centroid.x}
-                  y={arc.centroid.y + li * 26 - ((lines.length - 1) * 26) / 2}
+                  y={arc.centroid.y + li * 31 - ((lines.length - 1) * 31) / 2}
                   textAnchor='middle'
                   dominantBaseline='middle'
-                  className='fill-foreground font-mono text-xl font-medium'
+                  className='fill-foreground font-mono text-2xl font-medium'
                 >
                   {line}
                 </text>
@@ -369,7 +372,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
             x={CENTER.x}
             y={hubBackY}
             textAnchor='middle'
-            className={`cursor-pointer fill-muted-foreground font-mono text-xl uppercase underline decoration-1 underline-offset-[6px] tracking-[0.12em] transition-colors hover:fill-foreground ${NO_NATIVE_OUTLINE}`}
+            className={`cursor-pointer fill-muted-foreground font-mono text-2xl uppercase underline decoration-1 underline-offset-[6px] tracking-[0.12em] transition-colors hover:fill-foreground ${NO_NATIVE_OUTLINE}`}
             {...interactiveProps('Back to overview', onBack)}
           >
             ← Back
@@ -389,7 +392,7 @@ export function DiagramCanvas({ groups, drilledGroup, selectedLeafId, onDrill, o
             x={CENTER.x}
             y={CENTER.y + 46}
             textAnchor='middle'
-            className='fill-muted-foreground font-mono text-xs uppercase tracking-wide'
+            className='fill-muted-foreground font-mono text-lg uppercase tracking-wide'
           >
             protected
           </text>
