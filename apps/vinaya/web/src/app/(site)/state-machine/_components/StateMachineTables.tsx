@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
 import type { StateMachineModel } from '../_lib/load-state-machine'
@@ -57,7 +57,11 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
           <TableBody>
             {model.factInputs.map((input) => (
               <TableRow key={input.fact}>
-                <TableCell className='font-mono text-sm text-foreground'>{input.fact}</TableCell>
+                <TableCell className='font-mono text-sm text-foreground'>
+                  <Badge variant='outline' className='font-mono text-xs font-normal'>
+                    {input.fact}
+                  </Badge>
+                </TableCell>
                 <TableCell className='font-mono text-sm text-muted-foreground'>{input.readsFrom}</TableCell>
                 <TableCell className='font-sans text-sm text-muted-foreground'>{input.meaning}</TableCell>
               </TableRow>
@@ -81,7 +85,11 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
           <TableBody>
             {model.labels.map((label) => (
               <TableRow key={label.key}>
-                <TableCell className='font-mono text-sm text-foreground'>{label.id}</TableCell>
+                <TableCell className='font-mono text-sm text-foreground'>
+                  <Badge variant='outline' className='font-mono text-xs font-normal'>
+                    {label.id}
+                  </Badge>
+                </TableCell>
                 <TableCell className='font-mono text-sm text-muted-foreground'>{label.category}</TableCell>
                 <TableCell className='font-sans text-sm text-muted-foreground'>{label.carries}</TableCell>
               </TableRow>
@@ -105,12 +113,26 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
           <TableBody>
             {model.statuses.map((row) => (
               <TableRow key={row.status}>
-                <TableCell className='font-mono text-sm text-foreground'>{row.status}</TableCell>
+                <TableCell className='font-mono text-sm text-foreground'>
+                  <Badge variant='outline' className='font-mono text-xs font-normal'>
+                    {row.status}
+                  </Badge>
+                </TableCell>
                 <TableCell className='font-sans text-sm text-muted-foreground'>
                   {row.derivable ? 'Yes' : 'No'}
                 </TableCell>
                 <TableCell className='font-mono text-sm text-muted-foreground'>
-                  {row.concludedBy.length > 0 ? row.concludedBy.join(', ') : EMPTY_CELL}
+                  {row.concludedBy.length > 0 ? (
+                    <div className='flex flex-wrap gap-1.5'>
+                      {row.concludedBy.map((ruleId) => (
+                        <Badge key={ruleId} variant='outline' className='font-mono text-xs font-normal'>
+                          {ruleId}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    EMPTY_CELL
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -142,10 +164,18 @@ export function StateMachineTables({ model }: { model: StateMachineModel }) {
           <TableBody>
             {model.rules.map((rule) => (
               <TableRow key={rule.id}>
-                <TableCell className='font-mono text-sm text-foreground'>{rule.id}</TableCell>
+                <TableCell className='font-mono text-sm text-foreground'>
+                  <Badge variant='outline' className='font-mono text-xs font-normal'>
+                    {rule.id}
+                  </Badge>
+                </TableCell>
                 <TableCell className='font-mono text-sm text-muted-foreground'>{rule.chainStep}</TableCell>
                 <TableCell className='font-sans text-sm text-muted-foreground'>{rule.when}</TableCell>
-                <TableCell className='font-mono text-sm text-foreground'>{rule.status}</TableCell>
+                <TableCell className='font-mono text-sm text-foreground'>
+                  <Badge variant='outline' className='font-mono text-xs font-normal'>
+                    {rule.status}
+                  </Badge>
+                </TableCell>
                 <TableCell className='font-sans text-sm text-muted-foreground'>{rule.why}</TableCell>
               </TableRow>
             ))}
