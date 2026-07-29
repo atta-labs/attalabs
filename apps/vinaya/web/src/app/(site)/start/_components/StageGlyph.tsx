@@ -3,7 +3,10 @@ import type { StageId } from '../_lib/stages'
 
 /**
  * ---------------------------------------------------------------------------
- * The approved design port ("Vinaya loop.dc.html", 2026-07-28).
+ * The approved design port ("Vinaya loop.dc.html", 2026-07-28; revised
+ * 2026-07-29 — "structure 2" — to make the task visible in Plan's OUT and in
+ * every loop row; the noun marks and the other six stage diagrams are
+ * unchanged between the two revisions).
  *
  * The geometry below is COPIED from the design file's markup — every `d`
  * attribute, `viewBox`, radius and transform is verbatim, per the port
@@ -256,7 +259,7 @@ export function NounMark({ noun, className }: NounMarkProps) {
  * stage title, stating what goes in and what comes out before the diagram
  * says it in shapes. Copy verbatim from the design's stage headers. */
 export const STAGE_IN_OUT: Record<StageId, string> = {
-  plan: 'an intent in prose goes in — a tranche of reasoned task issues comes out',
+  plan: 'an intent in prose goes in — several individually reasoned task issues come out',
   brief: 'one task issue goes in — the same task, in full depth, comes out',
   develop: 'a brief goes in — a pull request with that brief still attached comes out',
   review: 'the open pull request goes in — a verdict comes out; review does not merge',
@@ -272,48 +275,92 @@ export const STAGE_IN_OUT: Record<StageId, string> = {
  * input mark. */
 const STAGE_DIAGRAMS: Record<StageId, { viewBox: string; content: ReactNode }> = {
   plan: {
-    viewBox: '0 0 800 340',
+    viewBox: '0 0 800 480',
     content: (
       <>
         <text x='40' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
           IN
         </text>
-        <text x='452' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+        <text x='414' y='24' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
           OUT
         </text>
-        <use href='#v-intent' transform='translate(40,140)' />
-        <text x='40' y='252' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+
+        <use href='#v-intent' transform='translate(40,180)' />
+        <text x='40' y='272' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
           Intent
         </text>
-        <text x='40' y='276' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+        <text x='40' y='296' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
           one person, describing
         </text>
-        <text x='40' y='296' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+        <text x='40' y='316' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
           what they want
         </text>
-        <path d='M186 168c60 0 60-70 118-70' markerEnd='url(#v-ah)' />
-        <path d='M186 172c70 0 60 46 118 46' markerEnd='url(#v-ah)' />
-        <path d='M186 176c80 0 60 114 118 114' markerEnd='url(#v-ah)' />
+
+        <path d='M150 205C266 205 300 120 418 120' markerEnd='url(#v-ah)' />
+        <path d='M150 208C266 208 320 205 418 205' markerEnd='url(#v-ah)' />
+        <path d='M150 211C266 211 320 290 418 290' markerEnd='url(#v-ah)' />
+        <path d='M150 214C266 214 300 375 418 375' markerEnd='url(#v-ah)' />
         <text
-          x='252'
-          y='326'
+          x='284'
+          y='452'
           textAnchor='middle'
           fontSize='13'
           letterSpacing='1.2'
           fill='var(--muted-foreground)'
           stroke='none'
         >
-          FANS OUT
+          FANS OUT INTO SEPARATE TASKS
         </text>
-        <use href='#v-tranche' transform='translate(452,42)' />
-        <text x='452' y='292' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
-          Tranche
+
+        <rect x='414' y='34' width='170' height='390' rx='10' stroke='var(--muted-foreground)' strokeDasharray='6 6' />
+        <path d='M439 47l9 9-9 9-9-9z' />
+        <text x='458' y='61' fontSize='13' fill='var(--muted-foreground)' stroke='none'>
+          one milestone
         </text>
-        <text x='452' y='314' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
-          one milestone; each task carries why it is
+        <path d='M414 76h170' stroke='var(--muted-foreground)' />
+
+        <use href='#v-task' transform='translate(430,90) scale(0.68)' />
+        <use href='#v-task' transform='translate(430,175) scale(0.68)' />
+        <use href='#v-task' transform='translate(430,260) scale(0.68)' />
+        <use href='#v-task' transform='translate(430,345) scale(0.68)' />
+
+        <path d='M520 205h22c8 0 8 6 8 14v57c0 8 0 14-8 14h-22' markerEnd='url(#v-ah-thin)' />
+        <path d='M520 120h34c8 0 8 6 8 14v227c0 8 0 14-8 14h-34' markerEnd='url(#v-ah-thin)' />
+        <text
+          transform='rotate(-90 576 250)'
+          x='576'
+          y='250'
+          textAnchor='middle'
+          fontSize='12'
+          letterSpacing='1.1'
+          fill='var(--muted-foreground)'
+          stroke='none'
+        >
+          SOME WAIT ON OTHERS
         </text>
-        <text x='452' y='332' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
-          that size, what it touches, what it waits on
+
+        <path d='M598 90h6M598 405h6M604 90v315' stroke='var(--muted-foreground)' />
+        <text x='620' y='192' fontSize='15' fill='currentColor' stroke='none'>
+          each one carries
+        </text>
+        <text x='620' y='214' fontSize='15' fill='currentColor' stroke='none'>
+          its own reasoning
+        </text>
+        <text x='620' y='248' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          why it is that size
+        </text>
+        <text x='620' y='270' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          what it touches
+        </text>
+        <text x='620' y='292' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          what it waits on
+        </text>
+
+        <text x='414' y='452' fontSize='17' fontWeight='500' fill='currentColor' stroke='none'>
+          Task issues
+        </text>
+        <text x='510' y='452' fontSize='14' fill='var(--muted-foreground)' stroke='none'>
+          — the tranche is the set of them
         </text>
       </>
     )
