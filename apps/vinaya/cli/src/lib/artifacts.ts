@@ -105,7 +105,7 @@ jobs:
         with:
           node-version: 20
       - name: Run checks
-        run: npx --yes vinaya check --all --diff-only
+        run: npx --yes @attalabs/vinaya check --all --diff-only
 `
 }
 
@@ -162,7 +162,7 @@ jobs:
       - name: Review gate
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes vinaya check --all
+        run: npx --yes @attalabs/vinaya check --all
 `
 }
 

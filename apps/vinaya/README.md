@@ -33,8 +33,8 @@ is refused by contract, not caught in review.
 [AttaLabs](../../README.md) ecosystem.
 
 > **Bootstrap status** — landing + install pages are live and the CLI skeleton ships real
-> commands (below). `npx @attalabs/vinaya init` is the planned one-command install; `init` / `doctor` /
-> `upgrade` / `eject` are not implemented yet.
+> commands (below). `npx @attalabs/vinaya init` is the one-command install; `init` / `doctor` /
+> `upgrade` / `eject` are implemented and published.
 
 ---
 
@@ -58,7 +58,7 @@ is refused by contract, not caught in review.
 | `vinaya issue create \| edit` | Same validated forge-write path for Issues |
 | `vinaya studio` | Launch local Vinaya Studio against the current repo |
 
-> Not yet implemented: `init`, `doctor`, `upgrade`, `eject`.
+> Not yet implemented: `demo`, `waiver` (`vinaya-cli-v1` task 7, #387).
 
 ---
 
