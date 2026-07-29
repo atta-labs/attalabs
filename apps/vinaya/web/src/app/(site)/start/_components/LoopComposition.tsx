@@ -4,14 +4,18 @@ import { MarkDefs, type NounId, NounMark, NOUNS } from './StageGlyph'
 
 /**
  * The overview's two visual sections, ported from the approved design
- * ("Vinaya loop.dc.html"): the noun vocabulary — one mark per thing, reused
- * everywhere — and the loop composition, whose geometry is copied verbatim
- * from the design's markup. The loop's shape is the model's real shape:
- * Plan fans out into per-task rows (Brief → Develop → Review and Security
- * bracketed on ONE pull request → the merge gate → Archive), the rows fan
- * back into Wrap up, and the return edge feeds the tranche's real outcome
- * into the next Plan. Containers and type are this repo's (retro `Card`,
- * shared `Heading`/`Text`, semantic tokens); the drawings are the design's.
+ * ("Vinaya loop.dc.html"; loop composition revised 2026-07-29 — "structure
+ * 2" — to put a task mark on every row and the Plan box, replacing the
+ * anonymous-pipeline reading with "each row is the life of one task"): the
+ * noun vocabulary — one mark per thing, reused everywhere — and the loop
+ * composition, whose geometry is copied verbatim from the design's markup.
+ * The loop's shape is the model's real shape: Plan fans out into per-task
+ * rows (one task mark leading each row → Brief → Develop → Review and
+ * Security bracketed on ONE pull request → the merge gate → Archive), the
+ * rows fan back into Wrap up, and the return edge feeds the tranche's real
+ * outcome into the next Plan. Containers and type are this repo's (retro
+ * `Card`, shared `Heading`/`Text`, semantic tokens); the drawings are the
+ * design's.
  *
  * Mounts `MarkDefs` itself — do not mount it again on the same page.
  */
@@ -60,13 +64,13 @@ export function LoopComposition() {
       <section className='flex flex-col gap-4'>
         <SectionHeader
           title='The loop'
-          subtitle='plan once, work every task in parallel, close out once — and feed the next round'
+          subtitle='each row is the life of one task — many run at once, then the batch is closed out'
         />
         <Card>
           <CardContent className='overflow-x-auto'>
             <svg
-              viewBox='0 0 1280 1090'
-              className='h-auto w-full min-w-[900px]'
+              viewBox='0 0 1330 1090'
+              className='h-auto w-full min-w-[940px]'
               fill='none'
               stroke='currentColor'
               strokeWidth='2'
@@ -83,6 +87,19 @@ export function LoopComposition() {
                   strokeLinecap='round'
                   strokeLinejoin='round'
                 >
+                  <use href='#v-task' transform='translate(20,-22) scale(0.5)' />
+                  <text
+                    x='53'
+                    y='40'
+                    textAnchor='middle'
+                    fontSize='12'
+                    letterSpacing='1.1'
+                    fill='var(--muted-foreground)'
+                    stroke='none'
+                  >
+                    ONE TASK
+                  </text>
+                  <path d='M92 0h32' markerEnd='url(#v-ah)' />
                   <rect x='130' y='-43' width='160' height='86' rx='8' />
                   <text
                     x='210'
@@ -204,41 +221,49 @@ export function LoopComposition() {
               </defs>
 
               <rect
-                x='104'
+                x='72'
                 y='150'
-                width='1160'
+                width='1202'
                 height='770'
                 rx='14'
                 stroke='var(--muted-foreground)'
                 strokeDasharray='3 7'
               />
-              <text x='120' y='138' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
-                EVERY TASK IN THE TRANCHE — ALL AT ONCE
+              <text x='88' y='138' fontSize='13' letterSpacing='1.3' fill='var(--muted-foreground)' stroke='none'>
+                ALL AT ONCE, INDEPENDENTLY OF EACH OTHER
               </text>
 
-              <rect x='540' y='26' width='200' height='86' rx='8' />
-              <text x='640' y='60' textAnchor='middle' fontSize='22' fontWeight='600' fill='currentColor' stroke='none'>
+              <rect x='590' y='26' width='200' height='86' rx='8' />
+              <text x='690' y='60' textAnchor='middle' fontSize='22' fontWeight='600' fill='currentColor' stroke='none'>
                 Plan
               </text>
-              <use href='#v-tranche' transform='translate(616,68) scale(0.16)' />
+              <use href='#v-task' transform='translate(646,70) scale(0.24,0.2)' />
+              <use href='#v-task' transform='translate(680,70) scale(0.24,0.2)' />
+              <use href='#v-task' transform='translate(714,70) scale(0.24,0.2)' />
 
-              <path d='M640 112v30H128v678' />
-              <path d='M128 290h34' markerEnd='url(#v-ah)' />
-              <path d='M128 540h34' markerEnd='url(#v-ah)' />
-              <path d='M128 790h34' markerEnd='url(#v-ah)' />
+              <path d='M690 112v30H92v698' />
+              <path d='M92 290h34' markerEnd='url(#v-ah)' />
+              <path d='M92 540h34' markerEnd='url(#v-ah)' />
+              <path d='M92 790h34' markerEnd='url(#v-ah)' />
+              <circle cx='92' cy='852' r='3.5' fill='currentColor' />
+              <circle cx='92' cy='868' r='3.5' fill='currentColor' />
+              <circle cx='92' cy='884' r='3.5' fill='currentColor' />
+              <text x='112' y='874' fontSize='13' letterSpacing='1.2' fill='var(--muted-foreground)' stroke='none'>
+                AND EVERY OTHER TASK IN THE TRANCHE, THE SAME WAY
+              </text>
 
-              <use href='#v-row' transform='translate(40,290)' />
-              <use href='#v-row' transform='translate(40,540)' opacity='0.5' />
-              <use href='#v-row' transform='translate(40,790)' opacity='0.28' />
+              <use href='#v-row' transform='translate(90,290)' />
+              <use href='#v-row' transform='translate(90,540)' />
+              <use href='#v-row' transform='translate(90,790)' />
 
-              <path d='M1208 290h32' />
-              <path d='M1208 540h32' opacity='0.5' />
-              <path d='M1208 790h32' opacity='0.28' />
-              <path d='M1240 290v693H744' markerEnd='url(#v-ah)' />
+              <path d='M1258 290h32' />
+              <path d='M1258 540h32' />
+              <path d='M1258 790h32' />
+              <path d='M1290 290v693H794' markerEnd='url(#v-ah)' />
 
-              <rect x='540' y='940' width='200' height='86' rx='8' />
+              <rect x='590' y='940' width='200' height='86' rx='8' />
               <text
-                x='640'
+                x='690'
                 y='974'
                 textAnchor='middle'
                 fontSize='22'
@@ -248,15 +273,15 @@ export function LoopComposition() {
               >
                 Wrap up
               </text>
-              <use href='#v-retro' transform='translate(620,982) scale(0.16)' />
-              <path d='M640 1026v10' />
-              <circle cx='640' cy='1054' r='18' />
-              <path d='M632 1054l6 7 12-15' />
-              <text x='668' y='1060' fontSize='13' letterSpacing='1.2' fill='var(--muted-foreground)' stroke='none'>
+              <use href='#v-retro' transform='translate(670,982) scale(0.16)' />
+              <path d='M690 1026v10' />
+              <circle cx='690' cy='1054' r='18' />
+              <path d='M682 1054l6 7 12-15' />
+              <text x='718' y='1060' fontSize='13' letterSpacing='1.2' fill='var(--muted-foreground)' stroke='none'>
                 A HUMAN SAYS THE TRANCHE IS DONE
               </text>
 
-              <path d='M540 983H52V69h484' strokeWidth='3.5' markerEnd='url(#v-ah)' />
+              <path d='M590 983H52V69h534' strokeWidth='3.5' markerEnd='url(#v-ah)' />
               <text
                 transform='rotate(-90 34 526)'
                 x='34'
