@@ -13,7 +13,13 @@ import { ColorSchemeToggle } from '../lib/color-scheme-toggle'
 import { NextLink } from '../lib/next-link'
 
 export interface TopBarLink {
-  label: string
+  /**
+   * A plain string renders exactly as before (`{label}` inside the same
+   * `NextLink`). Passing a `ReactNode` instead renders that node in the same
+   * slot — e.g. a decorated label with its own animation — fully
+   * backward-compatible since every existing caller already passes a string.
+   */
+  label: ReactNode
   href: string
   /** Match exact path for active state. Defaults to prefix match. */
   exact?: boolean
