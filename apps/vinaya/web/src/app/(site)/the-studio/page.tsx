@@ -177,7 +177,7 @@ export default function TheStudioPage() {
         />
       ))}
 
-      <section className='flex w-full flex-col items-center gap-8 px-6 py-20 text-center'>
+      <main className='flex w-full flex-col items-center gap-8 px-6 py-20 text-center'>
         <div className='flex flex-col items-center gap-4'>
           <Heading
             level={2}
@@ -207,7 +207,7 @@ export default function TheStudioPage() {
             </div>
           ))}
         </div>
-      </section>
+      </main>
 
       <Footer
         product='vinaya'
