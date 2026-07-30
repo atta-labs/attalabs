@@ -15,10 +15,18 @@ export default async function config(): Promise<NextConfig> {
     // AEG doctrine files at request time (root layout is `force-dynamic`, the
     // house pattern). On Vercel the serverless bundle only ships what tracing
     // detects, and these reads use computed paths, so bundle them explicitly —
-    // the same mechanism vada (`../yamls/**`) and herald use. `projects.md` is
-    // the marker `findRepoRoot()` walks up to, so it must be present too.
+    // the same mechanism vada (`../yamls/**`) and herald use.
+    //
+    // The MARKER FILES BELONG HERE TOO, and they are the half that has broken
+    // twice. Neither loader is handed a root: `findRepoRoot()`
+    // (`src/lib/github-links.ts`) walks up from `process.cwd()` for
+    // `vinaya.config.json`, and `read-root.ts` walks up for
+    // `.vinaya/projects.md`. Ship the doctrine without the marker and the walk
+    // throws before a single doctrine file is read — a 500 that only ever
+    // appears in production, on exactly the routes that call it. So: changing
+    // either marker constant means changing this list in the same commit.
     outputFileTracingIncludes: {
-      '/**': ['../../../aeg-root/**', '../../../.vinaya/projects.md']
+      '/**': ['../../../aeg-root/**', '../../../vinaya.config.json', '../../../.vinaya/projects.md']
     },
     turbopack: {
       root: resolve(__dirname, '../../..'),
