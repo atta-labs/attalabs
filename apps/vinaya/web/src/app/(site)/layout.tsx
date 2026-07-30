@@ -4,19 +4,34 @@ import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
 import type { ReactNode } from 'react'
 import { ProductSwitch } from '@/app/_components/ProductSwitch'
+import { ElectricLabel } from './_components/ElectricLabel'
 
-const links = [
+const NAV_ITEMS = [
   { label: 'Home', href: '/', exact: true },
   { label: 'The Harness', href: '/the-harness' },
   // Beside The Harness: both are code-derived reference pages — that one draws
   // the enforcement model, this one renders the state machine's own tables.
   { label: 'State Machine', href: '/state-machine' },
-  { label: 'Studio', href: '/the-studio' },
   { label: 'Start', href: '/start' },
   { label: 'CLI', href: '/cli' },
   { label: 'Docs', href: '/docs' },
+  { label: 'Studio', href: '/the-studio' },
   { label: 'Roadmap', href: '/roadmap' }
 ]
+
+// `label` takes a `ReactNode` (`@atta/ui/topbar`'s `TopBarLink.label`) — every item gets
+// a crackling border that lights up only while its own route is the active one
+// (`ElectricLabel` compares `href` against `usePathname()` itself, mirroring TopBar's own
+// `isActive`), so it reads as "you are here," not decoration. This app's only such use.
+const links = NAV_ITEMS.map(({ label, href, exact }) => ({
+  label: (
+    <ElectricLabel href={href} exact={exact}>
+      {label}
+    </ElectricLabel>
+  ),
+  href,
+  exact
+}))
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
   const { branding } = await getProductCms('vinaya')

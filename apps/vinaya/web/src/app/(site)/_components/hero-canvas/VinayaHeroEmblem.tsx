@@ -82,9 +82,9 @@ function EmblemInner() {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const ringBoxRef = useRef<HTMLDivElement>(null)
 
-  // Plays the build ONCE, ever. Returning visitors (flag persisted in localStorage) jump
-  // straight to the final settled state — no build, no shock wave — so a portal/studio
-  // switch or any nav back doesn't replay it.
+  // Plays the build on every load — the once-only gate below is deliberately
+  // disabled (Principal-set), not deleted. Restoring it is a one-line flip:
+  // uncomment the `if (seen) { ... return }` block below and nothing else.
   useEffect(() => {
     let seen = false
     try {
@@ -93,15 +93,15 @@ function EmblemInner() {
       // localStorage unavailable (private mode / SSR guard) — just play the animation.
     }
 
-    if (seen) {
-      setCoreRevealed(true)
-      setRingProgress(1)
-      setClamp(1)
-      setSpark(1)
-      setContent(1)
-      setGravity(1)
-      return
-    }
+    // if (seen) {
+    //   setCoreRevealed(true)
+    //   setRingProgress(1)
+    //   setClamp(1)
+    //   setSpark(1)
+    //   setContent(1)
+    //   setGravity(1)
+    //   return
+    // }
 
     const ramp = (dur: number, set: (v: number) => void) => {
       const t0 = performance.now()
@@ -188,10 +188,10 @@ function EmblemInner() {
             className='pointer-events-none absolute inset-0 flex flex-col items-center justify-between text-center'
             style={{ opacity: content, paddingTop: labelPad - 14, paddingBottom: labelPad - 12 }}
           >
-            <p className='font-sans text-2xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
+            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
               Vinaya
             </p>
-            <p className='font-sans text-2xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
+            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
               Harness
             </p>
           </div>
