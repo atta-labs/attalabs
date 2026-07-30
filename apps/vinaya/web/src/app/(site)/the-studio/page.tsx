@@ -28,7 +28,9 @@ const SECTIONS = [
       darkSrc: '/studio/dashboard.png',
       lightSrc: '/studio/dashboard-light.png',
       alt: 'Vinaya Studio dashboard showing Projects and Tranches preview cards and the Tasks card with its status filter chips',
-      caption: '/studio'
+      caption: '/studio',
+      width: 1600,
+      height: 1100
     }
   },
   {
@@ -40,7 +42,9 @@ const SECTIONS = [
       darkSrc: '/studio/projects.png',
       lightSrc: '/studio/projects-light.png',
       alt: 'Vinaya Studio Projects page showing the project cards grid',
-      caption: '/studio/projects'
+      caption: '/studio/projects',
+      width: 1600,
+      height: 1100
     }
   },
   {
@@ -52,7 +56,9 @@ const SECTIONS = [
       darkSrc: '/studio/tranches.png',
       lightSrc: '/studio/tranches-light.png',
       alt: 'Vinaya Studio Tranches page showing the Active and Archived tabs with several tranche progress cards',
-      caption: '/studio/tranches'
+      caption: '/studio/tranches',
+      width: 1600,
+      height: 1100
     }
   },
   {
@@ -64,7 +70,9 @@ const SECTIONS = [
       darkSrc: '/studio/tranche-board.png',
       lightSrc: '/studio/tranche-board-light.png',
       alt: 'Vinaya Studio tranche board Tasks tab showing the tasks table with status badges, Project(s), Deps, and Conflicts columns',
-      caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2'
+      caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2',
+      width: 1600,
+      height: 1100
     }
   },
   {
@@ -76,7 +84,9 @@ const SECTIONS = [
       darkSrc: '/studio/task.png',
       lightSrc: '/studio/task-light.png',
       alt: "Vinaya Studio task page showing a task's status, its GitHub Issue, and its merged pull request",
-      caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2/tasks/1'
+      caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2/tasks/1',
+      width: 1600,
+      height: 1100
     }
   },
   {
@@ -88,7 +98,9 @@ const SECTIONS = [
       darkSrc: '/studio/token-ledger.png',
       lightSrc: '/studio/token-ledger-light.png',
       alt: 'Vinaya Studio Token Ledger tab showing per-task token and cost rows and the tranche total',
-      caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2 — Token Ledger'
+      caption: '/studio/projects/vinaya/tranches/deprecation-v1 — Token Ledger · example figures',
+      width: 1600,
+      height: 876
     }
   },
   {
@@ -100,7 +112,9 @@ const SECTIONS = [
       darkSrc: '/studio/backlog.png',
       lightSrc: '/studio/backlog-light.png',
       alt: 'Vinaya Studio Backlog page showing the Project, Tier, and Flags filter chips and the backlog table',
-      caption: '/studio/backlog'
+      caption: '/studio/backlog',
+      width: 1600,
+      height: 1100
     }
   }
 ] as const
@@ -156,8 +170,8 @@ export default function TheStudioPage() {
               lightSrc={section.shot.lightSrc}
               alt={section.shot.alt}
               caption={section.shot.caption}
-              width={1600}
-              height={1100}
+              width={section.shot.width}
+              height={section.shot.height}
             />
           }
         />
