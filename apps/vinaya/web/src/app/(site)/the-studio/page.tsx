@@ -1,4 +1,4 @@
-import { Button, Code } from '@atta/ui/components'
+import { Badge, Button, Code } from '@atta/ui/components'
 import { Footer } from '@atta/ui/footer'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
@@ -100,8 +100,8 @@ const SECTIONS = [
 
 const CLOSING_LINKS = [
   { label: 'The CLI', href: '/cli' },
-  { label: 'The rulebook', href: '/docs' },
-  { label: 'Studio on the web', href: '/roadmap' }
+  { label: 'Get started', href: '/start' },
+  { label: 'Studio on the web', href: '/roadmap', soon: true }
 ] as const
 
 export default function TheStudioPage() {
@@ -134,13 +134,15 @@ export default function TheStudioPage() {
         </div>
       </section>
 
-      {SECTIONS.map((section) => (
+      {SECTIONS.map((section, index) => (
         <StudioSection
           key={section.id}
           id={section.id}
           eyebrow={section.eyebrow}
           heading={section.heading}
           body={section.body}
+          reverse={index % 2 === 1}
+          tone={index % 2 === 1 ? 'alt' : 'default'}
           shot={
             <StudioShot
               src={section.shot.src}
@@ -168,9 +170,19 @@ export default function TheStudioPage() {
         </div>
         <div className='flex flex-wrap items-center justify-center gap-4'>
           {CLOSING_LINKS.map((link) => (
-            <Button key={link.href} asChild size='lg' variant='outline'>
-              <Link href={link.href}>{link.label}</Link>
-            </Button>
+            <div key={link.href} className='relative inline-flex'>
+              {'soon' in link && link.soon && (
+                <Badge
+                  variant='outline'
+                  className='pointer-events-none absolute -top-3 -right-3 z-10 border-primary/40 bg-background text-primary'
+                >
+                  Soon
+                </Badge>
+              )}
+              <Button asChild size='lg' variant='outline'>
+                <Link href={link.href}>{link.label}</Link>
+              </Button>
+            </div>
           ))}
         </div>
       </section>
