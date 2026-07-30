@@ -25,7 +25,8 @@ const SECTIONS = [
     heading: 'Everything in flight, on one screen.',
     body: 'Your projects, your active tranches, and one work surface holding every task that is ready to pick up, already moving, in review, or blocked — plus the backlog. Filter by status; every row links to its GitHub Issue and to the board it belongs to.',
     shot: {
-      src: '/studio/dashboard.png',
+      darkSrc: '/studio/dashboard.png',
+      lightSrc: '/studio/dashboard-light.png',
       alt: 'Vinaya Studio dashboard showing Projects and Tranches preview cards and the Tasks card with its status filter chips',
       caption: '/studio'
     }
@@ -36,7 +37,8 @@ const SECTIONS = [
     heading: 'Your repo, as the harness sees it.',
     body: 'The project registry, read from your own repo. Each project carries where its code lives, where its specs live, and where its state is tracked. Pick one to see only its tranches.',
     shot: {
-      src: '/studio/projects.png',
+      darkSrc: '/studio/projects.png',
+      lightSrc: '/studio/projects-light.png',
       alt: 'Vinaya Studio Projects page showing the project cards grid',
       caption: '/studio/projects'
     }
@@ -47,7 +49,8 @@ const SECTIONS = [
     heading: 'Follow every batch of work, active and archived.',
     body: 'Active tranches come from open GitHub Milestones, archived ones from closed Milestones. Each card shows the projects it spans and how far it has got — done, active, still to do, and how many tasks are blocked.',
     shot: {
-      src: '/studio/tranches.png',
+      darkSrc: '/studio/tranches.png',
+      lightSrc: '/studio/tranches-light.png',
       alt: 'Vinaya Studio Tranches page showing the Active and Archived tabs with several tranche progress cards',
       caption: '/studio/tranches'
     }
@@ -58,7 +61,8 @@ const SECTIONS = [
     heading: 'The topology of a batch, not a to-do list.',
     body: 'Every task in the tranche with its derived status, the Issue behind it, the projects it touches, what it depends on, and what it conflicts with. The header says whether the tranche is active, ready to archive, or archived. A coherence check runs on demand and lists what no longer agrees.',
     shot: {
-      src: '/studio/tranche-board.png',
+      darkSrc: '/studio/tranche-board.png',
+      lightSrc: '/studio/tranche-board-light.png',
       alt: 'Vinaya Studio tranche board Tasks tab showing the tasks table with status badges, Project(s), Deps, and Conflicts columns',
       caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2'
     }
@@ -69,7 +73,8 @@ const SECTIONS = [
     heading: 'Every task carries its own record.',
     body: 'One page per task: its derived status, the Issue it was planned as, and the pull request that answers it — the reasoning that produced the work, kept next to the work.',
     shot: {
-      src: '/studio/task.png',
+      darkSrc: '/studio/task.png',
+      lightSrc: '/studio/task-light.png',
       alt: "Vinaya Studio task page showing a task's status, its GitHub Issue, and its merged pull request",
       caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2/tasks/1'
     }
@@ -80,7 +85,8 @@ const SECTIONS = [
     heading: 'See what the work actually cost.',
     body: 'Tokens and dollars per task, totalled for the tranche — read from what each pull request reported, not estimated after the fact.',
     shot: {
-      src: '/studio/token-ledger.png',
+      darkSrc: '/studio/token-ledger.png',
+      lightSrc: '/studio/token-ledger-light.png',
       alt: 'Vinaya Studio Token Ledger tab showing per-task token and cost rows and the tranche total',
       caption: '/studio/projects/vinaya/tranches/vinaya-pages-v2 — Token Ledger'
     }
@@ -91,7 +97,8 @@ const SECTIONS = [
     heading: 'Nothing quietly falls out of the system.',
     body: 'Every open Issue that belongs to no tranche, filterable by project, tier and flags. And when GitHub cannot be reached, Studio says so — it never shows you an empty list that looks like good news.',
     shot: {
-      src: '/studio/backlog.png',
+      darkSrc: '/studio/backlog.png',
+      lightSrc: '/studio/backlog-light.png',
       alt: 'Vinaya Studio Backlog page showing the Project, Tier, and Flags filter chips and the backlog table',
       caption: '/studio/backlog'
     }
@@ -145,7 +152,8 @@ export default function TheStudioPage() {
           tone={index % 2 === 1 ? 'alt' : 'default'}
           shot={
             <StudioShot
-              src={section.shot.src}
+              darkSrc={section.shot.darkSrc}
+              lightSrc={section.shot.lightSrc}
               alt={section.shot.alt}
               caption={section.shot.caption}
               width={1600}
