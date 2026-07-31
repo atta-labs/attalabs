@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 /**
  * Marker ↔ file-tracing coupling guard.
  *
- * Neither doctrine reader is handed a repo root: each walks up from
+ * None of the three doctrine readers is handed a repo root: each walks up from
  * `process.cwd()` until it finds a MARKER (`ROOT_MARKER` in
  * `github-links.ts`; `CONFIG_DIR`/`REGISTRY_FILE` in
  * `repo-state/read-root.ts`; the `aeg-root` directory in
@@ -132,7 +132,11 @@ function walkingFiles(): string[] {
       }
       if (!name.endsWith('.ts') && !name.endsWith('.tsx')) continue
       if (name.endsWith('.test.ts')) continue
-      if (/let\s+dir\s*=\s*process\.cwd\(\)/.test(readFileSync(full, 'utf8'))) {
+      // Matches any mention of `process.cwd()`, not one spelling of the walk:
+      // keying discovery to `let dir = …` let `let current = process.cwd()` and
+      // `let dir = resolve(process.cwd())` pass unseen. The wider match yields
+      // the same three files today and cannot silently miss a fourth.
+      if (/process\.cwd\(\)/.test(readFileSync(full, 'utf8'))) {
         found.push(relative(SRC_ROOT, full))
       }
     }
