@@ -20,7 +20,7 @@ import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { isVercelDeploy } from '@/lib/env'
-import { listTranches, readRegistry } from '@/lib/repo-state'
+import { listTranches, readRegistry, type TrancheSummary } from '@/lib/repo-state'
 import { trancheHref, NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutTrancheLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
@@ -39,6 +39,22 @@ export const metadata: Metadata = {
 // Preview rows shown on the two preview cards (Projects, Tranches) — a
 // window, not the page. The header count shows the true total behind the card.
 const PREVIEW = 4
+
+/**
+ * The Tranches preview row's progress cell. Counts the forge could not be read
+ * degrade to the plain task count — the one case where this cell is not a
+ * ratio at all, so it must not look like one.
+ */
+function previewRatio(tranche: TrancheSummary): string {
+  const { total, done, dropped, forgeAvailable } = tranche.taskCounts
+  if (!forgeAvailable) return `${tranche.taskCount}`
+
+  const shippable = total - dropped
+  // Every task dropped: there is no ratio to state (`0/0` reads as a bug, not
+  // as a fact), so the disposition is the whole answer.
+  if (shippable === 0) return `${dropped} dropped`
+  return dropped > 0 ? `${done}/${shippable} · ${dropped} dropped` : `${done}/${shippable}`
+}
 
 async function loadBacklog(token: string | null): Promise<{ issues: BacklogIssue[]; forge: ForgeStatus }> {
   const repo = await resolveRepo()
@@ -126,9 +142,14 @@ export default async function HomePage() {
               const row = (
                 <>
                   <span className='truncate text-card-foreground group-hover:text-primary'>{it.name}</span>
-                  <span className='shrink-0 text-muted-foreground/70'>
-                    {it.taskCounts.forgeAvailable ? `${it.taskCounts.done}/${it.taskCounts.total}` : `${it.taskCount}`}
-                  </span>
+                  {/* done-over-shippable, the same ratio the card's bar shows:
+                      a dropped task leaves the denominator rather than sitting
+                      in it forever as work that will never be done. The
+                      denominator therefore stops matching the tranche's task
+                      count, so the row says why in the same breath rather than
+                      shrinking silently — `17/17 · 1 dropped`, never a bare
+                      `17/17` beside a board that lists 18. */}
+                  <span className='shrink-0 text-muted-foreground/70'>{previewRatio(it)}</span>
                 </>
               )
               const rowClass = 'group flex items-baseline justify-between gap-2 font-mono text-xs'

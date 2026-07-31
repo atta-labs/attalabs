@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
+import { Fragment } from 'react'
 import type { TrancheSummary } from '@/lib/repo-state'
 import { NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
 import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
@@ -11,7 +12,7 @@ type TaskProgressProps = {
 }
 
 function TaskProgress({ counts, archived }: TaskProgressProps) {
-  const { total, done, ongoing, todo, blocked, forgeAvailable } = counts
+  const { total, done, ongoing, todo, blocked, dropped, incoherent, backlog, forgeAvailable } = counts
 
   if (!forgeAvailable) {
     return (
@@ -32,7 +33,30 @@ function TaskProgress({ counts, archived }: TaskProgressProps) {
     )
   }
 
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+  // A dropped task is out of the ratio entirely rather than counted against
+  // it: the bar measures the work that can still ship, and a tranche whose
+  // every remaining task merged reads 100%, not 94%.
+  const shippable = total - dropped
+  const pct = shippable > 0 ? Math.round((done / shippable) * 100) : 0
+
+  // Built as a list so a bucket that is zero simply isn't in it — the old
+  // hand-chained `x > 0 && ' · '` separators had to know about every other
+  // bucket, and each new bucket squared the conditions.
+  const segments = [
+    { key: 'done', label: `${done} done`, count: done, className: 'text-success' },
+    { key: 'ongoing', label: `${ongoing} active`, count: ongoing, className: 'text-primary' },
+    { key: 'todo', label: `${todo} to do`, count: todo },
+    { key: 'blocked', label: `${blocked} blocked`, count: blocked, className: 'text-warning' },
+    // Resolved, not outstanding — muted, and never dressed as done.
+    { key: 'dropped', label: `${dropped} dropped`, count: dropped, className: 'text-muted-foreground/70' },
+    // A closed Issue with no merged PR. Named, because it is a real defect.
+    { key: 'incoherent', label: `${incoherent} incoherent`, count: incoherent, className: 'text-destructive' },
+    // Never emitted for a tranche task today, so normally absent from this
+    // list — but rendered rather than dropped, because a bucket the data layer
+    // keeps and the card omits is a task the card silently fails to account
+    // for (17 done, 94%, and no sign of the 18th).
+    { key: 'backlog', label: `${backlog} backlog`, count: backlog, className: 'text-muted-foreground/70' }
+  ].filter((segment) => segment.count > 0)
 
   return (
     <div className='space-y-1'>
@@ -41,13 +65,12 @@ function TaskProgress({ counts, archived }: TaskProgressProps) {
       </div>
       <div className='flex items-center justify-between'>
         <span>
-          {done > 0 && <span className='text-success'>{done} done</span>}
-          {done > 0 && ongoing > 0 && ' · '}
-          {ongoing > 0 && <span className='text-primary'>{ongoing} active</span>}
-          {(done > 0 || ongoing > 0) && todo > 0 && ' · '}
-          {todo > 0 && <span>{todo} to do</span>}
-          {(done > 0 || ongoing > 0 || todo > 0) && blocked > 0 && ' · '}
-          {blocked > 0 && <span className='text-warning'>{blocked} blocked</span>}
+          {segments.map((segment, i) => (
+            <Fragment key={segment.key}>
+              {i > 0 && ' · '}
+              <span className={segment.className}>{segment.label}</span>
+            </Fragment>
+          ))}
         </span>
         <span>{pct}%</span>
       </div>

@@ -33,6 +33,7 @@ import {
   type PrRef
 } from '@atta/aeg-core'
 import { resolveRepo, type RepoRef } from '@atta/aeg-forge-state'
+import { bucketTaskStatuses, emptyTaskBuckets, type TaskBuckets } from './task-buckets'
 
 export type TrancheSnapshot = {
   derived: DerivedTranche
@@ -59,16 +60,10 @@ export type TrancheSnapshot = {
 /**
  * Per-tranche progress counts derived from the forge. Used by tranche
  * cards on the list and project pages to show real status without loading
- * the full derived tranche.
+ * the full derived tranche. The buckets themselves are `TaskBuckets` — the
+ * same shape and the same derivation the tranche board's header badge uses.
  */
-export type TrancheProgress = {
-  total: number
-  merged: number
-  /** in-flight + in-review + changes-requested combined. */
-  active: number
-  todo: number
-  backlog: number
-  blocked: number
+export type TrancheProgress = TaskBuckets & {
   unavailable: boolean
 }
 
@@ -113,10 +108,13 @@ export async function loadTrancheProgress(
   slug: string
 ): Promise<TrancheProgress> {
   const total = taskRefs.length
+  // Unreadable forge → every task reads `todo`, the same fallback
+  // `deriveTranche` makes when it knows no facts. `unavailable` is what stops
+  // a caller trusting these counts (see `deriveTrancheStatus`).
+  const unreadable: TrancheProgress = { ...emptyTaskBuckets(total), todo: total, unavailable: true }
+
   const repo = await resolveRepo()
-  if (!repo) {
-    return { total, merged: 0, active: 0, todo: total, backlog: 0, blocked: 0, unavailable: true }
-  }
+  if (!repo) return unreadable
 
   const resolvedRefs = await resolveRefs(repo, slug, taskRefs)
   const snapshot = await fetchForgeFacts({
@@ -126,9 +124,7 @@ export async function loadTrancheProgress(
     tasks: resolvedRefs
   })
 
-  if (snapshot.unavailable) {
-    return { total, merged: 0, active: 0, todo: total, backlog: 0, blocked: 0, unavailable: true }
-  }
+  if (snapshot.unavailable) return unreadable
 
   // Use a minimal Tranche (no edge data needed for progress counts).
   const minimal: Tranche = {
@@ -147,42 +143,12 @@ export async function loadTrancheProgress(
     backlog: []
   }
   const derived = deriveTranche(minimal, snapshot.facts)
+  const buckets = bucketTaskStatuses(
+    derived.tasks.map((dt) => dt.status),
+    derived.tasks.length || total
+  )
 
-  let merged = 0
-  let active = 0
-  let todo = 0
-  let backlog = 0
-  let blocked = 0
-  for (const dt of derived.tasks) {
-    switch (dt.status) {
-      case 'merged':
-        merged++
-        break
-      case 'in-flight':
-      case 'in-review':
-      case 'changes-requested':
-        active++
-        break
-      case 'todo':
-        todo++
-        break
-      case 'blocked':
-        blocked++
-        break
-      default:
-        backlog++
-    }
-  }
-
-  return {
-    total: derived.tasks.length || total,
-    merged,
-    active,
-    todo,
-    backlog,
-    blocked,
-    unavailable: false
-  }
+  return { ...buckets, unavailable: false }
 }
 
 // ---------- internal helpers ----------

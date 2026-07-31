@@ -55,6 +55,7 @@ import {
   resolveRepo
 } from '@atta/aeg-forge-state'
 import { loadTrancheProgress } from '@/lib/forge/load-snapshot'
+import { emptyTaskBuckets, type TaskBuckets } from '@/lib/forge/task-buckets'
 import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-status'
 
 /**
@@ -114,14 +115,14 @@ export type TrancheSummary = {
   taskCount: number
   /** Deduplicated project names referenced across all tasks in this tranche. */
   projects: string[]
-  taskCounts: {
-    total: number
-    done: number
-    ongoing: number
-    todo: number
-    blocked: number
-    forgeAvailable: boolean
-  }
+  /**
+   * The shared `TaskBuckets` (see `@/lib/forge/task-buckets`) plus whether the
+   * forge could be read at all. Every bucket is carried through as itself —
+   * `dropped` in particular is neither folded into `done` (it never shipped)
+   * nor into `todo` (there is nothing left to do), which is what a tranche
+   * card needs to render a resolved-but-unshipped task honestly.
+   */
+  taskCounts: TaskBuckets & { forgeAvailable: boolean }
   /** Task identity refs for forge progress queries — `{ id, issue }` per task.
    *  `issue` is `null` when the topology carries `#TBD`; the forge loader
    *  resolves real issue numbers via the `vinaya/tranche:<slug>` label. */
@@ -177,23 +178,29 @@ async function toSummary(fileSlug: string, tranche: Tranche, archived: boolean):
   }
 
   // Archived tranches are complete by definition — skip GitHub entirely.
+  //
+  // `done: total` is the one place `done` is not merged-only, and it is a
+  // deliberate carve-out from the dropped-is-not-done rule rather than an
+  // exception to it: this branch reads no forge facts at all, so it cannot
+  // know which of the tasks was dropped — only that the Milestone is closed,
+  // which is the Tranche Archivist attesting the whole set reached a terminal
+  // disposition. Nothing renders these counts as a ratio (`deriveTrancheStatus`
+  // short-circuits on `archived`, and the `/studio` preview row lists active
+  // tranches only), so the figure is a completeness marker, not a claim about
+  // how many PRs merged. Splitting it honestly would mean fetching per-task
+  // facts for every archived tranche on every list render.
   if (archived) {
-    return { ...base, taskCounts: { total, done: total, ongoing: 0, todo: 0, blocked: 0, forgeAvailable: true } }
+    return { ...base, taskCounts: { ...emptyTaskBuckets(total), done: total, forgeAvailable: true } }
   }
 
   // Active: use loadTrancheProgress, which resolves #TBD issue numbers via
   // the tranche:<slug> label before fetching forge facts.
-  const progress = await loadTrancheProgress(base.taskRefs, fileSlug)
+  const { unavailable, ...buckets } = await loadTrancheProgress(base.taskRefs, fileSlug)
   return {
     ...base,
-    taskCounts: {
-      total,
-      done: progress.merged,
-      ongoing: progress.active,
-      todo: progress.todo + progress.backlog,
-      blocked: progress.blocked,
-      forgeAvailable: !progress.unavailable
-    }
+    // `total` is the topology's own task count, which is authoritative over
+    // however many tasks the forge resolved.
+    taskCounts: { ...buckets, total, forgeAvailable: !unavailable }
   }
 }
 
