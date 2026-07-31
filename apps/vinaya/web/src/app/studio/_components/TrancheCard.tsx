@@ -12,7 +12,7 @@ type TaskProgressProps = {
 }
 
 function TaskProgress({ counts, archived }: TaskProgressProps) {
-  const { total, done, ongoing, todo, blocked, dropped, incoherent, forgeAvailable } = counts
+  const { total, done, ongoing, todo, blocked, dropped, incoherent, backlog, forgeAvailable } = counts
 
   if (!forgeAvailable) {
     return (
@@ -50,7 +50,12 @@ function TaskProgress({ counts, archived }: TaskProgressProps) {
     // Resolved, not outstanding — muted, and never dressed as done.
     { key: 'dropped', label: `${dropped} dropped`, count: dropped, className: 'text-muted-foreground/70' },
     // A closed Issue with no merged PR. Named, because it is a real defect.
-    { key: 'incoherent', label: `${incoherent} incoherent`, count: incoherent, className: 'text-destructive' }
+    { key: 'incoherent', label: `${incoherent} incoherent`, count: incoherent, className: 'text-destructive' },
+    // Never emitted for a tranche task today, so normally absent from this
+    // list — but rendered rather than dropped, because a bucket the data layer
+    // keeps and the card omits is a task the card silently fails to account
+    // for (17 done, 94%, and no sign of the 18th).
+    { key: 'backlog', label: `${backlog} backlog`, count: backlog, className: 'text-muted-foreground/70' }
   ].filter((segment) => segment.count > 0)
 
   return (

@@ -26,6 +26,15 @@ export type TrancheStatus = 'archived' | 'awaiting-archive' | 'active'
  * `awaiting-archive`: nothing was delivered, so there is nothing to archive.
  * `incoherent` is deliberately absent from the sum — a closed Issue with no
  * merged PR is a defect to resolve, never a completion.
+ *
+ * Both of those are **stricter than the Tranche Archivist's own entry gate**
+ * (`aeg-root/roles/tranche-archivist.md`), which admits any tranche whose
+ * every task reached a terminal disposition — an all-dropped tranche and one
+ * carrying an `incoherent` task both qualify there, and read Active here. The
+ * divergence is deliberate and errs toward not inviting an archive: this badge
+ * is read as "the Archivist can run now", and in both cases a human should
+ * look first — at nothing having shipped, or at a broken close. Widening the
+ * badge to mirror the gate exactly is a Principal call, not a bug fix.
  */
 export function deriveTrancheStatus(counts: TrancheSummary['taskCounts'], archived: boolean): TrancheStatus {
   if (archived) return 'archived'

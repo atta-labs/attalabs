@@ -178,6 +178,17 @@ async function toSummary(fileSlug: string, tranche: Tranche, archived: boolean):
   }
 
   // Archived tranches are complete by definition — skip GitHub entirely.
+  //
+  // `done: total` is the one place `done` is not merged-only, and it is a
+  // deliberate carve-out from the dropped-is-not-done rule rather than an
+  // exception to it: this branch reads no forge facts at all, so it cannot
+  // know which of the tasks was dropped — only that the Milestone is closed,
+  // which is the Tranche Archivist attesting the whole set reached a terminal
+  // disposition. Nothing renders these counts as a ratio (`deriveTrancheStatus`
+  // short-circuits on `archived`, and the `/studio` preview row lists active
+  // tranches only), so the figure is a completeness marker, not a claim about
+  // how many PRs merged. Splitting it honestly would mean fetching per-task
+  // facts for every archived tranche on every list render.
   if (archived) {
     return { ...base, taskCounts: { ...emptyTaskBuckets(total), done: total, forgeAvailable: true } }
   }

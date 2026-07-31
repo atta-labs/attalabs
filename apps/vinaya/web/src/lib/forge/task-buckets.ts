@@ -51,6 +51,13 @@ export type TaskBuckets = {
   backlog: number
 }
 
+/** Unreachable by construction — the argument's type is `never` when the
+ *  switch above is exhaustive. Throws rather than returns, so a status that
+ *  slips through at runtime is loud instead of miscounted. */
+function assertNever(status: never): never {
+  throw new Error(`Unhandled DerivedStatus: ${String(status)}`)
+}
+
 export function emptyTaskBuckets(total: number): TaskBuckets {
   return { total, done: 0, ongoing: 0, todo: 0, blocked: 0, dropped: 0, incoherent: 0, backlog: 0 }
 }
@@ -86,8 +93,16 @@ export function bucketTaskStatuses(statuses: Iterable<DerivedStatus>, total?: nu
       case 'incoherent':
         counts.incoherent++
         break
-      default:
+      case 'backlog':
         counts.backlog++
+        break
+      default:
+        // Exhaustiveness, held by the compiler rather than by a comment: with
+        // every `DerivedStatus` cased above, `status` narrows to `never` here,
+        // so adding a tenth status without giving it a bucket fails typecheck.
+        // A `default` that silently absorbed it is the exact mechanism this
+        // module exists to remove — it is what swept `dropped` into `backlog`.
+        assertNever(status)
     }
   }
   counts.total = total ?? seen
