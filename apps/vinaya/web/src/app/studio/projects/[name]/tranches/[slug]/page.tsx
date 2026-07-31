@@ -7,6 +7,7 @@ import { readTranche, readProject } from '@/lib/repo-state'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
+import { bucketTaskStatuses } from '@/lib/forge/task-buckets'
 import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
 import { CoherencePanel } from './_components/CoherencePanel'
 import { TrancheTabs } from './_components/TrancheTabs'
@@ -47,30 +48,11 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
     taskStatusMap.set(dt.task.id, dt.status)
   }
 
-  // Same status→bucket mapping as `loadTrancheProgress` (the card's counts
-  // source) — kept in step so this page's badge and the card's progress bar
-  // never disagree about what "done" means.
-  const taskCounts = { total: tranche.tasks.length, done: 0, ongoing: 0, todo: 0, blocked: 0 }
-  for (const status of taskStatusMap.values()) {
-    switch (status) {
-      case 'merged':
-        taskCounts.done++
-        break
-      case 'in-flight':
-      case 'in-review':
-      case 'changes-requested':
-        taskCounts.ongoing++
-        break
-      case 'todo':
-        taskCounts.todo++
-        break
-      case 'blocked':
-        taskCounts.blocked++
-        break
-      default:
-        break
-    }
-  }
+  // The same bucketing `loadTrancheProgress` (the card's counts source) runs,
+  // by calling it rather than by keeping a second copy in step: this page's
+  // own copy used to drop `dropped` on the floor, so a finished tranche with
+  // one abandoned task read Active here while its card read 94%.
+  const taskCounts = bucketTaskStatuses(taskStatusMap.values(), tranche.tasks.length)
   const trancheStatus = deriveTrancheStatus({ ...taskCounts, forgeAvailable: !snapshot.unavailable }, archived)
 
   // Dispatch-readiness sub-state for `todo` rows (#372 bundled finding):

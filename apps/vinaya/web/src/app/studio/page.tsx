@@ -126,8 +126,13 @@ export default async function HomePage() {
               const row = (
                 <>
                   <span className='truncate text-card-foreground group-hover:text-primary'>{it.name}</span>
+                  {/* done-over-shippable, the same ratio the card's bar shows:
+                      a dropped task leaves the denominator rather than sitting
+                      in it forever as work that will never be done. */}
                   <span className='shrink-0 text-muted-foreground/70'>
-                    {it.taskCounts.forgeAvailable ? `${it.taskCounts.done}/${it.taskCounts.total}` : `${it.taskCount}`}
+                    {it.taskCounts.forgeAvailable
+                      ? `${it.taskCounts.done}/${it.taskCounts.total - it.taskCounts.dropped}`
+                      : `${it.taskCount}`}
                   </span>
                 </>
               )

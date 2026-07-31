@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { deriveTrancheStatus } from './tranche-status'
 
 function counts(overrides: Partial<Parameters<typeof deriveTrancheStatus>[0]> = {}) {
-  return { total: 3, done: 3, ongoing: 0, todo: 0, blocked: 0, forgeAvailable: true, ...overrides }
+  return {
+    total: 3,
+    done: 3,
+    ongoing: 0,
+    todo: 0,
+    blocked: 0,
+    dropped: 0,
+    incoherent: 0,
+    backlog: 0,
+    forgeAvailable: true,
+    ...overrides
+  }
 }
 
 describe('deriveTrancheStatus', () => {
@@ -28,5 +39,22 @@ describe('deriveTrancheStatus', () => {
   it('reads active for a zero-task tranche rather than awaiting-archive', () => {
     // total === 0 must not satisfy `done === total` into a false "complete".
     expect(deriveTrancheStatus(counts({ total: 0, done: 0 }), false)).toBe('active')
+  })
+
+  it('reads awaiting-archive when the only unmerged task was dropped', () => {
+    // The live bug: `vinaya-pages-v2` finished 17 merged + 1 dropped and read
+    // Active forever, because a dropped task can never become `done`.
+    expect(deriveTrancheStatus(counts({ total: 18, done: 17, dropped: 1 }), false)).toBe('awaiting-archive')
+  })
+
+  it('does not read awaiting-archive when every task was dropped', () => {
+    // Nothing was delivered — there is no completed work to archive.
+    expect(deriveTrancheStatus(counts({ total: 3, done: 0, dropped: 3 }), false)).toBe('active')
+  })
+
+  it('does not count an incoherent task toward completion', () => {
+    // A closed Issue with no merged PR is a defect to resolve, not a
+    // completion — it must hold the tranche at active.
+    expect(deriveTrancheStatus(counts({ total: 3, done: 2, incoherent: 1 }), false)).toBe('active')
   })
 })
