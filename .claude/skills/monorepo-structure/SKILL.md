@@ -25,7 +25,6 @@ apps/
 ├── account/web/            # @atta/account-web (account.attalabs.dev — billing/auth/API hub)
 ├── vada-ai/web/            # @atta/vada-ai-web (vada.attalabs.dev)
 ├── vada-ai/mcp-server/     # @atta/vada-ai-mcp-server (Vāda's curated team product)
-├── vitakka-ai/web/         # @atta/vitakka-ai-web (vitakka.attalabs.dev)
 └── sati-ai/web/            # @atta/sati-ai-web (sati.attalabs.dev)
 
 packages/
@@ -47,7 +46,6 @@ packages/
 | `apps/atta-ai/web` | `attalabs.dev` | `attalabs.test` |
 | `apps/account/web` | `account.attalabs.dev` | `account.attalabs.test` |
 | `apps/vada-ai/web` | `vada.attalabs.dev` | `vada.attalabs.test` |
-| `apps/vitakka-ai/web` | `vitakka.attalabs.dev` | `vitakka.attalabs.test` |
 | `apps/sati-ai/web` | `sati.attalabs.dev` | `sati.attalabs.test` |
 
 All subdomains share auth via a single Clerk app with cookie scoped to `.attalabs.dev` (production) / `.attalabs.test` (local). See `skill-auth.md`.
@@ -118,7 +116,6 @@ import { something } from '@atta/vada-ai-web/src/lib/something'
 ```bash
 bun run dev              # All dev servers
 bun run dev:vada         # Vada only
-bun run dev:vitakka      # Vitakka only
 bun run dev:sati         # Sati only
 bun run dev:atta         # Atta ecosystem hub (apps/atta-ai/web)
 bun run dev:account      # Account hub
@@ -148,7 +145,7 @@ Root CLAUDE.md                         # Products + packages index, naming overv
 
 ## Anti-patterns
 
-- ❌ Importing between apps (`@atta/vada-ai-web` → `@atta/vitakka-ai-web`)
+- ❌ Importing between apps (`@atta/vada-ai-web` → `@atta/herald-ai-web`)
 - ❌ Duplicating shared logic — add to packages instead
 - ❌ Overriding strict TypeScript settings per-app
 - ❌ Adding a surface without a CLAUDE.md
