@@ -121,6 +121,9 @@ export function ThemesBrowseClient({
   const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
   const [fontsByTheme, setFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>({})
+  const [persistedFontsByTheme, setPersistedFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>(
+    {}
+  )
   const [createOpen, setCreateOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -133,6 +136,11 @@ export function ThemesBrowseClient({
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
   const selectedFonts: Partial<Record<FontRole, string>> = selectedId ? (fontsByTheme[selectedId] ?? {}) : {}
+  const persistedFonts: Partial<Record<FontRole, string>> = selectedId ? (persistedFontsByTheme[selectedId] ?? {}) : {}
+  const fontsPending = FONT_ROLES.some(({ role }) => {
+    const picked = selectedFonts[role]
+    return picked !== undefined && picked !== persistedFonts[role]
+  })
 
   const themeSchemes = useMemo(() => {
     const map: Record<string, { hasDark: boolean; hasLight: boolean }> = {}
@@ -218,18 +226,18 @@ export function ThemesBrowseClient({
           errorToast('Activation failed', result.message, 12000)
           return
         }
-        if (Object.keys(selectedFonts).length > 0) {
+        if (fontsPending) {
           const fontResult = await setThemeFontsAction(project, selectedId, selectedFonts)
           if (!fontResult.ok) {
             errorToast('Font save failed', fontResult.message, 12000)
             return
           }
-          setFontsByTheme((prev) => {
-            if (!(selectedId in prev)) return prev
-            const next = { ...prev }
-            delete next[selectedId]
-            return next
-          })
+          // Track what was persisted rather than clearing the local pick: the
+          // picker/preview keep reading `selectedFonts` unconditionally, so they
+          // never fall back to the server's now-stale `typography` prop and never
+          // revert. `hasChanges` goes false because `fontsPending` compares against
+          // this snapshot, not because the picked value disappears.
+          setPersistedFontsByTheme((prev) => ({ ...prev, [selectedId]: selectedFonts }))
         }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
@@ -240,8 +248,7 @@ export function ThemesBrowseClient({
     })
   }
 
-  const hasChanges =
-    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || Object.keys(selectedFonts).length > 0
+  const hasChanges = selectedId !== currentThemeId || selectedScheme !== currentColorScheme || fontsPending
 
   // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
   // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
