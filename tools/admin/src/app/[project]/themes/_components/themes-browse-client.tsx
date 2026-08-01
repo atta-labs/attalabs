@@ -55,6 +55,10 @@ function composeFontStack(role: FontRole, name: string): string {
   return `${name}, ${FONT_STACK_SUFFIX[role]}`
 }
 
+// Referentially stable fallback — a fresh `{}` literal here would change identity
+// every render and invalidate buildMessage/the preview-send effect that depend on it.
+const EMPTY_FONTS: Partial<Record<FontRole, string>> = {}
+
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
   if (typeof value === 'string') return value
@@ -135,8 +139,12 @@ export function ThemesBrowseClient({
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
-  const selectedFonts: Partial<Record<FontRole, string>> = selectedId ? (fontsByTheme[selectedId] ?? {}) : {}
-  const persistedFonts: Partial<Record<FontRole, string>> = selectedId ? (persistedFontsByTheme[selectedId] ?? {}) : {}
+  const selectedFonts: Partial<Record<FontRole, string>> = selectedId
+    ? (fontsByTheme[selectedId] ?? EMPTY_FONTS)
+    : EMPTY_FONTS
+  const persistedFonts: Partial<Record<FontRole, string>> = selectedId
+    ? (persistedFontsByTheme[selectedId] ?? EMPTY_FONTS)
+    : EMPTY_FONTS
   const fontsPending = FONT_ROLES.some(({ role }) => {
     const picked = selectedFonts[role]
     return picked !== undefined && picked !== persistedFonts[role]
