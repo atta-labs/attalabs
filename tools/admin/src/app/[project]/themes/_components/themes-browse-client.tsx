@@ -35,6 +35,13 @@ import { PROJECT_CONFIG } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
 
 type ColorScheme = 'dark' | 'light'
+type FontRole = 'fontSans' | 'fontSerif' | 'fontMono'
+
+const FONT_ROLES: { role: FontRole; label: string }[] = [
+  { role: 'fontSans', label: 'Sans' },
+  { role: 'fontSerif', label: 'Serif' },
+  { role: 'fontMono', label: 'Mono' }
+]
 
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
@@ -48,8 +55,12 @@ function hasColors(scheme: Record<string, unknown> | undefined): boolean {
   return !!(scheme.primary || scheme.background)
 }
 
-function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme, fontOverride?: string) {
-  const typography = fontOverride ? { ...theme.typography, fontSans: fontOverride } : theme.typography
+function buildThemeMessage(
+  theme: CMSTheme,
+  colorScheme: ColorScheme,
+  fontOverrides: Partial<Record<FontRole, string>>
+) {
+  const typography = { ...theme.typography, ...fontOverrides }
   return {
     type: 'PREVIEW_THEME' as const,
     theme: {
@@ -92,7 +103,7 @@ export function ThemesBrowseClient({
   const [isLibraryPending, startLibraryTransition] = useTransition()
   const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
-  const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
+  const [selectedFonts, setSelectedFonts] = useState<Partial<Record<FontRole, string>>>({})
   const [createOpen, setCreateOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -141,8 +152,8 @@ export function ThemesBrowseClient({
 
   const buildMessage = useCallback(() => {
     if (!selectedTheme) return null
-    return buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans)
-  }, [selectedTheme, selectedScheme, selectedFontSans])
+    return buildThemeMessage(selectedTheme, selectedScheme, selectedFonts)
+  }, [selectedTheme, selectedScheme, selectedFonts])
 
   const { iframeRef, iframeSrc, iframeKey, isReady, sendMessage, refresh, isFullscreen, toggleFullscreen } =
     usePortalPreview({
@@ -156,9 +167,9 @@ export function ThemesBrowseClient({
 
   useEffect(() => {
     if (isReady && selectedTheme) {
-      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans))
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, selectedFonts))
     }
-  }, [isReady, selectedTheme, selectedScheme, selectedFontSans, sendMessage])
+  }, [isReady, selectedTheme, selectedScheme, selectedFonts, sendMessage])
 
   function handleSelect(themeId: string) {
     setSelectedId(themeId)
@@ -170,11 +181,12 @@ export function ThemesBrowseClient({
     setSaved(false)
   }
 
-  function handleFontChange(font: string) {
-    setSelectedFontSans(font)
+  function handleFontChange(role: FontRole, font: string) {
+    const nextFonts = { ...selectedFonts, [role]: font }
+    setSelectedFonts(nextFonts)
     setSaved(false)
     if (isReady && selectedTheme) {
-      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, font))
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, nextFonts))
     }
   }
 
@@ -197,7 +209,7 @@ export function ThemesBrowseClient({
   }
 
   const hasChanges =
-    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
+    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || Object.keys(selectedFonts).length > 0
 
   // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
   // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
@@ -255,7 +267,15 @@ export function ThemesBrowseClient({
 
   const headerContent = (
     <>
-      <FontPicker value={selectedFontSans} onChange={handleFontChange} />
+      {FONT_ROLES.map(({ role, label }) => (
+        <div key={role} className='flex items-center gap-1.5'>
+          <span className='font-mono text-[9px] uppercase tracking-widest text-muted-foreground'>{label}</span>
+          <FontPicker
+            value={selectedFonts[role] ?? selectedTheme?.typography?.[role]}
+            onChange={(font) => handleFontChange(role, font)}
+          />
+        </div>
+      ))}
       <span className='text-border'>|</span>
       {selectedId && (
         <Button variant='outline' size='sm' asChild className='font-mono text-[10px]'>
