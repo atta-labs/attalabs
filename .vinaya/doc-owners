@@ -85,7 +85,6 @@ packages/adapter-langgraph/**                         .claude/skills/atta-adapte
 packages/ui/canvas/**                                 .claude/skills/ui-canvas-animation/SKILL.md
 packages/ui/styles/**                                 .claude/skills/ui-theme-tokens/SKILL.md
 
-apps/atta-ai/**                                       apps/atta-ai/CLAUDE.md
 apps/attalabs/**                                      apps/attalabs/CLAUDE.md
 apps/vada-ai/mcp-server/**                            .claude/skills/vada-mcp-server/SKILL.md
 apps/vada-ai/mcp-server/src/spec-registry.ts          .claude/skills/vada-yaml-authoring/SKILL.md

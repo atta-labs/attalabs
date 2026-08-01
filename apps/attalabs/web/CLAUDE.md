@@ -1,13 +1,13 @@
-# Atta AI Web — Claude Code Instructions
+# AttaLabs Web — Claude Code Instructions
 
-The ecosystem hub Next.js app, deployed to `attalabs.dev`. This is the parent surface — not a product UI, but the doorway to the entire ecosystem. It links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as the Atta brand identity page.
+The ecosystem hub Next.js app, deployed to `attalabs.dev`. This is the parent surface — not a product UI, but the doorway to the entire ecosystem. It links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as attalabs' own identity page.
 
 ---
 
 ## Architecture
 
 ```
-apps/atta-ai/web/
+apps/attalabs/web/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx         # Root layout — NextWebShell + IdentityProvider

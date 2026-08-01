@@ -43,7 +43,7 @@ packages/
 
 | App | Production URL | Local dev URL |
 |-----|----------------|---------------|
-| `apps/atta-ai/web` | `attalabs.dev` | `attalabs.test` |
+| `apps/attalabs/web` | `attalabs.dev` | `attalabs.test` |
 | `apps/account/web` | `account.attalabs.dev` | `account.attalabs.test` |
 | `apps/vada-ai/web` | `vada.attalabs.dev` | `vada.attalabs.test` |
 | `apps/sati-ai/web` | `sati.attalabs.dev` | `sati.attalabs.test` |
@@ -117,7 +117,7 @@ import { something } from '@atta/vada-ai-web/src/lib/something'
 bun run dev              # All dev servers
 bun run dev:vada         # Vada only
 bun run dev:sati         # Sati only
-bun run dev:atta         # Atta ecosystem hub (apps/atta-ai/web)
+bun run dev:attalabs     # AttaLabs ecosystem hub (apps/attalabs/web)
 bun run dev:account      # Account hub
 bun run dev:herald       # Herald only
 bun run build            # Production build (all)

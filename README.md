@@ -15,11 +15,10 @@
 **A lab building thinking tools — deep-reasoning AI, one Turborepo, many products.**
 
 [![Vāda](https://img.shields.io/badge/V%C4%81da-6366F1?style=for-the-badge)](apps/vada-ai/)
-[![Atta](https://img.shields.io/badge/Atta-C8980A?style=for-the-badge)](apps/atta-ai/)
 [![Herald](https://img.shields.io/badge/Herald-E11D48?style=for-the-badge)](apps/herald-ai/)
 [![Vinaya](https://img.shields.io/badge/Vinaya-972E2A?style=for-the-badge)](apps/vinaya/)
 
-![products](https://img.shields.io/badge/products-4-C8980A?style=flat-square)
+![products](https://img.shields.io/badge/products-3-C8980A?style=flat-square)
 ![packages](https://img.shields.io/badge/packages-12-E8C050?style=flat-square)
 ![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&logoColor=white)
 ![Bun](https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white)
@@ -31,9 +30,6 @@
 The dev lab where Dani builds AI products. Multiple products live here, sharing infrastructure
 through common packages. Each product has its own surfaces (web, mobile, MCP, CLI) and docs.
 
-For the canonical naming and ecosystem framing, see
-[`apps/atta-ai/specs/atta-naming-decision.md`](apps/atta-ai/specs/atta-naming-decision.md).
-
 ---
 
 ## 🧭 Products
@@ -41,12 +37,12 @@ For the canonical naming and ecosystem framing, see
 | Product | Domain | What it is | Status |
 |---------|--------|------------|--------|
 | **[Vāda](apps/vada-ai/)** | `vada.attalabs.dev` | Multi-agent **deliberation engine** — structured debate between AI agents. Standalone product *and* the deliberation layer inside Atta. | 🟢 Live |
-| **[Atta](apps/atta-ai/)** | target `atta.ai` | The **deep-thinking AI** — the flagship consumer product. | 🟡 Not yet deployed |
 | **[Herald](apps/herald-ai/)** | `herald.attalabs.dev` | **Forensic CV ↔ job-description match** — evidence-based audit reports, not vibes. | 🟢 Active |
 | **[Vinaya](apps/vinaya/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. | 🟠 Bootstrap |
 
-> **Atta** is the deep-thinking consumer product. It lives inside the
-> AttaLabs lab today; when ready it moves to its own domain (target: `atta.ai`).
+> **Atta** is the deep-thinking AI composed of Vāda + Vitakka + Sati — one product
+> within AttaLabs. Its consumer surface (target domain `atta.ai`) is not yet deployed;
+> the AttaLabs hub (`apps/attalabs/`) serves `attalabs.dev` in the meantime.
 
 ---
 

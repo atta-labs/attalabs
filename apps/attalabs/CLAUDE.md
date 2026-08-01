@@ -19,6 +19,7 @@ This app is the AttaLabs hub, serving `attalabs.dev` for the AttaLabs dev/lab ec
 
 Specs live in `specs/` at this level (`apps/attalabs/specs/`):
 
+- `attalabs-cms-identity.md`
 - `atta-build-strategy.md`
 - `atta-ecosystem-vision.md`
 - `atta-finetuning-research.md`
