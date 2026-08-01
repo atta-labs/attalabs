@@ -3,13 +3,13 @@
  * all published uiTheme + library documents (preserving _id), then a product Config
  * cloned from Herald's heraldConfig userInterface (theme + library refs stay valid).
  *
- * Usage (from repo root, Atta creds in env):
- *   set -a && source apps/atta-ai/web/.env.local && set +a
- *   export MIGRATE_SOURCE_PROJECT_ID=e9gbd2d1 MIGRATE_PRODUCT=atta
+ * Usage (from repo root, AttalLabs creds in env):
+ *   set -a && source apps/attalabs/web/.env.local && set +a
+ *   export MIGRATE_SOURCE_PROJECT_ID=e9gbd2d1 MIGRATE_PRODUCT=attalabs
  *   cd packages/cms && bun run migrate:herald-to-product
  *
  * Env:
- *   MIGRATE_PRODUCT          — required: atta | vinaya | vada
+ *   MIGRATE_PRODUCT          — required: attalabs | vinaya | vada
  *   SANITY_PROJECT_ID        — destination project (e.g. Atta)
  *   SANITY_DATASET           — default production
  *   SANITY_API_TOKEN         — destination write token (Editor+)
@@ -23,7 +23,7 @@ import { createClient, type SanityClient } from '@sanity/client'
 const HERALD_PROJECT_ID = 'e9gbd2d1'
 
 const PRODUCT_DEST: Record<string, { _type: string; _id: string }> = {
-  atta: { _type: 'attaConfig', _id: 'attaConfig' },
+  attalabs: { _type: 'attalabsConfig', _id: 'attalabsConfig' },
   vinaya: { _type: 'vinayaConfig', _id: 'vinayaConfig' },
   vada: { _type: 'vadaConfig', _id: 'vadaConfig' }
 }
