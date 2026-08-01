@@ -26,7 +26,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
-type App = 'vada' | 'atta' | 'vinaya' | 'herald'
+type App = 'vada' | 'attalabs' | 'vinaya' | 'herald'
 
 export async function generateUIIndex(app: App): Promise<UILibrary> {
   const cached = _cache.get(app)

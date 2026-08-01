@@ -3,8 +3,8 @@ import type { NextConfig } from 'next'
 import { resolve } from 'node:path'
 
 export default async function config(): Promise<NextConfig> {
-  await generateUIIndex('atta')
-  const componentsRelPath = '../../../packages/ui/generated/atta/components.ts'
+  await generateUIIndex('attalabs')
+  const componentsRelPath = '../../../packages/ui/generated/attalabs/components.ts'
   return {
     images: {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
