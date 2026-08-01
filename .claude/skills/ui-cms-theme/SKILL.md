@@ -351,9 +351,9 @@ Each product has its own Sanity Studio deployment, managed from `packages/cms`. 
 # From packages/cms/ or via turbo from root
 
 bun run studio              # Herald studio — port 3333 (default)
-bun run studio:atta         # Atta studio — port 3334
 bun run studio:vada         # Vada studio — port 3335
 bun run studio:vinaya       # Vinaya studio — port 3336
+bun run studio:attalabs     # AttalLabs studio — port 3337
 ```
 
 The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is loaded. The `studio:*` scripts set this automatically.
@@ -362,9 +362,9 @@ The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is lo
 
 ```bash
 bun run studio:deploy           # Deploy Herald studio
-bun run studio:deploy:atta      # Deploy Atta studio
 bun run studio:deploy:vada      # Deploy Vada studio
 bun run studio:deploy:vinaya    # Deploy Vinaya studio
+bun run studio:deploy:attalabs  # Deploy AttalLabs studio
 bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 ```
 
