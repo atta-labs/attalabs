@@ -43,6 +43,18 @@ const FONT_ROLES: { role: FontRole; label: string }[] = [
   { role: 'fontMono', label: 'Mono' }
 ]
 
+// Mirrors actions.ts's FONT_STACK_SUFFIX — kept separate because a 'use server'
+// file may only export async functions, so the two can't share one constant.
+const FONT_STACK_SUFFIX: Record<FontRole, string> = {
+  fontSans: 'sans-serif',
+  fontSerif: 'serif',
+  fontMono: 'monospace'
+}
+
+function composeFontStack(role: FontRole, name: string): string {
+  return `${name}, ${FONT_STACK_SUFFIX[role]}`
+}
+
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
   if (typeof value === 'string') return value
@@ -60,7 +72,12 @@ function buildThemeMessage(
   colorScheme: ColorScheme,
   fontOverrides: Partial<Record<FontRole, string>>
 ) {
-  const typography = { ...theme.typography, ...fontOverrides }
+  const composedOverrides: Partial<Record<FontRole, string>> = {}
+  for (const role of Object.keys(fontOverrides) as FontRole[]) {
+    const name = fontOverrides[role]
+    if (name) composedOverrides[role] = composeFontStack(role, name)
+  }
+  const typography = { ...theme.typography, ...composedOverrides }
   return {
     type: 'PREVIEW_THEME' as const,
     theme: {
@@ -207,6 +224,12 @@ export function ThemesBrowseClient({
             errorToast('Font save failed', fontResult.message, 12000)
             return
           }
+          setFontsByTheme((prev) => {
+            if (!(selectedId in prev)) return prev
+            const next = { ...prev }
+            delete next[selectedId]
+            return next
+          })
         }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
