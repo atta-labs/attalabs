@@ -40,6 +40,26 @@ name: Review Gate
 # step resolves both via `gh pr view` before checkout, and checkout uses
 # that resolved SHA explicitly rather than relying on the event's default ref
 # (which for `issue_comment` is the repo's default branch, not the PR head).
+#
+# Second live-fire bug, same root cause one layer up (PR #712, 2026-08-01):
+# resolving the right SHA for *checkout* isn't enough — GitHub Actions'
+# implicit per-job check-run is attached to `github.sha`, not to whatever
+# ref the job's steps actually check out. For an `issue_comment` event
+# `github.sha` is the *default branch's* current tip, so a verdict-comment
+# run correctly evaluates the PR (the script fetches live comments via `gh`,
+# independent of checkout) and correctly reports PASS/APPROVE in the run log
+# — but that conclusion lands as a "Review gate" check-run against `main`'s
+# HEAD commit, a SHA the PR's own required-status-check evaluation never
+# looks at. The PR's checks UI keeps showing the last stale `pull_request`-
+# triggered failure forever, silently requiring a manual `gh run rerun` of
+# that original run every time a verdict lands — confirmed live: two verdict
+# comments posted, two runs completed, `PASS (PR #712): ...` printed in each
+# run's own log, and the PR still read `mergeStateStatus: UNSTABLE` until a
+# rerun of the original failed run was triggered by hand. Fixed by managing
+# an explicit check-run via the Checks API, bound to the real resolved head
+# SHA (`steps.pr.outputs.sha`), only on the `issue_comment` path — the
+# `pull_request` path's implicit check-run is already correctly bound and is
+# left alone.
 
 on:
   pull_request:
@@ -65,6 +85,12 @@ jobs:
       # vinaya/waiver:review label would hard-fail this job with a 403 instead of
       # evaluating the waiver (security-reviewer finding on PR #489).
       issues: read
+      # checks: write — the explicit check-run this job manages on the
+      # `issue_comment` path (see header comment, PR #712 incident). Not
+      # needed on the `pull_request` path, where GitHub's implicit check-run
+      # is already correctly bound; granted unconditionally since job-level
+      # `permissions:` can't vary per step.
+      checks: write
     steps:
       - name: Resolve PR number, branch, and head SHA
         id: pr
@@ -82,6 +108,24 @@ jobs:
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
+      # issue_comment path only — see header comment. Creates an explicit
+      # check-run bound to the PR's REAL head SHA, so this run's eventual
+      # conclusion is visible to the PR's own required-status-check
+      # evaluation instead of landing (via GitHub's implicit binding) on
+      # whatever `main`'s tip happened to be when the comment fired.
+      - name: Create pending check-run on the PR's actual head SHA
+        id: check
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ID=$(gh api --method POST "repos/${{ github.repository }}/check-runs" \
+            -f name="Review gate" \
+            -f head_sha="${{ steps.pr.outputs.sha }}" \
+            -f status="in_progress" \
+            -q .id)
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.pr.outputs.sha }}
@@ -94,8 +138,32 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Review gate (code-reviewer + security-review verdicts)
+        id: gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ steps.pr.outputs.branch }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: bun packages/aeg-core/bin/verify-review-gate.ts
+
+      # Mirror image of the "Create pending" step above — always runs (even
+      # when the gate step failed) so the explicit check-run reflects the
+      # real conclusion rather than sitting `in_progress` forever. Guarded on
+      # the check ID actually existing: on the `pull_request` path this step
+      # is a no-op (no explicit check-run was created; the implicit one
+      # already reports correctly).
+      - name: Complete the explicit check-run
+        if: always() && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTCOME: ${{ steps.gate.outcome }}
+          CHECK_ID: ${{ steps.check.outputs.id }}
+        run: |
+          if [ -z "$CHECK_ID" ]; then
+            echo "::warning::No check-run id from the earlier step — skipping completion, nothing to update."
+            exit 0
+          fi
+          CONCLUSION="failure"
+          if [ "$OUTCOME" = "success" ]; then CONCLUSION="success"; fi
+          gh api --method PATCH "repos/${{ github.repository }}/check-runs/$CHECK_ID" \
+            -f status="completed" \
+            -f conclusion="$CONCLUSION"
