@@ -27,23 +27,9 @@
 
 ## Specification Documents
 
-### atta-ai
-
-- [Atta — Build Strategy](./apps/atta-ai/specs/atta-build-strategy.md)
-- [Atta Ecosystem — Vision](./apps/atta-ai/specs/atta-ecosystem-vision.md)
-- [Attā Fine-Tuning Research — Forward Planning](./apps/atta-ai/specs/atta-finetuning-research.md)
-- [Atta — Market Research](./apps/atta-ai/specs/atta-market-research.md)
-- [Atta Naming Decision](./apps/atta-ai/specs/atta-naming-decision.md)
-- [Cetanā (Architect Layer) — Capability Reality Check](./apps/atta-ai/specs/cetana-reality-check.md)
-
 ### attalabs
 
-- [Atta — Build Strategy](./apps/attalabs/specs/atta-build-strategy.md)
-- [Atta Ecosystem — Vision](./apps/attalabs/specs/atta-ecosystem-vision.md)
-- [Attā Fine-Tuning Research — Forward Planning](./apps/attalabs/specs/atta-finetuning-research.md)
-- [Atta — Market Research](./apps/attalabs/specs/atta-market-research.md)
-- [Atta Naming Decision](./apps/attalabs/specs/atta-naming-decision.md)
-- [Cetanā (Architect Layer) — Capability Reality Check](./apps/attalabs/specs/cetana-reality-check.md)
+- [AttaLabs — CMS identity](./apps/attalabs/specs/attalabs-cms-identity.md)
 
 ### herald-ai
 

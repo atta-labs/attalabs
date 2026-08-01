@@ -13,7 +13,7 @@ The engine has no LangGraph, no Anthropic SDK, no fetch, no LangChain. If you're
 
 The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in PR #47 (D-033 PR 2, May 12-13, 2026, apps/vada-ai/docs/vada-decisions-legacy.md D-033).
 
-The engine powers Vāda today and will power Vitakka and Atta-the-product when those are built. It is part of AttaLabs infrastructure, sitting under `packages/engine`. See `apps/atta-ai/specs/atta-naming-decision.md` for the v2 brand framing (AttaLabs as the dev/lab ecosystem; Atta as one product within it; global D-025).
+The engine powers Vāda today and will power Vitakka and Atta-the-product when those are built. It is part of AttaLabs infrastructure, sitting under `packages/engine`. See root `CLAUDE.md`'s naming bullets for the v2 brand framing (AttaLabs as the dev/lab ecosystem; Atta as one product within it; global D-025).
 
 ---
 
@@ -394,4 +394,4 @@ This is engine internals — the YAML author never touches it.
 - Spec registry + MCP exposure: **vada-mcp-server** skill
 - Architecture overview + locked decisions table: **vada-architecture** skill
 - apps/vada-ai/docs/vada-decisions-legacy.md D-033 (universal flow schema) and D-034 (signal type rejection + RevisionCondition tighten)
-- Ecosystem framing (AttaLabs / Atta / @atta packages — the engine lives under AttaLabs): `apps/atta-ai/specs/atta-naming-decision.md`, global D-025
+- Ecosystem framing (AttaLabs / Atta / @atta packages — the engine lives under AttaLabs): root `CLAUDE.md`'s naming bullets, global D-025

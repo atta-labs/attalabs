@@ -3,8 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atta/ui/components": ["../../../packages/ui/generated/atta/components"],
-      "@atta/ui/canvas": ["../../../packages/ui/generated/atta/canvas"],
+      "@atta/ui/components": ["../../../packages/ui/generated/attalabs/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/attalabs/canvas"],
       "@atta/ui/footer": ["../../../packages/ui/footer/index"]
     }
   },

@@ -7,12 +7,6 @@ export const PROJECT_CONFIG = {
     previewUrl: 'http://localhost:3003',
     displayName: 'Vāda'
   },
-  atta: {
-    projectId: PROJECT_IDS.atta,
-    configDocId: 'attaConfig',
-    previewUrl: 'http://localhost:3001',
-    displayName: 'Attā'
-  },
   herald: {
     projectId: PROJECT_IDS.herald,
     configDocId: 'heraldConfig',

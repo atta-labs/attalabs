@@ -9,7 +9,7 @@ description: Vāda's product structure (Vāda Teams catalog), wedges/capabilitie
 
 Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP server and a web app at `vada.attalabs.dev`. Multiple LLM agents debate, are consulted, or are critically reviewed; an optional synthesizer reconciles their outputs; auditors verify the result; revision fires when audits flag the conclusion. Accessed from any MCP-compatible client (Claude.ai web, Claude Desktop, Claude Code CLI, Cursor).
 
-**Where Vāda sits in the wider ecosystem** (v2 naming framing locked May 12, 2026 — see global D-025 and `apps/atta-ai/specs/atta-naming-decision.md`):
+**Where Vāda sits in the wider ecosystem** (v2 naming framing locked May 12, 2026 — see global D-025 and root `CLAUDE.md`'s naming bullets):
 
 - **AttaLabs** is the dev/lab ecosystem at `attalabs.dev`. Vāda is one product inside it.
 - **Atta-the-product** is a separate composed product (Vāda + Vitakka + Sati) targeting `atta.ai` when ready. Not yet deployed.
@@ -235,7 +235,6 @@ Vāda-internal:
 - `apps/vada-ai/specs/engine/v2-results/` — reviewer rounds
 
 Ecosystem-level (for the wider AttaLabs framing):
-- `apps/atta-ai/specs/atta-naming-decision.md` — v2 brand architecture
-- `apps/atta-ai/specs/atta-ecosystem-vision.md` — strategic positioning
+- root `CLAUDE.md`'s naming bullets — v2 brand architecture
 - `aeg-project/state.md` — cross-project current state
 - `docs/decisions-legacy.md` — global decision log

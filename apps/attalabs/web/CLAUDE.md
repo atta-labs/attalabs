@@ -1,13 +1,13 @@
-# Atta AI Web — Claude Code Instructions
+# AttaLabs Web — Claude Code Instructions
 
-The ecosystem hub Next.js app, deployed to `attalabs.dev`. This is the parent surface — not a product UI, but the doorway to the entire ecosystem. It links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as the Atta brand identity page.
+The ecosystem hub Next.js app, deployed to `attalabs.dev`. This is the parent surface — not a product UI, but the doorway to the entire ecosystem. It links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as attalabs' own identity page.
 
 ---
 
 ## Architecture
 
 ```
-apps/atta-ai/web/
+apps/attalabs/web/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx         # Root layout — NextWebShell + IdentityProvider
@@ -27,7 +27,7 @@ apps/atta-ai/web/
 
 ## Key Design Decisions
 
-- **Renders Atta's CMS identity, not attalabs' own** — the root layout calls `getProductCms('atta')`. An `attalabsConfig` singleton exists in the central `attalabs` project (`l5n0n8nn`) but has never been wired to anything; whether this hub should adopt it is an open product decision (D-125 surfaced the borrow without changing it).
+- **Renders its own CMS identity** — the root layout calls `getProductCms('attalabs')`, resolving `attalabsConfig`/`branding-attalabs` from the central `attalabs` project (`l5n0n8nn`) directly. It no longer borrows Atta's.
 - **No DB** — this is a pure marketing/hub surface. No Drizzle, no Neon.
 - **No engine** — no `@atta/engine` or `@atta/adapter-langgraph`.
 - **Homepage is public** — no auth required to view. Middleware only gates future `/account` and `/settings` routes.
@@ -38,12 +38,11 @@ apps/atta-ai/web/
 
 ## Known TODOs (in order)
 
-1. **Decide whether the hub adopts `attalabsConfig`** — it currently renders Atta's identity via `getProductCms('atta')`. The `attalabsConfig` singleton exists and is unread.
-2. **Real homepage design** — V1 is C-thin. Polish in a later dedicated session.
-3. **YAML flow visualizer at `/flows`** — Track A item 4. Foundation route for the YAML visualizer.
-4. **Documentation routes** — `/docs` or similar for ecosystem documentation.
-5. **Auth-gated account routes** — `/account`, `/settings` when ecosystem needs them. Middleware is already wired to protect these paths.
-6. **Sati anchor word** — "Remember." is a placeholder. Confirm or swap.
+1. **Real homepage design** — V1 is C-thin. Polish in a later dedicated session.
+2. **YAML flow visualizer at `/flows`** — Track A item 4. Foundation route for the YAML visualizer.
+3. **Documentation routes** — `/docs` or similar for ecosystem documentation.
+4. **Auth-gated account routes** — `/account`, `/settings` when ecosystem needs them. Middleware is already wired to protect these paths.
+5. **Sati anchor word** — "Remember." is a placeholder. Confirm or swap.
 
 ---
 

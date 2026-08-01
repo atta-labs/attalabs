@@ -103,18 +103,18 @@ Each product has its own studio. All managed from `packages/cms`.
 
 ```bash
 bun run studio              # Herald — port 3333
-bun run studio:atta         # Atta — port 3334
 bun run studio:vada         # Vada — port 3335
 bun run studio:vinaya       # Vinaya — port 3336
+bun run studio:attalabs     # AttalLabs — port 3337
 ```
 
 ### Deploy
 
 ```bash
 bun run studio:deploy           # Herald
-bun run studio:deploy:atta      # Atta
 bun run studio:deploy:vada      # Vada
 bun run studio:deploy:vinaya    # Vinaya
+bun run studio:deploy:attalabs  # AttalLabs
 bun run studio:deploy:all       # All four
 ```
 
@@ -169,7 +169,7 @@ Each product has a singleton document in Sanity that stores:
 | `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
 | `userInterface.library` | ref → `uiLibrary` | Active component library |
 
-Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vinayaConfig`
+Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `attalabsConfig`
 
 Query functions:
 ```ts
