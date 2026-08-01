@@ -21,6 +21,7 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | Project  | Path                  | Specs                       | Per-project state                    |
 |----------|-----------------------|-----------------------------|--------------------------------------|
 | admin    | `tools/admin`         | `tools/admin/specs/`        | (state tracked globally for now)     |
+| vitakka  | `apps/vitakka-ai`     | `apps/vitakka-ai/specs/`    | (state tracked globally for now)     |
 | vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | `apps/vada-ai/aeg-project/`   |
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
 | aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
