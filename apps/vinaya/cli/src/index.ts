@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkCommand } from './commands/check.js'
+import { demoBreakCommand } from './commands/demo.js'
 import { doctorCommand } from './commands/doctor.js'
 import { ejectCommand } from './commands/eject.js'
 import { initCommand, initProductCommand } from './commands/init.js'
@@ -12,6 +13,7 @@ import { newCheckCommand } from './commands/new-check.js'
 import { prCreateCommand, prEditCommand } from './commands/pr.js'
 import { runStudio } from './commands/studio.js'
 import { upgradeCommand } from './commands/upgrade.js'
+import { waiverCommand } from './commands/waiver.js'
 import { printJson } from './lib/envelope.js'
 import { printHelp } from './lib/output.js'
 
@@ -102,6 +104,20 @@ try {
         console.error(`Unknown 'issue' subcommand: ${subcommand ?? '(none)'} (expected 'create' or 'edit')`)
         process.exit(2)
       }
+      break
+    }
+    case 'demo': {
+      const [subcommand, ...rest] = args
+      if (subcommand === 'break') {
+        await demoBreakCommand(rest)
+      } else {
+        console.error(`Unknown 'demo' subcommand: ${subcommand ?? '(none)'} (expected 'break')`)
+        process.exit(2)
+      }
+      break
+    }
+    case 'waiver': {
+      await waiverCommand(args)
       break
     }
     default:
