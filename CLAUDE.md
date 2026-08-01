@@ -18,7 +18,7 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 
 - **AttaLabs** is the dev/lab ecosystem. Domain: `attalabs.dev`. Multiple products live here.
 - **Atta** is one product within AttaLabs — the deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain: `atta.ai` (preferred, not owned).
-- **Vāda, Vitakka, Sati** are the layers inside Atta. Vāda and Vitakka also live as standalone products at AttaLabs.
+- **Vāda, Vitakka, Sati** are the layers inside Atta. Vāda also lives as a standalone product at AttaLabs.
 - **Herald** and **Vinaya** are standalone products in AttaLabs, not part of Atta. (**Cetana** was retired — D-095, deleted by D-132.)
 - **The Atta Engine** is the execution substrate (`@atta/engine` + `@atta/adapter-langgraph`).
 - **No `-AI` suffix** on any product brand. Pāli naming is mandatory inside Atta, elective elsewhere.
@@ -31,7 +31,6 @@ For the canonical naming and ecosystem framing, see [`apps/atta-ai/specs/atta-na
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Atta | [apps/atta-ai/](apps/atta-ai/) | [CLAUDE.md](apps/atta-ai/CLAUDE.md) | [README.md](apps/atta-ai/README.md) | TBD (`atta.ai` target) | Hub serves `attalabs.dev`; consumer product not yet deployed |
-| Vitakka | [apps/vitakka-ai/](apps/vitakka-ai/) | [CLAUDE.md](apps/vitakka-ai/CLAUDE.md) | [README.md](apps/vitakka-ai/README.md) | `vitakka.attalabs.dev` | Scaffold, shelved — its Sanity CMS project now backs Vinaya's identity (D-124); borrows Atta's theme/branding to keep compiling |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
 | Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project (D-124) |
 
@@ -41,7 +40,7 @@ Each product follows a nested structure as needed:
 
 ```
 apps/{product-ai}/
-├── web/              # Next.js web app (Vāda, Atta, Vitakka, Herald)
+├── web/              # Next.js web app (Vāda, Atta, Herald)
 ├── mobile/           # React Native (Herald — iOS + Android)
 ├── mcp/              # MCP server (Vāda, Atta, Herald)
 ├── cli/              # CLI binary (Vinaya)
@@ -50,7 +49,7 @@ apps/{product-ai}/
 └── README.md
 ```
 
-Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp. Vitakka is scaffold only today.
+Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp.
 
 ---
 
@@ -105,7 +104,7 @@ Workspaces defined in root `package.json`:
 
 ### Turbo Tasks & Biome
 
-`bun run dev[:herald|:vitakka|:vada|:atta]`, `build[:herald]`, `clean` — see root `package.json` `scripts` for the full, current list rather than duplicating it here.
+`bun run dev[:herald|:vada|:atta]`, `build[:herald]`, `clean` — see root `package.json` `scripts` for the full, current list rather than duplicating it here.
 
 **Prefer scoped checks while iterating** — `bun run typecheck --filter=<pkg>` / `bun run lint --filter=<pkg>` against the package you're touching. Reserve unscoped `bun run check` (typecheck + lint + format across everything) for the final pre-PR gate — a full-repo run on every iteration is slow and burns tool-call budget for no signal beyond what the scoped run already gave you.
 

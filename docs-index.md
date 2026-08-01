@@ -112,11 +112,6 @@
 - [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
 - [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
 
-### vitakka-ai
-
-- [Vitakka](./apps/vitakka-ai/specs/vitakka-human.md)
-- [Vitakka — Technical Specification](./apps/vitakka-ai/specs/vitakka-spec.md)
-
 ## Root-Level Documentation
 
 - [⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION](./CLAUDE.md)

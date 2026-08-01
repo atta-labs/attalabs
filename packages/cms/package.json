@@ -29,7 +29,6 @@
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "migrate:themes-and-libraries": "bun run ./scripts/migrate-themes-and-libraries.ts",
     "seed:neobrutalist-themes": "bun run ./scripts/seed-neobrutalist-themes.ts",
-    "migrate:vitakka-to-vinaya": "bun run ./scripts/migrate-vitakka-to-vinaya.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rm -rf dist .turbo"

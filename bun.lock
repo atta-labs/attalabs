@@ -322,36 +322,6 @@
         "vitest": "^2.1.0",
       },
     },
-    "apps/vitakka-ai/mcp": {
-      "name": "@atta/vitakka-ai-mcp",
-      "version": "0.1.0",
-    },
-    "apps/vitakka-ai/mobile": {
-      "name": "@atta/vitakka-ai-mobile",
-      "version": "0.1.0",
-    },
-    "apps/vitakka-ai/web": {
-      "name": "@atta/vitakka-ai-web",
-      "version": "0.1.0",
-      "dependencies": {
-        "@atta/auth": "workspace:*",
-        "@atta/cms": "workspace:*",
-        "@atta/instrumentation": "workspace:*",
-        "@atta/ui": "workspace:*",
-        "@tailwindcss/postcss": "^4.0.0",
-        "next": "^16.2.1",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
-        "tailwindcss": "^4.0.0",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "@types/node": "^22.0.0",
-        "@types/react": "^19.0.0",
-        "@types/react-dom": "^19.0.0",
-        "typescript": "^5.7.0",
-      },
-    },
     "packages/adapter-langgraph": {
       "name": "@atta/adapter-langgraph",
       "version": "0.0.1",
@@ -827,12 +797,6 @@
     "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
-
-    "@atta/vitakka-ai-mcp": ["@atta/vitakka-ai-mcp@workspace:apps/vitakka-ai/mcp"],
-
-    "@atta/vitakka-ai-mobile": ["@atta/vitakka-ai-mobile@workspace:apps/vitakka-ai/mobile"],
-
-    "@atta/vitakka-ai-web": ["@atta/vitakka-ai-web@workspace:apps/vitakka-ai/web"],
 
     "@attalabs/vinaya": ["@attalabs/vinaya@workspace:apps/vinaya/cli"],
 
@@ -4325,8 +4289,6 @@
     "@atta/vada-ai-web/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "@atta/vinaya-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
-
-    "@atta/vitakka-ai-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
