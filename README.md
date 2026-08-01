@@ -97,7 +97,7 @@ it without implying ownership by Atta-the-product.
 
 ```bash
 bun install                # install the whole workspace
-bun run dev:vada           # or dev:herald · dev:atta
+bun run dev:vada           # or dev:herald · dev:attalabs
 bun run check              # typecheck + lint + format across everything
 ```
 
@@ -113,8 +113,8 @@ current task list. Prefer scoped checks while iterating —
 attalabs/
 ├─ apps/
 │  ├─ vada-ai/       web · mcp
-│  ├─ atta-ai/       web · mcp
 │  ├─ herald-ai/     web · mobile · mcp
+│  ├─ attalabs/      web
 │  └─ vinaya/        web · cli
 └─ packages/         engine · adapter-langgraph · ui · cms · db · auth · …
 ```
