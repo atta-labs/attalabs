@@ -30,12 +30,6 @@
 ### attalabs
 
 - [AttaLabs — CMS identity](./apps/attalabs/specs/attalabs-cms-identity.md)
-- [Atta — Build Strategy](./apps/attalabs/specs/atta-build-strategy.md)
-- [Atta Ecosystem — Vision](./apps/attalabs/specs/atta-ecosystem-vision.md)
-- [Attā Fine-Tuning Research — Forward Planning](./apps/attalabs/specs/atta-finetuning-research.md)
-- [Atta — Market Research](./apps/attalabs/specs/atta-market-research.md)
-- [Atta Naming Decision](./apps/attalabs/specs/atta-naming-decision.md)
-- [Cetanā (Architect Layer) — Capability Reality Check](./apps/attalabs/specs/cetana-reality-check.md)
 
 ### herald-ai
 
