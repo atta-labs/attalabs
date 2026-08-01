@@ -103,7 +103,7 @@ export function ThemesBrowseClient({
   const [isLibraryPending, startLibraryTransition] = useTransition()
   const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
-  const [selectedFonts, setSelectedFonts] = useState<Partial<Record<FontRole, string>>>({})
+  const [fontsByTheme, setFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>({})
   const [createOpen, setCreateOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -115,6 +115,7 @@ export function ThemesBrowseClient({
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
+  const selectedFonts: Partial<Record<FontRole, string>> = selectedId ? (fontsByTheme[selectedId] ?? {}) : {}
 
   const themeSchemes = useMemo(() => {
     const map: Record<string, { hasDark: boolean; hasLight: boolean }> = {}
@@ -182,8 +183,9 @@ export function ThemesBrowseClient({
   }
 
   function handleFontChange(role: FontRole, font: string) {
+    if (!selectedId) return
     const nextFonts = { ...selectedFonts, [role]: font }
-    setSelectedFonts(nextFonts)
+    setFontsByTheme((prev) => ({ ...prev, [selectedId]: nextFonts }))
     setSaved(false)
     if (isReady && selectedTheme) {
       sendMessage(buildThemeMessage(selectedTheme, selectedScheme, nextFonts))
