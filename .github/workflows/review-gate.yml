@@ -55,11 +55,32 @@ name: Review Gate
 # that original run every time a verdict lands — confirmed live: two verdict
 # comments posted, two runs completed, `PASS (PR #712): ...` printed in each
 # run's own log, and the PR still read `mergeStateStatus: UNSTABLE` until a
-# rerun of the original failed run was triggered by hand. Fixed by managing
-# an explicit check-run via the Checks API, bound to the real resolved head
-# SHA (`steps.pr.outputs.sha`), only on the `issue_comment` path — the
-# `pull_request` path's implicit check-run is already correctly bound and is
-# left alone.
+# rerun of the original failed run was triggered by hand.
+#
+# Third live-fire bug, caught by security review BEFORE merge (PR #715,
+# 2026-08-01) rather than after: the first attempt at fixing the above put
+# `checks: write` on the SAME job that checks out and executes the PR's own
+# branch content (`bun install` + `verify-review-gate.ts`). This repo is
+# public, forking is enabled, and `required_approving_review_count` is 0 —
+# `issue_comment`-triggered runs always execute the WORKFLOW FILE from the
+# base branch (GitHub's standard protection), but the *script* that workflow
+# checks out and runs is still whatever the PR's own branch contains. A
+# malicious PR author could edit their own copy of `verify-review-gate.ts`
+# to call the Checks API directly with an arbitrary `head_sha` and self-
+# report `"Review gate": success` — using the very `checks: write` grant
+# meant to fix propagation to instead forge the propagated result, defeating
+# the one gate this whole workflow exists to enforce. Fixed by splitting
+# into two jobs: `evaluate` checks out and runs PR-branch content but has NO
+# check-run-writing capability (the exact permission set this workflow had
+# before any of this); `report-check-run` holds `checks: write` but checks
+# out and executes nothing — its only inputs are `evaluate`'s own job
+# outputs (the PR number/SHA/result), values `evaluate` computed from a live
+# `gh pr view` call before ever touching PR content, not from raw event
+# payload data or PR-branch code an attacker can influence. Trade-off named
+# explicitly: the `issue_comment` path no longer shows an `in_progress`
+# state on the PR while `evaluate` runs (creating that would require
+# `checks: write` in the same job whose privilege this split exists to
+# remove) — the check-run now appears once, already completed.
 
 on:
   pull_request:
@@ -68,7 +89,7 @@ on:
     types: [created]
 
 jobs:
-  review-gate:
+  evaluate:
     name: Review gate
     if: >
       github.event_name == 'pull_request' ||
@@ -85,12 +106,14 @@ jobs:
       # vinaya/waiver:review label would hard-fail this job with a 403 instead of
       # evaluating the waiver (security-reviewer finding on PR #489).
       issues: read
-      # checks: write — the explicit check-run this job manages on the
-      # `issue_comment` path (see header comment, PR #712 incident). Not
-      # needed on the `pull_request` path, where GitHub's implicit check-run
-      # is already correctly bound; granted unconditionally since job-level
-      # `permissions:` can't vary per step.
-      checks: write
+      # Deliberately NO checks: write here — this job checks out and
+      # executes code FROM THE PR'S OWN BRANCH (`verify-review-gate.ts`),
+      # untrusted content on a public, fork-enabled repo with zero required
+      # reviews. See header comment, "Third live-fire bug" — that grant here
+      # is exactly the CRITICAL finding removed by the two-job split.
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      sha: ${{ steps.pr.outputs.sha }}
     steps:
       - name: Resolve PR number, branch, and head SHA
         id: pr
@@ -107,24 +130,6 @@ jobs:
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-
-      # issue_comment path only — see header comment. Creates an explicit
-      # check-run bound to the PR's REAL head SHA, so this run's eventual
-      # conclusion is visible to the PR's own required-status-check
-      # evaluation instead of landing (via GitHub's implicit binding) on
-      # whatever `main`'s tip happened to be when the comment fired.
-      - name: Create pending check-run on the PR's actual head SHA
-        id: check
-        if: github.event_name == 'issue_comment'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ID=$(gh api --method POST "repos/${{ github.repository }}/check-runs" \
-            -f name="Review gate" \
-            -f head_sha="${{ steps.pr.outputs.sha }}" \
-            -f status="in_progress" \
-            -q .id)
-          echo "id=$ID" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -145,25 +150,31 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: bun packages/aeg-core/bin/verify-review-gate.ts
 
-      # Mirror image of the "Create pending" step above — always runs (even
-      # when the gate step failed) so the explicit check-run reflects the
-      # real conclusion rather than sitting `in_progress` forever. Guarded on
-      # the check ID actually existing: on the `pull_request` path this step
-      # is a no-op (no explicit check-run was created; the implicit one
-      # already reports correctly).
-      - name: Complete the explicit check-run
-        if: always() && github.event_name == 'issue_comment'
+  # issue_comment path only — see header comment. Runs strictly after
+  # `evaluate` and touches no PR content at all (no checkout, no install, no
+  # script execution): its only inputs are `evaluate`'s own job outputs, so
+  # `checks: write` here can never be exercised by anything a PR author
+  # controls. The `pull_request` path's implicit check-run is already
+  # correctly bound to the right SHA and needs no help from this job — it is
+  # skipped there so the PR doesn't show two duplicate "Review gate" entries.
+  report-check-run:
+    name: Review gate (report)
+    if: always() && github.event_name == 'issue_comment' && needs.evaluate.result != 'skipped'
+    needs: evaluate
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: Report check-run on the PR's actual head SHA
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OUTCOME: ${{ steps.gate.outcome }}
-          CHECK_ID: ${{ steps.check.outputs.id }}
+          SHA: ${{ needs.evaluate.outputs.sha }}
+          JOB_RESULT: ${{ needs.evaluate.result }}
         run: |
-          if [ -z "$CHECK_ID" ]; then
-            echo "::warning::No check-run id from the earlier step — skipping completion, nothing to update."
-            exit 0
-          fi
           CONCLUSION="failure"
-          if [ "$OUTCOME" = "success" ]; then CONCLUSION="success"; fi
-          gh api --method PATCH "repos/${{ github.repository }}/check-runs/$CHECK_ID" \
+          if [ "$JOB_RESULT" = "success" ]; then CONCLUSION="success"; fi
+          gh api --method POST "repos/${{ github.repository }}/check-runs" \
+            -f name="Review gate" \
+            -f head_sha="$SHA" \
             -f status="completed" \
             -f conclusion="$CONCLUSION"
