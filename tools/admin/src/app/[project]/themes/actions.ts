@@ -83,15 +83,22 @@ const FONT_STACK_SUFFIX = {
   fontMono: 'monospace'
 } as const
 
+/** Google Fonts family names are alphanumerics, spaces, underscores and hyphens. */
+const FONT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 _-]{0,63}$/
+
 export async function setThemeFontsAction(
   _project: ProjectKey,
   id: string,
   fonts: Partial<Record<keyof typeof FONT_STACK_SUFFIX, string>>
 ): Promise<CmsWriteResult> {
   const patch: Record<string, string> = {}
-  for (const [role, name] of Object.entries(fonts)) {
+  for (const role of Object.keys(FONT_STACK_SUFFIX) as (keyof typeof FONT_STACK_SUFFIX)[]) {
+    const name = fonts[role]
     if (!name) continue
-    patch[`typography.${role}`] = `${name}, ${FONT_STACK_SUFFIX[role as keyof typeof FONT_STACK_SUFFIX]}`
+    if (!FONT_NAME_PATTERN.test(name)) {
+      return { ok: false, message: `"${name}" isn't a valid font name for ${role}.` }
+    }
+    patch[`typography.${role}`] = `${name}, ${FONT_STACK_SUFFIX[role]}`
   }
   if (Object.keys(patch).length === 0) return { ok: true }
   try {
