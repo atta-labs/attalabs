@@ -10,14 +10,14 @@ This app is the AttaLabs hub, serving `attalabs.dev` for the AttaLabs dev/lab ec
 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
-| Web | `web/` | `@atta/atta-ai-web` | Not yet implemented |
-| Mobile | `mobile/` | `@atta/atta-ai-mobile` | Not yet implemented |
+| Web | `web/` | `@atta/attalabs-web` | Live |
+| Mobile | `mobile/` | `@atta/attalabs-mobile` | Not yet implemented |
 
 ---
 
 ## Specifications
 
-Specs live in `specs/` at this level (`apps/atta-ai/specs/`):
+Specs live in `specs/` at this level (`apps/attalabs/specs/`):
 
 - `atta-build-strategy.md`
 - `atta-ecosystem-vision.md`
@@ -32,7 +32,7 @@ Specs live in `specs/` at this level (`apps/atta-ai/specs/`):
 
 The root layout renders the shared `@atta/ui/footer` `Footer` component — no product-specific footer content beyond `product`/`tagline` props. See `.claude/skills/ui-components/SKILL.md` for the component itself.
 
-Theme and branding come from CMS via `getProductCms('atta')` — this hub renders **Atta's** identity, not attalabs' own. An `attalabsConfig` singleton exists in the central `attalabs` project (`l5n0n8nn`) and is currently read by nothing; adopting it is an open decision (D-125 made the borrow explicit at the call site without changing it). See `.claude/skills/ui-cms-theme/SKILL.md`.
+Theme and branding come from CMS via `getProductCms('attalabs')` — this hub renders its own CMS identity (`attalabsConfig`, `branding-attalabs`, central project `l5n0n8nn`) directly. It no longer borrows Atta's. See `.claude/skills/ui-cms-theme/SKILL.md`.
 
 ---
 
