@@ -196,6 +196,16 @@ import { loadThemeFonts } from '@atta/cms'
 loadThemeFonts(newTheme.typography)
 ```
 
+### Authoring the three font roles
+
+All three `typography` font roles — sans, serif, mono — are authored from the admin's
+theme browse surface, against a live preview, rather than by hand-editing the theme
+document's raw fields. Because `typography` lives on the shared `uiTheme` document
+(D-060), a font chosen there is a property of that **theme**, not of the product used
+to preview it — every product bound to that theme picks up the change. This is the same
+shared-document trade the rest of this file's "What You Configure Where" section
+describes for colors and spacing; fonts are not a special case.
+
 ---
 
 ## SSR Theme Loading — How It Works
