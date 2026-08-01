@@ -15,50 +15,6 @@
         "typescript": "^5.7.0",
       },
     },
-    "apps/atta-ai/mcp-server": {
-      "name": "@atta/atta-ai-mcp-server",
-      "version": "0.0.1",
-      "dependencies": {
-        "@atta/adapter-langgraph": "workspace:*",
-        "@atta/engine": "workspace:*",
-        "@modelcontextprotocol/sdk": "^1.29.0",
-        "zod": "3.25.76",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "@types/node": "^20.0.0",
-        "typescript": "^5.7.0",
-      },
-    },
-    "apps/atta-ai/mobile": {
-      "name": "@atta/atta-ai-mobile",
-      "version": "0.1.0",
-    },
-    "apps/atta-ai/web": {
-      "name": "@atta/atta-ai-web",
-      "version": "0.1.0",
-      "dependencies": {
-        "@atta/auth": "workspace:*",
-        "@atta/cms": "workspace:*",
-        "@atta/identity": "workspace:*",
-        "@atta/instrumentation": "workspace:*",
-        "@atta/ui": "workspace:*",
-        "@tailwindcss/postcss": "^4.0.0",
-        "lucide-react": "^1.7.0",
-        "next": "^16.2.1",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
-        "server-only": "^0.0.1",
-        "tailwindcss": "^4.0.0",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "@types/node": "^22.0.0",
-        "@types/react": "^19.0.0",
-        "@types/react-dom": "^19.0.0",
-        "typescript": "^5.7.0",
-      },
-    },
     "apps/attalabs/mcp-server": {
       "name": "@atta/attalabs-mcp-server",
       "version": "0.0.1",
@@ -742,12 +698,6 @@
     "@atta/aeg-types": ["@atta/aeg-types@workspace:packages/aeg-types"],
 
     "@atta/agents": ["@atta/agents@workspace:packages/atta-agents"],
-
-    "@atta/atta-ai-mcp-server": ["@atta/atta-ai-mcp-server@workspace:apps/atta-ai/mcp-server"],
-
-    "@atta/atta-ai-mobile": ["@atta/atta-ai-mobile@workspace:apps/atta-ai/mobile"],
-
-    "@atta/atta-ai-web": ["@atta/atta-ai-web@workspace:apps/atta-ai/web"],
 
     "@atta/attalabs-mcp-server": ["@atta/attalabs-mcp-server@workspace:apps/attalabs/mcp-server"],
 
@@ -4272,8 +4222,6 @@
     "@asamuzakjp/css-color/lru-cache": ["lru-cache@10.4.3", "", {}, "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="],
 
     "@atta/admin/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
-
-    "@atta/atta-ai-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
     "@atta/attalabs-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
