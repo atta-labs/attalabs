@@ -5,9 +5,8 @@ import { AttalabsMark } from './marks/attalabs-mark'
 import { HeraldMark } from './marks/herald-mark'
 import { VadaMark } from './marks/vada-mark'
 import { VinayaMark } from './marks/vinaya-mark'
-import { VitakkaMark } from './marks/vitakka-mark'
 
-export type ProductId = 'attalabs' | 'atta' | 'vada' | 'vitakka' | 'herald' | 'vinaya'
+export type ProductId = 'attalabs' | 'atta' | 'vada' | 'herald' | 'vinaya'
 
 export interface FooterLink {
   label: string
@@ -25,7 +24,6 @@ const PRODUCT_NAMES: Record<ProductId, string> = {
   attalabs: 'AttaLabs',
   atta: 'Atta',
   vada: 'Vāda',
-  vitakka: 'Vitakka',
   herald: 'Herald',
   vinaya: 'Vinaya'
 }
@@ -35,7 +33,6 @@ const MARKS: Record<ProductId, MarkComponent> = {
   attalabs: AttalabsMark,
   atta: AttaMark,
   vada: VadaMark,
-  vitakka: VitakkaMark,
   herald: HeraldMark,
   vinaya: VinayaMark
 }
