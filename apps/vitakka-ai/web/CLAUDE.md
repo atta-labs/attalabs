@@ -1,8 +1,0 @@
-# Vitakka AI Web
-
-Next.js web app for Vitakka AI. Not yet implemented. Its Sanity CMS identity moved to Vinaya (D-124); the root layout now borrows Atta's config/branding via `getProductCms('atta')` to keep compiling, the same borrow `apps/vinaya/web` used before this rename.
-
-## Related
-
-- [Vitakka AI Overview](../CLAUDE.md)
-- [Root CLAUDE.md](../../../CLAUDE.md)
