@@ -251,7 +251,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 
-**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vinaya-theme` (`vitakka-theme` remains in use too — the shelved Vitakka scaffold keeps its own `styleId` even though it now borrows Atta's CMS config).
+**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vinaya-theme`.
 
 `NextWebShell` handles in order:
 1. Reads `cmsScheme` and `libraryId` from config
