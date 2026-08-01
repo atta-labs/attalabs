@@ -28,13 +28,36 @@ import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { exportShadcnCss } from '@/lib/export-shadcn-css'
-import { setActiveLibraryAction, setActiveThemeAction } from '../actions'
+import { setActiveLibraryAction, setActiveThemeAction, setThemeFontsAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
 import { FourSquareSwatch } from './four-square-swatch'
 import { PROJECT_CONFIG } from '@/lib/project-config'
 import type { ProjectKey } from '@/lib/project-config'
 
 type ColorScheme = 'dark' | 'light'
+type FontRole = 'fontSans' | 'fontSerif' | 'fontMono'
+
+const FONT_ROLES: { role: FontRole; label: string }[] = [
+  { role: 'fontSans', label: 'Sans' },
+  { role: 'fontSerif', label: 'Serif' },
+  { role: 'fontMono', label: 'Mono' }
+]
+
+// Mirrors actions.ts's FONT_STACK_SUFFIX — kept separate because a 'use server'
+// file may only export async functions, so the two can't share one constant.
+const FONT_STACK_SUFFIX: Record<FontRole, string> = {
+  fontSans: 'sans-serif',
+  fontSerif: 'serif',
+  fontMono: 'monospace'
+}
+
+function composeFontStack(role: FontRole, name: string): string {
+  return `${name}, ${FONT_STACK_SUFFIX[role]}`
+}
+
+// Referentially stable fallback — a fresh `{}` literal here would change identity
+// every render and invalidate buildMessage/the preview-send effect that depend on it.
+const EMPTY_FONTS: Partial<Record<FontRole, string>> = {}
 
 function extractColor(value: unknown): string | undefined {
   if (!value) return undefined
@@ -48,8 +71,17 @@ function hasColors(scheme: Record<string, unknown> | undefined): boolean {
   return !!(scheme.primary || scheme.background)
 }
 
-function buildThemeMessage(theme: CMSTheme, colorScheme: ColorScheme, fontOverride?: string) {
-  const typography = fontOverride ? { ...theme.typography, fontSans: fontOverride } : theme.typography
+function buildThemeMessage(
+  theme: CMSTheme,
+  colorScheme: ColorScheme,
+  fontOverrides: Partial<Record<FontRole, string>>
+) {
+  const composedOverrides: Partial<Record<FontRole, string>> = {}
+  for (const role of Object.keys(fontOverrides) as FontRole[]) {
+    const name = fontOverrides[role]
+    if (name) composedOverrides[role] = composeFontStack(role, name)
+  }
+  const typography = { ...theme.typography, ...composedOverrides }
   return {
     type: 'PREVIEW_THEME' as const,
     theme: {
@@ -92,7 +124,10 @@ export function ThemesBrowseClient({
   const [isLibraryPending, startLibraryTransition] = useTransition()
   const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
-  const [selectedFontSans, setSelectedFontSans] = useState<string | undefined>(undefined)
+  const [fontsByTheme, setFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>({})
+  const [persistedFontsByTheme, setPersistedFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>(
+    {}
+  )
   const [createOpen, setCreateOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -104,6 +139,16 @@ export function ThemesBrowseClient({
 
   const selectedTheme = themes.find((t) => t._id === selectedId) ?? null
   const selectedScheme = selectedId ? (schemeByTheme[selectedId] ?? 'dark') : 'dark'
+  const selectedFonts: Partial<Record<FontRole, string>> = selectedId
+    ? (fontsByTheme[selectedId] ?? EMPTY_FONTS)
+    : EMPTY_FONTS
+  const persistedFonts: Partial<Record<FontRole, string>> = selectedId
+    ? (persistedFontsByTheme[selectedId] ?? EMPTY_FONTS)
+    : EMPTY_FONTS
+  const fontsPending = FONT_ROLES.some(({ role }) => {
+    const picked = selectedFonts[role]
+    return picked !== undefined && picked !== persistedFonts[role]
+  })
 
   const themeSchemes = useMemo(() => {
     const map: Record<string, { hasDark: boolean; hasLight: boolean }> = {}
@@ -141,8 +186,8 @@ export function ThemesBrowseClient({
 
   const buildMessage = useCallback(() => {
     if (!selectedTheme) return null
-    return buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans)
-  }, [selectedTheme, selectedScheme, selectedFontSans])
+    return buildThemeMessage(selectedTheme, selectedScheme, selectedFonts)
+  }, [selectedTheme, selectedScheme, selectedFonts])
 
   const { iframeRef, iframeSrc, iframeKey, isReady, sendMessage, refresh, isFullscreen, toggleFullscreen } =
     usePortalPreview({
@@ -156,9 +201,9 @@ export function ThemesBrowseClient({
 
   useEffect(() => {
     if (isReady && selectedTheme) {
-      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, selectedFontSans))
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, selectedFonts))
     }
-  }, [isReady, selectedTheme, selectedScheme, selectedFontSans, sendMessage])
+  }, [isReady, selectedTheme, selectedScheme, selectedFonts, sendMessage])
 
   function handleSelect(themeId: string) {
     setSelectedId(themeId)
@@ -170,11 +215,13 @@ export function ThemesBrowseClient({
     setSaved(false)
   }
 
-  function handleFontChange(font: string) {
-    setSelectedFontSans(font)
+  function handleFontChange(role: FontRole, font: string) {
+    if (!selectedId) return
+    const nextFonts = { ...selectedFonts, [role]: font }
+    setFontsByTheme((prev) => ({ ...prev, [selectedId]: nextFonts }))
     setSaved(false)
     if (isReady && selectedTheme) {
-      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, font))
+      sendMessage(buildThemeMessage(selectedTheme, selectedScheme, nextFonts))
     }
   }
 
@@ -187,6 +234,19 @@ export function ThemesBrowseClient({
           errorToast('Activation failed', result.message, 12000)
           return
         }
+        if (fontsPending) {
+          const fontResult = await setThemeFontsAction(project, selectedId, selectedFonts)
+          if (!fontResult.ok) {
+            errorToast('Font save failed', fontResult.message, 12000)
+            return
+          }
+          // Track what was persisted rather than clearing the local pick: the
+          // picker/preview keep reading `selectedFonts` unconditionally, so they
+          // never fall back to the server's now-stale `typography` prop and never
+          // revert. `hasChanges` goes false because `fontsPending` compares against
+          // this snapshot, not because the picked value disappears.
+          setPersistedFontsByTheme((prev) => ({ ...prev, [selectedId]: selectedFonts }))
+        }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
         successToast('Theme activated', `${selectedTheme?.name ?? 'Theme'} is now the active theme.`)
@@ -196,8 +256,7 @@ export function ThemesBrowseClient({
     })
   }
 
-  const hasChanges =
-    selectedId !== currentThemeId || selectedScheme !== currentColorScheme || selectedFontSans !== undefined
+  const hasChanges = selectedId !== currentThemeId || selectedScheme !== currentColorScheme || fontsPending
 
   // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
   // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
@@ -255,7 +314,15 @@ export function ThemesBrowseClient({
 
   const headerContent = (
     <>
-      <FontPicker value={selectedFontSans} onChange={handleFontChange} />
+      {FONT_ROLES.map(({ role, label }) => (
+        <div key={role} className='flex items-center gap-1.5'>
+          <span className='font-mono text-[9px] uppercase tracking-widest text-muted-foreground'>{label}</span>
+          <FontPicker
+            value={selectedFonts[role] ?? selectedTheme?.typography?.[role]}
+            onChange={(font) => handleFontChange(role, font)}
+          />
+        </div>
+      ))}
       <span className='text-border'>|</span>
       {selectedId && (
         <Button variant='outline' size='sm' asChild className='font-mono text-[10px]'>
