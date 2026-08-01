@@ -28,7 +28,7 @@ import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { exportShadcnCss } from '@/lib/export-shadcn-css'
-import { setActiveLibraryAction, setActiveThemeAction } from '../actions'
+import { setActiveLibraryAction, setActiveThemeAction, setThemeFontsAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
 import { FourSquareSwatch } from './four-square-swatch'
 import { PROJECT_CONFIG } from '@/lib/project-config'
@@ -198,6 +198,13 @@ export function ThemesBrowseClient({
         if (!result.ok) {
           errorToast('Activation failed', result.message, 12000)
           return
+        }
+        if (Object.keys(selectedFonts).length > 0) {
+          const fontResult = await setThemeFontsAction(project, selectedId, selectedFonts)
+          if (!fontResult.ok) {
+            errorToast('Font save failed', fontResult.message, 12000)
+            return
+          }
         }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)

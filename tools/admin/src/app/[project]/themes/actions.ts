@@ -77,6 +77,32 @@ export async function deleteThemeAction(_project: ProjectKey, id: string): Promi
   }
 }
 
+const FONT_STACK_SUFFIX = {
+  fontSans: 'sans-serif',
+  fontSerif: 'serif',
+  fontMono: 'monospace'
+} as const
+
+export async function setThemeFontsAction(
+  _project: ProjectKey,
+  id: string,
+  fonts: Partial<Record<keyof typeof FONT_STACK_SUFFIX, string>>
+): Promise<CmsWriteResult> {
+  const patch: Record<string, string> = {}
+  for (const [role, name] of Object.entries(fonts)) {
+    if (!name) continue
+    patch[`typography.${role}`] = `${name}, ${FONT_STACK_SUFFIX[role as keyof typeof FONT_STACK_SUFFIX]}`
+  }
+  if (Object.keys(patch).length === 0) return { ok: true }
+  try {
+    const { writeClient } = getCmsClientsForProject('attalabs')
+    await writeClient.patch(id).set(patch).commit()
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, message: describeCmsWriteError(error, 'attalabs', 'save the theme fonts') }
+  }
+}
+
 export async function setActiveThemeAction(
   project: ProjectKey,
   id: string,
