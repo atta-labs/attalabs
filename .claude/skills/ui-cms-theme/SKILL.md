@@ -140,6 +140,43 @@ interface PortalUiConfig {
 
 Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **only the active scheme** as plain `:root {}` via `generateThemeCSSForScheme`. The `ColorSchemeToggle` swaps the style tag content on flip — no CSS attribute selectors needed, no specificity battles.
 
+### Theme values are guarded at the sink, not at each write path
+
+Both generators build declarations by string interpolation, and `NextWebShell` renders the
+result through `dangerouslySetInnerHTML`, which React does not escape. A theme value that
+contains `</style>`, a `;`, or a `}` would therefore escape its declaration and inject
+arbitrary CSS into **every product bound to that theme**.
+
+`utils/css-safety.ts` closes that at the point every feeder converges: `toCssDeclarations`
+drops any variable whose name or value could break out, and both generators route through
+it. The property *name* is guarded as well as the value, because `transformColorGroup`
+falls back to the raw Sanity field name for fields absent from `FIELD_TO_CSS_VAR`, and
+Sanity's HTTP API accepts fields the Studio schema never declared.
+
+**The sink is the right place for this and a write path is not.** Theme documents are
+authored through the central studio by hand — a documented route with no application code
+in front of it — so per-writer validation can never cover them all. One feeder is
+genuinely user-supplied: Herald's public profile page splices a visitor-settable
+`user.fontSans` into theme typography and renders it on an unauthenticated page. Setting
+fonts per user is a product requirement, so that feeder stays; the guard is what makes it
+safe. Anything added to `theme.ts` that emits a declaration must go through
+`toCssDeclarations` rather than interpolating values itself.
+
+The guard also rejects `url()` and `image-set()`. A custom property is inert until
+referenced, but `globals.css` sets `html { background: var(--background) }` — the
+shorthand, which accepts an image — so a theme colour of `url(https://…)` becomes an
+outbound request on every SSR page bound to that theme, leaking visitor IP and referer
+with no script involved.
+
+A dropped variable falls back to the compiled default in `globals.css`. Every value in
+every shipped theme passes the guard, and `theme-corpus.fixture.json` pins that: it holds
+all 890 distinct values across all 19 theme documents, and the test suite asserts none is
+rejected. That fixture exists because a hand-picked sample was not enough — review found a
+live value the guard rejected, `theme-obsidian`'s `shadowLg`, which turned out to be
+hand-written CSS rules smuggled through the very hole being closed. It was cleaned in
+Sanity rather than exempted; a theme document holds token values, never rules. If a value
+ever fails this guard, that is the question to ask of it.
+
 ```ts
 import { generateThemeCSSForScheme } from '@atta/cms'
 
