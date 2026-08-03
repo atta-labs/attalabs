@@ -1,9 +1,22 @@
 'use client'
 
 import { Button, Input } from '@atta/ui/components'
-import { ChevronDown, Loader2, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, Search } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
+/**
+ * The catalogue this picker offers.
+ *
+ * It used to fetch the full ~1900-family list from the Google Webfonts API, which requires
+ * an API key — and a key read by a client component is a key compiled into the browser
+ * bundle, so there was no way to hold one privately here. An environment variable would not
+ * have changed that: a `NEXT_PUBLIC_*` value ships to the browser too, and a server-only one
+ * is `undefined` in it.
+ *
+ * A curated list needs no credential at all. If the full catalogue is wanted back, generate
+ * it at build time from the public `google/fonts` metadata, or proxy the API through a server
+ * route — do not reintroduce a key into this file.
+ */
 const POPULAR_FONTS = [
   'Inter',
   'Roboto',
@@ -64,37 +77,14 @@ interface FontPickerProps {
 export function FontPicker({ value, onChange }: FontPickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [allFonts, setAllFonts] = useState<string[]>(POPULAR_FONTS)
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasFetched, setHasFetched] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const fontName = extractFontName(value)
 
-  const fetchFontsIfNeeded = useCallback(async () => {
-    if (hasFetched) return
-    setHasFetched(true)
-    setIsLoading(true)
-    try {
-      const res = await fetch(
-        'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBwIX97bVWr3-6AIUvGkcNnmFgirefZ6Sw&sort=popularity'
-      )
-      if (res.ok) {
-        const data = (await res.json()) as { items?: { family: string }[] }
-        const fontNames = data.items?.map((f) => f.family) || []
-        setAllFonts(fontNames.length > 0 ? fontNames : POPULAR_FONTS)
-      }
-    } catch {
-      // Keep popular fonts on error
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasFetched])
-
   const filteredFonts = useMemo(() => {
-    if (!search.trim()) return allFonts.slice(0, 50)
+    if (!search.trim()) return POPULAR_FONTS.slice(0, 50)
     const searchLower = search.toLowerCase()
-    return allFonts.filter((f) => f.toLowerCase().includes(searchLower)).slice(0, 50)
-  }, [search, allFonts])
+    return POPULAR_FONTS.filter((f) => f.toLowerCase().includes(searchLower)).slice(0, 50)
+  }, [search])
 
   useEffect(() => {
     filteredFonts.forEach(loadFontForPreview)
@@ -115,15 +105,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
 
   return (
     <div ref={containerRef} className='relative'>
-      <Button
-        variant='outline'
-        size='sm'
-        onClick={() => {
-          setOpen(!open)
-          if (!open) fetchFontsIfNeeded()
-        }}
-        className='gap-1.5 text-[10px]'
-      >
+      <Button variant='outline' size='sm' onClick={() => setOpen(!open)} className='gap-1.5 text-[10px]'>
         <span className='font-mono text-muted-foreground'>Aa</span>
         <span className='text-foreground' style={{ fontFamily: fontName ? `"${fontName}", sans-serif` : 'inherit' }}>
           {fontName || 'Font'}
@@ -146,11 +128,7 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
             </div>
           </div>
           <div className='max-h-64 overflow-y-auto'>
-            {isLoading ? (
-              <div className='flex items-center justify-center py-8'>
-                <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
-              </div>
-            ) : filteredFonts.length === 0 ? (
+            {filteredFonts.length === 0 ? (
               <div className='py-6 text-center text-xs text-muted-foreground'>No fonts found</div>
             ) : (
               filteredFonts.map((font) => (
