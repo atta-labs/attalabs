@@ -162,20 +162,25 @@ fonts per user is a product requirement, so that feeder stays; the guard is what
 safe. Anything added to `theme.ts` that emits a declaration must go through
 `toCssDeclarations` rather than interpolating values itself.
 
-The guard also rejects `url()` and `image-set()`. A custom property is inert until
-referenced, but `globals.css` sets `html { background: var(--background) }` — the
-shorthand, which accepts an image — so a theme colour of `url(https://…)` becomes an
-outbound request on every SSR page bound to that theme, leaking visitor IP and referer
-with no script involved.
+The guard also rejects the remote-fetch functions (`url()`, `image-set()`, `src()`). A
+custom property is inert until referenced, but `globals.css` sets
+`html { background: var(--background) }` — the shorthand, which accepts an image — so a
+theme colour of `url(https://…)` becomes an outbound request on every SSR page bound to
+that theme, leaking visitor IP and referer with no script involved. Unbalanced parentheses
+and quotes are rejected for a different reason: either one runs to the end of the
+stylesheet and voids every declaration after it.
+
+**A theme document holds token values, never rules.** The `shadows` group is a ramp of
+offsets and blur; the colour groups are colours. A field that closes its declaration and
+writes selectors of its own is using the injection vector as a feature, and this guard
+drops it. If a hover state or any other rule needs to change per theme, it belongs in
+`globals.css` or the component library, expressed against a token the theme *does* define.
 
 A dropped variable falls back to the compiled default in `globals.css`. Every value in
-every shipped theme passes the guard, and `theme-corpus.fixture.json` pins that: it holds
-all 890 distinct values across all 19 theme documents, and the test suite asserts none is
-rejected. That fixture exists because a hand-picked sample was not enough — review found a
-live value the guard rejected, `theme-obsidian`'s `shadowLg`, which turned out to be
-hand-written CSS rules smuggled through the very hole being closed. It was cleaned in
-Sanity rather than exempted; a theme document holds token values, never rules. If a value
-ever fails this guard, that is the question to ask of it.
+every shipped theme passes the guard, and `theme-corpus.fixture.json` pins that: all 853
+distinct values that reach a CSS declaration across all 19 theme documents, with the test
+suite asserting none is rejected. Assert against the whole corpus rather than a hand-picked
+sample — the sample is what misses the one value that matters.
 
 ```ts
 import { generateThemeCSSForScheme } from '@atta/cms'

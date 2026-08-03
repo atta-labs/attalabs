@@ -82,6 +82,20 @@ describe('isSafeCssValue', () => {
     expect(isSafeCssValue('0 0 0)')).toBe(false)
   })
 
+  it('rejects an unterminated string, which runs to the end of the stylesheet', () => {
+    expect(isSafeCssValue('oklch(0.1 0 0) "')).toBe(false)
+    expect(isSafeCssValue("'DM Sans, sans-serif")).toBe(false)
+  })
+
+  it('accepts properly paired quotes, which real font stacks use', () => {
+    expect(isSafeCssValue("'DM Sans', sans-serif")).toBe(true)
+    expect(isSafeCssValue('"Times New Roman", Georgia, serif')).toBe(true)
+  })
+
+  it('rejects src(), which no browser implements yet but would reopen the hole', () => {
+    expect(isSafeCssValue('src("https://attacker.test/x")')).toBe(false)
+  })
+
   it.each([
     ['style-element breakout', 'Inter</style><script>alert(1)</script>'],
     ['sibling declaration', 'Inter; background: url(https://evil.test)'],

@@ -61,9 +61,31 @@ const UNSAFE_CSS_VALUE = /[;{}<>@\\]|\/\*|\*\//
  *
  * `cssColorToOklch` passes such a value through untouched (culori cannot parse it, so
  * it is returned raw), which is why this cannot be left to the colour conversion.
- * No value in any of the 19 shipped themes uses either function.
+ * No value in any of the 19 shipped themes uses any of them.
+ *
+ * `src()` is here for a different reason than the rest: no browser implements it today,
+ * so it is not a current exposure. It is the one named CSS addition that would reopen
+ * this exact hole the moment it ships, and it costs nothing to deny now.
  */
-const REMOTE_FETCH_FUNCTION = /\b(?:url|image-set|image|-webkit-image-set)\s*\(/i
+const REMOTE_FETCH_FUNCTION = /\b(?:url|src|image-set|image|-webkit-image-set)\s*\(/i
+
+/**
+ * An unterminated string runs to the end of the stylesheet the same way an unclosed
+ * block does, so `oklch(0.1 0 0) "` voids every declaration after it. Real font stacks
+ * quote family names (`'DM Sans', sans-serif`), so quotes cannot simply be rejected —
+ * they have to be paired. Counting per quote character is enough here because a value
+ * that mixes them unevenly is already malformed, and none of the 890 shipped values
+ * contains an unpaired quote of either kind.
+ */
+function hasBalancedQuotes(value: string): boolean {
+  let doubles = 0
+  let singles = 0
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '"') doubles++
+    else if (value[i] === "'") singles++
+  }
+  return doubles % 2 === 0 && singles % 2 === 0
+}
 
 /**
  * CSS parsing consumes an unclosed block to the end of the stylesheet, so a value
@@ -110,7 +132,8 @@ export function isSafeCssValue(value: string): boolean {
     !UNSAFE_CSS_VALUE.test(value) &&
     !REMOTE_FETCH_FUNCTION.test(value) &&
     !hasControlCharacter(value) &&
-    hasBalancedParens(value)
+    hasBalancedParens(value) &&
+    hasBalancedQuotes(value)
   )
 }
 
@@ -121,9 +144,13 @@ export function isSafeCssValue(value: string): boolean {
  * Dropping rather than sanitising is deliberate: a mangled value ("what did the
  * theme mean by this?") is harder to diagnose than an absent one, and an absent
  * custom property falls back to the compiled default in `globals.css`, which is
- * always a legible theme. A value that trips this guard is not a near-miss
- * authoring mistake — no real colour, font stack, radius or shadow contains these
- * sequences.
+ * always a legible theme.
+ *
+ * Two kinds of value trip this guard, and they want different responses. A breakout
+ * sequence — `</style>`, `;`, `}`, a fetch function — is not something a theme author
+ * types by accident. An unbalanced paren or quote usually is: those two checks exist
+ * to catch a typo before it voids the rest of the stylesheet. Either way the variable
+ * is dropped; only the diagnosis differs.
  */
 export function toCssDeclarations(vars: Map<string, string>): string {
   const lines: string[] = []
