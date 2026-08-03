@@ -79,10 +79,13 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
   const [search, setSearch] = useState('')
   const fontName = extractFontName(value)
 
+  // No result cap: the catalogue is a local constant well under the old 50-item limit, and
+  // the list container scrolls. A cap here would only mislead a later reader into thinking
+  // a larger, remote list is still in play.
   const filteredFonts = useMemo(() => {
-    if (!search.trim()) return POPULAR_FONTS.slice(0, 50)
+    if (!search.trim()) return POPULAR_FONTS
     const searchLower = search.toLowerCase()
-    return POPULAR_FONTS.filter((f) => f.toLowerCase().includes(searchLower)).slice(0, 50)
+    return POPULAR_FONTS.filter((f) => f.toLowerCase().includes(searchLower))
   }, [search])
 
   useEffect(() => {
