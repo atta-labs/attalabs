@@ -5,6 +5,7 @@
 
 import type { CMSTheme, ThemeTypography } from '../types'
 import { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from '../types'
+import { toCssDeclarations } from './css-safety'
 import { cssColorToOklch } from './oklch'
 
 function extractColorValue(value: unknown): string | null {
@@ -72,13 +73,8 @@ export function generateThemeCSS(theme: CMSTheme): string {
   addShadowVars(lightVars, theme.shadows)
   addShadowVars(darkVars, theme.shadows)
 
-  const lightBlock = Array.from(lightVars.entries())
-    .map(([key, value]) => `  --${key}: ${value};`)
-    .join('\n')
-
-  const darkBlock = Array.from(darkVars.entries())
-    .map(([key, value]) => `  --${key}: ${value};`)
-    .join('\n')
+  const lightBlock = toCssDeclarations(lightVars)
+  const darkBlock = toCssDeclarations(darkVars)
 
   return `:root {\n${lightBlock || '  /* no light tokens */'}\n}\n\n:root[data-theme="dark"], .dark {\n${darkBlock || '  /* no dark tokens */'}\n}\n`
 }
@@ -91,9 +87,7 @@ export function generateThemeCSSForScheme(theme: CMSTheme, colorScheme: 'light' 
   addSpacingVars(vars, theme.spacing)
   addShadowVars(vars, theme.shadows)
 
-  const cssBlock = Array.from(vars.entries())
-    .map(([key, value]) => `  --${key}: ${value};`)
-    .join('\n')
+  const cssBlock = toCssDeclarations(vars)
 
   return `:root {\n${cssBlock || '  /* no tokens */'}\n}\n`
 }

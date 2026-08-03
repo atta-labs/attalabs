@@ -140,6 +140,48 @@ interface PortalUiConfig {
 
 Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **only the active scheme** as plain `:root {}` via `generateThemeCSSForScheme`. The `ColorSchemeToggle` swaps the style tag content on flip — no CSS attribute selectors needed, no specificity battles.
 
+### Theme values are guarded at the sink, not at each write path
+
+Both generators build declarations by string interpolation, and `NextWebShell` renders the
+result through `dangerouslySetInnerHTML`, which React does not escape. A theme value that
+contains `</style>`, a `;`, or a `}` would therefore escape its declaration and inject
+arbitrary CSS into **every product bound to that theme**.
+
+`utils/css-safety.ts` closes that at the point every feeder converges: `toCssDeclarations`
+drops any variable whose name or value could break out, and both generators route through
+it. The property *name* is guarded as well as the value, because `transformColorGroup`
+falls back to the raw Sanity field name for fields absent from `FIELD_TO_CSS_VAR`, and
+Sanity's HTTP API accepts fields the Studio schema never declared.
+
+**The sink is the right place for this and a write path is not.** Theme documents are
+authored through the central studio by hand — a documented route with no application code
+in front of it — so per-writer validation can never cover them all. One feeder is
+genuinely user-supplied: Herald's public profile page splices a visitor-settable
+`user.fontSans` into theme typography and renders it on an unauthenticated page. Setting
+fonts per user is a product requirement, so that feeder stays; the guard is what makes it
+safe. Anything added to `theme.ts` that emits a declaration must go through
+`toCssDeclarations` rather than interpolating values itself.
+
+The guard also rejects the remote-fetch functions (`url()`, `image-set()`, `src()`). A
+custom property is inert until referenced, but `globals.css` sets
+`html { background: var(--background) }` — the shorthand, which accepts an image — so a
+theme colour of `url(https://…)` becomes an outbound request on every SSR page bound to
+that theme, leaking visitor IP and referer with no script involved. Unbalanced parentheses
+and quotes are rejected for a different reason: either one runs to the end of the
+stylesheet and voids every declaration after it.
+
+**A theme document holds token values, never rules.** The `shadows` group is a ramp of
+offsets and blur; the colour groups are colours. A field that closes its declaration and
+writes selectors of its own is using the injection vector as a feature, and this guard
+drops it. If a hover state or any other rule needs to change per theme, it belongs in
+`globals.css` or the component library, expressed against a token the theme *does* define.
+
+A dropped variable falls back to the compiled default in `globals.css`. Every value in
+every shipped theme passes the guard, and `theme-corpus.fixture.json` pins that: all 853
+distinct values that reach a CSS declaration across all 19 theme documents, with the test
+suite asserting none is rejected. Assert against the whole corpus rather than a hand-picked
+sample — the sample is what misses the one value that matters.
+
 ```ts
 import { generateThemeCSSForScheme } from '@atta/cms'
 
