@@ -70,40 +70,47 @@ const UNSAFE_CSS_VALUE = /[;{}<>@\\]|\/\*|\*\//
 const REMOTE_FETCH_FUNCTION = /\b(?:url|src|image-set|image|-webkit-image-set)\s*\(/i
 
 /**
- * An unterminated string runs to the end of the stylesheet the same way an unclosed
- * block does, so `oklch(0.1 0 0) "` voids every declaration after it. Real font stacks
- * quote family names (`'DM Sans', sans-serif`), so quotes cannot simply be rejected —
- * they have to be paired. Counting per quote character is enough here because a value
- * that mixes them unevenly is already malformed, and none of the 890 shipped values
- * contains an unpaired quote of either kind.
+ * A value must end with every function call closed and every string terminated.
+ *
+ * Parentheses and quotes cannot be counted separately, because CSS tokenizes strings
+ * before it matches blocks: a `)` inside a string is text, not a closing paren. Counting
+ * them independently both misses `a(")"` — balanced by count, an unclosed function to the
+ * parser — and wrongly rejects `"Foo's Font", serif`, where an apostrophe inside a
+ * double-quoted family name is an ordinary character. One left-to-right pass carrying the
+ * open quote fixes both directions at once.
+ *
+ * An unclosed function consumes the rest of the stylesheet, which voids the whole theme
+ * and falls the page back to the compiled defaults. An unterminated string is smaller —
+ * CSS ends a string at a newline as a bad-string-token — but still discards the
+ * declarations around it. Neither is injection; both are availability, and both are free
+ * to reject because no shipped theme value is unbalanced.
+ *
+ * Backslash needs no handling here: `UNSAFE_CSS_VALUE` already rejects it, so no escape
+ * sequence can hide a delimiter from this pass.
  */
-function hasBalancedQuotes(value: string): boolean {
-  let doubles = 0
-  let singles = 0
-  for (let i = 0; i < value.length; i++) {
-    if (value[i] === '"') doubles++
-    else if (value[i] === "'") singles++
-  }
-  return doubles % 2 === 0 && singles % 2 === 0
-}
-
-/**
- * CSS parsing consumes an unclosed block to the end of the stylesheet, so a value
- * with an unbalanced `(` swallows every declaration after it and voids the theme.
- * That is availability rather than injection, but it is free to reject: no shipped
- * theme value has unbalanced parentheses.
- */
-function hasBalancedParens(value: string): boolean {
+function hasBalancedDelimiters(value: string): boolean {
   let depth = 0
+  let openQuote: string | null = null
+
   for (let i = 0; i < value.length; i++) {
     const char = value[i]
-    if (char === '(') depth++
-    else if (char === ')') {
+
+    if (openQuote !== null) {
+      if (char === openQuote) openQuote = null
+      continue
+    }
+
+    if (char === '"' || char === "'") {
+      openQuote = char
+    } else if (char === '(') {
+      depth++
+    } else if (char === ')') {
       depth--
       if (depth < 0) return false
     }
   }
-  return depth === 0
+
+  return openQuote === null && depth === 0
 }
 
 /**
@@ -132,8 +139,7 @@ export function isSafeCssValue(value: string): boolean {
     !UNSAFE_CSS_VALUE.test(value) &&
     !REMOTE_FETCH_FUNCTION.test(value) &&
     !hasControlCharacter(value) &&
-    hasBalancedParens(value) &&
-    hasBalancedQuotes(value)
+    hasBalancedDelimiters(value)
   )
 }
 

@@ -82,14 +82,30 @@ describe('isSafeCssValue', () => {
     expect(isSafeCssValue('0 0 0)')).toBe(false)
   })
 
-  it('rejects an unterminated string, which runs to the end of the stylesheet', () => {
+  it('rejects an unterminated string', () => {
     expect(isSafeCssValue('oklch(0.1 0 0) "')).toBe(false)
     expect(isSafeCssValue("'DM Sans, sans-serif")).toBe(false)
+  })
+
+  // CSS tokenizes strings before it matches blocks, so a delimiter inside a string is
+  // text. Counting parens and quotes separately fails in both directions; these two
+  // cases are what force a single pass that carries the open quote.
+  it('rejects a paren closed only inside a string — the function never closes', () => {
+    expect(isSafeCssValue('a(")"')).toBe(false)
+  })
+
+  it('rejects an even quote count that still leaves a string open', () => {
+    expect(isSafeCssValue('\'"\' "')).toBe(false)
   })
 
   it('accepts properly paired quotes, which real font stacks use', () => {
     expect(isSafeCssValue("'DM Sans', sans-serif")).toBe(true)
     expect(isSafeCssValue('"Times New Roman", Georgia, serif')).toBe(true)
+  })
+
+  it('accepts an apostrophe inside a double-quoted family name', () => {
+    expect(isSafeCssValue('"Foo\'s Font", serif')).toBe(true)
+    expect(isSafeCssValue('"Hershey\'s Handwriting", cursive')).toBe(true)
   })
 
   it('rejects src(), which no browser implements yet but would reopen the hole', () => {
