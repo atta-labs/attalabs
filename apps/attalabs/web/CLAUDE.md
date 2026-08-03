@@ -1,6 +1,6 @@
 # AttaLabs Web — Claude Code Instructions
 
-The ecosystem hub Next.js app, deployed to `attalabs.dev`. This is the parent surface — not a product UI, but the doorway to the entire ecosystem. It links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as attalabs' own identity page.
+The ecosystem hub Next.js app, deployed to `attalabs.dev` — the doorway to the ecosystem, not a product UI itself. Links to product subdomains (`vada.attalabs.dev`, `vitakka.attalabs.dev`, `sati.attalabs.dev`) and serves as attalabs' own identity page.
 
 ---
 
@@ -32,16 +32,15 @@ apps/attalabs/web/
 - **No engine** — no `@atta/engine` or `@atta/adapter-langgraph`.
 - **Homepage is public** — no auth required to view. Middleware only gates future `/account` and `/settings` routes.
 - **Single central `AIASphere`** with `color='var(--primary)'` at low matrix opacity. Brand restraint over visual density.
-- **Sati anchor word** "Remember." is a placeholder — Principal may swap it.
 
 ---
 
 ## Known TODOs (in order)
 
 1. **Real homepage design** — V1 is C-thin. Polish in a later dedicated session.
-2. **YAML flow visualizer at `/flows`** — Track A item 4. Foundation route for the YAML visualizer.
+2. **YAML flow visualizer at `/flows`** — Track A item 4.
 3. **Documentation routes** — `/docs` or similar for ecosystem documentation.
-4. **Auth-gated account routes** — `/account`, `/settings` when ecosystem needs them. Middleware is already wired to protect these paths.
+4. **Auth-gated account routes** — `/account`, `/settings` when ecosystem needs them (middleware already wired — see Key Design Decisions).
 5. **Sati anchor word** — "Remember." is a placeholder. Confirm or swap.
 
 ---

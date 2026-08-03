@@ -6,8 +6,6 @@ The canonical source of truth for AI models across all Atta AI products. Fetches
 
 ## Architecture
 
-Three layers:
-
 ```
 @atta/models/
 ├── src/
@@ -73,8 +71,6 @@ When a provider releases a flagship (e.g. Gemini 4 Pro) and you want it tagged a
    'gemini-4-pro': { tier: 'frontier', description: 'Frontier Gemini' },
    ```
 3. Done. Next SSR refresh picks it up (clear Next's data cache if needed).
-
-The model itself appears in the picker automatically because the catalog is fetched live from models.dev. The overlay only controls its curation signals.
 
 ---
 

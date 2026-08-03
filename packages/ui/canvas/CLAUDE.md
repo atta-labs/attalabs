@@ -21,8 +21,6 @@ AIACanvas  (context provider + canvas renderer)
 | `<svg>` inside AIARing | Animated wave paths | `z-10` |
 | DOM content / spheres | AIASphere elements, center text | `z-20` / `z-30` |
 
-The canvas is always behind. The SVG ring is above the canvas. DOM content is above both.
-
 ---
 
 ## Shared Modules (`shared/`)
@@ -213,9 +211,9 @@ A DOM element that registers its position with the canvas. The canvas uses the p
 
 **Registration lifecycle:** Sphere registers on mount via `useAIASphere` rAF loop, unregisters on unmount. Changing `state` or `showMatrix` uses `updateSphere` (Map.set on existing key — does NOT change cluster assignments). Never unmount and remount spheres just to update state — it shifts cluster assignments and the ring appears to rotate.
 
-**Position tracking:** `useAIASphere` runs a `requestAnimationFrame` loop that calls `getBoundingClientRect()` every frame and only updates the canvas when position changes (>0.5px threshold). This works in all scroll contexts — window scroll, nested overflow, CSS transforms. Do NOT add scroll/resize listeners.
+**Position tracking:** `useAIASphere` runs a `requestAnimationFrame` loop that calls `getBoundingClientRect()` every frame and only calls `registerSphere` with new coordinates when position changes (>0.5px threshold). This works in all scroll contexts — window scroll, nested overflow, CSS transforms. Do NOT add scroll/resize listeners.
 
-**Particle positioning:** `updateClusterOrbit` sets `p.x = target.x + Math.cos(angle) * radius + jitter` directly every frame. No lerp, no drift animation. When a sphere moves, particles move instantly. Jitter value `0.3` controls calmness.
+**Particle positioning:** `updateClusterOrbit` sets both axes directly every frame — `p.x = target.x + Math.cos(p.angle) * clusterRadius + jitter`, `p.y = target.y + Math.sin(p.angle) * clusterRadius + jitter`. No lerp, no drift animation. When a sphere moves, particles move instantly. Jitter value `0.3` controls calmness.
 
 **Size map:**
 
@@ -319,13 +317,11 @@ wander  →  forming  →  settled
 
 **Ambient particles** (`ambientRatio > 0`) always stay in `wander` mode regardless of canvas phase — they float forever.
 
-**`alwaysRenderSpheres`** renders matrix rain and glow even during `wander` phase. Without it, these effects only appear after `forming` begins.
-
 **`onPhaseChange`** fires on each transition. Use this to trigger UI changes.
 
 **The simulation hook should wait for `settled`** before starting agent interactions — particles aren't near their spheres until then.
 
-**Particle redistribution:** When spheres are added or removed (expand/collapse rounds), the canvas detects the sphere count change and redistributes particles evenly across all spheres. Particles snap to their new sphere position immediately — no drift animation.
+**Particle redistribution:** When spheres are added or removed (expand/collapse rounds), the canvas detects the change by comparing `maxCluster` to `spheres.length` and reassigns every sphere-bound particle (`p.cluster = idx++ % spheres.length`). Particles snap to their new sphere position immediately — no drift animation.
 
 ---
 
@@ -511,36 +507,6 @@ Each variant swells and quiets independently (offset by `w * 1.2`) — like laye
 
 ---
 
-## Particle System Internals
-
-### Direct Positioning
-
-`updateClusterOrbit` uses direct assignment, not lerp:
-```ts
-p.x = target.x + Math.cos(p.angle) * clusterRadius + jitter
-p.y = target.y + Math.sin(p.angle) * clusterRadius + jitter
-```
-Jitter value `0.3` keeps particles calm. Sphere moves → particles move instantly. No drift, no searching, no delay.
-
-### Redistribution on Sphere Count Change
-
-When spheres are added or removed (expand/collapse rounds), the canvas detects the change by comparing `maxCluster` to `spheres.length`. If they don't match:
-1. Reassign every sphere-bound particle: `p.cluster = idx++ % spheres.length`
-2. Snap each particle to its new sphere position immediately
-3. No animation — particles teleport
-
-### Position Tracking
-
-`useAIASphere` runs a `requestAnimationFrame` loop:
-1. Every frame: `getBoundingClientRect()` on the sphere DOM element
-2. Compare to last position (0.5px threshold)
-3. If changed: call `registerSphere` with new coordinates
-4. Works in any scroll context — window scroll, nested overflow, CSS transforms
-
-Do NOT add scroll or resize listeners. The rAF loop handles everything.
-
----
-
 ## Z-Index Reference
 
 | Element | z-index | Notes |
@@ -550,7 +516,7 @@ Do NOT add scroll or resize listeners. The rAF loop handles everything.
 | Center content (children of AIARing) | `z-20` | Above SVG ring |
 | Orbit spheres (AIASphere in orbit[]) | `z-30` | Topmost |
 
-**Do not add opaque fills to the SVG ring to hide spheres from canvas particles.** Use the SVG clip-path approach (already in place) — it excludes sphere positions from wave rendering without blocking canvas visibility.
+See AIARing's "Wave clip" note above — the clip-path approach, not opaque fills, is what keeps spheres visible through the wave layer.
 
 ---
 
@@ -584,7 +550,7 @@ Some lint hooks add `ctx.beginPath(); ctx.arc(); ctx.fill()` inside each sphere 
 `freq` value is near a multiple of π. Change to a small decimal like `0.22` (2–3 smooth cycles per segment).
 
 **Simulation starts before particles are near spheres:**
-Always gate simulation start on `ctx.phase === 'settled'`. The `forming` → `settled` transition happens when 50% of sphere-bound particles are within radius+30px of their sphere center.
+Always gate simulation start on `ctx.phase === 'settled'` — see the Canvas Phases table above for the exact trigger threshold.
 
 **`fireDirectedMessage` silently does nothing:**
 Sphere IDs in the context map are lowercase-matched. The lookup is `s.id.toLowerCase() === fromId.toLowerCase()`. Ensure the IDs passed to `fireDirectedMessage` match the `id` prop on the `AIASphere`.
@@ -652,5 +618,5 @@ bun run dev:vada
 
 ## Known Issues
 
-- **Ring matrix top gap (~15px):** Circular clip makes characters invisible at the very top where circle width → 0. Geometry constraint. Would need non-circular clip approach.
+- **Ring matrix top gap (~15px):** See AIARing's "Ring matrix" note above. Would need a non-circular clip approach to fully fix.
 - **Canvas resize lag:** Content height check in `animate()` occasionally lags one frame behind rapid expand/collapse.
