@@ -42,7 +42,7 @@
 #   (github.sha is then the selected branch's tip — a PR merge commit on main
 #   yields a green run). See packages/aeg-core/src/direct-main-push.ts.
 
-name: Archivist
+name: "Vinaya: Archivist"
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: Review Gate
+name: "Vinaya: Review Gate"
 
 # Split out of forge-lifecycle.yml's consolidated `aeg-gate-suite` job
 # (D-115, 2026-07-08). Required pre-merge check: a task-branch or fix/*
