@@ -201,7 +201,7 @@ Reviewers in earlier rounds flagged a real risk: the Caller Claude may default t
 
 ## Integrating Vāda's synthesis
 
-Synthesis is produced by Vāda's engine, not by Caller Claude. Every deliberation YAML that includes a synthesizer agent will return both rendered text content and (when the spec defines an output schema) a structured JSON synthesis object. Caller Claude can integrate the synthesis into its conversation but is not responsible for producing it. See `apps/vada-ai/docs/vada-decisions-legacy.md` D-016 for the architectural reversal and D-026 for how the structured/rendered fields surface to consumers.
+Synthesis is produced by Vāda's engine, not by Caller Claude. Every deliberation YAML that includes a synthesizer agent will return both rendered text content and (when the spec defines an output schema) a structured JSON synthesis object. Caller Claude can integrate the synthesis into its conversation but is not responsible for producing it.
 
 When Vāda returns its synthesizer output, the Caller Claude integrates it in three steps.
 

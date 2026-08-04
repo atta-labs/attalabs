@@ -126,7 +126,7 @@ Extracted `loadYamlFromCatalog(id)` into `@atta/engine/src/catalog-loader.ts` as
 
 - Eliminated three hardcoded `crucible-v1` fallbacks from web app (form init, route validation, session resume)
 - Rewrote MCP `spec-registry.ts` from static SPECS object to dynamic `readdirSync`-based discovery; `validateAllSpecs()` added
-- Dropped `-v1` suffixes from all 7 YAML filenames and `id` fields (D-025)
+- Dropped `-v1` suffixes from all 7 YAML filenames and `id` fields
 - Simplified ALIASES map to `a0`, `a1` only
 - Drizzle data migration (`0015_spec_id_backfill.sql`) strips `-v1` from existing `sessions.spec_id`
 - Collapsed `@vada/agent-metadata` package into `web/src/components/agents/visuals/`; deleted the package
