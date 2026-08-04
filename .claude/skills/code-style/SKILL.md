@@ -79,10 +79,8 @@ const count: number = 0
 
 ## Anti-patterns
 
-- ❌ `export default` anywhere
 - ❌ `any` type — use `unknown` + type narrowing
 - ❌ Inline styles — use Tailwind className
-- ❌ Importing a type without `type` keyword
 - ❌ Useless `else` after `return` — remove it
 
 ---

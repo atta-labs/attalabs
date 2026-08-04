@@ -1,4 +1,4 @@
-name: AEG Gate Suite
+name: "Vinaya: Gate Suite"
 
 # ONE consolidated PR-gate job (aeg-governance-hardening task 31, #395, item 3).
 #
@@ -10,7 +10,7 @@ name: AEG Gate Suite
 # checkout, one bun setup, one dependency install — same gates, same
 # strictness, ~1-2 billed minutes instead of ~9-10. (A 10th step, Review
 # gate, was added later — aeg-review-gate-v1 task 1, #474 — same job, same
-# amortized overhead — then split back OUT into its own workflow, D-115,
+# amortized overhead — then split back OUT into its own workflow,
 # 2026-07-08, once its need for an `issue_comment` trigger made it a genuine
 # exception to "same event set as everything else"; see `review-gate.yml`.)
 #
@@ -35,7 +35,7 @@ name: AEG Gate Suite
 # narrow back down:
 #   - 7 checks ran on [opened, synchronize, reopened] — guarded to those;
 #   - Runtime Test Plan also ran on `edited` (PR-body checkbox ticks must
-#     re-evaluate the gate without an empty commit — D-049);
+#     re-evaluate the gate without an empty commit);
 #   - verify-docs also ran on `labeled`/`unlabeled` (PR_LABELS feeds the
 #     tier derivation).
 # Install always runs, including on `edited` — verify-test-plan.ts now goes
@@ -47,7 +47,7 @@ name: AEG Gate Suite
 #   pull-requests: write (brief-validation's vinaya/needs:brief-correction label;
 #   covers the coherence/single-plan-PR `gh pr view` reads).
 #
-# Original per-check rationale (D-069 forge-lifecycle gates, D-049 test-plan
+# Original per-check rationale (forge-lifecycle gates, test-plan
 # gate, conventions mirroring, brief validation) lives with each step below.
 #
 # Real substrate (private repo — branch protection unavailable on free plan):
@@ -79,7 +79,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       # ── 1/9 · Closes #N ─────────────────────────────────────────────────
-      # Task-branch PRs must declare `Closes #N` in the body (D-069).
+      # Task-branch PRs must declare `Closes #N` in the body.
       # Non-task branches bypass automatically.
       - name: "Closes #N (task-branch PRs)"
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
@@ -100,14 +100,14 @@ jobs:
       # fail/info semantics; several grandfather via COHERENCE_ENFORCED_FROM /
       # R1_GRANDFATHERED_ISSUES). T2/T3 are scoped to the PR's own tranche
       # (via BRANCH) — an unrelated tranche's topology gap never blocks this
-      # PR (task 19). T2 relocation (task 24, #364, Part 2 — D-082): T2 only
+      # PR (task 19). T2 relocation (task 24, #364, Part 2): T2 only
       # blocks when PR_TOUCHED_FILES shows this PR's own diff touches a
       # topology file (a plan PR). Repo-state reads (topology files, tranche
       # list) come from a freshly-fetched origin/main via PR_HEAD_SHA/
       # PR_TOUCHED_FILES, not the checkout's merge-ref, which GitHub
       # materializes lazily and can lag behind main. On A1 failures the
       # script's issue numbers receive the `vinaya/incoherent` label.
-      - name: Resolve this PR's touched files (item 5/T2 relocation — D-082)
+      - name: Resolve this PR's touched files (item 5/T2 relocation)
         id: pr_files
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         env:
@@ -175,13 +175,13 @@ jobs:
         run: bun packages/aeg-core/bin/verify-single-plan-pr.ts
 
       # ── 4/9 · Runtime Test Plan checkbox state ──────────────────────────
-      # D-049 gate: a PR is not mergeable while any `- [ ]` box in the
+      # Test-plan gate: a PR is not mergeable while any `- [ ]` box in the
       # brief's Test Plan section is unticked. `Test Plan: unit-tests-only`
       # (first-class allowed value) passes by default. Runs on `edited` too
       # so PR-body ticks update the gate without forcing an empty commit.
       # BRANCH is required (task 25, #365): without it, a task-branch PR with
       # no Test Plan section at all silently advisory-PASSES instead of the
-      # loud FAIL D-049 requires (the #377 live-fire gap).
+      # loud FAIL the test-plan gate requires (the #377 live-fire gap).
       - name: Runtime Test Plan checkbox state
         if: ${{ !cancelled() && github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
         env:
@@ -189,16 +189,16 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: bun packages/aeg-core/bin/verify-test-plan.ts
 
-      # ── waiver-label actor (D-097) ───────────────────────────────────────
+      # ── waiver-label actor ───────────────────────────────────────
       # A doc-coverage waiver is honored only when the `vinaya/waiver:docs` label's
       # OWN labeling timeline event was actored by a configured principal —
       # label presence alone (checked via PR_LABELS below) is never
       # sufficient. Resolves the actor of the most recent LABELED_EVENT
       # naming `vinaya/waiver:docs`, if any. Empty output when none exists — an
       # empty/unset actor never verifies (isWaiverLabelActorVerified, task 29
-      # #380, D-097). Same shape as "Resolve this PR's touched files" above:
+      # #380). Same shape as "Resolve this PR's touched files" above:
       # structured output via $GITHUB_OUTPUT, guarded by !cancelled().
-      - name: Resolve waiver-label actor (D-097)
+      - name: Resolve waiver-label actor
         id: waiver_actor
         if: ${{ !cancelled() && github.event.action != 'edited' }}
         env:
@@ -225,7 +225,7 @@ jobs:
 
       # ── 5/9 · Tier-appropriate documentation gate ───────────────────────
       # verify-docs --pr (C0–C5). Runs on `labeled`/`unlabeled` too because
-      # PR_LABELS feeds the tier derivation. WAIVER_LABEL_ACTOR (D-097) feeds
+      # PR_LABELS feeds the tier derivation. WAIVER_LABEL_ACTOR feeds
       # the actor-verified waiver check — label presence alone never suffices.
       - name: Tier-appropriate documentation gate
         if: ${{ !cancelled() && github.event.action != 'edited' }}
@@ -241,7 +241,7 @@ jobs:
       # Blocks a diff that adds/edits a live `aeg-root/tranches/*.md`
       # topology file (other than README.md) or any new `*.tokens.md` file
       # anywhere — the residue classes this task's own Part B proved
-      # unnecessary. Existing `completed/**` files are exempt (D-117); this
+      # unnecessary. Existing `completed/**` files are exempt; this
       # only stops *new* state-file creation.
       - name: No new on-disk state
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
@@ -253,7 +253,7 @@ jobs:
       # task 3, #504) ──────────────────────────────────────────────────────
       # Makes enforcement.md's three ring tables load-bearing: G1
       # (implementation-exists) and G2 (no-orphan-hook/CLI) print `info`
-      # findings but never fail (D-116 — flipping G1 to blocking now would
+      # findings but never fail (flipping G1 to blocking now would
       # retroactively fail in-flight work against a pre-existing orphan
       # backlog). G3 (no seventh way into GitHub), G4 (cited forge numbers
       # resolve — a fabricated citation fails the build), and G5
@@ -296,7 +296,7 @@ jobs:
         run: bun scripts/check-forbidden-colors.ts --pr
 
       # ── 9/9 · Brief Validation ──────────────────────────────────────────
-      # Real, CI-enforced gate (D-069) — checks the PR body carries every
+      # Real, CI-enforced gate — checks the PR body carries every
       # required brief section (Tier, For, Project, Test Plan, surface map,
       # doc-update list, worktree Step 0, stop conditions, autonomy clause,
       # Closes #N, lock-ack). Applies `vinaya/needs:brief-correction` on failure.
@@ -318,7 +318,7 @@ jobs:
         run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "vinaya/needs:brief-correction"
 
       # Review gate (code-reviewer + security-review verdicts) moved out to
-      # its own workflow, `review-gate.yml` (D-115, 2026-07-08) — it needs an
+      # its own workflow, `review-gate.yml` (2026-07-08) — it needs an
       # `issue_comment` trigger (posting a verdict) that this job's
       # `pull_request`-only trigger set structurally cannot receive. See that
       # file's header for the full rationale and the live-fire bug (PR #485)

@@ -6,7 +6,7 @@ Schema version: `2.0`
 
 This document is the canonical reference for the v2 YAML schema used by Vāda. The schema collapses the three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) into a single universal model: **a flow is a sequence of rounds**. Every deliberation pattern is expressed as round structure plus optional declarative revision via `on_failure`. The engine has one compiler — `compileFlow` — that walks rounds and emits the Plan graph.
 
-For the architectural rationale behind v2, see `generic-flow-refactor.md` and D-033 in `apps/vada-ai/docs/vada-decisions-legacy.md`. For implementation status, see `vada-state.md`.
+For the architectural rationale behind v2, see `generic-flow-refactor.md`. For implementation status, see `vada-state.md`.
 
 ---
 
@@ -31,7 +31,7 @@ rounds:                          # required; non-empty list of round definitions
   - id: …
 ```
 
-The `id` field must match `^[a-z0-9-]+$` (kebab-case) and equal the YAML filename without the `.yaml` extension. No version suffixes — see D-013 + D-025.
+The `id` field must match `^[a-z0-9-]+$` (kebab-case) and equal the YAML filename without the `.yaml` extension. No version suffixes.
 
 ---
 
@@ -155,7 +155,7 @@ rounds:
 
 ### Signal types
 
-The schema accepts three signal types for forward extensibility. **v2 ships with `contains` only** — the engine throws explicitly if it encounters `equals` or `matches` at compile time (D-034). `equals` and `matches` are reserved for future engine work and currently unused by any catalog YAML.
+The schema accepts three signal types for forward extensibility. **v2 ships with `contains` only** — the engine throws explicitly if it encounters `equals` or `matches` at compile time. `equals` and `matches` are reserved for future engine work and currently unused by any catalog YAML.
 
 | Type | Triggers when… | Required fields | Engine support |
 |------|---------------|-----------------|---------------|
@@ -167,7 +167,7 @@ The signal applies across the audit round's agents using "any of" semantics: if 
 
 ---
 
-## Validation Rules (D-033)
+## Validation Rules
 
 The `validateFlow` function in `@atta/engine` enforces 10 rules. Failures raise `InvalidFlowConfigError`.
 
@@ -240,7 +240,7 @@ rounds:
       Please synthesize…
 ```
 
-Prior to D-033 a `{{reviewerResponses}}` variable was referenced in the v1 `vada-reviewers-synthesis` YAML — that variable was never populated by the engine, so the synthesizer ran blind. The v2 migration fixed this in PR #47.
+Prior to the generic flow refactor a `{{reviewerResponses}}` variable was referenced in the v1 `vada-reviewers-synthesis` YAML — that variable was never populated by the engine, so the synthesizer ran blind. The v2 migration fixed this in PR #47.
 
 ---
 
@@ -406,13 +406,13 @@ const conclusion = await adapter.execute({ plan, customVars })
 | `brokered-synth` | 2+ rounds, last round has exactly 1 agent, no `on_failure: revise` | `reviewer-{AgentName}` + `brokered-synthesis` |
 | `rounds-audit` | Any round has `on_failure.action: 'revise'` | `round-{r}-{AgentName}`, `terminal-{k}`, `audit-{Name}-{k}`, `__END__` |
 
-Shape detection is a deliberate pragmatic choice: the engine could in principle emit a fully generic Plan graph, but the existing adapter and route handler depend on the v1 node-id conventions, so `compileFlow` preserves them. The decision is documented in D-033 as the "shape detection vs greenfield rewrite" pragmatic weakening of the original "engine has zero branches" architectural ideal.
+Shape detection is a deliberate pragmatic choice: the engine could in principle emit a fully generic Plan graph, but the existing adapter and route handler depend on the v1 node-id conventions, so `compileFlow` preserves them. This is the "shape detection vs greenfield rewrite" pragmatic weakening of the original "engine has zero branches" architectural ideal.
 
 ---
 
 ## YAML Files
 
-All built-in specs live at `packages/agents/vada-deliberation/yamls/`. New specs go here. Filenames are unversioned (D-013 + D-025).
+All built-in specs live at `packages/agents/vada-deliberation/yamls/`. New specs go here. Filenames are unversioned.
 
 | File | Shape | Status |
 |------|-------|--------|
@@ -432,11 +432,11 @@ The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the 
 
 ## Migration from v1
 
-For pre-D-033 specs, the migration is structural — system prompts, classifier modes, and output schemas are preserved verbatim. The shape changes:
+For specs predating the generic flow refactor, the migration is structural — system prompts, classifier modes, and output schemas are preserved verbatim. The shape changes:
 
 - `reviewers:` (v1 top-level) → `rounds[0]` with `layout: parallel`
 - `flow.rounds: { count, agents }` (v1) → a single round with `repeats` set
 - `flow.synthesis: { agent, message_template }` (v1) → a separate single-agent round after the parallel rounds
 - `flow.audit: { agents, message_template, revision }` (v1) → a separate round with `on_failure: { action: revise, target: <synthesis-round-id>, max_revisions, signal }`
 
-All 9 catalog YAMLs were migrated in PR #47 (D-033 PR 2).
+All 9 catalog YAMLs were migrated in PR #47 (the generic flow refactor's second PR).

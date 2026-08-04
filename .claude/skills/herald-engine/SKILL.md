@@ -7,15 +7,13 @@ description: Herald AI forensic match engine — Skeptical Auditor YAML rules, a
 
 ## Context
 
-Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code (D-044, D-045, D-051). Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate. The system is tuned for honesty and evidence — not marketing.
+Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code. Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate.
 
 ---
 
 ## RULE #1: Never Modify the Auditor YAML Without Explicit Instruction
 
-`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted in D-045) — the prompt now lives here, declaratively, not in Herald's app code.
-
-**Do NOT modify it without explicit user instruction.**
+`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted when the endpoints unified) — the prompt now lives here, declaratively, not in Herald's app code.
 
 What it enforces:
 - Zero marketing language in any output
@@ -28,7 +26,7 @@ What it enforces:
 
 ## Audit API Flow (`POST /api/audit`)
 
-One endpoint, two payload shapes (D-045), still true today:
+One endpoint, two payload shapes, still true today:
 
 ```
 1. Dispatch on payload — `candidates` array present → batch shape; absent → single shape

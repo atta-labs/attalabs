@@ -4,7 +4,7 @@
 
 **Out of the AEG flow.** Held / future / research items for Vāda. This is a reference the Planner reads when choosing the next iteration slice — the flow never operates on it. Items graduate from here into an iteration (and get edges, owner, and a derived status) only when the Planner pulls them.
 
-Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired by D-029). See git history of `roadmap.md` for the full prior detail.
+Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired when hosted MCP shipped). See git history of `roadmap.md` for the full prior detail.
 
 > See also: [`vada-rethink.md`](./vada-rethink.md) — June 28, 2026 positioning / research backlog (intention-vs-mechanism teams, MCP center of gravity, frontier UI findings, Fusion / NVIDIA NIM / Hugging Face research items).
 
@@ -23,7 +23,7 @@ These are judgment/iteration loops, not clean "agent → PR" tasks. They belong 
 
 ## Web content
 
-- **Trust Vāda page rewrite** — currently references browser-only BYOK; needs a full rewrite for the server-side at-rest model (post-D-028/D-029). User-facing prose.
+- **Trust Vāda page rewrite** — currently references browser-only BYOK; needs a full rewrite for the server-side at-rest model (post single-source-keys reversal). User-facing prose.
 
 ## Hosted MCP hardening (Track E7+ — weeks-of-investment, deferred)
 

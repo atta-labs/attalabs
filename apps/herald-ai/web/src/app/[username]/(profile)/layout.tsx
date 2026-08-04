@@ -29,7 +29,7 @@ export default async function ProfileLayout({
     avatarUrl: user?.avatarUrl ?? null,
     cvUrl: user?.cvUrl ?? null
   }
-  // D-035: user.library drives ONLY the public profile. Owner /ui + /settings
+  // user.library drives ONLY the public profile. Owner /ui + /settings
   // live under (owner)/ and are fed the build-time library instead.
   const userLibrary = (user?.library ?? 'basic') as UILibrary
 

@@ -66,7 +66,7 @@ return <NextWebShell config={config} branding={branding} styleId="vada-theme">{c
 const config = await getProductConfig('vada')  // inside a page or component
 ```
 
-### RULE #3: The Sanity project comes from the product key, never the environment (D-125)
+### RULE #3: The Sanity project comes from the product key, never the environment
 
 ```ts
 // ✅ The key resolves project + document ids
@@ -103,18 +103,18 @@ Each product has its own studio. All managed from `packages/cms`.
 
 ```bash
 bun run studio              # Herald — port 3333
-bun run studio:atta         # Atta — port 3334
 bun run studio:vada         # Vada — port 3335
 bun run studio:vinaya       # Vinaya — port 3336
+bun run studio:attalabs     # AttalLabs — port 3337
 ```
 
 ### Deploy
 
 ```bash
 bun run studio:deploy           # Herald
-bun run studio:deploy:atta      # Atta
 bun run studio:deploy:vada      # Vada
 bun run studio:deploy:vinaya    # Vinaya
+bun run studio:deploy:attalabs  # AttalLabs
 bun run studio:deploy:all       # All four
 ```
 
@@ -169,7 +169,7 @@ Each product has a singleton document in Sanity that stores:
 | `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
 | `userInterface.library` | ref → `uiLibrary` | Active component library |
 
-Document types: `heraldConfig`, `attaConfig`, `vadaConfig`, `vinayaConfig`
+Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `attalabsConfig`
 
 Query functions:
 ```ts
@@ -233,7 +233,7 @@ separate from `border` so a black border can still cast a visible shadow), and
 | `SANITY_API_TOKEN` | Server only | Write access — seed/migrate scripts, `tools/admin` write clients |
 
 There is **no** `SANITY_PROJECT_ID`. The project is resolved from the product key via
-`PROJECT_IDS` (D-125); the env var existed, duplicated a committed public value, and its
+`PROJECT_IDS`; the env var existed, duplicated a committed public value, and its
 absence failed silently. Any lingering entry in a `.env.local` or Vercel project is inert.
 
 ---

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { buildFaviconIcons, getProductCms } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <PreviewThemeListener />
       {children}
+      <Analytics />
     </NextWebShell>
   )
 }

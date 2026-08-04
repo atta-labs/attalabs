@@ -30,7 +30,7 @@ PR #207 follow-up — deep architectural refactor across the Deliberate page and
 
 ## Previous session — Jun 27, 2026
 
-PR #207 follow-up — custom-class audit, hero repositioning, dropdown-hover explanation, topbar variant consistency, focus-indicator border swap (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one (plus a pre-existing local admin commit `a8a0f5c6` unrelated to this work).
+PR #207 follow-up — custom-class audit, hero repositioning, dropdown-hover explanation, topbar variant consistency, focus-indicator border swap. Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one (plus a pre-existing local admin commit `a8a0f5c6` unrelated to this work).
 
 **Audit — custom (non-Tailwind) classNames introduced by PR #207.**
 
@@ -66,7 +66,7 @@ The hero/fixed-bar wrappers previously carried `[&>form>div]:focus-within:ring-0
 
 ## Previous sub-session — Jun 27, 2026
 
-PR #207 six focused fixes (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
+PR #207 six focused fixes. Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
 
 **Fix 6 — Morphing submit button never appeared while typing (`onTextChange`).**
 
@@ -157,7 +157,7 @@ Out of scope (audit-flagged but not introduced in this PR — left for separate 
 
 ## Previous session — Jun 27, 2026
 
-PR #207 morphing button bug + external audit verification (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
+PR #207 morphing button bug + external audit verification. Branch `task/vada-production-v1/tool-badges`; no new PR, one additive commit on the existing one.
 
 **Fix 12 — Morphing button rendered Configure on empty input.**
 
@@ -195,7 +195,7 @@ No stop conditions triggered for the morphing-button fix itself. The `tsconfig` 
 
 ## Previous session — Jun 27, 2026
 
-PR #207 polish — five visual / UX fixes on the deliberate hero input + Configure modal (D-058). Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
+PR #207 polish — five visual / UX fixes on the deliberate hero input + Configure modal. Branch `task/vada-production-v1/tool-badges`; no new PR, additive commits on the existing one.
 
 **Fix 1 — Seamless inner textarea (root cause of the "double border" report).**
 
@@ -364,7 +364,7 @@ New purpose-built results view for `vada-council` and `vada-council-synthesis`. 
 
 **Phase 5 — Docs gate (commit `0136cb08`).**
 
-`verify-docs` on PR #207 was failing C2 decision-shape because legacy `apps/vada-ai/docs/vada-decisions-legacy.md` entries `D-001..D-034` carry `**Status:** Active` but no `**Type:**` field (the gate added Type as a required field after they were written). All 34 are foundational architectural decisions that predate the current type taxonomy → backfilled with `**Type:** 1` (irreversible — Principal must ratify). `verify-docs --pr` now passes against the PR body.
+`verify-docs` on PR #207 was failing C2 decision-shape because legacy rows in the frozen archive carried `**Status:** Active` but no `**Type:**` field (the gate added Type as a required field after they were written). All 34 are foundational architectural decisions that predate the current type taxonomy → backfilled with `**Type:** 1` (irreversible — Principal must ratify). `verify-docs --pr` now passes against the PR body.
 
 **Result.** PR #207 covers all six phases of the brief. Phases 2, 3 from prior session; Phases 1, 4, 5 from this session. Phase 6 = this docs note + push.
 
@@ -376,7 +376,7 @@ Frontier-chat hero layout + morphing Configure/Submit slot + dropdown restyle (v
 - New optional prop `submitSlot?: React.ReactNode` replaces the default `PromptInputSubmit` in BOTH inline and footer modes. When undefined the render is byte-identical to before — Herald's `JDInput` passes no new props and is unaffected.
 - New optional prop `textareaClassName?: string` is merged onto the inner textarea AFTER vendor defaults so callers can defeat utilities like `min-h-16` via tailwind-merge (no vendor patch needed).
 - Footer divider question: the vendored InputGroup uses `flex flex-col` with no border between textarea and footer — there is no shared "footer divider" class to opt out of. No `hideFooterDivider` prop introduced. Any further visual separation is a call-site decision (Vāda elevates the InputGroup with a child-selector `shadow-lg`).
-- Skill update (D-058, mandatory): `.claude/skills/ui-library-system/SKILL.md` gains a new "Cross-product composite components" section documenting the SmartPromptInput contract (all props in a table, the Herald-compatible invariant, and the rule for adding any new slot). The library-contract validator does NOT cover composite components, so the skill section IS the contract.
+- Skill update (mandatory): `.claude/skills/ui-library-system/SKILL.md` gains a new "Cross-product composite components" section documenting the SmartPromptInput contract (all props in a table, the Herald-compatible invariant, and the rule for adding any new slot). The library-contract validator does NOT cover composite components, so the skill section IS the contract.
 
 **Commit 2 — Vāda hero: frontier-chat layout (`DeliberateSection.tsx`).**
 - `actionsPosition` flipped from `'left'` to `'right'`. TeamPicker sits inline-right of the textarea on a single line and drops into the footer when the textarea wraps.
@@ -409,7 +409,7 @@ Frontier-chat hero layout + morphing Configure/Submit slot + dropdown restyle (v
 Council teams added on PR #207 (vada-production-v1, branch `task/vada-production-v1/tool-badges`). Two new YAML specs landed under `packages/agents/vada-deliberation/yamls/`:
 
 - `vada-council.yaml` — three independent answer slots (Gemini / GPT / Grok by default, any vendor-keyed model swappable per slot) answer the user's question in parallel. One round, `layout: parallel`, no synthesis, no draft. Each agent has `tools: [web_search]` and `classifier.mode: skip`.
-- `vada-council-synthesis.yaml` — same three answer slots, plus a `role: synthesizer` agent in a second serial round that compares the three answers using the `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` template (the post-D-033 pattern, not the broken `{{reviewerResponses}}` of pre-D-033).
+- `vada-council-synthesis.yaml` — same three answer slots, plus a `role: synthesizer` agent in a second serial round that compares the three answers using the `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` template (the new pattern, not the broken `{{reviewerResponses}}` of the old one).
 
 The distinction this introduces: Council is an **answer-a-question** team — there is no draft, the models reason from scratch in parallel. The existing Reviewers / Reviewers + Synthesis remain **critique-a-draft** teams — a primary AI has already produced a draft and reviewers attack it. Both shapes are useful; they answer different jobs.
 
@@ -419,9 +419,9 @@ Synthesis output contract (locked here for the future Council results view to co
 { agreements: string[], disagreements: string[], bottomLine: string }
 ```
 
-Known limitation, intentionally deferred: the existing rounds UI's `ConclusionPanel` / synthesis parser is keyed to the Reviewers JSON shape (`{summary, agreements, divergences, recommendation, ...}`) and will not correctly render Council's `{agreements, disagreements, bottomLine}` output. Building the Council results view (columns + AIASphere/matrix + synthesis panel) is a separate task; do not retrofit the old rounds UI to handle both shapes. See D-035.
+Known limitation, intentionally deferred: the existing rounds UI's `ConclusionPanel` / synthesis parser is keyed to the Reviewers JSON shape (`{summary, agreements, divergences, recommendation, ...}`) and will not correctly render Council's `{agreements, disagreements, bottomLine}` output. Building the Council results view (columns + AIASphere/matrix + synthesis panel) is a separate task; do not retrofit the old rounds UI to handle both shapes.
 
-Both YAMLs are auto-discovered by `listPublicSpecs()` (engine `catalog-loader.ts` enumerates the directory) — no registry edits required. Engine validation (70/70 tests) confirms both pass the D-033 rules. `listPublicSpecs()` now returns 4 public specs: `vada-council, vada-council-synthesis, vada-reviewers, vada-reviewers-synthesis`.
+Both YAMLs are auto-discovered by `listPublicSpecs()` (engine `catalog-loader.ts` enumerates the directory) — no registry edits required. Engine validation (70/70 tests) confirms both pass the v2 schema rules. `listPublicSpecs()` now returns 4 public specs: `vada-council, vada-council-synthesis, vada-reviewers, vada-reviewers-synthesis`.
 
 ---
 
@@ -626,7 +626,7 @@ Per-vendor tool substrate (vada-production-v1 T3, PR #194). The adapter now forw
 - `runOpenAICompatCustomToolLoop` added — multi-turn tool execution loop for openai-compat, parallel to the existing Anthropic loop. Uses OpenAI's `tool_calls` / tool message format. Activated when any tools (server registry + custom) are declared on an openai-compat agent.
 - `createMultiVendorLlmCall` gains optional `vendorExtraBody` (4th param) for per-vendor extra body params (e.g. OpenRouter plugin passthrough). No YAML schema field.
 - `resolvedTools` is now consumed in all three vendor branches. Anthropic branch unchanged in behavior — Herald's `SkepticalAuditor + fetch_github_signals` path is unaffected.
-- See D-053 for the Option A+B/C boundary decision. Option C (external MCP servers requiring engine schema changes) remains deferred.
+- The Option A+B vs. Option C boundary is a settled decision. Option C (external MCP servers requiring engine schema changes) remains deferred.
 
 ---
 
@@ -637,14 +637,14 @@ Homepage rewrite. Removed sections that described implementation internals (YAML
 - Deleted `PositioningSection` (YAML syntax + engine diagram), `MechanismSection` (BYOK callout + round geometry), `EcosystemSection` (Atta/Vitakka branding — products not yet public), `ArchitectureDiagram`, `PositioningDiagram`
 - Removed async CMS branding fetches (`getAttaBranding`, `getVitakkaBranding`) from homepage; page is now a plain sync Server Component
 - Added `WhatItIsSection`, `WhyItWorksSection`, `TryItSection`, `McpDeveloperSection` — all static, no CMS dependencies
-- Updated `NegationsSection`: removed "No tools. No file access. No code execution." (a YAML-level decision per D-046, not a product constraint); replaced with "Vāda is not a search engine."
+- Updated `NegationsSection`: removed "No tools. No file access. No code execution." (a YAML-level decision, not a product constraint); replaced with "Vāda is not a search engine."
 - Updated `HomeHero`: subtitle "Deliberation Teams" → "Multi-model deliberation"; added concrete second line after animation
 
 ---
 
 ## Most recent session — May 12-13, 2026
 
-D-033 generic flow refactor + D-034 cleanup landed. Vāda's YAML schema, engine compiler, and all consumers now operate on a single universal round-based model (v2 schema). Key changes:
+The generic flow refactor + cleanup landed. Vāda's YAML schema, engine compiler, and all consumers now operate on a single universal round-based model (v2 schema). Key changes:
 
 - Schema v2: `Flow` (top-level) → `rounds: Round[]`. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one model. Synthesizer is a single-agent round. Audit is a round. Revision is declarative via `on_failure: { action: revise, target, max_revisions, signal }`.
 - Engine: `compileFlow(flow, question, model?, customVars?) → Plan` replaces `compileSpec` + per-shape compilers. Greenfield code; emits the same Plan node ids (`solo`, `reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`) so the adapter executes the graph identically across shapes.
@@ -652,8 +652,8 @@ D-033 generic flow refactor + D-034 cleanup landed. Vāda's YAML schema, engine 
 - `vada-reviewers-synthesis` synthesis template bug fixed in the migration: was `{{reviewerResponses}}` (never populated by the engine), now `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`. Synthesizer now actually sees the reviewer outputs.
 - Deleted: `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `compile.ts`, all `compilers/*.ts` (brokered, rounds, solo, custom, spec). The `Team` / `BrokeredWorkflow` / `RoundsWorkflow` / `SoloWorkflow` / `CustomWorkflow` / `Workflow` union types deleted from `types.ts`.
 - 29 consumer files updated: route handler, both MCP tool files (`consult.ts`, `deliberate.ts`), 6 UI components reading the spec shape (`DeliberatePanel`, `TeamPicker`, `TeamSummary`, `TeamHeader`, `AgentTab`, calculator), verify scripts, and `apps/vada-ai/web/src/lib/flow-helpers.ts` (new — shared shape detection for UI).
-- D-034 cleanup (PR #48): `compile-flow.ts` `buildRevisionCondition` throws explicitly on unsupported signal types instead of silently treating `equals`/`matches` as `contains`. `RevisionCondition` in `types.ts` collapsed to single-variant interface (`type: 'contains'`); the unused `json-field-equals`/`json-field-truthy` variants and their adapter case blocks removed.
-- See apps/vada-ai/docs/vada-decisions-legacy.md D-033 and D-034. Implementation across PRs #41 (schema + types + validation), #47 (compileFlow + migration + consumer updates), #48 (cleanup).
+- Cleanup (PR #48): `compile-flow.ts` `buildRevisionCondition` throws explicitly on unsupported signal types instead of silently treating `equals`/`matches` as `contains`. `RevisionCondition` in `types.ts` collapsed to single-variant interface (`type: 'contains'`); the unused `json-field-equals`/`json-field-truthy` variants and their adapter case blocks removed.
+- Implementation across PRs #41 (schema + types + validation), #47 (compileFlow + migration + consumer updates), #48 (cleanup).
 
 ---
 
@@ -663,7 +663,7 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 - Settings tabs restructured: Teams tab removed; Account / API Keys / Agent Style remain
 - `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` — shared across products
 - Ecosystem schemas (`providerKeys`, `userPreferences`) moved from `apps/vada-ai/web` to `@atta/db`; query layer migrated
-- Unified team agent model storage: `vada:team:<specId>` → `Record<agentName, string>` for all team types (D-027); replaces separate `vada:reviewer-models:` and `vada:team-model:` keys
+- Unified team agent model storage: `vada:team:<specId>` → `Record<agentName, string>` for all team types; replaces separate `vada:reviewer-models:` and `vada:team-model:` keys
 - DB `getUserTeamModels` call removed from deliberate page; stale DB entries were overriding localStorage selections on every refresh (revert-to-Claude bug) — fixed
 - `GlobalModelSelector` writes to unified storage via `specAgentNames` prop; `resolveModel` in `DeliberatePanel` reads from single source
 
@@ -673,7 +673,7 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 > **Framing note (2026-04-30):** The "Brokered mode" and "Autonomous mode" product categories used in older entries have been retired. Current framing uses the Vāda Teams catalog (YAML specs at `packages/agents/vada-deliberation/yamls/`). See `vada-reviewers-spec.md` for the in-progress Vāda Reviewers team spec.
 
 **Last updated:** Jun 23, 2026
-**Last milestone:** Council + Council + Synthesis teams added — answer-a-question shape distinct from the critique-a-draft Reviewers shape (vada-decisions D-035). Per-vendor tool substrate (PR #194, D-053 Option A+B) shipped the same day.
+**Last milestone:** Council + Council + Synthesis teams added — answer-a-question shape distinct from the critique-a-draft Reviewers shape. Per-vendor tool substrate (PR #194, Option A+B) shipped the same day.
 **Next milestone:** Council results view — columns + AIASphere/matrix + synthesis panel keyed to the `{ agreements, disagreements, bottomLine }` contract.
 
 ---
@@ -682,9 +682,9 @@ BYOK + Settings restructure (branch: `feat/shared-keys-ui`). Key changes:
 
 Vāda is a YAML-driven deliberation runtime. The engine executes deliberation configurations expressed entirely as YAML files. Other applications (Claude Desktop, Cursor, custom apps) invoke Vāda via MCP by passing a YAML and a question; the engine runs the YAML and returns the result. Modes (Crucible, Sparring, Reviewers, baselines) are not features — they are YAML configurations. The engine is mode-agnostic.
 
-The v2 schema (D-033) collapses all deliberation patterns into a single model: a flow is a sequence of rounds. Each round has agents, layout (parallel or serial), optional repeats, and optional declarative revision. The compiler detects four shapes from this structure (solo, brokered ± synthesis, rounds + audit) and emits a Plan graph the adapter executes identically across all of them.
+The v2 schema collapses all deliberation patterns into a single model: a flow is a sequence of rounds. Each round has agents, layout (parallel or serial), optional repeats, and optional declarative revision. The compiler detects four shapes from this structure (solo, brokered ± synthesis, rounds + audit) and emits a Plan graph the adapter executes identically across all of them.
 
-Vāda is one product within the AttaLabs ecosystem (`vada.attalabs.dev`). It is also the deliberation layer inside Atta-the-product (the composed deep-thinking AI; see `apps/atta-ai/specs/atta-naming-decision.md` and `aeg-project/state.md` for the v2 framing locked in D-025). This document tracks Vāda-internal state — for ecosystem-level positioning see those documents.
+Vāda is one product within the AttaLabs ecosystem (`vada.attalabs.dev`). It is also the deliberation layer inside Atta-the-product (the composed deep-thinking AI; see `apps/atta-ai/specs/atta-naming-decision.md` and `aeg-project/state.md` for the v2 framing). This document tracks Vāda-internal state — for ecosystem-level positioning see those documents.
 
 ---
 
@@ -703,7 +703,7 @@ All affected skill files, CLAUDE.md files, and READMEs updated to match the rest
 Vestigial `declare` stubs removed. Vitest added. 8 compile tests passing.
 
 ### Phase 4 — Brokered through engine
-`BrokeredWorkflow` type, `compileBrokered`, `brokered-trio` team, `verify-brokered-port.ts` live test, `vada__consult` wired through engine. (Note: the `BrokeredWorkflow` type was later deleted as part of D-033's v2 schema migration. The catalog `brokered-trio.yaml` survives as a v2 `brokered-no-synth` shape.)
+`BrokeredWorkflow` type, `compileBrokered`, `brokered-trio` team, `verify-brokered-port.ts` live test, `vada__consult` wired through engine. (Note: the `BrokeredWorkflow` type was later deleted as part of the v2 schema migration. The catalog `brokered-trio.yaml` survives as a v2 `brokered-no-synth` shape.)
 
 ### Phase 5 — Brokered specs update
 `brokered-deliberation/00`, `01`, `02`, `06` specs updated to reflect engine-based architecture. (Some of these specs reference v1 framing — see `vada-teams-catalog/` directory; flagged for separate cleanup pass.)
@@ -729,14 +729,14 @@ Sonnet investigated current code, identified 30+ branches that needed to die, pr
 Extracted `loadYamlFromCatalog(id)` from ad-hoc per-caller implementations into `@atta/engine` (`packages/engine/src/catalog-loader.ts`). Fixed two broken runtime YAML-loading paths: the web route was using `process.cwd()` (which resolves to `apps/vada-ai/web/` in dev) and the MCP spec-registry was using the wrong `../../../yamls` depth. Path resolution anchored to `import.meta.url` — immune to dev server cwd changes. `VADA_YAMLS_DIR` env var available for production override.
 
 ### Phase 7.3 — YAML catalog cleanup and complete migration
-Eliminated all hardcoded spec references and static registries. Three `crucible-v1` fallbacks removed from web app (form initialization, route validation, session resume). MCP `spec-registry.ts` rewritten from a static `SPECS` record to dynamic `readdirSync`-based discovery delegating to `@atta/engine`'s `listPublicSpecs()`; `validateAllSpecs()` added for startup fail-fast validation. All 7 YAML filenames and `id` fields stripped of `-v1` suffixes (apps/vada-ai/docs/vada-decisions-legacy.md D-025 — Vāda-internal; note: the global PM `D-025` is the v2 naming framing — different log, same number); ALIASES simplified to `a0`/`a1` only. Drizzle migration backfills `sessions.spec_id` column. `@vada/agent-metadata` package deleted and collapsed into `apps/vada-ai/web/src/components/agents/visuals/`. `customVars` Handlebars rendering added for `system_prompt` fields.
+Eliminated all hardcoded spec references and static registries. Three `crucible-v1` fallbacks removed from web app (form initialization, route validation, session resume). MCP `spec-registry.ts` rewritten from a static `SPECS` record to dynamic `readdirSync`-based discovery delegating to `@atta/engine`'s `listPublicSpecs()`; `validateAllSpecs()` added for startup fail-fast validation. All 7 YAML filenames and `id` fields stripped of `-v1` suffixes; ALIASES simplified to `a0`/`a1` only. Drizzle migration backfills `sessions.spec_id` column. `@vada/agent-metadata` package deleted and collapsed into `apps/vada-ai/web/src/components/agents/visuals/`. `customVars` Handlebars rendering added for `system_prompt` fields.
 
 ### BYOK + Settings restructure (`feat/shared-keys-ui`)
 Settings page restructured: Teams tab removed (model selection moved inline to deliberation panel). `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` as shared components. Ecosystem DB schemas (`providerKeys`, `userPreferences`) moved to `@atta/db`. Team agent model storage unified to a single localStorage key format `vada:team:<specId>` → `Record<agentName, string>` for all team types; stale DB seeding that caused revert-to-Claude bug removed.
 
 ### Phase 8 — Synthesis exposed to consumers
 The engine already produced structured synthesis via terminal nodes; both MCP and web app consumers stripped the structured field at the boundary. Phase 8 exposes it:
-- `vada__deliberate` returns `structured` alongside `content`; null when the spec has no output_schema (apps/vada-ai/docs/vada-decisions-legacy.md D-026)
+- `vada__deliberate` returns `structured` alongside `content`; null when the spec has no output_schema
 - Web app SSE adds typed `synthesis_complete` events with both content and structured payloads
 - `transcriptEntries` gains a `structured jsonb` column; synthesis and revision phases insert a transcript entry with structured populated
 - `persistTurn` threads `structured` from engine output (AgentOutput.structured) through to DB
@@ -745,21 +745,21 @@ The engine already produced structured synthesis via terminal nodes; both MCP an
 No schema 2.0 required. The change is at the API boundary, not the spec language.
 
 ### Phase 9 — Hosted MCP server shipped (May 4, 2026)
-PRs #9 + #10 landed server end-to-end. Endpoint: `https://vada.attalabs.dev/api/mcp`. Streamable HTTP transport. Bearer auth via SHA-256-hashed `vada_*` API keys (`packages/auth/src/api-key-auth.ts`). Provider keys envelope-encrypted in `user_provider_keys` (AES-256-GCM, AAD-bound to clerkId, `MASTER_ENCRYPTION_KEY` env var, `kms_key_id` reserved for future KMS migration). Both `vada__consult` and `vada__deliberate` tools wired through. See `apps/vada-ai/specs/mcp-architecture.md` for full spec, `apps/vada-ai/docs/vada-decisions-legacy.md` D-029 for the architectural decision. Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log, hardening) remain as future work.
+PRs #9 + #10 landed server end-to-end. Endpoint: `https://vada.attalabs.dev/api/mcp`. Streamable HTTP transport. Bearer auth via SHA-256-hashed `vada_*` API keys (`packages/auth/src/api-key-auth.ts`). Provider keys envelope-encrypted in `user_provider_keys` (AES-256-GCM, AAD-bound to clerkId, `MASTER_ENCRYPTION_KEY` env var, `kms_key_id` reserved for future KMS migration). Both `vada__consult` and `vada__deliberate` tools wired through. See `apps/vada-ai/specs/mcp-architecture.md` for full spec. Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log, hardening) remain as future work.
 
 ### Phase 10 — Single-source-keys reversal (May 4, 2026)
-PR #13 demoted IndexedDB from canonical provider-key storage. Server-side `user_provider_keys` is now the single source of truth. Both UI surfaces (Settings → API Keys; the `/deliberate` model picker's inline key dialog) write to the server via `POST /api/keys/provider`. The `/deliberate` page's lock-icon row, "Sign," and "Forget this device" affordances were removed. `@atta/identity` package retained — `IdentityProvider` mounted in vada-ai and atta-ai layouts; `probeProviderKey` (validate before save), `fetchInstalledOllamaModels` (local Ollama discovery), `MigrationPrompt` (one-time UX nudge for users with pre-reversal IndexedDB keys), `useIdentity` hook used by judge benchmark + model picker. The package no longer holds canonical keys. See apps/vada-ai/docs/vada-decisions-legacy.md D-028.
+PR #13 demoted IndexedDB from canonical provider-key storage. Server-side `user_provider_keys` is now the single source of truth. Both UI surfaces (Settings → API Keys; the `/deliberate` model picker's inline key dialog) write to the server via `POST /api/keys/provider`. The `/deliberate` page's lock-icon row, "Sign," and "Forget this device" affordances were removed. `@atta/identity` package retained — `IdentityProvider` mounted in vada-ai and atta-ai layouts; `probeProviderKey` (validate before save), `fetchInstalledOllamaModels` (local Ollama discovery), `MigrationPrompt` (one-time UX nudge for users with pre-reversal IndexedDB keys), `useIdentity` hook used by judge benchmark + model picker. The package no longer holds canonical keys.
 
 ### Phase 11 — Shared keys UI + ecosystem schemas (May 5, 2026)
-`feat/shared-keys-ui` merged. `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` as shared components. Ecosystem-shared key tables (`apiKeys`, `userProviderKeys`, `mcpSessions`) moved from `apps/vada-ai/web/src/db/schema.ts` to `packages/db/src/schema/keys.ts`. Vāda-specific tables (including `userSettings` for face-style preference) stay in app-local schema. Settings tabs restructured: Account / API Keys / Agent Style. Teams tab removed; team agent model selection moves inline via apps/vada-ai/docs/vada-decisions-legacy.md D-027's unified `vada:team:<specId>` localStorage key. See apps/vada-ai/docs/vada-decisions-legacy.md D-030.
+`feat/shared-keys-ui` merged. `ProviderKeysSection` and `ApiKeysSection` extracted to `packages/ui/account/` as shared components. Ecosystem-shared key tables (`apiKeys`, `userProviderKeys`, `mcpSessions`) moved from `apps/vada-ai/web/src/db/schema.ts` to `packages/db/src/schema/keys.ts`. Vāda-specific tables (including `userSettings` for face-style preference) stay in app-local schema. Settings tabs restructured: Account / API Keys / Agent Style. Teams tab removed; team agent model selection moves inline via the unified `vada:team:<specId>` localStorage key.
 
 ### Phase 12 — Doc audit pass (May 6, 2026)
-PR `docs/may-5-reality-sync` synced 7 repo files to May 4-5 reality: `apps/vada-ai/docs/vada-decisions-legacy.md` (D-028, D-029, D-030 appended), `mcp-architecture.md` (target → shipped), `vada-byok-principles.md` (rewritten in place), `vada-byok-gap-report.md` (resolution status block prepended), `vada-mcp-server/SKILL.md`, `auth/SKILL.md`, `database/SKILL.md`. Out-of-scope deferrals were addressed in a follow-up cleanup pass.
+PR `docs/may-5-reality-sync` synced 6 repo files to May 4-5 reality: `mcp-architecture.md` (target → shipped), `vada-byok-principles.md` (rewritten in place), `vada-byok-gap-report.md` (resolution status block prepended), `vada-mcp-server/SKILL.md`, `auth/SKILL.md`, `database/SKILL.md`. Out-of-scope deferrals were addressed in a follow-up cleanup pass.
 
 ### Phase 13 — Vendor registry consolidation (May 11, 2026)
-PR #31 shipped a single source of truth for vendor metadata at `packages/models/src/vendors.ts`. 12 vendors registered with `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`. Four prior divergent prefix-resolution implementations (in transform, adapter, route, reviewer-models) collapsed to one. Adapter dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) instead of per-vendor switch. `vada__consult` MCP tool gains optional `reviewer_config: Record<agentName, modelId>` parameter, validated against the registry. Crucible, Sparring, War Room marked `experimental: true` and unpublished from the public `/teams` catalog. Tech debt cleared in the same PR — `providers.ts` shim deleted; 18 consumer files migrated. See apps/vada-ai/docs/vada-decisions-legacy.md D-032.
+PR #31 shipped a single source of truth for vendor metadata at `packages/models/src/vendors.ts`. 12 vendors registered with `sdkShape`, `baseURL`, `keyConvention`, `modelPrefixes`, `envVar`, `localOnly`. Four prior divergent prefix-resolution implementations (in transform, adapter, route, reviewer-models) collapsed to one. Adapter dispatches by SDK shape (3 branches: `anthropic`, `google-genai`, `openai-compat`) instead of per-vendor switch. `vada__consult` MCP tool gains optional `reviewer_config: Record<agentName, modelId>` parameter, validated against the registry. Crucible, Sparring, War Room marked `experimental: true` and unpublished from the public `/teams` catalog. Tech debt cleared in the same PR — `providers.ts` shim deleted; 18 consumer files migrated.
 
-### Phase 14 — D-033 generic flow refactor + D-034 cleanup (May 12-13, 2026)
+### Phase 14 — Generic flow refactor + cleanup (May 12-13, 2026)
 Universal round-based YAML schema shipped across the stack. PR #41 added the new types + Zod schema + `validateFlow` (10 validation rules). PR #47 implemented greenfield `compileFlow`, migrated all 9 catalog YAMLs to `schema_version: "2.0"`, deleted the old schema and per-shape compilers, and updated 29 consumer files. PR #48 cleanup removed dead code from the adapter switch tables and tightened `RevisionCondition` to a single-variant interface. Key outcomes:
 
 - One compiler entrypoint (`compileFlow`) replaces `compileSpec` + per-workflow compilers. Shape detection at the top of the function emits matching Plan node ids (`solo`, `reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`) so the adapter executes the graph identically across shapes.
@@ -767,15 +767,15 @@ Universal round-based YAML schema shipped across the stack. PR #41 added the new
 - `types.ts` shrunk by ~200 lines: `Team`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, and the `Workflow` discriminated union all deleted. `Plan`, `PlanNode`, `PlanEdge`, `PlanGraph`, `PlanNodeRole`, `PlanNodeKind`, `PlanEdgeKind`, and the `Agent` re-export survive.
 - `index.ts` public API surface: `loadFlow`, `compileFlow`, `validateFlow`, `resolveAgentFailure`, `InvalidFlowConfigError`, `Flow`, `FlowSchema`, `Plan`, `Agent`, and supporting types. No backwards-compat shim — the consumer surface migrated atomically in PR #47.
 - UI shape detection extracted into `apps/vada-ai/web/src/lib/flow-helpers.ts` (39 lines). `detectShape`, `getDisplayAgentNames`, `getFlowAgentCount`, `getFlowShapeLabel` consumed by `DeliberatePanel`, `TeamPicker`, `TeamSummary`, `TeamHeader`, `AgentTab`, and `calculator.ts`.
-- D-034 cleanup: `compile-flow.ts` `buildRevisionCondition` throws on unsupported signal types instead of silently producing a `contains` Plan. `RevisionCondition` in `types.ts` collapsed to single-variant interface; adapter switch tables in `adapter.ts` and `graph-builder.ts` lost their dead `json-field-equals` / `json-field-truthy` case blocks.
+- Cleanup: `compile-flow.ts` `buildRevisionCondition` throws on unsupported signal types instead of silently producing a `contains` Plan. `RevisionCondition` in `types.ts` collapsed to single-variant interface; adapter switch tables in `adapter.ts` and `graph-builder.ts` lost their dead `json-field-equals` / `json-field-truthy` case blocks.
 
-The architectural ideal in D-033 ("engine has zero branches on workflow type") is met for the YAML schema layer (one schema, zero discriminators) but pragmatically weakened in the compiler — `compileFlow` contains shape detection over `flow.rounds` topology to emit matching node ids. The decision is documented in D-033 as deliberate; a future cleanup PR could revisit it once the adapter is refactored.
+The architectural ideal ("engine has zero branches on workflow type") is met for the YAML schema layer (one schema, zero discriminators) but pragmatically weakened in the compiler — `compileFlow` contains shape detection over `flow.rounds` topology to emit matching node ids. This is a deliberate tradeoff; a future cleanup PR could revisit it once the adapter is refactored.
 
-See `yaml-schema-reference.md` for the canonical schema documentation. See `generic-flow-refactor.md` for the design doc. See apps/vada-ai/docs/vada-decisions-legacy.md D-033 and D-034.
+See `yaml-schema-reference.md` for the canonical schema documentation. See `generic-flow-refactor.md` for the design doc.
 
 ### Phase 15 — Per-vendor tool substrate (Jun 23, 2026)
 
-PR #194. `@atta/adapter-langgraph` now supports tool forwarding across all three vendor SDK shapes, not just Anthropic. Implements D-053 Option A+B.
+PR #194. `@atta/adapter-langgraph` now supports tool forwarding across all three vendor SDK shapes, not just Anthropic. Implements the Option A+B per-vendor tool substrate.
 
 **Option A — Per-vendor tool registries (tools.ts):**
 - `GOOGLE_TOOL_REGISTRY`: `web_search → { googleSearch: {} }`. Gemini grounding is a native server-side capability; no client-side handler required. `callGoogle()` updated to accept `tools?: any[]` and uses structured `generateContent({ contents, tools })` form when tools are present, simple string form otherwise (backward compat preserved).
@@ -791,9 +791,8 @@ PR #194. `@atta/adapter-langgraph` now supports tool forwarding across all three
 
 **Blast radius:** The Anthropic branch in `createMultiVendorLlmCall` is byte-identical to pre-T3. Herald's `SkepticalAuditor + fetch_github_signals` custom-tool path is unaffected. 62 tests pass (17 new), `@atta/forensic-hiring-auditor:typecheck` clean.
 
-**Deferred (Option C):** External MCP server support requires a new `mcp_servers` field in `@atta/engine` `FlowAgentSchema` — a contract change with blast radius across Vāda + Herald. Deferred to a separate task per D-053.
+**Deferred (Option C):** External MCP server support requires a new `mcp_servers` field in `@atta/engine` `FlowAgentSchema` — a contract change with blast radius across Vāda + Herald. Deferred to a separate task.
 
-See D-053 in `docs/decisions-legacy.md` for the A+B/C boundary rationale.
 
 ---
 
@@ -853,13 +852,13 @@ These were raised but not resolved. They need answers before being designed into
 Real-case Brokered terminates when the Principal says it's done, not after a fixed number of rounds. Requires engine extension. Could be: external loop control via Caller Claude (Principal continues by re-invoking) or engine-internal with a "continue?" callback.
 
 ### OQ-G: How are YAML forks named without the -vN convention?
-apps/vada-ai/docs/vada-decisions-legacy.md D-025 dropped the `-v1` suffix convention. When `crucible.yaml` needs to be iterated (after benchmark data exists), what naming scheme is used for the fork? Semantic names (`crucible-extended.yaml`)? Numeric suffixes reintroduced on first fork (`crucible-v2.yaml`)? Date-based? The answer shapes catalog readability and comparison UX.
+Vāda dropped the `-v1` suffix convention. When `crucible.yaml` needs to be iterated (after benchmark data exists), what naming scheme is used for the fork? Semantic names (`crucible-extended.yaml`)? Numeric suffixes reintroduced on first fork (`crucible-v2.yaml`)? Date-based? The answer shapes catalog readability and comparison UX.
 
 ### OQ-H (NEW May 13): Adapter refactor to new TemplateState shape
-PR #47 left the adapter on the v1 `TemplateState` shape (`outputsByRound`, `lastOutputByAgent`, etc.). The D-033 design contemplated a round-namespaced template context (`rounds.<id>.outputs`, `currentRound.prior_agents`, `revision.source_outputs`) — that refactor is future work. Currently v2 YAMLs use v1 template variable names; the adapter is unchanged. Decision needed on when (and whether) to refactor the TemplateState to match the new schema's mental model. Adjacent decision: SSE event names (`state_changed: ROUND_N` etc.) also still match v1 semantics; PR 3 (deferred) would rename to `round_started` / `round_completed` / `revision_started`.
+PR #47 left the adapter on the v1 `TemplateState` shape (`outputsByRound`, `lastOutputByAgent`, etc.). The v2 design contemplated a round-namespaced template context (`rounds.<id>.outputs`, `currentRound.prior_agents`, `revision.source_outputs`) — that refactor is future work. Currently v2 YAMLs use v1 template variable names; the adapter is unchanged. Decision needed on when (and whether) to refactor the TemplateState to match the new schema's mental model. Adjacent decision: SSE event names (`state_changed: ROUND_N` etc.) also still match v1 semantics; PR 3 (deferred) would rename to `round_started` / `round_completed` / `revision_started`.
 
 ### OQ-I (NEW May 13): Shape detection vs generic walker — keep, or revisit when the adapter is refactored?
-D-033's compromise: `compileFlow` uses shape detection (4 branches: solo, brokered ± synthesis, rounds-audit) to emit matching v1 node ids so the adapter and `resolveAuditChain` continue working. This pragmatically weakens the "engine has zero branches" architectural ideal. A future PR could rewrite `compileFlow` as a generic walker that emits round-id-namespaced node ids (e.g. `round-{id}-{agent}` instead of `reviewer-{agent}`) — but the adapter and route handler would need updating in lockstep. Decide when the adapter refactor (OQ-H) happens.
+The v2 compiler's compromise: `compileFlow` uses shape detection (4 branches: solo, brokered ± synthesis, rounds-audit) to emit matching v1 node ids so the adapter and `resolveAuditChain` continue working. This pragmatically weakens the "engine has zero branches" architectural ideal. A future PR could rewrite `compileFlow` as a generic walker that emits round-id-namespaced node ids (e.g. `round-{id}-{agent}` instead of `reviewer-{agent}`) — but the adapter and route handler would need updating in lockstep. Decide when the adapter refactor (OQ-H) happens.
 
 ---
 
@@ -901,7 +900,7 @@ All 7 initial YAMLs were named with `-v1` but none had a `-v2` comparison to jus
 `{{variable}}` placeholders in YAML `system_prompt` fields are rendered at runtime against `customVars`. This lets a single YAML express parameterizable behavior (domain, context, role) without code changes. The Domain Expert pattern — injecting `{{domain}}` into the system prompt — is the canonical use case.
 
 ### UX coherence walkthrough must precede architectural lock
-"What does the user click? What does it mean? What state do they end up in?" — should have killed the two-store sync architecture immediately if asked when the hosted MCP architecture was first locked. Cost: a sync bug surfaced within minutes of feature use, multiple review rounds, and an architectural reversal (apps/vada-ai/docs/vada-decisions-legacy.md D-028) within the same week.
+"What does the user click? What does it mean? What state do they end up in?" — should have killed the two-store sync architecture immediately if asked when the hosted MCP architecture was first locked. Cost: a sync bug surfaced within minutes of feature use, multiple review rounds, and an architectural reversal within the same week.
 
 ### SHA-256 + unique index is the right hash mechanism for high-entropy bearer tokens
 bcrypt's per-request CPU cost is unjustified when the token has 256 bits of randomness and the lookup uses an indexed unique constraint. The hosted MCP API key path uses SHA-256 hex digest with `api_keys.key_hash` unique-indexed.
@@ -910,7 +909,7 @@ bcrypt's per-request CPU cost is unjustified when the token has 256 bits of rand
 Reflexive flipping when challenged is as bad as defending a wrong choice. The right answer requires reasoning, not capitulation. Multiple challenges across the May 4 debugging marathon required pushing past the temptation to immediately reverse course.
 
 ### Pragmatic weakenings are not failures — they need to be honestly captured
-D-033's intent was "engine has zero branches on workflow type." In practice, `compileFlow` keeps 4 shape-detection branches for v1 node-id compatibility. This is a deliberate pragmatic choice (the adapter and route handler depend on the v1 ids) but it materially differs from the ideal. Capture both the ideal and the pragmatic outcome in the decision log so future contributors understand what was traded and why.
+The v2 design's intent was "engine has zero branches on workflow type." In practice, `compileFlow` keeps 4 shape-detection branches for v1 node-id compatibility. This is a deliberate pragmatic choice (the adapter and route handler depend on the v1 ids) but it materially differs from the ideal. Capture both the ideal and the pragmatic outcome in the frozen decision archive so future contributors understand what was traded and why.
 
 ### "Fix the entire stack" beats "leave it for a follow-up PR"
 PR #47 originally proposed a backwards-compat shim (`compileSpec = compileFlow`-with-aliasing) so the route handler and MCP could merge unchanged, with consumer updates deferred. The Principal rejected the shim and demanded full consumer migration in the same PR. The result was a heavier PR (60 files) but a fully consistent codebase. Half-merged refactors compound; full migrations close the loop cleanly even when large.
@@ -922,9 +921,8 @@ PR #47 originally proposed a backwards-compat shim (`compileSpec = compileFlow`-
 Core architectural documents (read these first in a new session):
 - `apps/vada-ai/specs/vada-state.md` (this document)
 - `apps/vada-ai/specs/vada-product-recognitions.md`
-- `apps/vada-ai/docs/vada-decisions-legacy.md`
 - `apps/vada-ai/specs/vada-yaml-immutability-principle.md`
-- `apps/vada-ai/specs/generic-flow-refactor.md` — D-033 design document
+- `apps/vada-ai/specs/generic-flow-refactor.md` — generic flow refactor design document
 
 Existing canonical docs:
 - `apps/vada-ai/specs/vada-product-spec.md` — full product positioning

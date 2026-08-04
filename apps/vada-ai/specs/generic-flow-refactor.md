@@ -10,25 +10,25 @@
 
 ## Implementation Status (post-merge update, May 13, 2026)
 
-D-033 is **implemented and shipped across PRs #41, #47, and #48** with the following pragmatic deviations from the original design captured here for the record.
+The generic flow refactor is **implemented and shipped across PRs #41, #47, and #48** with the following pragmatic deviations from the original design captured here for the record.
 
 ### What shipped
 
-- **PR #41** — Schema + types + validation. `Flow`, `Round`, `AgentInRound`, `OnFailureSpec` types in `packages/engine/src/flow-types.ts`. Zod schema in `flow-schema.ts`. `validateFlow` enforcing the 10 D-033 rules + 30 tests covering every rule. No engine wiring; old v1 types kept alive. Build green; runtime untouched.
+- **PR #41** — Schema + types + validation. `Flow`, `Round`, `AgentInRound`, `OnFailureSpec` types in `packages/engine/src/flow-types.ts`. Zod schema in `flow-schema.ts`. `validateFlow` enforcing the 10 v2 schema rules + 30 tests covering every rule. No engine wiring; old v1 types kept alive. Build green; runtime untouched.
 - **PR #47** — Greenfield `compileFlow` (386 lines, no v1 shims) + all 9 catalog YAMLs migrated to `schema_version: "2.0"` + deletion of `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `validate.ts`, `compile.ts`, the entire `compilers/` directory. 29 consumer files migrated (MCP servers, route handlers, UI components, verify scripts). The `Team`, `Workflow`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow` union all deleted from `types.ts`. New helper `apps/vada-ai/web/src/lib/flow-helpers.ts` (39 lines) centralises shape detection for UI consumers (`DeliberatePanel`, `TeamPicker`, `TeamSummary`, `TeamHeader`, `AgentTab`, `calculator.ts`). 67 engine tests, 33 UI tests, 21/21 typecheck pass, biome clean.
-- **PR #48** — D-034 cleanup follow-up. `buildRevisionCondition` throws on unsupported signal types (was silently coercing `equals` and `matches` to `contains`). `RevisionCondition` collapsed from 3-variant union to single-variant interface. Dead `json-field-equals` / `json-field-truthy` case blocks + orphaned `getJsonField` helper removed from adapter and graph-builder. 1 new test, 68 engine tests total.
+- **PR #48** — Cleanup follow-up. `buildRevisionCondition` throws on unsupported signal types (was silently coercing `equals` and `matches` to `contains`). `RevisionCondition` collapsed from 3-variant union to single-variant interface. Dead `json-field-equals` / `json-field-truthy` case blocks + orphaned `getJsonField` helper removed from adapter and graph-builder. 1 new test, 68 engine tests total.
 
 ### Pragmatic weakenings from the original design (honest capture)
 
 1. **Shape detection vs generic walker.** The original design called for "one engine compiler" with "zero branches on workflow type." `compileFlow` instead contains 4 shape-detection branches over `flow.rounds` topology (`solo`, `brokered-no-synth`, `brokered-synth`, `rounds-audit`) that emit matching v1 Plan node ids. The reason: the adapter, `resolveAuditChain`, the route handler, and the UI all depend on the v1 node-id conventions (`reviewer-{name}`, `brokered-synthesis`, `round-{r}-{name}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`). Rewriting all four consumers in lockstep was out of scope; PR #47 shipped the schema unification and absorbed the compromise in the compiler. Captured as OQ-I in `vada-state.md`: a future PR could rewrite `compileFlow` as a generic round-id-namespaced walker once the adapter and route handler are refactored.
 
-2. **TemplateState shape unchanged.** The original design specified a new template context with `rounds.<id>.outputs`, `currentRound.prior_agents`, `currentRound.repeat_index`, and `revision.source_round_id` / `revision.source_outputs` / `revision.index` variables. v2 YAMLs in the catalog **still use the v1 TemplateState shape** (`outputsByRound`, `lastOutputByAgent`, `conclusion`, `auditOutputs`, `isRevision`, `revisionIndex`, `participants`, `customVars.X`, `allPreviousOutputs`). The adapter was not refactored as part of D-033. Captured as OQ-H in `vada-state.md`: the new template context is a future PR paired with the OQ-I compiler refactor.
+2. **TemplateState shape unchanged.** The original design specified a new template context with `rounds.<id>.outputs`, `currentRound.prior_agents`, `currentRound.repeat_index`, and `revision.source_round_id` / `revision.source_outputs` / `revision.index` variables. v2 YAMLs in the catalog **still use the v1 TemplateState shape** (`outputsByRound`, `lastOutputByAgent`, `conclusion`, `auditOutputs`, `isRevision`, `revisionIndex`, `participants`, `customVars.X`, `allPreviousOutputs`). The adapter was not refactored as part of that migration. Captured as OQ-H in `vada-state.md`: the new template context is a future PR paired with the OQ-I compiler refactor.
 
 3. **PR 3 (MCP `agent_config` rename + new SSE events) deferred.** The original design called for renaming the MCP `reviewer_config` parameter to `agent_config` and emitting new generic SSE events (`round_started`, `round_completed`, `revision_started`) in place of the special-cased `state_changed: ROUND_N | CONCLUDING | AUDITING | REVISING` and `synthesis_complete`. PR #47 left the MCP parameter and SSE event names unchanged. The MCP contract continues to accept `reviewer_config`; the deliberation route continues to emit the v1 SSE event vocabulary. Both work correctly with v2 YAMLs — the mapping is internal. PR 3 is a separate effort that can land independently.
 
 4. **PR 4 (UI rewrite) deferred.** The original design called for replacing `RoundStrip` / `Round` / `RoundView` / `useRoundStrip` with `FlowFeed` / `RoundColumn` / `AgentGrid` / `AgentChain` / `AgentCard` / `useFlowState`. PR #47 left the existing UI components in place; the only UI work was migrating consumers of the old engine API to call `flow-helpers.detectShape` instead of inspecting workflow union members. The empty-state "Agents are getting ready…" bug (Bug #1 from the May 11 audit) is still present. PR 4 is a separate effort.
 
-5. **Synthesizer template fix landed unintentionally inside PR #47.** The v1 `vada-reviewers-synthesis.yaml` referenced `{{reviewerResponses}}` in its synthesis template — a variable the engine never populated. The synthesizer ran blind in production. PR #47 fixed this in the v2 migration: the synthesis template now uses `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`. This was not in the original D-033 design scope but was caught during the migration and fixed atomically.
+5. **Synthesizer template fix landed unintentionally inside PR #47.** The v1 `vada-reviewers-synthesis.yaml` referenced `{{reviewerResponses}}` in its synthesis template — a variable the engine never populated. The synthesizer ran blind in production. PR #47 fixed this in the v2 migration: the synthesis template now uses `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}`. This was not in the original design scope but was caught during the migration and fixed atomically.
 
 ### Decisions on the original Open Questions
 
@@ -44,7 +44,7 @@ OQ-5 (`output_format: structured` events): N/A — `synthesis_complete` SSE even
 
 OQ-6 (round display_name + description): Resolved as designed — round has required `name` (rendered in UI), optional `description` not yet implemented (no consumer needs it).
 
-OQ-7 (audit signal robustness): Resolved with D-034 nuance. Schema accepts `contains | equals | matches` for forward extensibility; compiler ships `contains` only and throws on the others.
+OQ-7 (audit signal robustness): Resolved with a nuance in the cleanup follow-up. Schema accepts `contains | equals | matches` for forward extensibility; compiler ships `contains` only and throws on the others.
 
 OQ-8 (empty rounds): Rejected at validation. Rule 9.
 
@@ -237,7 +237,7 @@ For the full YAML examples by shape, see `apps/vada-ai/specs/yaml-schema-referen
 - Replaces: `compileBrokered`, `compileRounds`, `compileSolo`, `compileCustom`. All deleted in PR #47.
 - Plan structure unchanged. The compiler walks rounds and emits nodes matching v1 ids.
 - For `on_failure: { action: 'revise', target, max_revisions }`, the compiler emits a conditional edge from the audit terminal back to the next synthesis terminal slot (or `__END__` on max). Shipped.
-- D-034 cleanup (PR #48): compiler throws on `signal.type: 'equals' | 'matches'` instead of silently coercing.
+- Cleanup (PR #48): compiler throws on `signal.type: 'equals' | 'matches'` instead of silently coercing.
 
 ### MCP server — DEFERRED (PR 3)
 
@@ -248,7 +248,7 @@ For the full YAML examples by shape, see `apps/vada-ai/specs/yaml-schema-referen
 ### Web route handler — PARTIALLY SHIPPED (PR #47)
 
 - Reads new schema via `loadFromCatalog` (delegates to `loadFlow`). Shipped.
-- Same `agentVendorOverrides` construction as today (apps/vada-ai/docs/vada-decisions-legacy.md D-032 vendor registry stays). Shipped.
+- Same `agentVendorOverrides` construction as today (the vendor registry stays). Shipped.
 - Calls `compileFlow` instead of the old per-workflow compilers. Shipped.
 - SSE event names unchanged (still v1 vocabulary). PR 3 work.
 
@@ -271,7 +271,7 @@ What did land in PR #47 for the UI: `flow-helpers.ts` (39 lines, shared shape de
 
 ### Decision log entry — SHIPPED
 
-D-033 ("Universal round-based YAML schema") is in `apps/vada-ai/docs/vada-decisions-legacy.md`. D-034 ("Signal-type rejection + RevisionCondition tighten") is the cleanup follow-up, also in `apps/vada-ai/docs/vada-decisions-legacy.md`. The global `decisions.md` does not have a corresponding entry — D-033 is Vāda-internal even though it touches multiple consumer files in the Vāda codebase. The global log only gets entries for cross-product ecosystem-level decisions (the global D-025 is the v2 naming framing, which qualifies; the engine refactor is Vāda's own concern).
+The universal round-based YAML schema and its cleanup follow-up are both Vāda-internal decisions, even though the schema touches multiple consumer files in the Vāda codebase. The global record only gets entries for cross-product ecosystem-level decisions (the v2 naming framing is the example that qualifies; the engine refactor is Vāda's own concern).
 
 ## Rollout — 4 PRs sequenced on a feature branch
 
@@ -296,7 +296,7 @@ Not yet started. The original brief is captured here for the eventual implemente
 
 Not yet started. Captures the dependency on PR 3 emitting the new events.
 
-### D-034 cleanup PR — SHIPPED (PR #48, May 13)
+### Cleanup PR — SHIPPED (PR #48, May 13)
 
 Not in the original plan; emerged during PR #47 review.
 - `buildRevisionCondition` throws explicitly on unsupported signal types
@@ -321,5 +321,5 @@ All 7 items resolved at the design review on May 12 prior to PR #41 dispatch. Ca
 3. ✅ Within-round input model confirmed (round-level default, per-agent override)
 4. ✅ OQ-1 through OQ-10 resolved
 5. ✅ Rollout sequencing confirmed (4 PRs)
-6. ✅ Docs trail confirmed (design doc + D-033 in apps/vada-ai/docs/vada-decisions-legacy.md + briefs sequenced)
+6. ✅ Docs trail confirmed (design doc + briefs sequenced)
 7. ✅ Nothing additional flagged

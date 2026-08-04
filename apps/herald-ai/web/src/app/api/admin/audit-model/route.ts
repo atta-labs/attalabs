@@ -11,7 +11,7 @@
  * see `resolveAuditSelection` — so a race between revoking a key and
  * saving cannot break an audit.)
  *
- * Task 3b. Does not change D-033 whose-key logic.
+ * Task 3b. Does not change the existing whose-key logic.
  */
 
 import { auth } from '@clerk/nextjs/server'

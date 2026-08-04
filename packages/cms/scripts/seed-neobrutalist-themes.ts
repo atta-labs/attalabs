@@ -1,5 +1,5 @@
 /**
- * Seed the two neobrutalist-ready themes into the central Attalabs dataset (D-131).
+ * Seed the two neobrutalist-ready themes into the central Attalabs dataset.
  *
  * These were authored live in Sanity during `refactor/ui-theme-token-roles`, which
  * meant the values existed only in a published document and in that PR's body —

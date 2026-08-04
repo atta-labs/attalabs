@@ -3,7 +3,7 @@ export * from './errors'
 export { deriveTemplateState } from './derive'
 export { validateTemplate } from './validate-template'
 export { loadYamlFromCatalog, listPublicSpecs } from './catalog-loader'
-// D-033 PR 2: universal round-based schema + compiler
+// Generic flow refactor PR 2: universal round-based schema + compiler
 export { loadFlow } from './flow-loader'
 export { compileFlow } from './compile-flow'
 export type {

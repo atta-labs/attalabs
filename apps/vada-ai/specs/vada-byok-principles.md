@@ -1,7 +1,7 @@
 # Vāda · BYOK Architecture (Current State)
 
 **Status:** ratified
-**Last major change:** May 4, 2026 — single-source-keys reversal (D-028) and hosted MCP shipped (D-029). See `apps/vada-ai/docs/vada-decisions-legacy.md` for the architectural decision history.
+**Last major change:** May 4, 2026 — single-source-keys reversal and hosted MCP shipped. See `apps/vada-ai/docs/vada-decisions-legacy.md` for the architectural decision history.
 
 This document describes how BYOK actually works in Vāda today.
 
@@ -11,7 +11,7 @@ This document describes how BYOK actually works in Vāda today.
 
 Before May 4, 2026, Vāda used a transit-mode model: provider API keys were encrypted in your browser via a passkey-derived AES-256-GCM key (stored in IndexedDB), and transited Vāda's server in cleartext request bodies during deliberation runs. The server held them only in memory for the duration of a single request. This model gave a strong "no key at rest on our servers" story but constrained Vāda to web-app-only deliberation — an MCP client running on Claude Desktop or Cursor cannot reach a user's browser IndexedDB or passkey.
 
-On May 4, 2026, the hosted MCP server shipped (D-029), which required server-side decryptable provider keys to call provider APIs on the user's behalf. A brief intermediate architecture (PRs #9-10) tried to maintain both stores with synchronization, but the UX implications — especially the lock-icon "Sign out / Forget device" affordances on the deliberate page that no longer reflected reality once the server held a copy of every key — surfaced a sync bug within minutes of feature use. PR #13 (single-source-keys reversal) demoted IndexedDB from canonical key storage and made server-side `user_provider_keys` the single source of truth.
+On May 4, 2026, the hosted MCP server shipped, which required server-side decryptable provider keys to call provider APIs on the user's behalf. A brief intermediate architecture (PRs #9-10) tried to maintain both stores with synchronization, but the UX implications — especially the lock-icon "Sign out / Forget device" affordances on the deliberate page that no longer reflected reality once the server held a copy of every key — surfaced a sync bug within minutes of feature use. PR #13 (single-source-keys reversal) demoted IndexedDB from canonical key storage and made server-side `user_provider_keys` the single source of truth.
 
 The current model is **server-side at rest, decrypted per-request**: provider keys are envelope-encrypted in `user_provider_keys`, decrypted only inside the API route handler for the duration of the LLM call, then garbage-collected. This is a deliberate trust escalation from the prior model — Vāda's server holds an encrypted copy of your keys it can decrypt — and is documented honestly here rather than papered over.
 
@@ -29,14 +29,14 @@ When you run a deliberation — whether through the web app or through hosted MC
 
 ### At rest (Vāda's database)
 
-- **Table:** `user_provider_keys` (defined in `packages/db/src/schema/keys.ts`, ecosystem-shared per D-030)
+- **Table:** `user_provider_keys` (defined in `packages/db/src/schema/keys.ts`, ecosystem-shared)
 - **One row per user.** All provider keys are bundled in a single AES-256-GCM encrypted JSONB payload.
 - **Columns:** `id`, `clerk_id`, `encrypted_payload` (JSONB), `created_at`, `updated_at`.
 - **Encryption:** AES-256-GCM applied to a JSONB payload containing all provider keys. The master key comes from the `MASTER_ENCRYPTION_KEY` env var; AAD on each ciphertext is the user's `clerkId`. Implementation in `packages/crypto/`.
 
 ### Storage schema (api_keys — for hosted MCP authentication)
 
-Separate from provider keys. The `api_keys` table holds Vāda API keys (`vada_*`) used as bearer tokens by MCP clients. Stored as SHA-256 hex digests with a unique index on `key_hash` — direct lookup, no bcrypt. Plaintext is shown once at creation and not recoverable. See D-029 for the full hosted MCP authentication architecture.
+Separate from provider keys. The `api_keys` table holds Vāda API keys (`vada_*`) used as bearer tokens by MCP clients. Stored as SHA-256 hex digests with a unique index on `key_hash` — direct lookup, no bcrypt. Plaintext is shown once at creation and not recoverable.
 
 ### In transit and in request memory
 
@@ -99,7 +99,7 @@ This is a **deliberate trust escalation** compared to the pre-May-4 architecture
 - Conclusions (recommendation, key condition, unresolved points)
 - Terminal state per deliberation (Clean / Revised / Unconverged)
 - User account metadata via Clerk (Clerk ID, email, etc.)
-- Model assignments per agent role (in localStorage; no longer DB-backed per D-027)
+- Model assignments per agent role (in localStorage; no longer DB-backed)
 - Vāda API keys for hosted MCP — SHA-256 hashed (`api_keys` table)
 - Session logs from hosted MCP invocations (`mcp_sessions` table)
 
@@ -142,9 +142,8 @@ These are V2 work, not V1 commitments.
 
 ## Related documents
 
-- `apps/vada-ai/docs/vada-decisions-legacy.md` — D-028 (single-source-keys reversal), D-029 (hosted MCP architecture), D-030 (shared `@atta/ui/account` + ecosystem-shared schemas)
 - `mcp-architecture.md` — full hosted MCP architecture spec
-- `vada-byok-gap-report.md` — historical gap analysis from April 30; mostly superseded by D-028
+- `vada-byok-gap-report.md` — historical gap analysis from April 30; mostly superseded by the single-source-keys reversal
 - `.claude/skills/auth/SKILL.md` — Clerk auth model
 - `.claude/skills/database/SKILL.md` — Drizzle patterns + ecosystem-shared tables
 - `.claude/skills/vada-mcp-server/SKILL.md` — MCP server (both surfaces) implementation guide

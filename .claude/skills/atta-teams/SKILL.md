@@ -12,7 +12,7 @@ Deliberation content is split across two concerns:
 - **YAML spec files** (`packages/agents/vada-deliberation/yamls/`) — deliberation configs that define agents and workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files. Agent system prompts, tool configs, and flow structure are all in YAML.
 - **Agent visuals** (`apps/vada-ai/web/src/components/agents/visuals/`) — display-only metadata for web UI rendering (colors, face indices, display names). No runtime deliberation logic. Used only by the web app.
 
-No runtime logic lives in either location. YAML specs compose agents into deliberations; visuals directory provides UI-only rendering config.
+No runtime logic lives in either location.
 
 `@vada/teams` is **deleted**. Do not reference or import it.
 `@vada/agents` / `@vada/agent-metadata` are **deleted**. Do not reference or import them. See [apps/vada-ai/web/src/components/agents/visuals/](../apps/vada-ai/web/src/components/agents/visuals/) for web-only display types.
@@ -33,7 +33,7 @@ packages/agents/vada-deliberation/yamls/
 ├── a1-baseline.yaml               # Single-agent structured-output baseline
 ├── brokered-trio.yaml             # 3 reviewers, no rounds (Strategist + Critic + Devil's Advocate)
 ├── brokered-quartet.yaml          # 4 reviewers, no rounds (experimental)
-└── vada-fusion-native.yaml        # Outside Read — 4-agent attack-vector panel → battlefield-map synthesizer → audit (D-036)
+└── vada-fusion-native.yaml        # Outside Read — 4-agent attack-vector panel → battlefield-map synthesizer → audit
 ```
 
 ---
@@ -248,7 +248,7 @@ For use with `vada__consult` (Brokered mode):
 
 ## Adding a New Team (YAML spec)
 
-1. Create `packages/agents/vada-deliberation/yamls/<team-name>.yaml` (no `-v1` suffix — see D-025)
+1. Create `packages/agents/vada-deliberation/yamls/<team-name>.yaml` (no `-v1` suffix)
 2. Define agents inline in the YAML
 3. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 4. Add to ALIASES map only if a short-name is needed for MCP UX
@@ -293,7 +293,7 @@ Crucible (4-7 agents) is no longer the default team — Sparring (2 agents) is. 
 - ❌ `tools: undefined` in YAML (use `[]` for explicit none)
 - ❌ Making Crucible the default again without Round 24+ evidence
 - ❌ Agent name mismatch between YAML flow references and agent definition
-- ❌ Adding `-v1` suffix to new YAML filenames before a fork exists (see D-025)
+- ❌ Adding `-v1` suffix to new YAML filenames before a fork exists
 
 ---
 

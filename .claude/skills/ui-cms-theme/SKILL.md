@@ -39,13 +39,13 @@ Sanity CMS
 @atta/ui package
 ├── lib/next-web-shell.tsx         # Root provider: reads cookie + config → injects CSS + fonts
 ├── lib/theme-context.tsx          # ThemeContext — exposes { theme, styleId } to client components
-├── lib/color-scheme.ts            # Shared cookie/attribute/default contract
+├── lib/color-scheme.ts            # Shared cookie/attribute/default contract, resolveColorScheme()
 └── lib/color-scheme-toggle.tsx    # Client toggle — swaps style tag content + flips <html data-theme>
 ```
 
 ---
 
-### Colour-group fields that are not surfaces (D-131)
+### Colour-group fields that are not surfaces
 
 Three fields in the `light`/`dark` colour groups do not name a surface or an ink. They
 exist because the vendored neobrutalist components reference them and the theme system
@@ -62,7 +62,7 @@ previously could not express them:
 `retro` and `brutal` draw a hard border AND a hard offset shadow on every surface.
 A theme tuned for the soft libraries typically ships a border at 0.14–0.20 alpha —
 fine under `basic`/`animate`, effectively **frameless** under a neobrutalist one,
-where the border IS the design. Before D-131 this was masked: `globals.css` forced
+where the border IS the design. This used to be masked: `globals.css` forced
 `--border: var(--foreground)` for those two libraries, overriding whatever border a
 theme defined.
 
@@ -96,7 +96,7 @@ differently in each. Do not "fix" `addShadowVars` to duplicate the ramp.
 ## Product Config Queries
 
 Each product has a dedicated config document in Sanity. One generic query family reads
-them all, keyed by `ProductKey` (D-125) — there are no per-product query functions:
+them all, keyed by `ProductKey` — there are no per-product query functions:
 
 ```ts
 import { getProductCms, getProductConfig, getProductBranding } from '@atta/cms'
@@ -112,14 +112,14 @@ const branding = await getProductBranding('vada')
 The product key resolves everything: the Sanity project (from `PROJECT_IDS`), the config
 document (`${key}Config`), and the branding document (`branding-${key}`). Nothing comes
 from the environment — a project ID is public and identical in every environment, so it
-lives in code (D-125). Pass the key of the product whose *content* you want: a consumer
+lives in code. Pass the key of the product whose *content* you want: a consumer
 that deliberately borrows another product's identity passes that product's key, and the
 call site says so out loud.
 
 `getProductCms` is the root-layout entry point. It fetches both documents in parallel and
 owns the graceful-degradation policy — on failure it returns `null` for that document, and
 logs the reason outside production. Do not wrap it in `.catch(() => null)`; that is what
-made a broken config indistinguishable from an unconfigured one (D-125).
+made a broken config indistinguishable from an unconfigured one.
 
 The `PortalUiConfig` shape (same for all products):
 
@@ -139,6 +139,48 @@ interface PortalUiConfig {
 ## Theme CSS Generation
 
 Colors from Sanity are stored as plain hex or oklch strings. `NextWebShell` emits **only the active scheme** as plain `:root {}` via `generateThemeCSSForScheme`. The `ColorSchemeToggle` swaps the style tag content on flip — no CSS attribute selectors needed, no specificity battles.
+
+### Theme values are guarded at the sink, not at each write path
+
+Both generators build declarations by string interpolation, and `NextWebShell` renders the
+result through `dangerouslySetInnerHTML`, which React does not escape. A theme value that
+contains `</style>`, a `;`, or a `}` would therefore escape its declaration and inject
+arbitrary CSS into **every product bound to that theme**.
+
+`utils/css-safety.ts` closes that at the point every feeder converges: `toCssDeclarations`
+drops any variable whose name or value could break out, and both generators route through
+it. The property *name* is guarded as well as the value, because `transformColorGroup`
+falls back to the raw Sanity field name for fields absent from `FIELD_TO_CSS_VAR`, and
+Sanity's HTTP API accepts fields the Studio schema never declared.
+
+**The sink is the right place for this and a write path is not.** Theme documents are
+authored through the central studio by hand — a documented route with no application code
+in front of it — so per-writer validation can never cover them all. One feeder is
+genuinely user-supplied: Herald's public profile page splices a visitor-settable
+`user.fontSans` into theme typography and renders it on an unauthenticated page. Setting
+fonts per user is a product requirement, so that feeder stays; the guard is what makes it
+safe. Anything added to `theme.ts` that emits a declaration must go through
+`toCssDeclarations` rather than interpolating values itself.
+
+The guard also rejects the remote-fetch functions (`url()`, `image-set()`, `src()`). A
+custom property is inert until referenced, but `globals.css` sets
+`html { background: var(--background) }` — the shorthand, which accepts an image — so a
+theme colour of `url(https://…)` becomes an outbound request on every SSR page bound to
+that theme, leaking visitor IP and referer with no script involved. Unbalanced parentheses
+and quotes are rejected for a different reason: either one runs to the end of the
+stylesheet and voids every declaration after it.
+
+**A theme document holds token values, never rules.** The `shadows` group is a ramp of
+offsets and blur; the colour groups are colours. A field that closes its declaration and
+writes selectors of its own is using the injection vector as a feature, and this guard
+drops it. If a hover state or any other rule needs to change per theme, it belongs in
+`globals.css` or the component library, expressed against a token the theme *does* define.
+
+A dropped variable falls back to the compiled default in `globals.css`. Every value in
+every shipped theme passes the guard, and `theme-corpus.fixture.json` pins that: all 853
+distinct values that reach a CSS declaration across all 19 theme documents, with the test
+suite asserting none is rejected. Assert against the whole corpus rather than a hand-picked
+sample — the sample is what misses the one value that matters.
 
 ```ts
 import { generateThemeCSSForScheme } from '@atta/cms'
@@ -196,6 +238,16 @@ import { loadThemeFonts } from '@atta/cms'
 loadThemeFonts(newTheme.typography)
 ```
 
+### Authoring the three font roles
+
+All three `typography` font roles — sans, serif, mono — can also be authored from the
+admin's theme browse surface, against a live preview, alongside the theme document's other
+hand-edit paths (the central studio, and the admin's own theme editor). Because `typography`
+lives on the shared `uiTheme` document, a font chosen there is a property of that
+**theme**, not of the product used to preview it — every product bound to that theme picks
+up the change. This is the same shared-document trade the rest of this file's "What You
+Configure Where" section describes for colors and spacing; fonts are not a special case.
+
 ---
 
 ## SSR Theme Loading — How It Works
@@ -251,16 +303,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 
-**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vinaya-theme` (`vitakka-theme` remains in use too — the shelved Vitakka scaffold keeps its own `styleId` even though it now borrows Atta's CMS config).
+**`styleId` must be unique per product** — it identifies the injected `<style>` tag. Use `herald-theme`, `vada-theme`, `atta-theme`, `vinaya-theme`.
 
 `NextWebShell` handles in order:
 1. Reads `cmsScheme` and `libraryId` from config
-2. Reads `atta-color-scheme` cookie via `next/headers`; resolves final scheme as `cookie → CMS → 'dark'`
-3. Calls `generateThemeCSSForScheme(theme, colorScheme)` → injects `<style id={styleId}>` with the **active scheme only** as plain `:root {}`
-4. Stamps `<html data-theme={resolvedScheme}>` (used by Tailwind `dark:` variant and neobrutalist border override)
-5. Calls `getGoogleFontsUrl` → injects `<link rel="preconnect">` + `<link rel="stylesheet">` for fonts
-6. Builds Clerk appearance object from the *resolved* scheme's color tokens
-7. Wraps children: `ThemeProvider` → `AuthProvider` → `LibraryProvider` → `ToastProvider`
+2. Resolves and injects theme CSS + fonts (see "SSR Theme Loading" above for the exact cookie → CMS → `'dark'` sequence)
+3. Stamps `<html data-theme={resolvedScheme}>` (used by Tailwind `dark:` variant and neobrutalist border override)
+4. Builds Clerk appearance object from the *resolved* scheme's color tokens
+5. Wraps children: `ThemeProvider` → `AuthProvider` → `LibraryProvider` → `ToastProvider`
 
 **When `config` is `null`** (CMS unreachable or not yet configured): no theme CSS is injected, no fonts are loaded, the base `globals.css` defaults apply. The app still renders.
 
@@ -268,21 +318,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 ## Color Scheme Toggle (Light / Dark)
 
-Visitors can flip between the theme's light and dark color schemes at runtime. The mechanism is cookie-driven so the next SSR render agrees with the user's choice — no FOUC.
-
-### Architecture
-
-```
-packages/ui/lib/
-├── color-scheme.ts            # Shared contract: cookie name, type, default, resolveColorScheme()
-├── theme-context.tsx          # ThemeContext — { theme, styleId } for client consumption
-├── color-scheme-toggle.tsx    # 'use client' — swaps style tag content + flips <html data-theme>
-└── next-web-shell.tsx         # Server — reads cookie, resolves scheme, injects single-scheme CSS
-```
+Visitors can flip between the theme's light and dark color schemes at runtime. The mechanism is cookie-driven so the next SSR render agrees with the user's choice — no FOUC. (File map: see the `@atta/ui package` tree under Architecture above.)
 
 ### How it works
 
-- **SSR (`NextWebShell`):** reads `atta-color-scheme` cookie via `next/headers`, resolves `cookie → CMS default → 'dark'`, emits the **active scheme only** as plain `:root {}` via `generateThemeCSSForScheme`, stamps `<html data-theme="...">`. Wraps children with `ThemeProvider` so the toggle can find the theme client-side.
+- **SSR (`NextWebShell`):** see "SSR Theme Loading" above for the full sequence. Wraps children with `ThemeProvider` so the toggle can find the theme client-side.
 - **Client (`ColorSchemeToggle`):** reads `theme` and `styleId` from `ThemeContext`. On click: (1) finds `<style id={styleId}>` and replaces `textContent` with `generateThemeCSSForScheme(theme, next)`, (2) flips `<html data-theme>`, (3) writes the cookie. Pure client side — no router refresh, instant repaint with zero FOUC.
 - **Tailwind `dark:` variant:** `globals.css` declares `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *))` so `dark:` utilities follow the attribute (not `prefers-color-scheme`).
 
@@ -330,9 +370,9 @@ In components, use `--agent-color` via the `data-agent` attribute — never hard
 
 - **MUST** use `NextWebShell` at every product's root layout — never replicate it manually
 - **MUST** use `getProductCms`/`getProductConfig`/`getProductBranding` from `@atta/cms` — never call the Sanity client directly in app code
-- **MUST NOT** resolve a Sanity project from an env var, or reintroduce an ambient read client — the project comes from the product key via `PROJECT_IDS` (D-125)
-- **MUST NOT** wrap `getProductCms` in `.catch(() => null)` — it already degrades gracefully and logs the reason in dev; re-swallowing restores the silent failure D-125 closed
-- **MUST** call `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` (or any other by-ID/by-name `uiTheme`/`library` lookup) with `createProductClient('attalabs')`, never a product's own client (D-114 — see "Any by-ID/by-name theme lookup must target the central project" below)
+- **MUST NOT** resolve a Sanity project from an env var, or reintroduce an ambient read client — the project comes from the product key via `PROJECT_IDS`
+- **MUST NOT** wrap `getProductCms` in `.catch(() => null)` — it already degrades gracefully and logs the reason in dev; re-swallowing restores the silent failure this design already closed
+- **MUST** call `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` (or any other by-ID/by-name `uiTheme`/`library` lookup) with `createProductClient('attalabs')`, never a product's own client (see "Any by-ID/by-name theme lookup must target the central project" below)
 - **MUST** inject font URLs from `getGoogleFontsUrl` — never hardcode Google Fonts URLs
 - **MUST NOT** add product-specific CSS variable definitions outside `globals.css` or the CMS theme system
 - **MUST NOT** override `--font-sans`, `--font-serif`, `--font-mono` in component CSS — let the theme own fonts
@@ -351,9 +391,9 @@ Each product has its own Sanity Studio deployment, managed from `packages/cms`. 
 # From packages/cms/ or via turbo from root
 
 bun run studio              # Herald studio — port 3333 (default)
-bun run studio:atta         # Atta studio — port 3334
 bun run studio:vada         # Vada studio — port 3335
 bun run studio:vinaya       # Vinaya studio — port 3336
+bun run studio:attalabs     # AttalLabs studio — port 3337
 ```
 
 The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is loaded. The `studio:*` scripts set this automatically.
@@ -362,15 +402,15 @@ The `SANITY_STUDIO_PRODUCT` env var controls which product's schema/config is lo
 
 ```bash
 bun run studio:deploy           # Deploy Herald studio
-bun run studio:deploy:atta      # Deploy Atta studio
 bun run studio:deploy:vada      # Deploy Vada studio
 bun run studio:deploy:vinaya    # Deploy Vinaya studio
+bun run studio:deploy:attalabs  # Deploy AttalLabs studio
 bun run studio:deploy:all       # Deploy all four (sequential, prompts y/n)
 ```
 
 ### What You Configure Where
 
-Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vinaya, Herald, Attā).
+Per Cross-Product Theme Centralization under Attalabs (2026-06-25), theme and library *documents* are no longer per-product. They are stored and managed exclusively in the central Attalabs Sanity project, and the Themes/Libraries sections are hidden from the other product studios' sidebars (Vāda, Vinaya, Herald, Attā).
 
 | Document Type | Where it's edited | Purpose |
 |--------------|--------------------|---------|
@@ -380,13 +420,13 @@ Per **D-060** (Cross-Product Theme Centralization under Attalabs, 2026-06-25), t
 
 At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.ts`) resolves this across the two projects: it fetches the `{product}Config` singleton from the product's own project, then resolves the referenced `uiTheme`/`library` IDs against the central `attalabs` project client (`createProductClient('attalabs', ...)`).
 
-**To change a product's theme or library document (colors, typography, etc.):** Open the **central Attalabs studio** (`attalabs.sanity.studio`, project `l5n0n8nn`) → find the `uiTheme` or `library` document → edit it → publish. These sections are hidden in the per-product studios per D-060 — they are not edited there.
+**To change a product's theme or library document (colors, typography, etc.):** Open the **central Attalabs studio** (`attalabs.sanity.studio`, project `l5n0n8nn`) → find the `uiTheme` or `library` document → edit it → publish. These sections are hidden in the per-product studios — they are not edited there.
 
 **To point a product at a different (existing) theme or library:** Open the **relevant product studio** → find the `{product}Config` singleton → change the linked theme or library reference → publish. The change takes effect on the next server render (or after revalidation).
 
-### Any by-ID/by-name theme lookup must target the central project (D-114)
+### Any by-ID/by-name theme lookup must target the central project
 
-`getProductUiConfig` is not the only place that fetches a `uiTheme`/`library` document — anything that looks one up **by ID or by name**, such as a per-user custom-theme feature (e.g. Herald's public-profile theme picker, `packages/cms/src/queries/theme.ts`'s `getThemeById`/`getThemeByName`/`getThemes`), must do the same central-project redirection. These lower-level query functions take a generic `SanityClient` parameter and perform **no redirection themselves** — passing them a product's own client (`createProductClient('herald')`) will silently find nothing and return `null` post-D-060, since `uiTheme`/`library` documents no longer exist in any per-product project.
+`getProductUiConfig` is not the only place that fetches a `uiTheme`/`library` document — anything that looks one up **by ID or by name**, such as a per-user custom-theme feature (e.g. Herald's public-profile theme picker, `packages/cms/src/queries/theme.ts`'s `getThemeById`/`getThemeByName`/`getThemes`), must do the same central-project redirection. These lower-level query functions take a generic `SanityClient` parameter and perform **no redirection themselves** — passing them a product's own client (`createProductClient('herald')`) will silently find nothing and return `null`, since `uiTheme`/`library` documents no longer exist in any per-product project.
 
 ```ts
 import { createProductClient, getThemeById } from '@atta/cms'
@@ -394,11 +434,11 @@ import { createProductClient, getThemeById } from '@atta/cms'
 // ✅ Correct — central project, matches where uiTheme documents actually live
 const theme = await getThemeById(createProductClient('attalabs'), themeId)
 
-// ❌ Wrong — silently returns null for any themeId created after D-060
+// ❌ Wrong — silently returns null for any themeId created after theme centralization
 const theme = await getThemeById(createProductClient('herald'), themeId)
 ```
 
-This exact mistake shipped in Herald (D-114): a per-user profile theme was saved correctly but the public-page render resolved it against Herald's own project and always got `null`, so the saved theme silently never appeared. The write path, the DB column, and cache revalidation were all correct — only this one client was wrong. If you add per-user or per-entity theme customization to any other product, use `createProductClient('attalabs')` for every `uiTheme`/`library` lookup, not just the product-config resolver.
+This exact mistake shipped in Herald: a per-user profile theme was saved correctly but the public-page render resolved it against Herald's own project and always got `null`, so the saved theme silently never appeared. The write path, the DB column, and cache revalidation were all correct — only this one client was wrong. If you add per-user or per-entity theme customization to any other product, use `createProductClient('attalabs')` for every `uiTheme`/`library` lookup, not just the product-config resolver.
 
 ---
 
@@ -412,20 +452,17 @@ This exact mistake shipped in Herald (D-114): a per-user profile theme was saved
 3. Call `getProductCms('{product}')` in the product's `layout.tsx` and pass the result to
    `NextWebShell` with a unique `styleId`
 
-No new query function is needed — that was the old per-product pattern, deleted in D-125.
+No new query function is needed — that was the old per-product pattern, since deleted.
 
 ---
 
 ## Anti-patterns
 
-- ❌ Hardcoded Google Fonts `<link>` in layout — use `getGoogleFontsUrl(theme.typography)`
-- ❌ Raw Sanity client calls in app code — use typed query functions from `@atta/cms`
 - ❌ Hex colors in component CSS or JSX — all colors via CSS variables
 - ❌ `next/font/google` with hardcoded font names — fonts come from CMS theme
-- ❌ Different theme CSS per-component — theme is global, injected once at root by `NextWebShell`
-- ❌ Calling `generateThemeCSS` (or `generateThemeCSSForScheme`) inside a component — theme CSS is injected once at root layout by `NextWebShell`
+- ❌ Calling `generateThemeCSS`/`generateThemeCSSForScheme` per-component, or otherwise varying theme CSS per-component — theme is global, injected once at root by `NextWebShell`
 - ❌ Duplicating `AuthProvider` or `LibraryProvider` inside `NextWebShell` children
 - ❌ Hand-rolling a color-scheme toggle — use `<ColorSchemeToggle />` from `@atta/ui/lib/color-scheme-toggle`
-- ❌ Passing a product's own client to `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` — these take a generic `SanityClient` and do no central-project redirection themselves; always pass `createProductClient('attalabs')` (D-114)
-- ❌ Reading `SANITY_PROJECT_ID` (or `NEXT_PUBLIC_SANITY_PROJECT_ID`) anywhere in app or package code — the project is resolved from the product key (D-125)
+- ❌ Passing a product's own client to `getThemeById`/`getThemeByName`/`getThemes`/`getLibraries` — these take a generic `SanityClient` and do no central-project redirection themselves; always pass `createProductClient('attalabs')`
+- ❌ Reading `SANITY_PROJECT_ID` (or `NEXT_PUBLIC_SANITY_PROJECT_ID`) anywhere in app or package code — the project is resolved from the product key
 - ❌ Reading the `atta-color-scheme` cookie directly anywhere except `NextWebShell` — keep the SSR resolution single-source

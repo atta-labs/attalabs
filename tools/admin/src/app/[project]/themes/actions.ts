@@ -77,6 +77,39 @@ export async function deleteThemeAction(_project: ProjectKey, id: string): Promi
   }
 }
 
+const FONT_STACK_SUFFIX = {
+  fontSans: 'sans-serif',
+  fontSerif: 'serif',
+  fontMono: 'monospace'
+} as const
+
+/** Google Fonts family names are alphanumerics, spaces, underscores and hyphens. */
+const FONT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 _-]{0,63}$/
+
+export async function setThemeFontsAction(
+  _project: ProjectKey,
+  id: string,
+  fonts: Partial<Record<keyof typeof FONT_STACK_SUFFIX, string>>
+): Promise<CmsWriteResult> {
+  const patch: Record<string, string> = {}
+  for (const role of Object.keys(FONT_STACK_SUFFIX) as (keyof typeof FONT_STACK_SUFFIX)[]) {
+    const name = fonts[role]
+    if (!name) continue
+    if (!FONT_NAME_PATTERN.test(name)) {
+      return { ok: false, message: `"${name}" isn't a valid font name for ${role}.` }
+    }
+    patch[`typography.${role}`] = `${name}, ${FONT_STACK_SUFFIX[role]}`
+  }
+  if (Object.keys(patch).length === 0) return { ok: true }
+  try {
+    const { writeClient } = getCmsClientsForProject('attalabs')
+    await writeClient.patch(id).set(patch).commit()
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, message: describeCmsWriteError(error, 'attalabs', 'save the theme fonts') }
+  }
+}
+
 export async function setActiveThemeAction(
   project: ProjectKey,
   id: string,

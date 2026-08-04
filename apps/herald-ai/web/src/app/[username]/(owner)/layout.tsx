@@ -30,7 +30,7 @@ export default async function OwnerLayout({
   // routes do not leak the existence of someone else's editor.
   if (user.username !== segment) notFound()
 
-  // D-035 (Lock: YES): owner /ui + /settings render the BUILD-TIME library —
+  // (Lock: YES): owner /ui + /settings render the BUILD-TIME library —
   // never the visitor's profile library. Mirrors app/(app)/layout.tsx so
   // crossing the two paths stays impossible-by-construction.
   const config = await getProductConfig('herald').catch(() => null)

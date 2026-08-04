@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server'
 
 import { perIpAuditLimiter } from '@/lib/rate-limit'
 
-// D-060: `/ui` and `/settings` moved under `/[username]/(owner)/`. The owner
+// `/ui` and `/settings` moved under `/[username]/(owner)/`. The owner
 // layout server-component handles auth + ownership (redirects anonymous to
 // /sign-in, 404s non-owners). Keeping middleware matchers only for top-level
 // authenticated app routes; per-segment owner gating belongs in the layout.
 const isProtectedRoute = createRouteMatcher(['/bulk-audit(.*)', '/onboarding'])
 
 export default clerkMiddleware(async (auth, req) => {
-  // Per-IP rate limit on POST /api/audit. The per-owner limit (D-033 abuse
+  // Per-IP rate limit on POST /api/audit. The per-owner limit (abuse
   // hole) runs inside the route handler, where the owner's clerkId is
   // resolvable — middleware can't do that lookup.
   if (req.method === 'POST' && req.nextUrl.pathname === '/api/audit') {

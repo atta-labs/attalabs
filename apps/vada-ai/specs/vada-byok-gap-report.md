@@ -11,12 +11,12 @@ Status: retired
 
 ## Resolution status (May 6, 2026)
 
-- **Gap 1 (server-side key transit):** Closed by single-source-keys reversal (D-028, May 4). The Path A vs Path B framework no longer applies — Vāda did not move to browser-direct calls (Path A), nor did it harden transit-mode (Path B). Instead: keys are now server-side encrypted at rest, decrypted only inside request handlers (Path C, not enumerated in report). This was driven by the requirement to ship hosted MCP (D-029) which mandates server-decryptable keys.
+- **Gap 1 (server-side key transit):** Closed by the single-source-keys reversal (May 4). The Path A vs Path B framework no longer applies — Vāda did not move to browser-direct calls (Path A), nor did it harden transit-mode (Path B). Instead: keys are now server-side encrypted at rest, decrypted only inside request handlers (Path C, not enumerated in report). This was driven by the requirement to ship hosted MCP, which mandates server-decryptable keys.
 - **Gap 2 (multi-vendor adapter):** Closed May 1, 2026. `packages/adapter-langgraph/src/llm.ts` now routes by model prefix (claude-* → Anthropic, gemini-* → Google, gpt-*/o4-* → OpenAI, grok-* → xAI) using per-vendor official SDKs.
-- **Gap 3 (implementation hygiene in `@atta/identity`):** Mostly moot. The package is preserved (per D-028) but no longer holds canonical provider keys. Hygiene items 3a-3e described in this report were specific to the IndexedDB-as-canonical-store architecture; with that role demoted, the issues no longer apply in their original form. If the surviving utilities (`probeProviderKey`, `fetchInstalledOllamaModels`, `MigrationPrompt`) develop new hygiene needs, they can be addressed individually.
+- **Gap 3 (implementation hygiene in `@atta/identity`):** Mostly moot. The package is preserved but no longer holds canonical provider keys. Hygiene items 3a-3e described in this report were specific to the IndexedDB-as-canonical-store architecture; with that role demoted, the issues no longer apply in their original form. If the surviving utilities (`probeProviderKey`, `fetchInstalledOllamaModels`, `MigrationPrompt`) develop new hygiene needs, they can be addressed individually.
 - **Gap 4 (`packages/identity/src/invoke.ts` dead code):** No longer relevant in the form described. The "browser-direct V2" path the file was a seed for is no longer the design direction — V2 hardening directions are different (KMS migration, audit log, per-key scoping). The file's status now is: review at convenience, delete or document per current relevance.
 
-The rest of this document is preserved as-is for historical context. **Do not treat its recommendations as current.** Current architecture is documented in `vada-byok-principles.md` (rewritten May 6, 2026) and the relevant decision log entries (D-028, D-029, D-030 in `apps/vada-ai/docs/vada-decisions-legacy.md`).
+The rest of this document is preserved as-is for historical context. **Do not treat its recommendations as current.** Current architecture is documented in `vada-byok-principles.md` (rewritten May 6, 2026) and the relevant archived-decision records.
 
 ---
 

@@ -41,7 +41,6 @@
 # To un-exempt a surface, remove its no-doc line and add a real binding.
 #
 # no-doc: packages/typescript-config/** — pure config package; no behavior docs needed
-# no-doc: apps/vitakka-ai/** — scaffold only (no implementation surface yet)
 # no-doc: packages/instrumentation/** — dev-ergonomics utility (browser-extension error
 #   filter, ~85 lines); no product behavior to document. Flagged for Planner: no owning
 #   skill exists (aeg-governance-hardening task 3, 2026-07-02).
@@ -86,7 +85,6 @@ packages/adapter-langgraph/**                         .claude/skills/atta-adapte
 packages/ui/canvas/**                                 .claude/skills/ui-canvas-animation/SKILL.md
 packages/ui/styles/**                                 .claude/skills/ui-theme-tokens/SKILL.md
 
-apps/atta-ai/**                                       apps/atta-ai/CLAUDE.md
 apps/attalabs/**                                      apps/attalabs/CLAUDE.md
 apps/vada-ai/mcp-server/**                            .claude/skills/vada-mcp-server/SKILL.md
 apps/vada-ai/mcp-server/src/spec-registry.ts          .claude/skills/vada-yaml-authoring/SKILL.md

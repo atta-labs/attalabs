@@ -139,7 +139,7 @@ Locked May 12, 2026. All product brands are bare: **Atta, Vāda, Vitakka, Sati, 
 
 ### Naming aesthetic — Pāli is preferred inside Atta, elective elsewhere
 
-Locked May 12, 2026. Inside Atta, Pāli names are mandatory (Atta, Vāda, Vitakka, Sati). Inside AttaLabs more broadly, Pāli is common but elective (Cetana is Pāli by preference; Herald is English by fit). Pāli is no longer a *signal of ownership* — it's a *naming preference*. Canonical detail: `apps/atta-ai/specs/atta-naming-decision.md`.
+Locked May 12, 2026. Inside Atta, Pāli names are mandatory (Atta, Vāda, Vitakka, Sati). Inside AttaLabs more broadly, Pāli is common but elective (Cetana is Pāli by preference; Herald is English by fit). Pāli is no longer a *signal of ownership* — it's a *naming preference*. Canonical detail: root `CLAUDE.md`'s naming bullets.
 
 ---
 

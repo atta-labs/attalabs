@@ -1,2 +1,1 @@
 apps/vada-ai/**
-apps/atta-ai/**

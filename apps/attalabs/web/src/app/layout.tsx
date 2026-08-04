@@ -11,7 +11,7 @@ import '@atta/ui/canvas.css'
 import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { branding } = await getProductCms('atta')
+  const { branding } = await getProductCms('attalabs')
   return {
     title: 'Atta — Where deep thinking happens',
     description: 'A place for deep thinking with AI. Bring any model. Deliberate across them. Keep what matters.',
@@ -20,9 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  // The hub renders Atta's identity, not attalabs' own — `attalabsConfig` exists
-  // but has never been wired up. Unchanged here; switching it is a design call.
-  const { config, branding } = await getProductCms('atta')
+  const { config, branding } = await getProductCms('attalabs')
 
   return (
     <NextWebShell config={config} branding={branding} styleId='atta-theme' cookieName='atta-color-scheme'>

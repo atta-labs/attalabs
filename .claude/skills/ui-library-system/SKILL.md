@@ -34,10 +34,9 @@ description: How the @atta/ui multi-library system works — build-time generati
 >    exports (most are) and matches the contract, just re-export from `components/index.ts`.
 > 3. **If the upstream's API doesn't match the contract**, **add a wrapper** in
 >    `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
->    The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
->    old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
->    Button — but as of the Radix-flavor switch, retro's upstream exports flat named
->    components and native `asChild`, so those adapters are gone.)
+>    The wrapper IS editable. `installed/` stays verbatim. (retro's old Base UI-era adapters
+>    are gone since the Radix-flavor switch — full history under "CLI workflow when adding
+>    or restoring a component" below.)
 > 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
 >    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
 >    is the canonical example.
@@ -63,10 +62,10 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ---
 
-## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule
 
 The banner above states the rule; this section is the operational reference. Codified by
-D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
+Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
 
 ### Upstream-source mapping (CLI install commands)
 
@@ -77,16 +76,11 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 | `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched (2026-07-12) shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
 | `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
 
-### Doctrine (the rule, restated for skim-readers)
+### One doctrine note the banner doesn't cover
 
-- `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
-- Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
-  `../../../lib/utils`) when moving the file under the library. Nothing else.
-- Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
-  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
-- **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
-  matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
-  formatter rules never fight a fresh CLI paste. Re-installing later just works.
+**Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
+matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
+formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
 ### Base UI vs Radix flavor — the `asChild` contract idiom
 
@@ -99,7 +93,7 @@ Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
 
 **Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
 `asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
-`installed/*` (D-065). The adapter resolves the single element child and forwards it as
+`installed/*`. The adapter resolves the single element child and forwards it as
 `render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
 lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
 built for retro's Base UI Button before retro was re-based onto Radix.
@@ -157,7 +151,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
   We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
   forcing every library to extend with a shared name set. That gave consumers no real
   cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
-  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  in `brutal`) and forced bespoke implementations. Removed by PR #207. Consumer
   code that wants cross-library certainty for a specific call site should pick a variant
   every library exports (default / outline / ghost, depending on coverage) or hard-import
   from a single library.
@@ -166,7 +160,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, since theme centralization, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
 
 | Pattern | Resolution | How |
 |---------|-----------|-----|
@@ -316,7 +310,7 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ## Composing the two patterns — build-time chrome + runtime per-user surface
 
-The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver, so a composing app's build-time alias and its runtime provider agree by construction.
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
@@ -404,26 +398,13 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 ### Build-Time Pattern (recommended for new apps)
 
-1. **Call generateUIIndex in next.config.ts:**
-   ```ts
-   import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
-   const nextConfig = async () => {
-     await generateUIIndex('your-app')
-     return { /* ... */ }
-   }
-   ```
+1. **Call `generateUIIndex` in `next.config.ts`** — same shape as the "next.config.ts
+   Integration" example under Pattern 1 above, with your app's name in place of `{app}`.
 
-2. **Add tsconfig path aliases** — the alias key is `@atta/ui/components`, not bare `@atta/ui` (see the note under "Generated File Format" above, and "Import Bypass Bug" under Debugging). Every live app aliases this exact string; app code must import it verbatim:
-   ```json
-   {
-     "compilerOptions": {
-       "paths": {
-         "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
-         "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
-       }
-     }
-   }
-   ```
+2. **Add tsconfig path aliases** — same shape as "tsconfig.json Mapping" under Pattern 1
+   above, with your app's name in place of `{app}`. The alias key is `@atta/ui/components`,
+   never bare `@atta/ui` (see "Import Bypass Bug" under Debugging) — every live app aliases
+   this exact string, and app code must import it verbatim.
 
 3. **Set the library in Sanity CMS:** The `{app}Config` document's `userInterface.library` field controls which library gets written to the generated index.
 
@@ -574,7 +555,7 @@ Verified against the official shadcn registry (`ui.shadcn.com/docs/components`,
 2026-07-17): **shadcn ships no `code`, `code-block`, or `snippet` component.** It
 ships `Kbd` — keyboard keys, not code display. So `basic/installed/code.tsx`
 **does not exist and must not be created**: `installed/` holds a verbatim CLI
-paste from that library's own upstream (D-065), and hand-rolling a file there is
+paste from that library's own upstream, and hand-rolling a file there is
 exactly the drift the banner calls non-negotiable. Pasting *another* registry's
 code-block (shadcn-studio, shadcn.io, retroui) into `basic/installed/` is the
 same violation wearing a disguise — basic ← shadcn only, and a third-party item
@@ -678,7 +659,7 @@ axe flags `aria-allowed-attr` [critical] — `aria-pressed` is valid only on a
 `button`/`role=button`, and the outer button already carries the real state from
 Radix's Root. The wrapper passes `aria-pressed={undefined}` to strip it from
 `toggle-item`; this works only because the primitive spreads `{...props}` AFTER
-its own `aria-pressed`, and it keeps `installed/` verbatim (D-065).
+its own `aria-pressed`, and it keeps `installed/` verbatim.
 
 **`toggle-highlight` cannot be reached this way and still violates.**
 `installed/toggle.tsx` renders it as `<ToggleHighlightPrimitive className='…' />`
@@ -687,7 +668,7 @@ decorative empty div with no accessible name, and `AnimatePresence` only mounts
 it in the pressed state, so the violation appears in the pressed state only.
 Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
-which is the drift D-065 exists to prevent, so it is deliberately not done here.
+which is the drift this doctrine exists to prevent, so it is deliberately not done here.
 
 **`Switch`** (`vinaya-pages-v2` task 9, #622) joined as `Switch` + `SwitchProps`, and is
 the first contracted component where **all four** libraries had their own upstream —
@@ -853,7 +834,7 @@ the same way `submitSlot` was added:
 2. **Honor it in every code path the default would render in.** `submitSlot`
    replaces the default submit in BOTH inline and footer modes — partial
    replacement is a confusing footgun.
-3. **Update this section** in the same PR (D-058 doc-coherence). The props
+3. **Update this section** in the same PR (doc-coherence). The props
    table is the contract; if it's not here, future agents won't know the slot exists.
 4. **No library swap.** SmartPromptInput is a single implementation. Do not
    create per-library variants.

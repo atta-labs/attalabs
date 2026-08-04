@@ -56,7 +56,7 @@ export default async function EnvoyPage({
     cvUrl: user.cvUrl ?? undefined
   }
 
-  // Fetch theme from Sanity if user has one selected. D-060 moved uiTheme
+  // Fetch theme from Sanity if user has one selected. Theme centralization moved uiTheme
   // documents out of Herald's own project into the central Attalabs project
   // — must resolve against createProductClient('attalabs'), not Herald's
   // own project client (which no longer has any uiTheme docs to find).

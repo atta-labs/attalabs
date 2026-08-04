@@ -79,7 +79,7 @@ This is a **deliberate trust escalation**. Users must explicitly opt in to hoste
 
 ### Storage schema
 
-Table: `user_provider_keys` (defined in `packages/db/src/schema/keys.ts` as ecosystem-shared per D-030)
+Table: `user_provider_keys` (defined in `packages/db/src/schema/keys.ts` as ecosystem-shared)
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -289,7 +289,7 @@ The hosted server is the path for users who:
 
 3. **Per-key scoping:** should individual API keys be scopeable to specific tools only (e.g., a key that can only call `vada__consult` but not `vada__deliberate`)? Useful for embedded integrations. Not designed yet.
 
-4. **Audit log retention:** how long should per-request audit log entries be kept? Regulatory considerations TBD.
+4. **Audit log retention:** how long should per-request audit log records be kept? Regulatory considerations TBD.
 
 5. ~~**API key character format:**~~ **Resolved (May 4, 2026):** `vada_<base64url(32 random bytes)>` — the `vada_` prefix plus 32 bytes of base64url-encoded entropy is the format (note: the originally-planned `vada_pk_` prefix was not used; the shipped prefix is `vada_`). Implementation in `packages/crypto/src/api-keys.ts`'s `generateApiKey`. Per-product keys would mint analogous prefixes (`vitakka_`, etc.) via the `product` column on the `api_keys` table.
 

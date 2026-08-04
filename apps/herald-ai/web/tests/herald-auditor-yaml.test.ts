@@ -5,7 +5,7 @@ import { compileFlow, loadFlow } from '@atta/engine'
 import { MATCH_REPORT_SCHEMA } from '../src/lib/prompts'
 
 // The auditor YAML lives in the @atta/forensic-hiring-auditor package (moved
-// there by D-045/D-051); route.ts reaches it transitively via that package's
+// there by the engine migration); route.ts reaches it transitively via that package's
 // `run()`, which resolves its own internal path and does not export it. This
 // constant re-derives the same on-disk location directly so a future move of
 // either side fails here instead of surfacing only at runtime as a silent

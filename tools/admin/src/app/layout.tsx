@@ -20,17 +20,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // today (this package has no build/start script, so NODE_ENV is always
   // development and useCdn stays false); if admin ever gains a production
   // start, pass an explicit non-CDN client here.
-  const [config, vadaBranding, attaBranding, heraldBranding, vinayaBranding] = await Promise.all([
+  const [config, vadaBranding, heraldBranding, vinayaBranding] = await Promise.all([
     getProductConfig('vada').catch(() => null),
     getProductBranding('vada').catch(() => null),
-    getProductBranding('atta').catch(() => null),
     getProductBranding('herald').catch(() => null),
     getProductBranding('vinaya').catch(() => null)
   ])
 
   const projectLogos: Record<ProjectKey, string | null> = {
     vada: vadaBranding?.logoSolidDark?.url ?? null,
-    atta: attaBranding?.logoSolidDark?.url ?? null,
     herald: heraldBranding?.logoSolidDark?.url ?? null,
     vinaya: vinayaBranding?.logoSolidDark?.url ?? null
   }
