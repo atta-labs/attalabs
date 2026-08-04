@@ -81,6 +81,34 @@ name: "Vinaya: Review Gate"
 # state on the PR while `evaluate` runs (creating that would require
 # `checks: write` in the same job whose privilege this split exists to
 # remove) — the check-run now appears once, already completed.
+#
+# Fourth live-fire bug, found reviewing vinaya-independence-v1 task 1
+# (#721, 2026-08-04): `report-check-run`'s `checks: write` POST/PATCH was
+# never the actual source of duplicate "Review gate" entries — GitHub
+# creates its OWN fresh implicit check-run for every execution of a job
+# named "Review gate", regardless of which trigger fired it. Before this
+# fix, `evaluate`'s `if:` ran it on BOTH `pull_request` AND `issue_comment`
+# — so every verdict comment (each dispatched reviewer posts its own) spun
+# up a brand-new implicit "Review gate" check-run, one GitHub Checks API
+# object per comment. `report-check-run`'s PATCH-not-POST logic (added
+# earlier in the same task) only prevented itself from adding a THIRD
+# entry on top; it could never retroactively merge implicit check-runs
+# GitHub had already created on its own. Confirmed empirically: two
+# dispatched reviewers' verdict comments produced two separate, both-
+# `success` "Review gate" check-run objects on the identical SHA.
+#
+# Fix: `evaluate` now fires ONLY on `pull_request` — one honest implicit
+# check-run per push, the same way any other CI check behaves (refreshing
+# per commit is normal, not "duplication"). The `issue_comment` path is
+# split into its own job, `evaluate_on_comment` — identical steps and
+# permissions (no `checks: write`, same reasoning as the Third bug above),
+# but a DIFFERENT job-level name, so its implicit check-runs never compete
+# for the "Review gate" name at all. `report-check-run` still owns "Review
+# gate" exclusively via lookup-then-PATCH-or-POST, and now that it's the
+# ONLY thing (besides `evaluate`'s one-per-push implicit run) ever creating
+# a check-run under that name, the PATCH converges for real: any number of
+# verdict comments on the same SHA collapse into the one check-run
+# `evaluate` (or the first comment) already created.
 
 on:
   pull_request:
@@ -91,9 +119,7 @@ on:
 jobs:
   evaluate:
     name: Review gate
-    if: >
-      github.event_name == 'pull_request' ||
-      (github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT'))
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -120,11 +146,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            NUMBER="${{ github.event.pull_request.number }}"
-          else
-            NUMBER="${{ github.event.issue.number }}"
-          fi
+          NUMBER="${{ github.event.pull_request.number }}"
           BRANCH=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefName -q .headRefName)
           SHA=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefOid -q .headRefOid)
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
@@ -150,30 +172,62 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: bun packages/aeg-core/bin/verify-review-gate.ts
 
-  # issue_comment path only — see header comment. Runs strictly after
-  # `evaluate` and touches no PR content at all (no checkout, no install, no
-  # script execution): its only inputs are `evaluate`'s own job outputs, so
-  # `checks: write` here can never be exercised by anything a PR author
-  # controls. The `pull_request` path's implicit check-run is already
-  # correctly bound to the right SHA and needs no help from this job — it is
-  # skipped there so the PR doesn't show two duplicate "Review gate" entries.
-  #
-  # Found live during vinaya-independence-v1 task 1 (#721): the skip above
-  # stops a duplicate on the SAME run, but does nothing about a duplicate
-  # across DIFFERENT runs — the `pull_request` path's own implicit check-run
-  # (created the moment the PR opens, before any review exists, so it's
-  # always a starting `failure`) is a real, separate check-run object from
-  # whatever this job later POSTs once a verdict lands. Both carry the same
-  # name "Review gate" on the same SHA, so the checks list shows a
-  # permanently-stale fail sitting next to the real, current result — GitHub
-  # resolves the *required-check* gate correctly against the newest one, but
-  # the display is confusing enough to read as broken. Fix: look up any
-  # existing "Review gate" check-run on this SHA and PATCH it in place
-  # instead of always POSTing a new one — converges to one evolving entry.
+  # issue_comment path only — see header comment ("Fourth live-fire bug")
+  # for why this is a separate job from `evaluate` rather than a shared
+  # `if:` branch. Same permissions and steps as `evaluate` (deliberately no
+  # `checks: write` — see header, "Third live-fire bug"), different
+  # job-level name so its implicit check-run never competes with the
+  # canonical "Review gate" name `report-check-run` owns below.
+  evaluate_on_comment:
+    name: Review gate (verdict check)
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      sha: ${{ steps.pr.outputs.sha }}
+    steps:
+      - name: Resolve PR number, branch, and head SHA
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NUMBER="${{ github.event.issue.number }}"
+          BRANCH=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefName -q .headRefName)
+          SHA=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefOid -q .headRefOid)
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Review gate (code-reviewer + security-review verdicts)
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: bun packages/aeg-core/bin/verify-review-gate.ts
+
+  # Owns the canonical "Review gate" name exclusively on the issue_comment
+  # path — see header comment ("Fourth live-fire bug") for the full
+  # PATCH-converges-to-one-entry reasoning.
   report-check-run:
     name: Review gate (report)
-    if: always() && github.event_name == 'issue_comment' && needs.evaluate.result != 'skipped'
-    needs: evaluate
+    if: always() && needs.evaluate_on_comment.result != 'skipped'
+    needs: evaluate_on_comment
     runs-on: ubuntu-latest
     permissions:
       checks: write
@@ -181,8 +235,8 @@ jobs:
       - name: Report check-run on the PR's actual head SHA
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ needs.evaluate.outputs.sha }}
-          JOB_RESULT: ${{ needs.evaluate.result }}
+          SHA: ${{ needs.evaluate_on_comment.outputs.sha }}
+          JOB_RESULT: ${{ needs.evaluate_on_comment.result }}
         run: |
           CONCLUSION="failure"
           if [ "$JOB_RESULT" = "success" ]; then CONCLUSION="success"; fi
