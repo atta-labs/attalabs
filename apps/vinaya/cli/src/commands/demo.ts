@@ -120,13 +120,17 @@ function recoverFromCrash(repoRoot: string, statePath: string): void {
 }
 
 /**
- * `BRANCH` is set explicitly to the demo branch alongside `PR_BODY` — the
- * same CI-style override `coherence`/`dispatch-readiness` already read
- * instead of deriving the branch from `git rev-parse` themselves (those two
- * checks `chdir` to their OWN module's repo root, so a bare git lookup from
- * inside a dev/test invocation of this source tree would answer with the
- * invoking developer's branch, not the demo's — `BRANCH` is the documented
- * escape hatch, not a workaround specific to this command).
+ * `BRANCH` is set explicitly to the demo branch alongside `PR_BODY`. As of
+ * vinaya-cli-v1 task 7 Correction 2, `coherence`/`dispatch-readiness` no
+ * longer `chdir` — they derive the branch from the caller's own inherited
+ * cwd, which for this commit already correctly resolves to the demo branch
+ * with no help needed. This override is now belt-and-suspenders rather than
+ * load-bearing (it was the workaround for the pre-Correction-2 chdir bug,
+ * which made a bare `git rev-parse` answer with whatever branch this source
+ * tree's OWN dev checkout happened to be on, not the demo's): forcing it
+ * explicitly still costs nothing and keeps this call site correct regardless
+ * of how a future check resolves its own branch, rather than depending on
+ * every check's cwd-derivation staying bug-free forever.
  */
 function attemptCommit(repoRoot: string, demoBranch: string, prBody: string, message: string): CommitResult {
   const result = spawnSync('git', ['commit', '-m', message], {
