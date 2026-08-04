@@ -66,7 +66,7 @@ return <NextWebShell config={config} branding={branding} styleId="vada-theme">{c
 const config = await getProductConfig('vada')  // inside a page or component
 ```
 
-### RULE #3: The Sanity project comes from the product key, never the environment (D-125)
+### RULE #3: The Sanity project comes from the product key, never the environment
 
 ```ts
 // ✅ The key resolves project + document ids
@@ -233,7 +233,7 @@ separate from `border` so a black border can still cast a visible shadow), and
 | `SANITY_API_TOKEN` | Server only | Write access — seed/migrate scripts, `tools/admin` write clients |
 
 There is **no** `SANITY_PROJECT_ID`. The project is resolved from the product key via
-`PROJECT_IDS` (D-125); the env var existed, duplicated a committed public value, and its
+`PROJECT_IDS`; the env var existed, duplicated a committed public value, and its
 absence failed silently. Any lingering entry in a `.env.local` or Vercel project is inert.
 
 ---

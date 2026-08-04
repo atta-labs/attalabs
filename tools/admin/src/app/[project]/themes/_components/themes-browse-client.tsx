@@ -258,7 +258,7 @@ export function ThemesBrowseClient({
 
   const hasChanges = selectedId !== currentThemeId || selectedScheme !== currentColorScheme || fontsPending
 
-  // Strict PARTITION (D-131): retro/brutal get only `neobrutalist` themes, the soft
+  // Strict PARTITION: retro/brutal get only `neobrutalist` themes, the soft
   // libraries only the rest — not a one-way filter. `selectedLibraryId` is a document
   // id (`library-retro`); the helper accepts both that and the bare id.
   const availableThemes = useMemo(() => themesForLibrary(themes, selectedLibraryId), [themes, selectedLibraryId])

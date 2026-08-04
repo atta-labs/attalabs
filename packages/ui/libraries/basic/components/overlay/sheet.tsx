@@ -13,7 +13,7 @@ import { resolveSingleChild } from '../as-child'
 
 // asChild → render adapters for basic's Base UI Sheet (built on @base-ui/react
 // Dialog). See ../as-child. installed/sheet.tsx stays a verbatim Base UI paste
-// (D-065); only the two composition points apps use with `asChild`
+//; only the two composition points apps use with `asChild`
 // (SheetTrigger, SheetClose) are wrapped. Everything else is a plain re-export.
 function SheetTrigger({
   asChild,

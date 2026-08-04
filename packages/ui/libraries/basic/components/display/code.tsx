@@ -6,7 +6,7 @@ import type { CodeBlockProps, CodeProps } from '../../../../types'
 // component (verified against ui.shadcn.com/docs/components — it ships `Kbd`,
 // which is keyboard keys, not code display). With no upstream canonical to
 // paste there is nothing for `installed/` to hold, and hand-rolling a file
-// there is exactly the drift D-065 forbids. `display/badge.tsx` is the same
+// there is exactly the drift the installed/-verbatim doctrine forbids. `display/badge.tsx` is the same
 // shape — our own component, editable layer.
 //
 // `className` merges LAST so a caller can override the defaults: these are a

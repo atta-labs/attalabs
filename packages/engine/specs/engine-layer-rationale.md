@@ -109,7 +109,7 @@ For long-term memory, yes — the schema should support a memory type system (`f
 
 ### Open questions for memory
 
-- How does memory interact with the immutability principle (D-018)? A YAML that uses memory produces different output for different users at different times. Benchmark history per YAML must factor in memory state. Either mark such YAMLs as non-benchmarkable, or capture memory state hashes per benchmark run.
+- How does memory interact with the immutability principle? A YAML that uses memory produces different output for different users at different times. Benchmark history per YAML must factor in memory state. Either mark such YAMLs as non-benchmarkable, or capture memory state hashes per benchmark run.
 - How does memory interact with BYOK? If memory contents include user secrets or PII, they must remain on the user's infrastructure. Cross-thread Store backed by user-controlled storage may be required for some use cases. The architecture supports this via custom backends.
 
 ---
@@ -159,7 +159,7 @@ flow:
 
 ### Open questions for sub-graphs
 
-- How does the engine resolve sub-graph references at compile time vs runtime? Compile-time (eager loading) is cleaner but rejects YAMLs whose sub-graphs aren't yet registered. Runtime (lazy loading) is more flexible but defers errors. Probably compile-time for known sub-graphs, runtime for full-content invocations (matching D-017's pattern for top-level YAMLs).
+- How does the engine resolve sub-graph references at compile time vs runtime? Compile-time (eager loading) is cleaner but rejects YAMLs whose sub-graphs aren't yet registered. Runtime (lazy loading) is more flexible but defers errors. Probably compile-time for known sub-graphs, runtime for full-content invocations (matching the existing pattern for top-level YAMLs).
 - Can sub-graphs invoke sub-graphs? Yes — recursive composition is supported in LangGraph. Schema needs to express depth limits to prevent runaway recursion.
 - How is cost calculated for a spec containing sub-graphs? The cost calculator (Atta Labs Phase 2) walks the parent graph and recursively calculates sub-graph costs. Total is the sum.
 
@@ -330,7 +330,7 @@ When schema 2.0 lands:
 5. Schema migration tools (likely in Atta Labs) help authors upgrade their YAMLs to a newer schema if they want new features.
 6. There is no auto-upgrade. Existing YAMLs stay at their schema version unless the author chooses to fork to a new version.
 
-This is consistent with the immutability principle (D-018): schema upgrades are forks, not in-place mutations.
+This is consistent with the immutability principle: schema upgrades are forks, not in-place mutations.
 
 ---
 

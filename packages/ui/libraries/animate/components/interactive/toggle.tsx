@@ -24,7 +24,7 @@ import {
 // removing it here loses nothing and leaves exactly one correct announcement
 // instead of a state duplicated onto a generic element. The primitive spreads
 // `{...props}` AFTER its own `aria-pressed`, which is what makes this override
-// work from the wrapper — `installed/` stays a verbatim CLI paste (D-065).
+// work from the wrapper — `installed/` stays a verbatim CLI paste.
 // Spread rather than a literal `aria-pressed={undefined}` attribute: Biome's
 // a11y/useValidAriaValues rejects the literal (it only accepts true/false/mixed
 // and cannot see that the intent is removal), while the spread expresses the

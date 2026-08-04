@@ -70,11 +70,11 @@ export type Tranche = {
  *
  * Conventions for missing entries: a task absent from the `Map<TaskId,
  * ForgeFacts>` passed to `deriveTranche` is treated as `todo` — tranche
- * tasks are committed work; `backlog` is a project-level concept (D-059).
+ * tasks are committed work; `backlog` is a project-level concept.
  */
 export type ForgeFacts = {
   issueState: 'open' | 'closed'
-  /** Issue assignee present. No longer affects `todo` derivation (D-059). */
+  /** Issue assignee present. No longer affects `todo` derivation. */
   assigned: boolean
   /** A `task/<tranche>/<n>` branch exists on the forge. */
   branchExists: boolean
@@ -92,7 +92,7 @@ export type ForgeFacts = {
    *   - `'completed'`    ← closed COMPLETED
    *   - `'not_planned'`  ← closed NOT_PLANNED (legitimately dropped)
    *   - `null`           ← issue open, or no close reason recorded
-   * Drives the honest terminal-status derivation (D-069): a closed Issue with
+   * Drives the honest terminal-status derivation: a closed Issue with
    * no merged PR resolves to `dropped` (NOT_PLANNED) or `incoherent`
    * (COMPLETED-but-unproven) — never the innocuous `todo`.
    */
@@ -108,7 +108,7 @@ export type ForgeIssue = { number: number; body: string; labels: string[] }
 
 /** A `Closes #N` Issue's resolved AEG task identity — the tranche slug and
  * task id derived from its title (`[<slug>] <id> — ...`) and `vinaya/tranche:<slug>`
- * label. Used by `checkClosesN`'s reverse-direction check (D-069 Layer 1
+ * label. Used by `checkClosesN`'s reverse-direction check (Layer 1
  * reverse): a branch closing an Issue that resolves to one of these must be
  * named `task/<trancheSlug>/<taskId>`. */
 export type TaskIssueRef = { trancheSlug: string; taskId: string }
@@ -161,7 +161,7 @@ export type ForgeFactsSnapshot = {
   /**
    * `true` when GitHub was unreachable or no token was available. The facts
    * map will be empty in this case; `deriveTranche` then treats every task
-   * as `todo` — tranche tasks are committed work, minimum `todo` (D-059).
+   * as `todo` — tranche tasks are committed work, minimum `todo`.
    */
   unavailable: boolean
   /** Diagnostic — logged, not user-facing. Empty when `unavailable` is false. */
@@ -180,7 +180,7 @@ export type RawTaskFacts = {
      * GitHub's native close reason. `null` while the issue is open or no reason
      * was recorded. The pure mapper projects `COMPLETED`/`NOT_PLANNED` onto
      * `ForgeFacts.stateReason` (`'completed'`/`'not_planned'`), everything else
-     * to `null` — driving the honest terminal-status derivation (D-069).
+     * to `null` — driving the honest terminal-status derivation.
      */
     stateReason: 'COMPLETED' | 'NOT_PLANNED' | 'REOPENED' | null
     /** ISO 8601 datetime when the issue was closed, or null if still open. */
