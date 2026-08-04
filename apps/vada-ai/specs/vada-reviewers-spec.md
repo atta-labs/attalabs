@@ -1344,7 +1344,7 @@ The v2 bucket is for cognitive enhancements with less certain payoff. Each is te
 
 ## 6a. Comparison protocol — pinned before any benchmark run
 
-This section is the harness contract: for each condition, the exact common input, the artifact a judge (T10) evaluates, and any per-condition invocation parameters. Pinned by `vada-production-v1` T9 (Issue #184) before the first dry run, per D-066. Implemented by `apps/vada-ai/web/scripts/run-benchmark.ts`.
+This section is the harness contract: for each condition, the exact common input, the artifact a judge (T10) evaluates, and any per-condition invocation parameters. Pinned by `vada-production-v1` T9 (Issue #184) before the first dry run. Implemented by `apps/vada-ai/web/scripts/run-benchmark.ts`.
 
 §5.2 locked six conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW). Two more were added to the harness matrix after §5.2 was written, once `vada-fusion` (A2 external benchmark, Issue #179) and `vada-fusion-native` (Outside Read engine, Issue #180) existed: **FUSION-default** and **FUSION-native**. All eight run against identical per-question input.
 

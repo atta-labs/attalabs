@@ -3,7 +3,7 @@
 **Date captured:** April 25, 2026
 **Status:** ratified
 
-> **April 26, 2026 — Naming convention section superseded (D-025).** The `-v1` / `-vN` suffix naming convention described in the "Naming convention" section below was dropped in Phase 7.3. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). All other sections of this document remain active: the core principle (do not modify benchmarked YAMLs; iterate by forking) is unchanged. The worked example references to `-v1` / `-v2` filenames are illustrative; the actual mechanism (copy, new id, benchmark separately) still applies.
+> **April 26, 2026 — Naming convention section superseded.** The `-v1` / `-vN` suffix naming convention described in the "Naming convention" section below was dropped in Phase 7.3. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). All other sections of this document remain active: the core principle (do not modify benchmarked YAMLs; iterate by forking) is unchanged. The worked example references to `-v1` / `-v2` filenames are illustrative; the actual mechanism (copy, new id, benchmark separately) still applies.
 
 ---
 
@@ -167,7 +167,7 @@ This separates two concerns:
 - **Catalog membership** (the `packages/agents/vada-deliberation/yamls/` directory contents) — append-only after benchmarking
 - **Registry membership** (which YAMLs the MCP exposes by default) — mutable
 
-A user knowing a YAML's id can still invoke it directly via full-content MCP calls (D-017), even if it's no longer in the registry.
+A user knowing a YAML's id can still invoke it directly via full-content MCP calls, even if it's no longer in the registry.
 
 ---
 

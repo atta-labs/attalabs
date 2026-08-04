@@ -13,7 +13,7 @@
 
 Custom tools = YAML `custom_tools: [...]` on an agent + matching `CustomToolHandlerMap` registered on the adapter at construction time. The loop lives in `custom-tool-loop.ts`; dispatch lives in `llm.ts`.
 
-### Anthropic — **Fully working (D-047, Herald production)**
+### Anthropic — **Fully working (Herald production)**
 
 `runAnthropicCustomToolLoop` sends the merged tool list (server tools + custom tool specs) to `client.messages.create`, intercepts `tool_use` blocks, runs handlers concurrently, sends `tool_result` blocks back, and loops until `stop_reason !== 'tool_use'` or no registered handlers match. Gated by `resolveRegisteredCustomTools` — a pure predicate that is unit-tested.
 

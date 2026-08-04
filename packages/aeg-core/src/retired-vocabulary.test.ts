@@ -147,7 +147,12 @@ const RETIRED_IN_PRODUCT = [
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
-  [TRANCHE_SLUG_VN_PATTERN]: ['aeg-root'],
+  [TRANCHE_SLUG_VN_PATTERN]: ['.'],
+  // LEGACY_SLUG_PATTERN stays aeg-root-only, deliberately not widened with the
+  // VN pattern above: every slug it can ever match is, by construction,
+  // already archived (derived from aeg-root/tranches/completed/*.md) — citing
+  // a closed tranche is the safe case (same durability class as a closed PR),
+  // not the live-citation problem this widening exists to catch.
   ...(LEGACY_SLUG_PATTERN ? { [LEGACY_SLUG_PATTERN]: ['aeg-root'] } : {})
 }
 
@@ -160,10 +165,42 @@ const PATTERN_SCOPE: Record<string, string[]> = {
  * that licenses those files to carry the rest of the retired vocabulary.
  */
 const PATTERN_EXEMPT: Record<string, string[]> = {
+  '\\bD-[0-9]{3}\\b': [
+    // The one confirmed load-bearing exception (task-729 sweep, widening PRODUCT
+    // to `['.']`): a foundational architectural fact (Cetana's retirement) whose
+    // D-numbers resolve to the permanent archive — not a routine build-log
+    // citation like the ~300 others the same sweep stripped.
+    './CLAUDE.md'
+  ],
+  'decisions\\.md': [
+    // `engine/design-decisions.md` is Vāda's own live, current design-decisions
+    // doc — not the retired global `decisions.md`. The bare-substring pattern
+    // can't distinguish the two; these are the citing files (task-729 sweep).
+    'docs-index.md',
+    'apps/vada-ai/specs/legacy/README.md',
+    'apps/vada-ai/specs/vada-product-spec.md',
+    'apps/vada-ai/web/CLAUDE.md',
+    'apps/vada-ai/CLAUDE.md'
+  ],
   'decisions-legacy': [
     'packages/aeg-core/src/file-classify.ts',
     'packages/aeg-core/src/file-classify.test.ts',
-    'packages/aeg-core/src/pr-tier.test.ts'
+    'packages/aeg-core/src/pr-tier.test.ts',
+    // Legitimate archive-index pointers ("see X for history"), not claims that
+    // the frozen archive is a live/writable artifact (task-729 sweep).
+    'docs-index.md',
+    '.claude/skills/database/SKILL.md',
+    '.claude/skills/vada-architecture/SKILL.md',
+    'apps/vada-ai/specs/vada-byok-principles.md',
+    'apps/vada-ai/web/CLAUDE.md',
+    'apps/vada-ai/CLAUDE.md'
+  ],
+  CONTRADICTION: [
+    // Vāda Reviewers' live "CONTRADICTIONS" output section — a real product
+    // feature, coincidentally matching the retired decision-log's
+    // "## CONTRADICTION — <topic>" entry-shape ban. Not a citation
+    // (task-729 sweep).
+    'apps/vada-ai/specs/vada-reviewers-spec.md'
   ]
 }
 
@@ -218,23 +255,19 @@ const EXEMPT = [
 ]
 
 /**
- * The surfaces an adopter installs and reads.
+ * The scope `RETIRED_IN_PRODUCT` checks against.
  *
- * `packages/aeg-forge-state` is here because the CLI consumes it: its label
- * vocabulary is rendered to adopters, so it is product surface even though it
- * sits outside the three directories the ruling names. `.vinaya/` is the
- * config an adopter's own repo grows, and its comments are read by whoever
- * edits it.
+ * Repo-wide (`['.']`), not an enumerated adopter-surface list. It used to be
+ * a 7-path array (`aeg-root`, `packages/aeg-core`, `packages/aeg-forge-state`,
+ * `apps/vinaya`, `.vinaya`, and 2 of 22 `.claude/skills`) — but an enumerated
+ * list has the exact blind-spot shape that let a `D-###` citation sit
+ * unwatched in root `CLAUDE.md` and a dangling reference survive PR #725's
+ * manual citation-strip: a new package/app lands and nobody remembers to add
+ * it here. `['.']` is self-maintaining — every current and future surface is
+ * covered by construction. `SCOPE` below (for the separate `RETIRED`
+ * pattern list) is unaffected by this change.
  */
-const PRODUCT = [
-  'aeg-root',
-  'packages/aeg-core',
-  'packages/aeg-forge-state',
-  'apps/vinaya',
-  '.vinaya',
-  '.claude/skills/aeg',
-  '.claude/skills/aeg-roles'
-]
+const PRODUCT = ['.']
 
 /**
  * Everything an agent in this repo reads.

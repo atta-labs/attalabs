@@ -8,7 +8,7 @@
 #
 # post-merge: Triggered after merge to main. Resolves the merge commit's PR, assembles
 #   and posts the per-task Archivist provenance block, and explicitly closes the task's
-#   Issue (D-056) — the mechanical close-out obligations from `roles/archivist.md` items
+#   Issue — the mechanical close-out obligations from `roles/archivist.md` items
 #   1 and 8. Idempotent per PR (skips if a provenance comment already exists) and skips
 #   non-task branches. See packages/aeg-core/src/archive-task.ts.
 #
@@ -20,9 +20,9 @@
 #   instead of never. Never fails red — a notification channel (label +
 #   idempotent tracking comment on the branch's own resolved PR), not a merge
 #   gate. See packages/aeg-core/src/dead-branch-push-audit.ts.
-#   (D-120, 2026-07-13: this job previously also ran a stuck row-adjacent-
+#   (2026-07-13: this job previously also ran a stuck row-adjacent-
 #   blocker check, `stale-blocker.ts` — retired along with the dispatch-gate
-#   predicate it watched for, which D-120 removed. Re-scoping it to watch
+#   predicate it watched for, which that change removed. Re-scoping it to watch
 #   Depends-on/Conflicts-with staleness instead would require a new
 #   staleness-duration signal `dispatch-gate.ts` doesn't already compute —
 #   out of that decision's scope, so the job step was retired rather than

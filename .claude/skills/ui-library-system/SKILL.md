@@ -62,10 +62,10 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ---
 
-## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule
 
 The banner above states the rule; this section is the operational reference. Codified by
-D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
+Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
 
 ### Upstream-source mapping (CLI install commands)
 
@@ -93,7 +93,7 @@ Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
 
 **Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
 `asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
-`installed/*` (D-065). The adapter resolves the single element child and forwards it as
+`installed/*`. The adapter resolves the single element child and forwards it as
 `render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
 lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
 built for retro's Base UI Button before retro was re-based onto Radix.
@@ -151,7 +151,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
   We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
   forcing every library to extend with a shared name set. That gave consumers no real
   cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
-  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  in `brutal`) and forced bespoke implementations. Removed by PR #207. Consumer
   code that wants cross-library certainty for a specific call site should pick a variant
   every library exports (default / outline / ghost, depending on coverage) or hard-import
   from a single library.
@@ -160,7 +160,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, since theme centralization, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
 
 | Pattern | Resolution | How |
 |---------|-----------|-----|
@@ -310,7 +310,7 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ## Composing the two patterns — build-time chrome + runtime per-user surface
 
-The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver, so a composing app's build-time alias and its runtime provider agree by construction.
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
@@ -555,7 +555,7 @@ Verified against the official shadcn registry (`ui.shadcn.com/docs/components`,
 2026-07-17): **shadcn ships no `code`, `code-block`, or `snippet` component.** It
 ships `Kbd` — keyboard keys, not code display. So `basic/installed/code.tsx`
 **does not exist and must not be created**: `installed/` holds a verbatim CLI
-paste from that library's own upstream (D-065), and hand-rolling a file there is
+paste from that library's own upstream, and hand-rolling a file there is
 exactly the drift the banner calls non-negotiable. Pasting *another* registry's
 code-block (shadcn-studio, shadcn.io, retroui) into `basic/installed/` is the
 same violation wearing a disguise — basic ← shadcn only, and a third-party item
@@ -659,7 +659,7 @@ axe flags `aria-allowed-attr` [critical] — `aria-pressed` is valid only on a
 `button`/`role=button`, and the outer button already carries the real state from
 Radix's Root. The wrapper passes `aria-pressed={undefined}` to strip it from
 `toggle-item`; this works only because the primitive spreads `{...props}` AFTER
-its own `aria-pressed`, and it keeps `installed/` verbatim (D-065).
+its own `aria-pressed`, and it keeps `installed/` verbatim.
 
 **`toggle-highlight` cannot be reached this way and still violates.**
 `installed/toggle.tsx` renders it as `<ToggleHighlightPrimitive className='…' />`
@@ -668,7 +668,7 @@ decorative empty div with no accessible name, and `AnimatePresence` only mounts
 it in the pressed state, so the violation appears in the pressed state only.
 Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
-which is the drift D-065 exists to prevent, so it is deliberately not done here.
+which is the drift this doctrine exists to prevent, so it is deliberately not done here.
 
 **`Switch`** (`vinaya-pages-v2` task 9, #622) joined as `Switch` + `SwitchProps`, and is
 the first contracted component where **all four** libraries had their own upstream —
@@ -834,7 +834,7 @@ the same way `submitSlot` was added:
 2. **Honor it in every code path the default would render in.** `submitSlot`
    replaces the default submit in BOTH inline and footer modes — partial
    replacement is a confusing footgun.
-3. **Update this section** in the same PR (D-058 doc-coherence). The props
+3. **Update this section** in the same PR (doc-coherence). The props
    table is the contract; if it's not here, future agents won't know the slot exists.
 4. **No library swap.** SmartPromptInput is a single implementation. Do not
    create per-library variants.

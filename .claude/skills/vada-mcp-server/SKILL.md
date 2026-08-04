@@ -82,7 +82,7 @@ Agent definitions live in the YAML spec loaded via `lookupSpec` (auto-discovered
 - Refused with structured `missing_provider_key` error if `providerKeys[vendorId]` is absent server-side
 - Errors include resolved `vendorId`, `modelId`, and `agentName` for client-side reporting
 
-The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek). See D-032 in `apps/vada-ai/docs/vada-decisions-legacy.md`.
+The resolved vendor map flows through `agentVendorOverrides` into `createMultiVendorLlmCall` and `LangGraphAdapter`, correctly routing cross-vendor models like `deepseek-r1-distill-llama-70b` served by Groq (which prefix matching alone would misidentify as DeepSeek).
 
 ### `vada__deliberate` — Rounds-Based Team Deliberation
 
@@ -129,7 +129,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 
 ## Adding a New Public Spec
 
-1. Create `packages/agents/vada-deliberation/yamls/<name>.yaml` (no `-v1` suffix — see D-025)
+1. Create `packages/agents/vada-deliberation/yamls/<name>.yaml` (no `-v1` suffix)
 2. The spec is **auto-discovered** — no changes to `spec-registry.ts` needed
 3. If it should be addressable by a short alias from `vada__deliberate`, add to the `ALIASES` map:
    ```ts
@@ -173,7 +173,7 @@ Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewe
 - Agent definitions: **atta-teams** skill (`apps/vada-ai/agents/src/`)
 - Plan compilation: **atta-engine** skill
 - LangGraph execution: **atta-adapter-langgraph** skill
-- Vendor registry + SDK-shape dispatch: D-032 in `apps/vada-ai/docs/vada-decisions-legacy.md` + `packages/models/src/vendors.ts`
+- Vendor registry + SDK-shape dispatch: `packages/models/src/vendors.ts`
 
 ---
 
@@ -190,7 +190,7 @@ Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-ar
 - User configures provider keys in Settings → API Keys
 - Encrypted at rest in the `user_provider_keys` table with envelope encryption (AES-256-GCM, AAD-bound to `clerkId`, master key from `MASTER_ENCRYPTION_KEY` env var; `kms_key_id` column reserved for future KMS migration)
 - Decrypted only inside the request handler for the duration of the LLM call — never logged, never persisted in plaintext
-- Same store backs the web app's deliberate page (single canonical key store as of D-028; the prior browser-only IndexedDB BYOK was demoted from canonical role on May 4, 2026)
+- Same store backs the web app's deliberate page (single canonical key store; the prior browser-only IndexedDB BYOK was demoted from canonical role on May 4, 2026)
 
 **Request lifecycle (brief):**
 - Client POST → bearer token validation → provider key decryption → engine execution → SSE stream back → session log

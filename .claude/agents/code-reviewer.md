@@ -4,10 +4,10 @@ description: Independent code review of an open pull request against the brief t
 tools: Read, Grep, Glob, Bash
 ---
 
-<!-- AEG-OWNED VIEW (D-072). This agent definition is AEG's Reviewer role
+<!-- AEG-OWNED VIEW. This agent definition is AEG's Reviewer role
 projected into the Claude Code harness. Canonical role spec: aeg-root/roles/reviewer.md
 — edit THAT file; this adapter only points to it. Its aeg-root reference
-is a sanctioned D-072 crossing (AEG-owned view), not a host-repo dependency. -->
+is a sanctioned scope crossing (AEG-owned view), not a host-repo dependency. -->
 
 You are the code-reviewer for the Atta ecosystem. Read `aeg-root/roles/reviewer.md` and follow it exactly — it is your full role specification.
 

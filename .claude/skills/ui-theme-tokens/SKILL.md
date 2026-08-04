@@ -19,7 +19,7 @@ Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Color
 
 If the color you want is not in the list, it does not exist. Pick the closest semantic token by **role** (see doctrine below), or add a new one to `globals.css` and to the CMS theme schema — do **not** reach for the Tailwind palette as an escape hatch.
 
-**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. Per D-065 those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
+**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. Those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
 
 ---
 
@@ -58,7 +58,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | `popover-foreground` | **Floating ink** | `popover` | Text inside popovers/menus/tooltips. |
 | `secondary-foreground` | **Frame ink** | `secondary` | Text on `secondary` surfaces (topbar labels, toolbar buttons). **Do not use this as free-floating "metadata text" on a `background` surface** — its contrast is calibrated against `secondary`, not `background`. |
 | `primary-foreground` | **CTA ink** | `primary` | Text on `primary` fills (button labels, badge text on primary backgrounds). |
-| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" before D-131, when `accent` was still a highlight; it is a fill now.) |
+| `accent-foreground` | **Fill ink** | `accent` | Text on `accent` fills. (Named "highlight ink" when `accent` was still a highlight; it is a fill now.) |
 | `destructive-foreground` | **Error fill ink** | `destructive` | Text on `destructive` fills. Note: `destructive` text on a non-destructive surface uses `text-destructive` directly (see status section). |
 
 **Rule of thumb:** if you wrote `bg-X`, the matching text token is `text-X-foreground`. If you wrote `bg-background` or no surface at all, your text choices are `foreground` or `muted-foreground`.
@@ -68,9 +68,9 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | Token | Role | Use for |
 |---|---|---|
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
-| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent` (D-131). |
+| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent`. |
 
-> ### THE FILL/HIGHLIGHT SPLIT (D-131) — stated once, here
+> ### THE FILL/HIGHLIGHT SPLIT — stated once, here
 >
 > **`accent` paints backgrounds. `primary` colours text and borders.**
 >

@@ -26,7 +26,7 @@ export function resolveAgentFailure(round: Pick<Round, 'layout' | 'agentFailure'
 }
 
 /**
- * Validates a Flow against the 10 structural and semantic rules from D-033.
+ * Validates a Flow against the 10 structural and semantic rules from the v2 schema.
  * Throws InvalidFlowConfigError on the first violation found.
  * Rule 10 (agent_failure defaults) is a derivation rule — use resolveAgentFailure instead.
  */

@@ -8,7 +8,7 @@
 
 ## Why this document exists
 
-In Phase 1 (February 2026), Mastra was removed and LangGraph became the sole deliberation execution path. The decision was captured as D-001 with a one-paragraph rationale, and the audit doc (`vada-legacy-mastra-audit.md`) inventoried what was being replaced. But the "why LangGraph and not Mastra" comparison was never written up as a standalone document.
+In Phase 1 (February 2026), Mastra was removed and LangGraph became the sole deliberation execution path. The decision was captured with a one-paragraph rationale, and the audit doc (`vada-legacy-mastra-audit.md`) inventoried what was being replaced. But the "why LangGraph and not Mastra" comparison was never written up as a standalone document.
 
 In April 2026, the question came up again: Mastra had Workflows, which sound like what `@atta/engine` does. Did the choice hold up? Will LangGraph carry the ecosystem (Vāda + Vitakka + future products) the way Mastra was supposed to?
 

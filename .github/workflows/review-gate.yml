@@ -1,11 +1,11 @@
 name: "Vinaya: Review Gate"
 
 # Split out of forge-lifecycle.yml's consolidated `aeg-gate-suite` job
-# (D-115, 2026-07-08). Required pre-merge check: a task-branch or fix/*
+# (2026-07-08). Required pre-merge check: a task-branch or fix/*
 # branch PR must not merge without a clean code-reviewer APPROVE verdict AND
 # a clean security-review PASS verdict on the PR, or a principal-actor-
-# verified `vinaya/waiver:review` label (D-097 pattern). Only plan/* branches are
-# exempt (`isReviewGateExemptBranch` — topology/decision-log docs only, no
+# verified `vinaya/waiver:review` label. Only plan/* branches are
+# exempt (`isReviewGateExemptBranch` — topology/frozen-archive docs only, no
 # code to review).
 #
 # Why this is its own workflow, not a step in the consolidated job: this
