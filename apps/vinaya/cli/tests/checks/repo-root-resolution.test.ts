@@ -137,4 +137,53 @@ describe('RC2 — coherence/dispatch-readiness evaluate the CALLER’s repo, nev
       rmSync(root, { recursive: true, force: true })
     }
   }, 20_000)
+
+  // Correction 3: the identical chdir(REPO_ROOT) leak, missed by Correction 2,
+  // still live in check-doc-coverage.ts — this is the test that should have
+  // existed there and would have caught it. Mirrors the coherence/
+  // dispatch-readiness tests above exactly: a real fixture repo, a real
+  // `.vinaya/doc-owners` binding that names only the FIXTURE's own file, and
+  // a positive/negative assertion on whose diff and whose doc-owners state
+  // the check actually evaluated.
+  it('doc-coverage evaluates the FIXTURE’s own diff and doc-owners, never this monorepo’s own, when run with cwd set to a different repo', () => {
+    const root = initFixture('rc2-doc-coverage')
+    try {
+      mkdirSync(join(root, '.vinaya'), { recursive: true })
+      // A dangling in-repo pointer — FAILS deterministically regardless of
+      // PR_BODY/waiver state, so the check's own findings are forced to name
+      // whichever repo's diff/doc-owners it actually read.
+      writeFileSync(join(root, '.vinaya', 'doc-owners'), 'fixture-marker.ts   .vinaya/nonexistent-fixture-doc.md\n')
+      git(root, ['add', '.vinaya/doc-owners'])
+      git(root, ['commit', '-q', '-m', 'Chore: add fixture doc-owners'])
+      const baseSha = git(root, ['rev-parse', 'HEAD'])
+
+      writeFileSync(join(root, 'fixture-marker.ts'), 'fixture content\n')
+      git(root, ['add', 'fixture-marker.ts'])
+      git(root, ['commit', '-q', '-m', 'Chore: add the bound fixture file'])
+
+      const binPath = join(import.meta.dir, '..', '..', 'src', 'checks', 'bin', 'check-doc-coverage.ts')
+      const result = spawnSync('bun', [binPath], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, BASE_SHA: baseSha, PR_BODY: undefined }
+      })
+      const combined = `${result.stdout}\n${result.stderr}`
+
+      // Positive proof: the finding names the FIXTURE's own dangling pointer
+      // — proof it parsed the fixture's own `.vinaya/doc-owners` content
+      // (this repo's real doc-owners has no such binding) and that the
+      // fixture's own bound file (matched via the fixture's own diff against
+      // the fixture's own baseSha) actually fired the binding.
+      expect(combined).toContain('nonexistent-fixture-doc.md')
+      expect(result.status).toBe(1)
+
+      // Negative proof — the actual leak: none of this monorepo's own real
+      // bound files/docs (from this repo's OWN `.vinaya/doc-owners`) appear.
+      expect(combined).not.toContain('daniboomerang/attalabs')
+      expect(combined).not.toContain('packages/aeg-core')
+      expect(combined).not.toContain('aeg-root/state-machine.md')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  }, 20_000)
 })
