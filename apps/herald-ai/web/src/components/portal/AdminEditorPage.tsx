@@ -103,7 +103,7 @@ export function AdminEditorPage({
   }
 
   // `themesForLibrary` is a strict PARTITION, not a one-way filter: retro/brutal get
-  // only `neobrutalist` themes and the soft libraries get only the rest (D-131). A
+  // only `neobrutalist` themes and the soft libraries get only the rest. A
   // neobrutalist theme is legible under basic/animate but is built around a hard border
   // and offset shadow those libraries never draw, so it reads as a washed-out version of
   // itself.

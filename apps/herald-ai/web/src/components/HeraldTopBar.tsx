@@ -11,7 +11,7 @@ import { HeraldAccountMenu } from '@/components/HeraldAccountMenu'
  * Shared Herald topbar. The optional `context` prop tunes the centered nav
  * to the surface that rendered the layout:
  *  - `'main'`  (default) — `/bulk-audit`, `/onboarding`. Shows Bulk Audit + /username.
- *  - `'owner'` — `/[username]/(owner)/ui` + `/settings` (D-060). Shows /username only;
+ *  - `'owner'` — `/[username]/(owner)/ui` + `/settings`. Shows /username only;
  *    Bulk Audit is excluded so the owner's appearance/settings space isn't doubled up
  *    with the audit nav. The Settings gear in `extraActions` still routes to
  *    `/{username}/settings`, so navigation between the two owner surfaces is preserved.
@@ -46,7 +46,7 @@ export async function HeraldTopBar({ context = 'main' }: { context?: 'main' | 'o
   // Gear → /{me}/settings, rendered in TopBar's right-cluster `extraActions`
   // slot (immediately before `accountMenu`). Matches `HeraldAccountMenu`'s
   // responsive icon-with-label pattern: icon-only ≤ md, icon + "Settings" ≥ md.
-  // D-035: `Button` comes from the FLAT `@atta/ui/components` import, which
+  // `Button` comes from the FLAT `@atta/ui/components` import, which
   // herald's next.config.ts aliases (webpack + turbopack) to
   // `packages/ui/generated/herald/components.ts` — written by
   // generateUIIndex('herald') from the CMS chrome library (retro). So chrome

@@ -12,7 +12,7 @@ Rewritten 2026-06-18 to reflect herald-onto-engine iteration complete (PRs #104,
 
 One audit operation — **Bulk Audit**: N CVs × M job descriptions → one forensic match report per pair. Same operation whether a recruiter runs many CVs against one role or a candidate runs their CV against many roles; the user chooses the inputs. Plus a public forensic profile at `/[username]`.
 
-The auditor runs as a YAML-declared agent on `@atta/engine` + `@atta/adapter-langgraph`, backed by multi-vendor BYOK (all 12 vendors) and per-audit model selection. The GitHub signal tool is declared in the YAML and executed by the adapter's custom-tool loop (D-047). `POST /api/audit` is the unified endpoint.
+The auditor runs as a YAML-declared agent on `@atta/engine` + `@atta/adapter-langgraph`, backed by multi-vendor BYOK (all 12 vendors) and per-audit model selection. The GitHub signal tool is declared in the YAML and executed by the adapter's custom-tool loop. `POST /api/audit` is the unified endpoint.
 
 ---
 
@@ -22,13 +22,13 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 
 | Item | Decision | PR | Status |
 |------|----------|----|--------|
-| Engine migration — auditor as solo YAML | D-044 | #104 | ✅ done |
-| Endpoint unification → `POST /api/audit` | D-045 | #107 | ✅ done |
+| Engine migration — auditor as solo YAML | — | #104 | ✅ done |
+| Endpoint unification → `POST /api/audit` | — | #107 | ✅ done |
 | Multi-vendor BYOK + audit model selector | task 3b | #112 | ✅ done |
 | N×M matrix UI (Bulk Audit accepts N CVs × M JDs) | task 4 | #117 | ✅ done |
 | Polymorphic inputs (JD link/text; CV text/.md/.pdf/profile) | task 5 | #123 | ✅ done |
 | Per-key rate limit / cap on profile audits | task 6 / #93 | #113 | ✅ done (enforcement degraded — Upstash creds expired; see below) |
-| Custom client-side tool execution in engine | D-047 | #115 | ✅ done (shared, Vāda in blast radius) |
+| Custom client-side tool execution in engine | — | #115 | ✅ done (shared, Vāda in blast radius) |
 | GitHub tool declared in auditor YAML | task 7b | #120 | ✅ done |
 | Auditor quality fix (max_tokens, stale model, JD charset) | — | #132 | ✅ done |
 
@@ -36,8 +36,8 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 
 ## Smaller / open
 
-- **Profile-audit abuse cap (D-033)** — per-key rate limit shipped (task 6 / #93), but enforcement depends on fresh Upstash Redis creds (see Parked / pending manual ops below). Once creds are fresh, enforcement is active with no code change needed.
-- **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, per D-035). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
+- **Profile-audit abuse cap** — per-key rate limit shipped (task 6 / #93), but enforcement depends on fresh Upstash Redis creds (see Parked / pending manual ops below). Once creds are fresh, enforcement is active with no code change needed.
+- **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, by design). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
 
 ---
 
@@ -51,4 +51,4 @@ Real pending items — not tasks, not deleted. Manual/operational actions outsid
 
 ---
 
-*Herald is NOT part of Atta — sibling product in AttaLabs, separate Clerk app (D-031). Domain `herald.attalabs.dev`.*
+*Herald is NOT part of Atta — sibling product in AttaLabs, separate Clerk app. Domain `herald.attalabs.dev`.*

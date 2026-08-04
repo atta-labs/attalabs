@@ -1,5 +1,5 @@
 /**
- * Audit rate limiters (D-033 abuse hole).
+ * Audit rate limiters (abuse hole).
  *
  * Two distinct limits run on POST /api/audit:
  *
