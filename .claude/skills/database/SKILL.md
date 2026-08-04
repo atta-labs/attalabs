@@ -17,8 +17,8 @@ Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecos
 - **MUST** use `snake_case` for all column names
 - **MUST** store JSON fields as `text` — serialize/deserialize manually
 - **MUST** use `clerk_id` as primary key (or FK) for user-scoped tables
-- The `users` table is shared across products in `packages/db/src/schema/users.ts`. Per-product profile tables (e.g., `apps/vada-ai/web/src/db/schema.ts` `userSettings`) reference `users.clerk_id` as a FK.
-- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`) live in `packages/db/src/schema/keys.ts` (per D-030). These are read by any product that exposes hosted MCP or BYOK Settings.
+- Per-product profile tables (e.g., `apps/vada-ai/web/src/db/schema.ts` `userSettings`) reference the shared `users.clerk_id` as a FK (see schema split below).
+- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`, per D-030 — see schema split below) are read by any product that exposes hosted MCP or BYOK Settings.
 
 ```ts
 import { boolean, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
@@ -127,11 +127,8 @@ src/db/
 
 ## Anti-patterns
 
-- ❌ Raw SQL strings — use Drizzle query builder
 - ❌ Inline queries in components or route handlers — always use `queries.ts`
-- ❌ Storing parsed JSON objects directly — serialize to text first
 - ❌ Defining a new product-local `users` table — the shared table in `@atta/db` is canonical; reference it by FK
 - ❌ Storing user-provided secrets (API keys, OAuth tokens, etc.) in plaintext columns — follow the `user_provider_keys` envelope encryption pattern
 - ❌ Putting product-specific tables in `@atta/db` because they "feel ecosystem-shaped" — defer to app-local; promote later when a second consumer is concrete
-- ❌ Throwing on missing rows — return `null` and handle in caller
 - ❌ Forgetting `updatedAt: new Date()` on updates

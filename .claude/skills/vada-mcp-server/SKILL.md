@@ -24,8 +24,6 @@ Vāda's MCP server exists as two distinct surfaces that share the same tool surf
    - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
    - Status: shipped May 4, 2026 (PRs #9 + #10). Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
 
-Both surfaces expose the same two tools (`vada__consult`, `vada__deliberate`) and route to the same YAML catalog. Transport and key management differ; tool input/output shapes do not.
-
 ---
 
 ## Local stdio server (current implementation)
@@ -92,7 +90,7 @@ Caller provides a question and a team name. The server looks up the named YAML s
 
 `deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileFlow(flow, question, model)`.
 
-The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (PR #31, May 11). Experimental specs (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`) remain accessible by explicit `spec_id` via `vada__consult` but are not advertised in the `vada__deliberate` enum.
+The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (PR #31, May 11). The remaining experimental specs are still reachable via `vada__consult`'s explicit `spec_id` — see Spec Registry below for the full list and why they're held back.
 
 ---
 

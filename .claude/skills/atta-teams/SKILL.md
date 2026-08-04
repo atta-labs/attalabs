@@ -12,7 +12,7 @@ Deliberation content is split across two concerns:
 - **YAML spec files** (`packages/agents/vada-deliberation/yamls/`) — deliberation configs that define agents and workflows. These replaced the deleted `@vada/teams` TypeScript package. All seven built-in specs live here as YAML files. Agent system prompts, tool configs, and flow structure are all in YAML.
 - **Agent visuals** (`apps/vada-ai/web/src/components/agents/visuals/`) — display-only metadata for web UI rendering (colors, face indices, display names). No runtime deliberation logic. Used only by the web app.
 
-No runtime logic lives in either location. YAML specs compose agents into deliberations; visuals directory provides UI-only rendering config.
+No runtime logic lives in either location.
 
 `@vada/teams` is **deleted**. Do not reference or import it.
 `@vada/agents` / `@vada/agent-metadata` are **deleted**. Do not reference or import them. See [apps/vada-ai/web/src/components/agents/visuals/](../apps/vada-ai/web/src/components/agents/visuals/) for web-only display types.

@@ -7,9 +7,7 @@ description: Atta engine internals — Flow → Plan compilation via compileFlow
 
 ## Context
 
-`@atta/engine` is a **pure library**. It takes a `Flow` (loaded from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
-
-The engine has no LangGraph, no Anthropic SDK, no fetch, no LangChain. If you're importing a runtime dependency here, you're in the wrong package.
+`@atta/engine` is a **pure library**. It takes a `Flow` (loaded from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies (no LangGraph, no Anthropic SDK, no fetch, no LangChain — see "Rules" below). The engine compiles; the adapter executes. These responsibilities never cross.
 
 The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in PR #47 (D-033 PR 2, May 12-13, 2026, apps/vada-ai/docs/vada-decisions-legacy.md D-033).
 

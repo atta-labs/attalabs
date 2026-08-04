@@ -9,7 +9,7 @@ description: The complete and ONLY list of CSS color/radius/font tokens allowed 
 
 Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Colors, fonts, and radius come from a Sanity CMS document, are injected into CSS variables by `NextWebShell`, and are exposed to Tailwind via `@theme inline` mappings in `packages/ui/styles/globals.css`. There are also two color schemes (light / dark) and multiple component libraries (basic / retro / animate / brutal).
 
-**If you write `text-green-500` or `bg-[#1A1610]` or `text-white`, the CMS theme cannot reach it.** The color will be wrong in the other scheme, wrong for products with a different brand palette, and wrong when a new theme inverts the surface treatment. Semantic tokens are the only way the theme system works.
+**If you write `text-green-500` or `bg-[#1A1610]` or `text-white`, the CMS theme cannot reach it** — wrong in the other scheme, wrong per-product, wrong under a future theme (detailed under "Why This Matters" below). Semantic tokens are the only way the theme system works.
 
 ---
 
@@ -352,7 +352,7 @@ When unsure, walk this tree top-down. The first match wins.
 
 ## Enforcement
 
-This rule is **absolute**. If you see hardcoded colors, absolute colors, or wrong-pair surface/text combinations while editing any file, fix them in-flight — do not ship code that regresses the theme system. Reviewers will bounce PRs that introduce Tailwind palette classes, raw color values, `text-white`/`bg-black`, or surface/foreground mispairings.
+If you see hardcoded colors, absolute colors, or wrong-pair surface/text combinations while editing any file, fix them in-flight — do not ship code that regresses the theme system. Reviewers will bounce PRs that introduce Tailwind palette classes, raw color values, `text-white`/`bg-black`, or surface/foreground mispairings.
 
 ---
 

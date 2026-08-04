@@ -148,8 +148,6 @@ The numbered label (`02 / …`) is editorial — it reflects the user's scroll o
 
 ## Style Rules (Non-Negotiable)
 
-These are enforced across every section:
-
 - **Semantic tokens only.** `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `text-success`, `border-border`, `border-success/40`, etc. **Never** hardcoded hex, `oklch(…)`, `hsl(…)`, or palette classes like `text-green-500`. Full reference: `.claude/skills/ui-theme-tokens/SKILL.md`.
 - **No raw HTML primitives.** Use `Heading` / `Text` from `@atta/ui` — never raw `<h1>` / `<p>`. `<section>`, `<div>`, `<blockquote>` are semantic HTML and allowed.
 - **Icons only from `lucide-react`.**

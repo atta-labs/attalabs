@@ -34,10 +34,9 @@ description: How the @atta/ui multi-library system works — build-time generati
 >    exports (most are) and matches the contract, just re-export from `components/index.ts`.
 > 3. **If the upstream's API doesn't match the contract**, **add a wrapper** in
 >    `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
->    The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
->    old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
->    Button — but as of the Radix-flavor switch, retro's upstream exports flat named
->    components and native `asChild`, so those adapters are gone.)
+>    The wrapper IS editable. `installed/` stays verbatim. (retro's old Base UI-era adapters
+>    are gone since the Radix-flavor switch — full history under "CLI workflow when adding
+>    or restoring a component" below.)
 > 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
 >    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
 >    is the canonical example.
@@ -77,16 +76,11 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 | `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched (2026-07-12) shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
 | `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
 
-### Doctrine (the rule, restated for skim-readers)
+### One doctrine note the banner doesn't cover
 
-- `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
-- Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
-  `../../../lib/utils`) when moving the file under the library. Nothing else.
-- Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
-  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
-- **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
-  matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
-  formatter rules never fight a fresh CLI paste. Re-installing later just works.
+**Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
+matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
+formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
 ### Base UI vs Radix flavor — the `asChild` contract idiom
 
@@ -404,26 +398,13 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 ### Build-Time Pattern (recommended for new apps)
 
-1. **Call generateUIIndex in next.config.ts:**
-   ```ts
-   import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
-   const nextConfig = async () => {
-     await generateUIIndex('your-app')
-     return { /* ... */ }
-   }
-   ```
+1. **Call `generateUIIndex` in `next.config.ts`** — same shape as the "next.config.ts
+   Integration" example under Pattern 1 above, with your app's name in place of `{app}`.
 
-2. **Add tsconfig path aliases** — the alias key is `@atta/ui/components`, not bare `@atta/ui` (see the note under "Generated File Format" above, and "Import Bypass Bug" under Debugging). Every live app aliases this exact string; app code must import it verbatim:
-   ```json
-   {
-     "compilerOptions": {
-       "paths": {
-         "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
-         "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
-       }
-     }
-   }
-   ```
+2. **Add tsconfig path aliases** — same shape as "tsconfig.json Mapping" under Pattern 1
+   above, with your app's name in place of `{app}`. The alias key is `@atta/ui/components`,
+   never bare `@atta/ui` (see "Import Bypass Bug" under Debugging) — every live app aliases
+   this exact string, and app code must import it verbatim.
 
 3. **Set the library in Sanity CMS:** The `{app}Config` document's `userInterface.library` field controls which library gets written to the generated index.
 
