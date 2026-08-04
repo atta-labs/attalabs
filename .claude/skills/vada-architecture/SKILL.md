@@ -154,24 +154,24 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 
 ## Locked Architectural Decisions
 
-| Decision | Reason | Reference |
-|----------|--------|-----------|
-| Cognitive router inside `@atta/adapter-langgraph`, not a separate package | Round 23 reviewer convergence; over-modular for V1 | — |
-| Sparring (2 agents) = default rounds-audit team, not Crucible (4-7) | Round 24 convergence; simpler, faster, easier to debug | — |
-| Tools ON for reasoning agents, OFF for audit agents | Task 4.5 empirical finding; restricting reasoning tools degrades output | — |
-| `vada__consult` ships before `vada__deliberate` | Round 24; validates distribution without betting on deliberation thesis first | — |
-| Direct `@anthropic-ai/sdk` in adapter (not LangChain wrapper) | LangChain wrapper had a `top_p` bug | — |
-| `Agent.tools: string[]` (not boolean) | Tool-specific config needed; adapter registry maps logical name → Anthropic API type | — |
-| Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient | — |
-| Spec ratification via explicit metadata block (not assumption) | Prevents spec/implementation drift like the BYOK gap | — |
-| Architectural decisions are recorded append-only | Audit trail preserved across supersession events | — |
-| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + the frozen decision archive; filenames are stable | — |
-| v2 naming framing (AttaLabs vs Atta; no -AI suffix; Pāli rule demoted) | Three rounds of multi-reviewer pressure-testing converged on v2 | — |
-| Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged | — |
-| Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable | — |
-| Universal round-based YAML schema (v2) | One model expresses every deliberation pattern; engine compiler treats them uniformly | — |
-| `compileFlow` shape detection preserves v1 Plan node ids | Adapter and route handler depend on the ids; deliberate pragmatic weakening of "zero branches" | — |
-| `RevisionCondition` single-variant (`type: 'contains'`); engine throws on `equals`/`matches` | Honest engine surface; schema reserves the types for future extensibility | — |
+| Decision | Reason |
+|----------|--------|
+| Cognitive router inside `@atta/adapter-langgraph`, not a separate package | Round 23 reviewer convergence; over-modular for V1 |
+| Sparring (2 agents) = default rounds-audit team, not Crucible (4-7) | Round 24 convergence; simpler, faster, easier to debug |
+| Tools ON for reasoning agents, OFF for audit agents | Task 4.5 empirical finding; restricting reasoning tools degrades output |
+| `vada__consult` ships before `vada__deliberate` | Round 24; validates distribution without betting on deliberation thesis first |
+| Direct `@anthropic-ai/sdk` in adapter (not LangChain wrapper) | LangChain wrapper had a `top_p` bug |
+| `Agent.tools: string[]` (not boolean) | Tool-specific config needed; adapter registry maps logical name → Anthropic API type |
+| Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient |
+| Spec ratification via explicit metadata block (not assumption) | Prevents spec/implementation drift like the BYOK gap |
+| Architectural decisions are recorded append-only | Audit trail preserved across supersession events |
+| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + the frozen decision archive; filenames are stable |
+| v2 naming framing (AttaLabs vs Atta; no -AI suffix; Pāli rule demoted) | Three rounds of multi-reviewer pressure-testing converged on v2 |
+| Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged |
+| Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable |
+| Universal round-based YAML schema (v2) | One model expresses every deliberation pattern; engine compiler treats them uniformly |
+| `compileFlow` shape detection preserves v1 Plan node ids | Adapter and route handler depend on the ids; deliberate pragmatic weakening of "zero branches" |
+| `RevisionCondition` single-variant (`type: 'contains'`); engine throws on `equals`/`matches` | Honest engine surface; schema reserves the types for future extensibility |
 
 ---
 
