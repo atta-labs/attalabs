@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { waiverCommand } from '../src/commands/waiver.js'
+import { positionalArgs, waiverCommand } from '../src/commands/waiver.js'
 
 /**
  * A fake `gh` on PATH — logs every invocation's argv to `logPath` and, for
@@ -97,5 +97,57 @@ describe('vinaya waiver', () => {
     const out = await captureStdout(() => waiverCommand(['review', '5', '--reason', 'x', '--print-only']))
     expect(out).toContain('vinaya/waiver:review')
     expect(out).not.toContain('vinaya/waiver:docs')
+  })
+
+  // F2 regression (code-review REQUEST CHANGES, PR #713): a `--reason` value
+  // that happens to look like a kind (`docs`/`review`) or a PR number (a bare
+  // digit string) must never be silently consumed by the positional kind/PR
+  // scan. `positionalArgs` is the exact mechanism that excludes `--reason`
+  // (and its value token) before that scan runs — unit-tested directly here,
+  // with no prompt/stdin involved.
+  describe('positionalArgs (F2 fix)', () => {
+    it('drops a value flag and its value token, leaving no positional candidates', () => {
+      expect(positionalArgs(['--reason', 'docs', '--print-only'])).toEqual([])
+      expect(positionalArgs(['--reason', 'review', '--print-only'])).toEqual([])
+      expect(positionalArgs(['--reason', '42', '--print-only'])).toEqual([])
+    })
+
+    it('keeps a real positional candidate that appears outside --reason', () => {
+      expect(positionalArgs(['review', '--reason', '42', '--print-only'])).toEqual(['review'])
+      expect(positionalArgs(['--reason', 'docs', '5'])).toEqual(['5'])
+    })
+
+    it('handles the --reason=value form identically (no extra token consumed)', () => {
+      expect(positionalArgs(['--reason=docs', '5', '--print-only'])).toEqual(['5'])
+    })
+  })
+
+  describe('ambiguous --reason text never misbinds kind/PR-number (F2 fix)', () => {
+    it('--reason docs: kind stays the real positional (review), reason stays "docs"', async () => {
+      const out = await captureStdout(() => waiverCommand(['review', '456', '--reason', 'docs', '--print-only']))
+      expect(out).toContain('gh pr edit 456 --add-label vinaya/waiver:review')
+      expect(out).not.toContain('vinaya/waiver:docs')
+      expect(out).toContain('Reason: docs')
+    })
+
+    it('--reason review: kind stays the real positional (docs), reason stays "review"', async () => {
+      const out = await captureStdout(() => waiverCommand(['docs', '456', '--reason', 'review', '--print-only']))
+      expect(out).toContain('gh pr edit 456 --add-label vinaya/waiver:docs')
+      expect(out).not.toContain('vinaya/waiver:review')
+      expect(out).toContain('Reason: review')
+    })
+
+    it('--reason 42: PR number stays the real positional (456), reason stays "42"', async () => {
+      const out = await captureStdout(() => waiverCommand(['docs', '456', '--reason', '42', '--print-only']))
+      expect(out).toContain('gh pr edit 456 --add-label vinaya/waiver:docs')
+      expect(out).not.toContain('gh pr edit 42 ')
+      expect(out).toContain('Reason: 42')
+    })
+
+    it('--reason 42, PR number given as a flag value only: still binds 456, never the reason digit-string', async () => {
+      const out = await captureStdout(() => waiverCommand(['review', '--reason', '42', '456', '--print-only']))
+      expect(out).toContain('gh pr edit 456 --add-label vinaya/waiver:review')
+      expect(out).not.toContain('gh pr edit 42 ')
+    })
   })
 })

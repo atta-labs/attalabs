@@ -44,15 +44,39 @@ function detectPrNumber(): string | null {
   }
 }
 
+// Flags this command accepts, and whether each consumes a following value
+// token. A positional scan (kind/PR-number) must skip both the flag AND its
+// value — otherwise `--reason docs`/`--reason 42` (reason text that happens
+// to look like a kind or PR number) gets silently bound to the wrong field
+// instead of the reason, with no prompt and no error (review finding F2).
+const VALUE_FLAGS = ['--reason']
+const BOOLEAN_FLAGS = ['--print-only']
+
+/** `args` with every recognized flag — and, for a value flag, its consumed value token — removed, leaving only genuine positional candidates. Exported for direct unit testing of the F2 fix (`tests/waiver.test.ts`). */
+export function positionalArgs(args: string[]): string[] {
+  const result: string[] = []
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] as string
+    if (VALUE_FLAGS.some((f) => a.startsWith(`${f}=`))) continue
+    if (VALUE_FLAGS.includes(a)) {
+      i += 1 // also skip this flag's value token, whatever it looks like
+      continue
+    }
+    if (BOOLEAN_FLAGS.includes(a)) continue
+    result.push(a)
+  }
+  return result
+}
+
 async function resolveKind(args: string[]): Promise<WaiverKind | null> {
-  const positional = args.find((a) => a === 'docs' || a === 'review')
+  const positional = positionalArgs(args).find((a) => a === 'docs' || a === 'review')
   if (positional === 'docs' || positional === 'review') return positional
   const answer = (await prompt('Which waiver — `docs` or `review`? ')).trim().toLowerCase()
   return answer === 'docs' || answer === 'review' ? answer : null
 }
 
 async function resolvePrNumber(args: string[]): Promise<string | null> {
-  const positional = args.find((a) => /^\d+$/.test(a))
+  const positional = positionalArgs(args).find((a) => /^\d+$/.test(a))
   if (positional) return positional
   const detected = detectPrNumber()
   if (detected) return detected
