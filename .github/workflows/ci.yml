@@ -1,4 +1,4 @@
-# CI — typecheck + unit tests (D-078, ring 1).
+# CI — typecheck + unit tests (ring 1).
 #
 # The ring-1 backstop for what pre-commit enforces at ring 0. Until this
 # workflow existed, no CI job ran typecheck or any unit tests — state-machine
@@ -8,7 +8,7 @@
 # an indirect net. Notably, packages/aeg-core's test suite — the tests
 # guarding every enforcement gate — ran nowhere automatically.
 #
-# Scopes (deliberate, no silent caps — D-074 discipline):
+# Scopes (deliberate, no silent caps):
 #   - Both steps use `turbo --affected`, which scopes to packages changed
 #     between this branch and `main` PLUS every transitive dependent (turbo
 #     computes the dependency graph, not just changed files) — so a change to
