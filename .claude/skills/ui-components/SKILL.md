@@ -18,15 +18,13 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > | `retro` | retroui (`retroui.dev`, Radix flavor) | `npx shadcn@latest add https://retroui.dev/r/radix/<component>.json` |
 > | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
 >
-> **The rule:** `installed/<comp>.tsx` is a verbatim CLI paste from its library's upstream.
-> Even a one-character change is a hard rule violation. NEVER hand-roll your own
-> implementation in `installed/`; ALWAYS pull from upstream.
+> **Even a one-character change in `installed/` is a hard rule violation.** Never hand-roll
+> an implementation there — always pull from upstream.
 >
 > ### How to add or change a primitive — the right workflow
 >
 > 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
->    library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
->    layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
+>    library's `installed/<comp>.tsx`, adjusting only import paths — nothing else.
 > 2. **Check if the upstream's exported API matches our contract** (`packages/ui/component-contract.mjs`).
 >    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
 >    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`

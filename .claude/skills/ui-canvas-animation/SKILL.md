@@ -100,7 +100,7 @@ Every color operation in a renderer routes through the shared helpers:
 - `withAlpha(color, α)` — attach alpha to any hex/hsl/rgb input (handles format conversion)
 - `brightenForLight(color)` — theme-aware saturation boost for agent palettes in light mode
 - `fgAt(α)` — theme-ink color from `--foreground` with alpha
-- `bloomStops(color, opts)` — `[core, outer]` tuple for radial glow gradients (see Rule #11)
+- `bloomStops(color, opts)` — `[core, outer]` tuple for radial glow gradients (see Rule #8)
 
 ```ts
 // ✗ BAD
@@ -178,8 +178,6 @@ This rule exists because exactly this happened during the paint-primitives refac
 | Operator | `hsl(30 32% 52%)` amber |
 
 ## AIAAgent
-
-Convenience wrapper around `AIASphere` — resolves agent `color` and face illustration from the canonical agent name. Use this instead of `AIASphere` when working with named agents.
 
 ```tsx
 import { AIAAgent } from '@atta/ui/canvas'
@@ -402,21 +400,7 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 
 `bg/fabric.ts` is a standalone background renderer — it does NOT use `AIACanvas`. It renders directly onto a canvas element via a `BgRenderer` function created by `createFabricRenderer()` or `createSplitFabricRenderer()`.
 
-**Key point: Fabric behavior is now config-driven (see "Fabric Configuration" above).** Pass a `FabricConfig` to the factory to control particle speed, completion behavior, and shock waves per-page.
-
-```tsx
-import { createFabricRenderer } from '@atta/ui/canvas'
-
-// Page-specific renderer
-export const renderMyFabric = createFabricRenderer({
-  approachSpeedMultiplier: 0.8,
-  forceCompleteAtSphereEdge: true,
-  shockWaveOnArrival: false
-})
-
-// Use in AIACanvas
-<AIACanvas bg={renderMyFabric} ...>
-```
+**Key point: Fabric behavior is now config-driven (see "Fabric Configuration" above).** Pass a `FabricConfig` to the same `createFabricRenderer()` / `createSplitFabricRenderer()` factories shown there, then wire the result to `AIACanvas.bg` the same way as "Wiring to Canvas Components" above.
 
 **What it renders:**
 1. A displaced grid mesh (two-density layers: coarse + fine) with ripple effects on sphere joins
@@ -433,7 +417,6 @@ export const renderMyFabric = createFabricRenderer({
 - `dying` state: particle stops moving and fades out (trail erosion)
 - Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
 - Settle gate: particles don't spawn until the canvas has settled
-- **Config isolation:** each page's renderer has its own config, no global state pollution
 
 **State shape passed to `drawFabric`:**
 ```ts
@@ -698,9 +681,6 @@ Each page has its own fabric config file that creates a page-specific renderer:
 └── brokered/components/home/
     ├── SplitChooserCanvas.tsx
     └── fabric-brokered.ts     — Brokered page: normal speed, snap completion, split-mirror
-```
-
-Each renderer file exports a `BgRenderer` created via `createFabricRenderer()` or `createSplitFabricRenderer()`, capturing its own `FabricConfig`. This isolates particle behavior per-page with zero global state.
 ```
 
 ## After Editing Package Files

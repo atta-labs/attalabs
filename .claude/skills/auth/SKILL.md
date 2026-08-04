@@ -9,9 +9,9 @@ description: Clerk authentication patterns across the Atta ecosystem — shared 
 
 The **Atta family** (Atta, Vāda, and other Atta-composed surfaces) uses a **single Clerk application** via the `@atta/auth` wrapper, with auth state propagating across product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`). Sign in once on any Atta-family subdomain → signed in everywhere (the Google model).
 
-**Herald is a deliberate exception** (D-031): it is a standalone AttaLabs product with its **own** Clerk application (`closing-blowfish-4`), its **own** Neon DB, and its **own** `user_provider_keys` table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below before applying any rule here to Herald.
+**Herald is a deliberate exception** (D-031) — a standalone identity perimeter with its own Clerk app, DB, and key table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below for the specifics before applying any rule here to Herald.
 
-For the Atta family there is one shared `users` table in `@atta/db`, keyed by `clerk_id`; per-product profile rows reference `clerk_id` as a foreign key. Identity does not live in product tables.
+For the Atta family, identity does not live in product tables — see RULE #4 for the shared `users` table.
 
 ---
 

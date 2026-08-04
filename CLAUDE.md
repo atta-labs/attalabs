@@ -130,7 +130,7 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 ## Principal Session Hygiene
 
-Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one tranche-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline in a Principal session that's already carrying a lot of history.
+Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one tranche-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline.
 
 ---
 

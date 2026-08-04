@@ -51,7 +51,7 @@ packages/adapter-langgraph/src/
 
 ## Cognitive Router — Four Capabilities
 
-The router is four capabilities implemented as LangGraph nodes + state mutations. All live inside this package.
+The router is four capabilities implemented as LangGraph nodes + state mutations.
 
 | Capability | Location | Behavior |
 |------------|----------|----------|
@@ -246,8 +246,6 @@ Not usually a bug. Check in order:
 2. Check classifier logs. Did round-Synthesizer get tools? (hard-rule should guarantee)
 3. Is FactChecker flagging based on web search variance? Run 2-3 times — if intermittent, it's LLM variance, not a code bug
 4. Is there a runtime error swallowed somewhere? Check stderr
-
-Do NOT chase CLEAN by loosening audits.
 
 ---
 

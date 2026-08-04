@@ -65,7 +65,7 @@ const { config, branding } = await getProductCms('vada')
 
 ### Cross-product fetching
 
-There is nothing special to do. Every read resolves its project from the product key, so an ecosystem surface — e.g. the Vāda home page showing Attā and Vinaya alongside Vāda — just asks for each key:
+Every read resolves its project from the product key, so an ecosystem surface — e.g. the Vāda home page showing Attā and Vinaya alongside Vāda — just asks for each key:
 
 ```ts
 import { getProductBranding } from '@atta/cms'

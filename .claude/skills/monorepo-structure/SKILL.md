@@ -58,7 +58,6 @@ All subdomains share auth via a single Clerk app with cookie scoped to `.attalab
 - Product apps: `apps/{product-ai}/{surface}/`
 - Package names: `@atta/{name}` (no `-ai` suffix for packages)
 - Workspaces: `"workspaces": ["apps/*/*", "packages/*"]`
-- Code namespace stays `@atta/*` — AttaLabs is only the public domain wrapper, not a code-level rename
 
 ### TypeScript Config Inheritance
 ```json
@@ -147,8 +146,6 @@ Root CLAUDE.md                         # Products + packages index, naming overv
 
 - ❌ Importing between apps (`@atta/vada-ai-web` → `@atta/herald-ai-web`)
 - ❌ Duplicating shared logic — add to packages instead
-- ❌ Overriding strict TypeScript settings per-app
-- ❌ Adding a surface without a CLAUDE.md
 - ❌ Using `find` or relative paths to locate sibling packages
 - ❌ Renaming `@atta/*` packages to `@attalabs/*` — the code namespace is Atta; AttaLabs is only the public domain
 - ❌ Creating an `apps/atta-ai/` for the memory product — that's Sati now (`apps/sati-ai/`)

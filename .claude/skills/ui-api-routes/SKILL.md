@@ -75,7 +75,7 @@ const result = await Promise.race([
 
 ### LLM Integration
 
-**MUST NOT** call `generateText()` or a raw provider SDK directly in a route handler. Every LLM call runs through `@atta/engine` (`loadFlow` / `loadYamlFromCatalog` → `compileFlow` → `LangGraphAdapter.execute`) — never a bespoke per-route call. This is D-044/D-045: Herald's original `/api/match` called `generateText()` directly, and was migrated onto the engine specifically so Herald inherits the cognitive router, multi-vendor failover, transcript tracing, and cost tracking that a direct SDK call can never get. Direct `generateText`/SDK calls in a route are a rejected pattern, not a convenience shortcut.
+**MUST NOT** call `generateText()` or a raw provider SDK directly in a route handler. Every LLM call runs through `@atta/engine` (`loadFlow` / `loadYamlFromCatalog` → `compileFlow` → `LangGraphAdapter.execute`) — never a bespoke per-route call. This is D-044/D-045: Herald's original `/api/match` called `generateText()` directly, and was migrated onto the engine specifically so Herald inherits the cognitive router, multi-vendor failover, transcript tracing, and cost tracking that a direct SDK call can never get.
 
 Two sanctioned shapes, chosen by whether the agent is reused across routes:
 
@@ -125,7 +125,7 @@ return NextResponse.json({ grade: 'N/A', score: 0, signals: [] })     // fallbac
 return NextResponse.json({ error: 'failed' })    // different shape on error
 ```
 
-**Additive failure signal, not a shape swap.** A route can (and, per D-058, should) surface *why* a fallback fired without breaking the "consistent shape" rule above — add an optional field that's absent on success and present on failure, never change the envelope itself. `apps/herald-ai/web/src/app/api/audit/route.ts` is the reference example: `MatchReport.auditFailed?: { reason, category }` is set only when `buildPartialReport()` builds a fallback (execution failed, not just parsed-oddly); every consumer that ignores the field still gets the exact same shape it always did. Prefer this pattern over inventing a second response envelope for the failure case.
+**Additive failure signal, not a shape swap.** A route can (and, per D-058, should) surface *why* a fallback fired without breaking the "consistent shape" rule above — add an optional field that's absent on success and present on failure, never change the envelope itself. `apps/herald-ai/web/src/app/api/audit/route.ts` is the reference example: `MatchReport.auditFailed?: { reason, category }` is set only when `buildPartialReport()` builds a fallback (execution failed, not just parsed-oddly); every consumer that ignores the field still gets the exact same shape it always did.
 
 ---
 

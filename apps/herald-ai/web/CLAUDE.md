@@ -12,8 +12,6 @@ These files are the source of truth for Herald's current state. Do not rely on m
 
 The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via proxy-based subdomain routing.
 
-Pattern: Portal + Onboarding + Admin merged into one codebase.
-
 ---
 
 ## Architecture
@@ -106,12 +104,7 @@ The onboarding chat at `/admin` uses:
 
 ### RULE #4: Envoy components are separate from Portal components
 
-```
-components/
-├── envoy/     # Only used on [username] pages (recruiter sees these)
-├── portal/    # Only used on admin/onboarding pages (candidate sees these)
-└── shared/    # TopBar (used by both)
-```
+`components/envoy/` renders only on `[username]` pages (recruiter-facing). `components/portal/` renders only on admin/onboarding pages (candidate-facing). `components/shared/` (TopBar) is used by both.
 
 ### RULE #5: Fonts and theme tokens
 

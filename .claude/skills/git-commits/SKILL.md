@@ -77,7 +77,6 @@ Co-Authored-By: Claude Sonnet <noreply@anthropic.com>"
 
 ## Anti-patterns
 
-- ❌ `Co-Authored-By` or `Generated with` footers — ever
 - ❌ Vague messages like "fix stuff" or "update code"
 - ❌ One massive commit for many unrelated changes
 - ❌ Committing before the user has tested and confirmed

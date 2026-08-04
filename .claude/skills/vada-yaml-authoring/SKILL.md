@@ -30,8 +30,6 @@ The schema is uniform but the topology determines runtime behaviour. `compileFlo
 | `brokered-synth` | 2+ rounds, last round has exactly 1 agent, no `on_failure: revise` | Parallel reviewers + single synthesizer | `vada-reviewers-synthesis.yaml` |
 | `rounds-audit` | Any round has `on_failure.action: 'revise'` | Multi-round debate + synthesis + audit + revision | `sparring.yaml`, `crucible.yaml`, `war-room.yaml` |
 
-You do not declare the shape. The schema is the same. `compileFlow` infers it from the rounds you define.
-
 ---
 
 ## Quick Recipe: Solo (baseline)
@@ -109,7 +107,7 @@ rounds:
     message_template: "{{question}}"
 ```
 
-The shape is `brokered-no-synth` because there is exactly one round with more than one agent and no `on_failure: revise`. `compileFlow` emits node ids `reviewer-ReviewerA`, `reviewer-ReviewerB`, `reviewer-ReviewerC`.
+This is `brokered-no-synth`; `compileFlow` emits node ids `reviewer-ReviewerA`, `reviewer-ReviewerB`, `reviewer-ReviewerC`.
 
 ---
 
@@ -180,7 +178,7 @@ rounds:
       Please synthesize:
 ```
 
-The shape is `brokered-synth` because there are 2+ rounds, the last round has exactly one agent, and there is no `on_failure: revise`. `compileFlow` emits node ids `reviewer-{name}` + `brokered-synthesis`.
+This is `brokered-synth`; `compileFlow` emits node ids `reviewer-{name}` + `brokered-synthesis`.
 
 **Critical**: the synthesis template must use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` to receive the reviewer responses. The pre-D-033 v1 YAML referenced `{{reviewerResponses}}` — the engine never populated that variable, and the synthesizer ran blind in production. The PR #47 migration fixed this; do not reintroduce the broken pattern.
 
@@ -301,7 +299,7 @@ rounds:
         case_sensitive: false
 ```
 
-The shape is `rounds-audit` because the audit round declares `on_failure.action: 'revise'`. `compileFlow` emits node ids `round-{r}-{agent}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`, and wires the conditional revision edge from the last auditor back to the next terminal (or to `__END__` after `max_revisions`).
+This is `rounds-audit`; `compileFlow` emits node ids `round-{r}-{agent}`, `terminal-{k}`, `audit-{name}-{k}`, `__END__`, and wires the conditional revision edge from the last auditor back to the next terminal (or to `__END__` after `max_revisions`).
 
 ---
 

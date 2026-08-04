@@ -148,7 +148,7 @@ Not at the component level, not at the layout level — at the page. Different p
 
 ### RULE #3: `onProvideKey` only when keys live in localStorage
 
-Settings-persisted keys (server-side) belong in a separate API Keys surface. The picker just shows a lock state for unkeyed routes.
+Settings-persisted keys (server-side) belong in a separate API Keys surface — see the `onProvideKey` contract above for what the picker does instead.
 
 ### RULE #4: Never hardcode provider brand colors
 
@@ -164,13 +164,11 @@ Provider branding comes from `ModelIcon`/`ProviderIcon` (`@lobehub/icons`). Don'
    ```
 2. No other code changes needed. Next SSR pulls the new model from models.dev, overlay tags it, picker renders it at the top of the OpenAI group.
 
-   This applies uniformly to every vendor, including Anthropic — there is no
-   per-vendor allowlist gate anywhere in `@atta/models` (herald-hardening-v1
-   task 12, #469: removed the `OVERLAY_ONLY_PROVIDERS` gate that used to hide
-   any un-curated Anthropic model). A model absent from `OVERLAY` still
-   surfaces automatically at `tier: 'balanced'`, just not pinned to the top —
-   Claude Opus 4.8 and Sonnet 5 (task 14, #524) are the worked example: both
-   were reachable in the picker the moment the gate was removed, then tagged
+   Same no-gate rule as RULE #1 above — including for Anthropic
+   (herald-hardening-v1 task 12, #469, removed the `OVERLAY_ONLY_PROVIDERS`
+   gate that used to hide un-curated Anthropic models). Claude Opus 4.8 and
+   Sonnet 5 (task 14, #524) are the worked example: both were reachable in
+   the picker the moment the gate was removed, then tagged
    `frontier`/`balanced` here so they sort to the top like every prior
    flagship generation.
 
