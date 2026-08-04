@@ -14,8 +14,6 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import {
   DOC_OWNERS_PATH,
   evaluateC5,
@@ -25,18 +23,27 @@ import {
 } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
 
-// DOC_OWNERS_PATH is repo-root-relative — chdir so it resolves regardless of
-// the invoking process's own cwd (mirrors bin/verify-docs.ts's own pattern).
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../../../..')
-process.chdir(REPO_ROOT)
-
+// No chdir: `DOC_OWNERS_PATH` (`.vinaya/doc-owners`) and the `git diff` below
+// must resolve relative to the CALLER's cwd — the repo `vinaya check` is
+// meant to evaluate — never a fixed location derived from wherever this
+// script physically lives. The runner's spawn() already inherits the
+// caller's cwd with no override, so no chdir is needed (vinaya-cli-v1
+// task 7, Correction 3 — the same RC2 fix Correction 2 applied to
+// `check-coherence.ts`/`check-dispatch-readiness.ts`, missed here).
 const CHECK_NAME = 'doc-coverage'
 
 // Array-form execFileSync — no shell, so `base` (env-controlled) is passed
 // to git as an inert literal argv element, never shell-interpreted.
 function git(args: string[]): string {
   try {
-    return execFileSync('git', args, { encoding: 'utf8' }).trim()
+    // stdio explicitly piped (not left to default inheritance) — a failing
+    // git call (e.g. no `origin/main` in the caller's repo, expected and
+    // caught below) must never leak its own stderr onto THIS check's stderr
+    // stream, which the runner treats as the versioned CheckError channel;
+    // an unswallowed raw git error there reads as "check emitted garbage"
+    // (status: 'error'), never a silent pass, even though this function's
+    // own contract is "swallow the failure, return ''".
+    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
   } catch {
     return ''
   }
