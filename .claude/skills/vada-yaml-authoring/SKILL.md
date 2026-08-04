@@ -9,13 +9,13 @@ description: How to create and register v2 YAML deliberation specs. Load when ad
 
 A YAML spec is a complete, self-contained deliberation configuration. It defines agents (with system prompts, tools, classifier behavior) and a sequence of rounds (each with agents, layout, optional repeats, optional declarative revision). The engine converts the spec to a compiled Plan via `compileFlow`; the adapter executes the Plan.
 
-As of D-033 (apps/vada-ai/docs/vada-decisions-legacy.md, May 12-13, 2026), all flows use **schema version 2.0** — the universal round-based model. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one schema. The compiler detects which shape a YAML expresses from its topology and emits matching Plan node ids.
+As of the generic flow refactor (May 12-13, 2026), all flows use **schema version 2.0** — the universal round-based model. The three v1 shapes (brokered-no-synthesis, brokered-with-synthesis, rounds-based) collapsed into one schema. The compiler detects which shape a YAML expresses from its topology and emits matching Plan node ids.
 
-File location: `packages/agents/vada-deliberation/yamls/<spec-id>.yaml` (no version suffix — see global D-013 + apps/vada-ai/docs/vada-decisions-legacy.md D-025).
+File location: `packages/agents/vada-deliberation/yamls/<spec-id>.yaml` (no version suffix).
 
 Full schema reference: `apps/vada-ai/specs/yaml-schema-reference.md`.
 
-Design rationale: `apps/vada-ai/specs/generic-flow-refactor.md` and apps/vada-ai/docs/vada-decisions-legacy.md D-033.
+Design rationale: `apps/vada-ai/specs/generic-flow-refactor.md`.
 
 ---
 
@@ -180,7 +180,7 @@ rounds:
 
 This is `brokered-synth`; `compileFlow` emits node ids `reviewer-{name}` + `brokered-synthesis`.
 
-**Critical**: the synthesis template must use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` to receive the reviewer responses. The pre-D-033 v1 YAML referenced `{{reviewerResponses}}` — the engine never populated that variable, and the synthesizer ran blind in production. The PR #47 migration fixed this; do not reintroduce the broken pattern.
+**Critical**: the synthesis template must use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` to receive the reviewer responses. The old v1 YAML referenced `{{reviewerResponses}}` — the engine never populated that variable, and the synthesizer ran blind in production. The PR #47 migration fixed this; do not reintroduce the broken pattern.
 
 ---
 
@@ -294,7 +294,7 @@ rounds:
       target: synthesis                   # MUST be a prior round id (Rule 3)
       max_revisions: 1
       signal:
-        type: contains                    # v2 ships with 'contains' only (D-034)
+        type: contains                    # v2 ships with 'contains' only
         value: FLAG
         case_sensitive: false
 ```
@@ -307,7 +307,7 @@ This is `rounds-audit`; `compileFlow` emits node ids `round-{r}-{agent}`, `termi
 
 New YAMLs are **auto-discovered**. The engine's `listPublicSpecs()` uses `readdirSync` to enumerate `packages/agents/vada-deliberation/yamls/`; the MCP `spec-registry.ts` delegates to it. Just creating the YAML file is enough for it to appear in the catalog and in MCP tool enums.
 
-`validateAllSpecs()` runs at startup — a malformed YAML crashes the server on start. This is intentional (fail-fast). The 10 validation rules from D-033 are enforced by `validateFlow` (called by `loadFlow`).
+`validateAllSpecs()` runs at startup — a malformed YAML crashes the server on start. This is intentional (fail-fast). The 10 validation rules from the v2 schema are enforced by `validateFlow` (called by `loadFlow`).
 
 To hide a spec from the public `/teams` catalog (while keeping it in the catalog for benchmarks), set `experimental: true` at the top level. The 7 experimental YAMLs use this today (PR #31 unpublished Crucible, Sparring, War Room).
 
@@ -412,7 +412,7 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 
 ---
 
-## The 10 validation rules (D-033)
+## The 10 validation rules
 
 `validateFlow` enforces these. Failures raise `InvalidFlowConfigError` at load time.
 
@@ -433,19 +433,19 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 
 ## Anti-patterns
 
-- ❌ Using `schema_version: "1.0"` — v1 is gone. The engine accepts `schema_version: "2.0"` only (D-033).
+- ❌ Using `schema_version: "1.0"` — v1 is gone. The engine accepts `schema_version: "2.0"` only.
 - ❌ Using v1 keys (`flow.rounds`, `flow.synthesis`, `flow.audit`, top-level `reviewers`, `response`) — the engine no longer parses them. Use `rounds[]` with one entry per phase.
 - ❌ Importing `loadSpec` or `compileSpec` from `@atta/engine` — those exports were deleted in PR #47. Use `loadFlow` / `compileFlow`.
 - ❌ Referencing `{{reviewerResponses}}` in a synthesis template — that variable was never populated. Use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` instead.
-- ❌ Setting `signal.type: 'equals'` or `'matches'` — v2 ships with `contains` only. The engine throws explicitly on others (D-034). The schema reserves them for future extensibility, but compileFlow currently rejects them.
-- ❌ Defining team logic in TypeScript — it belongs in YAML (`@vada/teams` was deleted long before D-033).
+- ❌ Setting `signal.type: 'equals'` or `'matches'` — v2 ships with `contains` only. The engine throws explicitly on others. The schema reserves them for future extensibility, but compileFlow currently rejects them.
+- ❌ Defining team logic in TypeScript — it belongs in YAML (`@vada/teams` was deleted long before the generic flow refactor).
 - ❌ Adding a YAML to a static `SPECS` map — the registry is dynamic; just create the file. `validateAllSpecs()` will discover and validate it at startup.
 - ❌ Agent name mismatch between round `agents[].name` and top-level `agents[].name` — exact case-sensitive match required (validation Rule 4).
 - ❌ Setting `classifier.mode: always_tools` for a pure audit agent — defeats the audit-as-blindness mechanism.
 - ❌ Omitting `classifier` on a tool-enabled agent — be explicit. Implicit `skip` means tools are silently dropped.
 - ❌ Adding `tools` to `agents[]` without verifying the tool name exists in the relevant per-vendor registry (`ANTHROPIC_TOOL_REGISTRY`, `GOOGLE_TOOL_REGISTRY`, or `OPENAI_COMPAT_TOOL_REGISTRY` in `packages/adapter-langgraph/src/tools.ts`). Unknown names are skipped with a warning, not a throw — silent no-ops are hard to debug.
 - ❌ Targeting `on_failure.target` to the same round or a later round — Rule 3 rejects this. Audit rounds must come after their revision target.
-- ❌ Adding `-v1` / `-v2` suffix to a filename or `id` — global D-013 + apps/vada-ai/docs/vada-decisions-legacy.md D-025 keep filenames unversioned. Version history lives in git + decision logs.
+- ❌ Adding `-v1` / `-v2` suffix to a filename or `id` — filenames stay unversioned. Version history lives in git + the frozen decision archive.
 - ❌ Not writing a verify script — silent regressions are the enemy.
 
 ---
@@ -458,4 +458,3 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 - Classifier behavior + SDK-shape dispatch: **atta-adapter-langgraph** skill
 - Architecture overview + locked decisions: **vada-architecture** skill
 - Design rationale for the universal round-based schema: `apps/vada-ai/specs/generic-flow-refactor.md`
-- apps/vada-ai/docs/vada-decisions-legacy.md D-033 + D-034 (engine vocabulary + signal type cleanup)

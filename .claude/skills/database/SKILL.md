@@ -7,7 +7,7 @@ description: Drizzle ORM patterns for Neon Postgres — schema, queries, JSON fi
 
 ## Context
 
-Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP (D-029) and the shared keys UI extraction (D-030) — see `apps/vada-ai/docs/vada-decisions-legacy.md` for rationale.
+Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecosystem-shared concerns (provider keys, API keys, MCP sessions) live in `packages/db/` (`@atta/db`) and are shared across products. Product-specific tables stay in each product's app-local schema (`apps/{product}/web/src/db/schema.ts`). The split is documented as a deliberate exception to per-product isolation, driven by hosted MCP and the shared keys UI extraction — see `apps/vada-ai/docs/vada-decisions-legacy.md` for rationale.
 
 ---
 
@@ -18,7 +18,7 @@ Each app uses Neon Postgres + Drizzle ORM. Identity (the `users` table) and ecos
 - **MUST** store JSON fields as `text` — serialize/deserialize manually
 - **MUST** use `clerk_id` as primary key (or FK) for user-scoped tables
 - Per-product profile tables (e.g., `apps/vada-ai/web/src/db/schema.ts` `userSettings`) reference the shared `users.clerk_id` as a FK (see schema split below).
-- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions`, per D-030 — see schema split below) are read by any product that exposes hosted MCP or BYOK Settings.
+- Ecosystem-shared key tables (`api_keys`, `user_provider_keys`, `mcp_sessions` — see schema split below) are read by any product that exposes hosted MCP or BYOK Settings.
 
 ```ts
 import { boolean, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
@@ -41,7 +41,7 @@ export const users = pgTable('users', {
 
 `packages/db/src/schema/`:
 - `users.ts` — identity (`users`)
-- `keys.ts` — `api_keys`, `user_provider_keys`, `mcp_sessions` (per D-030)
+- `keys.ts` — `api_keys`, `user_provider_keys`, `mcp_sessions`
 
 `apps/{product}/web/src/db/schema.ts`:
 - product-specific tables (deliberation transcripts, benchmarks, per-product preferences like `userSettings`, etc.)

@@ -312,7 +312,7 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 
 When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
 
-When a button has both icon and label (Sign out, Settings, Theme — the pattern established by D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
+When a button has both icon and label (Sign out, Settings, Theme): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 

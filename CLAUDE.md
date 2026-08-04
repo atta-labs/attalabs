@@ -29,7 +29,7 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
-| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project (D-124) |
+| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project |
 
 ## App Structure Convention
 
@@ -130,7 +130,7 @@ NEVER include `Generated with [Claude Code]` or `Co-Authored-By: Claude` attribu
 
 ## Principal Session Hygiene
 
-Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one tranche-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, decision log) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline.
+Long-running Principal/orchestration sessions (Planner, Brief Author, multi-task oversight) accumulate context fast — every turn replays the whole window. Keep one tranche-scope per session: when a task's PR merges and you're moving to a genuinely separate concern, start a fresh session rather than continuing in the same one. Briefs and AEG's own docs (Issues, topology files, the frozen decision archive) are the durable state — a new session loses no context that matters, since none of it lives in the chat itself. Push exploratory digging into subagents/dispatched sessions rather than doing it inline.
 
 ---
 
