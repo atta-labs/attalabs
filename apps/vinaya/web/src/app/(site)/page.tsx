@@ -1,10 +1,10 @@
+import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { Footer } from '@atta/ui/footer'
 import { CtaSection } from './_components/CtaSection'
 import { EnergyFieldBg } from './_components/EnergyFieldBg'
 import { HeroSection } from './_components/HeroSection'
 import { ProtectedSection } from './_components/ProtectedSection'
 import { WorkflowSection } from './_components/WorkflowSection'
-import { HeroFabric } from './_components/hero-canvas/HeroFabric'
 import { VinayaHeroEmblem } from './_components/hero-canvas/VinayaHeroEmblem'
 
 // A three-chapter, full-viewport story built around the visual work. Only the Hero,

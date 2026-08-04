@@ -4,10 +4,10 @@ import { Button } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowDown, GitBranch } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { EnergyFieldBg } from '../EnergyFieldBg'
 import { HarnessStructure } from './HarnessStructure'
 import { CONDUIT_ANGLES_DEG } from './harness-geometry'
-import { HeroFabric } from './HeroFabric'
 
 // The harness's electricity-arc angles in radians — the grid agents in the fabric are born
 // at these points (the electricity), then walk the mesh toward the cursor.

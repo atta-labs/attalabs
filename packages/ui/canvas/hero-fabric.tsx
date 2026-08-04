@@ -11,7 +11,7 @@
 
 import '@atta/ui/canvas.css'
 import { createFabricRenderer, refreshThemeCache } from '@atta/ui/canvas'
-import type { BgState } from '@atta/ui/canvas'
+import type { BgState, FabricConfig } from '@atta/ui/canvas'
 import { useEffect, useRef } from 'react'
 
 const FABRIC_CONFIG = {
@@ -33,7 +33,8 @@ export function HeroFabric({
   gravity = 0,
   pulseKey = 0,
   emitAngles,
-  emitRadiusRatio = 0.875
+  emitRadiusRatio = 0.875,
+  config
 }: {
   centerRef?: React.RefObject<HTMLElement | null> // omit → curvature centers on the viewport
   gravity?: number // 0→1 curvature-fold intensity (settleProgress); 0 = flat mesh
@@ -43,12 +44,15 @@ export function HeroFabric({
   emitAngles?: number[]
   // Fraction of the ring's half-width where the electricity sits (rMid ≈ 0.875·c).
   emitRadiusRatio?: number
+  // Overrides merged onto the default config (e.g. `wordmark`, `gravityMultiplier: 0` to
+  // reveal a wordmark without also folding the mesh). Read once, at mount.
+  config?: Partial<FabricConfig>
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Own renderer per instance → own gridAgent state (keyed by config), so the hero, Workflow
   // and CTA fabric canvases never share/stomp each other's agents.
   const renderFabricRef = useRef<((s: BgState) => void) | null>(null)
-  if (!renderFabricRef.current) renderFabricRef.current = createFabricRenderer({ ...FABRIC_CONFIG })
+  if (!renderFabricRef.current) renderFabricRef.current = createFabricRenderer({ ...FABRIC_CONFIG, ...config })
   const gravityRef = useRef(gravity)
   gravityRef.current = gravity
   const lastKey = useRef(0)
