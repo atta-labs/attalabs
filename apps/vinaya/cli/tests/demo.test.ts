@@ -167,4 +167,60 @@ describe('vinaya demo break', () => {
     expect(remaining).toBe('')
     expect(existsSync(join(stateAbs, 'vinaya-demo-state.json'))).toBe(false)
   }, 15_000)
+
+  // F1 regression (security review HIGH, PR #713): a kill mid-demo leaves the
+  // fixture STAGED but uncommitted on the demo branch — the exact window
+  // between "stage" and "commit refused, guided fix pending". The old
+  // recovery path did `git checkout <originalBranch>` with no `reset`/`clean`
+  // first, and plain git carries a staged addition across a checkout — so the
+  // fixture would land staged on the user's REAL original branch. This test
+  // reproduces that exact window and asserts genuinely no residue survives,
+  // not just that the branch name matches.
+  it('recovers from a crash mid-demo (staged, uncommitted fixture on the demo branch) leaving the original branch genuinely clean', async () => {
+    const beforeHead = git(root, ['rev-parse', 'HEAD'])
+
+    // A real branch that happens to share the reserved prefix, created before
+    // this "crash" and NOT part of this run's own state — proves recovery
+    // never sweeps by prefix, only ever deletes the one branch it recorded.
+    git(root, ['branch', 'vinaya/demo-break-not-mine'])
+
+    // Simulate the crash window: on the demo branch, with the fixture staged
+    // (git add'd) but never committed — exactly what `runDemoBreak` leaves on
+    // disk between staging and the first (deliberately-refused) commit.
+    git(root, ['checkout', '-b', 'vinaya/demo-break-crashed-2'])
+    writeFileSync(join(root, '.vinaya-demo-brief.md'), 'incomplete fixture, never committed\n')
+    git(root, ['add', '.vinaya-demo-brief.md'])
+    expect(git(root, ['status', '--porcelain'])).toContain('A  .vinaya-demo-brief.md')
+
+    const gitDir = git(root, ['rev-parse', '--git-dir'])
+    const stateAbs = gitDir.startsWith('/') ? gitDir : join(root, gitDir)
+    writeFileSync(
+      join(stateAbs, 'vinaya-demo-state.json'),
+      JSON.stringify({ originalBranch: 'main', demoBranch: 'vinaya/demo-break-crashed-2' }),
+      'utf-8'
+    )
+
+    let code = -1
+    const out = await captureStdout(async () => {
+      code = await runDemoBreak(root, [])
+    })
+    expect(code, out).toBe(0)
+
+    // Back on main, genuinely clean — not just the right branch name, but no
+    // staged, modified, or untracked residue of any kind, and the fixture
+    // file itself does not exist there at all.
+    expect(git(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).toBe('main')
+    expect(git(root, ['status', '--porcelain'])).toBe('')
+    expect(git(root, ['diff', '--cached', '--name-only'])).toBe('')
+    expect(git(root, ['ls-files', '.vinaya-demo-brief.md'])).toBe('')
+    expect(git(root, ['rev-parse', 'HEAD'])).toBe(beforeHead) // no stray commit landed on main either
+
+    // Only the crashed run's own recorded branch was deleted — the unrelated
+    // pre-existing branch sharing the prefix survives untouched.
+    expect(() => git(root, ['rev-parse', '--verify', 'refs/heads/vinaya/demo-break-crashed-2'])).toThrow()
+    expect(git(root, ['rev-parse', '--verify', 'refs/heads/vinaya/demo-break-not-mine'])).toMatch(/^[0-9a-f]{40}$/)
+
+    // cleanup for subsequent assertions/afterEach
+    git(root, ['branch', '-D', 'vinaya/demo-break-not-mine'])
+  }, 15_000)
 })

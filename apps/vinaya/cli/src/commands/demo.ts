@@ -45,14 +45,6 @@ function branchExists(repoRoot: string, name: string): boolean {
   }
 }
 
-function listDemoBranches(repoRoot: string): string[] {
-  const out = gitCapture(repoRoot, ['for-each-ref', '--format=%(refname:short)', `refs/heads/${DEMO_BRANCH_PREFIX}*`])
-  return out
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
 /** Collision-safe: retries with a fresh timestamp+random suffix if a name is somehow already taken. */
 function createDemoBranch(repoRoot: string): string {
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -73,10 +65,17 @@ function gitDirAbs(repoRoot: string): string {
 
 /**
  * Crash recovery: a state file left on disk means a prior run never reached
- * its own cleanup (a crash mid-demo). Detects that, restores the recorded
- * original branch if the process is currently sitting on a stray demo
- * branch, deletes every stray `vinaya/demo-break-*` branch, and removes the
- * stale state file — all before this run creates its own.
+ * its own cleanup (a crash mid-demo). Never a prefix-glob sweep — only the
+ * ONE demo branch this run's own state file names is ever touched (a real
+ * branch a user happened to name with the reserved prefix must never be
+ * force-deleted as collateral).
+ *
+ * If the process is currently sitting on that stray demo branch, its staged
+ * fixture (the exact "commit refused, guided fix pending" window this
+ * command's own demo lives in) is discarded with `reset --hard` + `clean -fd`
+ * BEFORE switching away — `git checkout` alone carries a staged-but-uncommitted
+ * change across branches, which would otherwise land the fixture on the
+ * user's real original branch (the exact defect this fixes).
  */
 function recoverFromCrash(repoRoot: string, statePath: string): void {
   const currentBranch = gitCapture(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD'])
@@ -89,30 +88,35 @@ function recoverFromCrash(repoRoot: string, statePath: string): void {
     }
   }
 
-  const stray = listDemoBranches(repoRoot)
   const onStrayBranch = currentBranch.startsWith(DEMO_BRANCH_PREFIX)
-  if (stray.length === 0 && !onStrayBranch) {
-    if (existsSync(statePath)) rmSync(statePath, { force: true })
+  if (!state) {
+    if (onStrayBranch) {
+      throw new Error(
+        `On a leftover demo branch \`${currentBranch}\` with no recoverable state file. ` +
+          'Checkout the branch you want manually, then re-run `vinaya demo break`.'
+      )
+    }
     return
   }
 
   process.stdout.write('→ Found a leftover demo branch from a previous run — cleaning it up first.\n')
 
   if (onStrayBranch) {
-    const target = state?.originalBranch
-    if (!target || !branchExists(repoRoot, target)) {
+    gitCapture(repoRoot, ['reset', '--hard'])
+    gitCapture(repoRoot, ['clean', '-fd'])
+    if (!branchExists(repoRoot, state.originalBranch)) {
       throw new Error(
-        `On a leftover demo branch \`${currentBranch}\` with no recoverable original branch recorded. ` +
+        `Recorded original branch \`${state.originalBranch}\` no longer exists. ` +
           'Checkout the branch you want manually, then re-run `vinaya demo break`.'
       )
     }
-    gitCapture(repoRoot, ['checkout', target])
+    gitCapture(repoRoot, ['checkout', state.originalBranch])
   }
 
-  for (const b of listDemoBranches(repoRoot)) {
-    gitCapture(repoRoot, ['branch', '-D', b])
+  if (branchExists(repoRoot, state.demoBranch)) {
+    gitCapture(repoRoot, ['branch', '-D', state.demoBranch])
   }
-  if (existsSync(statePath)) rmSync(statePath, { force: true })
+  rmSync(statePath, { force: true })
 }
 
 /**
@@ -164,7 +168,18 @@ Closes #0 (fixture value — no real Issue; discarded with the demo branch)
 `
 }
 
+/**
+ * `reset --hard` + `clean -fd` run BEFORE `checkout`, on the demo branch,
+ * every time — even on the plain success path, where they are a no-op
+ * (nothing to discard once the fix commit lands) — for symmetry with the
+ * failure paths that call this same function while the fixture is still
+ * staged, uncommitted, on the demo branch. `git checkout` alone carries a
+ * staged-but-uncommitted file across branches; skipping this step here is
+ * exactly how the fixture would land on the user's real original branch.
+ */
 function cleanup(repoRoot: string, originalBranch: string, demoBranch: string, statePath: string): void {
+  gitCapture(repoRoot, ['reset', '--hard'])
+  gitCapture(repoRoot, ['clean', '-fd'])
   gitCapture(repoRoot, ['checkout', originalBranch])
   gitCapture(repoRoot, ['branch', '-D', demoBranch])
   if (existsSync(statePath)) rmSync(statePath, { force: true })
