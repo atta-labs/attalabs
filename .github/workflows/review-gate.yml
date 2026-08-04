@@ -157,6 +157,19 @@ jobs:
   # controls. The `pull_request` path's implicit check-run is already
   # correctly bound to the right SHA and needs no help from this job — it is
   # skipped there so the PR doesn't show two duplicate "Review gate" entries.
+  #
+  # Found live during vinaya-independence-v1 task 1 (#721): the skip above
+  # stops a duplicate on the SAME run, but does nothing about a duplicate
+  # across DIFFERENT runs — the `pull_request` path's own implicit check-run
+  # (created the moment the PR opens, before any review exists, so it's
+  # always a starting `failure`) is a real, separate check-run object from
+  # whatever this job later POSTs once a verdict lands. Both carry the same
+  # name "Review gate" on the same SHA, so the checks list shows a
+  # permanently-stale fail sitting next to the real, current result — GitHub
+  # resolves the *required-check* gate correctly against the newest one, but
+  # the display is confusing enough to read as broken. Fix: look up any
+  # existing "Review gate" check-run on this SHA and PATCH it in place
+  # instead of always POSTing a new one — converges to one evolving entry.
   report-check-run:
     name: Review gate (report)
     if: always() && github.event_name == 'issue_comment' && needs.evaluate.result != 'skipped'
@@ -173,8 +186,18 @@ jobs:
         run: |
           CONCLUSION="failure"
           if [ "$JOB_RESULT" = "success" ]; then CONCLUSION="success"; fi
-          gh api --method POST "repos/${{ github.repository }}/check-runs" \
-            -f name="Review gate" \
-            -f head_sha="$SHA" \
-            -f status="completed" \
-            -f conclusion="$CONCLUSION"
+
+          EXISTING_ID=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs?check_name=Review+gate" \
+            --jq '.check_runs | sort_by(.started_at) | last | .id // empty')
+
+          if [ -n "$EXISTING_ID" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/check-runs/$EXISTING_ID" \
+              -f status="completed" \
+              -f conclusion="$CONCLUSION"
+          else
+            gh api --method POST "repos/${{ github.repository }}/check-runs" \
+              -f name="Review gate" \
+              -f head_sha="$SHA" \
+              -f status="completed" \
+              -f conclusion="$CONCLUSION"
+          fi
