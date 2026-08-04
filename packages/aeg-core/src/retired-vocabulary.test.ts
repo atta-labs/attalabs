@@ -147,7 +147,12 @@ const RETIRED_IN_PRODUCT = [
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
-  [TRANCHE_SLUG_VN_PATTERN]: ['aeg-root'],
+  [TRANCHE_SLUG_VN_PATTERN]: ['.'],
+  // LEGACY_SLUG_PATTERN stays aeg-root-only, deliberately not widened with the
+  // VN pattern above: every slug it can ever match is, by construction,
+  // already archived (derived from aeg-root/tranches/completed/*.md) — citing
+  // a closed tranche is the safe case (same durability class as a closed PR),
+  // not the live-citation problem this widening exists to catch.
   ...(LEGACY_SLUG_PATTERN ? { [LEGACY_SLUG_PATTERN]: ['aeg-root'] } : {})
 }
 
