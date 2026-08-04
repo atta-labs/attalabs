@@ -2,7 +2,7 @@
 
 This app is the AttaLabs hub, serving `attalabs.dev` for the AttaLabs dev/lab ecosystem. It is distinct from Atta, the deep-thinking AI consumer product composed of Vāda + Vitakka + Sati — Atta's own consumer surface (target domain `atta.ai`) has not yet been deployed. See the root CLAUDE.md products table for the full picture.
 
-**Domain:** atta.ai
+**Domain:** attalabs.dev
 
 ---
 

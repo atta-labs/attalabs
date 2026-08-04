@@ -274,8 +274,16 @@ export interface FabricConfig {
   approachSpeedMultiplier: number     // 0.2 = original, 0.8 = fast, 0.1 = slow
   forceCompleteAtSphereEdge: boolean  // snap at radius, or smooth approach?
   shockWaveOnArrival: boolean         // expanding ripple when particle joins
+  gravityMultiplier?: number          // 0 = no gravity fold, 1 = full Gaussian funnel pull toward ring. Default 1.
+  waterWave?: boolean                 // multi-plane water-surface wave instead of the default shimmer; also lets Tron particles spawn as soon as phase=settled
+  radialFold?: boolean                // fold radiates OUTWARD from the ring center (paired with a settleProgress ramp) instead of the whole grid folding at once. Default false.
+  pulseReach?: number                 // scales the closing-pulse shock wave's travel so it can reach the screen edges. Default 1.
+  gridAgents?: boolean                // deterministic Tron-style "agents" gliding along the grid lines, trailing light. Default false.
+  wordmark?: { text: string; cellSize?: number } // illuminate the grid cells that fall inside a wordmark's letterforms — rasterized once (cached by text), sampled at a cell size finer than the mesh's own coarse step. Single reveal pass, driven by settleProgress. Default: no wordmark.
 }
 ```
+
+Only the first three fields are threaded through every renderer's original signature — the rest were added incrementally as later pages needed them (see each field's own doc comment in `bg/fabric.ts` for the full reasoning). All are optional and default to off/unchanged behavior for any existing caller that doesn't set them.
 
 Threaded through `renderFabricBgCore` signature so every page can pass its own config.
 
@@ -680,6 +688,11 @@ packages/ui/canvas/
 │   ├── paint.ts           — Particle paint primitives (paintParticleHead, paintClusterGlow, bloomStops)
 │   ├── constants.ts       — MATRIX_CHARS and tuning constants
 │   └── math.ts            — Trig / numeric helpers
+├── shared/harness-geometry.ts — Pure polar/angle math shared by harness-ring.tsx (screen-coordinate helpers, no DOM/SVG dependency)
+├── hero-fabric.tsx        — Local, contained fabric canvas (not fixed inset-0) for a normal in-flow section; moved here verbatim from apps/vinaya/web, which was already generic — imports only from this package
+├── harness-ring.tsx       — Canvas-drawn wheel/spoke/electricity mark (AttaLabs ecosystem hero's Vinaya node)
+├── herald-flag.tsx        — Canvas-drawn sphere with a rippling flag (AttaLabs ecosystem hero's Herald node)
+├── engine-gear.tsx        — Canvas-drawn interlocking gears (AttaLabs ecosystem hero's Engine node)
 └── assistant-wave.tsx     — Standalone SVG wave
 ```
 
