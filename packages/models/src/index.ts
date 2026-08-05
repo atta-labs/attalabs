@@ -12,6 +12,8 @@ export { FALLBACK_CATALOG } from './fallback'
 
 export { OVERLAY } from './overlay'
 
+export { TIER_RANK, isRankedTier, meetsMinTier, type MinTier } from './tiers'
+
 export { DECOMMISSIONED_MODEL_IDS, isDecommissioned } from './deprecations'
 
 export { resolveDispatchModel } from './dispatch'
