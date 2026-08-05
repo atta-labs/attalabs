@@ -176,10 +176,11 @@ const RETIRED_IN_PRODUCT = [
  * out-of-surface consequence: this scope does not yet reach Herald's
  * or `packages/agents/`'s own source comments (e.g.
  * `packages/agents/forensic-hiring-auditor/src/tools/github-signals.ts`,
- * `apps/herald-ai/web/src/components/HeraldAccountMenu.tsx`), which
+ * `apps/herald-ai/web/src/components/HeraldAccountMenu.tsx`,
+ * `apps/herald-ai/web/src/components/envoy/ReportView.tsx`), which
  * still carry live tranche-slug citations today — tracked as its own
- * follow-up (widen to Herald/Vāda/attalabs the same way this task
- * widened to Vinaya) rather than silently left unowned.
+ * follow-up, #736 (widen to Herald/Vāda/attalabs the same way this
+ * task widened to Vinaya) rather than silently left unowned.
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
