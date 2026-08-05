@@ -530,7 +530,7 @@ Exit non-zero on any `fail`. `info` and `pass` checks do not affect exit code. `
 
 **Grandfather cutoff — `COHERENCE_ENFORCED_FROM = '2026-07-01'`:**
 
-Legacy incoherences that predate the cutoff are emitted as `status: "info"` (visible in the report) rather than `"fail"` (which blocks CI). Rationale: branch protection is unavailable on the free plan; pre-existing repo-wide debt (legacy vada/herald/aeg-ui tranches) cannot be retro-fixed, so a hard gate on those findings would make every new PR un-mergeable.
+Legacy incoherences that predate the cutoff are emitted as `status: "info"` (visible in the report) rather than `"fail"` (which blocks CI). Rationale: pre-existing repo-wide debt (legacy vada/herald/aeg-ui tranches) cannot be retro-fixed, so a hard gate on those findings would make every new PR un-mergeable.
 
 | Check | Terminal event date used for grandfather test |
 |---|---|

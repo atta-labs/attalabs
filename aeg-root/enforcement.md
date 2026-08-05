@@ -84,7 +84,7 @@ Every pull request, on open and on every push, re-runs the same checks in CI:
 
 **reader-resolvable-prose rollout (task 15):** ships report-only, same precedent as G1/G2 above — it can only ever print a `warning` finding, never fail CI (the check's own exit code always stays 0), so the real backlog this run surfaces (161 findings, all class 2, across `aeg-root` and the public site's `(site)` pages on the day this shipped) is visible debt rather than a wave of newly-red pull requests. A later, separately-dispatched task flips it to blocking once that backlog is cleared.
 
-Red CI plus the merge gate means no agent can merge the change. The Principal can always override — that is a feature, not a hole.
+Red CI is now unmergeable by any actor — the repository ruleset's `required_status_checks` rule carries `bypass_actors: []`, so the Principal has no ambient override either. The Principal's override paths are explicit and auditable instead: edit the ruleset itself, or apply an actor-verified `vinaya/waiver:review` label to skip the review gate specifically.
 
 ---
 
