@@ -58,7 +58,7 @@ is refused by contract, not caught in review.
 | `vinaya issue create \| edit` | Same validated forge-write path for Issues |
 | `vinaya studio` | Launch local Vinaya Studio against the current repo |
 
-> Not yet implemented: `demo`, `waiver` (`vinaya-cli-v1` task 7, #387).
+> Not yet implemented: `demo`, `waiver` (#387).
 
 ---
 

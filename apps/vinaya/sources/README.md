@@ -21,8 +21,8 @@ zod-validated config object.
 ## DoctrineSource adapter
 
 - **`createFileDoctrineSource`** (`src/doctrine-file-adapter.ts`) — file-backed
-  `DoctrineSource` for `deriveDiagramModel` (`@atta/aeg-core`,
-  enforcement-derivation-v1 task 5, #506). Reads `<root>/enforcement.md`,
+  `DoctrineSource` for `deriveDiagramModel` (`@atta/aeg-core`, #506). Reads
+  `<root>/enforcement.md`,
   `<root>/roles/*.md`, and `<root>/contracts/*.md` over a configurable root
   (`DoctrineFileSourceConfig.root`, default `DEFAULT_GOVERNANCE_ROOT`), never a
   hardcoded literal — same rule as `createFileSource`. This keeps `aeg-core`'s

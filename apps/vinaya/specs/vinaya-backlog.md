@@ -4,11 +4,11 @@
 
 **Out of the AEG flow.** Held / future / research items for Vinaya. Reference the Planner reads when choosing the next tranche slice; the flow never operates on it.
 
-First mention of this file — created by `vinaya-cli-v1` task 1 (#381), per the brief's §2 correction (`vinaya-spec.md` already existed at dig time; this backlog file did not).
+First mention of this file — created (#381), per the brief's §2 correction (`vinaya-spec.md` already existed at dig time; this backlog file did not).
 
 ---
 
-## `vinaya-cli-v1` — remaining tasks (issues #382–#387, undispatched)
+## Remaining tasks (issues #382–#387, undispatched)
 
 - **Task 2 — `StateSource` seam.** Already built and parked; blocked behind this task's merge + archival (row-adjacency).
 - **Check engine, `init`, forge writes, lifecycle, trust surface** — the remainder of the v1.0 command surface: `init`, `init product`, `demo break`, `doctor`, `upgrade`, `eject`, `check` (`--json`/`--diff-only`/`--parallel`), `pr create/edit`, `issue create/edit`, `waiver`, `new check`, `studio` (launcher). See `vinaya-spec.md` § v1.0 scope.

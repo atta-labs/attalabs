@@ -9,7 +9,7 @@ name: "Vinaya: Gate Suite"
 # files. The 9 checks below now run as SEQUENTIAL STEPS of one job — one
 # checkout, one bun setup, one dependency install — same gates, same
 # strictness, ~1-2 billed minutes instead of ~9-10. (A 10th step, Review
-# gate, was added later — aeg-review-gate-v1 task 1, #474 — same job, same
+# gate, was added later (#474) — same job, same
 # amortized overhead — then split back OUT into its own workflow,
 # 2026-07-08, once its need for an `issue_comment` trigger made it a genuine
 # exception to "same event set as everything else"; see `review-gate.yml`.)
@@ -86,7 +86,7 @@ jobs:
         env:
           BRANCH: ${{ github.head_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-          # GH_TOKEN (aeg-forge-state-v1 3b, #437): loadTrancheFiles' repo-state
+          # GH_TOKEN (#437): loadTrancheFiles' repo-state
           # reads now derive from the forge (`gh` CLI shell-out) instead of
           # `git show origin/main:...` — this step had no forge dependency
           # before and so never needed a token; it does now.
@@ -249,8 +249,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: bun packages/aeg-core/bin/check-no-disk-state.ts
 
-      # ── G-checks: registry load-bearing (G1–G5, enforcement-derivation-v1
-      # task 3, #504) ──────────────────────────────────────────────────────
+      # ── G-checks: registry load-bearing (G1–G5, #504) ─────────────────────
       # Makes enforcement.md's three ring tables load-bearing: G1
       # (implementation-exists) and G2 (no-orphan-hook/CLI) print `info`
       # findings but never fail (flipping G1 to blocking now would
