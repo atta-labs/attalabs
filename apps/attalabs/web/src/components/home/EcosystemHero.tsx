@@ -157,6 +157,30 @@ function useRevealOnce(ref: React.RefObject<HTMLElement | null>) {
 }
 
 /**
+ * Tracks whether a section is on screen, continuously — unlike `useRevealOnce`, which fires
+ * once and stops observing.
+ *
+ * This page stacks four full-height sections, each carrying a canvas mark that owns its own
+ * rAF loop. Left ungated they all run for the whole visit, including the three the reader
+ * cannot see. `packages/ui/canvas/CLAUDE.md` prescribes exactly this remedy: an
+ * IntersectionObserver driving `paused`, which cancels the loop while preserving particle
+ * state so resuming does not restart the animation.
+ */
+function useInView(ref: React.RefObject<HTMLElement | null>) {
+  const [inView, setInView] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) setInView(e.isIntersecting)
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref])
+  return inView
+}
+
+/**
  * Ramps 0→1 over `dur` once `active` turns true. Wall-clock driven via setInterval rather
  * than rAF so a backgrounded tab resumes at the right point instead of stranding mid-ramp.
  */
@@ -189,6 +213,43 @@ function useRamp(active: boolean, dur: number, delay = 0, skip = false) {
 }
 
 /**
+ * Ramps toward 1 while `on`, back toward 0 when it goes false — unlike `useRamp`, which fires
+ * once and stays. This is what lets a mark's motion actually reverse: the harness ungrips and
+ * its electricity dies out on the way back up, rather than freezing mid-gesture.
+ *
+ * Wall-clock driven for the same reason as `useRamp` — a backgrounded tab resumes at the
+ * right point instead of stranding partway.
+ */
+function useToggleRamp(on: boolean, dur: number, skip = false) {
+  const [v, setV] = useState(0)
+  useEffect(() => {
+    if (skip) {
+      setV(on ? 1 : 0)
+      return
+    }
+    let cancelled = false
+    const target = on ? 1 : 0
+    const t0 = performance.now()
+    let from = 0
+    setV((current) => {
+      from = current
+      return current
+    })
+    const id = setInterval(() => {
+      if (cancelled) return
+      const p = Math.min(1, (performance.now() - t0) / dur)
+      setV(from + (target - from) * p)
+      if (p >= 1) clearInterval(id)
+    }, 16)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [on, dur, skip])
+  return v
+}
+
+/**
  * The single fixed layer behind every section — Vinaya's REAL fabric renderer
  * (`createFabricRenderer`, via HeroFabric), not a static grid. Using the real renderer is
  * what brings the cursor effect with it: it brightens the actual mesh lines within ~150px of
@@ -212,7 +273,21 @@ function BackgroundField() {
  */
 function MarkStage({ children, stageRef }: { children: ReactNode; stageRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={stageRef} className='relative flex items-center justify-center' style={{ height: MARK_SIZE }}>
+    // Scaled down on narrow viewports. Vāda's trio spans 1.792 × MARK_SIZE (430px) — wider
+    // than a 375px phone once the gutters are taken off — so at full size both flanking faces
+    // were sliced by the column's `overflow-hidden`. Scaling keeps all four marks the same
+    // size as each other, which a per-mark width clamp would not.
+    //
+    // The transform goes on the stage itself, NOT a wrapper: a transformed element becomes
+    // the containing block for absolutely-positioned descendants, and the flanks are
+    // absolute — a wrapper would reparent them onto a zero-size box. `getBoundingClientRect`
+    // reports the scaled rect, so sphere registration and the timeline's touch test stay
+    // correct without knowing the scale.
+    <div
+      ref={stageRef}
+      className='relative flex scale-[0.62] items-center justify-center min-[400px]:scale-75 sm:scale-100'
+      style={{ height: MARK_SIZE }}
+    >
       {children}
     </div>
   )
@@ -305,14 +380,26 @@ function headViewportY(scope: HTMLDivElement | null): number | null {
 }
 
 /**
- * True while the timeline's head is level with `markRef` — what makes a mark come alive as
- * the head reaches it, and go quiet again once it has passed.
+ * Hysteresis band around the mark's centre, in px. Without it a head parked exactly on the
+ * threshold would flip the mark on and off on every sub-pixel scroll jitter.
+ */
+const TOUCH_HYSTERESIS = 24
+
+/**
+ * True once the timeline's head has passed DOWN through `markRef`, and stays true — it is a
+ * latch, not a proximity band. Scrolling back up past the mark's centre releases it, so the
+ * next descent lights it again.
+ *
+ * A band was the obvious first reading of "alive while touched", but it means a mark dies the
+ * moment the head moves past it: scroll to the bottom of the page and every mark above is
+ * dark again. Latching is what makes the descent read as switching the page on, one mark at
+ * a time, with everything behind you left running.
  *
  * The boolean is React state, unlike the head's own position: it changes a handful of times
  * per page rather than every frame, so a re-render on each flip costs nothing. The scroll
  * handler itself is still rAF-throttled and only calls `setState` when the answer changes.
  */
-function useTimelineTouch(markRef: React.RefObject<HTMLElement | null>) {
+function useTimelineTouch(markRef: React.RefObject<HTMLElement | null>, { eager = false } = {}) {
   const scope = useContext(TimelineScope)
   const [touched, setTouched] = useState(false)
 
@@ -325,12 +412,16 @@ function useTimelineTouch(markRef: React.RefObject<HTMLElement | null>) {
       if (!mark || y === null) return
       const box = mark.getBoundingClientRect()
       const centre = box.top + box.height / 2
-      // Generous band: the mark is alive from the moment the head enters its own height,
-      // not only at the single pixel where they coincide.
-      const reach = box.height / 2 + 80
       setTouched((was) => {
-        const now = Math.abs(y - centre) <= reach
-        return now === was ? was : now
+        // `eager` is for the FIRST mark only. The head starts at the very top of the thread,
+        // which is ~190px of scrolling above that mark's centre — so waiting for a genuine
+        // pass would leave the opening section dead through the first flick of the wheel.
+        // Any scroll at all counts as reaching it; returning to a hard 0 still releases it
+        // through the normal rule below, so it re-triggers on the way back down.
+        if (eager && window.scrollY > 0) return true
+        if (!was && y >= centre) return true
+        if (was && y < centre - TOUCH_HYSTERESIS) return false
+        return was
       })
     }
     const onScroll = () => {
@@ -346,7 +437,7 @@ function useTimelineTouch(markRef: React.RefObject<HTMLElement | null>) {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
-  }, [markRef, scope])
+  }, [markRef, scope, eager])
 
   return touched
 }
@@ -425,8 +516,9 @@ function Timeline({ reduced }: { reduced: boolean }) {
       <div ref={headRef} className='absolute top-0 left-1/2 -translate-x-1/2 will-change-transform'>
         <span className='-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-4 rounded-full bg-primary opacity-30 blur-md' />
         <span className='-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-[5px] rounded-full bg-primary' />
-        {/* A slow pulse on the head only — suppressed under reduced motion, where the
-            scroll-linked travel is kept (it is the scroll itself) but nothing self-animates. */}
+        {/* A slow pulse on the head — suppressed under reduced motion. The head's travel down
+            the thread is kept either way: it is driven by the scroll rather than by a timer,
+            so suppressing it would only make the indicator wrong, not calmer. */}
         {!reduced && (
           <span className='-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-[5px] animate-ping rounded-full bg-primary opacity-40' />
         )}
@@ -533,10 +625,13 @@ function VadaSection() {
   const markRef = useRef<HTMLDivElement>(null)
   const reduced = usePrefersReducedMotion()
   const active = useRevealOnce(ref)
-  // The trio is anonymous and quiet until the timeline's head is level with it. On touch the
-  // three take back their identity hues and the rain starts falling — colour and rain ARE the
-  // reaction, so nothing scales or moves.
-  const alive = useTimelineTouch(markRef)
+  // The trio is anonymous and quiet until the timeline's head passes down through it. On touch
+  // the three take back their identity hues and the rain starts falling, and they STAY that
+  // way for the rest of the descent — colour and rain ARE the reaction, so nothing scales.
+  // `eager`: Vāda opens the page, so it wakes on the first pixel of scroll rather than
+  // waiting for the head to travel down to it.
+  const alive = useTimelineTouch(markRef, { eager: true })
+  const inView = useInView(ref)
   const agentState = alive ? 'speaking' : 'complete'
   const hue = (identity: string) => (alive ? identity : VADA_TRIO_RESTING)
   // The flanking pair arrives just behind the lead, so the team assembles rather than
@@ -576,7 +671,8 @@ function VadaSection() {
           faceOpacity={0.55}
           size={FLANK_LARGE}
           particleCount={45}
-          showMatrix={alive}
+          showMatrix={alive && !reduced}
+          paused={!inView}
           matrixOpacity={0.7}
           solidBg
           bgOpacity={1}
@@ -600,7 +696,8 @@ function VadaSection() {
           faceOpacity={0.55}
           size={FLANK_LARGE}
           particleCount={45}
-          showMatrix={alive}
+          showMatrix={alive && !reduced}
+          paused={!inView}
           matrixOpacity={0.7}
           solidBg
           bgOpacity={1}
@@ -617,7 +714,8 @@ function VadaSection() {
           faceOpacity={0.6}
           size={VADA_LEAD}
           particleCount={90}
-          showMatrix={alive}
+          showMatrix={alive && !reduced}
+          paused={!inView}
           matrixOpacity={0.85}
           solidBg
           bgOpacity={1}
@@ -635,6 +733,7 @@ function HeraldSection() {
   const active = useRevealOnce(ref)
   const reveal = useRamp(active, 1000, 0, reduced)
   const alive = useTimelineTouch(markRef)
+  const inView = useInView(ref)
 
   return (
     <SectionShell
@@ -663,7 +762,8 @@ function HeraldSection() {
           color='var(--foreground)'
           size={MARK_SIZE}
           particleCount={90}
-          showMatrix={alive}
+          showMatrix={alive && !reduced}
+          paused={!inView}
           matrixOpacity={0.85}
           solidBg
           bgOpacity={1}
@@ -682,18 +782,17 @@ function VinayaSection() {
   const markRef = useRef<HTMLDivElement>(null)
   const reduced = usePrefersReducedMotion()
   const active = useRevealOnce(ref)
-  // The harness draws itself on: screws rise and bands deploy, then electricity sparks
-  // across the gaps, then the gripper columns clamp inward.
-  //
-  // Timing matters more here than on the other marks: the electricity is the ONLY part of
-  // this mark that keeps moving once revealed (everything else is a one-shot draw-on), so a
-  // long lead-in reads as "nothing is happening". The spark is brought forward to overlap
-  // the tail of the band deploy rather than waiting for it to finish.
+  const alive = useTimelineTouch(markRef)
+  // The harness builds itself ONCE on reveal — screws rise, bands deploy — and that structure
+  // stays put. What the timeline head drives is the live half: the gripper columns close on
+  // `main` and the electricity runs while the head is below, and both reverse when you scroll
+  // back up past it. So the harness un-grips and goes dark rather than sitting statically
+  // deployed, and the next descent grabs again.
   const ringProgress = useRamp(active, 1700, 0, reduced)
   // 900ms is Vinaya's own hero draw-in for the electricity (`at(3900, () => ramp(900,
   // setSpark))`) — the arcs draw across the gaps at the same rate there and here.
-  const spark = useRamp(active, 900, 1300, reduced)
-  const clamp = useRamp(active, 600, 1900, reduced)
+  const spark = useToggleRamp(alive && !reduced, 900, reduced)
+  const clamp = useToggleRamp(alive, 600, reduced)
 
   return (
     <SectionShell
@@ -728,6 +827,10 @@ function EngineSection() {
   const reduced = usePrefersReducedMotion()
   const active = useRevealOnce(ref)
   const reveal = useRamp(active, 1000, 0, reduced)
+  // The gear turns and the plan particles travel only while the head is below this mark.
+  // Scroll back up and the mechanism parks exactly where it stood; scroll down again and it
+  // resumes from there rather than rewinding to the start.
+  const alive = useTimelineTouch(markRef)
 
   return (
     <SectionShell
@@ -742,10 +845,9 @@ function EngineSection() {
     >
       {/* One mark, not a gear trio: plan nodes converging through a funnel into a single
           execution node. The gear survives only as a slow ring behind that node — texture, so
-          the mark still reads as "engine" without being a gear-as-icon. It animates
-          continuously rather than settling, since a running graph is the point. */}
+          the mark still reads as "engine" without being a gear-as-icon. */}
       <div className='relative' style={{ width: MARK_SIZE, height: MARK_SIZE }}>
-        <EngineMark revealProgress={reveal} />
+        <EngineMark revealProgress={reveal} running={alive && !reduced} />
       </div>
     </SectionShell>
   )

@@ -42,6 +42,8 @@ export interface AIAgentProps {
   solidBg?: boolean
   /** Opacity of the canvas bg fill (0–1, default 0.5). Only used when solidBg=true. */
   bgOpacity?: number
+  /** Forwarded to AIASphere — pauses the self-owned canvas when this agent is off-screen. */
+  paused?: boolean
   /** Whether the sphere is visible (particles still orbit when false). */
   visible?: boolean
   /** Label rendered below (or around) the sphere. */
@@ -89,7 +91,9 @@ export function AIAgent({
   matrixOpacity = 0.5,
   particleCount = 150,
   solidBg,
+  bgOpacity,
   visible = true,
+  paused,
   label,
   labelPosition,
   noLabel = false,
@@ -127,7 +131,9 @@ export function AIAgent({
       matrixOpacity={matrixOpacity}
       particleCount={particleCount}
       solidBg={solidBg}
+      bgOpacity={bgOpacity}
       visible={visible}
+      paused={paused}
       label={noLabel ? undefined : label}
       onClick={onClick}
       className={className}

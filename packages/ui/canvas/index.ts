@@ -8,8 +8,11 @@ export type { BgVariant, BgRenderer, BgState, BgEvent, FabricConfig } from './bg
 export { renderFabricBg, renderSplitFabricBg, createFabricRenderer, createSplitFabricRenderer } from './bg'
 // A local, contained fabric-mesh canvas (not full-viewport like AIACanvas) — for a
 // hero section that scrolls with the page, or a compact node mark. Moved here from
-// apps/vinaya/web (its original, still-only, consumer) — zero code changes, it was
-// already written with only @atta/ui/canvas imports.
+// apps/vinaya/web (its first consumer), which needed no import rewriting: it already
+// depended only on @atta/ui/canvas. ONE addition on the way over — an optional
+// `config?: Partial<FabricConfig>` prop, merged over the defaults at mount, so a second
+// consumer can vary the fabric without forking the component. Vinaya passes no `config`
+// at any of its call sites, so its rendering is unchanged.
 export { HeroFabric } from './hero-fabric'
 // Vinaya's mark — canvas-drawn harness ring (ported from apps/vinaya/web's SVG
 // HarnessStructure), standalone — clamps onto its own canvas-drawn "main" hub.

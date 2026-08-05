@@ -39,6 +39,12 @@ interface AIASphereProps {
   solidBg?: boolean
   bgOpacity?: number
   visible?: boolean
+  /**
+   * Only meaningful on the STANDALONE path (no surrounding AIACanvas), where this sphere owns
+   * the canvas it draws into: cancels that canvas's rAF loop without losing particle state.
+   * Inside an existing AIACanvas the parent owns the loop and this is ignored.
+   */
+  paused?: boolean
   children?: ReactNode
   /** Overlay slot (e.g. a model-icon badge). Rendered outside the circular clip, anchored bottom-right. */
   badge?: ReactNode
@@ -207,7 +213,7 @@ export function AIASphere(props: Parameters<typeof AIASphereInner>[0]) {
       <div className='absolute' style={{ inset: -pad, pointerEvents: 'none' }}>
         {/* No className on AIACanvas — avoids relative/absolute Tailwind class conflict that collapses containerRef height to 0. */}
         {/* Explicit-size inner div drives containerRef height instead. */}
-        <AIACanvas wanderDuration={0} alwaysRenderSpheres>
+        <AIACanvas wanderDuration={0} alwaysRenderSpheres paused={props.paused}>
           <div className='relative' style={{ width: canvasSize, height: canvasSize }}>
             {/* Sphere at (pad, pad) aligns the face with the layout anchor. */}
             {/* pointer-events: auto re-enables pointer events so onClick spheres remain clickable. */}

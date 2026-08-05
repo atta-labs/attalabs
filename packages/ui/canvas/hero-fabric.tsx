@@ -44,8 +44,8 @@ export function HeroFabric({
   emitAngles?: number[]
   // Fraction of the ring's half-width where the electricity sits (rMid ≈ 0.875·c).
   emitRadiusRatio?: number
-  // Overrides merged onto the default config (e.g. `wordmark`, `gravityMultiplier: 0` to
-  // reveal a wordmark without also folding the mesh). Read once, at mount.
+  // Overrides merged onto the default config (e.g. `gravityMultiplier: 0` to keep the mesh
+  // flat where the curvature fold would be wrong). Read once, at mount.
   config?: Partial<FabricConfig>
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)

@@ -279,7 +279,6 @@ export interface FabricConfig {
   radialFold?: boolean                // fold radiates OUTWARD from the ring center (paired with a settleProgress ramp) instead of the whole grid folding at once. Default false.
   pulseReach?: number                 // scales the closing-pulse shock wave's travel so it can reach the screen edges. Default 1.
   gridAgents?: boolean                // deterministic Tron-style "agents" gliding along the grid lines, trailing light. Default false.
-  wordmark?: { text: string }         // a wordmark near the bottom of the canvas, drawn as clean stencil letters from a small built-in glyph set (WORDMARK_GLYPHS, straight-line strokes per glyph) — NOT raster- or grid-derived, both of which read illegibly at small sizes. Letters colour in one at a time as the reveal advances. Single reveal pass, driven by settleProgress. Default: no wordmark.
 }
 ```
 
@@ -689,7 +688,7 @@ packages/ui/canvas/
 │   ├── constants.ts       — MATRIX_CHARS and tuning constants
 │   ├── math.ts            — Trig / numeric helpers
 │   └── harness-geometry.ts — Pure polar/angle math for harness-ring.tsx (screen-coordinate helpers, no DOM/SVG dependency)
-├── hero-fabric.tsx        — Local, contained fabric canvas (not fixed inset-0) for a normal in-flow section; moved here verbatim from apps/vinaya/web, which was already generic — imports only from this package
+├── hero-fabric.tsx        — Local, contained fabric canvas (not fixed inset-0) for a normal in-flow section; moved here from apps/vinaya/web, which needed no import rewriting (it already depended only on this package). Gained one optional `config?: Partial<FabricConfig>` prop on the move, merged over the defaults at mount, so a second consumer can vary the fabric without forking it — Vinaya passes no `config`, so its rendering is unchanged
 ├── harness-ring.tsx       — Canvas-drawn wheel/spoke/electricity mark, standalone, clamping onto its own canvas-drawn "main" hub (AttaLabs ecosystem hero's Vinaya node — same composition as the real site, ported to canvas since the real HarnessStructure.tsx is SVG)
 ├── herald-logo.tsx        — Herald's real brand logo (Sanity `branding-herald`), reused verbatim as `currentColor` SVG inside an AIASphere's clipped children slot — the one sanctioned SVG in this hero, a real asset not a decorative illustration (AttaLabs ecosystem hero's Herald node)
 ├── engine-mark.tsx        — Canvas-drawn plan nodes converging through a funnel into one execution node, ringed by a slowly rotating gear (AttaLabs ecosystem hero's Atta Engine node). Authored in a 300×410 reference box, scaled from its width, so the gear alone carries the same diameter as the sphere marks and the plan fan gets its own band above

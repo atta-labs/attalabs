@@ -134,7 +134,9 @@ function draw(
   h: number,
   reveal: number,
   gearAngle: number,
-  particles: Particle[]
+  particles: Particle[],
+  /** When false the mechanism is drawn exactly as it stands, without advancing. */
+  running: boolean
 ) {
   if (w <= 0 || h <= 0) return
   // Width-driven: the canvas element carries REF_RATIO as its aspect, so the height follows.
@@ -226,8 +228,10 @@ function draw(
   // t < 0 waits at the plan node (staggered starts), 0..1 runs the feeder fading in,
   // 1..1.6 runs the trunk at full strength then holds at the execution node.
   for (const pt of particles) {
-    pt.t += pt.speed
-    if (pt.t > 1.6) pt.t = -0.3
+    if (running) {
+      pt.t += pt.speed
+      if (pt.t > 1.6) pt.t = -0.3
+    }
     let pos: Pt
     let alpha: number
     const edge = feeders[pt.edgeIdx]
@@ -252,22 +256,30 @@ function draw(
   ctx.restore()
 }
 
-export function EngineMark({ revealProgress }: { revealProgress: number }) {
+export function EngineMark({ revealProgress, running = true }: { revealProgress: number; running?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const revealRef = useRef(revealProgress)
   revealRef.current = revealProgress
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx) return
-    let raf = 0
-    let gearAngle = 0
-    const particles: Particle[] = PLAN_NODES.map((_, i) => ({
+  const runningRef = useRef(running)
+  runningRef.current = running
+  // Gear angle and particle phases live OUTSIDE the effect so a stop/start does not rewind
+  // the mechanism — it picks up exactly where it was parked.
+  const gearAngleRef = useRef(0)
+  const particlesRef = useRef<Particle[] | null>(null)
+  if (!particlesRef.current) {
+    particlesRef.current = PLAN_NODES.map((_, i) => ({
       edgeIdx: i,
       t: -(i * 0.22),
       speed: 0.006 + Math.random() * 0.002
     }))
+  }
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    const particles = particlesRef.current
+    if (!canvas || !ctx || !particles) return
+    let raf = 0
 
     const render = () => {
       refreshThemeCache()
@@ -280,13 +292,23 @@ export function EngineMark({ revealProgress }: { revealProgress: number }) {
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
-      draw(ctx, w, h, revealRef.current, gearAngle, particles)
-      gearAngle += GEAR_SPEED
-      raf = requestAnimationFrame(render)
+      const live = runningRef.current
+      draw(ctx, w, h, revealRef.current, gearAngleRef.current, particles, live)
+      if (live) gearAngleRef.current += GEAR_SPEED
+
+      // Stop the loop once the mark is parked AND its reveal has finished. The canvas keeps
+      // its last frame, so the mark stays on screen as a still — it simply costs nothing
+      // while the reader is elsewhere on the page. The reveal condition matters: a section
+      // can be scrolled into view (ramping) without the timeline head having reached it yet,
+      // and stopping then would freeze it half-drawn.
+      if (live || revealRef.current < 1) raf = requestAnimationFrame(render)
+      else raf = 0
     }
     raf = requestAnimationFrame(render)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [running])
 
   // The parent box is the same square every other mark gets. This canvas is taller than that
   // box and hangs off the top of it, positioned so the GEAR's centre — not the canvas's —

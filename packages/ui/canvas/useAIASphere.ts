@@ -4,6 +4,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { type SphereState, useAIAContext } from './aia-context'
 import { resolveColor } from './shared/colors'
+import { isLightTheme } from './shared/theme'
 
 const SIZE_MAP: Record<string, number> = {
   xs: 32,
@@ -82,6 +83,10 @@ export function useAIASphere({
     let lastX = -1
     let lastY = -1
     let lastColor = ''
+    // Seeded so the first frame always resolves: `isLightTheme()` returns a boolean, so a
+    // null sentinel can never equal it.
+    let lastTheme: boolean | null = null
+    let lastResolved = resolveColor(color)
 
     const track = () => {
       if (!ref.current || !ctx.containerRef.current) {
@@ -94,12 +99,22 @@ export function useAIASphere({
       const exactX = sphereRect.left - containerRect.left + sphereRect.width / 2
       const exactY = sphereRect.top - containerRect.top + sphereRect.height / 2
 
-      // Re-resolve every frame. A `var(--*)` colour is not a fixed value — it changes when
-      // the colour scheme flips — and this effect does not re-run on that flip (its deps are
-      // the colour STRING, which never changes). Resolving once at mount froze the sphere on
-      // whichever scheme happened to be active then, so after a toggle the matrix rain was
-      // drawing in the old scheme's ink: invisible against the new background.
-      const resolved = resolveColor(color)
+      // A `var(--*)` colour is not a fixed value — it changes when the colour scheme flips —
+      // and this effect does not re-run on that flip (its deps are the colour STRING, which
+      // never changes). Resolving once at mount froze the sphere on whichever scheme happened
+      // to be active then, so after a toggle the matrix rain drew in the old scheme's ink:
+      // invisible against the new background.
+      //
+      // But re-resolving on EVERY frame means a `getComputedStyle` per sphere per frame, and
+      // sphere counts are unbounded (Vāda's feed mounts one per role per round). The scheme
+      // only changes when `html[data-theme]` does, which is exactly what the shared theme
+      // cache already tracks — so watch that instead and re-resolve on the transition.
+      const theme = isLightTheme()
+      if (theme !== lastTheme) {
+        lastTheme = theme
+        lastResolved = resolveColor(color)
+      }
+      const resolved = lastResolved
 
       // Only call registerSphere when something actually changed — avoids unnecessary Map
       // operations on static home-page spheres.

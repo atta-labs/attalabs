@@ -28,13 +28,6 @@ export interface FabricConfig {
    *  on several simultaneous canvases — unlike the sphere-homing particle system, which uses
    *  shared module state. Default false. */
   gridAgents?: boolean
-  /** A wordmark near the bottom of the canvas, drawn as clean canvas stencil letters
-   *  (straight-line strokes per glyph — a small built-in glyph set, see WORDMARK_GLYPHS),
-   *  not raster/grid-derived — that read illegibly at small sizes. Letters color in one at
-   *  a time as the reveal advances. Reveal is driven by `settleProgress` (0→1, the same
-   *  signal `ctx.startGravity()` already ramps) — pair with `gravityMultiplier: 0` so the
-   *  reveal doesn't also fold the mesh. Default: no wordmark. */
-  wordmark?: { text: string }
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
@@ -302,156 +295,6 @@ function computeWaterWave(bx: number, by: number, t: number): { x: number; y: nu
     x: Math.sin(p1) * 5.0 + Math.sin(p2) * 3.0 + Math.sin(p3) * 2.0 + tanX,
     y: Math.sin(p1 + 1.0) * 4.5 + Math.sin(p2 + 0.8) * 2.8 + Math.sin(p3 + 1.3) * 1.8 + tanY
   }
-}
-
-// ── Wordmark ("burned into the fabric") ────────────────────────────────────────
-// Clean, canvas-drawn stencil letters — straight-line strokes per glyph, no raster, no
-// grid-segment tracing (that produced illegible, jagged letterforms — superseded). Each
-// letter lights in sequence as revealProgress advances, one subtle color-in pass.
-
-type Stroke = readonly (readonly [number, number])[] // polyline in a 0..1 unit box (y=0 top)
-
-const WORDMARK_GLYPHS: Record<string, readonly Stroke[]> = {
-  A: [
-    [
-      [0, 1],
-      [0.5, 0]
-    ],
-    [
-      [0.5, 0],
-      [1, 1]
-    ],
-    [
-      [0.22, 0.58],
-      [0.78, 0.58]
-    ]
-  ],
-  T: [
-    [
-      [0, 0],
-      [1, 0]
-    ],
-    [
-      [0.5, 0],
-      [0.5, 1]
-    ]
-  ],
-  L: [
-    [
-      [0, 0],
-      [0, 1]
-    ],
-    [
-      [0, 1],
-      [1, 1]
-    ]
-  ],
-  B: [
-    [
-      [0, 0],
-      [0, 1]
-    ],
-    [
-      [0, 0],
-      [0.68, 0]
-    ],
-    [
-      [0.68, 0],
-      [0.88, 0.12],
-      [0.88, 0.38],
-      [0.68, 0.5]
-    ],
-    [
-      [0, 0.5],
-      [0.68, 0.5]
-    ],
-    [
-      [0.68, 0.5],
-      [0.92, 0.62],
-      [0.92, 0.88],
-      [0.68, 1]
-    ],
-    [
-      [0, 1],
-      [0.68, 1]
-    ]
-  ],
-  S: [
-    [
-      [1, 0.16],
-      [0.8, 0],
-      [0.2, 0],
-      [0, 0.16],
-      [0, 0.38],
-      [0.22, 0.5],
-      [0.78, 0.5],
-      [1, 0.62],
-      [1, 0.84],
-      [0.8, 1],
-      [0.2, 1],
-      [0, 0.84]
-    ]
-  ]
-}
-
-function drawGlyph(
-  ctx: CanvasRenderingContext2D,
-  letter: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  alpha: number
-): void {
-  const strokes = WORDMARK_GLYPHS[letter]
-  if (!strokes || alpha <= 0.001) return
-  ctx.globalAlpha = alpha
-  ctx.lineWidth = Math.max(1.5, h * 0.09)
-  ctx.lineJoin = 'round'
-  ctx.lineCap = 'round'
-  for (const stroke of strokes) {
-    ctx.beginPath()
-    stroke.forEach(([ux, uy], i) => {
-      const px = x + ux * w
-      const py = y + uy * h
-      if (i === 0) ctx.moveTo(px, py)
-      else ctx.lineTo(px, py)
-    })
-    ctx.stroke()
-  }
-}
-
-function drawWordmark(
-  ctx: CanvasRenderingContext2D,
-  wordmark: { text: string },
-  H: number,
-  CX: number,
-  _t: number,
-  revealProgress: number
-): void {
-  if (revealProgress <= 0.001) return
-  const text = wordmark.text.toUpperCase()
-
-  const letterH = Math.min(H * 0.09, 70)
-  const letterW = letterH * 0.62
-  const gap = letterW * 0.42
-  const totalW = text.length * letterW + (text.length - 1) * gap
-  const startX = CX - totalW / 2
-  const y = H * 0.9 - letterH
-
-  // Smoothstep, then letters color in one at a time across that ramp.
-  const eased = revealProgress * revealProgress * (3 - 2 * revealProgress)
-  const n = text.length
-
-  ctx.save()
-  ctx.strokeStyle = fgAt(1)
-  for (let i = 0; i < n; i++) {
-    const per = Math.max(0, Math.min(1, eased * n - i))
-    if (per <= 0) continue
-    const x = startX + i * (letterW + gap)
-    drawGlyph(ctx, text[i]!, x, y, letterW, letterH, per * 0.92)
-  }
-  ctx.restore()
 }
 
 function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: number): void {
@@ -1648,8 +1491,6 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)
   }
-
-  if (config.wordmark) drawWordmark(ctx, config.wordmark, H, CX, t, settleProgress)
 }
 
 export function renderFabricBg(state: BgState): void {

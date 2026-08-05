@@ -25,7 +25,7 @@ Specs live in `specs/` at this level (`apps/attalabs/specs/`):
 
 ## Shared chrome
 
-The root layout renders the shared `@atta/ui/footer` `Footer` component — no product-specific footer content beyond `product`/`tagline` props. See `.claude/skills/ui-components/SKILL.md` for the component itself.
+The root layout renders **no footer**. The home page is a full-bleed scroll of four full-height sections with its own fixed topbar, and a footer bolted under the last one read as a stray band rather than as chrome. Products that want the shared `@atta/ui/footer` `Footer` still mount it in their own layout; this hub deliberately does not.
 
 Theme and branding come from CMS via `getProductCms('attalabs')` — this hub renders its own CMS identity (`attalabsConfig`, `branding-attalabs`, central project `l5n0n8nn`) directly. It no longer borrows Atta's. See `.claude/skills/ui-cms-theme/SKILL.md`.
 
