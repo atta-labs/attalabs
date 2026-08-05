@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
+import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import {
   buildInitOps,
   CHECKS_WORKFLOW_PATH,
@@ -90,22 +91,24 @@ afterEach(() => {
 })
 
 describe('vinaya init', () => {
-  it('installs exactly the 5-item minimal manifest on a clean repo', async () => {
+  it('installs exactly the 6-item minimal manifest on a clean repo', async () => {
     let rc = -1
     await captureStdout(async () => {
       rc = await runInit(['--yes'], makeDeps())
     })
     expect(rc).toBe(0)
 
-    // The minimal manifest (2026-07-23 re-ruling): config + root VINAYA.md +
-    // two workflows (tracked) + two hook stubs. Nothing else is written.
+    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665): config +
+    // root VINAYA.md + two workflows (tracked) + two hook stubs + the
+    // .vinaya/doc-owners starter. Nothing else is written.
     for (const p of [
       CONFIG_PATH,
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
       '.husky/pre-commit',
-      '.husky/pre-push'
+      '.husky/pre-push',
+      DOC_OWNERS_PATH
     ]) {
       expect(existsSync(join(root, p))).toBe(true)
     }
@@ -121,7 +124,8 @@ describe('vinaya init', () => {
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
       '.husky/pre-commit',
-      '.husky/pre-push'
+      '.husky/pre-push',
+      DOC_OWNERS_PATH
     ])
     expect(tree).toEqual(expected)
     for (const gone of [
@@ -268,6 +272,17 @@ describe('never-clobber', () => {
     expect(out).toContain(DOCTRINE_POINTER_PATH)
     // the non-foreign review workflow still installs
     expect(existsSync(join(root, REVIEW_WORKFLOW_PATH))).toBe(true)
+  })
+
+  it('REFUSES a foreign .vinaya/doc-owners rather than overwriting it', async () => {
+    mkdirSync(join(root, '.vinaya'), { recursive: true })
+    writeFileSync(join(root, DOC_OWNERS_PATH), '# adopter-authored bindings\napp/** docs/app.md\n')
+
+    const out = await captureStdout(() => runInit(['--yes'], makeDeps()))
+
+    expect(readFileSync(join(root, DOC_OWNERS_PATH), 'utf-8')).toBe('# adopter-authored bindings\napp/** docs/app.md\n')
+    expect(out).toContain('REFUSE')
+    expect(out).toContain(DOC_OWNERS_PATH)
   })
 })
 
