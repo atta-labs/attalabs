@@ -163,6 +163,23 @@ const RETIRED_IN_PRODUCT = [
  * buffer bug that had been silently swallowing that flood as "no hits" got
  * fixed. `apps/vinaya/cli/src` only, not `cli/tests` — the fixtures there
  * are the same legitimate-data case aeg-core's own tests are.
+ *
+ * This does not contradict `PRODUCT`'s own "an enumerated list is a
+ * blind spot" argument above — it is a different scoping problem, not
+ * the same one solved differently. `D-###`/`decision log` are dead
+ * vocabulary with no legitimate positive occurrence anywhere, so
+ * `PRODUCT = ['.']` costs nothing to keep repo-wide. A tranche slug is
+ * the product's own live naming, colliding with real fixtures and other
+ * products' unrelated conventions everywhere outside doctrine — going
+ * repo-wide there isn't "a list that might miss a future path," it's
+ * "a list that is mostly wrong right now." Known, deliberately
+ * out-of-surface consequence: this scope does not yet reach Herald's
+ * or `packages/agents/`'s own source comments (e.g.
+ * `packages/agents/forensic-hiring-auditor/src/tools/github-signals.ts`,
+ * `apps/herald-ai/web/src/components/HeraldAccountMenu.tsx`), which
+ * still carry live tranche-slug citations today — tracked as its own
+ * follow-up (widen to Herald/Vāda/attalabs the same way this task
+ * widened to Vinaya) rather than silently left unowned.
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
@@ -422,6 +439,25 @@ describe('the product carries no trace of a history the adopter lacks', () => {
       expect(hits, `\n${hits.slice(0, 30).join('\n')}\n(${hits.length} total)\n`).toEqual([])
     })
   }
+})
+
+describe('grep() distinguishes "no matches" from a real failure', () => {
+  // The exact regression this task exists to prevent: a bare `catch { return
+  // [] }` cannot tell grep's real "nothing found" (exit 1) apart from a
+  // genuine failure (bad scope, ENOBUFS) — it silently reported both as a
+  // clean repo. Pinned directly against `grep()`, not just observed as a
+  // side effect of the pattern suites above passing.
+  it('returns [] for a pattern with zero matches (exit 1) — the legitimate case', () => {
+    expect(grep('ZZZ_NO_SUCH_STRING_EVER_MATCHES_ANYTHING_ZZZ', ['aeg-root'])).toEqual([])
+  })
+
+  it('rethrows for a malformed pattern (grep exits 2) — a real failure, not "no matches"', () => {
+    // Unbalanced bracket expression: grep exits 2 with a stderr message, never
+    // 1. A missing scope path is NOT usable for this on this platform — BSD
+    // grep silently returns exit 1 for a nonexistent directory too, identical
+    // to "no matches" — so a malformed pattern is the reliable non-1 case.
+    expect(() => grep('[', ['aeg-root'])).toThrow()
+  })
 })
 
 /**

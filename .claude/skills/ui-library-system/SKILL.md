@@ -64,8 +64,7 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ## Per-library `installed/*` — CLI sources, doctrine, and contract rule
 
-The banner above states the rule; this section is the operational reference. Codified by
-Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
+The banner above states the rule; this section is the operational reference. Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
 
 ### Upstream-source mapping (CLI install commands)
 
