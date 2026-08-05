@@ -5,8 +5,15 @@ import type { ModelEntry } from './catalog'
 // When a new flagship ships (e.g. Gemini 3 Pro), add it here.
 //
 // Key: the models.dev model id (not the OpenRouter-prefixed form).
+//
+// Capability-ordering contract (see ./tiers.ts): tiers here form the floor
+// scale `frontier > balanced > fast`. `reasoning` is unranked and fails
+// every floor — see tiers.ts for why. A tier value in this map is a
+// Principal-ratifiable mapping: propose a new model's tier in a PR, never
+// assign one silently.
 export const OVERLAY: Record<string, { tier?: ModelEntry['tier']; description?: string }> = {
   // Anthropic
+  'claude-opus-5': { tier: 'frontier', description: 'Deep reasoning' },
   'claude-opus-4-8': { tier: 'frontier', description: 'Deep reasoning' },
   'claude-sonnet-5': { tier: 'balanced', description: 'Balanced — default' },
   'claude-opus-4-7': { tier: 'balanced', description: 'Deep reasoning' },
@@ -17,6 +24,7 @@ export const OVERLAY: Record<string, { tier?: ModelEntry['tier']; description?: 
   'gpt-5': { tier: 'frontier', description: 'Most capable OpenAI' },
   'gpt-5-mini': { tier: 'fast', description: 'Fast + cheap' },
   'gpt-4.1': { tier: 'balanced', description: 'Balanced workhorse' },
+  'gpt-4o': { tier: 'balanced', description: 'Balanced workhorse' },
   o3: { tier: 'reasoning', description: 'Reasoning-optimized' },
 
   // Google — bump when Gemini 3 releases; key on the models.dev id exactly
@@ -31,6 +39,10 @@ export const OVERLAY: Record<string, { tier?: ModelEntry['tier']; description?: 
   // xAI — via OpenRouter
   'grok-4': { tier: 'frontier', description: 'xAI frontier' },
   'grok-3': { tier: 'balanced', description: 'xAI workhorse' },
+
+  // openrouter/fusion is intentionally NOT overlaid here — it is a router
+  // product, not a model. It has no stable capability tier of its own and
+  // correctly falls through to the transform-time 'balanced' default.
 
   // DeepSeek — via OpenRouter
   'deepseek-r1': { tier: 'reasoning', description: 'Reasoning' },
