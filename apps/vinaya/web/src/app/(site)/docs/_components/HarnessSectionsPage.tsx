@@ -117,9 +117,11 @@ export function HarnessSectionsPage({
       <StickyDocHeader title={doc.title} section={doc.section} />
       <article className='space-y-4'>
         <header className='space-y-3'>
-          <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-            {doc.section}
-          </Text>
+          {doc.section !== doc.title && (
+            <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+              {doc.section}
+            </Text>
+          )}
           <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
             {doc.title}
           </Heading>
