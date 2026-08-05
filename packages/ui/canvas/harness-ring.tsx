@@ -478,12 +478,42 @@ export function HarnessRing({
       // `times[w] += v.speed * v.dir` once per frame. Scaling `t` here (it used to be
       // `t * 0.06`) divided the electricity's speed by ~17 and it read as frozen.
       if (s > 0) drawHarnessRing(ctx, s, cr, rp, cl2, sp, t, sh)
-      if (!pausedRef.current) t++
+      // Paused ⇒ STOP the loop, do not merely freeze the clock. Holding `t` still while
+      // continuing to schedule frames leaves a full clearRect + redraw running at 60fps for
+      // a mark nobody is looking at, which is the exact cost this prop exists to avoid.
+      // The canvas keeps its last frame, so the harness stays on screen as a still.
+      if (pausedRef.current) {
+        raf = 0
+        return
+      }
+      t++
       raf = requestAnimationFrame(render)
     }
     raf = requestAnimationFrame(render)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [paused])
+
+  // Parked repaint: while the loop is stopped the mark still has to reflect changing props
+  // (the reveal ramp can advance before the timeline head arrives). One frame per change.
+  useEffect(() => {
+    if (!paused) return
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    refreshThemeCache()
+    const dpr = window.devicePixelRatio || 1
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr)
+      canvas.height = Math.round(h * dpr)
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, w, h)
+    if (size > 0) drawHarnessRing(ctx, size, hubRadius, ringProgress, clamp, spark, 0, showHub)
+  }, [paused, size, hubRadius, ringProgress, clamp, spark, showHub])
 
   return <canvas ref={canvasRef} className='pointer-events-none absolute inset-0 h-full w-full' />
 }

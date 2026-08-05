@@ -1,5 +1,6 @@
-// Herald's real brand mark — one of the two sanctioned SVG reuses (the other is vada-face.tsx) to "no SVG anywhere" in this hero.
-// Every other mark is hand-drawn illustration where canvas is a real substitute; this is the
+// Herald's real brand mark — one of the two sanctioned SVG reuses in this hero (the other is
+// vada-face.tsx); every other mark is canvas-drawn. What makes both sanctioned is that they
+// are real product assets rather than decorative art — this is the
 // actual Herald logo asset (Sanity `branding-herald.logoOutlineDark/Light`, both resolve to
 // the same file: https://cdn.sanity.io/files/e9gbd2d1/production/
 // 2639ff863b31a3b517424274ef4ba000d9586922.svg), not a decorative illustration competing with
