@@ -1,4 +1,8 @@
 {
-  "buildCommand": "bun turbo run build --filter=@atta/attalabs-web",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../../.. && bun turbo run build --filter=@atta/attalabs-web",
+  "installCommand": "cd ../../.. && bun install --frozen-lockfile",
+  "outputDirectory": ".next",
   "ignoreCommand": "cd ../../.. && bash scripts/vercel-ignore-build.sh @atta/attalabs-web"
 }

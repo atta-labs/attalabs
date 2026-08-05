@@ -28,10 +28,17 @@ import { describe, expect, it } from 'vitest'
  * anything to someone who was not here, and a tool meant to be adopted
  * cannot ship the residue of the monorepo it grew in." That ruling's
  * enforcement covered `D-###` and stopped; forge numbers and slugs survived
- * unwatched until this pair of patterns closed the gap. Both are scoped to
- * `aeg-root` only via `PATTERN_SCOPE`, not the full `PRODUCT` surface — see
- * the comment on `PATTERN_SCOPE` for why a repo-wide ban would be wrong for
- * this specific class, unlike the ones above it.
+ * unwatched until this pair of patterns closed the gap. `FORGE_NUMBER_PATTERN`
+ * and `LEGACY_SLUG_PATTERN` are scoped to `aeg-root` only via `PATTERN_SCOPE`
+ * — that directory is pure doctrine prose, no test fixtures, so a blind grep
+ * there cannot mistake a legitimate occurrence for a citation.
+ * `TRANCHE_SLUG_VN_PATTERN` needed a wider net (a real citation surfaced in
+ * shipped `apps/vinaya/cli/src` comments, not doctrine), but not the full
+ * `PRODUCT` surface: widening it to every path once flooded with hundreds of
+ * false positives — `aeg-core`/`aeg-forge-state`'s own test fixtures
+ * legitimately using real tranche names as data, and other products' entirely
+ * unrelated `-vN` naming (Vāda's `crucible-v1.yaml`). See the comment on
+ * `PATTERN_SCOPE` for the resulting hand-picked surface.
  *
  * A third failure mode, found by post-merge review, joined coverage to
  * vacuity: `[a-z][a-z-]+-v[0-9]` only sees a tranche slug that ends `-vN`.
@@ -141,13 +148,66 @@ const RETIRED_IN_PRODUCT = [
  * appear nowhere live — a forge number or tranche slug is the product's own
  * working vocabulary: it appears legitimately in fixtures, tests, and
  * source across every `PRODUCT` path. What's banned is narrower than the
- * string: citing one as an unexplained doctrine reference. Scoping to the
- * doctrine surface says that precisely, in one static declaration per
- * pattern — not a list that grows every time a new tranche ships.
+ * string: citing one as an unexplained doctrine reference.
+ *
+ * `FORGE_NUMBER_PATTERN` and `LEGACY_SLUG_PATTERN` scope to `aeg-root` only
+ * — pure doctrine prose, no test fixtures live there, so a blind grep can't
+ * mistake a legitimate occurrence for a citation.
+ *
+ * `TRANCHE_SLUG_VN_PATTERN` needs a second surface: the real incident this
+ * pattern exists to catch was a citation in shipped `apps/vinaya/cli/src`
+ * comments, not doctrine. It stays narrow, not `PRODUCT`-wide — first tried
+ * at `['.']`, which produced ~600 false positives (aeg-core/aeg-forge-state's
+ * own test fixtures using real tranche names as data, plus other products'
+ * unrelated `-vN` naming like Vāda's `crucible-v1.yaml`) once the grep
+ * buffer bug that had been silently swallowing that flood as "no hits" got
+ * fixed. `apps/vinaya/cli/src` only, not `cli/tests` — the fixtures there
+ * are the same legitimate-data case aeg-core's own tests are.
+ *
+ * This does not contradict `PRODUCT`'s own "an enumerated list is a
+ * blind spot" argument above — it is a different scoping problem, not
+ * the same one solved differently. `D-###`/`decision log` are dead
+ * vocabulary with no legitimate positive occurrence anywhere, so
+ * `PRODUCT = ['.']` costs nothing to keep repo-wide. A tranche slug is
+ * the product's own live naming, colliding with real fixtures and other
+ * products' unrelated conventions everywhere outside doctrine — going
+ * repo-wide there isn't "a list that might miss a future path," it's
+ * "a list that is mostly wrong right now." Known, deliberately
+ * out-of-surface consequence: this scope does not yet reach Herald's
+ * or `packages/agents/`'s own source comments (e.g.
+ * `packages/agents/forensic-hiring-auditor/src/tools/github-signals.ts`,
+ * `apps/herald-ai/web/src/components/HeraldAccountMenu.tsx`,
+ * `apps/herald-ai/web/src/components/envoy/ReportView.tsx`), which
+ * still carry live tranche-slug citations today — tracked as its own
+ * follow-up, #736 (widen to Herald/Vāda/attalabs the same way this
+ * task widened to Vinaya) rather than silently left unowned.
  */
 const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
-  [TRANCHE_SLUG_VN_PATTERN]: ['aeg-root'],
+  [TRANCHE_SLUG_VN_PATTERN]: [
+    'aeg-root',
+    'apps/vinaya/cli/src',
+    '.claude/skills',
+    '.github/workflows',
+    '.vinaya',
+    'CLAUDE.md',
+    // Vinaya's own prose doctrine — CLAUDE.md/README/specs, never src or
+    // test/fixture dirs (those hold functional tranche-slug handling and
+    // legitimate test data, the same false-positive class ['.'] produced).
+    'apps/vinaya/CLAUDE.md',
+    'apps/vinaya/README.md',
+    'apps/vinaya/cli/README.md',
+    'apps/vinaya/sources/README.md',
+    'apps/vinaya/specs',
+    'apps/vinaya/web/CLAUDE.md',
+    'apps/vinaya/web/README.md',
+    'apps/vinaya/web/design'
+  ],
+  // LEGACY_SLUG_PATTERN stays aeg-root-only, deliberately not widened with the
+  // VN pattern above: every slug it can ever match is, by construction,
+  // already archived (derived from aeg-root/tranches/completed/*.md) — citing
+  // a closed tranche is the safe case (same durability class as a closed PR),
+  // not the live-citation problem this widening exists to catch.
   ...(LEGACY_SLUG_PATTERN ? { [LEGACY_SLUG_PATTERN]: ['aeg-root'] } : {})
 }
 
@@ -160,10 +220,48 @@ const PATTERN_SCOPE: Record<string, string[]> = {
  * that licenses those files to carry the rest of the retired vocabulary.
  */
 const PATTERN_EXEMPT: Record<string, string[]> = {
+  '\\bD-[0-9]{3}\\b': [
+    // The one confirmed load-bearing exception (task-729 sweep, widening PRODUCT
+    // to `['.']`): a foundational architectural fact (Cetana's retirement) whose
+    // D-numbers resolve to the permanent archive — not a routine build-log
+    // citation like the ~300 others the same sweep stripped.
+    './CLAUDE.md'
+  ],
+  'decisions\\.md': [
+    // `engine/design-decisions.md` is Vāda's own live, current design-decisions
+    // doc — not the retired global `decisions.md`. The bare-substring pattern
+    // can't distinguish the two; these are the citing files (task-729 sweep).
+    'docs-index.md',
+    'apps/vada-ai/specs/legacy/README.md',
+    'apps/vada-ai/specs/vada-product-spec.md',
+    'apps/vada-ai/web/CLAUDE.md',
+    'apps/vada-ai/CLAUDE.md'
+  ],
   'decisions-legacy': [
     'packages/aeg-core/src/file-classify.ts',
     'packages/aeg-core/src/file-classify.test.ts',
-    'packages/aeg-core/src/pr-tier.test.ts'
+    'packages/aeg-core/src/pr-tier.test.ts',
+    // Legitimate archive-index pointers ("see X for history"), not claims that
+    // the frozen archive is a live/writable artifact (task-729 sweep).
+    'docs-index.md',
+    '.claude/skills/database/SKILL.md',
+    '.claude/skills/vada-architecture/SKILL.md',
+    'apps/vada-ai/specs/vada-byok-principles.md',
+    'apps/vada-ai/web/CLAUDE.md',
+    'apps/vada-ai/CLAUDE.md'
+  ],
+  CONTRADICTION: [
+    // Vāda Reviewers' live "CONTRADICTIONS" output section — a real product
+    // feature, coincidentally matching the retired decision-log's
+    // "## CONTRADICTION — <topic>" entry-shape ban. Not a citation
+    // (task-729 sweep).
+    'apps/vada-ai/specs/vada-reviewers-spec.md'
+  ],
+  '[a-z][a-z-]+-v[0-9]': [
+    // Team-catalog spec `id:` fields (`sparring-v1`, `brokered-trio-v1`) — the
+    // product's own live YAML naming, structurally identical in shape to an
+    // AEG tranche slug but not one. Not a citation.
+    '.claude/skills/atta-teams/SKILL.md'
   ]
 }
 
@@ -218,23 +316,19 @@ const EXEMPT = [
 ]
 
 /**
- * The surfaces an adopter installs and reads.
+ * The scope `RETIRED_IN_PRODUCT` checks against.
  *
- * `packages/aeg-forge-state` is here because the CLI consumes it: its label
- * vocabulary is rendered to adopters, so it is product surface even though it
- * sits outside the three directories the ruling names. `.vinaya/` is the
- * config an adopter's own repo grows, and its comments are read by whoever
- * edits it.
+ * Repo-wide (`['.']`), not an enumerated adopter-surface list. It used to be
+ * a 7-path array (`aeg-root`, `packages/aeg-core`, `packages/aeg-forge-state`,
+ * `apps/vinaya`, `.vinaya`, and 2 of 22 `.claude/skills`) — but an enumerated
+ * list has the exact blind-spot shape that let a `D-###` citation sit
+ * unwatched in root `CLAUDE.md` and a dangling reference survive PR #725's
+ * manual citation-strip: a new package/app lands and nobody remembers to add
+ * it here. `['.']` is self-maintaining — every current and future surface is
+ * covered by construction. `SCOPE` below (for the separate `RETIRED`
+ * pattern list) is unaffected by this change.
  */
-const PRODUCT = [
-  'aeg-root',
-  'packages/aeg-core',
-  'packages/aeg-forge-state',
-  'apps/vinaya',
-  '.vinaya',
-  '.claude/skills/aeg',
-  '.claude/skills/aeg-roles'
-]
+const PRODUCT = ['.']
 
 /**
  * Everything an agent in this repo reads.
@@ -269,13 +363,38 @@ function grep(pattern: string, scope: string[] = SCOPE): string[] {
         // Both extensionless governance files: the doc-ownership manifest and
         // the collision-domain list. A glob-only include cannot see either.
         '--include=doc-owners',
-        '--include=packages'
+        '--include=packages',
+        // PRODUCT went from a 7-path enumeration to ['.'] — every one of
+        // those paths was hand-picked to stay outside node_modules; '.' is
+        // not. Without these, a common-shape pattern (e.g. the tranche-slug
+        // regex matching version strings like `--tls-max-v1.2` in vendored
+        // .d.ts files) produces megabytes of matches and blows execFileSync's
+        // default 1MB buffer — see the catch block below for what that does
+        // if left uncaught.
+        '--exclude-dir=node_modules',
+        '--exclude-dir=.git',
+        '--exclude-dir=.next',
+        '--exclude-dir=.turbo',
+        '--exclude-dir=dist',
+        '--exclude-dir=build'
       ],
-      { cwd: REPO_ROOT, encoding: 'utf8' }
+      // maxBuffer is defense in depth, not the fix — --exclude-dir above is
+      // what keeps output bounded. 20MB is generous headroom past the
+      // largest observed full-repo sweep (~250KB) without masking a genuine
+      // future blowup by just raising the ceiling indefinitely.
+      { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
     )
     return out.split('\n').filter(Boolean)
-  } catch {
-    return [] // grep exits 1 on no matches
+  } catch (error) {
+    // grep's contract: exit 1 means "no matches" — every other outcome
+    // (a bad pattern, a missing scope path, ENOBUFS from an unbounded
+    // scope) is a real failure. A bare `catch { return [] }` could not
+    // tell those apart: it turned the exact ENOBUFS case above into a
+    // silent, incorrect "clean repo" instead of a loud test failure. That
+    // is not hypothetical — it is what widening PRODUCT to ['.'] did to
+    // this suite before --exclude-dir existed.
+    if ((error as { status?: number }).status === 1) return []
+    throw error
   }
 }
 
@@ -321,6 +440,25 @@ describe('the product carries no trace of a history the adopter lacks', () => {
       expect(hits, `\n${hits.slice(0, 30).join('\n')}\n(${hits.length} total)\n`).toEqual([])
     })
   }
+})
+
+describe('grep() distinguishes "no matches" from a real failure', () => {
+  // The exact regression this task exists to prevent: a bare `catch { return
+  // [] }` cannot tell grep's real "nothing found" (exit 1) apart from a
+  // genuine failure (bad scope, ENOBUFS) — it silently reported both as a
+  // clean repo. Pinned directly against `grep()`, not just observed as a
+  // side effect of the pattern suites above passing.
+  it('returns [] for a pattern with zero matches (exit 1) — the legitimate case', () => {
+    expect(grep('ZZZ_NO_SUCH_STRING_EVER_MATCHES_ANYTHING_ZZZ', ['aeg-root'])).toEqual([])
+  })
+
+  it('rethrows for a malformed pattern (grep exits 2) — a real failure, not "no matches"', () => {
+    // Unbalanced bracket expression: grep exits 2 with a stderr message, never
+    // 1. A missing scope path is NOT usable for this on this platform — BSD
+    // grep silently returns exit 1 for a nonexistent directory too, identical
+    // to "no matches" — so a malformed pattern is the reliable non-1 case.
+    expect(() => grep('[', ['aeg-root'])).toThrow()
+  })
 })
 
 /**

@@ -47,7 +47,7 @@ Conversation logs / thinking are **not** artifacts — never cite them as author
 - **The living state** → forge-native, never the model: active/blocked/next is derived from Issue/branch/PR state, and completed-work history, lessons, per-project operational state, and ratification items live on the forge.
 - **`roadmap.md` is retired**. Never read or write it.
 
-The model layer exists **once**, at repo-root `aeg-root/`. A unit's `aeg-project/` carries only that unit's *living state* — never a copy of the model. The AEG skills are part of the model and live at `aeg-root/skills/` (canonical); the `.claude/skills/` copies are a generated view.
+A unit's `aeg-project/` carries only that unit's *living state* — never a copy of the model. The AEG skills are part of the model and live at `aeg-root/skills/` (canonical); the `.claude/skills/` copies are a generated view.
 
 ## 5. The tranche — AEG's top-level artifact
 

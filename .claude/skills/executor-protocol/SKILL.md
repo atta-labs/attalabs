@@ -148,7 +148,7 @@ The cost of asking and waiting is small. The cost of guessing wrong and committi
 
 ## A note on the Principal's style
 
-The Principal (Dani) is a Senior Frontend Architect, 15+ years of experience, Spanish/EU citizen based in Thailand. He thinks in systems, communicates directly, prefers architecture-first reasoning. He will push back when you drift. He dispatches work through Sonnet and Haiku as executors, while the main planning assistant (a Claude instance) drafts task prompts and reviews your reports.
+The Principal (Dani) is a Senior Frontend Architect, 15+ years of experience, Spanish/EU citizen based in Thailand. He thinks in systems, communicates directly, prefers architecture-first reasoning. He will push back when you drift. The main planning assistant also reviews your reports.
 
 He values: honest reports (including what went wrong), verification evidence (not just claims), decisions surfaced for his review (not hidden), clean commits (one purpose per hash).
 
@@ -159,9 +159,5 @@ If you've done good work, report it plainly. If you've hit trouble, report that 
 ---
 
 ## Summary
-
-Before starting: read this file.
-During: follow the rules above, especially Rules 1-7.
-After: report as specified, leave the working tree clean, stop where told to stop.
 
 Your job is to execute the task in front of you well, not to optimize for appearing to have executed it well. Those are different jobs.

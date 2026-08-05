@@ -1,5 +1,5 @@
 /**
- * TypeScript types for the v2 universal round-based Flow schema (D-033).
+ * TypeScript types for the v2 universal round-based Flow schema.
  * Independent from spec-types.ts — no import dependency in either direction.
  * These are the canonical camelCase types; the Zod schema in flow-schema.ts
  * validates the snake_case YAML shape.

@@ -79,8 +79,8 @@ function EnvoyNavContent({
     <>
       {/* Row 1 — standard app topbar (shared TopBar). In-flow at top of the page — public profile only.
           Scrolls away with the page; Row 2 (fixed) takes over once the hero is collapsed.
-          D-060: Bulk Audit / UI nav links are gone from the profile topbar; the owner-only Palette icon
-          button below opens the appearance editor at /{username}/ui. D-113 reverses D-061's "single
+          Bulk Audit / UI nav links are gone from the profile topbar; the owner-only Palette icon
+          button below opens the appearance editor at /{username}/ui. This reverses the earlier "single
           Settings entry point": the owner also gets a Settings gear here (→ /{username}/settings) so
           Settings is reachable without navigating off the public profile first. */}
       <div className='bg-background'>

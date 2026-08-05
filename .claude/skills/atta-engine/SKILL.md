@@ -7,13 +7,11 @@ description: Atta engine internals — Flow → Plan compilation via compileFlow
 
 ## Context
 
-`@atta/engine` is a **pure library**. It takes a `Flow` (loaded from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies. The engine compiles; the adapter executes. These responsibilities never cross.
+`@atta/engine` is a **pure library**. It takes a `Flow` (loaded from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies (no LangGraph, no Anthropic SDK, no fetch, no LangChain — see "Rules" below). The engine compiles; the adapter executes. These responsibilities never cross.
 
-The engine has no LangGraph, no Anthropic SDK, no fetch, no LangChain. If you're importing a runtime dependency here, you're in the wrong package.
+The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in PR #47 (the generic flow refactor's second PR, May 12-13, 2026).
 
-The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in PR #47 (D-033 PR 2, May 12-13, 2026, apps/vada-ai/docs/vada-decisions-legacy.md D-033).
-
-The engine powers Vāda today and will power Vitakka and Atta-the-product when those are built. It is part of AttaLabs infrastructure, sitting under `packages/engine`. See root `CLAUDE.md`'s naming bullets for the v2 brand framing (AttaLabs as the dev/lab ecosystem; Atta as one product within it; global D-025).
+The engine powers Vāda today and will power Vitakka and Atta-the-product when those are built. It is part of AttaLabs infrastructure, sitting under `packages/engine`. See root `CLAUDE.md`'s naming bullets for the v2 brand framing (AttaLabs as the dev/lab ecosystem; Atta as one product within it).
 
 ---
 
@@ -44,10 +42,10 @@ packages/engine/src/
 ├── flow-types.ts             # Flow, Round, AgentInRound, OnFailureSpec, SignalType (public)
 ├── flow-schema.ts            # Zod schema for schema_version "2.0" YAMLs
 ├── flow-loader.ts            # loadFlow(yaml: string) → Flow (snake_case → camelCase)
-├── validate-flow.ts          # validateFlow enforcing the 10 D-033 rules
+├── validate-flow.ts          # validateFlow enforcing the 10 v2 schema rules
 ├── compile-flow.ts           # compileFlow(flow, question, model?, customVars?) → Plan
 │                              # — shape detection, node-id emission, conditional edges,
-│                              # buildRevisionCondition (D-034 throws on equals/matches)
+│                              # buildRevisionCondition (throws on equals/matches)
 ├── catalog-loader.ts         # loadFromCatalog(id) + listPublicSpecs(); anchors on import.meta.url
 ├── derive.ts                 # deriveTemplateState — TemplateState construction for the adapter
 ├── errors.ts                 # InvalidFlowConfigError, others
@@ -165,9 +163,9 @@ interface OnFailureSpec {
 }
 ```
 
-The schema accepts all three `signal.type` values for forward extensibility. The engine emits Plans only for `contains` — `compileFlow.buildRevisionCondition` throws explicitly on `equals` and `matches` (D-034 cleanup, PR #48). Schema reserves the types; compiler refuses them.
+The schema accepts all three `signal.type` values for forward extensibility. The engine emits Plans only for `contains` — `compileFlow.buildRevisionCondition` throws explicitly on `equals` and `matches` (cleanup, PR #48). Schema reserves the types; compiler refuses them.
 
-**RevisionCondition** (post-D-034, single-variant interface)
+**RevisionCondition** (single-variant interface)
 ```ts
 interface RevisionCondition {
   type: 'contains'                 // discriminator preserved for forward extensibility
@@ -189,20 +187,20 @@ type Plan = {
 type PlanGraph = { nodes: PlanNode[]; edges: PlanEdge[]; entry: string; exit: string }
 ```
 
-**PlanNodeKind** + **PlanEdgeKind** (vocabulary refactor, May 3, 2026, OQ-cross-9 Choice A — preserved through D-033)
+**PlanNodeKind** + **PlanEdgeKind** (vocabulary refactor, May 3, 2026, OQ-cross-9 Choice A — preserved through the generic flow refactor)
 
 PlanNodeKind values (7): `agent`, `synthesizer`, `audit`, `terminal`, `start`, `end`, `meta`.
 PlanEdgeKind values (3): `flow`, `ordering`, `conditional`.
 
 Every emitted node carries both `kind` (engine-vocab) and `role` (Plan vocabulary, used by the UI). `compileFlow` emits these consistently across all 4 shapes.
 
-**Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used (herald-hardening-v1 Task 11).
+**Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used.
 
 ---
 
-## Shape Detection (D-033 pragmatic compromise)
+## Shape Detection (pragmatic compromise)
 
-`compileFlow` detects the flow's shape from its topology and emits matching v1 Plan node ids. This is a deliberate pragmatic weakening of the D-033 architectural ideal ("engine has zero branches"): the adapter and route handler depend on the v1 node-id conventions, so the compiler preserves them.
+`compileFlow` detects the flow's shape from its topology and emits matching v1 Plan node ids. This is a deliberate pragmatic weakening of the architectural ideal ("engine has zero branches"): the adapter and route handler depend on the v1 node-id conventions, so the compiler preserves them.
 
 | Shape | Detection rule | Node ids emitted |
 |-------|---------------|------------------|
@@ -348,7 +346,7 @@ The runtime executes auditors in parallel by virtue of how `compileFlow` wires t
 
 ## Adding YAML specs is the workflow now
 
-PR #47 (D-033 PR 2) removed the option of adding a new compiler. There is no `compilers/` directory anymore — `compileFlow` is the only entrypoint. New deliberation patterns are expressed as YAML.
+PR #47 (the generic flow refactor's second PR) removed the option of adding a new compiler. There is no `compilers/` directory anymore — `compileFlow` is the only entrypoint. New deliberation patterns are expressed as YAML.
 
 For most additions:
 
@@ -376,12 +374,12 @@ This is engine internals — the YAML author never touches it.
 - ❌ `Agent.tools` as boolean — use `string[]` always, `[]` for explicit none
 - ❌ Renaming node IDs without grepping adapter + mcp-server + `flow-helpers.ts` for dependencies
 - ❌ Importing `loadSpec` / `compileSpec` / `specToTeam` / `Team` / `Workflow` from `@atta/engine` — those exports were deleted in PR #47
-- ❌ Reintroducing per-shape compilers (`compilers/solo.ts`, etc.) — D-033 collapsed them deliberately
+- ❌ Reintroducing per-shape compilers (`compilers/solo.ts`, etc.) — the generic flow refactor collapsed them deliberately
 - ❌ Treating `MAX_REVISIONS` as a failure — it's a valid terminal state
 - ❌ Adding new terminal states without Principal approval (contract with adapter + mcp-server)
 - ❌ Calling internal helpers (`buildRevisionCondition`, `detectShape`, `buildPlan`) from outside the engine — use `compileFlow`
-- ❌ Importing from `@vada/teams` — that package was deleted long before D-033
-- ❌ Setting `signal.type` to `'equals'` or `'matches'` in a YAML — engine throws explicitly (D-034). The schema reserves them; the compiler doesn't ship them yet.
+- ❌ Importing from `@vada/teams` — that package was deleted long before the generic flow refactor
+- ❌ Setting `signal.type` to `'equals'` or `'matches'` in a YAML — engine throws explicitly. The schema reserves them; the compiler doesn't ship them yet.
 
 ---
 
@@ -393,5 +391,4 @@ This is engine internals — the YAML author never touches it.
 - YAML authoring recipes by shape: **vada-yaml-authoring** skill
 - Spec registry + MCP exposure: **vada-mcp-server** skill
 - Architecture overview + locked decisions table: **vada-architecture** skill
-- apps/vada-ai/docs/vada-decisions-legacy.md D-033 (universal flow schema) and D-034 (signal type rejection + RevisionCondition tighten)
-- Ecosystem framing (AttaLabs / Atta / @atta packages — the engine lives under AttaLabs): root `CLAUDE.md`'s naming bullets, global D-025
+- Ecosystem framing (AttaLabs / Atta / @atta packages — the engine lives under AttaLabs): root `CLAUDE.md`'s naming bullets

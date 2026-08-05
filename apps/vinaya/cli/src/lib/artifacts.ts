@@ -1,4 +1,4 @@
-// The install manifest, made concrete (vinaya-cli-v1 task 4).
+// The install manifest, made concrete.
 //
 // Every artifact `vinaya init` writes into an adopter repo lives here as
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
@@ -191,9 +191,11 @@ function doctrinePointer(): string {
 # Vinaya doctrine — read this first
 
 This repo is governed by Vinaya. The full, canonical doctrine (roles,
-contracts, the state machine, the ring gates) ships inside the installed
-\`vinaya\` npm package as versioned reference content and is updated cleanly by
-\`vinaya upgrade\` — there is no in-repo copy to drift.
+contracts, the state machine, the ring gates) currently lives in the
+\`attalabs\` monorepo's \`aeg-root/\` (public GitHub source) — bundling it into
+the installed \`vinaya\` npm package, so it ships and updates cleanly via
+\`vinaya upgrade\` with no in-repo copy to drift, is planned but not yet
+shipped.
 
 An agent working in this repo follows the governed flow by reading two things:
 
@@ -205,8 +207,10 @@ An agent working in this repo follows the governed flow by reading two things:
 Live task status is derived from the forge (Issues, labels, comments) via
 \`vinaya check\` — it is never written into a file here.
 
-To view the doctrine text: \`vinaya doctor\` reports what is installed; the
-package's own reference content is the source of truth.
+To view the doctrine text today: read \`aeg-root/\` in the \`attalabs\`
+monorepo; \`vinaya doctor\` reports what is installed in this repo. Once
+in-package bundling ships, the package's own reference content becomes the
+source of truth.
 `
 }
 

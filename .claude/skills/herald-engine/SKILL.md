@@ -7,15 +7,13 @@ description: Herald AI forensic match engine — Skeptical Auditor YAML rules, a
 
 ## Context
 
-Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code (D-044, D-045, D-051). Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate. The system is tuned for honesty and evidence — not marketing.
+Herald's core feature is a forensic CV-to-JD match report powered by Claude Sonnet. The audit call chain runs through `@atta/forensic-hiring-auditor` — a standalone agent package that wraps `@atta/engine` + `@atta/adapter-langgraph` — not a bespoke direct-SDK call in Herald's own code. Herald's route handles auth, credential resolution, caching, and the retry/timeout wrapper; the package owns the auditor's prompt/model config, the GitHub signal tool, and the JSON parse/NO-FIT gate.
 
 ---
 
 ## RULE #1: Never Modify the Auditor YAML Without Explicit Instruction
 
-`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted in D-045) — the prompt now lives here, declaratively, not in Herald's app code.
-
-**Do NOT modify it without explicit user instruction.**
+`packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` is the single source of truth for the Skeptical Auditor's `system_prompt`, `model`, `max_tokens`, and its `fetch_github_signals` custom tool. It is the successor to the old `SKEPTICAL_AUDITOR_PROMPT` TypeScript constant (deleted when the endpoints unified) — the prompt now lives here, declaratively, not in Herald's app code.
 
 What it enforces:
 - Zero marketing language in any output
@@ -28,7 +26,7 @@ What it enforces:
 
 ## Audit API Flow (`POST /api/audit`)
 
-One endpoint, two payload shapes (D-045), still true today:
+One endpoint, two payload shapes, still true today:
 
 ```
 1. Dispatch on payload — `candidates` array present → batch shape; absent → single shape
@@ -56,7 +54,7 @@ The GitHub signal fetch is no longer a deterministic pre-fetch that races the LL
 | `fetch_github_signals` tool call | 10s (`GITHUB_SIGNAL_TIMEOUT_MS`) | Tool returns `[]`; model proceeds without GitHub evidence |
 | LLM generation (per attempt, 2 attempts) | 90s (`AUDIT_LLM_TIMEOUT_MS`) | Retry once, then partial report |
 
-**Never increase timeouts without understanding the user-facing impact.** The signal-tool timeout was 3s from the original single-call deterministic pre-fetch until herald-hardening-v1 Task 13's follow-up (#520, found live post-`GITHUB_PAT`-rotation): `extractSignals` had since grown into a real fan-out (up to 5 repos × 4 parallel GitHub API calls each), and the 3s budget was racing against and discarding genuine, still-in-flight signal data on real authenticated runs — not a hypothetical, observed live. Raised to 10s; still a small, bounded fraction of the 90s LLM turn budget, so signals remain best-effort, not required, and the audit still can't block indefinitely. The LLM timeout has moved twice as the auditor grew: 25s → 45s (when a tool-call turn made the audit a 2-turn dialogue) → 90s (when `max_tokens` rose 2000 → 8000). Any reference to 25s is stale.
+**Never increase timeouts without understanding the user-facing impact.** The signal-tool timeout was 3s from the original single-call deterministic pre-fetch until a follow-up (#520, found live post-`GITHUB_PAT`-rotation): `extractSignals` had since grown into a real fan-out (up to 5 repos × 4 parallel GitHub API calls each), and the 3s budget was racing against and discarding genuine, still-in-flight signal data on real authenticated runs — not a hypothetical, observed live. Raised to 10s; still a small, bounded fraction of the 90s LLM turn budget, so signals remain best-effort, not required, and the audit still can't block indefinitely. The LLM timeout has moved twice as the auditor grew: 25s → 45s (when a tool-call turn made the audit a 2-turn dialogue) → 90s (when `max_tokens` rose 2000 → 8000). Any reference to 25s is stale.
 
 ### Caching
 
@@ -119,7 +117,7 @@ Signals are detected by:
 - `GITHUB_PAT` is optional — the `fetch_github_signals` tool returns `[]` without it (and without a `github_handle`), and the auditor is instructed to proceed on the profile alone
 - Exposed to the auditor agent as `extractSignals` wrapped in `createGithubSignalToolHandler` — declared as a custom tool in the YAML, invoked by the model at most once per audit, not called deterministically by Herald's route
 
-**Capturing structured signals onto the report (herald-hardening-v1 Task 13, #520).** The LLM only ever sees the flattened `string[]` evidence — that contract is unchanged. To surface the richer `RawSignal[]` on the report itself, `run()` (`packages/agents/forensic-hiring-auditor/src/index.ts`) builds its `customTools` map with `createGithubSignalToolHandler(onSignals)` — a factory that returns a fresh closure per call, invoking `onSignals(signals)` with the full `RawSignal[]` before mapping to the string array the LLM receives. `run()` declares `capturedSignals` as a local `let` inside its own function body (never module-level), so concurrent `run()` invocations — batch mode fans out 1-10 candidates via `Promise.all` — each own an independent capture; there is no shared mutable state to race on. After `adapter.execute()` returns, `run()` attaches `capturedSignals` onto the returned `MatchReport` as `githubSignals?: RawSignal[]` (only when non-empty). `createGithubSignalToolHandler` is the only `fetch_github_signals` implementation in this package now — the earlier non-capturing `fetchGithubSignalsForHandle`/`githubSignalToolHandler` pair (kept initially "for any future caller") turned out to have none, and was deleted in the same follow-up that raised the timeout, rather than left as dead code implying a live second code path.
+**Capturing structured signals onto the report (#520).** The LLM only ever sees the flattened `string[]` evidence — that contract is unchanged. To surface the richer `RawSignal[]` on the report itself, `run()` (`packages/agents/forensic-hiring-auditor/src/index.ts`) builds its `customTools` map with `createGithubSignalToolHandler(onSignals)` — a factory that returns a fresh closure per call, invoking `onSignals(signals)` with the full `RawSignal[]` before mapping to the string array the LLM receives. `run()` declares `capturedSignals` as a local `let` inside its own function body (never module-level), so concurrent `run()` invocations — batch mode fans out 1-10 candidates via `Promise.all` — each own an independent capture; there is no shared mutable state to race on. After `adapter.execute()` returns, `run()` attaches `capturedSignals` onto the returned `MatchReport` as `githubSignals?: RawSignal[]` (only when non-empty). `createGithubSignalToolHandler` is the only `fetch_github_signals` implementation in this package now — the earlier non-capturing `fetchGithubSignalsForHandle`/`githubSignalToolHandler` pair (kept initially "for any future caller") turned out to have none, and was deleted in the same follow-up that raised the timeout, rather than left as dead code implying a live second code path.
 
 ---
 

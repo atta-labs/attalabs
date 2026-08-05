@@ -6,7 +6,7 @@
  * at 0.14–0.20 alpha — fine under `basic`/`animate`, effectively frameless under a
  * neobrutalist one, where the border IS the design.
  *
- * Before D-131 this was hidden: `globals.css` forced `--border: var(--foreground)`
+ * This used to be hidden: `globals.css` forced `--border: var(--foreground)`
  * for retro/brutal, overriding whatever border a theme defined. Removing that shim
  * let each theme own its border, which is correct — but it means an un-tuned theme
  * paired with a neobrutalist library now renders without contours.

@@ -7,7 +7,7 @@ import {
 import { resolveSingleChild } from '../as-child'
 
 // asChild → render adapter for basic's Base UI CollapsibleTrigger. See ../as-child.
-// installed/collapsible.tsx stays a verbatim Base UI paste (D-065); the adapter
+// installed/collapsible.tsx stays a verbatim Base UI paste; the adapter
 // lives in this wrapper. Collapsible + CollapsibleContent are plain re-exports.
 function CollapsibleTrigger({
   asChild,

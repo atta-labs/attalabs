@@ -25,8 +25,6 @@
  */
 
 import { execFile, execFileSync } from 'node:child_process'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import {
   checkA1,
@@ -50,9 +48,14 @@ import { createForgeSource } from '@atta/vinaya-sources'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
 
 const CHECK_NAME = 'coherence'
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../../../..')
-process.chdir(REPO_ROOT)
 
+// No chdir: the only cwd-dependent work here is `git(...)` shelling out for
+// the caller's own remote/branch, and the runner's spawn already inherits
+// the caller's cwd — which IS the repo `vinaya check` is meant to evaluate.
+// A chdir here previously pointed at wherever this SCRIPT lives (this
+// monorepo from source, or the CLI's own install location once bundled),
+// never the target repo — silently leaking this repo's own tranche/branch
+// facts into whatever repo actually invoked the check.
 const execFileAsync = promisify(execFile)
 
 // Array-form execFileSync — no shell, so no injection surface even though

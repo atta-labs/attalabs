@@ -18,15 +18,13 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > | `retro` | retroui (`retroui.dev`, Radix flavor) | `npx shadcn@latest add https://retroui.dev/r/radix/<component>.json` |
 > | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
 >
-> **The rule:** `installed/<comp>.tsx` is a verbatim CLI paste from its library's upstream.
-> Even a one-character change is a hard rule violation. NEVER hand-roll your own
-> implementation in `installed/`; ALWAYS pull from upstream.
+> **Even a one-character change in `installed/` is a hard rule violation.** Never hand-roll
+> an implementation there — always pull from upstream.
 >
 > ### How to add or change a primitive — the right workflow
 >
 > 1. **Install via CLI** (or paste the canonical from the upstream's docs) into the right
->    library's `installed/<comp>.tsx`. Adjust ONLY the import paths to match our directory
->    layout (e.g. `@/lib/utils` → `../../../lib/utils`) — nothing else.
+>    library's `installed/<comp>.tsx`, adjusting only import paths — nothing else.
 > 2. **Check if the upstream's exported API matches our contract** (`packages/ui/component-contract.mjs`).
 >    Most upstreams export flat named components (`Tabs`, `TabsList`, `TabsTrigger`,
 >    `TabsContent`) — those match our contract directly, just re-export from `components/index.ts`
@@ -308,17 +306,17 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 
 **Below `md` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `md` because there is always at least Sign-in or account UI to surface (`withAuth={true}`) or nav links (`withAuth={false}`).
 
-**`extraActions` on `withAuth={false}`** (`vinaya-pages-v1` task 6, #544): unlike `signedInLinks`/`accountMenu`/`SignInButton`, `extraActions` is NOT gated on auth mode — it renders unconditionally on both `TopBarWithAuth` and `TopBarNoAuth`, since there is no signed-in state to gate it on in the no-auth variant. Use it for content that must appear regardless of auth (e.g. a product switch next to `ColorSchemeToggle`) even on a `withAuth={false}` consumer.
+**`extraActions` on `withAuth={false}`** (#544): unlike `signedInLinks`/`accountMenu`/`SignInButton`, `extraActions` is NOT gated on auth mode — it renders unconditionally on both `TopBarWithAuth` and `TopBarNoAuth`, since there is no signed-in state to gate it on in the no-auth variant. Use it for content that must appear regardless of auth (e.g. a product switch next to `ColorSchemeToggle`) even on a `withAuth={false}` consumer.
 
 **`TopBarLink.label` takes a `ReactNode`, not just a `string`.** A plain string renders exactly as before — every existing consumer's `links`/`signedInLinks` array is unaffected. Passing a decorated node instead (e.g. a label wrapped in a small self-contained client component) renders that node in the same slot, in both the desktop centered nav and the mobile sheet row, with no other change to `TopBar` itself. Vinaya's `ElectricLabel` (`apps/vinaya/web/src/app/(site)/_components/ElectricLabel.tsx`) is the first consumer: it self-detects whether its own `href` is the active route (via `usePathname()`, mirroring `TopBar`'s own `isActive`) and renders a `<canvas>` accent only then — `TopBar` stays agnostic to what a decorated label actually does.
 
 When wiring an action that belongs in the right cluster (Settings gear, theme switcher, owner-only buttons): use `extraActions` and trust the responsive contract — your button will appear in the desktop cluster and inside the mobile sheet automatically. Do NOT manually duplicate it in a custom mobile row; that creates two-place-to-fix drift.
 
-When a button has both icon and label (Sign out, Settings, Theme — the pattern established by D-061): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
+When a button has both icon and label (Sign out, Settings, Theme): always render the label text. Do **not** wrap it in `<span className='hidden md:inline'>` — the label is hidden in the desktop cluster only by the topbar's own breakpoint, not by per-button visibility classes. Inside the mobile sheet the label needs to be visible.
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 
-**The nav frame is library-resolved via `ChromeFrame`** (`vinaya-pages-v2` task 8, #621). The shared TopBar renders its content through `useComponents().ChromeFrame` with `variant='topbar'` (falling back to basic's flush frame during the runtime library-import window), so the *edge treatment* is each library's own: the flush libraries (basic/animate/brutal) render a full-width `border-b` bar; **retro** wraps it in its own Card with a small `px-2 pt-2` margin — the "floating card" look — so its offset shadow has room to breathe. This is why the same TopBar reads as flush chrome on animate and a detached card on retro **without a `library === '…'` branch** and without leaking retro's spacing onto other products: the float lives only in `retro/components/chrome/chrome-frame.tsx`. The earlier `bg-secondary`-token approach (this note's prior wording) is superseded — the token gave every library the same frame band, which is precisely the per-library difference `ChromeFrame` restores. The same component (`variant: 'topbar' | 'bar' | 'rail' | 'panel'`) skins the sidebar rails (`variant='rail'`), content panels (`variant='panel'`), and generic horizontal chrome bars (`variant='bar'` — the `/docs` sticky breadcrumb). Full architecture: `.claude/skills/ui-library-system/SKILL.md`.
+**The nav frame is library-resolved via `ChromeFrame`** (#621). The shared TopBar renders its content through `useComponents().ChromeFrame` with `variant='topbar'` (falling back to basic's flush frame during the runtime library-import window), so the *edge treatment* is each library's own: the flush libraries (basic/animate/brutal) render a full-width `border-b` bar; **retro** wraps it in its own Card with a small `px-2 pt-2` margin — the "floating card" look — so its offset shadow has room to breathe. This is why the same TopBar reads as flush chrome on animate and a detached card on retro **without a `library === '…'` branch** and without leaking retro's spacing onto other products: the float lives only in `retro/components/chrome/chrome-frame.tsx`. The earlier `bg-secondary`-token approach (this note's prior wording) is superseded — the token gave every library the same frame band, which is precisely the per-library difference `ChromeFrame` restores. The same component (`variant: 'topbar' | 'bar' | 'rail' | 'panel'`) skins the sidebar rails (`variant='rail'`), content panels (`variant='panel'`), and generic horizontal chrome bars (`variant='bar'` — the `/docs` sticky breadcrumb). Full architecture: `.claude/skills/ui-library-system/SKILL.md`.
 
 The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). Adding a new slot (or changing where `extraActions` renders) requires updating every consumer's mental model — touch with care.
 

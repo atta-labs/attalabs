@@ -33,4 +33,4 @@ SANITY_API_TOKEN=          # writes only — seed/migrate scripts, admin mutatio
 ```
 
 Reads need none of these to pick a project: it is resolved from the product key via
-`PROJECT_IDS` (D-125). Project IDs are public and identical in every environment.
+`PROJECT_IDS`. Project IDs are public and identical in every environment.

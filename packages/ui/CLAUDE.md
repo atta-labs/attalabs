@@ -228,12 +228,6 @@ Every library must export the same set of components and types. This is enforced
 5. Implement (or add a basic fallback) in **all other libraries** — the contract blocks the build until every library exports it
 6. Run `bun run validate:ui-contract` to verify before committing
 
-### Running the validator manually
-
-```bash
-bun run validate:ui-contract
-```
-
 ### What the output looks like
 
 ```

@@ -194,7 +194,7 @@ This also enforces clear thinking. Modifying an existing YAML implies "this is n
 
 A dedicated principle document, `vada-yaml-immutability-principle.md`, expands on this.
 
-**Date revised: April 26, 2026 (Phase 7.3 / D-025)** — The `-v1` / `-vN` naming convention was dropped. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). The core immutability principle (once benchmarked, do not modify; iterate by forking) is unchanged. The naming convention section of `vada-yaml-immutability-principle.md` is superseded.
+**Date revised: April 26, 2026 (Phase 7.3)** — The `-v1` / `-vN` naming convention was dropped. YAML files are now named semantically without version suffixes (`crucible.yaml`, not `crucible-v1.yaml`). The core immutability principle (once benchmarked, do not modify; iterate by forking) is unchanged. The naming convention section of `vada-yaml-immutability-principle.md` is superseded.
 
 ### What this implies for the future
 
@@ -265,6 +265,6 @@ Examples of when to update:
 Examples of when NOT to update:
 - New phase ships (update `vada-state.md` instead)
 - New YAML created (update YAML catalog references)
-- Open questions resolved (update `apps/vada-ai/docs/vada-decisions-legacy.md` or `vada-state.md`)
+- Open questions resolved (update `vada-state.md`)
 
 When updating: add a "Date revised" entry under the affected recognition with a one-paragraph note on what changed and why. Keep the original text unless it's outright wrong; recognitions evolve, and the evolution itself is signal.

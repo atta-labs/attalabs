@@ -151,12 +151,26 @@ export const COMMANDS: readonly Command[] = [
   {
     name: 'demo break',
     description: 'Run a guided refusal-then-fix demo on an isolated, discardable branch',
-    status: 'planned'
+    flags: [{ flag: '--keep', description: 'Skip cleanup and leave the demo branch checked out to inspect' }],
+    details: [
+      "Creates a collision-safe `vinaya/demo-break-<id>` branch off the current one, stages a deliberately incomplete draft brief, and attempts a real `git commit` — the repo's actually-installed pre-commit hook refuses it with its real output, not a scripted string. Applies the minimal fix, commits again, then switches back and deletes the demo branch.",
+      'Safe to run twice: refuses on a dirty working tree, refuses from a detached HEAD, and recovers automatically from a prior crashed run before starting a fresh one — never leaves the original branch touched or a stray demo branch behind.'
+    ],
+    status: 'shipped'
   },
   {
     name: 'waiver',
-    description: "Apply the principal-verified 'vinaya/waiver:docs' label after prompting for a reason",
-    status: 'planned'
+    description:
+      "Apply the actor-verified 'vinaya/waiver:docs' or 'vinaya/waiver:review' label after prompting for a reason",
+    flags: [
+      { flag: '--reason', description: 'The waiver rationale, posted as a PR comment (prompted for if omitted)' },
+      { flag: '--print-only', description: 'Print the exact `gh` commands instead of running them' }
+    ],
+    details: [
+      "Applies the label via `gh pr edit --add-label`, under the invoking human's own authenticated `gh` identity — this command never fabricates an actor. A waiver is never an agent-emittable string: not a PR body field, not a commit trailer, not a comment — the label plus its own labeling-timeline actor is the only mechanism ring 1 honors.",
+      '`--print-only` prints the exact `gh pr edit`/`gh pr comment` commands and runs nothing — for a human who wants to run them itself, or a CI/non-interactive context where an agent session should never be the one applying its own waiver.'
+    ],
+    status: 'shipped'
   },
   {
     name: 'studio',

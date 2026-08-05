@@ -12,8 +12,6 @@ These files are the source of truth for Herald's current state. Do not rely on m
 
 The main Next.js 16 application. Serves both the **Herald Portal** (marketing + onboarding + admin dashboard) and the **Herald Envoy** (deployed candidate pages) from a single codebase via proxy-based subdomain routing.
 
-Pattern: Portal + Onboarding + Admin merged into one codebase.
-
 ---
 
 ## Architecture
@@ -106,12 +104,7 @@ The onboarding chat at `/admin` uses:
 
 ### RULE #4: Envoy components are separate from Portal components
 
-```
-components/
-├── envoy/     # Only used on [username] pages (recruiter sees these)
-├── portal/    # Only used on admin/onboarding pages (candidate sees these)
-└── shared/    # TopBar (used by both)
-```
+`components/envoy/` renders only on `[username]` pages (recruiter-facing). `components/portal/` renders only on admin/onboarding pages (candidate-facing). `components/shared/` (TopBar) is used by both.
 
 ### RULE #5: Fonts and theme tokens
 
@@ -197,7 +190,7 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 
 ### The Skeptical Auditor
 
-- The auditor's system prompt lives in `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` (D-051) — not in this app. `src/lib/prompts.ts` holds only `MATCH_REPORT_SCHEMA`, the parser contract injected into the YAML's `{{schema}}` template var at compile time
+- The auditor's system prompt lives in `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml` — not in this app. `src/lib/prompts.ts` holds only `MATCH_REPORT_SCHEMA`, the parser contract injected into the YAML's `{{schema}}` template var at compile time
 - Do NOT modify the YAML without explicit instruction from the user
 - Zero marketing language in any AI output
 - Every claim must reference a detectable signal
@@ -205,9 +198,9 @@ GITHUB_TOKEN=                # Higher GitHub API rate limits
 
 ### Audit API (`POST /api/audit`)
 
-- Single shape: `{ job_description, username? }` → `MatchReport` (no `username` → falls back to the hardcoded `DANI_PROFILE` on the server's `ANTHROPIC_API_KEY`). Batch shape: `{ jd, candidates: [...] }` → `{ results: [...] }`. Dispatched on presence of `candidates` (D-045)
-- Both shapes call the shared engine-backed cell `runSingleMatch`, which calls `run()` from `@atta/forensic-hiring-auditor` (`loadFlow` → `compileFlow` → `LangGraphAdapter.execute` against `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml`, D-051) — no direct SDK call in this app
-- GitHub signal fetching is a model-invoked custom tool (`fetch_github_signals`, D-047), not a Herald pre-fetch — 3s timeout, degrades to no signals
+- Single shape: `{ job_description, username? }` → `MatchReport` (no `username` → falls back to the hardcoded `DANI_PROFILE` on the server's `ANTHROPIC_API_KEY`). Batch shape: `{ jd, candidates: [...] }` → `{ results: [...] }`. Dispatched on presence of `candidates`
+- Both shapes call the shared engine-backed cell `runSingleMatch`, which calls `run()` from `@atta/forensic-hiring-auditor` (`loadFlow` → `compileFlow` → `LangGraphAdapter.execute` against `packages/agents/forensic-hiring-auditor/yamls/herald-auditor.yaml`) — no direct SDK call in this app
+- GitHub signal fetching is a model-invoked custom tool, not a Herald pre-fetch — 3s timeout, degrades to no signals
 - LLM timeout: `AUDIT_LLM_TIMEOUT_MS` = 90s per attempt, 2 attempts, then falls back to a partial report
 - Batch requires Clerk auth and runs on the logged-in user's stored BYOK key (402 if missing); 1–10 candidates per call
 - Caching: hash(JD + profile + vendor + model) → in-memory 24h

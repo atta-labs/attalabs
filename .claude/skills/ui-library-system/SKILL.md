@@ -34,10 +34,9 @@ description: How the @atta/ui multi-library system works — build-time generati
 >    exports (most are) and matches the contract, just re-export from `components/index.ts`.
 > 3. **If the upstream's API doesn't match the contract**, **add a wrapper** in
 >    `components/<comp>.tsx` or `components/interactive/` that adapts the API to the contract.
->    The wrapper IS editable. `installed/` stays verbatim. (retro used to need this for its
->    old Base UI heritage — dotted `Object.assign` Tabs and `render`-instead-of-`asChild`
->    Button — but as of the Radix-flavor switch, retro's upstream exports flat named
->    components and native `asChild`, so those adapters are gone.)
+>    The wrapper IS editable. `installed/` stays verbatim. (retro's old Base UI-era adapters
+>    are gone since the Radix-flavor switch — full history under "CLI workflow when adding
+>    or restoring a component" below.)
 > 4. **If you want a library-specific variant** — add it to the wrapper layer (e.g.
 >    `components/interactive/<comp>.tsx`), NOT in `installed/`. The `Button.ghost-pill` variant
 >    is the canonical example.
@@ -63,10 +62,9 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ---
 
-## Per-library `installed/*` — CLI sources, doctrine, and contract rule (D-065)
+## Per-library `installed/*` — CLI sources, doctrine, and contract rule
 
-The banner above states the rule; this section is the operational reference. Codified by
-D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
+The banner above states the rule; this section is the operational reference. Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
 
 ### Upstream-source mapping (CLI install commands)
 
@@ -77,16 +75,11 @@ D-065 (2026-06-28) after PR #207's Tabs + Button reconciliation.
 | `retro` | retroui (Radix flavor) | `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` | retroui relaunched (2026-07-12) shipping each component in two flavors under `https://retroui.dev/r/<flavor>/<component>.json` (a shadcn-CLI registry item; source is the JSON's `files[0].content`). retro standardizes on the **Radix** flavor — flat named exports, native `asChild`, consolidated `radix-ui` package imports (not per-component `@radix-ui/react-*`). The old `@retroui/<component>` namespace and Base UI heritage are gone. |
 | `brutal` | neobrutalism | `bunx shadcn@latest add @neobrutalism/<component>` | Radix-based; `noShadow` / `neutral` / `reverse` variant set instead of `outline`/`destructive`. |
 
-### Doctrine (the rule, restated for skim-readers)
+### One doctrine note the banner doesn't cover
 
-- `installed/<component>.tsx` is a **verbatim CLI paste** from that library's upstream.
-- Adjust only the import paths from the temp install location (e.g. `@/lib/utils` →
-  `../../../lib/utils`) when moving the file under the library. Nothing else.
-- Helper trees the upstream emits (e.g. animate-ui's `installed/animate-ui/primitives/...`)
-  are preserved verbatim alongside the component files. Don't dedupe, don't flatten.
-- **Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
-  matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
-  formatter rules never fight a fresh CLI paste. Re-installing later just works.
+**Biome ignores `packages/ui/libraries/*/installed`** (configured in `biome.json` —
+matches the precedent for `packages/cms/*-ai` auto-generated studio dirs) so
+formatter rules never fight a fresh CLI paste. Re-installing later just works.
 
 ### Base UI vs Radix flavor — the `asChild` contract idiom
 
@@ -99,7 +92,7 @@ Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
 
 **Rule:** any Base UI `installed/*` component that apps use with `asChild` carries an
 `asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
-`installed/*` (D-065). The adapter resolves the single element child and forwards it as
+`installed/*`. The adapter resolves the single element child and forwards it as
 `render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
 lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
 built for retro's Base UI Button before retro was re-based onto Radix.
@@ -120,7 +113,7 @@ that basic is Radix was wrong — basic is the current Base UI holdout:
 | Toggle | radix | own | →basic (wrapper) | radix |
 
 Adapters exist where an app actually passes `asChild` AND the resolved primitive is Base UI:
-`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic (`ui-retro-contract-v1` f/u 4, #539).
+`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic (#539).
 `Dialog`/`Tooltip` are Base UI in basic too but no app uses them with `asChild` yet — add the
 same adapter if that changes. animate/brutal fall back to basic's Sheet, so they re-export the
 basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
@@ -134,7 +127,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
    class strings, variants, types, or formatting. Don't run Biome `--write` against the
    file — the ignore glob exists for that.
 3. **Wrap only if the upstream shape differs from the cross-library contract:**
-   - As of the Radix-flavor switch (ui-retro-contract-v1 task 2, #539, 2026-07-12) retro's
+   - As of the Radix-flavor switch (#539, 2026-07-12) retro's
      upstream matches the contract natively — Tabs exports flat (`Tabs`, `TabsList`,
      `TabsTrigger`, `TabsContent`) and Button supports `asChild` via Radix `Slot`. Both the
      old dotted-Tabs adapter and the `asChild`→`render` Button adapter (task 1, #536) were
@@ -157,7 +150,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
   We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
   forcing every library to extend with a shared name set. That gave consumers no real
   cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
-  in `brutal`) and forced bespoke implementations. Removed by D-065 / PR #207. Consumer
+  in `brutal`) and forced bespoke implementations. Removed by PR #207. Consumer
   code that wants cross-library certainty for a specific call site should pick a variant
   every library exports (default / outline / ghost, depending on coverage) or hard-import
   from a single library.
@@ -166,7 +159,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 
 ## Overview
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, post-D-060, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
+`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one at a time per surface, controlled by its Sanity CMS config (and, since theme centralization, by the central `attalabs` library registry the per-consumer configs reference). There are two ways an app resolves which library it uses:
 
 | Pattern | Resolution | How |
 |---------|-----------|-----|
@@ -316,7 +309,7 @@ const loadLibrary = useCallback((library: UILibrary) => {
 
 ## Composing the two patterns — build-time chrome + runtime per-user surface
 
-The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver (D-060), so a composing app's build-time alias and its runtime provider agree by construction.
+The two base patterns are not exclusive. An app can run **both** on **disjoint route subtrees**: a fixed, CMS-driven library for its authenticated chrome, and a per-user runtime choice on a public surface. The build-time generator sees Pattern 1; the public subtree behaves as Pattern 2. Both read their library id through the same central `attalabs` resolver, so a composing app's build-time alias and its runtime provider agree by construction.
 
 The invariant that makes this work: **each subtree feeds its own `LibraryProvider`, and no shared parent layout wraps one.** A provider mounted in a common ancestor inherits into both subtrees and silently crosses the build-time and per-user paths — the regression this composition keeps re-introducing when someone "saves a hop."
 
@@ -372,11 +365,11 @@ When a consumer needs visual behavior the canonical component does not ship by d
 - `Button.variant = 'ghost-pill'` (basic) — bordered text-style pill with accent hover. Animate inherits via the shared `buttonVariants` import; retro/brutal use their own `cva` maps and fall back to default styling for unknown variants, which is acceptable since the contract is structural.
 - `Textarea.variant = 'bare'` (basic) — strips border/rounded/bg/focus-ring/resize/min-h-16 for nesting inside a styled container.
 
-Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro and brutal each have their own `components/form/textarea.tsx` wrapper (ui-retro-contract-v1 follow-up, #540) implementing the full `TextareaVariant` union against their own `installed/textarea.tsx` idiom (retro: `outline`-based focus; brutal: `ring`-based focus) — previously these were bare passthroughs that silently ignored every variant, which broke Herald's `JDInput` (`textareaVariant='bare'` had no effect, rendering an opaque boxed textarea instead of blending into the popover surface). If you add an EIGHTH variant to the shared `TextareaVariant` union, propagate it to all four wrappers, not just basic's.
+Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro and brutal each have their own `components/form/textarea.tsx` wrapper (#540) implementing the full `TextareaVariant` union against their own `installed/textarea.tsx` idiom (retro: `outline`-based focus; brutal: `ring`-based focus) — previously these were bare passthroughs that silently ignored every variant, which broke Herald's `JDInput` (`textareaVariant='bare'` had no effect, rendering an opaque boxed textarea instead of blending into the popover surface). If you add an EIGHTH variant to the shared `TextareaVariant` union, propagate it to all four wrappers, not just basic's.
 
 **Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps existing consumers' renders unchanged.
 
-**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback — animate and brutal still do this. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight`. Both `basic` and `retro` (ui-retro-contract-v1 task 3, #540) ship their OWN twin, each wrapping its own library's `DropdownMenuItem` so a retro dropdown renders retro's item styling rather than basic's. The wrapper accepts `selected?: boolean`, applying `cn('group', selected && 'bg-accent text-accent-foreground', className)` on top of the canonical `focus:bg-accent`/`data-[highlighted]:bg-accent` hover — so a selected item keeps the accent fill as a PERSISTENT commitment even when not focused or hovered.
+**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback — animate and brutal still do this. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight`. Both `basic` and `retro` (#540) ship their OWN twin, each wrapping its own library's `DropdownMenuItem` so a retro dropdown renders retro's item styling rather than basic's. The wrapper accepts `selected?: boolean`, applying `cn('group', selected && 'bg-accent text-accent-foreground', className)` on top of the canonical `focus:bg-accent`/`data-[highlighted]:bg-accent` hover — so a selected item keeps the accent fill as a PERSISTENT commitment even when not focused or hovered.
 
 **Add a universal default (preferred when EVERY consumer needs the same fix, and the install file is intentionally locked).** Not every wrapper adapts a mismatched upstream API or adds an opt-in variant/prop — some exist purely to bake in a default so no call site has to remember a class. Canonical example: `Button`'s `leading-none` default, one wrapper per library (`basic`, `retro`, `brutal`, `animate`), each merging `cn(className, 'leading-none')` before forwarding to its own `installed/button.tsx`. Buttons are single-line UI; the label's default line-height box is taller than a typical `h-4 w-4` icon, so an icon+label button looks vertically off even though `items-center` centers it correctly. Adding `leading-none` at each call site (three Herald topbar buttons did, briefly) is the anti-pattern this section warns against — it works for that one instance and leaves every other button (including ones not yet written) with the same latent bug. A universal-default wrapper takes unconditional `className` (not a variant flag) precisely because there's no case where a button should keep the un-collapsed line-height.
 
@@ -384,17 +377,17 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 **Argument order matters for a `cn()`-merged default — put it LAST.** `cn(className, 'leading-none')`, never `cn('leading-none', className)`. Tailwind v4's `text-{size}` utilities bundle their own default line-height, and tailwind-merge treats that bundled line-height as conflicting with an explicit `leading-*`; the LAST conflicting class in the argument list wins. Since virtually every real button className sets a text-size (`text-xs`, `text-sm`, …), `cn('leading-none', className)` gets silently overridden by that class the moment a real caller passes one — verified: `twMerge('leading-none', 'text-xs')` → `'text-xs'` (dropped), `twMerge('text-xs', 'leading-none')` → both survive. A wrapper default that can be silently clobbered by the exact classes real callers pass is worse than no default — it looks fixed in an isolated test with no `text-*` class and stays broken in production. Verify any override-intended `cn()` default by rendering with `renderToStaticMarkup` (or hitting a real dev server) with a realistic caller className, not just an empty one.
 
-**Wrapping the installed component to fix a container behavior — the `Table` responsive-scroll wrapper.** When the fix isn't a class merged onto the installed element but a *container* the installed element renders itself, wrap the whole installed component. `Table` is the canonical example (`vinaya-pages-v2` task 6): every library's `installed/table.tsx` renders its own `w-full` horizontal-scroll container (`overflow-x-auto` in basic/retro, `overflow-auto` in animate/brutal — both clip on x), but `w-full` has no width floor, so it fails to clip when an ancestor is itself a scroll container (a page shell with `overflow-y-auto`, which CSS promotes to `overflow-x: auto`) — the container's width resolves to the table's `min-w`, nothing clips, and the table overflows the page. Fix: a shared factory `makeScrollableTable(InstalledTable, stickyHeaderClass)` in `lib/scrollable-table.tsx` wraps the installed Table in a transparent `@container/tbl w-full min-w-0 max-w-full` outer div (plus an inner div that carries the sticky/overflow classes) — `max-w-full` caps the width at the parent, `min-w-0` lets it shrink below the table's intrinsic width, which is exactly the constraint the installed container needs before its OWN `overflow-x-auto` will clip and scroll; `@container/tbl` establishes the container-query context the sticky switch below keys off. Each library gets a short `components/table.tsx` wrapper (`export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)`) and its `index.ts` exports `Table` from there while the other Table parts still come from `../installed/table`. Crucially the wrapper adds NO overflow of its own and does NOT neutralize the installed container — the library's own container is still the scroller, so its per-library styling is preserved (retro's `rounded border-2 shadow-md` frame stays put while its content scrolls inside it). The wrapper exposes a `containerClassName` prop (merged last) so a consumer can extend/override the scroll box (a `max-h-*` body, block margin, etc.). `TableProps` (= `ScrollableTableProps`) is exported alongside. Verified across all four libraries in a real browser at 390px: each scrolls inside its own box, `document.scrollWidth === innerWidth` (no page overflow).
+**Wrapping the installed component to fix a container behavior — the `Table` responsive-scroll wrapper.** When the fix isn't a class merged onto the installed element but a *container* the installed element renders itself, wrap the whole installed component. `Table` is the canonical example: every library's `installed/table.tsx` renders its own `w-full` horizontal-scroll container (`overflow-x-auto` in basic/retro, `overflow-auto` in animate/brutal — both clip on x), but `w-full` has no width floor, so it fails to clip when an ancestor is itself a scroll container (a page shell with `overflow-y-auto`, which CSS promotes to `overflow-x: auto`) — the container's width resolves to the table's `min-w`, nothing clips, and the table overflows the page. Fix: a shared factory `makeScrollableTable(InstalledTable, stickyHeaderClass)` in `lib/scrollable-table.tsx` wraps the installed Table in a transparent `@container/tbl w-full min-w-0 max-w-full` outer div (plus an inner div that carries the sticky/overflow classes) — `max-w-full` caps the width at the parent, `min-w-0` lets it shrink below the table's intrinsic width, which is exactly the constraint the installed container needs before its OWN `overflow-x-auto` will clip and scroll; `@container/tbl` establishes the container-query context the sticky switch below keys off. Each library gets a short `components/table.tsx` wrapper (`export const Table = makeScrollableTable(InstalledTable, STICKY_HEADER)`) and its `index.ts` exports `Table` from there while the other Table parts still come from `../installed/table`. Crucially the wrapper adds NO overflow of its own and does NOT neutralize the installed container — the library's own container is still the scroller, so its per-library styling is preserved (retro's `rounded border-2 shadow-md` frame stays put while its content scrolls inside it). The wrapper exposes a `containerClassName` prop (merged last) so a consumer can extend/override the scroll box (a `max-h-*` body, block margin, etc.). `TableProps` (= `ScrollableTableProps`) is exported alongside. Verified across all four libraries in a real browser at 390px: each scrolls inside its own box, `document.scrollWidth === innerWidth` (no page overflow).
 
 `Table` also carries one behavior prop, **`stickyHeader`** (**opt-in — default OFF**), so a consumer never restyles the header at the call site. It pins the header row while you scroll PAST the table — the header sticks to the nearest scrolling ancestor (a page shell's `overflow-y-auto` region, or the page itself) and leaves when the table scrolls out. There is NO fixed height: the wrapper does NOT trap the sticky inside a horizontal-scroll box (that would pin the header to the box, not the page), it leaves the installed container `overflow-visible` so the ancestor is the scroll context. **Default-off is deliberate for a shared primitive** — pinning is only correct where the table sits inside a scrolling ancestor, and every product (Vāda, Herald, Atta, Vinaya) shares this Table. A consumer that has browser-verified the behavior opts in (`<Table stickyHeader>`); everyone else gets the responsive horizontal-scroll wrapper with no behavior change. (Vinaya passes `stickyHeader` at every call site.)
 
-**The responsive switch is a container query, not a viewport breakpoint (`vinaya-pages-v2` task 6 follow-up).** The `overflow-visible`/sticky classes are gated on `@min-[780px]/tbl:` — the wrapper's outer div is `@container/tbl`, so the switch keys off the table's OWN container width, not the viewport. This is the whole point: a `min-w-[760px]` table only fits once its container is ≥ ~780px, and a viewport breakpoint (`md:` = 768px viewport) can be past its threshold while the container — viewport minus sidebars/padding — is still narrower than the table, so page-sticky mode engages and the table bleeds past the card at that intermediate width. Keying on the container closes that gap: below the fit width the installed container keeps its OWN horizontal scroll (contained box, header not pinned, never overflows the card); at/above it the header pins. A consumer whose table sits under a fixed bar shifts the pinned offset with `containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'` (same container-query prefix, so the offset only applies in the same mode the pin does).
+**The responsive switch is a container query, not a viewport breakpoint.** The `overflow-visible`/sticky classes are gated on `@min-[780px]/tbl:` — the wrapper's outer div is `@container/tbl`, so the switch keys off the table's OWN container width, not the viewport. This is the whole point: a `min-w-[760px]` table only fits once its container is ≥ ~780px, and a viewport breakpoint (`md:` = 768px viewport) can be past its threshold while the container — viewport minus sidebars/padding — is still narrower than the table, so page-sticky mode engages and the table bleeds past the card at that intermediate width. Keying on the container closes that gap: below the fit width the installed container keeps its OWN horizontal scroll (contained box, header not pinned, never overflows the card); at/above it the header pins. A consumer whose table sits under a fixed bar shifts the pinned offset with `containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'` (same container-query prefix, so the offset only applies in the same mode the pin does).
 
 `stickyHeader` is also why `makeScrollableTable` takes a **second arg** — a per-library, literal (Tailwind-scannable) sticky-header class each library's wrapper passes. Sticky `<th>` cells detach from the row's border (a `border-collapse` quirk), so the pinned header carries its own bottom rule as a **box-shadow** (`shadow-[inset_0_-Npx_0_0_<color>]`) rather than a `border-*` class — a real border on a sticky `th` renders inconsistently under `border-collapse`, the inset shadow does not. Both the shadow's **width and color must replicate each library's REAL row border**, which differ on both axes: width is `-1px` (basic/animate `border-b`) or `-2px` (retro/brutal `border-b-2`); color is **`--border`** for retro, animate and brutal, and **`--border` at 60%** for basic (`border-border/60`). retro and animate were both changed from `currentColor` to `var(--border)` in `refactor/ui-theme-token-roles` — see the correction note below.
 
 > **Corrected (`refactor/ui-theme-token-roles`).** This section previously said retro and animate must use **`currentColor`**, on the premise that their rows carry `border-b`/`border-b-2` with no colour class and therefore render at currentColor. **That premise is wrong.** `globals.css` declares `@layer base { * { @apply border-border } }`, so *every* element — including `<tr>` — resolves to `border-color: var(--border)`. A Tailwind `border-b-2` utility sets width only; the colour still comes from that base rule. Meanwhile `currentColor` on a sticky `<th>` is the header's **text** colour (`text-foreground`), so the pinned header underlined at the foreground colour while the rows beneath it underlined at `--border`. On any theme where `--border` ≠ `--foreground` that produced a bright, mismatched rule — precisely the failure the original wording was written to prevent. Verified visually on Vinaya × obsidian-retro (white pinned-header rule over dark rows). **animate had the identical defect** — its rows are `border-b` with no colour class (`animate/installed/table.tsx:34`), so they resolve to `--border` too, while its pinned header underlined at `currentColor`. Both were changed to `var(--border)`; basic keeps `--border/60` and brutal already used `var(--border)`. Use `var(--border)`. The pinned header's fill is per-library (`bg-card` basic/animate/brutal, `bg-muted` retro) so it opaquely covers rows scrolling under it. This is the canonical "same prop + same contract across libraries, per-library-correct rendering baked into the wrapper" — a consumer writes `<Table stickyHeader>` (or omits it to opt out) and gets a header rule that matches its own rows in every library, with zero sticky/border/background classes at the call site.
 
-**Reconciling a padding-model difference between two shadcn eras — the animate `CardContent` wrapper (`vinaya-pages-v2`).** The four libraries were installed at different times and carry different shadcn Card conventions: **retro** (new-shadcn) puts vertical padding on the **Card** (`py-(--card-spacing)`) and makes `CardContent` sides-only (`px-…`); **animate** (old-shadcn) leaves the Card unpadded and makes `CardContent` `p-6 pt-0` — the top padding is expected to come from a sibling `CardHeader`. A card written as `<Card><CardContent>title + body</CardContent></Card>` with **no `CardHeader`** therefore renders correctly on retro but loses its top padding on animate. Because any product can be pointed at any library through its CMS config — the library choice is swappable, not fixed per product — this is a real defect in the shared library that any consumer hits the moment it switches to animate, NOT a per-product concern. The fix is a wrapper, not a call-site class: `libraries/animate/components/card.tsx` re-exports the installed Card parts but wraps `CardContent` to merge `pt-6` (`cn('pt-6', className)` — `pt-6` first so it lands after installed's `pt-0` and overrides it, while a caller's own `pt-*` still wins last), and `components/index.ts` re-routes the `CardContent` export through that wrapper. `installed/card.tsx` stays verbatim. This is the padding twin of the `leading-none` / `cursor-pointer` universal-default wrappers above: a per-library default baked into the wrapper layer so no consumer adds a class. Do NOT "fix" it by adding `p-6`/`pt-6` at every `CardContent` call site — that is the anti-pattern this section exists to prevent.
+**Reconciling a padding-model difference between two shadcn eras — the animate `CardContent` wrapper.** The four libraries were installed at different times and carry different shadcn Card conventions: **retro** (new-shadcn) puts vertical padding on the **Card** (`py-(--card-spacing)`) and makes `CardContent` sides-only (`px-…`); **animate** (old-shadcn) leaves the Card unpadded and makes `CardContent` `p-6 pt-0` — the top padding is expected to come from a sibling `CardHeader`. A card written as `<Card><CardContent>title + body</CardContent></Card>` with **no `CardHeader`** therefore renders correctly on retro but loses its top padding on animate. Because any product can be pointed at any library through its CMS config — the library choice is swappable, not fixed per product — this is a real defect in the shared library that any consumer hits the moment it switches to animate, NOT a per-product concern. The fix is a wrapper, not a call-site class: `libraries/animate/components/card.tsx` re-exports the installed Card parts but wraps `CardContent` to merge `pt-6` (`cn('pt-6', className)` — `pt-6` first so it lands after installed's `pt-0` and overrides it, while a caller's own `pt-*` still wins last), and `components/index.ts` re-routes the `CardContent` export through that wrapper. `installed/card.tsx` stays verbatim. This is the padding twin of the `leading-none` / `cursor-pointer` universal-default wrappers above: a per-library default baked into the wrapper layer so no consumer adds a class. Do NOT "fix" it by adding `p-6`/`pt-6` at every `CardContent` call site — that is the anti-pattern this section exists to prevent.
 
 **Never reach for `!important` at the call site, or descendant selectors (`[&>form>div]:...`) on a component you own.** Both are signals that the component is missing a variant, prop, or wrapper. Back out and add one of the three.
 
@@ -404,26 +397,13 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
 
 ### Build-Time Pattern (recommended for new apps)
 
-1. **Call generateUIIndex in next.config.ts:**
-   ```ts
-   import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
-   const nextConfig = async () => {
-     await generateUIIndex('your-app')
-     return { /* ... */ }
-   }
-   ```
+1. **Call `generateUIIndex` in `next.config.ts`** — same shape as the "next.config.ts
+   Integration" example under Pattern 1 above, with your app's name in place of `{app}`.
 
-2. **Add tsconfig path aliases** — the alias key is `@atta/ui/components`, not bare `@atta/ui` (see the note under "Generated File Format" above, and "Import Bypass Bug" under Debugging). Every live app aliases this exact string; app code must import it verbatim:
-   ```json
-   {
-     "compilerOptions": {
-       "paths": {
-         "@atta/ui/components": ["../../../packages/ui/generated/your-app/components"],
-         "@atta/ui/canvas": ["../../../packages/ui/generated/your-app/canvas"]
-       }
-     }
-   }
-   ```
+2. **Add tsconfig path aliases** — same shape as "tsconfig.json Mapping" under Pattern 1
+   above, with your app's name in place of `{app}`. The alias key is `@atta/ui/components`,
+   never bare `@atta/ui` (see "Import Bypass Bug" under Debugging) — every live app aliases
+   this exact string, and app code must import it verbatim.
 
 3. **Set the library in Sanity CMS:** The `{app}Config` document's `userInterface.library` field controls which library gets written to the generated index.
 
@@ -454,7 +434,7 @@ If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles
   * `"."` → `./libraries/basic/components/index.ts` — **catches the bare form, hardcoding `basic`.**
 
   So `@atta/ui` is not "the flat import" — it is the second way to pin yourself to `basic`. Only the exact aliased string reaches `packages/ui/generated/{app}/components.ts`, which is what re-exports the CMS-configured library. **"Flat" here means "no subpath *after* `/components`", never "drop the `/components`".**
-* **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (`vinaya-pages-v1` task 8, #568: this section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
+* **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (#568: this section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
 * **Not this bug:** `@atta/ui/shared`, `@atta/ui/topbar`, `@atta/ui/footer`, `@atta/ui/canvas`, `@atta/ui/lib/*`, `@atta/ui/smart-prompt-input`, `@atta/ui/doc-collector`. These resolve to library-independent code (shared primitives, composites, utilities) — they are not library-swapped, so there is no per-app index for them to miss.
 
 **Build-time apps:**
@@ -548,7 +528,7 @@ to the basic implementation via `export { TextReveal } from '../../basic/...'`).
 Use `import { TextReveal } from '@atta/ui'` from consumer code; no
 injection contract — it resolves like any other library primitive.
 
-**`Breadcrumb`** (`vinaya-pages-v1` task 4, #553) joined the same way, and is the
+**`Breadcrumb`** (#553) joined the same way, and is the
 plainest worked example of "Adding a Component to a Library" above: seven
 components (`Breadcrumb`, `BreadcrumbList`, `BreadcrumbItem`, `BreadcrumbLink`,
 `BreadcrumbPage`, `BreadcrumbSeparator`, `BreadcrumbEllipsis`) plus their seven
@@ -564,7 +544,7 @@ state, not a TODO. Give one its own `installed/breadcrumb.tsx` when that
 upstream actually has a breadcrumb worth swapping in — the contract already
 holds the export, so nothing else moves.
 
-**`Code` / `CodeBlock`** (`vinaya-pages-v1` task 9, #569) joined the contract the
+**`Code` / `CodeBlock`** (#569) joined the contract the
 same way — and is the first contracted component with **no upstream canonical in
 any library**. That makes it the precedent for a question `Breadcrumb` doesn't
 answer: *where does a contracted component live when there is nothing to paste
@@ -574,7 +554,7 @@ Verified against the official shadcn registry (`ui.shadcn.com/docs/components`,
 2026-07-17): **shadcn ships no `code`, `code-block`, or `snippet` component.** It
 ships `Kbd` — keyboard keys, not code display. So `basic/installed/code.tsx`
 **does not exist and must not be created**: `installed/` holds a verbatim CLI
-paste from that library's own upstream (D-065), and hand-rolling a file there is
+paste from that library's own upstream, and hand-rolling a file there is
 exactly the drift the banner calls non-negotiable. Pasting *another* registry's
 code-block (shadcn-studio, shadcn.io, retroui) into `basic/installed/` is the
 same violation wearing a disguise — basic ← shadcn only, and a third-party item
@@ -604,7 +584,7 @@ merges last *because* it must always win). Both are hook-free and carry no
 button would force a client boundary on every consumer and is deliberately not
 part of the contract.
 
-**`ChromeFrame`** (`vinaya-pages-v2` task 8, #621) is the same no-upstream ⇒
+**`ChromeFrame`** (#621) is the same no-upstream ⇒
 wrapper-layer shape as `Code`, and it is the mechanism for **per-library app
 chrome**. It takes `variant: 'topbar' | 'bar' | 'rail' | 'panel'` + `className` +
 `children` and owns ONE thing: the per-library *edge* treatment of a chrome
@@ -634,7 +614,7 @@ tunes the content box, not the float. This **supersedes** the earlier
 every library the *same* frame, which is the exact per-library difference this
 restores.
 
-**`Toggle`** (`vinaya-pages-v2` task 13, #626) joined the contract as `Toggle` +
+**`Toggle`** (#626) joined the contract as `Toggle` +
 `toggleVariants` + `ToggleProps`, and is the case where three of the four
 libraries each had their **own** upstream to paste. `basic` ← shadcn's
 `toggle` (Radix `@radix-ui/react-toggle`, added to `packages/ui/package.json`);
@@ -678,7 +658,7 @@ axe flags `aria-allowed-attr` [critical] — `aria-pressed` is valid only on a
 `button`/`role=button`, and the outer button already carries the real state from
 Radix's Root. The wrapper passes `aria-pressed={undefined}` to strip it from
 `toggle-item`; this works only because the primitive spreads `{...props}` AFTER
-its own `aria-pressed`, and it keeps `installed/` verbatim (D-065).
+its own `aria-pressed`, and it keeps `installed/` verbatim.
 
 **`toggle-highlight` cannot be reached this way and still violates.**
 `installed/toggle.tsx` renders it as `<ToggleHighlightPrimitive className='…' />`
@@ -687,9 +667,9 @@ decorative empty div with no accessible name, and `AnimatePresence` only mounts
 it in the pressed state, so the violation appears in the pressed state only.
 Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
-which is the drift D-065 exists to prevent, so it is deliberately not done here.
+which is the drift this doctrine exists to prevent, so it is deliberately not done here.
 
-**`Switch`** (`vinaya-pages-v2` task 9, #622) joined as `Switch` + `SwitchProps`, and is
+**`Switch`** (#622) joined as `Switch` + `SwitchProps`, and is
 the first contracted component where **all four** libraries had their own upstream —
 no fallback anywhere. `basic` ← shadcn's `switch` (new-york style, matching the
 per-component `@radix-ui/react-*` import idiom the rest of basic's `installed/` uses —
@@ -853,7 +833,7 @@ the same way `submitSlot` was added:
 2. **Honor it in every code path the default would render in.** `submitSlot`
    replaces the default submit in BOTH inline and footer modes — partial
    replacement is a confusing footgun.
-3. **Update this section** in the same PR (D-058 doc-coherence). The props
+3. **Update this section** in the same PR (doc-coherence). The props
    table is the contract; if it's not here, future agents won't know the slot exists.
 4. **No library swap.** SmartPromptInput is a single implementation. Do not
    create per-library variants.

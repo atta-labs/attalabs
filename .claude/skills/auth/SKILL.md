@@ -9,9 +9,9 @@ description: Clerk authentication patterns across the Atta ecosystem — shared 
 
 The **Atta family** (Atta, Vāda, and other Atta-composed surfaces) uses a **single Clerk application** via the `@atta/auth` wrapper, with auth state propagating across product subdomains via a cookie scoped to the parent domain (`.attalabs.dev`). Sign in once on any Atta-family subdomain → signed in everywhere (the Google model).
 
-**Herald is a deliberate exception** (D-031): it is a standalone AttaLabs product with its **own** Clerk application (`closing-blowfish-4`), its **own** Neon DB, and its **own** `user_provider_keys` table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below before applying any rule here to Herald.
+**Herald is a deliberate exception** — a standalone identity perimeter with its own Clerk app, DB, and key table. It does **not** share identity or SSO with the Atta family. See "Herald exception" below for the specifics before applying any rule here to Herald.
 
-For the Atta family there is one shared `users` table in `@atta/db`, keyed by `clerk_id`; per-product profile rows reference `clerk_id` as a foreign key. Identity does not live in product tables.
+For the Atta family, identity does not live in product tables — see RULE #4 for the shared `users` table.
 
 ---
 
@@ -96,7 +96,7 @@ There is no `account.attalabs.dev` hub. Each product hosts its own `/settings` U
 
 ---
 
-## Herald exception (D-031)
+## Herald exception
 
 Herald does **not** follow Rules #1, #2, #4 above. It is a standalone identity perimeter:
 
@@ -112,9 +112,9 @@ Reversal (folding Herald into the shared Clerk app) requires migrating Herald id
 
 ### Herald library/chrome note (cross-ref, not auth)
 
-Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile** (D-035). Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
+Unrelated to auth but adjacent in Herald's layout: Herald's **app chrome** uses the build-time CMS library; the **user's saved library preference applies only to their public `/[username]` profile**. Don't wire app-chrome components to a user-library provider. See `apps/herald-ai/specs/herald-app-architecture.md` §4.
 
-### Herald owner-route gate (D-061)
+### Herald owner-route gate
 
 Herald has a per-route ownership gate on top of Clerk auth: routes under `app/[username]/(owner)/*` (currently `/{username}/ui` and `/{username}/settings`) are only accessible to the signed-in user whose own `username` matches the `[username]` URL segment.
 
@@ -161,7 +161,7 @@ export const config = {
 }
 ```
 
-> The matcher above shows Herald's flat routes (D-036). Atta-family apps use their own protected prefixes (e.g. `/app`, `/dashboard`).
+> The matcher above shows Herald's flat routes. Atta-family apps use their own protected prefixes (e.g. `/app`, `/dashboard`).
 
 ---
 
@@ -235,7 +235,7 @@ const appearance = buildClerkAppearance({ background: 'oklch(...)', foreground: 
 
 ## Anti-patterns
 
-- ❌ Creating a separate Clerk application for a new **Atta-family** surface (Herald's own app is the one sanctioned exception, D-031 — not a precedent for Atta-family products)
+- ❌ Creating a separate Clerk application for a new **Atta-family** surface (Herald's own app is the one sanctioned exception — not a precedent for Atta-family products)
 - ❌ Sharing a Clerk app or `users` table **between Herald and the Atta family** — Herald's identity perimeter is separate
 - ❌ Adding `AuthProvider` inside `NextWebShell` children
 - ❌ Setting Atta-family cookie scope to a product subdomain instead of the parent `.attalabs.dev` — breaks SSO

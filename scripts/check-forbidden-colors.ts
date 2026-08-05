@@ -19,7 +19,7 @@
  * `oklch(...)` definitions.
  *
  * `packages/ui/libraries/<lib>/installed/` (and nested helper trees) is exempt — verbatim
- * upstream CLI paste, see D-065.
+ * upstream CLI paste.
  *
  * `packages/cms/{product}-ai/` (e.g. `vada-ai`, `vinaya-ai`) is exempt — the built Sanity
  * Studio output committed as a deploy snapshot, biome-ignored for the same reason
@@ -186,7 +186,7 @@ function isUiFile(p: string): boolean {
   return /\.(tsx|jsx|ts|js|mts|cts|mjs|cjs|css)$/.test(p)
 }
 
-// `packages/ui/libraries/<name>/installed/**` is verbatim upstream CLI paste (D-065 +
+// `packages/ui/libraries/<name>/installed/**` is verbatim upstream CLI paste (see
 // Biome ignore). Color choices in there are upstream's, not ours — exempt from this gate.
 // Matches nested helper trees too (e.g. `installed/animate-ui/primitives/...`).
 const INSTALLED_RE = /(?:^|\/)packages\/ui\/libraries\/[^/]+\/installed\//

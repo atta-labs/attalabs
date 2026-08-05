@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cn } from '../../../../lib/utils'
 import { Switch as InstalledSwitch, type SwitchProps as InstalledSwitchProps } from '../../installed/switch'
 
-// Wrapper (installed/ stays a verbatim animate-ui CLI paste — D-065; never edited).
+// Wrapper (installed/ stays a verbatim animate-ui CLI paste; never edited).
 // Two jobs:
 //
 // 1. cursor-pointer default. animate is the ONE library whose installed Switch

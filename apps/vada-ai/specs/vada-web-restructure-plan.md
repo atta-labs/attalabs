@@ -155,7 +155,7 @@ Migrates from `(main)/brokered/mcp/`. Existing content path TBD — Haiku found 
 
 ### 8. Settings (`/settings`)
 
-Unchanged. Already at `(main)/settings/`. Three tabs (Account / API Keys / Agent Style). Teams tab was removed per D-030; team agent model selection moved inline to the deliberation panel via D-027.
+Unchanged. Already at `(main)/settings/`. Three tabs (Account / API Keys / Agent Style). Teams tab was removed; team agent model selection moved inline to the deliberation panel.
 
 ---
 

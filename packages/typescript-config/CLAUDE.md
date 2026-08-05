@@ -2,8 +2,6 @@
 
 Shared TypeScript configurations for the Atta AI monorepo. This package provides base configs that all other packages and apps extend.
 
-Provides base configs that all other packages and apps extend.
-
 ---
 
 ## Configs

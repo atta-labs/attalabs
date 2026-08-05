@@ -9,7 +9,7 @@ import { Switch as InstalledSwitch } from '../../installed/switch'
 //
 // The Radix flavor (`https://retroui.dev/r/radix/switch.json`) is deliberate:
 // retroui's docs page shows the `base` flavor, which is Base UI and composes
-// via `render=` instead of `asChild`. retro standardizes on Radix (D-065).
+// via `render=` instead of `asChild`. retro standardizes on Radix.
 //
 // UPSTREAM DEFECT ADAPTED HERE — retroui's *radix* flavor styles its checked
 // state on `data-checked:` / `data-unchecked:`, which are **Base UI's**
@@ -20,7 +20,7 @@ import { Switch as InstalledSwitch } from '../../installed/switch'
 // contains zero `data-checked=` attributes. Their `base` flavor is presumably
 // where those class names came from.
 //
-// The fix belongs here, not in installed/ (D-065): re-express upstream's own
+// The fix belongs here, not in installed/: re-express upstream's own
 // intended rules against the attribute Radix actually emits. The thumb is
 // rendered inside installed/, so it is reached with a descendant selector on
 // its stable `data-slot` — a wrapper reaching into the primitive it wraps,
