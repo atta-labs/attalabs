@@ -1,4 +1,4 @@
-// Herald's real brand mark — the one sanctioned exception to "no SVG anywhere" in this hero.
+// Herald's real brand mark — one of the two sanctioned SVG reuses (the other is vada-face.tsx) to "no SVG anywhere" in this hero.
 // Every other mark is hand-drawn illustration where canvas is a real substitute; this is the
 // actual Herald logo asset (Sanity `branding-herald.logoOutlineDark/Light`, both resolve to
 // the same file: https://cdn.sanity.io/files/e9gbd2d1/production/

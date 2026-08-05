@@ -296,12 +296,16 @@ export function EngineMark({ revealProgress, running = true }: { revealProgress:
       draw(ctx, w, h, revealRef.current, gearAngleRef.current, particles, live)
       if (live) gearAngleRef.current += GEAR_SPEED
 
-      // Stop the loop once the mark is parked AND its reveal has finished. The canvas keeps
-      // its last frame, so the mark stays on screen as a still — it simply costs nothing
-      // while the reader is elsewhere on the page. The reveal condition matters: a section
-      // can be scrolled into view (ramping) without the timeline head having reached it yet,
-      // and stopping then would freeze it half-drawn.
-      if (live || revealRef.current < 1) raf = requestAnimationFrame(render)
+      // Parked ⇒ stop the loop. The canvas keeps its last frame, so the mark stays on screen
+      // as a still and costs nothing while the reader is elsewhere.
+      //
+      // This deliberately does NOT also wait for the reveal to finish. Gating on
+      // `reveal < 1` looked safer (don't freeze a half-drawn mark) but inverted the whole
+      // point: a mark that is never revealed has `reveal === 0` forever, so the loop it was
+      // meant to park ran for the entire visit. The still-ramping case is covered instead by
+      // the one-shot redraw effect below, which repaints on every `revealProgress` change
+      // while parked.
+      if (live) raf = requestAnimationFrame(render)
       else raf = 0
     }
     raf = requestAnimationFrame(render)
@@ -309,6 +313,28 @@ export function EngineMark({ revealProgress, running = true }: { revealProgress:
       if (raf) cancelAnimationFrame(raf)
     }
   }, [running])
+
+  // Parked repaint: while the gear is not turning the mark still has to reflect a changing
+  // `revealProgress` (the section can be scrolling into view before the timeline head gets
+  // there). One frame per change, no loop.
+  useEffect(() => {
+    if (running) return
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    const particles = particlesRef.current
+    if (!canvas || !ctx || !particles) return
+    refreshThemeCache()
+    const dpr = window.devicePixelRatio || 1
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr)
+      canvas.height = Math.round(h * dpr)
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, w, h)
+    draw(ctx, w, h, revealProgress, gearAngleRef.current, particles, false)
+  }, [running, revealProgress])
 
   // The parent box is the same square every other mark gets. This canvas is taller than that
   // box and hangs off the top of it, positioned so the GEAR's centre — not the canvas's —

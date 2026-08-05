@@ -18,9 +18,10 @@ export { HeroFabric } from './hero-fabric'
 // HarnessStructure), standalone — clamps onto its own canvas-drawn "main" hub.
 export { HarnessRing } from './harness-ring'
 // Herald's real brand logo (Sanity branding-herald), reused verbatim as `currentColor`
-// SVG — the one sanctioned SVG mark in the AttaLabs hero. See herald-logo.tsx.
+// SVG — one of the TWO sanctioned SVG marks in the AttaLabs hero (Issue #710's Boundary
+// sanctions both: a real product asset, not decorative art). See herald-logo.tsx.
 export { HeraldLogoMark } from './herald-logo'
-// Vāda's real agent face illustrations, ported verbatim — the AttaLabs hero's second
+// Vāda's real agent face illustrations, ported verbatim — the AttaLabs hero's other
 // sanctioned SVG mark. See vada-face.tsx.
 export { VadaFace, VadaFaceAdvocate, VadaFaceCritic } from './vada-face'
 // Atta Engine's mark — plan nodes converging through a funnel into one execution node,

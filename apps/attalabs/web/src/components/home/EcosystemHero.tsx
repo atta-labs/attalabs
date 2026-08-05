@@ -7,14 +7,14 @@
 // EVERY mark is the product's own real, shared canvas component — not a redrawn
 // approximation:
 //   Vāda    — a team of three AIAgents (the same AIASphere Vāda's own home uses), each with
-//             a different real Vāda agent face: lead centred, two flanking behind.
-//   Herald  — AIASphere carrying Herald's real brand logo from Sanity.
+//             a different real Vāda agent face (sanctioned SVG 2 of 2): lead centred, two flanking behind.
+//   Herald  — AIASphere carrying Herald's real brand logo from Sanity (sanctioned SVG 1 of 2).
 //   Vinaya  — HarnessRing, the harness ported from Vinaya's own hero.
 //   Engine  — plan nodes converging through a funnel into one execution node, with a
 //               slow gear ring behind it as texture (EngineMark).
 // No particle streams between marks and no shockwave pulses — each mark just arrives.
 //
-// Every PRIMARY mark is exactly MARK_SIZE across so the four sections carry identical visual
+// Every PRIMARY mark renders at the same diameter so the four sections carry identical visual
 // weight. Flanking marks are deliberately smaller and set behind, so the trios read as one
 // composition rather than four more equal elements.
 //
@@ -41,23 +41,62 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Logo, Text } from '@atta/ui/shared'
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
 
-/** Every primary mark renders at this diameter, so all four sections weigh the same. */
-const MARK_SIZE = 240
+/** The diameter every primary mark renders at on a wide viewport. */
+const MARK_SIZE_MAX = 240
 /**
- * Vāda's lead agent, Herald's sphere, Vinaya's harness and the Engine's gear are all exactly
- * MARK_SIZE across — no mark is a step smaller than another, including the lead of the trio.
+ * Widest composition on the page, as a multiple of one mark: Vāda's trio spans
+ * `2 · flankOffset + flank` = 1.792 marks. The mark size is derived from this so the trio
+ * fits, which is what keeps the flanking faces from being clipped on a phone.
  */
-const VADA_LEAD = MARK_SIZE
-/** Flanking marks in Vāda's agent trio — smaller, and set behind the lead. */
-const FLANK_LARGE = Math.round(VADA_LEAD * 0.6)
+const WIDEST_MARK_MULTIPLE = 1.792
+/** Horizontal gutters either side of the mark column (`px-6`). */
+const MARK_GUTTER = 48
+/** Flanking marks in Vāda's agent trio — smaller than the lead, and set behind it. */
+const flankSizeFor = (markSize: number) => Math.round(markSize * 0.6)
 /**
  * Horizontal offset for a flanking mark, measured centre-to-centre. Derived from the two
  * radii plus a small negative overlap so the flank tucks *behind* the lead's edge rather
  * than colliding with its face — an offset smaller than `leadRadius + flankRadius` would
  * push the two illustrations on top of each other.
  */
-const flankOffset = (flankSize: number, overlap = 0.34) =>
-  Math.round(VADA_LEAD / 2 + flankSize / 2 - flankSize * overlap)
+const flankOffset = (markSize: number, flankSize: number, overlap = 0.34) =>
+  Math.round(markSize / 2 + flankSize / 2 - flankSize * overlap)
+
+/**
+ * The mark diameter every section renders at, shrunk on narrow viewports so Vāda's trio fits
+ * without its flanks being clipped.
+ *
+ * This is a real SIZE, deliberately not a CSS `transform: scale()`. A transform would be the
+ * one-line fix, and it is wrong here: `use-aia-canvas.ts` measures its container with
+ * `getBoundingClientRect` (the SCALED box) and writes the result back as a CSS pixel width,
+ * which the same transform then scales again — the canvas ends up at `size · scale²` while
+ * `useAIASphere` registers its radius from the UNSCALED prop. The DOM faces would still look
+ * right (the browser lays those out), so the breakage would be invisible except in the
+ * particle field and matrix rain. Passing a smaller number down has none of that ambiguity.
+ */
+const MarkSizeContext = createContext(MARK_SIZE_MAX)
+
+function useMarkSize() {
+  return useContext(MarkSizeContext)
+}
+
+function useResponsiveMarkSize() {
+  const [size, setSize] = useState(MARK_SIZE_MAX)
+  useEffect(() => {
+    const compute = () => {
+      const usable = window.innerWidth - MARK_GUTTER
+      setSize(Math.max(120, Math.min(MARK_SIZE_MAX, Math.floor(usable / WIDEST_MARK_MULTIPLE))))
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    window.addEventListener('orientationchange', compute)
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('orientationchange', compute)
+    }
+  }, [])
+  return size
+}
 
 /**
  * The Vāda trio at rest: one quiet colour for all three, so the sleeping team reads as a
@@ -272,22 +311,9 @@ function BackgroundField() {
  * flanking pieces overhang sideways without pushing the copy down relative to its neighbours.
  */
 function MarkStage({ children, stageRef }: { children: ReactNode; stageRef?: React.RefObject<HTMLDivElement | null> }) {
+  const markSize = useMarkSize()
   return (
-    // Scaled down on narrow viewports. Vāda's trio spans 1.792 × MARK_SIZE (430px) — wider
-    // than a 375px phone once the gutters are taken off — so at full size both flanking faces
-    // were sliced by the column's `overflow-hidden`. Scaling keeps all four marks the same
-    // size as each other, which a per-mark width clamp would not.
-    //
-    // The transform goes on the stage itself, NOT a wrapper: a transformed element becomes
-    // the containing block for absolutely-positioned descendants, and the flanks are
-    // absolute — a wrapper would reparent them onto a zero-size box. `getBoundingClientRect`
-    // reports the scaled rect, so sphere registration and the timeline's touch test stay
-    // correct without knowing the scale.
-    <div
-      ref={stageRef}
-      className='relative flex scale-[0.62] items-center justify-center min-[400px]:scale-75 sm:scale-100'
-      style={{ height: MARK_SIZE }}
-    >
+    <div ref={stageRef} className='relative flex items-center justify-center' style={{ height: markSize }}>
       {children}
     </div>
   )
@@ -632,6 +658,8 @@ function VadaSection() {
   // waiting for the head to travel down to it.
   const alive = useTimelineTouch(markRef, { eager: true })
   const inView = useInView(ref)
+  const markSize = useMarkSize()
+  const flankSize = flankSizeFor(markSize)
   const agentState = alive ? 'speaking' : 'complete'
   const hue = (identity: string) => (alive ? identity : VADA_TRIO_RESTING)
   // The flanking pair arrives just behind the lead, so the team assembles rather than
@@ -657,9 +685,9 @@ function VadaSection() {
       <div
         className='absolute z-0'
         style={{
-          width: FLANK_LARGE,
-          height: FLANK_LARGE,
-          transform: `translateX(-${flankOffset(FLANK_LARGE)}px)`,
+          width: flankSize,
+          height: flankSize,
+          transform: `translateX(-${flankOffset(markSize, flankSize)}px)`,
           opacity: flank
         }}
       >
@@ -669,7 +697,7 @@ function VadaSection() {
           color={hue(VADA_AGENT_COLORS.critic)}
           face={<VadaFaceCritic />}
           faceOpacity={0.55}
-          size={FLANK_LARGE}
+          size={flankSize}
           particleCount={45}
           showMatrix={alive && !reduced}
           paused={!inView}
@@ -682,9 +710,9 @@ function VadaSection() {
       <div
         className='absolute z-0'
         style={{
-          width: FLANK_LARGE,
-          height: FLANK_LARGE,
-          transform: `translateX(${flankOffset(FLANK_LARGE)}px)`,
+          width: flankSize,
+          height: flankSize,
+          transform: `translateX(${flankOffset(markSize, flankSize)}px)`,
           opacity: flank
         }}
       >
@@ -694,7 +722,7 @@ function VadaSection() {
           color={hue(VADA_AGENT_COLORS.advocate)}
           face={<VadaFaceAdvocate />}
           faceOpacity={0.55}
-          size={FLANK_LARGE}
+          size={flankSize}
           particleCount={45}
           showMatrix={alive && !reduced}
           paused={!inView}
@@ -705,14 +733,14 @@ function VadaSection() {
         />
       </div>
 
-      <div className='relative z-10' style={{ width: VADA_LEAD, height: VADA_LEAD, opacity: lead }}>
+      <div className='relative z-10' style={{ width: markSize, height: markSize, opacity: lead }}>
         <AIAgent
           id='attalabs-vada'
           state={agentState}
           color={hue(VADA_AGENT_COLORS.strategist)}
           face={<VadaFace />}
           faceOpacity={0.6}
-          size={VADA_LEAD}
+          size={markSize}
           particleCount={90}
           showMatrix={alive && !reduced}
           paused={!inView}
@@ -734,6 +762,7 @@ function HeraldSection() {
   const reveal = useRamp(active, 1000, 0, reduced)
   const alive = useTimelineTouch(markRef)
   const inView = useInView(ref)
+  const markSize = useMarkSize()
 
   return (
     <SectionShell
@@ -747,7 +776,7 @@ function HeraldSection() {
       copyShown={reveal > 0.2 || reduced}
       reduced={reduced}
     >
-      <div className='relative' style={{ width: MARK_SIZE, height: MARK_SIZE, opacity: reveal }}>
+      <div className='relative' style={{ width: markSize, height: markSize, opacity: reveal }}>
         {/* `--foreground` is the ONE token contracted to read against `--background` in both
             colour schemes — it is the page's ink, so it flips with the scheme by definition.
             `--primary` is a brand/action colour with no such guarantee, which is why the
@@ -760,7 +789,7 @@ function HeraldSection() {
           id='attalabs-herald'
           state={alive ? 'speaking' : 'complete'}
           color='var(--foreground)'
-          size={MARK_SIZE}
+          size={markSize}
           particleCount={90}
           showMatrix={alive && !reduced}
           paused={!inView}
@@ -783,6 +812,8 @@ function VinayaSection() {
   const reduced = usePrefersReducedMotion()
   const active = useRevealOnce(ref)
   const alive = useTimelineTouch(markRef)
+  const inView = useInView(ref)
+  const markSize = useMarkSize()
   // The harness builds itself ONCE on reveal — screws rise, bands deploy — and that structure
   // stays put. What the timeline head drives is the live half: the gripper columns close on
   // `main` and the electricity runs while the head is below, and both reverse when you scroll
@@ -806,15 +837,16 @@ function VinayaSection() {
       copyShown={ringProgress > 0.5 || reduced}
       reduced={reduced}
     >
-      <div className='relative' style={{ width: MARK_SIZE, height: MARK_SIZE }}>
-        {/* The `main` hub is sized off MARK_SIZE at a ratio that keeps its label legible —
+      <div className='relative' style={{ width: markSize, height: markSize }}>
+        {/* The `main` hub is sized off the mark diameter at a ratio that keeps its label legible —
             the columns clamp onto it, so it is the thing the whole harness closes around. */}
         <HarnessRing
-          size={MARK_SIZE}
-          hubRadius={Math.round(MARK_SIZE * 0.18)}
+          size={markSize}
+          hubRadius={Math.round(markSize * 0.18)}
           ringProgress={ringProgress}
           clamp={clamp}
           spark={spark}
+          paused={!inView}
         />
       </div>
     </SectionShell>
@@ -831,6 +863,8 @@ function EngineSection() {
   // Scroll back up and the mechanism parks exactly where it stood; scroll down again and it
   // resumes from there rather than rewinding to the start.
   const alive = useTimelineTouch(markRef)
+  const inView = useInView(ref)
+  const markSize = useMarkSize()
 
   return (
     <SectionShell
@@ -846,7 +880,7 @@ function EngineSection() {
       {/* One mark, not a gear trio: plan nodes converging through a funnel into a single
           execution node. The gear survives only as a slow ring behind that node — texture, so
           the mark still reads as "engine" without being a gear-as-icon. */}
-      <div className='relative' style={{ width: MARK_SIZE, height: MARK_SIZE }}>
+      <div className='relative' style={{ width: markSize, height: markSize }}>
         <EngineMark revealProgress={reveal} running={alive && !reduced} />
       </div>
     </SectionShell>
@@ -856,6 +890,7 @@ function EngineSection() {
 export function EcosystemHero({ logoUrl }: { logoUrl?: string | null }) {
   const reduced = usePrefersReducedMotion()
   const scopeRef = useRef<HTMLDivElement>(null)
+  const markSize = useResponsiveMarkSize()
 
   // The timeline thread is this page's scroll indicator, so the native scrollbar beside it is
   // duplicate chrome. Scoped to this page and reversed on unmount — the rule is a class on
@@ -867,29 +902,31 @@ export function EcosystemHero({ logoUrl }: { logoUrl?: string | null }) {
   }, [])
 
   return (
-    <div className='relative w-full overflow-x-hidden bg-background'>
-      <BackgroundField />
-      {/* Fixed topbar spanning ONLY the right (stack) half, matching the column split — it
+    <MarkSizeContext.Provider value={markSize}>
+      <div className='relative w-full overflow-x-hidden bg-background'>
+        <BackgroundField />
+        {/* Fixed topbar spanning ONLY the right (stack) half, matching the column split — it
           sits over the opaque panel, so it reads as that column's chrome rather than floating
           across the artwork. The toggle is the shared @atta/ui one the product topbars mount,
           so the cookie write and the data-theme flip stay in a single implementation. */}
-      <header className='fixed inset-x-0 top-0 z-50 lg:right-1/2'>
-        <div className='flex items-center justify-between gap-4 bg-background/20 px-6 py-3 backdrop-blur-md lg:px-12'>
-          <Logo dark={logoUrl ?? undefined} alt='AttaLabs' size='h-10' text={['Atta', 'Labs']} />
-          <ColorSchemeToggle />
-        </div>
-      </header>
-      {/* The four sections and the thread that runs through them share one positioning
+        <header className='fixed inset-x-0 top-0 z-50 lg:right-1/2'>
+          <div className='flex items-center justify-between gap-4 bg-background/20 px-6 py-3 backdrop-blur-md lg:px-12'>
+            <Logo dark={logoUrl ?? undefined} alt='AttaLabs' size='h-10' text={['Atta', 'Labs']} />
+            <ColorSchemeToggle />
+          </div>
+        </header>
+        {/* The four sections and the thread that runs through them share one positioning
           context, so the thread spans exactly their combined height. */}
-      <div ref={scopeRef} className='relative'>
-        <TimelineScope.Provider value={scopeRef}>
-          <Timeline reduced={reduced} />
-          <VadaSection />
-          <HeraldSection />
-          <VinayaSection />
-          <EngineSection />
-        </TimelineScope.Provider>
+        <div ref={scopeRef} className='relative'>
+          <TimelineScope.Provider value={scopeRef}>
+            <Timeline reduced={reduced} />
+            <VadaSection />
+            <HeraldSection />
+            <VinayaSection />
+            <EngineSection />
+          </TimelineScope.Provider>
+        </div>
       </div>
-    </div>
+    </MarkSizeContext.Provider>
   )
 }

@@ -430,7 +430,8 @@ export function HarnessRing({
   ringProgress,
   clamp,
   spark,
-  showHub = true
+  showHub = true,
+  paused = false
 }: {
   size: number // px diameter of the ring
   hubRadius: number // gripper columns' inner target — the "main" hub's radius
@@ -440,10 +441,18 @@ export function HarnessRing({
   // Draw the "main" hub at the centre. The columns still clamp to `hubRadius` either way —
   // set false where the ring reads better empty (the label is illegible at small sizes).
   showHub?: boolean
+  /**
+   * Stops this mark's own rAF loop. The canvas keeps its last frame, so the harness stays on
+   * screen as a still — for a page that stacks several marks, the ones off-screen cost
+   * nothing. Mirrors `AIACanvas`'s `paused`.
+   */
+  paused?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const propsRef = useRef({ size, hubRadius, ringProgress, clamp, spark, showHub })
   propsRef.current = { size, hubRadius, ringProgress, clamp, spark, showHub }
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -469,7 +478,7 @@ export function HarnessRing({
       // `times[w] += v.speed * v.dir` once per frame. Scaling `t` here (it used to be
       // `t * 0.06`) divided the electricity's speed by ~17 and it read as frozen.
       if (s > 0) drawHarnessRing(ctx, s, cr, rp, cl2, sp, t, sh)
-      t++
+      if (!pausedRef.current) t++
       raf = requestAnimationFrame(render)
     }
     raf = requestAnimationFrame(render)
