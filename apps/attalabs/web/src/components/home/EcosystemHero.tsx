@@ -881,7 +881,7 @@ function EngineSection() {
           execution node. The gear survives only as a slow ring behind that node — texture, so
           the mark still reads as "engine" without being a gear-as-icon. */}
       <div className='relative' style={{ width: markSize, height: markSize }}>
-        <EngineMark revealProgress={reveal} running={alive && !reduced} />
+        <EngineMark revealProgress={reveal} running={alive && inView && !reduced} />
       </div>
     </SectionShell>
   )
