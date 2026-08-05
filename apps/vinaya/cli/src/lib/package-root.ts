@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
  * tree); once bundled into a single-file `dist/index.js` (what a real
  * `npm install` ships), the depth from the bundled file to the package root
  * is different, and a fixed walk silently lands one or more directories
- * short or short of the mark (vinaya-cli-v1 task 7, Correction 2 — RC1).
+ * short or short of the mark.
  *
  * `moduleUrl` must be the CALLER's own `import.meta.url`, not this module's —
  * the walk starts from wherever the caller physically lives (workspace

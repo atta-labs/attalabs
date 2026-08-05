@@ -1,5 +1,5 @@
-// `vinaya waiver` — the forge-authenticated escape hatch (vinaya-cli-v1
-// task 7). A waiver is never an agent-emittable string: not a PR body field,
+// `vinaya waiver` — the forge-authenticated escape hatch. A waiver is never
+// an agent-emittable string: not a PR body field,
 // not a commit trailer, not a comment the config could parse. The ONLY
 // mechanism ring 1 honors is the actor-verified `vinaya/waiver:docs` /
 // `vinaya/waiver:review` label — `isWaiverLabelActorVerified`

@@ -1,4 +1,4 @@
-// `vinaya demo break` — the productized belief moment (vinaya-cli-v1 task 7).
+// `vinaya demo break` — the productized belief moment.
 //
 // On an ISOLATED, DISCARDABLE branch of the CURRENT repo (never a separate
 // temp-dir sandbox — Issue #387's Boundary corrects an earlier scratch doc on
@@ -121,8 +121,8 @@ function recoverFromCrash(repoRoot: string, statePath: string): void {
 
 /**
  * `BRANCH` is set explicitly to the demo branch alongside `PR_BODY`. As of
- * vinaya-cli-v1 task 7 Correction 2, `coherence`/`dispatch-readiness` no
- * longer `chdir` — they derive the branch from the caller's own inherited
+ * Correction 2, `coherence`/`dispatch-readiness` no longer `chdir` — they
+ * derive the branch from the caller's own inherited
  * cwd, which for this commit already correctly resolves to the demo branch
  * with no help needed. This override is now belt-and-suspenders rather than
  * load-bearing (it was the workaround for the pre-Correction-2 chdir bug,

@@ -27,9 +27,7 @@ import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
 // must resolve relative to the CALLER's cwd — the repo `vinaya check` is
 // meant to evaluate — never a fixed location derived from wherever this
 // script physically lives. The runner's spawn() already inherits the
-// caller's cwd with no override, so no chdir is needed (vinaya-cli-v1
-// task 7, Correction 3 — the same RC2 fix Correction 2 applied to
-// `check-coherence.ts`/`check-dispatch-readiness.ts`, missed here).
+// caller's cwd with no override, so no chdir is needed.
 const CHECK_NAME = 'doc-coverage'
 
 // Array-form execFileSync — no shell, so `base` (env-controlled) is passed

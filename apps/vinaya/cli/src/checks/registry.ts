@@ -7,9 +7,9 @@ import type { CheckSpec } from './contract'
 // running unbundled from `src/checks/`; once bundled into a single-file
 // `dist/index.js` (what a real `npm install` ships), the depth from the
 // bundled file to the package root differs, and a fixed walk landed every
-// `BIN_DIR`-derived path one directory short (vinaya-cli-v1 task 7,
-// Correction 2 — RC1). `BIN_DIR` is still computed once at module scope: the
-// package root a check's bin resolves against never changes at runtime.
+// `BIN_DIR`-derived path one directory short. `BIN_DIR` is still computed
+// once at module scope: the package root a check's bin resolves against
+// never changes at runtime.
 const BIN_DIR = join(packageRoot(import.meta.url), 'src', 'checks', 'bin')
 
 /**
@@ -19,8 +19,8 @@ const BIN_DIR = join(packageRoot(import.meta.url), 'src', 'checks', 'bin')
  * no-privileged-API proof, not a stylistic choice. See
  * `tests/checks/no-privileged-api.test.ts`.
  *
- * `reader-resolvable-prose` is NOT registered here (vinaya-cli-v1 task 7,
- * Correction 2 — RC3): it hardcodes this monorepo's own doctrine layout
+ * `reader-resolvable-prose` is NOT registered here: it hardcodes this
+ * monorepo's own doctrine layout
  * (`aeg-root/glossary.md`, `aeg-root/tranches/completed/`) and this
  * monorepo's own marketing-site source path
  * (`apps/vinaya/web/src/app/(site)/**\/page.tsx`) — a scope-registration bug,
