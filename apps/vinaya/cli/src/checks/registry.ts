@@ -1,15 +1,34 @@
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+import { packageRoot } from '../lib/package-root.js'
 import type { CheckSpec } from './contract'
 
-const CLI_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const BIN_DIR = join(CLI_ROOT, 'src', 'checks', 'bin')
+// `packageRoot(import.meta.url)` walks up to the nearest `package.json`
+// rather than a fixed `../..` — the fixed depth was correct only when
+// running unbundled from `src/checks/`; once bundled into a single-file
+// `dist/index.js` (what a real `npm install` ships), the depth from the
+// bundled file to the package root differs, and a fixed walk landed every
+// `BIN_DIR`-derived path one directory short. `BIN_DIR` is still computed
+// once at module scope: the package root a check's bin resolves against
+// never changes at runtime.
+const BIN_DIR = join(packageRoot(import.meta.url), 'src', 'checks', 'bin')
 
 /**
- * The five core AEG gates, expressed as ordinary `CheckSpec`s — the exact
- * shape a `vinaya.config.json` entry produces. No extra field, no privileged
- * flag: this IS the no-privileged-API proof, not a stylistic choice.
- * See `tests/checks/no-privileged-api.test.ts`.
+ * The four core AEG gates an adopter's repo actually runs, expressed as
+ * ordinary `CheckSpec`s — the exact shape a `vinaya.config.json` entry
+ * produces. No extra field, no privileged flag: this IS the
+ * no-privileged-API proof, not a stylistic choice. See
+ * `tests/checks/no-privileged-api.test.ts`.
+ *
+ * `reader-resolvable-prose` is NOT registered here: it hardcodes this
+ * monorepo's own doctrine layout
+ * (`aeg-root/glossary.md`, `aeg-root/tranches/completed/`) and this
+ * monorepo's own marketing-site source path
+ * (`apps/vinaya/web/src/app/(site)/**\/page.tsx`) — a scope-registration bug,
+ * not a pathing one. No `packageRoot()`-style fix makes those paths exist in
+ * an arbitrary adopter's repo. The check's bin and its underlying
+ * `@atta/aeg-core` logic are left in place — they may still be useful as this
+ * repo's own internal doc-quality tool — but they are reachable only by
+ * direct invocation, never through this adopter-facing registry.
  */
 export function coreCheckRegistry(): CheckSpec[] {
   return [
@@ -34,12 +53,6 @@ export function coreCheckRegistry(): CheckSpec[] {
     {
       name: 'dispatch-readiness',
       run: join(BIN_DIR, 'check-dispatch-readiness.ts'),
-      scope: 'full',
-      timeoutMs: 30_000
-    },
-    {
-      name: 'reader-resolvable-prose',
-      run: join(BIN_DIR, 'check-reader-resolvable-prose.ts'),
       scope: 'full',
       timeoutMs: 30_000
     }
