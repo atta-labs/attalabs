@@ -15,8 +15,8 @@ import type { Tranche, Lifecycle, Task } from './types'
  *   - an optional `## Backlog` section as bullets
  *
  * Real tranche files include narrative references to dropped task ids in
- * prose (e.g. `herald-onto-engine.md`'s "Task 3a — removed"). The parser
- * ignores those — only rows present in the topology table become tasks.
+ * prose (e.g. a "Task 3a — removed" note). The parser ignores those — only
+ * rows present in the topology table become tasks.
  */
 export function parseTranche(md: string): Tranche {
   return {
@@ -30,7 +30,7 @@ export function parseTranche(md: string): Tranche {
 
 function parseName(md: string): string {
   // The H1 is `# Tranche: <slug> — <timeframe>`. The slug may contain
-  // hyphens (e.g. `herald-onto-engine`, `aeg-ui-v1`), so capture the first
+  // hyphens (e.g. `some-tranche-name`, `another-v1`), so capture the first
   // non-whitespace run — the space before the em-dash is the delimiter.
   //
   // `Iteration:` is accepted as the superseded spelling, permanently. This is

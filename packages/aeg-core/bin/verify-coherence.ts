@@ -180,10 +180,9 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * match the file-parsed topology table exactly for every task that HAS a
  * forge Issue. `dependsOn`/`conflictsWith` are read from the topology table
  * itself (`parseTranche`) and merged in, NOT forge-derived — a deliberate,
- * TEMPORARY narrowing (Planner triage, Issue #437) of the original swap: at
- * least 9 grandfathered `vada-production-v1` Issues (#183 #184 #185 #186
- * #187 #188 #240 #241 #244) predate the "Dependency rationale" grammar
- * and carry no forge-parseable dependency data at all, and
+ * TEMPORARY narrowing of the original swap: a cohort of grandfathered Issues
+ * predates the "Dependency rationale" grammar and carries no forge-parseable
+ * dependency data at all, and
  * `parse-rationale-deps.ts`'s cross-tranche-qualified-ref handling has its
  * own real gaps independent of that (fixed one instance on Issue #388, but
  * others may remain). Backfilling/auditing the rest is its own follow-up
@@ -194,8 +193,8 @@ function readFileAtRef(ref: string, relPath: string): string | null {
  * tasks it finds via a labeled Issue, so a row with no Issue is structurally
  * invisible to it. T3 (`tbd-in-active-tranche`) exists specifically to
  * catch these — silently dropping them here would blind the one check whose
- * entire job is to see them (confirmed live: `vada-production-v1`'s 6a/6b/6c
- * rows, real `#TBD` entries, vanish from the forge-derived list entirely).
+ * entire job is to see them (confirmed live: a tranche's real `#TBD` rows
+ * vanish from the forge-derived list entirely).
  * So any file task with no forge counterpart is appended as-is, fully
  * file-derived, not merged.
  *
@@ -290,10 +289,10 @@ export async function loadTrancheFiles(prContext: PrReadContext = null, onlySlug
   await loadDir(TRANCHES_RELDIR, false)
   await loadDir(COMPLETED_RELDIR, true)
 
-  // Forge-native tranches with no topology file at all (the forge-native cutover:
-  // vinaya-studio-v1, vinaya-cli-v1, herald-hardening-v1 all had their
-  // aeg-root/tranches/*.md deleted once their Milestone-derived replacement
-  // was proven safe) are structurally invisible to the directory-listing
+  // Forge-native tranches with no topology file at all (at the forge-native
+  // cutover, a tranche's aeg-root/tranches/*.md was deleted once its
+  // Milestone-derived replacement was proven safe) are structurally
+  // invisible to the directory-listing
   // enumeration above — there is no filename for a slug with zero file to
   // ever appear in `mainNames`/`prNames`, so `deriveOrFallback` is never even
   // called for it, even though `deriveOrFallback` itself already handles a
@@ -362,8 +361,8 @@ export async function runCoherenceChecks(
 
   // ---------- CI scope detection ----------
   // Parse the PR's tranche from BRANCH (CI) or GITHUB_HEAD_REF (Actions env).
-  // Used to scope T3 so a PR against aeg-coherence-v1 isn't blocked by legacy
-  // #TBD rows in vada-production-v1 or herald tranches.
+  // Used to scope T3 so a PR against one tranche isn't blocked by legacy
+  // #TBD rows in an unrelated one.
   const ciTrancheSlug: string | null = (() => {
     const branch = process.env.BRANCH ?? process.env.GITHUB_HEAD_REF ?? ''
     const m = branch.match(/^task\/([^/]+)\//)

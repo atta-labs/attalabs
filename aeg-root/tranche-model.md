@@ -114,8 +114,8 @@ To see **live status**, you do not read this file — you ask the forge: `gh pr 
 The filename slug (`<name>` in `aeg-root/tranches/<name>.md`) should name the tranche's **center of gravity — the durable, highest-leverage work — not its narrowest downstream feature.** The test: *what is the lasting, reusable thing this tranche produces?* Name that.
 
 - When a tranche **onboards a project onto shared infrastructure** (or grows that infra), name the **onboarding / infra**, not the feature that happens to ride on it. The infra work outlives and outscopes the feature, and other projects inherit it. Example: a tranche that migrates a product onto a shared billing engine and adds multi-vendor payment support to that shared engine — with "refund UI" as the proximate feature on that product — is named **`billing-onto-engine`**, *not* `billing-refund-ui`. The engine maturing is the center of gravity; the refund UI is one feature on top.
-- When a tranche is genuinely **one project's self-contained feature** (no shared-infra change, no cross-project blast radius), `<project>-<feature>` is fine (e.g. `vada-reviewers-benchmark`).
-- A name should not imply a narrower scope than the `Project(s)` column reveals. If tasks span `engine, vada, herald`, a filename saying only `herald-…` misleads a reader scanning `tranches/`. When in doubt, name the broadest/most-shared layer the tranche touches.
+- When a tranche is genuinely **one project's self-contained feature** (no shared-infra change, no cross-project blast radius), `<project>-<feature>` is fine (e.g. `<project>-reviewers-benchmark`).
+- A name should not imply a narrower scope than the `Project(s)` column reveals. If tasks span several projects, a filename naming only one of them misleads a reader scanning `tranches/`. When in doubt, name the broadest/most-shared layer the tranche touches.
 
 The `Project(s)` column remains the authoritative blast-radius record per task; the filename is a human-readable handle, chosen to not mislead about scope.
 
@@ -262,7 +262,7 @@ Append-only. Each row records one role's turn at a phase. Re-entry appends a **n
 - **Role** — the AEG role doing the work (`Planner`, `Brief Author`, `Developer`, `Reviewer`, `Security`, `Archivist`).
 - **Agent/Model** — the role's agent + model, with the surface in parentheses: `claude-opus-4-7 (CC)` for Claude Code (terminal), `claude-opus-4-7 (chat)` for a claude.ai conversation. The surface matters because it is what tells you which capture source applies (below).
 - **Tokens in / Tokens out** — integers from the meter, or `—` for "not yet known."
-- **Cost** — USD as `$X.XXXX` from the adapter's PRICING table, or `—`. *(V1 honesty: the PRICING table is currently missing some recent models — e.g. `claude-sonnet-4-20250514` — so cost can read `$0.00` for an otherwise real row. Tokens are still exact; that gap is a known Herald-backlog dependency, not a ledger bug.)*
+- **Cost** — USD as `$X.XXXX` from the adapter's PRICING table, or `—`. *(V1 honesty: the PRICING table is currently missing some recent models — e.g. `claude-sonnet-4-20250514` — so cost can read `$0.00` for an otherwise real row. Tokens are still exact; that gap is a known backlog dependency in the model catalogue, not a ledger bug.)*
 - **Date** — `YYYY-MM-DD`.
 
 ### The append rule (read this exactly the way you read derived status)

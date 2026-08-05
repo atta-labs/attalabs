@@ -298,8 +298,8 @@ After every commit: `git log --oneline -3` to confirm the new commit is a direct
 
 - Format: `Type(scope): Brief description` — start-case type, optional lower-case scope in parens, colon, space, description
 - Types: `Feat`, `Fix`, `Refactor`, `Style`, `Docs`, `Chore`, `Test`, `Perf`, `Build`, `Revert`
-- **Header line MUST be ≤72 characters** (type + scope + description combined). Count before committing: `echo -n "Feat(herald): your message here" | wc -c`. CI rejects anything over 72 — this is the single most common CI failure.
-- Scope must be lower-case (e.g. `herald`, `aeg`, `ui`, `engine`)
+- **Header line MUST be ≤72 characters** (type + scope + description combined). Count before committing: `echo -n "Feat(scope): your message here" | wc -c`. CI rejects anything over 72 — this is the single most common CI failure.
+- Scope must be lower-case, naming the surface touched (e.g. `ui`, `api`, `cli`)
 - Subject must be sentence-case (not ALL CAPS, not all lowercase)
 - No trailing period on the subject line
 - Reference the task's Issue in the PR body (`Closes #N`), not necessarily in every commit message

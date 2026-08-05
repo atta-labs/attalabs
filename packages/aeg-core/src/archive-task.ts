@@ -42,8 +42,8 @@ const TASK_BRANCH_PATTERN = /^task\/([^/]+)\/([^/]+)$/
  * either signal is present. `buildProvenanceBlock` already tolerates a
  * `null` ref (falls back to a branch-name task label), so this function's
  * only remaining job is the branch-name half of that OR — it is no longer
- * the sole gate. (Confirmed gap, #524/#530: a task whose Issue carried
- * `vinaya/tranche:herald-hardening-v1` was closed by a `fix/*`-branch PR;
+ * the sole gate. (Confirmed gap: a task whose Issue carried a
+ * `vinaya/tranche:*` label was closed by a `fix/*`-branch PR;
  * branch-name-only detection silently skipped provenance forever.)
  */
 export function taskRefFromBranch(branch: string): { tranche: string; taskId: string } | null {

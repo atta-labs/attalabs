@@ -81,10 +81,10 @@ Post a new comment on the pinned lessons Issue — never edit an existing commen
 **Tasks moved out:** <list → destination tranche, with reason — read from the source topology's `Moved out → <dest>` annotations>
 
 ### What went well
-<2-5 bullets. Concrete patterns — not "we were fast" but "the brief-level isolation of 7a/7b prevented a shared-engine regression from blocking Herald work.">
+<2-5 bullets. Concrete patterns — not "we were fast" but "the brief-level isolation of 7a/7b prevented a shared-engine regression from blocking a consuming product’s work.">
 
 ### What stalled or caused rework
-<2-5 bullets. Honest. Concrete. Not blame — pattern identification. E.g. "PRs that touched both @atta/ui and a consuming app consistently triggered IdentityProvider crashes because no role checked context requirements before merging.">
+<2-5 bullets. Honest. Concrete. Not blame — pattern identification. E.g. "PRs that touched both a shared UI package and a consuming app consistently triggered IdentityProvider crashes because no role checked context requirements before merging.">
 
 ### Carry-forward lessons (add to the pinned lessons Issue's calibration comment if not already there)
 <Distilled as rules. E.g. "Schema-change PRs must list drizzle-kit push and new env vars in the PR body — they are not done at merge without those steps.">
@@ -113,14 +113,14 @@ If you don't have the information to fill a field, write "unknown — Principal 
 
 ### 4. Update the pinned state Issue
 
-Per-project state is a pinned GitHub Issue, not a `state.md` file — update the relevant one(s) by editing the Issue body (one for `aeg`, `vada`, `herald`, `cetana`, or the ecosystem-wide bucket for `aeg-core`/`atta`/`desktop`/`attalabs`).
+Per-project state is a pinned GitHub Issue, not a `state.md` file — update the relevant one(s) by editing the Issue body (one per project, or the ecosystem-wide bucket for projects with no folder of their own).
 
 > **`now.md` is retired.** Do not look for or update `now.md` — it no longer exists. "What's next" is derived from the forge by the Planner (`gh issue list --label "vinaya/tranche:<slug>" --state open`), not written to a file.
 
 - Bump "Last updated" to today
 - Move the tranche from the "active" to "complete" list in the tranches summary
 - Add a "Recently shipped" entry for the tranche (one paragraph: what the tranche built, its scope, its durable impact)
-- Update any product-phase notes that the tranche's work advanced (e.g. "Herald Phase 3 complete")
+- Update any product-phase notes that the tranche's work advanced (e.g. "Phase 3 complete")
 
 ### 6. Ratify pending Type 1 decisions
 

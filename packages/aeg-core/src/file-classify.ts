@@ -8,21 +8,21 @@
  * Touching one must never satisfy C3's code-requires-docs pairing, carry a
  * tier signal, or be held to a spec's `Status:` block.
  *
- * Identified by PATH, not by a filename suffix. The suffix rule broke the
- * moment the per-product logs were restored to their original names — the
- * files were still archives, the predicate stopped believing it, and the
- * assertions that would have caught it were pointed at a synthetic path
- * instead. Naming the real files is the only form of this rule that cannot
- * silently stop applying.
+ * Recognized by filename suffix, never by an enumerated path list. An earlier
+ * form of this predicate hardcoded each consumer's archive by full path, which
+ * put specific product names inside a package that ships to adopters who have
+ * neither. The suffix is the actual rule — a file named `…decisions-legacy.md`
+ * is an archive in any repo — and it subsumes every path that list held, so
+ * the coupling was removable with no behavior change.
+ *
+ * The historical failure the path list was added to prevent (renaming an
+ * archive out of recognition) is not re-opened: the earlier rule required a
+ * `-decisions-legacy.md` suffix and so missed a top-level `decisions-legacy.md`
+ * with no prefix, which is why the list existed at all. Matching the bare
+ * suffix covers both shapes.
  */
-const FROZEN_ARCHIVES: ReadonlySet<string> = new Set([
-  'docs/decisions-legacy.md',
-  'apps/herald-ai/docs/herald-decisions-legacy.md',
-  'apps/vada-ai/docs/vada-decisions-legacy.md'
-])
-
 export function isFrozenArchive(p: string): boolean {
-  return FROZEN_ARCHIVES.has(p) || p.endsWith('-decisions-legacy.md')
+  return p.endsWith('decisions-legacy.md')
 }
 
 export function isDocFile(p: string): boolean {

@@ -1,12 +1,12 @@
 ---
 sidebar_title: Coordination
 ---
-# Atta Coordination — How to Work With This System
+# Coordination — How to Work With This System
 
 **This file lives in the repo at `aeg-root/coordination.md`.**
 **All agents read this at session start.**
 
-This is the coordination contract for the Atta ecosystem — **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `tranche-model.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
+This is the coordination contract for **this repo's instance** of the AEG operating model. (The model itself is neutral and lives in `state-machine.md`, `aeg-manual-flow.md`, `tranche-model.md`, the role docs, and the `aeg` skill; *this* file fills in the repo-specific parts: the names, the products, the tools in use, the house communication style. A different repo adopting AEG would keep the model and replace this file's specifics.)
 
 Dani works with multiple agents across a chat/planning surface and a coding-agent surface. This file tells each agent who it is, how to orient, and what the rules are.
 
@@ -24,7 +24,7 @@ If you are starting a fresh session and need to orient:
 2. `aeg-root/state-machine.md` — the constitution; artifact states, roles, permissions, decision schema
 3. `aeg-root/roles/{your-role}.md` — Planner / Brief Author (incl. Planner & Brief Author modes), Developer, Principal, Reviewer, Security, or Archivist
 4. `aeg-root/tranche-model.md` — the tranche model: tasks-as-Issues, forge-derived status, the thin topology file, conflicts (read when planning or executing)
-5. **Per-project state (pinned Issues)** — what is true right now, per project (`aeg`, `vada`, `herald` — one pinned Issue each, found via the repo's native Pinned Issues view, not a memorized number) plus the ecosystem-wide bucket (`aeg-core`/`atta`/`desktop`/`attalabs` + cross-project facts, its own pinned Issue). Non-derivable operational facts; current focus pointer.
+5. **Per-project state (pinned Issues)** — what is true right now, per project (one pinned Issue each, found via the repo's native Pinned Issues view, not a memorized number) plus the ecosystem-wide bucket (every project with no dedicated folder, plus cross-project facts, its own pinned Issue). Non-derivable operational facts; current focus pointer.
 6. **Derive current execution state from the forge** — see the "Session-start forge queries" section below
 7. `aeg-root/tranches/<name>.md` — the current tranche's task topology (the plan); live status is queried from the forge, not read here. **Post-cutover:** most active tranches no longer have this file at all — task→Issue topology derives straight from the forge (a Milestone + `tranche:<slug>`-labeled Issues). **No active tranche carries this file at all today** — the last tracked exception's file was deleted once its backfill completed (`tranche-model.md` §4); `completed/` tranches keep theirs permanently, by design, and `check-no-disk-state.ts` now CI-blocks adding a new active one.
 8. **Lessons log (pinned Issue)** — calibration lessons + anti-patterns, one comment per lesson (read when authoring briefs or post-mortems)
@@ -35,7 +35,7 @@ The AEG model front door is the **`aeg`** skill (the model in one read) → the 
 
 There is exactly one AEG model in this monorepo, at the repo-root `aeg-root/` (constitution, flow, roles, skills, the project registry `projects.md`). It exists nowhere else. **Any agent, executing any task for any project — an app, a package, a library, the monorepo itself — orients from `aeg-root/` first:** it reads the constitution, the role doc, and the active tranche there. It never expects a per-project copy of the model.
 
-Living **state** is held in pinned forge Issues (lessons, per-project operational state): one root ecosystem-wide pinned Issue (covering `aeg-core`/`atta`/`desktop`/`attalabs` — projects with no dedicated folder — plus cross-project facts) and one pinned Issue per project with its own folder (`aeg`, `vada`, `herald`, `cetana`). A task updates the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
+Living **state** is held in pinned forge Issues (lessons, per-project operational state): one root ecosystem-wide pinned Issue (covering every project with no dedicated folder, plus cross-project facts) and one pinned Issue per project that has its own folder. A task updates the pinned state Issue of each project it touches (one for a single-project task, several for a cross-project task — resolve which project via `.vinaya/projects.md`, then which Issue via this list or `gh issue search`). This state layer holds facts only — never the model — which is what forces every agent back to `aeg-root/` for the rules.
 
 For deeper context on the operational model design:
 - `aeg-root/aeg-manual-flow.md` — running the flow by hand (the operator's guide)
@@ -96,7 +96,7 @@ Conversation logs / thinking are not artifacts; do not cite as authority.
 
 > **`now.md` is retired.** Active work, blocked tasks, and next candidates are derived from the forge (see "Session-start forge queries" above). The forge is the single source of truth for what is happening; the per-project pinned state Issue holds what the forge cannot derive.
 
-The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo AttaLabs work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research — cross-cutting items are cut as backlog Issues instead. **Backlog convention:** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (the old per-unit `aeg-project/` state folder is retired).
+The roadmap is **not** an AEG file — it lives in the company's tool (or, for solo work, in the per-project backlogs `apps/<project>/specs/<project>-backlog.md`, which are reference docs out of the flow). The old global `roadmap.md` is retired, and the monorepo-wide `specs/ecosystem-backlog.md` it once sat beside was deleted with the rest of the stale AEG research — cross-cutting items are cut as backlog Issues instead. **Backlog convention:** a unit's *plan* lives in its `specs/` (`apps/<project>/specs/<project>-backlog.md` per project); a unit's *flow + governance* lives in the root `aeg-root/` (model, exists once); its *living state* lives on the per-project pinned Issue (the old per-unit `aeg-project/` state folder is retired).
 
 ### What lives in the repo
 
@@ -104,42 +104,15 @@ Everything else. All skills (canonical home `aeg-root/skills/*/SKILL.md`, with a
 
 ---
 
-## The names — operational reference
+## The names — where the host repo defines them
 
-These names matter every session. Locked v2 framing (May 12, 2026). *(This section is repo-specific instance content — a different team adopting AEG replaces it with its own names.)*
+Every session needs a shared vocabulary for the products, brands, and domains the work touches. **That vocabulary is the host repo's, not this model's**, so it is not defined here.
 
-### Two ecosystems at different scales
+An earlier revision carried one repo's product table, brand architecture, and naming conventions inline, marked as instance content. Marking it was not enough: a repo adopting this model still received another organization's product names, domains, and house naming rules as part of its own doctrine. The section is now a pointer rather than a payload.
 
-- **AttaLabs ecosystem** = the dev/lab ecosystem. Permanent home at `attalabs.dev`. Where Dani builds AI products. Multiple products live here — some related to Atta, some not.
-- **Atta ecosystem** = the internal composition of Vāda + Vitakka + Sati that makes up Atta-the-product. A smaller scale.
+**Where to look, in order:** the project registry (`.vinaya/projects.md` — the authority for valid `Project:` values, and the only names any gate resolves against), then the repo's own root guidance file for brand and naming conventions. A repo with a single project needs neither: one project, no disambiguation, no registry.
 
-When context-sensitive, prefer the explicit qualifier ("AttaLabs ecosystem" vs "Atta ecosystem" vs "Atta-internal composition").
-
-### Brand architecture
-
-- **AttaLabs** = the dev/lab. Permanent home at `attalabs.dev`. Multiple products inside.
-- **Atta** = a product within AttaLabs. The deep-thinking AI composed of Vāda + Vitakka + Sati. Target consumer domain: `atta.ai` if available. Not yet deployed.
-- **The Atta Engine** = the agent-flow execution substrate (`@atta/engine` + `@atta/adapter-langgraph`). Powers Vāda today; will power Vitakka and Atta. Lives in AttaLabs.
-- **Code namespace** stays `@atta/*`. The monorepo's name, not a brand.
-
-### Products
-
-| Product | What it is | Domain |
-|---|---|---|
-| **Atta** | The deep-thinking AI. Composed of Vāda + Vitakka + Sati. Not yet deployed. | TBD; target `atta.ai` |
-| **Vāda** | Deliberation engine. V1 live. Standalone product + deliberation layer inside Atta. Pāli for "debate/discourse." | `vada.attalabs.dev` |
-| **Vitakka** | Focused-thinking product. Not yet built. Standalone + focus layer inside Atta. Pāli for "directed thought." | `vitakka.attalabs.dev` (when built) |
-| **Sati** | Memory layer inside Atta. Standalone surface deferred. Pāli for "mindfulness, recollection." | TBD |
-| **Vinaya** | Agentic Execution Governance made shippable — the CLI plus Vinaya Studio, the UI that visualizes a repo's AEG execution (`apps/vinaya/`). The model is repo-root `aeg-root/`. NOT part of Atta. | `vinaya.attalabs.dev` |
-| **Herald** | Standalone forensic CV/JD match tool. NOT part of Atta. Sibling product in AttaLabs. English name. | `herald.attalabs.dev` (when deployed) |
-
-### Naming convention — no `-AI` suffix on any product brand
-
-Locked May 12, 2026. All product brands are bare: **Atta, Vāda, Vitakka, Sati, Herald, Vinaya**. Never `AttaAI`, `VadaAI`, etc. The AI category signal is carried via page content and site metadata, not the brand.
-
-### Naming aesthetic — Pāli is preferred inside Atta, elective elsewhere
-
-Locked May 12, 2026. Inside Atta, Pāli names are mandatory (Atta, Vāda, Vitakka, Sati). Inside AttaLabs more broadly, Pāli is common but elective (Cetana is Pāli by preference; Herald is English by fit). Pāli is no longer a *signal of ownership* — it's a *naming preference*. Canonical detail: root `CLAUDE.md`'s naming bullets.
+Nothing in this model resolves a product name. Names route work to specs and state; the routing is registry-driven, and the registry is the adopter's.
 
 ---
 
@@ -236,7 +209,7 @@ The only thing a non-Developer role does *not* route through a worktree is a pur
 
 ### When state changes, update the pinned state Issue
 
-State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The Brief Author updates the relevant project's pinned state Issue (`aeg`, `vada`, `herald`, `cetana`, or the ecosystem-wide one) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
+State changes: a project phase advances, an app ships/scaffolds, auth/DNS config changes, a known production issue is resolved, a pending manual op is completed. The Brief Author updates the relevant project's pinned state Issue (one per project, or the ecosystem-wide one) directly (editing an Issue body is a forge action, not a repo-file change — it does not go through a worktree/PR). For Tier 3 work affecting the state Issue, note it in the code PR's body too.
 
 Active work, next candidates, and blocked tasks are **derived from the forge** — they are never written to a file. (`now.md` is retired.)
 
@@ -262,7 +235,7 @@ State the decision in the pull request that carries the work, during the convers
 |----------------------|-------|
 | A skill / agent definition | Repo only (skills: canonical in `aeg-root/skills/`, generated view in `.claude/skills/`) |
 | A project spec, ecosystem vision, naming decision | Repo only |
-| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue: `aeg`, `vada`, `herald`, `cetana`, plus one covering `aeg-core`/`atta`/`desktop`/`attalabs` ecosystem-wide |
+| Non-derivable operational facts (production issues, env-var requirements, phase intent, pending manual ops, current-focus pointer) | Per-project pinned Issue, one per project, plus one covering ecosystem-wide facts |
 | The execution plan (task topology, edges) | `aeg-root/tranches/<name>.md` |
 | Held / future project items | `apps/{project}/specs/{project}-backlog.md` (per project); cross-cutting items are cut as backlog Issues |
 | Completed work history | `git log` / merged-PR history (redundant with a committed changelog, so none is kept) |
@@ -284,12 +257,8 @@ State the decision in the pull request that carries the work, during the convers
 - ❌ Putting planning metadata (priority, estimates, points) on an Issue — that's the company's roadmap, not AEG
 - ❌ Building a dynamic conflict scanner — declare conflicts conservatively and serialize (`tranche-model.md` §9)
 - ❌ Putting tactical day-to-day plans in project specs (commit churn)
-- ❌ Pretending to have read a spec that isn't in context — ask Dani by exact path, or use GitHub MCP
-- ❌ Renaming `@atta/*` packages to `@attalabs/*` — code namespace is Atta; AttaLabs is only the public URL
-- ❌ Treating Atta as merely a code namespace or "the ecosystem only" — Atta is **the product**
-- ❌ Adding `-AI` suffix to any product brand
-- ❌ Treating "Pāli name = built by Atta" as structural (demoted to elective aesthetic)
-- ❌ Treating Herald or Vinaya as part of Atta — both are sibling AttaLabs products
+- ❌ Pretending to have read a spec that isn't in context — ask for it by exact path, or read it from the forge
+- ❌ Restating the host repo's brand, namespace, or product-naming rules here — they belong to the adopting repo, not to this model
 - ❌ Letting the Developer review its own work — review/security passes are separate fresh-context invocations
 - ❌ Generating strategy or planning a tranche before reading the specs (spec-check gate)
 - ❌ Adding version suffixes to spec filenames (locked)

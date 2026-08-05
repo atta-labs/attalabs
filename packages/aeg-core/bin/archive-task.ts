@@ -68,8 +68,8 @@ export function main(): void {
   const prNumber = (associated[0] as AssociatedPr).number
   const pr = shJson<PrView>(`gh pr view ${prNumber} --json number,headRefName,body,mergedAt,comments`)
 
-  // Branch-name-only detection silently skipped a real task closure (#524/#530:
-  // Issue tagged `vinaya/tranche:herald-hardening-v1`, closed by a `fix/*`-branch PR).
+  // Branch-name-only detection silently skipped a real task closure: an Issue
+  // carrying a `vinaya/tranche:*` label, closed by a `fix/*`-branch PR.
   // `isEligibleForProvenance` (pure, unit-tested) makes the actual decision;
   // this shim only fetches the two facts it needs — the branch ref, and the
   // closed Issue's live labels.

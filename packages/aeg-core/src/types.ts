@@ -13,7 +13,7 @@ import type { ForgeFacts, Tranche, Lifecycle, Task } from '@atta/aeg-types'
 export type Project = {
   /** Registry-unique name. Authority for `Project:` validation. */
   name: string
-  /** Declared home folder (e.g. `apps/vada-ai`). Never derived. */
+  /** Declared home folder (e.g. `apps/<product>`). Never derived. */
   path: string
   /** Specs folder for the project. */
   specsPath: string
@@ -116,8 +116,8 @@ export type DerivedTranche = {
   /**
    * Edges that reference task ids not present in this tranche's topology
    * table. Surface for diagnostics; does not throw, since real files
-   * occasionally name dropped/prose-only ids (e.g. `3a` in
-   * `herald-onto-engine.md`'s narrative).
+   * occasionally name dropped/prose-only ids (e.g. a `3a` that survives only
+   * in a tranche file's narrative).
    */
   unknownEdges: UnknownEdge[]
 }
