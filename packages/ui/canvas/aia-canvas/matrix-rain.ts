@@ -7,7 +7,14 @@ export function renderSphereMatrix(
   sphere: SphereRegistration,
   matrixDrops: Map<string, MatrixDrop[]>
 ): void {
-  if (!sphere.showMatrix || sphere.state === 'idle') return
+  if (!sphere.showMatrix || sphere.state === 'idle') {
+    // Drop the column on the way out. Without this the drops just stop being advanced and
+    // sit frozen wherever they were, so the next time the sphere is switched back on a
+    // full-height column of rain reappears in one frame instead of falling from the top.
+    // That only shows up on a sphere whose `showMatrix` is toggled rather than left on.
+    matrixDrops.delete(sphere.id)
+    return
+  }
 
   let drops = matrixDrops.get(sphere.id)
   if (!drops) {

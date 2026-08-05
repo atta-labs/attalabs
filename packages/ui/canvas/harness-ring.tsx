@@ -1,12 +1,13 @@
 'use client'
 
 // Vinaya's mark — the harness ring, canvas-drawn (ported from apps/vinaya/web's SVG
-// HarnessStructure so "no SVG anywhere" holds across every mark). Same staged reveal as the
-// original: hexagonal screws rise from the fabric first, then each ring band deploys out of
-// its screw, then gripper columns extend and clamp inward, then electricity sparks across the
-// gaps. Unlike the original (which clamped onto a single small `main` node), the gripper
-// columns' inner target is `clusterRadius` — the bounding radius of whatever this ring
-// encloses — so the same component that used to hold one sphere can hold a whole cluster.
+// HarnessStructure so "no SVG anywhere" holds across every mark), standalone — same
+// composition as the real site: a ring clamping onto a small `main` hub at its center, not
+// enclosing any other product's mark. Same staged reveal as the original: hexagonal screws
+// rise from the fabric first, then each ring band deploys out of its screw, then gripper
+// columns extend and clamp inward onto the hub, then electricity sparks across the gaps, then
+// the hub itself (circle + "main" + a small branch glyph, canvas-drawn — the real site's
+// MainBranchNode is SVG, this one isn't, to keep "no SVG anywhere" true) fades in.
 
 import { useEffect, useRef } from 'react'
 import { withAlpha } from './shared/color-math'
@@ -127,14 +128,72 @@ function drawWaveArc(
   ctx.stroke()
 }
 
+// Hub — the "main" node the gripper columns clamp onto. Circle + "main" + a small
+// branch glyph (two child nodes off a trunk, matching lucide's GitBranch silhouette closely
+// enough to read at this size), all canvas-drawn. Fades in as the clamp finishes.
+function drawHub(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, alpha: number) {
+  if (alpha <= 0.001) return
+  const primary = resolveColor('var(--primary)')
+  const secondary = resolveColor('var(--secondary)')
+
+  ctx.save()
+  ctx.globalAlpha = alpha
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fillStyle = secondary
+  ctx.fill()
+  ctx.strokeStyle = primary
+  ctx.lineWidth = 2
+  ctx.stroke()
+
+  ctx.fillStyle = primary
+  ctx.font = `700 ${Math.round(r * 0.34)}px var(--font-mono, monospace)`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('main', cx, cy - r * 0.32)
+
+  // Branch glyph — trunk node + two child nodes off a short curve, GitBranch-like.
+  const gx = cx - r * 0.16
+  const gy = cy + r * 0.18
+  const s = r * 0.22
+  ctx.beginPath()
+  ctx.moveTo(gx, gy - s)
+  ctx.lineTo(gx, gy + s)
+  ctx.strokeStyle = primary
+  ctx.lineWidth = 1.75
+  ctx.lineCap = 'round'
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(gx, gy)
+  ctx.quadraticCurveTo(gx + s * 0.9, gy, gx + s * 0.9, gy - s * 0.7)
+  ctx.stroke()
+  for (const [px, py] of [
+    [gx, gy - s],
+    [gx, gy + s],
+    [gx + s * 0.9, gy - s * 0.7]
+  ] as const) {
+    ctx.beginPath()
+    ctx.arc(px, py, 2.6, 0, Math.PI * 2)
+    ctx.fillStyle = secondary
+    ctx.fill()
+    ctx.strokeStyle = primary
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
 function drawHarnessRing(
   ctx: CanvasRenderingContext2D,
   size: number,
-  clusterRadius: number,
+  hubRadius: number,
   ringProgress: number,
   clamp: number,
   spark: number,
-  t: number
+  t: number,
+  showHub: boolean
 ) {
   const c = size / 2
   const rOut = round(c * 0.93)
@@ -242,11 +301,11 @@ function drawHarnessRing(
     ctx.restore()
   }
 
-  // --- Columns: shaft + curved gripper clamp, riding inward to hug clusterRadius. ---
+  // --- Columns: shaft + curved gripper clamp, riding inward to hug the hub. ---
   if (p > 0) {
     for (const d of RING_AXIS_DEG) {
       const rO = strutOuter
-      const gripR = strutOuter - (strutOuter - clusterRadius) * p
+      const gripR = strutOuter - (strutOuter - hubRadius) * p
       const footLen = 15
       const rO2 = rO - footLen
       const footW = 14
@@ -296,7 +355,7 @@ function drawHarnessRing(
         ctx.fill()
       }
 
-      // hook/screw snap onto the cluster in the last stretch of the clamp
+      // hook/screw snap onto the hub in the last stretch of the clamp
       const hookSnap = cl((clamp - 0.82) / 0.18)
       if (hookSnap > 0) {
         const bolt = polar(c, c, gripR - 1, d)
@@ -359,25 +418,32 @@ function drawHarnessRing(
     }
   }
 
+  // --- Hub: fades in once the clamp has mostly finished. ---
+  if (showHub) drawHub(ctx, c, c, hubRadius, cl((clamp - 0.6) / 0.4))
+
   ctx.restore()
 }
 
 export function HarnessRing({
   size,
-  clusterRadius,
+  hubRadius,
   ringProgress,
   clamp,
-  spark
+  spark,
+  showHub = true
 }: {
   size: number // px diameter of the ring
-  clusterRadius: number // gripper columns' inner target — the enclosed cluster's bounding radius
+  hubRadius: number // gripper columns' inner target — the "main" hub's radius
   ringProgress: number // 0→1 — screws rise, then bands deploy
-  clamp: number // 0→1 — columns extend and clamp onto the cluster
+  clamp: number // 0→1 — columns extend and clamp onto the hub
   spark: number // 0→1 — electricity draws across the gaps
+  // Draw the "main" hub at the centre. The columns still clamp to `hubRadius` either way —
+  // set false where the ring reads better empty (the label is illegible at small sizes).
+  showHub?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ size, clusterRadius, ringProgress, clamp, spark })
-  propsRef.current = { size, clusterRadius, ringProgress, clamp, spark }
+  const propsRef = useRef({ size, hubRadius, ringProgress, clamp, spark, showHub })
+  propsRef.current = { size, hubRadius, ringProgress, clamp, spark, showHub }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -397,8 +463,12 @@ export function HarnessRing({
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
-      const { size: s, clusterRadius: cr, ringProgress: rp, clamp: cl2, spark: sp } = propsRef.current
-      if (s > 0) drawHarnessRing(ctx, s, cr, rp, cl2, sp, t * 0.06)
+      const { size: s, hubRadius: cr, ringProgress: rp, clamp: cl2, spark: sp, showHub: sh } = propsRef.current
+      // `t` is the raw frame count, NOT a scaled clock. The wave phase downstream is
+      // `t * v.speed * v.dir`, which is exactly Vinaya's own hero: its SVG advances
+      // `times[w] += v.speed * v.dir` once per frame. Scaling `t` here (it used to be
+      // `t * 0.06`) divided the electricity's speed by ~17 and it read as frozen.
+      if (s > 0) drawHarnessRing(ctx, s, cr, rp, cl2, sp, t, sh)
       t++
       raf = requestAnimationFrame(render)
     }

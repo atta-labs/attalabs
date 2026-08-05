@@ -81,6 +81,7 @@ export function useAIASphere({
     let rafId = 0
     let lastX = -1
     let lastY = -1
+    let lastColor = ''
 
     const track = () => {
       if (!ref.current || !ctx.containerRef.current) {
@@ -93,17 +94,25 @@ export function useAIASphere({
       const exactX = sphereRect.left - containerRect.left + sphereRect.width / 2
       const exactY = sphereRect.top - containerRect.top + sphereRect.height / 2
 
-      // Only call registerSphere when position actually changed — avoids
-      // unnecessary Map operations on static home-page spheres.
-      if (Math.abs(exactX - lastX) > 0.5 || Math.abs(exactY - lastY) > 0.5) {
+      // Re-resolve every frame. A `var(--*)` colour is not a fixed value — it changes when
+      // the colour scheme flips — and this effect does not re-run on that flip (its deps are
+      // the colour STRING, which never changes). Resolving once at mount froze the sphere on
+      // whichever scheme happened to be active then, so after a toggle the matrix rain was
+      // drawing in the old scheme's ink: invisible against the new background.
+      const resolved = resolveColor(color)
+
+      // Only call registerSphere when something actually changed — avoids unnecessary Map
+      // operations on static home-page spheres.
+      if (Math.abs(exactX - lastX) > 0.5 || Math.abs(exactY - lastY) > 0.5 || resolved !== lastColor) {
         lastX = exactX
         lastY = exactY
+        lastColor = resolved
         ctx.registerSphere({
           id,
           x: exactX,
           y: exactY,
           radius: diameter / 2,
-          color: resolveColor(color),
+          color: resolved,
           state: stateRef.current,
           particleCount: particles,
           showMatrix: showMatrixRef.current,
