@@ -1,4 +1,4 @@
-// The install manifest, made concrete (vinaya-cli-v1 task 4).
+// The install manifest, made concrete.
 //
 // Every artifact `vinaya init` writes into an adopter repo lives here as
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow

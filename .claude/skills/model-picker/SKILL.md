@@ -165,7 +165,7 @@ Provider branding comes from `ModelIcon`/`ProviderIcon` (`@lobehub/icons`). Don'
 2. No other code changes needed. Next SSR pulls the new model from models.dev, overlay tags it, picker renders it at the top of the OpenAI group.
 
    Same no-gate rule as RULE #1 above — including for Anthropic
-   (herald-hardening-v1 task 12, #469, removed the `OVERLAY_ONLY_PROVIDERS`
+   (#469, removed the `OVERLAY_ONLY_PROVIDERS`
    gate that used to hide un-curated Anthropic models). Claude Opus 4.8 and
    Sonnet 5 (task 14, #524) are the worked example: both were reachable in
    the picker the moment the gate was removed, then tagged

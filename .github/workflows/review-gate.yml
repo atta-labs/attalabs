@@ -82,7 +82,7 @@ name: "Vinaya: Review Gate"
 # `checks: write` in the same job whose privilege this split exists to
 # remove) — the check-run now appears once, already completed.
 #
-# Fourth live-fire bug, found reviewing vinaya-independence-v1 task 1
+# Fourth live-fire bug, found reviewing an open PR
 # (#721, 2026-08-04): `report-check-run`'s `checks: write` POST/PATCH was
 # never the actual source of duplicate "Review gate" entries — GitHub
 # creates its OWN fresh implicit check-run for every execution of a job

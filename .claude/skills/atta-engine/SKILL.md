@@ -194,7 +194,7 @@ PlanEdgeKind values (3): `flow`, `ordering`, `conditional`.
 
 Every emitted node carries both `kind` (engine-vocab) and `role` (Plan vocabulary, used by the UI). `compileFlow` emits these consistently across all 4 shapes.
 
-**Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used (herald-hardening-v1 Task 11).
+**Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used.
 
 ---
 
