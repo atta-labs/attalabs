@@ -7,7 +7,7 @@ import { z } from 'zod'
 // booleans, no conditional logic. Ring 0 (git hooks) and the
 // CI/branch-protection guarantee are never represented here, by design.
 //
-// `checks` (vinaya-cli-v1 task 3): custom-check registration.
+// `checks`: custom-check registration.
 // Same discipline — globs (`include`) are permitted for SCOPING, conditionals
 // (`if`/`unless`/`except`) are never part of this grammar. Any entry here
 // produces the exact same `CheckSpec` shape the built-in registry does
@@ -20,7 +20,7 @@ const CheckEntrySchema = z.object({
   timeoutMs: z.number().optional()
 })
 
-// briefSchema (vinaya-cli-v1 task 5): the config-defined brief schema
+// briefSchema: the config-defined brief schema
 // the forge-write commands validate a body against. WHICH sections a `pr`/
 // `issue` body must carry is expressed HERE, never hardcoded in the command
 // code — this repo's required-section set is just one instance (one
@@ -68,7 +68,7 @@ const BriefSchemaSchema = z.object({
 })
 export type BriefSchema = z.infer<typeof BriefSchemaSchema>
 
-// `managed` (vinaya-cli-v1 task 4): the ownership manifest
+// `managed`: the ownership manifest
 // `vinaya init` writes and `vinaya eject` reads. It records exactly what the
 // installer created so eject reverses it precisely — deleting only files it
 // created, stripping only blocks it wrote (leaving adopter content), and

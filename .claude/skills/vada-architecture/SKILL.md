@@ -17,7 +17,7 @@ Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP serv
 
 The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of the generic flow refactor (May 12-13, 2026), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
-**Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture. (Confirmed for herald-hardening-v1 Task 11: the additive `Conclusion.estimatedCostUsd` / `MatchReport.estimatedCostUsd` field is Herald/adapter-level, not a Vāda deliberation-catalog change. Same for Task 13, #520: the additive `MatchReport.githubSignals` field and its per-invocation capture live entirely in `forensic-hiring-auditor`, Herald-only content.)
+**Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture. (Confirmed: the additive `Conclusion.estimatedCostUsd` / `MatchReport.estimatedCostUsd` field is Herald/adapter-level, not a Vāda deliberation-catalog change. Same for #520: the additive `MatchReport.githubSignals` field and its per-invocation capture live entirely in `forensic-hiring-auditor`, Herald-only content.)
 
 ---
 
@@ -165,7 +165,7 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 | Recursion limit raised to 150 in LangGraph | Classifier nodes double graph step count; default 25 is insufficient |
 | Spec ratification via explicit metadata block (not assumption) | Prevents spec/implementation drift like the BYOK gap |
 | Architectural decisions are recorded append-only | Audit trail preserved across supersession events |
-| Active YAML specs are unversioned (`crucible.yaml`, not `crucible-v1.yaml`) | Versioning belongs in git history + the frozen decision archive; filenames are stable |
+| Active YAML specs are unversioned (`crucible.yaml`, no version suffix) | Versioning belongs in git history + the frozen decision archive; filenames are stable |
 | v2 naming framing (AttaLabs vs Atta; no -AI suffix; Pāli rule demoted) | Three rounds of multi-reviewer pressure-testing converged on v2 |
 | Single source of truth for vendor metadata at `packages/models/src/vendors.ts` | Four prior prefix-resolution implementations had diverged |
 | Adapter dispatches by SDK shape (3 branches: anthropic, google-genai, openai-compat) | Vendor count grows; SDK shape count is small and stable |

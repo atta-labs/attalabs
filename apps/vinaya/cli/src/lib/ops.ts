@@ -1,4 +1,4 @@
-// The change-set spine (vinaya-cli-v1 task 4).
+// The change-set spine.
 //
 // One model of typed, owned operations that BOTH `init` and `eject` consume.
 // `init` applies each op forward and records what it did into the `managed`

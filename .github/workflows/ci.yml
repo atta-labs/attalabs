@@ -19,6 +19,14 @@
 #     and completes near-instantly. This is sound, not a gap: repo-file gates
 #     (verify-docs, coherence, etc.) run in their own separate CI jobs
 #     regardless of what this job decides to test.
+#   - One exception to `--affected`: packages/aeg-core/src/retired-vocabulary
+#     .test.ts scans the whole repo tree by path, not just its own package —
+#     `--affected` scopes to packages whose OWN files differ from origin/main,
+#     so a PR that never touches packages/aeg-core skips this test entirely
+#     regardless of what it plants elsewhere. Confirmed live: merging a
+#     widened version of this test into an unrelated open PR that carried
+#     real citation violations still went green, because turbo saw aeg-core
+#     as unaffected. The step below runs it unconditionally.
 #   - Typecheck additionally scopes to ./packages/* only. App typecheck
 #     requires the CMS `generate` step (Sanity tokens live in uncommitted
 #     .env files, absent in CI); apps are type-checked by their Vercel
@@ -50,7 +58,7 @@ jobs:
       contents: read
       issues: read
     env:
-      # GH_TOKEN (aeg-forge-state-v1 3b, #437): @atta/aeg-core's test suite
+      # GH_TOKEN (#437): @atta/aeg-core's test suite
       # now exercises the coherence oracle's forge-derived tranche read
       # (verify-coherence.test.ts's CLI subprocess test, plus the new
       # golden-comparison test) — both shell out to `gh`, which needs a
@@ -100,3 +108,7 @@ jobs:
 
       - name: Unit tests (affected packages)
         run: bunx turbo test --affected
+
+      - name: Vocabulary gate (repo-wide scan — not affected-scoped)
+        working-directory: packages/aeg-core
+        run: bunx vitest run src/retired-vocabulary.test.ts
