@@ -185,9 +185,18 @@ Used **only** by the actual sidebar component. Do not pull these into other chro
 | `rounded-xl` | `calc(var(--radius) + 4px)` |
 | `rounded-2xl` / `3xl` / `4xl` | Progressively larger |
 
-### Agent Identity (Vāda-specific)
+### Agent Identity
 
-Cascades from the nearest `[data-agent="..."]` ancestor into `--agent-color`. Use `var(--agent-color)` inside canvas code, or apply the scoped data attribute; **never** hardcode the underlying hsl().
+Declared in the shared `packages/ui/styles/globals.css`, so **every** consumer resolves them — not only Vāda. They used to live in `apps/vada-ai`'s own globals, which meant any other product rendering agent spheres (the AttaLabs hub's ecosystem page was the first) resolved them to nothing and silently fell back to greyscale. Vāda still declares the same values locally; the two declarations are identical, so the later one simply wins and nothing changes there.
+
+Two ways to consume them, and the choice is not stylistic:
+
+- **`var(--agent-strategist)` etc. directly** — when the code names a specific agent. Canvas marks do this: they pass the variable as a `color` prop.
+- **`var(--agent-color)`** — inside a subtree under a `[data-agent="..."]` ancestor, where the agent is whatever the surrounding component says it is.
+
+Either way, **never** hardcode the underlying `hsl()`.
+
+Unlike every other token on this page these are **scheme-fixed**: one set of values, no light/dark variants, chosen to stay legible on dark backgrounds (see `.claude/skills/ui-canvas-animation`). That is deliberate — an agent's identity colour is its name, not a surface treatment — but it means they carry no contrast guarantee against `background` in either scheme. Where something must stay visible in both, reach for `foreground` / `muted-foreground` instead.
 
 | Attribute | Variable |
 |-----------|----------|

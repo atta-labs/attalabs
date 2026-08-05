@@ -1,3 +1,4 @@
+import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { Badge, Button, Code } from '@atta/ui/components'
 import { Footer } from '@atta/ui/footer'
 import { Heading, Text } from '@atta/ui/shared'
@@ -5,7 +6,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EnergyFieldBg } from '../_components/EnergyFieldBg'
 import { ScrollButton } from '../_components/ScrollButton'
-import { HeroFabric } from '../_components/hero-canvas/HeroFabric'
 import { StudioSection } from './_components/StudioSection'
 import { StudioShot } from './_components/StudioShot'
 

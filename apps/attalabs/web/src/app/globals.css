@@ -1,0 +1,23 @@
+/*
+ * App-local styles for the AttaLabs hub, layered on top of @atta/ui's globals.
+ *
+ * Only what cannot be expressed as a Tailwind class on an element belongs here — right now
+ * that is a single rule targeting the document root and a vendor pseudo-element.
+ */
+
+/*
+ * The home page's timeline thread already shows scroll position, so the native scrollbar is
+ * duplicate chrome beside it. Applied as a class that the hero toggles on <html>, never
+ * unconditionally: any other route keeps its scrollbar, and the page restores it on unmount.
+ *
+ * This hides the scrollbar's *appearance* only. Wheel, trackpad, keyboard, drag-select and
+ * anchor scrolling all behave exactly as before — the element still scrolls, and its
+ * accessibility semantics are unchanged.
+ */
+.hide-native-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-native-scrollbar::-webkit-scrollbar {
+  display: none;
+}

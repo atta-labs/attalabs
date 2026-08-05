@@ -95,6 +95,21 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Agent identity colours — shared across every product that renders agent spheres.
+   These were previously declared ONLY in apps/vada-ai's own globals.css, which meant any
+   other consumer (e.g. the AttaLabs hub's ecosystem page) resolved them to nothing and had
+   to fall back to greyscale. Vāda still declares the same values locally; identical, so the
+   later declaration simply wins and nothing changes there.
+   Chosen to stay legible on dark backgrounds — see .claude/skills/ui-canvas-animation. */
+:root {
+  --agent-strategist:      hsl(119 21% 45%);
+  --agent-critic:          hsl(0 49% 57%);
+  --agent-devils-advocate: hsl(278 35% 63%);
+  --agent-synthesizer:     hsl(43 52% 54%);
+  --agent-researcher:      hsl(207 32% 52%);
+  --agent-operator:        hsl(30 32% 52%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

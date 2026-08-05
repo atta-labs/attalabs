@@ -1,9 +1,9 @@
 import { ArrowDown, ClipboardCheck, FlaskConical, GitBranch, type LucideIcon, Sparkles, Users } from 'lucide-react'
 import { siClaude, siGithub, siGoogle, siJira, siLinear, siOpenai } from 'simple-icons'
+import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { Badge, Card, CardContent } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { EnergyFieldBg } from './EnergyFieldBg'
-import { HeroFabric } from './hero-canvas/HeroFabric'
 import { ScrollButton } from './ScrollButton'
 
 // Brand marks — simple-icons path strings rendered monochrome (currentColor): theme-correct

@@ -51,7 +51,13 @@ export function renderParticles(
     if (p.opacity < p.baseOpacity) p.opacity += 0.003
     ctx.beginPath()
     ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
-    ctx.fillStyle = p.color
+    // Read the sphere's CURRENT colour, not the `p.color` captured at creation. Particles are
+    // only rebuilt when the sphere id list changes, so a sphere whose colour comes from a
+    // `var(--*)` token kept painting its particles in the colour that token had when the page
+    // first rendered — after a colour-scheme flip that is the *previous* scheme's ink, which
+    // on a dark background is invisible. The matrix rain never showed this because it
+    // re-samples `sphere.color` on every spawn.
+    ctx.fillStyle = sphere.color
     ctx.globalAlpha = p.opacity
     ctx.fill()
   }
