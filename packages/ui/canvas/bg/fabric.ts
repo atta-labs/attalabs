@@ -28,13 +28,13 @@ export interface FabricConfig {
    *  on several simultaneous canvases — unlike the sphere-homing particle system, which uses
    *  shared module state. Default false. */
   gridAgents?: boolean
-  /** Illuminate the grid cells that fall inside a wordmark's letterforms, near the bottom of
-   *  the canvas — "burned into the fabric," one subtle pass (low-key alpha, no stacked depth
-   *  layers). Rasterized once (cached by text), sampled at a cell size finer than the mesh's
-   *  own coarse step. Reveal is driven by `settleProgress` (0→1, the same signal
-   *  `ctx.startGravity()` already ramps) — pair with `gravityMultiplier: 0` so the reveal
-   *  doesn't also fold the mesh. Default: no wordmark. */
-  wordmark?: { text: string; cellSize?: number }
+  /** A wordmark near the bottom of the canvas, drawn as clean canvas stencil letters
+   *  (straight-line strokes per glyph — a small built-in glyph set, see WORDMARK_GLYPHS),
+   *  not raster/grid-derived — that read illegibly at small sizes. Letters color in one at
+   *  a time as the reveal advances. Reveal is driven by `settleProgress` (0→1, the same
+   *  signal `ctx.startGravity()` already ramps) — pair with `gravityMultiplier: 0` so the
+   *  reveal doesn't also fold the mesh. Default: no wordmark. */
+  wordmark?: { text: string }
 }
 
 const DEFAULT_FABRIC_CONFIG: FabricConfig = {
@@ -305,110 +305,151 @@ function computeWaterWave(bx: number, by: number, t: number): { x: number; y: nu
 }
 
 // ── Wordmark ("burned into the fabric") ────────────────────────────────────────
-// Rasterized once per text string (cached), then sampled at a cell size finer than
-// the mesh's own coarse step (COLS/ROWS above) so letterforms stay legible. One
-// subtle illuminated-cell pass — no stacked depth layers (superseded design; see
-// FabricConfig.wordmark doc comment).
+// Clean, canvas-drawn stencil letters — straight-line strokes per glyph, no raster, no
+// grid-segment tracing (that produced illegible, jagged letterforms — superseded). Each
+// letter lights in sequence as revealProgress advances, one subtle color-in pass.
 
-interface WordmarkRaster {
-  width: number
-  height: number
-  alpha: Uint8ClampedArray // one byte per pixel — sampled at (y * width + x)
+type Stroke = readonly (readonly [number, number])[] // polyline in a 0..1 unit box (y=0 top)
+
+const WORDMARK_GLYPHS: Record<string, readonly Stroke[]> = {
+  A: [
+    [
+      [0, 1],
+      [0.5, 0]
+    ],
+    [
+      [0.5, 0],
+      [1, 1]
+    ],
+    [
+      [0.22, 0.58],
+      [0.78, 0.58]
+    ]
+  ],
+  T: [
+    [
+      [0, 0],
+      [1, 0]
+    ],
+    [
+      [0.5, 0],
+      [0.5, 1]
+    ]
+  ],
+  L: [
+    [
+      [0, 0],
+      [0, 1]
+    ],
+    [
+      [0, 1],
+      [1, 1]
+    ]
+  ],
+  B: [
+    [
+      [0, 0],
+      [0, 1]
+    ],
+    [
+      [0, 0],
+      [0.68, 0]
+    ],
+    [
+      [0.68, 0],
+      [0.88, 0.12],
+      [0.88, 0.38],
+      [0.68, 0.5]
+    ],
+    [
+      [0, 0.5],
+      [0.68, 0.5]
+    ],
+    [
+      [0.68, 0.5],
+      [0.92, 0.62],
+      [0.92, 0.88],
+      [0.68, 1]
+    ],
+    [
+      [0, 1],
+      [0.68, 1]
+    ]
+  ],
+  S: [
+    [
+      [1, 0.16],
+      [0.8, 0],
+      [0.2, 0],
+      [0, 0.16],
+      [0, 0.38],
+      [0.22, 0.5],
+      [0.78, 0.5],
+      [1, 0.62],
+      [1, 0.84],
+      [0.8, 1],
+      [0.2, 1],
+      [0, 0.84]
+    ]
+  ]
 }
-const wordmarkRasterCache = new Map<string, WordmarkRaster>()
 
-const WORDMARK_RASTER_HEIGHT = 140 // px — reference scale; layers derive their own display size from this
-
-function getWordmarkRaster(text: string): WordmarkRaster | null {
-  if (typeof document === 'undefined') return null
-  const cached = wordmarkRasterCache.get(text)
-  if (cached) return cached
-
-  const fontSize = WORDMARK_RASTER_HEIGHT * 0.72
-  const font = `700 ${fontSize}px ui-sans-serif, system-ui, sans-serif`
-  const letterSpacing = fontSize * 0.14
-
-  const measureCanvas = document.createElement('canvas')
-  const mctx = measureCanvas.getContext('2d')
-  if (!mctx) return null
-  mctx.font = font
-  let width = letterSpacing
-  for (const ch of text) width += mctx.measureText(ch).width + letterSpacing
-  width = Math.ceil(width)
-
-  const raster = document.createElement('canvas')
-  raster.width = width
-  raster.height = WORDMARK_RASTER_HEIGHT
-  const rctx = raster.getContext('2d')
-  if (!rctx) return null
-  rctx.font = font
-  rctx.fillStyle = '#fff'
-  rctx.textBaseline = 'alphabetic'
-  let x = letterSpacing
-  const baseline = WORDMARK_RASTER_HEIGHT * 0.76
-  for (const ch of text) {
-    rctx.fillText(ch, x, baseline)
-    x += rctx.measureText(ch).width + letterSpacing
+function drawGlyph(
+  ctx: CanvasRenderingContext2D,
+  letter: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  alpha: number
+): void {
+  const strokes = WORDMARK_GLYPHS[letter]
+  if (!strokes || alpha <= 0.001) return
+  ctx.globalAlpha = alpha
+  ctx.lineWidth = Math.max(1.5, h * 0.09)
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  for (const stroke of strokes) {
+    ctx.beginPath()
+    stroke.forEach(([ux, uy], i) => {
+      const px = x + ux * w
+      const py = y + uy * h
+      if (i === 0) ctx.moveTo(px, py)
+      else ctx.lineTo(px, py)
+    })
+    ctx.stroke()
   }
-
-  const { data } = rctx.getImageData(0, 0, width, WORDMARK_RASTER_HEIGHT)
-  const alpha = new Uint8ClampedArray(width * WORDMARK_RASTER_HEIGHT)
-  for (let i = 0; i < alpha.length; i++) alpha[i] = data[i * 4 + 3] ?? 0
-
-  const result: WordmarkRaster = { width, height: WORDMARK_RASTER_HEIGHT, alpha }
-  wordmarkRasterCache.set(text, result)
-  return result
 }
-
-const WORDMARK_ALPHA_THRESHOLD = 96 // ignore near-transparent raster pixels (out of 255)
-const WORDMARK_MAX_ALPHA = 0.55 // subtle — never reaches full-ink brightness
 
 function drawWordmark(
   ctx: CanvasRenderingContext2D,
-  wordmark: { text: string; cellSize?: number },
+  wordmark: { text: string },
   H: number,
   CX: number,
-  t: number,
+  _t: number,
   revealProgress: number
 ): void {
   if (revealProgress <= 0.001) return
-  const raster = getWordmarkRaster(wordmark.text)
-  if (!raster) return
+  const text = wordmark.text.toUpperCase()
 
-  const baseCell = wordmark.cellSize ?? 6
-  const dispHeight = Math.min(H * 0.1, 80)
-  const scale = dispHeight / raster.height
-  // Smoothstep — gentler at the very start/end of the reveal ramp than a linear fade.
+  const letterH = Math.min(H * 0.09, 70)
+  const letterW = letterH * 0.62
+  const gap = letterW * 0.42
+  const totalW = text.length * letterW + (text.length - 1) * gap
+  const startX = CX - totalW / 2
+  const y = H * 0.9 - letterH
+
+  // Smoothstep, then letters color in one at a time across that ramp.
   const eased = revealProgress * revealProgress * (3 - 2 * revealProgress)
-
-  const dispW = raster.width * scale
-  const dispH = raster.height * scale
-  const xStart = CX - dispW / 2
-  const yStart = H * 0.9 - dispH
-
-  const cellPx = Math.max(2, baseCell * scale)
-  const cols = Math.ceil(dispW / cellPx)
-  const rows = Math.ceil(dispH / cellPx)
-  // Gentle "burning" flicker.
-  const flicker = 0.9 + 0.1 * Math.sin(t * 0.05)
+  const n = text.length
 
   ctx.save()
-  for (let ry = 0; ry <= rows; ry++) {
-    const cy = yStart + ry * cellPx + cellPx / 2
-    const srcY = Math.round((cy - yStart) / scale)
-    if (srcY < 0 || srcY >= raster.height) continue
-    for (let rx = 0; rx <= cols; rx++) {
-      const cx = xStart + rx * cellPx + cellPx / 2
-      const srcX = Math.round((cx - xStart) / scale)
-      if (srcX < 0 || srcX >= raster.width) continue
-      const a = raster.alpha[srcY * raster.width + srcX] ?? 0
-      if (a < WORDMARK_ALPHA_THRESHOLD) continue
-      const cellAlpha = (a / 255) * WORDMARK_MAX_ALPHA * flicker * eased
-      if (cellAlpha < 0.02) continue
-      ctx.globalAlpha = 1
-      ctx.fillStyle = fgAt(cellAlpha)
-      ctx.fillRect(cx - cellPx * 0.42, cy - cellPx * 0.42, cellPx * 0.84, cellPx * 0.84)
-    }
+  ctx.strokeStyle = fgAt(1)
+  for (let i = 0; i < n; i++) {
+    const per = Math.max(0, Math.min(1, eased * n - i))
+    if (per <= 0) continue
+    const x = startX + i * (letterW + gap)
+    drawGlyph(ctx, text[i]!, x, y, letterW, letterH, per * 0.92)
   }
   ctx.restore()
 }

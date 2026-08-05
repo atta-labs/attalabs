@@ -279,7 +279,7 @@ export interface FabricConfig {
   radialFold?: boolean                // fold radiates OUTWARD from the ring center (paired with a settleProgress ramp) instead of the whole grid folding at once. Default false.
   pulseReach?: number                 // scales the closing-pulse shock wave's travel so it can reach the screen edges. Default 1.
   gridAgents?: boolean                // deterministic Tron-style "agents" gliding along the grid lines, trailing light. Default false.
-  wordmark?: { text: string; cellSize?: number } // illuminate the grid cells that fall inside a wordmark's letterforms — rasterized once (cached by text), sampled at a cell size finer than the mesh's own coarse step. Single reveal pass, driven by settleProgress. Default: no wordmark.
+  wordmark?: { text: string }         // a wordmark near the bottom of the canvas, drawn as clean stencil letters from a small built-in glyph set (WORDMARK_GLYPHS, straight-line strokes per glyph) — NOT raster- or grid-derived, both of which read illegibly at small sizes. Letters colour in one at a time as the reveal advances. Single reveal pass, driven by settleProgress. Default: no wordmark.
 }
 ```
 
@@ -687,12 +687,13 @@ packages/ui/canvas/
 │   ├── theme.ts           — Cached light/dark detection (refreshThemeCache, isLightTheme)
 │   ├── paint.ts           — Particle paint primitives (paintParticleHead, paintClusterGlow, bloomStops)
 │   ├── constants.ts       — MATRIX_CHARS and tuning constants
-│   └── math.ts            — Trig / numeric helpers
-├── shared/harness-geometry.ts — Pure polar/angle math shared by harness-ring.tsx (screen-coordinate helpers, no DOM/SVG dependency)
+│   ├── math.ts            — Trig / numeric helpers
+│   └── harness-geometry.ts — Pure polar/angle math for harness-ring.tsx (screen-coordinate helpers, no DOM/SVG dependency)
 ├── hero-fabric.tsx        — Local, contained fabric canvas (not fixed inset-0) for a normal in-flow section; moved here verbatim from apps/vinaya/web, which was already generic — imports only from this package
-├── harness-ring.tsx       — Canvas-drawn wheel/spoke/electricity mark (AttaLabs ecosystem hero's Vinaya node)
-├── herald-flag.tsx        — Canvas-drawn sphere with a rippling flag (AttaLabs ecosystem hero's Herald node)
-├── engine-gear.tsx        — Canvas-drawn interlocking gears (AttaLabs ecosystem hero's Engine node)
+├── harness-ring.tsx       — Canvas-drawn wheel/spoke/electricity mark, standalone, clamping onto its own canvas-drawn "main" hub (AttaLabs ecosystem hero's Vinaya node — same composition as the real site, ported to canvas since the real HarnessStructure.tsx is SVG)
+├── herald-logo.tsx        — Herald's real brand logo (Sanity `branding-herald`), reused verbatim as `currentColor` SVG inside an AIASphere's clipped children slot — the one sanctioned SVG in this hero, a real asset not a decorative illustration (AttaLabs ecosystem hero's Herald node)
+├── engine-mark.tsx        — Canvas-drawn plan nodes converging through a funnel into one execution node, ringed by a slowly rotating gear (AttaLabs ecosystem hero's Atta Engine node). Authored in a 300×410 reference box, scaled from its width, so the gear alone carries the same diameter as the sphere marks and the plan fan gets its own band above
+├── vada-face.tsx          — Vāda's real emblematic agent faces (Strategist / Critic / Devil's Advocate), ported verbatim from the product's own agent-faces-full.tsx — the hero's second sanctioned SVG, real assets rather than decorative illustration (AttaLabs ecosystem hero's Vāda node)
 └── assistant-wave.tsx     — Standalone SVG wave
 ```
 
