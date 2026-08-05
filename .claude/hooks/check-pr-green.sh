@@ -2,9 +2,11 @@
 # PreToolUse merge-gate hook.
 #
 # Intercepts every agent path that can MERGE a pull request and BLOCKS it unless
-# the PR's checks are all green (`gh pr checks <n>` exits 0). Branch protection is
-# unavailable on this private+free repo (classic protection AND rulesets both 403),
-# so the green-merge invariant lives here in the harness, not in a GitHub button.
+# the PR's checks are all green (`gh pr checks <n>` exits 0). The repository
+# ruleset's `required_status_checks` rule now blocks a red merge for every actor
+# too — this hook is defense-in-depth ahead of that forge-side gate, not a
+# substitute for a missing one: it denies the merge attempt itself, before the
+# API call the ruleset would otherwise reject.
 #
 # Intercepted merge paths:
 #   - Bash:  `gh pr merge [<n>]`, `gh api … /pulls/<n>/merge`, `curl … /pulls/<n>/merge`

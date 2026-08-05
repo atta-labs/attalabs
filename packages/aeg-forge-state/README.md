@@ -25,7 +25,7 @@ octokit-based access path.
    files to calling this package directly.
 2. **`vinaya-cli-v1`'s shippable CLI** (task 2, #382) — imports or re-homes
    this package as the forge-backed half of Vinaya's `StateSource` seam, for
-   arbitrary adopter repos (not just `daniboomerang/attalabs`).
+   arbitrary adopter repos, not only the one it was written in.
 
 Keep the public API shaped for an arbitrary `(owner, repo, slug)` triple, not
 this-repo-only conveniences — that genericity is the entire reason this

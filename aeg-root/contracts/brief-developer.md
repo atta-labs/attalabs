@@ -98,7 +98,7 @@ Every field the Brief Author emits (left) has exactly one named obligation for t
 **Scope of "prior task" — verify all three predicates for each:**
 - **Mid-tranche task:** every earlier task in the same tranche that this task depends on (direct `depends-on` edges).
 - **First task of an vinaya/tranche:** the entire previous tranche of that product must be archived — all Issues closed, all PRs in main, all tasks with provenance blocks, tranche file in `aeg-root/tranches/completed/`.
-- **ALL tasks:** every cross-tranche dependency declared in the topology (e.g. a vada task that depends on a herald task from another tranche) must also satisfy all three predicates.
+- **ALL tasks:** every cross-tranche dependency declared in the topology (e.g. a task in one project that depends on a task in another, from an earlier tranche) must also satisfy all three predicates.
 
 **Hard STOP language:** *"Prior task [Y] does not pass the coherence gate: Issue #N is [open/closed], PR #M is [merged/unmerged], provenance block is [present/absent]. The Archivist must fully close out task [Y] before this task can proceed. Here is what is owed: [list]."*
 

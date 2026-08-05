@@ -50,9 +50,10 @@ name: "Vinaya: Gate Suite"
 # Original per-check rationale (forge-lifecycle gates, test-plan
 # gate, conventions mirroring, brief validation) lives with each step below.
 #
-# Real substrate (private repo — branch protection unavailable on free plan):
-#   CI turns red/green. The T9 merge-gate hook (merged in #255) denies agent
-#   merges of red-CI PRs. Local hooks enforce the same rules for every writer.
+# Real substrate: CI turns red/green, and the repository ruleset's
+#   required_status_checks rule blocks a red merge for every actor too. The
+#   T9 merge-gate hook (merged in #255) is defense-in-depth for agent merges,
+#   ahead of that forge gate. Local hooks enforce the same rules for every writer.
 
 on:
   pull_request:
@@ -265,9 +266,9 @@ jobs:
         run: bun packages/aeg-core/bin/verify-registry.ts
 
       # ── 6/9 · Biome lint/format ─────────────────────────────────────────
-      # Mirrors the local lint-staged/Husky enforcement into CI so it binds
-      # every writer (GitHub API/MCP writes, direct pushes, hand-merges) —
-      # same Biome config, identical gate.
+      # Mirrors the local .husky/pre-commit enforcement (bun run check) into
+      # CI so it binds every writer (GitHub API/MCP writes, direct pushes,
+      # hand-merges) — same Biome config, identical gate.
       - name: Biome lint/format
         if: ${{ !cancelled() && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
         run: bun run format-and-lint

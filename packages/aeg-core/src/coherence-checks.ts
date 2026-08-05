@@ -19,9 +19,9 @@ import type { ForgeFacts, Tranche, Task } from './types'
  * emitted as `status: "info"` (visible in the report) rather than `"fail"`
  * (which blocks CI). Applies to A1/A2/A3/T3.
  *
- * Rationale: branch protection is unavailable on the free plan; pre-existing
- * repo-wide debt (legacy vada/herald/aeg-ui tranches) can't be retro-fixed,
- * so a hard gate on those findings would make every new PR un-mergeable.
+ * Rationale: pre-existing repo-wide debt from tranches that predate the
+ * cutoff can't be retro-fixed, so a hard gate on those findings would make
+ * every new PR un-mergeable.
  */
 export const COHERENCE_ENFORCED_FROM = '2026-07-01'
 
@@ -278,8 +278,8 @@ export function scopeT2ToPlanPr(result: CheckResult, isPlanPr: boolean): CheckRe
  * A task in an active tranche has a null issue ref (empty / `—` / `#TBD`).
  *
  * `ciTrancheSlug`: when set (parsed from `BRANCH`/`GITHUB_HEAD_REF` env),
- *   only tasks in THAT tranche are checked — prevents vada/herald legacy
- *   #TBD rows from blocking a PR against an unrelated tranche.
+ *   only tasks in THAT tranche are checked — prevents legacy `#TBD` rows in
+ *   an unrelated tranche from blocking this PR.
  *
  * `enrichedEntries`: when provided (post-forge-fetch), used to determine if a
  *   tranche predates `COHERENCE_ENFORCED_FROM` by proxy: if the tranche has

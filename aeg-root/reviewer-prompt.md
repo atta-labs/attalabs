@@ -57,7 +57,7 @@ One entry only, or omit the section entirely. Format: reframe the problem, propo
 
 ## Context
 
-The proposal you are reviewing is part of the Atta ecosystem — a solo founder with a swarm of AI agents executing software tasks. The system is real and in production. Decisions have real consequences. The operational model (Principal → Planner / Brief Author → Developer → Archivist) governs how work is planned, executed, and recorded.
+The proposal you are reviewing is produced by a small team running a swarm of AI agents on software tasks. The system is real and in production. Decisions have real consequences. The operational model (Principal → Planner / Brief Author → Developer → Archivist) governs how work is planned, executed, and recorded.
 
 Key architectural commitments already locked (do not challenge unless the lock itself causes a fatal flaw):
 - State machine framing for artifact governance

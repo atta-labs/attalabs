@@ -2,9 +2,9 @@
 
 /**
  * check-direct-main-push — ring-2 detection backstop for direct pushes to
- * `main` (aeg-governance-hardening task 24, #364, Part 3 — item 1). Branch
- * protection is unavailable on this private, free-plan repo, so prevention
- * stays in `.husky/pre-push` (denies the push target locally) — this job
+ * `main` (aeg-governance-hardening task 24, #364, Part 3 — item 1).
+ * Prevention lives in `.husky/pre-push` (ring 0) and the repository
+ * ruleset's `non_fast_forward`/`pull_request` rules (ring 1) — this job
  * runs on every push to `main` and answers, after the fact, "was this
  * commit introduced by a merged PR?" via the commits→pulls association API
  * (`gh api repos/{owner}/{repo}/commits/{sha}/pulls`, which GitHub documents

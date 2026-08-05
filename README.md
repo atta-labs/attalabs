@@ -89,7 +89,7 @@ it without implying ownership by Atta-the-product.
 | Database | Neon Postgres + Drizzle ORM |
 | Storage | Cloudflare R2 |
 | Hosting | Vercel |
-| Tooling | Biome · Husky · lint-staged · commitlint |
+| Tooling | Biome · Husky · commitlint |
 
 ---
 

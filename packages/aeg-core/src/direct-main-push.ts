@@ -7,9 +7,9 @@
  * introduced the commit to the repository" for a commit on the default
  * branch) and passes the result in here.
  *
- * Detection only, never prevention: branch protection is unavailable on
- * this private, free-plan repo, so a direct push to `main` cannot be
- * refused. This predicate only decides whether the pushed commit is
+ * Detection only, never prevention here: prevention lives at
+ * `.husky/pre-push` (ring 0) and the repository ruleset (ring 1). This
+ * predicate only decides whether the pushed commit is
  * legitimate (associated with a merged PR) — the CLI shim opens an
  * incident Issue and fails the run loudly on a violation; it never reverts
  * or mutates anything (Principal decision, brief §11).

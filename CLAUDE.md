@@ -86,7 +86,7 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 | Storage | Cloudflare R2 |
 | Hosting | Vercel |
 | Linting | Biome (formatter + linter) |
-| Git Hooks | Husky + lint-staged + commitlint |
+| Git Hooks | Husky + commitlint |
 
 ---
 

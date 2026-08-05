@@ -26,7 +26,7 @@ The Brief Author's stages — name them, and say which you're in:
 
 **Announce the role + the task on entry.** *"I'm the Brief Author. I'll turn task <n>'s Planner rationale (Issue #N) into the executable brief — first I read the rationale, then I dig the current code for the perishable detail, then I run the contract checklist, then hand you the brief to dispatch."*
 
-1. **Inherit** — read the task's Planner rationale (the contract's producer side). Narrate it back briefly: *"3a's rationale: boundary is the engine's structured-output path, blast radius is engine+vada+herald, the trap is the Anthropic-only sdkShape. Starting from that — not a blank page."* This is conversational-protocol "reflect back," and it proves the contract is being consumed, not re-derived.
+1. **Inherit** — read the task's Planner rationale (the contract's producer side). Narrate it back briefly: *"3a's rationale: boundary is the engine's structured-output path, blast radius is the engine plus its two consuming products, the trap is the single-vendor sdkShape. Starting from that — not a blank page."* This is conversational-protocol "reflect back," and it proves the contract is being consumed, not re-derived.
 
 2. **Dig** — the deep pass for the *perishable* detail (current signatures, exact file list, final model pick). Narrate the load-bearing reads: *"Reading `llm.ts` now to get the current vendor-branch shape for the surface map."* If the dig **contradicts** the rationale (boundary moved, sizing broke), STOP and say so — that's a `severity:strategy` escalation back to the Planner, announced, not a silent fix.
 
@@ -201,7 +201,7 @@ Every brief whose Technical Surface Map (§4) includes a real code file carries 
 ```
 **Premise:**
 - packages/aeg-core/src/docs/surfaced-manifest.ts contains: export function isSurfacedDoc
-- apps/herald-ai/web/src/lib/prompts.ts absent: SKEPTICAL_AUDITOR_PROMPT
+- apps/<product>/web/src/lib/prompts.ts absent: SOME_PROMPT_CONSTANT
 ```
 
 Exactly three assertion kinds — `contains:<literal-substring>`, `absent:<literal-substring>`, `sha256:<hex>` (whole-file hash). This is a pin format, not a DSL; do not invent additional kinds. `verify-dispatch --premise <body-file>` re-asserts every pin immediately before the Developer's Step 0 — a failed premise means the surface moved between authoring and dispatch (the live-fire failure this closes: two briefs described a target architecture a later, uncited migration had already superseded), and is a stop condition, not a silent re-guess.
@@ -294,7 +294,7 @@ The unchecked boxes are the merge gate: an unticked `[agent]` box means the Deve
 #### Authoring rules
 
 - **Every brief with runtime surface has a Test Plan with at least one `[agent]` item and at least one `[principal]` item when both kinds of paths are reachable.** A brief that touches an API route (= an `[agent]`-runnable surface) AND a page behind Clerk (= a `[principal]`-runnable surface) lists both. A brief that touches only one of those lists only that kind.
-- **A Test Plan is `unit-tests-only` if and only if the §4 Technical Surface Map has no runtime surface in it** — no API route, no page, no server action, no `runtime`-marked file. (If §4 lists, say, `apps/herald-ai/web/src/app/api/foo/route.ts`, you cannot declare `unit-tests-only`.) The two fields are coupled; Brief Validation mechanically rejects a body that declares `Test Plan: unit-tests-only` while also carrying a tagged `- [ ]`/`- [x]` checkbox item (`checkTestPlanExclusivity`, `packages/aeg-core/src/brief-validation.ts`) — not just cross-checked in prose.
+- **A Test Plan is `unit-tests-only` if and only if the §4 Technical Surface Map has no runtime surface in it** — no API route, no page, no server action, no `runtime`-marked file. (If §4 lists, say, `apps/<product>/web/src/app/api/foo/route.ts`, you cannot declare `unit-tests-only`.) The two fields are coupled; Brief Validation mechanically rejects a body that declares `Test Plan: unit-tests-only` while also carrying a tagged `- [ ]`/`- [x]` checkbox item (`checkTestPlanExclusivity`, `packages/aeg-core/src/brief-validation.ts`) — not just cross-checked in prose.
 - **Items name concrete observables, not properties.** "The audit works" is not a test plan item. "Sign in → upload `tests/fixtures/cv-anna.pdf` → audit returns a `MatchReport` with `grade` in `A|B|C|D` and `signals.length > 0`" is.
 - **`[agent]` items must be scriptable from the dispatched-agent surface** — they need no human auth, no Principal-stored BYOK keys, no human eyes on a render. If an item needs any of those, it is `[principal]`. Mis-tagging an `[agent]` item that actually requires auth is the failure mode the Verification phase exists to remove (`roles/developer.md` § Verification); the Brief Author owns the tagging.
 - **The Principal cannot tick `[agent]` boxes and the agent cannot tick `[principal]` boxes.** This asymmetry is the whole shape of the gate (mirror of the chat-vs-terminal token capture). A brief that pretends one actor can satisfy the other's half is malformed.
@@ -369,7 +369,7 @@ When an automation layer dispatches, it passes the model through; the brief can 
 These two qualify a task and ride into the PR body. Both are reference-only — never read as instruction.
 
 ```
-**Project:** [project(s) this task touches — e.g. "vada" or "engine, herald"]
+**Project:** [project(s) this task touches — e.g. "web" or "engine, api"]
 ```
 Multi-valued. Resolves against `.vinaya/projects.md`. **Required in a multi-project repo; omitted entirely in a single-project repo** (no registry → one project → no field). Routes the Developer to the right specs and the Archivist to the right per-project state; a value that doesn't resolve to a registry row makes the brief malformed (refuse, don't guess). It must match the Planner's `Project(s)` for the task, including every shared-package consumer in the blast radius — see `roles/planner.md` and the planner-brief contract.
 
