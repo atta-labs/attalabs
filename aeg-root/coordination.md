@@ -230,7 +230,7 @@ This is **mechanically enforced**, not merely asked:
 - `.husky/pre-commit` refuses a commit while the current branch is `main`; `.husky/pre-push` refuses any push whose target is `refs/heads/main`. (Husky activates per-worktree via the post-checkout hook, so the guards fire in every worktree.)
 - The merge-gate hook `.claude/hooks/check-pr-green.sh` (a `PreToolUse` hook wired in `.claude/settings.json`, sibling to `check-skill.sh`) intercepts every agent merge path — `gh pr merge`, `gh api …/merge`, `curl …/merge`, and the GitHub MCP `merge_pull_request` tool — and **denies the merge unless `gh pr checks <pr>` is all-green**. A red or pending PR cannot be merged by an agent. The gate fails closed: if greenness can't be proven, the merge is denied.
 
-Branch protection is unavailable on this private+free repo (classic protection and rulesets both 403), so the green-merge + no-direct-commit invariants live in these hooks, not in a GitHub setting. The exception path is the same as everywhere: a `Lock`/override is a Principal action, not an agent one.
+The green-merge + no-direct-commit invariants now live in both these hooks and a GitHub setting: repository ruleset `17656829` ("Main protection") requires the `AEG gate suite`, `Typecheck + unit tests`, and `Review gate` checks on `~DEFAULT_BRANCH`, with `bypass_actors: []`. The exception path is the same as everywhere: a `Lock`/override is a Principal action, not an agent one.
 
 The only thing a non-Developer role does *not* route through a worktree is a pure forge action (cutting an Issue, posting a comment, merging via the gate) — those touch the forge, not repo files. Every repo *file* edit goes through the worktree + PR.
 

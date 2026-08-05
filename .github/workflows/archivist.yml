@@ -29,9 +29,9 @@
 #   re-purposed.)
 #
 # direct-main-push-detection: Runs on every push to `main` (aeg-governance-hardening
-#   task 24, #364, Part 3 — item 1). Branch protection is unavailable on this
-#   private, free-plan repo, so prevention stays in `.husky/pre-push` — this job
-#   is the ring-2 backstop that DETECTS a direct push after the fact via the
+#   task 24, #364, Part 3 — item 1). Prevention lives in `.husky/pre-push` (ring 0)
+#   and the repository ruleset's `non_fast_forward`/`pull_request` rules (ring 1);
+#   this job is the ring-2 backstop that DETECTS a direct push after the fact via the
 #   commits→pulls association API and fails the run loudly. Detection only,
 #   never mutation — no revert, no force-push. Permissions are deliberately
 #   read-only plus `issues: write`: `pull-requests: read` is REQUIRED for the

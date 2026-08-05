@@ -1,8 +1,9 @@
 # Reject any push whose target is `main`. AEG requires every repo-file change to
 # reach main via a worktree branch + PR + green merge — never a direct push.
-# Branch protection is unavailable on this private+free repo, so this guard lives
-# in the hook. Gate on the PUSH TARGET being main, not on "is a worktree" — a
-# legitimate push of a task branch to origin must always pass.
+# This is ring-0 prevention: it refuses the push before it ever reaches the
+# forge, which the ruleset's `non_fast_forward`/`pull_request` rules can only
+# reject after the fact. Gate on the PUSH TARGET being main, not on "is a
+# worktree" — a legitimate push of a task branch to origin must always pass.
 #
 # git feeds pre-push one line per ref on stdin: `<localref> <localsha> <remoteref> <remotesha>`.
 while read -r _localref _localsha remoteref remotesha; do
