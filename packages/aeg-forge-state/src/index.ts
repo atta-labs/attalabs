@@ -37,7 +37,7 @@ export {
   resolveTaskIssueRef,
   TITLE_PATTERN
 } from './list-tasks'
-export { parseRationaleDeps } from './parse-rationale-deps'
+export { parseRationaleDeps, SECTION_HEADER } from './parse-rationale-deps'
 export type { ParsedRationaleDeps } from './parse-rationale-deps'
 export { resolveRepo } from './resolve-repo'
 export type { RepoRef } from './resolve-repo'
