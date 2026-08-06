@@ -32,14 +32,19 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
  *. `role`/`contract` docs each back exactly one node — its
  * `category`/`actorType` is the frame.
  */
+function docFrameBadges(node: { category?: string; actorType?: string; crosses?: string }): string[] {
+  if (node.actorType === 'either') return ['human or agent']
+  return badgeLabels(node)
+}
+
 function frameForSlug(slug: string, model: DiagramModel): { kindTag: string; badges: string[] } | undefined {
   if (slug.startsWith('roles/')) {
     const node = model.nodes.find((n) => n.kind === 'role' && n.label === slug.slice('roles/'.length))
-    return node ? { kindTag: 'role', badges: badgeLabels(node) } : undefined
+    return node ? { kindTag: 'role', badges: docFrameBadges(node) } : undefined
   }
   if (slug.startsWith('contracts/')) {
     const node = model.nodes.find((n) => n.kind === 'contract' && n.label === slug.slice('contracts/'.length))
-    return node ? { kindTag: 'contract', badges: badgeLabels(node) } : undefined
+    return node ? { kindTag: 'contract', badges: docFrameBadges(node) } : undefined
   }
   return undefined
 }
