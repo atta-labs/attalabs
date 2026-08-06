@@ -39,6 +39,11 @@ export type VocabularyPattern = {
    * An npm scope or a domain that merely CONTAINS a product name is the product
    * naming itself, not an unexplained reference an adopter cannot resolve —
    * exempting the whole file would blind the pattern to real leakage beside it.
+   *
+   * Granularity is the LINE, which is the accepted limit: a genuine leak that
+   * shares a line with a legitimate citation escapes. Prose puts them on
+   * separate lines in practice, and the alternative — exempting only the
+   * matched span — would need column offsets `grep -n` does not report.
    */
   exemptContent?: string[]
   /** A string this pattern MUST match — proves the pattern is not vacuous. */
