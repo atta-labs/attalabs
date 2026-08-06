@@ -8,11 +8,11 @@ import type { ModelEntry } from './catalog'
  *
  * `reasoning` is deliberately excluded from the ranked scale: whether
  * reasoning-tier models (o3, deepseek-r1) outperform a frontier model at
- * strict-JSON synthesis over large multi-agent inputs is unmeasured (#186's
- * benchmark is what will settle it). Ranking `reasoning` either way would
- * hardcode an unmeasured claim into a safety floor, so `meetsMinTier`
- * fails closed against it — a reasoning-tier model satisfies no floor
- * until a role opts it in explicitly.
+ * strict-JSON synthesis over large multi-agent inputs has not been measured.
+ * Ranking `reasoning` either way would hardcode an unmeasured claim into a
+ * safety floor, so `meetsMinTier` fails closed against it — a reasoning-tier
+ * model satisfies no floor until a role opts it in explicitly. Give it a rank
+ * here once a benchmark has actually compared the two on that task shape.
  */
 export type MinTier = 'frontier' | 'balanced' | 'fast'
 

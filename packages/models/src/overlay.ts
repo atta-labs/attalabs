@@ -8,9 +8,8 @@ import type { ModelEntry } from './catalog'
 //
 // Capability-ordering contract (see ./tiers.ts): tiers here form the floor
 // scale `frontier > balanced > fast`. `reasoning` is unranked and fails
-// every floor — see tiers.ts for why. A tier value in this map is a
-// Principal-ratifiable mapping: propose a new model's tier in a PR, never
-// assign one silently.
+// every floor — see tiers.ts for why. Tier values here are curated, not
+// inferred: propose a new model's tier in review, never assign one silently.
 export const OVERLAY: Record<string, { tier?: ModelEntry['tier']; description?: string }> = {
   // Anthropic
   'claude-opus-5': { tier: 'frontier', description: 'Deep reasoning' },
