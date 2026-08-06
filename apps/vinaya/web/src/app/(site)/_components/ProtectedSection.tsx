@@ -39,7 +39,7 @@ export function ProtectedSection() {
         level={2}
         className='max-w-[820px] text-balance text-center font-sans text-2xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-3xl'
       >
-        Governed execution, from <span className='rounded-lg bg-accent px-2'>brief to merge</span>.
+        Governed execution, from <span className='rounded-lg bg-accent px-2'>brief to merge</span>
       </Heading>
 
       {/* Card sized so the ANIMATION is the main character: a big canvas on the left, a
