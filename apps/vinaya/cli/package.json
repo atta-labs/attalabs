@@ -39,7 +39,8 @@
     "prepack": "bun scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests scripts"
+    "lint": "biome check src tests scripts",
+    "verify-published-lifecycle": "bun scripts/verify-published-lifecycle.ts"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
