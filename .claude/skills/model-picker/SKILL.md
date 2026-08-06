@@ -156,6 +156,30 @@ Provider branding comes from `ModelIcon`/`ProviderIcon` (`@lobehub/icons`). Don'
 
 ---
 
+## Capability floor vs display sort — two different concepts
+
+The picker's `TIER_ORDER` (private, inside `model-picker.tsx`) is a **display-sort** order: it only answers "what do I show first" (`frontier → reasoning → balanced → fast`, per the Internal UI behavior list above).
+
+`@atta/models` separately exports a **capability floor** from `packages/models/src/tiers.ts`:
+
+```ts
+import { TIER_RANK, isRankedTier, meetsMinTier, type MinTier } from '@atta/models'
+
+type MinTier = 'frontier' | 'balanced' | 'fast'   // note: no 'reasoning'
+
+meetsMinTier('frontier', 'balanced')  // true  — 3 >= 2
+meetsMinTier('fast', 'balanced')      // false — 1 < 2
+meetsMinTier('reasoning', 'fast')     // false — fails closed, see below
+```
+
+This answers a different question: "is this model strong enough for a given role's demands". A future per-role `min_tier` gate (not yet built — see #740) would call `meetsMinTier` to hard-block sub-tier models in the picker.
+
+**Do not collapse the two.** Sort order and capability floor happen to share tier vocabulary but answer different questions — reusing, moving, or unifying the picker's `TIER_ORDER` into this primitive (or vice versa) would silently turn a sort order into a safety gate or a safety gate into a mere sort hint.
+
+**`reasoning` is unranked, and gates fail closed against it.** `isRankedTier('reasoning')` is `false`; `meetsMinTier` returns `false` for any minTier when the model's own tier is `reasoning` — a reasoning-tier model satisfies no floor until a role opts it in explicitly. Reason: whether reasoning-optimized models (o3, deepseek-r1) outperform a frontier model at strict-JSON synthesis over large multi-agent inputs is unmeasured; ranking `reasoning` either way would hardcode an unmeasured claim into a safety floor. Issue #186's benchmark is what will settle it.
+
+---
+
 ## When a flagship releases (e.g. GPT-6)
 
 1. Add one line to `packages/models/src/overlay.ts`:
