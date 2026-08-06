@@ -218,7 +218,14 @@ const PATTERNS: VocabularyPattern[] = [
     // rather than path-scoped on purpose: `apps/vinaya/specs/vinaya-spec.md`
     // carries 18 of these AND is a surface where real leakage could appear, so
     // exempting the file would blind the pattern to the thing it exists for.
-    exemptContent: ['@attalabs/', 'attalabs.dev']
+    //
+    // Task 8 — `attalabs' own` added as the same false-positive class,
+    // found recurring during the doctrine sweep: `vinaya-spec.md`'s "Vinaya's
+    // own vs. attalabs' own" section uses this idiom six times to describe
+    // the parent monorepo's own unshipped tooling/CI, as distinct from what
+    // Vinaya ships — the section's entire purpose is explaining that
+    // boundary, not leaking an unexplained reference to it.
+    exemptContent: ['@attalabs/', 'attalabs.dev', "attalabs' own"]
   },
   {
     id: 'harness-claude-path',
