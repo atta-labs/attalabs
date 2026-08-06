@@ -32,6 +32,15 @@ export type VocabularyPattern = {
   scope: string[]
   /** Path substrings exempted for this pattern only, beyond `globalExempt`. */
   exempt?: string[]
+  /**
+   * Substrings that, when present on the matched LINE, make the hit legitimate.
+   * Distinct from `exempt`, which filters by path: a name can be leakage in one
+   * sentence and the product's own identifier in the next, within the same file.
+   * An npm scope or a domain that merely CONTAINS a product name is the product
+   * naming itself, not an unexplained reference an adopter cannot resolve —
+   * exempting the whole file would blind the pattern to real leakage beside it.
+   */
+  exemptContent?: string[]
   /** A string this pattern MUST match — proves the pattern is not vacuous. */
   sample: string
   /**
@@ -85,8 +94,10 @@ export function evaluateVocabularyCitation(
     }
 
     const exempt = [...globalExempt, ...(p.exempt ?? [])]
+    const exemptContent = p.exemptContent ?? []
     const hits = grepFn(p.pattern, p.scope).filter((h) => {
       if (exempt.some((e) => h.file.includes(e))) return false
+      if (exemptContent.some((e) => h.content.includes(e))) return false
       if (p.exemptTableRow && TABLE_ROW.test(h.content)) return false
       return true
     })

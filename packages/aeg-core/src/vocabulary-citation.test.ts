@@ -56,6 +56,45 @@ describe('evaluateVocabularyCitation', () => {
     expect(result.findings).toEqual([])
   })
 
+  it('exemptContent: a hit whose LINE carries the product’s own identifier is not a finding', () => {
+    const patterns: VocabularyPattern[] = [
+      {
+        id: 'product-name',
+        pattern: '\\battalabs\\b',
+        scope: ['.'],
+        sample: 'the attalabs monorepo',
+        exemptContent: ['@attalabs/', 'attalabs.dev']
+      }
+    ]
+    const hits = [
+      { file: 'apps/vinaya/specs/spec.md', line: 4, content: 'installed via `npx @attalabs/vinaya check`' },
+      { file: 'apps/vinaya/specs/spec.md', line: 9, content: 'served at vinaya.attalabs.dev' }
+    ]
+    const result = evaluateVocabularyCitation(patterns, fakeGrep({ '\\battalabs\\b': hits }), ALWAYS_MATCHES)
+    expect(result.findings).toEqual([])
+  })
+
+  it('exemptContent is scoped to the LINE, not the file — real leakage beside an exempt line still reports', () => {
+    const patterns: VocabularyPattern[] = [
+      {
+        id: 'product-name',
+        pattern: '\\battalabs\\b',
+        scope: ['.'],
+        sample: 'the attalabs monorepo',
+        exemptContent: ['@attalabs/']
+      }
+    ]
+    // Same file: one legitimate package-name citation, one genuine leak. A
+    // path-based exemption would have silenced both — which is exactly why
+    // this is content-scoped.
+    const hits = [
+      { file: 'apps/vinaya/specs/spec.md', line: 4, content: 'run `npx @attalabs/vinaya check`' },
+      { file: 'apps/vinaya/specs/spec.md', line: 21, content: 'mirrors how the attalabs monorepo does it' }
+    ]
+    const result = evaluateVocabularyCitation(patterns, fakeGrep({ '\\battalabs\\b': hits }), ALWAYS_MATCHES)
+    expect(result.findings).toEqual([{ ...hits[1], patternId: 'product-name' }])
+  })
+
   it('records a pattern whose sample fails to self-match as vacuous, and skips its scope entirely', () => {
     // Deliberately not shaped like any real retired-vocabulary token — this
     // repo's own `retired-vocabulary.test.ts` sweeps `['.']` repo-wide, and a

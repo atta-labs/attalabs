@@ -160,7 +160,15 @@ const PATTERNS: VocabularyPattern[] = [
     // scope excludes these two packages. Confirmed empirically: every one of
     // ~170 hits this pattern produced before this exemption, across both
     // packages, was inside a `.test.ts` file.
-    exempt: ['.test.ts']
+    exempt: ['.test.ts'],
+    // Vinaya's own published identifiers. `attalabs` inside the npm scope
+    // `@attalabs/vinaya` or the domain `vinaya.attalabs.dev` is the product
+    // naming itself — an adopter reads those as a package name and a URL, not
+    // as an unexplained reference to someone else's product. Content-scoped
+    // rather than path-scoped on purpose: `apps/vinaya/specs/vinaya-spec.md`
+    // carries 18 of these AND is a surface where real leakage could appear, so
+    // exempting the file would blind the pattern to the thing it exists for.
+    exemptContent: ['@attalabs/', 'attalabs.dev']
   },
   {
     id: 'harness-claude-path',
@@ -205,6 +213,25 @@ const PATTERNS: VocabularyPattern[] = [
   }
 ]
 
+/**
+ * Report-only rollout, following this repo's own documented precedent for a
+ * check that lands on a real pre-existing backlog: `aeg-root/enforcement.md`
+ * records G1/G2 shipping report-only, and `reader-resolvable-prose` shipping
+ * report-only against 161 findings — deliberately, so the backlog is "visible
+ * debt rather than a wave of newly-red pull requests", with the check's own
+ * exit code staying 0.
+ *
+ * The same applies here. The remaining findings are genuine harness citations
+ * in `aeg-root/**` doctrine and Vinaya's own specs — real debt, owned by task
+ * 8's doctrine sweep, not defects this task introduced. Registering the check
+ * red on arrival would get it disabled rather than cleaned; registering it
+ * report-only makes the debt visible and enforceable the day task 8 clears it.
+ *
+ * Flip to `false` when that sweep lands. Findings are still emitted and still
+ * machine-readable; only their severity and the exit code change.
+ */
+const REPORT_ONLY = true
+
 function main(): void {
   const result = evaluateVocabularyCitation(PATTERNS, grepFn, matchFn, GLOBAL_EXEMPT)
 
@@ -222,7 +249,7 @@ function main(): void {
     emitCheckError({
       schema: 1,
       check: CHECK_NAME,
-      severity: 'error',
+      severity: REPORT_ONLY ? 'warning' : 'error',
       message: `"${finding.patternId}" cites vocabulary that does not survive leaving this repo: ${finding.content.trim()}`,
       agent_recovery_prompt:
         'Rewrite this line without the flagged citation — state the underlying fact or rule directly, without naming a product, ' +
@@ -232,7 +259,10 @@ function main(): void {
     })
   }
 
-  process.exit(result.vacuousPatterns.length > 0 || result.findings.length > 0 ? 1 : 0)
+  // A vacuous pattern always fails, report-only or not: it means this check is
+  // lying about its own coverage, which is worse than any finding it could
+  // report. Ordinary findings respect the rollout flag.
+  process.exit(result.vacuousPatterns.length > 0 || (!REPORT_ONLY && result.findings.length > 0) ? 1 : 0)
 }
 
 main()
