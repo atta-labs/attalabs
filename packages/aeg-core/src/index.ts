@@ -28,6 +28,13 @@ export { deriveSection7, globsOverlap } from './derive-section7'
 export type { Section7Match } from './derive-section7'
 export { checkManifestValidity, parseNoDocRules } from './manifest-validity'
 export type { NoDocRule } from './manifest-validity'
+export { evaluateVocabularyCitation } from './vocabulary-citation'
+export type {
+  VocabularyCheckResult,
+  VocabularyFinding,
+  VocabularyHit,
+  VocabularyPattern
+} from './vocabulary-citation'
 export { deriveTierFromDiff, overrideActive, readTierFromPrBody } from './pr-tier'
 export {
   checkAutonomyClause,
