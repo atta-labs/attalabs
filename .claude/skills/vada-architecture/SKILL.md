@@ -25,6 +25,8 @@ The product surface today is the catalog of YAML team specs at `packages/agents/
 
 Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 10 YAML team specs at `packages/agents/vada-deliberation/yamls/` (3 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
 
+`listPublicSpecs()` reads this directory from disk at runtime (`readdirSync`), so `apps/vada-ai/web/next.config.ts`'s `outputFileTracingIncludes` must separately declare the directory for Vercel's static tracer, which cannot detect a dynamically-joined path. Moving the catalog without updating that entry breaks every catalog-backed route in production only (green build, green local dev) — see `.claude/skills/vada-yaml-authoring/SKILL.md` for the full note.
+
 | MCP Tool | Behavior | Cost | Serves |
 |----------|----------|------|--------|
 | `vada__deliberate` | Compiles a YAML spec and runs the full flow end-to-end. Returns synthesized output + structured field when the spec declares one. | Variable per spec | MOAT-A (audit trail) |

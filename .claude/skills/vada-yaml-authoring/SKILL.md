@@ -309,6 +309,8 @@ New YAMLs are **auto-discovered**. The engine's `listPublicSpecs()` uses `readdi
 
 `validateAllSpecs()` runs at startup — a malformed YAML crashes the server on start. This is intentional (fail-fast). The 10 validation rules from the v2 schema are enforced by `validateFlow` (called by `loadFlow`).
 
+**Deployment coupling.** `listPublicSpecs()`/`loadYamlFromCatalog` read this directory from disk at runtime with `readdirSync`. Vercel's tracer cannot detect a dynamically-joined path, so `apps/vada-ai/web/next.config.ts`'s `outputFileTracingIncludes` must separately name the catalog directory. Moving or renaming `packages/agents/vada-deliberation/yamls/` without updating that entry breaks every catalog-backed route (`/teams`, `/teams/[slug]`, `/deliberate`, `/deliberation/[id]`, `api/deliberation/start`, `api/deliberation/[id]/workflow/run`) in production only — the build stays green and local dev is unaffected, since the local filesystem always has the real files.
+
 To hide a spec from the public `/teams` catalog (while keeping it in the catalog for benchmarks), set `experimental: true` at the top level. The 7 experimental YAMLs use this today (PR #31 unpublished Crucible, Sparring, War Room).
 
 To make a spec addressable by a short alias from `vada__deliberate`, add it to the `ALIASES` map in `spec-registry.ts`:

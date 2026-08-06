@@ -20,8 +20,14 @@ export default async function config(): Promise<NextConfig> {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
     },
     transpilePackages: ['@atta/ui', '@atta/adapter-langgraph', '@atta/engine'],
+    // listPublicSpecs() (`@atta/engine`'s catalog-loader.ts) reads this
+    // directory with readdirSync at runtime. Vercel's tracer cannot detect a
+    // dynamically-joined path, so it must be declared here explicitly.
+    // Moving/renaming the catalog without updating this entry returns
+    // vada.attalabs.dev to a production-only 500 on every catalog-backed
+    // route (/teams, /deliberate, /deliberation/[id], api/deliberation/*).
     outputFileTracingIncludes: {
-      '/**': ['../yamls/**']
+      '/**': ['../../../packages/agents/vada-deliberation/yamls/**']
     },
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
