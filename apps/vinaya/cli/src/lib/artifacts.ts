@@ -3,10 +3,11 @@
 // Every artifact `vinaya init` writes into an adopter repo lives here as
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
 // Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
-// what a shipped check consumes.** The manifest is exactly five items —
+// what a shipped check consumes.** The manifest is exactly six items —
 // `vinaya.config.json` (starter ruleset, `checks: {}` empty), two `vinaya-`
 // workflows, git-hook managed blocks, a root `VINAYA.md`
-// doctrine pointer (reading-order convention), and labels. Everything
+// doctrine pointer (reading-order convention), an empty `.vinaya/doc-owners`
+// starter manifest (#665), and labels. Everything
 // else the earlier amendment-4 manifest carried (GitHub templates, the
 // governance/ scaffold, example check scripts) was this monorepo's own
 // operational apparatus, not product surface — no shipped check consumes it,
@@ -16,7 +17,7 @@
 // repo's own battle-tested gates, not invented blanks — the failure it
 // kills is blank-config paralysis.
 
-import { label } from '@atta/aeg-core'
+import { DOC_OWNERS_PATH, label } from '@atta/aeg-core'
 import type { VinayaConfig } from './config.js'
 import type { CreateLabelOp, Op } from './ops.js'
 
@@ -215,6 +216,63 @@ source of truth.
 }
 
 // ---------------------------------------------------------------------------
+// Doc-ownership manifest (root .vinaya/doc-owners) — the starter for the C5
+// coherence seam. Grammar reproduced from this monorepo's own doc-owners
+// header (format line, glob syntax, pointer forms, coverage rule, no-doc
+// escape hatch, dormancy note) so an adopter learns the file by reading it.
+// Ships with zero real bindings — an adopter's bindings are theirs to add.
+// ---------------------------------------------------------------------------
+function starterDocOwners(): string {
+  return `# ${MANAGED_NOTE}
+#
+# ${DOC_OWNERS_PATH} — code → doc bindings for the coherence seam.
+#
+# Format: one binding per line, CODEOWNERS-shaped.
+#     <code-glob>  <doc-pointer>
+# Whitespace-separated. Lines starting with \`#\` and blank lines are ignored.
+#
+# Glob syntax (kept deliberately simple — no character classes):
+#   \`**\`  matches any sequence (including \`/\`)
+#   \`*\`   matches any sequence not containing \`/\`
+#   every other character is literal — so dynamic-route segments like
+#   \`[username]\` match literally, no escaping required.
+#
+# Pointer forms:
+#   in-repo path             e.g. \`docs/my-feature.md\`
+#   in-repo path with anchor e.g. \`docs/my-feature.md#section-2\`
+#   URL                      e.g. \`https://example.com/docs/x\`
+#
+# Coverage rule (enforced by C5, the doc-owners check bundled into \`vinaya check\`):
+#   When a code file in the PR matches a glob:
+#     - in-repo pointer  → that path must appear in the PR diff, else FAIL
+#     - URL pointer      → require a \`Doc-ack: <pointer> — <note>\` PR-body line
+#     - dangling pointer → in-repo pointer that does not exist on disk: FAIL
+#   Escape:
+#     A PR-wide \`vinaya/waiver:docs\` label whose labeling timeline event's
+#     actor is a configured principal suppresses every fired binding for that
+#     PR — a forge-authenticated human act, never a parseable string. There is
+#     no PR-body waiver field; label presence alone is never sufficient.
+#
+# Dormancy:
+#   This file absent, OR no glob matches any changed code file → silent no-op.
+#   The gate has no opinion until you teach it one.
+#
+# ── No-doc allow-list ───────────────────────────────────────────────────────
+# Surfaces that legitimately need no bound doc are listed below. Format:
+#   # no-doc: <glob> — <reason>
+# These lines exempt the matching directory from the completeness scoreboard
+# (\`vinaya check\`'s advisory output). They do NOT affect C5 enforcement — if a
+# binding exists for a surface, C5 still fires on changed files regardless of
+# any no-doc line. Use no-doc for scaffold-only, config-only, or stub-only
+# surfaces where adding a doc-owners binding would be meaningless busywork.
+# To un-exempt a surface, remove its no-doc line and add a real binding.
+#
+# This starter ships empty — no bindings, no no-doc entries. Add your own
+# below this line as your repo grows real code → doc coverage needs.
+`
+}
+
+// ---------------------------------------------------------------------------
 // Labels — create-if-absent, existing never modified (amendment-4 manifest).
 // The names come from the code-owned vocabulary (`@atta/aeg-core`'s re-exported
 // `LABELS`), never written here as literals, so an adopter's repo is seeded
@@ -299,6 +357,14 @@ export function buildInitOps(ctx: InitContext): Op[] {
     path: DOCTRINE_POINTER_PATH,
     content: doctrinePointer(),
     group: 'Doctrine pointer'
+  })
+
+  // Doc-ownership manifest — root .vinaya/doc-owners starter.
+  ops.push({
+    kind: 'create-file',
+    path: DOC_OWNERS_PATH,
+    content: starterDocOwners(),
+    group: 'Doc-ownership manifest'
   })
 
   // Labels.
