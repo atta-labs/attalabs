@@ -176,12 +176,12 @@ const HOOK_PREAMBLE = '#!/usr/bin/env sh\n'
 function preCommitBody(): string {
   return `# Vinaya commit-time gate. Runs the deterministic checks over your staged
 # diff before the commit lands.
-npx --no-install vinaya check --all --diff-only || exit 1`
+npx --no-install @attalabs/vinaya check --all --diff-only || exit 1`
 }
 
 function prePushBody(): string {
   return `# Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
-npx --no-install vinaya check --all || exit 1`
+npx --no-install @attalabs/vinaya check --all || exit 1`
 }
 
 // ---------------------------------------------------------------------------
