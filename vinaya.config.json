@@ -1,4 +1,11 @@
 {
+  "checks": {
+    "vocabulary-citation": {
+      "run": "./scripts/vinaya-checks/vocabulary-citation.ts",
+      "scope": "full",
+      "timeoutMs": 30000
+    }
+  },
   "briefSchema": {
     "pr": {
       "sections": [
