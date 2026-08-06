@@ -36,7 +36,7 @@ through common packages. Each product has its own surfaces (web, mobile, MCP, CL
 
 | Product | Domain | What it is | Status |
 |---------|--------|------------|--------|
-| **[Vinaya](apps/vinaya/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. Install with `npx @attalabs/vinaya init`. | 🟠 Bootstrap |
+| **[Vinaya](apps/vinaya/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. Install with `npx @attalabs/vinaya init`. | 🟢 Live |
 | **[Vāda](apps/vada-ai/)** | `vada.attalabs.dev` | Multi-agent **deliberation engine** — structured debate between AI agents. Standalone product *and* the deliberation layer inside Atta. | 🟢 Live |
 | **[Herald](apps/herald-ai/)** | `herald.attalabs.dev` | **Forensic CV ↔ job-description match** — evidence-based audit reports, not vibes. | 🟢 Active |
 
