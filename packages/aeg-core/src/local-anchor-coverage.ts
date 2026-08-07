@@ -84,6 +84,20 @@ function toGlobalIterator(re: RegExp): RegExp {
   return new RegExp(re.source, flags)
 }
 
+/** Total match count of `re` in `text` — the co-occurrence "supply" a scope offers. */
+function countMatches(re: RegExp, text: string): number {
+  const iter = toGlobalIterator(re)
+  let count = 0
+  iter.lastIndex = 0
+  let m = iter.exec(text)
+  while (m !== null) {
+    count++
+    if (m.index === iter.lastIndex) iter.lastIndex++
+    m = iter.exec(text)
+  }
+  return count
+}
+
 function computeLineStarts(content: string): number[] {
   const starts = [0]
   for (let i = 0; i < content.length; i++) {
@@ -158,17 +172,25 @@ function splitIntoBlocks(content: string): Block[] {
   return blocks
 }
 
-function blockTextForLine(blocks: readonly Block[], line: number): string {
-  for (const block of blocks) {
-    if (line >= block.startLine && line <= block.endLine) return block.text
-  }
-  return ''
-}
-
 /**
  * Flags every match of `pattern` that has no `mustCoOccurWith` match within
  * its scope. Pure — takes file contents, returns findings; performs no I/O
  * and knows nothing about what `pattern`/`mustCoOccurWith` mean.
+ *
+ * **Co-occurrence is counted, not merely detected.** A scope with two
+ * `pattern` matches and only one `mustCoOccurWith` match must flag one of
+ * them — checking "does a citation exist anywhere in this scope" lets a
+ * SINGLE real citation silently clear every other, unrelated anchor sharing
+ * the same block (found live in review: `"Task 2 did X, and Task 5 (task 5,
+ * #999) wrapped it up."` reported zero findings under a presence-only test,
+ * because "Task 5"'s citation cleared the unrelated "Task 2" anchor too).
+ * Each scope's citation matches are a fixed SUPPLY; each pattern match in
+ * that scope, in document order, consumes one — the first `N` matches (`N` =
+ * the scope's citation count) are covered, everything past that is a
+ * finding. This does not verify WHICH citation belongs to WHICH anchor
+ * (this primitive has no product-specific notion of "the same number") —
+ * only that supply meets demand, which is exactly what a purely structural,
+ * product-agnostic primitive can promise.
  */
 export function checkLocalAnchorCoverage(
   files: readonly AnchorSourceFile[],
@@ -188,12 +210,29 @@ export function checkLocalAnchorCoverage(
     const lines = file.content.split('\n')
     const blocks = options.scope === 'block' ? splitIntoBlocks(file.content) : null
 
+    // Scope key: the block object itself (`'block'` scope) or the line
+    // number (`'line'` scope) — matches sharing a key share one citation
+    // supply, consumed in document order.
+    const remainingSupply = new Map<Block | number, number>()
+    const supplyFor = (key: Block | number, scopeText: string): number => {
+      const cached = remainingSupply.get(key)
+      if (cached !== undefined) return cached
+      const supply = countMatches(options.mustCoOccurWith, scopeText)
+      remainingSupply.set(key, supply)
+      return supply
+    }
+
     iterPattern.lastIndex = 0
     let match: RegExpExecArray | null = iterPattern.exec(file.content)
     while (match !== null) {
       const line = lineNumberAt(lineStarts, match.index)
-      const scopeText = blocks ? blockTextForLine(blocks, line) : (lines[line - 1] ?? '')
-      if (!testFresh(options.mustCoOccurWith, scopeText)) {
+      const block = blocks ? (blocks.find((b) => line >= b.startLine && line <= b.endLine) ?? null) : null
+      const scopeText = block ? block.text : (lines[line - 1] ?? '')
+      const key: Block | number = block ?? line
+      const supply = supplyFor(key, scopeText)
+      if (supply > 0) {
+        remainingSupply.set(key, supply - 1)
+      } else {
         findings.push({ file: file.path, line, match: match[0] })
       }
       // Guard against a zero-width match looping forever.

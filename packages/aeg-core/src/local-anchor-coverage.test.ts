@@ -193,4 +193,48 @@ describe('checkLocalAnchorCoverage', () => {
       expect(result.findings).toEqual([])
     })
   })
+
+  /**
+   * Co-occurrence is COUNTED, not merely detected (found live in code
+   * review, PR #766): a presence-only test lets one real citation clear
+   * every other, unrelated anchor sharing the same scope. Two `Task N`
+   * mentions, one citation → the uncited one must still fire.
+   */
+  describe('co-occurrence is counted per-match, not shared across a scope (review finding)', () => {
+    it('flags exactly one of the two anchors — not zero — when the block has two anchors and one citation', () => {
+      // Citations are consumed in document order: the first match ("Task 2")
+      // claims the block's one available citation, leaving the second
+      // ("Task 5") flagged — this primitive has no semantic notion of WHICH
+      // citation belongs to WHICH anchor (see the function's own doc
+      // comment), only that supply (1 citation) must meet demand (2
+      // anchors). The point under test is the COUNT: exactly one finding,
+      // never zero.
+      const result = checkLocalAnchorCoverage(file('Task 2 did X, and Task 5 (task 5, #999) wrapped it up.'), {
+        pattern: TASK_PATTERN,
+        mustCoOccurWith: CITATION_PATTERN,
+        scope: 'block'
+      })
+      expect(result.findings).toEqual([{ file: 'doc.md', line: 1, match: 'Task 5' }])
+    })
+
+    it('stays clean when every anchor in the block has its own citation, one-to-one', () => {
+      const result = checkLocalAnchorCoverage(
+        file('Task 2 (task 2, #100) did X, and Task 5 (task 5, #999) wrapped it up.'),
+        { pattern: TASK_PATTERN, mustCoOccurWith: CITATION_PATTERN, scope: 'block' }
+      )
+      expect(result.findings).toEqual([])
+    })
+
+    it('flags both anchors when the block has zero citations, not just the first', () => {
+      const result = checkLocalAnchorCoverage(file('Task 2 did X, and Task 5 wrapped it up.'), {
+        pattern: TASK_PATTERN,
+        mustCoOccurWith: CITATION_PATTERN,
+        scope: 'block'
+      })
+      expect(result.findings).toEqual([
+        { file: 'doc.md', line: 1, match: 'Task 2' },
+        { file: 'doc.md', line: 1, match: 'Task 5' }
+      ])
+    })
+  })
 })
