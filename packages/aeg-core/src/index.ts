@@ -151,6 +151,14 @@ export {
   stripNonProse
 } from './reader-resolvable-prose'
 export type { ProseFileClass, ProseFinding, ProseSourceFile } from './reader-resolvable-prose'
+export { checkLocalAnchorCoverage } from './local-anchor-coverage'
+export type {
+  AnchorCoverageFinding,
+  AnchorCoverageScope,
+  AnchorSourceFile,
+  LocalAnchorCoverageOptions,
+  LocalAnchorCoverageResult
+} from './local-anchor-coverage'
 export { checkDispatchReadiness } from './dispatch-gate'
 export type {
   DispatchConflictsWithFact,
