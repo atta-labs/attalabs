@@ -439,3 +439,63 @@ describe('checkIssueRationale / amendRationaleDeps — round-trip agreement (tas
     expect(amendDepsAcceptsSectionLocation(body)).toBe(true)
   })
 })
+
+// ---------------------------------------------------------------------------
+// `hasRationaleField` regex-grouping regression (found live 2026-08-07 while
+// unblocking PR #754): `labelPattern`'s own top-level `|` (e.g. `Dependency
+// rationale|Depends[- ]on`) must not split the surrounding
+// `(?:\*\*|^#{1,4}\s+)\s*` alternation. Ungrouped, `Depends[- ]on` becomes a
+// bare, unanchored alternative that matches ANY "Depends on"/"Depends-on"
+// text anywhere in the body — including plain prose with no bold/heading
+// marker nearby — and a body that never had this field at all gets
+// misreported as "field found, but malformed" instead of "field missing".
+// ---------------------------------------------------------------------------
+
+describe('hasRationaleField — label-pattern grouping (regression, found live 2026-08-07)', () => {
+  it('a body with a bare "Depends on" in ordinary prose, and no bold/heading Dependency-rationale field, reports the field MISSING', () => {
+    const body = `
+**Boundary** — Depends on the reader having already read the design doc.
+
+**Sizing** — One PR.
+
+**Project(s) + blast radius** — aeg, aeg-core.
+
+**Traps to avoid** — Do not do X.
+
+**Suggested agent-class** — high.
+
+**Stop-and-escalate** — If Y happens, stop.
+
+**Docs to keep coherent** — state-machine.md §12.
+`
+    const result = checkIssueRationale(body)
+    expect(result.status).toBe('fail')
+    const depError = result.errors.find((e) => e.startsWith('issue-validation Dependency rationale'))
+    expect(depError).toBeDefined()
+    // Missing (no prefix match) — not the "found but wrong form" message task 738 added.
+    expect(depError).toMatch(/rationale field not found/)
+    expect(depError).not.toMatch(/rationale field found, but not in the form/)
+  })
+
+  it('a real-shaped Issue with only inline "Depends-on: #N" prose in an unrelated section (Issue #240/#241 shape) reports the field MISSING, not malformed', () => {
+    const body = `
+**Boundary** — Depends on: **#186 (T11)** — the benchmark data answers the signal question.
+
+**Sizing** — One PR.
+
+**Project(s) + blast radius** — vada only.
+
+**Traps to avoid** — Do not do X.
+
+**Suggested agent-class** — high.
+
+**Stop-and-escalate** — If Y happens, stop.
+
+**Docs to keep coherent** — some-doc.md.
+`
+    const result = checkIssueRationale(body)
+    const depError = result.errors.find((e) => e.startsWith('issue-validation Dependency rationale'))
+    expect(depError).toBeDefined()
+    expect(depError).toMatch(/rationale field not found/)
+  })
+})

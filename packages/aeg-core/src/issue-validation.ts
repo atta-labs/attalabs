@@ -27,7 +27,14 @@ export type IssueSectionResult = { status: 'pass' | 'fail'; errors: string[] }
  * (e.g. Issue #219). Case-insensitive.
  */
 function hasRationaleField(body: string, labelPattern: string): boolean {
-  const re = new RegExp(`(?:\\*\\*|^#{1,4}\\s+)\\s*${labelPattern}`, 'im')
+  // `labelPattern` is grouped. Ungrouped, its own top-level `|` (present in
+  // several RATIONALE_FIELDS entries, e.g. `Dependency rationale|Depends[- ]on`)
+  // splits the WHOLE alternation instead of just the label — turning the
+  // second half into a bare, unanchored match with no prefix requirement at
+  // all. Found live: "Depends on" matching mid-sentence prose with no `**`/
+  // heading marker anywhere near it, misreporting old Issues that never had
+  // this field as "malformed" instead of "missing".
+  const re = new RegExp(`(?:\\*\\*|^#{1,4}\\s+)\\s*(?:${labelPattern})`, 'im')
   return re.test(body)
 }
 
