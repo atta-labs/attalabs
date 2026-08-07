@@ -64,6 +64,50 @@ describe('no-privileged-api', () => {
       expect(coreOutcome?.status).toBe('pass')
       expect(customOutcome?.status).toBe('pass')
     })
+
+    it('exercises a task 4 core check ("test-plan") the same way, including its fail path', async () => {
+      const testPlanSpec = coreCheckRegistry().find((s) => s.name === 'test-plan')
+      if (!testPlanSpec) {
+        throw new Error(
+          'coreCheckRegistry() no longer registers "test-plan" — update this test to name a live core check'
+        )
+      }
+      const customSpec: CheckSpec = { name: 'custom-fixture', run: FIXTURE, scope: 'full' }
+
+      // Pass path — same "no PR_BODY → nothing to check" bypass as `test-plan`'s
+      // own docstring, run through the SAME `runChecks` call as a custom check.
+      const [passOutcome, customOutcome] = await runChecks([testPlanSpec, customSpec], {
+        parallel: 2,
+        diffOnly: false,
+        changedFiles: null,
+        defaultTimeoutMs: 10_000
+      })
+      expect(Object.keys(passOutcome ?? {}).sort()).toEqual(Object.keys(customOutcome ?? {}).sort())
+      expect(passOutcome?.exitCode).toBe(0)
+      expect(passOutcome?.status).toBe('pass')
+
+      // Fail path — an unticked `[agent]` box must produce a real `fail`
+      // CheckOutcome with a CheckError findable on `.errors`, proving the
+      // JSON-lines-on-stderr contract round-trips through the SAME spawn
+      // path a config-registered check would use.
+      process.env.PR_BODY = '## Test plan\n- [ ] **[agent]** run tests'
+      process.env.BRANCH = 'task/vinaya-demo-readiness-v1/4'
+      try {
+        const [failOutcome] = await runChecks([testPlanSpec], {
+          parallel: 1,
+          diffOnly: false,
+          changedFiles: null,
+          defaultTimeoutMs: 10_000
+        })
+        expect(failOutcome?.status).toBe('fail')
+        expect(failOutcome?.exitCode).toBe(1)
+        expect(failOutcome?.errors.length).toBeGreaterThan(0)
+        expect(failOutcome?.errors[0]?.check).toBe('test-plan')
+      } finally {
+        delete process.env.BRANCH
+        delete process.env.PR_BODY
+      }
+    })
   })
 
   it('runChecks has no branch on provenance — a core-labeled spec and a custom-labeled spec pointed at the SAME executable behave identically', async () => {
