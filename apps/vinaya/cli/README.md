@@ -90,4 +90,4 @@ Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the
 
 Copyright (C) 2026 Daniel Estevez.
 
-AGPL-3.0-only — see [LICENSE](./LICENSE). You may use, fork and modify Vinaya freely; derivatives must ship their source under the same license.
+Apache-2.0 — see [LICENSE](./LICENSE).
