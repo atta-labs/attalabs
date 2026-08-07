@@ -9,6 +9,9 @@ out/
 dist/
 build/
 **/.turbo/
+# Build-time copy of the doctrine subset into the CLI package (bundle-doctrine.ts)
+# — scoped precisely, never the real doctrine source at repo-root aeg-root/.
+/apps/vinaya/cli/aeg-root/
 docs/
 # Re-include AEG docs renderer (aeg-core).
 !packages/aeg-core/src/docs/

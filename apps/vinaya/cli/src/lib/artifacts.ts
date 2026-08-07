@@ -18,9 +18,11 @@
 // repo's own battle-tested gates, not invented blanks — the failure it
 // kills is blank-config paralysis.
 
+import { join } from 'node:path'
 import { DOC_OWNERS_PATH, label } from '@atta/aeg-core'
 import type { VinayaConfig } from './config.js'
 import type { CreateLabelOp, Op } from './ops.js'
+import { packageRoot } from './package-root.js'
 
 export type HookDir = '.husky' | '.git/hooks'
 
@@ -277,15 +279,14 @@ npx --no-install @attalabs/vinaya check --all || exit 1`
 // Doctrine pointer (root VINAYA.md, the only orientation artifact)
 // ---------------------------------------------------------------------------
 function doctrinePointer(): string {
+  const doctrineRoot = join(packageRoot(import.meta.url), 'aeg-root')
   return `<!-- ${MANAGED_NOTE} -->
 # Vinaya doctrine — read this first
 
 This repo is governed by Vinaya. The full, canonical doctrine (roles,
-contracts, the state machine, the ring gates) currently lives in the
-\`attalabs\` monorepo's \`aeg-root/\` (public GitHub source) — bundling it into
-the installed \`vinaya\` npm package, so it ships and updates cleanly via
-\`vinaya upgrade\` with no in-repo copy to drift, is planned but not yet
-shipped.
+contracts, the state machine, the ring gates) ships inside the installed
+\`@attalabs/vinaya\` npm package itself — no in-repo copy to drift, and
+\`vinaya upgrade\` regenerates this pointer if the install location changes.
 
 An agent working in this repo follows the governed flow by reading two things:
 
@@ -297,10 +298,12 @@ An agent working in this repo follows the governed flow by reading two things:
 Live task status is derived from the forge (Issues, labels, comments) via
 \`vinaya check\` — it is never written into a file here.
 
-To view the doctrine text today: read \`aeg-root/\` in the \`attalabs\`
-monorepo; \`vinaya doctor\` reports what is installed in this repo. Once
-in-package bundling ships, the package's own reference content becomes the
-source of truth.
+To read the doctrine text, it is bundled at this install's own resolved
+path:
+
+    ${doctrineRoot}
+
+\`vinaya doctor\` reports what is installed in this repo.
 `
 }
 
