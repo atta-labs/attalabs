@@ -56,18 +56,6 @@ const SHIPS_PREFIX = 'aeg-root/'
  */
 const SHIPS_ARCHIVE_PREFIX = 'aeg-root/tranches/completed/'
 
-/**
- * The public site's pages — reader-facing product copy, same vocabulary rule
- * as `aeg-root/**` because its reader has no forge at all. Scoped to
- * `page.tsx` itself, not the whole `(site)` route tree: a page's own body is
- * where reader-visible prose lives (JSX text, step copy); sibling
- * `_components/**` include non-textual/decorative surfaces (e.g. canvas
- * illustrations using fictional PR numbers as flavor text) that are not
- * prose in the sense this check means.
- */
-const READER_FACING_PREFIX = 'apps/vinaya/web/src/app/(site)/'
-const READER_FACING_SUFFIX = '/page.tsx'
-
 /** A per-product specs file (`apps/<product>/specs/**`) — this reader has this forge; references are legitimate here. */
 function isSpecFile(path: string): boolean {
   return path.startsWith('apps/') && path.includes('/specs/') && path.endsWith('.md')
@@ -82,12 +70,26 @@ function isClaudeMdFile(path: string): boolean {
  * The file-class map, encoded as data (not a rule buried in control flow).
  * Returns `null` for anything outside all three classes — out of this
  * check's scope entirely, not merely exempt.
+ *
+ * `readerFacingPrefix`/`readerFacingSuffix` scope the "reader-facing" class
+ * to a consumer's own reader-facing surface — this package stays generic and
+ * has no attalabs-specific path baked in. The caller-supplied shape mirrors
+ * the vinaya adopter's product site: a page's own body is where
+ * reader-visible prose lives (JSX text, step copy); sibling component
+ * directories include non-textual/decorative surfaces (e.g. canvas
+ * illustrations using fictional PR numbers as flavor text) that are not
+ * prose in the sense this check means, hence a suffix-scoped match rather
+ * than a bare prefix.
  */
-export function classifyProseFile(path: string): ProseFileClass | null {
+export function classifyProseFile(
+  path: string,
+  readerFacingPrefix: string,
+  readerFacingSuffix: string
+): ProseFileClass | null {
   if (path.startsWith(SHIPS_PREFIX)) {
     return path.startsWith(SHIPS_ARCHIVE_PREFIX) ? 'internal' : 'ships'
   }
-  if (path.startsWith(READER_FACING_PREFIX) && path.endsWith(READER_FACING_SUFFIX)) {
+  if (path.startsWith(readerFacingPrefix) && path.endsWith(readerFacingSuffix)) {
     return 'reader-facing'
   }
   if (isSpecFile(path) || isClaudeMdFile(path)) return 'internal'
@@ -170,6 +172,8 @@ export function legacySlugPattern(legacySlugs: readonly string[]): RegExp | null
  */
 export function checkUnresolvableReferences(
   files: readonly ProseSourceFile[],
+  readerFacingPrefix: string,
+  readerFacingSuffix: string,
   legacySlugs: readonly string[] = []
 ): ProseFinding[] {
   const findings: ProseFinding[] = []
@@ -185,7 +189,7 @@ export function checkUnresolvableReferences(
   ]
 
   for (const file of files) {
-    const cls = classifyProseFile(file.path)
+    const cls = classifyProseFile(file.path, readerFacingPrefix, readerFacingSuffix)
     if (!cls || !SWEPT_CLASSES.has(cls)) continue
     const scrubbed = stripNonProse(file.path, file.content)
     for (const { pattern, what, group } of patterns) {
@@ -256,12 +260,14 @@ function definesOrLinksGlossary(content: string, term: string): boolean {
  */
 export function checkUndefinedVocabulary(
   files: readonly ProseSourceFile[],
-  glossaryTerms: readonly string[]
+  glossaryTerms: readonly string[],
+  readerFacingPrefix: string,
+  readerFacingSuffix: string
 ): ProseFinding[] {
   const findings: ProseFinding[] = []
 
   for (const file of files) {
-    const cls = classifyProseFile(file.path)
+    const cls = classifyProseFile(file.path, readerFacingPrefix, readerFacingSuffix)
     if (!cls || !SWEPT_CLASSES.has(cls)) continue
     const scrubbed = stripNonProse(file.path, file.content)
 
@@ -283,9 +289,14 @@ export function checkUndefinedVocabulary(
 export function checkReaderResolvableProse(
   files: readonly ProseSourceFile[],
   glossaryTerms: readonly string[],
+  readerFacingPrefix: string,
+  readerFacingSuffix: string,
   legacySlugs: readonly string[] = []
 ): ProseFinding[] {
-  return [...checkUnresolvableReferences(files, legacySlugs), ...checkUndefinedVocabulary(files, glossaryTerms)]
+  return [
+    ...checkUnresolvableReferences(files, readerFacingPrefix, readerFacingSuffix, legacySlugs),
+    ...checkUndefinedVocabulary(files, glossaryTerms, readerFacingPrefix, readerFacingSuffix)
+  ]
 }
 
 /** Parses `aeg-root/glossary.md`'s `**Term** — definition` entry headings into a bare term list. */
