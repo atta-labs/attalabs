@@ -59,10 +59,24 @@ const CHECK_NAME = 'coherence'
 const execFileAsync = promisify(execFile)
 
 // Array-form execFileSync — no shell, so no injection surface even though
-// today's arguments are fixed literals.
+// today's arguments are fixed literals. `stdio: ['ignore', 'pipe', 'pipe']`
+// is load-bearing, not cosmetic: without it, a git call THIS FUNCTION
+// EXPECTS TO FAIL AND CATCHES (e.g. `rev-parse --abbrev-ref HEAD` on an
+// unborn HEAD — a fresh repo's very first commit, before any tranche
+// branch exists) still inherits stderr and writes its raw, non-JSON text
+// onto the check's own stderr stream. The runner (`runner.ts`) treats every
+// stderr line as a `CheckError` JSON candidate; one non-JSON line sets
+// `malformed = true` and reports `status: 'error'` regardless of the
+// check's real exit code — misreporting a correct, silent, exit-0 bypass
+// as a crash. Found live 2026-08-07: this exact gap made `vinaya check
+// --all` refuse a brand-new adopter repo's very first commit (the
+// pre-commit hook treats `error` as a failure), even though this
+// function's own JS-level handling of the unborn-HEAD case was already
+// correct. Every other check bin's `git()` helper already pipes stderr
+// this way — `check-doc-coverage.ts` names the same reasoning explicitly.
 function git(args: string[]): string {
   try {
-    return execFileSync('git', args, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
   } catch {
     return ''
   }

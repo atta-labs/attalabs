@@ -59,10 +59,15 @@ const CHECK_NAME = 'dispatch-readiness'
 const execFileAsync = promisify(execFile)
 
 // Array-form execFileSync — no shell, so no injection surface even though
-// today's arguments are fixed literals.
+// today's arguments are fixed literals. `stdio: ['ignore', 'pipe', 'pipe']`
+// is load-bearing, not cosmetic — see `check-coherence.ts`'s identical
+// `git()` helper for the full reasoning: without it, an expected-and-caught
+// git failure (e.g. `rev-parse --abbrev-ref HEAD` on an unborn HEAD) leaks
+// raw non-JSON text onto this check's stderr, which the runner misreads as
+// `status: 'error'` regardless of the real exit code.
 function git(args: string[]): string {
   try {
-    return execFileSync('git', args, { encoding: 'utf8' }).trim()
+    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
   } catch {
     return ''
   }
