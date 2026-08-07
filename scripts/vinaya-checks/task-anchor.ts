@@ -26,13 +26,10 @@
  *
  * Scope: every surface this repo's own doctrine convention
  * `(task N, #issue)` is actually used in today — `aeg-root`, every product's
- * `specs/` and every `CLAUDE.md` under `apps/`, `.claude/skills`, root
- * `CLAUDE.md`, and `docs` (excluding the frozen `decisions-legacy.md`
- * archive, same treatment `aeg-root/tranches/completed/` gets — a closed
- * historical record, not live prose an anchor coverage gap would mislead a
- * reader in today). NOT `coreCheckRegistry()` — this convention is this
- * repo's own, not a shipped adopter surface; registered only in this repo's
- * own `vinaya.config.json` under `checks`, per the Issue's own Traps-to-avoid.
+ * `specs/` and every `CLAUDE.md` under `apps/`, `.claude/skills`, and root
+ * `CLAUDE.md`. NOT `coreCheckRegistry()` — this convention is this repo's
+ * own, not a shipped adopter surface; registered only in this repo's own
+ * `vinaya.config.json` under `checks`, per the Issue's own Traps-to-avoid.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -99,13 +96,13 @@ function isExempt(path: string): boolean {
   return GLOBAL_EXEMPT.some((e) => path.includes(e))
 }
 
-// `docs/` is deliberately NOT scoped: its only prose content is
-// `docs/decisions-legacy.md` (a frozen historical record, same exempt class
-// as above) and `docs/superpowers/**`, which has its own unrelated
-// "Task N" step-numbering convention (an external planning-tool format,
-// numbering implementation-plan steps) that was never meant to carry this
-// repo's `(task N, #issue)` citation shape at all — scoping it in produced
-// nothing but false positives against a different tool's grammar.
+// `docs/` is deliberately NOT scoped: its only prose content is one closed,
+// superseded historical record (same exempt class as above) and
+// `docs/superpowers/**`, which has its own unrelated "Task N"
+// step-numbering convention (an external planning-tool format, numbering
+// implementation-plan steps) that was never meant to carry this repo's
+// `(task N, #issue)` citation shape at all — scoping it in produced nothing
+// but false positives against a different tool's grammar.
 function collectScopeFiles(): string[] {
   const isMd = (name: string) => name.endsWith('.md')
   const paths = [
