@@ -177,7 +177,7 @@ This rationale is the **producer side of the `aeg-root/contracts/planner-brief.m
 - **Boundary** — what this task is and, crucially, what it is *not* (what was deliberately split out).
 - **Sizing** — that it passed the four "too big?" tests (or how a larger candidate was split).
 - **Project(s) + blast radius** — every project touched, and for shared-package changes, which consumers are in the blast radius and whether each needs re-verification or edits.
-- **Dependency rationale** — *why* each `depends-on` / `conflicts-with` edge exists (not just that it does).
+- **Dependency rationale** — *why* each `depends-on` / `conflicts-with` edge exists (not just that it does). **Write it bold-inline only, exactly `**Dependency rationale** — …`** — no colon inside the bold, no heading form. This one field has a downstream consumer beyond the creation gate (`amendRationaleDeps`, the only sanctioned way to edit these edges after creation) that locates it by that exact anchor; see `aeg-root/contracts/planner-brief.md`'s "Rationale grammar" section for why.
 - **Traps to avoid** — concrete pitfalls the dig surfaced that would otherwise bite the executing agent (e.g. "do NOT use `loadYamlFromCatalog` — it hardcodes another project's directory; use `loadFlow(readFileSync(...))`"). This single field is often the highest-value thing the planner produces.
 - **Suggested agent-class** — high / mid / fast capability, with a one-line reason (this is plan-time; the Brief Author confirms the final model pick at dispatch — see below).
 - **Stop-and-escalate** — the conditions under which the executing agent must stop and escalate rather than improvise (e.g. "if making it work requires changing the shared contract, escalate `severity:strategy`").

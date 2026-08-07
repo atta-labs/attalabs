@@ -16,7 +16,7 @@
  * applicability from the labels; this module only checks the body.
  */
 
-import { hasLabel } from '@atta/aeg-forge-state'
+import { hasLabel, SECTION_HEADER } from '@atta/aeg-forge-state'
 import { stripCode } from './anchored-region'
 
 export type IssueSectionResult = { status: 'pass' | 'fail'; errors: string[] }
@@ -43,16 +43,42 @@ const RATIONALE_FIELDS: Array<{ name: string; pattern: string }> = [
   { name: 'Docs to keep coherent', pattern: 'Docs to keep coherent|§7' }
 ]
 
+const DEPENDENCY_RATIONALE_FIELD_NAME = 'Dependency rationale'
+
 /**
  * Every one of the eight Planner's-rationale fields must be present in a task
  * Issue's body. One error line per missing field, mirroring
  * `checkBriefSections`'s error style.
+ *
+ * `Dependency rationale` carries a second, stricter requirement the other
+ * seven fields do not: `amendRationaleDeps` (`@atta/aeg-forge-state`, the ONLY
+ * sanctioned way to edit `Depends-on`/`Conflicts-with`) locates this section
+ * by the exact anchor `SECTION_HEADER` — `**Dependency rationale**` with the
+ * bold closing immediately after the label. A body written
+ * `**Dependency rationale:** …` (colon inside the bold) satisfies the tolerant
+ * detector above but not `SECTION_HEADER`, so it passes here and then throws
+ * on the only sanctioned edit path. Importing `SECTION_HEADER` rather than a
+ * second hand-written regex keeps this one grammar.
  */
 export function checkIssueRationale(body: string): IssueSectionResult {
-  const errors = RATIONALE_FIELDS.filter((f) => !hasRationaleField(body, f.pattern)).map(
-    (f) =>
-      `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md).`
-  )
+  const errors: string[] = []
+  for (const f of RATIONALE_FIELDS) {
+    if (!hasRationaleField(body, f.pattern)) {
+      errors.push(
+        `issue-validation ${f.name}: rationale field not found in the Issue body — every task Issue carries the full Planner's rationale (aeg-root/contracts/planner-brief.md).`
+      )
+      continue
+    }
+    if (f.name === DEPENDENCY_RATIONALE_FIELD_NAME && !SECTION_HEADER.test(body)) {
+      errors.push(
+        `issue-validation ${f.name}: rationale field found, but not in the form amend-deps requires — ` +
+          'write `**Dependency rationale** — …`, not `**Dependency rationale:** …`. ' +
+          '`amendRationaleDeps` (the only sanctioned way to edit Depends-on/Conflicts-with) locates this ' +
+          'section by the exact anchor `**Dependency rationale**`; a colon inside the bold breaks that match ' +
+          'and the Issue becomes unamendable.'
+      )
+    }
+  }
   return { status: errors.length > 0 ? 'fail' : 'pass', errors }
 }
 

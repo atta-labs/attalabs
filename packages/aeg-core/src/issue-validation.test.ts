@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { amendRationaleDeps } from '@atta/aeg-forge-state'
 import { describe, expect, it } from 'vitest'
 import { fenceShapes } from './fixtures/fence-shapes'
 import {
@@ -48,9 +51,7 @@ Small-medium.
 
 aeg only.
 
-### Dependency rationale
-
-Depends on task 3.
+**Dependency rationale** — Depends on task 3.
 
 ### Traps
 
@@ -342,5 +343,99 @@ describe('code-blindness — every content check reuses the single stripCode (PR
     const body = `${rationale({ boundary: 'Add a CLI flag in `apps/vinaya/cli`.' })}\n${quoted}\n`
     expect(checkNoBriefContent(body).status).toBe('pass')
     expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// One rationale grammar (task 738): an Issue body the creation gate accepts
+// must always be rewritable by `amend-deps`. `checkIssueRationale` and
+// `amendRationaleDeps` are two independent consumers of the same
+// `Dependency rationale` field; this suite feeds a shared set of bodies
+// through BOTH and asserts they agree, rather than trusting two
+// independently-passing unit tests that never run against each other's
+// fixtures (Issue #736, found live 2026-08-05).
+// ---------------------------------------------------------------------------
+
+/** A complete, otherwise-canonical rationale body with only the `Dependency
+ * rationale` field's form varied — isolates disagreement to that one field. */
+function rationaleWithDependencyForm(dependencyField: string): string {
+  return `
+**Boundary** — What this task is and is not.
+
+**Sizing** — Passes all four tests.
+
+**Project(s) + blast radius** — aeg, aeg-core.
+
+${dependencyField}
+
+**Traps to avoid** — Do not do X.
+
+**Suggested agent-class** — high.
+
+**Stop-and-escalate** — If Y happens, stop.
+
+**Docs to keep coherent** — state-machine.md §12.
+`
+}
+
+/** Whether `amendRationaleDeps` can locate the section at all — the same
+ * question `checkIssueRationale`'s new check answers for the creation gate. */
+function amendDepsAcceptsSectionLocation(body: string): boolean {
+  try {
+    amendRationaleDeps(body, { dependsOn: ['1'], note: 'round-trip probe', date: '2026-01-01' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Whether `checkIssueRationale` accepts this body on the `Dependency
+ * rationale` field specifically (ignores errors on the other seven fields,
+ * which `rationaleWithDependencyForm` always satisfies). */
+function checkIssueRationaleAcceptsDependencyField(body: string): boolean {
+  return !checkIssueRationale(body).errors.some((e) => e.startsWith('issue-validation Dependency rationale'))
+}
+
+const DEPENDENCY_FORM_FIXTURES: Array<{ name: string; field: string; accepted: boolean }> = [
+  {
+    name: 'canonical bold form (Issue #309 shape)',
+    field: '**Dependency rationale** — No depends-on.',
+    accepted: true
+  },
+  {
+    name: 'colon-inside-bold form (Issue #736 shape, found live 2026-08-05)',
+    field: '**Dependency rationale:** No depends-on.',
+    accepted: false
+  },
+  {
+    name: 'heading form (Issue #219 shape) — amend-deps has no heading grammar for this field',
+    field: '### Dependency rationale\n\nNo depends-on.',
+    accepted: false
+  }
+]
+
+describe('checkIssueRationale / amendRationaleDeps — round-trip agreement (task 738)', () => {
+  it.each(DEPENDENCY_FORM_FIXTURES)('$name: both consumers agree (accepted=$accepted)', ({ field, accepted }) => {
+    const body = rationaleWithDependencyForm(field)
+    expect(checkIssueRationaleAcceptsDependencyField(body)).toBe(accepted)
+    expect(amendDepsAcceptsSectionLocation(body)).toBe(accepted)
+  })
+
+  it('rejects the exact colon-form body from Issue #736 (real, captured 2026-08-05) with an actionable error', () => {
+    const body = readFileSync(join(__dirname, 'fixtures', 'issue-736-body.md'), 'utf8')
+    const result = checkIssueRationale(body)
+    expect(result.status).toBe('fail')
+    const depError = result.errors.find((e) => e.startsWith('issue-validation Dependency rationale'))
+    expect(depError).toBeDefined()
+    expect(depError).toMatch(/\*\*Dependency rationale\*\* — …/)
+    expect(depError).toMatch(/\*\*Dependency rationale:\*\* …/)
+    // And the same body is, independently, unamendable — the defect this task closes.
+    expect(amendDepsAcceptsSectionLocation(body)).toBe(false)
+  })
+
+  it('still passes the canonical form on both consumers — no regression on the accepted shape', () => {
+    const body = rationaleWithDependencyForm('**Dependency rationale** — Depends-on: 1.')
+    expect(checkIssueRationale(body).status).toBe('pass')
+    expect(amendDepsAcceptsSectionLocation(body)).toBe(true)
   })
 })
