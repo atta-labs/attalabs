@@ -35,6 +35,14 @@ process.chdir(REPO_ROOT)
 
 const CHECK_NAME = 'reader-resolvable-prose'
 
+/**
+ * This adopter's own reader-facing surface — attalabs' public site's pages.
+ * `aeg-core`'s `classifyProseFile`/`checkReaderResolvableProse` are generic;
+ * this repo-specific shape is supplied here, not baked into the package.
+ */
+const READER_FACING_PREFIX = 'apps/vinaya/web/src/app/(site)/'
+const READER_FACING_SUFFIX = '/page.tsx'
+
 /** Recursively collects repo-relative paths under `dir` whose name passes `match`. */
 function collect(dir: string, match: (name: string) => boolean, out: string[] = []): string[] {
   let entries: string[]
@@ -85,7 +93,7 @@ function main(): void {
   const glossaryTerms = parseGlossaryTerms(readFileSync(join(REPO_ROOT, 'aeg-root/glossary.md'), 'utf8'))
   const slugs = legacySlugs()
 
-  const findings = checkReaderResolvableProse(files, glossaryTerms, slugs)
+  const findings = checkReaderResolvableProse(files, glossaryTerms, READER_FACING_PREFIX, READER_FACING_SUFFIX, slugs)
 
   for (const finding of findings) {
     emitCheckError({

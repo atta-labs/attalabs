@@ -25,58 +25,84 @@ function legacySlugs(): string[] {
 
 const REAL_GLOSSARY = readFileSync(join(REPO_ROOT, 'aeg-root/glossary.md'), 'utf8')
 
+/** This test's own consumer-supplied reader-facing shape — mirrors the real bin script's literal. */
+const READER_FACING_PREFIX = 'apps/vinaya/web/src/app/(site)/'
+const READER_FACING_SUFFIX = '/page.tsx'
+
 describe('classifyProseFile — the three-class map', () => {
   it('classifies aeg-root/** as ships', () => {
-    expect(classifyProseFile('aeg-root/enforcement.md')).toBe('ships')
-    expect(classifyProseFile('aeg-root/roles/developer.md')).toBe('ships')
+    expect(classifyProseFile('aeg-root/enforcement.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBe('ships')
+    expect(classifyProseFile('aeg-root/roles/developer.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBe('ships')
   })
 
   it('classifies the archived-tranche history under aeg-root as internal, not ships', () => {
-    expect(classifyProseFile('aeg-root/tranches/completed/aeg-ui-v1.md')).toBe('internal')
+    expect(
+      classifyProseFile('aeg-root/tranches/completed/aeg-ui-v1.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)
+    ).toBe('internal')
   })
 
   it('classifies a (site) page as reader-facing', () => {
-    expect(classifyProseFile('apps/vinaya/web/src/app/(site)/start/quick/page.tsx')).toBe('reader-facing')
+    expect(
+      classifyProseFile(
+        'apps/vinaya/web/src/app/(site)/start/quick/page.tsx',
+        READER_FACING_PREFIX,
+        READER_FACING_SUFFIX
+      )
+    ).toBe('reader-facing')
   })
 
   it('does not classify a (site) non-page component as reader-facing', () => {
-    expect(classifyProseFile('apps/vinaya/web/src/app/(site)/_components/canvas/TwoErasCanvas.tsx')).toBeNull()
+    expect(
+      classifyProseFile(
+        'apps/vinaya/web/src/app/(site)/_components/canvas/TwoErasCanvas.tsx',
+        READER_FACING_PREFIX,
+        READER_FACING_SUFFIX
+      )
+    ).toBeNull()
   })
 
   it('classifies apps/*/specs/** as internal', () => {
-    expect(classifyProseFile('apps/vinaya/specs/vinaya-spec.md')).toBe('internal')
+    expect(classifyProseFile('apps/vinaya/specs/vinaya-spec.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBe(
+      'internal'
+    )
   })
 
   it('classifies any CLAUDE.md as internal', () => {
-    expect(classifyProseFile('CLAUDE.md')).toBe('internal')
-    expect(classifyProseFile('apps/vinaya/CLAUDE.md')).toBe('internal')
+    expect(classifyProseFile('CLAUDE.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBe('internal')
+    expect(classifyProseFile('apps/vinaya/CLAUDE.md', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBe('internal')
   })
 
   it('classifies an unrelated source file as out of scope entirely', () => {
-    expect(classifyProseFile('packages/aeg-core/src/index.ts')).toBeNull()
+    expect(classifyProseFile('packages/aeg-core/src/index.ts', READER_FACING_PREFIX, READER_FACING_SUFFIX)).toBeNull()
   })
 })
 
 describe('class 1 — unresolvable references — the gate can see what it bans', () => {
   it('fires on a bare forge number, drawn from the ships class', () => {
-    const findings = checkUnresolvableReferences([
-      { path: 'aeg-root/enforcement.md', content: 'fixed the gap (task 3, #365)' }
-    ])
+    const findings = checkUnresolvableReferences(
+      [{ path: 'aeg-root/enforcement.md', content: 'fixed the gap (task 3, #365)' }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
     expect(findings[0]!.message).toContain('forge number')
   })
 
   it('fires on a bare forge number, drawn from the reader-facing class', () => {
-    const findings = checkUnresolvableReferences([
-      { path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx', content: 'shipped in (#365)' }
-    ])
+    const findings = checkUnresolvableReferences(
+      [{ path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx', content: 'shipped in (#365)' }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
   })
 
   it('fires on a bare -vN tranche slug, drawn from the ships class', () => {
-    const findings = checkUnresolvableReferences([
-      { path: 'aeg-root/roles/developer.md', content: 'landed in aeg-coherence-v1 task 3' }
-    ])
+    const findings = checkUnresolvableReferences(
+      [{ path: 'aeg-root/roles/developer.md', content: 'landed in aeg-coherence-v1 task 3' }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
     expect(findings[0]!.message).toContain('tranche slug')
   })
@@ -86,6 +112,8 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
     expect(slugs.length, 'no legacy slugs on disk to prove coverage against').toBeGreaterThan(0)
     const findings = checkUnresolvableReferences(
       [{ path: 'aeg-root/enforcement.md', content: `shipped during ${slugs[0]}` }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX,
       slugs
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
@@ -105,6 +133,8 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
     const slugs = legacySlugs()
     const findings = checkUnresolvableReferences(
       [{ path: 'aeg-root/enforcement.md', content: `(shipped during ${slugs[0]}.)` }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX,
       slugs
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
@@ -113,7 +143,11 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
 
   it('does NOT fire inside a markdown code fence — a quoted example is not prose', () => {
     const content = ['See the grammar:', '```', 'Closes #365', '```', 'in every PR.'].join('\n')
-    const findings = checkUnresolvableReferences([{ path: 'aeg-root/enforcement.md', content }])
+    const findings = checkUnresolvableReferences(
+      [{ path: 'aeg-root/enforcement.md', content }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings).toEqual([])
   })
 
@@ -121,27 +155,39 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
     const content = ['// task 9 (#569) added them for `/cli`', 'export default function Page() { return null }'].join(
       '\n'
     )
-    const findings = checkUnresolvableReferences([{ path: 'apps/vinaya/web/src/app/(site)/docs/page.tsx', content }])
+    const findings = checkUnresolvableReferences(
+      [{ path: 'apps/vinaya/web/src/app/(site)/docs/page.tsx', content }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings).toEqual([])
   })
 
   it('never sweeps apps/*/specs/** or CLAUDE.md — references are legitimate there', () => {
-    const findings = checkUnresolvableReferences([
-      { path: 'apps/vinaya/specs/vinaya-spec.md', content: 'closed by (#365), see aeg-coherence-v1' },
-      { path: 'apps/vinaya/CLAUDE.md', content: 'closed by (#365), see aeg-coherence-v1' }
-    ])
+    const findings = checkUnresolvableReferences(
+      [
+        { path: 'apps/vinaya/specs/vinaya-spec.md', content: 'closed by (#365), see aeg-coherence-v1' },
+        { path: 'apps/vinaya/CLAUDE.md', content: 'closed by (#365), see aeg-coherence-v1' }
+      ],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(findings).toEqual([])
   })
 
   it('red before green — a seeded violation fails, then the fix passes', () => {
-    const violating = checkUnresolvableReferences([
-      { path: 'aeg-root/roles/developer.md', content: 'This closed the gap (#365).' }
-    ])
+    const violating = checkUnresolvableReferences(
+      [{ path: 'aeg-root/roles/developer.md', content: 'This closed the gap (#365).' }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(violating.length, 'expected the seeded violation to be caught').toBeGreaterThan(0)
 
-    const fixed = checkUnresolvableReferences([
-      { path: 'aeg-root/roles/developer.md', content: 'This closed the gap in a prior task.' }
-    ])
+    const fixed = checkUnresolvableReferences(
+      [{ path: 'aeg-root/roles/developer.md', content: 'This closed the gap in a prior task.' }],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
+    )
     expect(fixed).toEqual([])
   })
 })
@@ -176,7 +222,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
           content: "This step's changes land in the current tranche."
         }
       ],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
     expect(findings[0]!.message).toContain('Tranche')
@@ -185,7 +233,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
   it('fires on a coined term used bare, drawn from the ships class', () => {
     const findings = checkUndefinedVocabulary(
       [{ path: 'aeg-root/roles/planner.md', content: 'The planner reads the tranche next.' }],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
   })
@@ -198,7 +248,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
           content: 'A tranche — a named batch of related tasks — is what ships together.'
         }
       ],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings).toEqual([])
   })
@@ -211,7 +263,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
           content: 'This lands in the current tranche. See /docs/glossary for definitions.'
         }
       ],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings).toEqual([])
   })
@@ -219,7 +273,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
   it('does NOT match an ordinary-English word that merely contains a coined term ("briefly" is not "Brief")', () => {
     const findings = checkUndefinedVocabulary(
       [{ path: 'aeg-root/roles/planner.md', content: 'The planner briefly summarizes the sizing.' }],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings).toEqual([])
   })
@@ -230,7 +286,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
         { path: 'apps/vinaya/specs/vinaya-spec.md', content: 'The tranche and its brief are dispatched.' },
         { path: 'apps/vinaya/CLAUDE.md', content: 'The tranche and its brief are dispatched.' }
       ],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings).toEqual([])
   })
@@ -252,7 +310,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
   it('red before green — a seeded violation fails, then the fix (an inline definition) passes', () => {
     const violating = checkUndefinedVocabulary(
       [{ path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx', content: 'The forge tracks every task.' }],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(violating.length, 'expected the seeded violation to be caught').toBeGreaterThan(0)
 
@@ -263,7 +323,9 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
           content: 'The forge — the Git host treated as the source of truth — tracks every task.'
         }
       ],
-      glossaryTerms
+      glossaryTerms,
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(fixed).toEqual([])
   })
@@ -313,7 +375,9 @@ describe('regression: class 2 still fires on prose that follows a URL on the sam
           content: '<p>See https://vinaya.dev — every tranche ships here</p>'
         }
       ],
-      ['Tranche']
+      ['Tranche'],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings, JSON.stringify(findings)).toHaveLength(1)
     expect(findings[0]!.message).toContain('Tranche')
@@ -324,7 +388,9 @@ describe('checkReaderResolvableProse — runs both classes together', () => {
   it('reports both a reference finding and a vocabulary finding for one file', () => {
     const findings = checkReaderResolvableProse(
       [{ path: 'aeg-root/roles/reviewer.md', content: 'Closed the gap (#365) in this tranche.' }],
-      ['Tranche']
+      ['Tranche'],
+      READER_FACING_PREFIX,
+      READER_FACING_SUFFIX
     )
     expect(findings.length).toBeGreaterThanOrEqual(2)
   })
