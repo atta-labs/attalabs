@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { packageRoot } from '../lib/package-root.js'
 import type { CheckSpec } from './contract'
@@ -10,7 +11,29 @@ import type { CheckSpec } from './contract'
 // `BIN_DIR`-derived path one directory short. `BIN_DIR` is still computed
 // once at module scope: the package root a check's bin resolves against
 // never changes at runtime.
-const BIN_DIR = join(packageRoot(import.meta.url), 'src', 'checks', 'bin')
+//
+// **The published tarball never contains `src/`** — `package.json`'s
+// `files` allowlist ships only `dist`, `templates`, `README.md`. Every one
+// of these checks was 100% unreachable through a real `npm install`
+// (`check --all` errored "not found on PATH" for all 15 — found live
+// against the real published `@attalabs/vinaya@0.1.1`, not caught by any
+// prior review because verification only ever ran against local source,
+// where `src/checks/bin/*.ts` genuinely exists). `scripts/build.ts` now
+// bundles each `src/checks/bin/*.ts` to its own standalone, self-contained
+// `dist/checks/bin/*.js` (same `Bun.build` shape as the main `dist/index.js`
+// entrypoint) — that bundled output is what actually ships. Prefer it when
+// present; fall back to the raw `.ts` source so `bun src/index.ts check
+// --all` still works for local, unbundled dev without requiring a build
+// first.
+const DIST_BIN_DIR = join(packageRoot(import.meta.url), 'dist', 'checks', 'bin')
+const SRC_BIN_DIR = join(packageRoot(import.meta.url), 'src', 'checks', 'bin')
+const BIN_DIR = existsSync(DIST_BIN_DIR) ? DIST_BIN_DIR : SRC_BIN_DIR
+const BIN_EXT = BIN_DIR === DIST_BIN_DIR ? '.js' : '.ts'
+
+/** `bin('check-brief-shape')` → the real, resolvable path to that check's executable — bundled `.js` when shipped, raw `.ts` in local dev. */
+function bin(name: string): string {
+  return join(BIN_DIR, `${name}${BIN_EXT}`)
+}
 
 /**
  * The four core AEG gates an adopter's repo actually runs, expressed as
@@ -34,91 +57,91 @@ export function coreCheckRegistry(): CheckSpec[] {
   return [
     {
       name: 'brief-shape',
-      run: join(BIN_DIR, 'check-brief-shape.ts'),
+      run: bin('check-brief-shape'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'doc-coverage',
-      run: join(BIN_DIR, 'check-doc-coverage.ts'),
+      run: bin('check-doc-coverage'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'coherence',
-      run: join(BIN_DIR, 'check-coherence.ts'),
+      run: bin('check-coherence'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'dispatch-readiness',
-      run: join(BIN_DIR, 'check-dispatch-readiness.ts'),
+      run: bin('check-dispatch-readiness'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'closes-n',
-      run: join(BIN_DIR, 'check-closes-n.ts'),
+      run: bin('check-closes-n'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'single-plan-pr',
-      run: join(BIN_DIR, 'check-single-plan-pr.ts'),
+      run: bin('check-single-plan-pr'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'test-plan',
-      run: join(BIN_DIR, 'check-test-plan.ts'),
+      run: bin('check-test-plan'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'no-disk-state',
-      run: join(BIN_DIR, 'check-no-disk-state.ts'),
+      run: bin('check-no-disk-state'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'registry-gates',
-      run: join(BIN_DIR, 'check-registry-gates.ts'),
+      run: bin('check-registry-gates'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'review-gate',
-      run: join(BIN_DIR, 'check-review-gate.ts'),
+      run: bin('check-review-gate'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'branch-topology',
-      run: join(BIN_DIR, 'check-branch-topology.ts'),
+      run: bin('check-branch-topology'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'dead-branch-push',
-      run: join(BIN_DIR, 'check-dead-branch-push.ts'),
+      run: bin('check-dead-branch-push'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'first-push-dispatch',
-      run: join(BIN_DIR, 'check-first-push-dispatch.ts'),
+      run: bin('check-first-push-dispatch'),
       scope: 'full',
       timeoutMs: 30_000
     },
     {
       name: 'doc-coverage-push',
-      run: join(BIN_DIR, 'check-doc-coverage-push.ts'),
+      run: bin('check-doc-coverage-push'),
       scope: 'diff',
       timeoutMs: 15_000
     },
     {
       name: 'issue-assignment',
-      run: join(BIN_DIR, 'check-issue-assignment.ts'),
+      run: bin('check-issue-assignment'),
       scope: 'full',
       timeoutMs: 30_000
     }

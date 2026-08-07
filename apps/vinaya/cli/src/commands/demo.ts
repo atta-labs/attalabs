@@ -33,6 +33,24 @@ function gitCapture(repoRoot: string, args: string[]): string {
   return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 }
 
+/**
+ * The current branch name — never `git rev-parse --abbrev-ref HEAD`, which
+ * throws `fatal: ambiguous argument 'HEAD'` on an UNBORN branch (a fresh
+ * repo with zero commits: HEAD is a valid symbolic ref, it just doesn't
+ * resolve to a commit yet). `symbolic-ref` answers the question this
+ * command actually needs — "what branch am I on" — without requiring a
+ * commit to exist, and only fails when HEAD is genuinely detached (a raw
+ * SHA, no symbolic ref at all), which is exactly the case callers already
+ * handle via the `'HEAD'` sentinel below.
+ */
+function currentBranchName(repoRoot: string): string {
+  try {
+    return gitCapture(repoRoot, ['symbolic-ref', '--short', 'HEAD'])
+  } catch {
+    return 'HEAD'
+  }
+}
+
 function branchExists(repoRoot: string, name: string): boolean {
   try {
     execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${name}`], {
@@ -78,7 +96,7 @@ function gitDirAbs(repoRoot: string): string {
  * user's real original branch (the exact defect this fixes).
  */
 function recoverFromCrash(repoRoot: string, statePath: string): void {
-  const currentBranch = gitCapture(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD'])
+  const currentBranch = currentBranchName(repoRoot)
   let state: DemoState | null = null
   if (existsSync(statePath)) {
     try {
@@ -216,7 +234,7 @@ export async function runDemoBreak(repoRoot: string, args: string[]): Promise<nu
     return 1
   }
 
-  const originalBranch = gitCapture(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD'])
+  const originalBranch = currentBranchName(repoRoot)
   if (originalBranch === 'HEAD') {
     console.error('Cannot run `vinaya demo break` from a detached HEAD — checkout a branch first.')
     return 1

@@ -223,4 +223,48 @@ describe('vinaya demo break', () => {
     // cleanup for subsequent assertions/afterEach
     git(root, ['branch', '-D', 'vinaya/demo-break-not-mine'])
   }, 15_000)
+
+  it('does not crash with a raw git error on a zero-commit repo — the exact real-published-path crash found live 2026-08-07', async () => {
+    // The REALISTIC reproduction, matching the real brief's own command
+    // sequence (`vinaya init` then `vinaya demo break`, no intermediate
+    // manual commit): a fresh repo, `vinaya init`-shaped dirty working tree
+    // (real config/doctrine files present but never committed), zero
+    // commits. `runDemoBreak` calls `recoverFromCrash` FIRST, before its own
+    // dirty-tree check — and `recoverFromCrash`'s first line used to be
+    // `git rev-parse --abbrev-ref HEAD`, which throws `fatal: ambiguous
+    // argument 'HEAD'` on this exact unborn-HEAD state regardless of
+    // dirtiness. That unhandled throw is the real crash task 3's dress
+    // rehearsal hit against the real published package — it fired before
+    // the dirty-tree check ever got a chance to return its own, correct,
+    // non-crashing "commit or stash first" message.
+    rmSync(root, { recursive: true, force: true })
+    root = join(tmpdir(), `vinaya-demo-zero-commit-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    mkdirSync(root, { recursive: true })
+    git(root, ['init', '-q', '-b', 'main'])
+    git(root, ['config', 'user.email', 'test@example.com'])
+    git(root, ['config', 'user.name', 'Test'])
+    installRealHook(root)
+    writeFileSync(join(root, 'vinaya.config.json'), '{}\n') // stand-in for init's real, uncommitted output
+
+    expect(() => git(root, ['rev-parse', 'HEAD'])).toThrow() // sanity: genuinely zero commits
+    expect(git(root, ['status', '--porcelain'])).not.toBe('') // sanity: genuinely dirty, like a real post-init repo
+
+    let code = -1
+    const out = await captureStdout(async () => {
+      code = await runDemoBreak(root, [])
+    })
+    // The historical bug: an unhandled `execFileSync` throw crashed the
+    // whole process with a raw, unhandled Node stack trace — never reaching
+    // any of `runDemoBreak`'s own output, and never returning a code at all
+    // (the test process itself would throw). The fix does not make this
+    // succeed — a dirty tree is still correctly refused — it makes the
+    // refusal an ORDINARY, handled `return 1` with a clear message, not a
+    // crash.
+    expect(code, out).toBe(1)
+    expect(out).toBe('')
+    // No raw git stderr text ever reached the top-level catch as an
+    // exception message — the assertion above (return 1, not a throw)
+    // already proves this; this call directly proves runDemoBreak returns
+    // rather than throws, since a throw would have failed the `await` above.
+  }, 15_000)
 })
