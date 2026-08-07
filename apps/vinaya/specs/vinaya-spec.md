@@ -238,6 +238,23 @@ attalabs' own instance, `scripts/vinaya-checks/task-anchor.ts`, configures it ag
 
 **Registered report-only, following the same precedent Correction 3 documents.** A live sweep at registration found **38 real findings** across `.claude/skills/**`, `aeg-root/state-machine.md`, `apps/herald-ai/specs/herald-app-architecture.md`, `apps/vada-ai/specs/**`, and `apps/vinaya/specs/{vinaya-spec,vinaya-backlog}.md` — genuine pre-existing debt this check's introduction surfaces, not something to suppress or block CI over on day one. (An initial pre-merge-review count of 24 undercounted: `checkLocalAnchorCoverage`'s co-occurrence test originally checked only whether a scope's citation SUPPLY was non-zero, not whether it covered every anchor's DEMAND — one real citation could silently clear every other, unrelated anchor sharing its block. Fixed to consume citations one-to-one per anchor in document order before this task merged; see `local-anchor-coverage.ts`'s own doc comment and the round-trip regression tests it added.) `REPORT_ONLY = true` in the check script; a vacuous-pattern self-test failure is the one exception that still exits 1 regardless.
 
+### Correction 6 (2026-08-07) — the deterministic-checks placement lens (#723)
+
+The install-manifest diagram above (Correction 4) shows where `init` puts things; this is the same "where does it land, how does CI reach it" lens narrowed to one path — a custom check's own file, from scaffold to a running CI job — verified against a real `vinaya new check` run (same scratch repo, local source) chained into a real `vinaya check --all`.
+
+**Where the file lands.** `newCheckCommand` (`src/commands/new-check.ts:17-41`) writes exactly one file, `./scripts/vinaya-checks/<name>.ts` (`CHECKS_DIR`, line 6; `targetPath`, line 27; `writeFileSync` + `chmodSync(0o755)`, lines 35-36), relative to whatever repo the command runs in — never inside the installed `@attalabs/vinaya` package. Confirmed live: `vinaya new check my-custom-rule` created `scripts/vinaya-checks/my-custom-rule.ts`, scaffolded from `custom-check.template.ts` by a literal `{{CHECK_NAME}}` split/join (line 34) against the SAME `TEMPLATE_PATH` (line 5) documented in Correction 4.
+
+**Registration is a paste, not a write.** The command does not touch `vinaya.config.json` itself — it prints the exact `checks` entry to stdout (line 39: `{ checks: { [name]: { run: './scripts/vinaya-checks/<name>.ts', scope: 'diff' } } }`) for the adopter to paste in. Confirmed by hand-editing `vinaya.config.json`'s `checks: {}` (empty per the starter ruleset, Correction 1) to add exactly that entry — matching `CheckEntrySchema` (`src/lib/config.ts:15-21`: `run`, `scope: 'diff'|'full'`, optional `include`/`args`/`timeoutMs`).
+
+**How `vinaya check --all` picks it up.** `customSpecsFromConfig` (`src/commands/check.ts:53-60`) loads the config and maps `checks` into `CheckSpec[]` (line 58); `checkCommand` merges that with the 15-entry built-in registry — `const allSpecs = [...coreCheckRegistry(), ...customSpecs]` (line 76) — before running everything through `runChecks`. No separate code path for custom vs. core checks past that merge; a config-registered check is, from the runner's perspective, indistinguishable from a shipped one (the same no-privileged-API invariant `tests/checks/no-privileged-api.test.ts` proves). Confirmed live: `vinaya check --all` (same scratch repo, `my-custom-rule` registered) ran all 15 core checks plus `my-custom-rule`, and failed on `my-custom-rule` — the scaffold's own example finding, not a wiring error:
+```
+✓ brief-shape: pass … ✓ issue-assignment: pass
+✗ my-custom-rule: fail
+    error: Example finding from the scaffolded template — replace with a real check.
+```
+
+**How CI reaches that same path.** `checksWorkflow()` (`artifacts.ts:84-111`, installed to `.github/workflows/vinaya-checks.yml` by `init`, per Correction 4's diagram) runs `npx --yes @attalabs/vinaya check --all --diff-only` on every `pull_request` — the identical `check --all` entry point just verified above. No separate CI-only registration step exists: a check reaches CI the moment its `checks` entry lands in `vinaya.config.json`, because the workflow's one command re-derives `allSpecs` fresh on every run. The pre-commit/pre-push git hooks (Correction 4's diagram, `.git/hooks/pre-commit`/`pre-push`) run the same `check --all` command locally, so a newly-registered check is enforced before either a commit or a push leaves — not only in CI.
+
 ## Forge writes (#385)
 
 `vinaya pr create | edit` and `vinaya issue create | edit` are the validated forge-write path: every write runs the full, **config-defined brief-schema validation LOCALLY, before any `gh` write** — prevention, not detection. A malformed body is refused at the CLI layer, in-session, before anything reaches the forge; the identical `@atta/aeg-core` validators run in CI purely as a backstop. The commands **adapt the semantics** of `packages/aeg-core/bin/open-pr.ts` / `open-issue.ts` — they never import them: those bins `process.chdir(REPO_ROOT)` and shell out to this repo's `bin/*` gate scripts, so importing them would drag this repo's layout into a distributable CLI. Instead, like `src/checks/bin/check-brief-shape.ts`, they call the aeg-core public exports and speak the versioned `CheckError` contract.
@@ -290,6 +307,28 @@ Correction 1 above cut `governance/doc-owners` because it was copy-momentum from
 ### Correction 3 (2026-08-07) — hook package name + label-create resilience (#757)
 
 Two bugs, both reproduced live before fixing. **Package name:** the hook-body generators (`preCommitBody`/`prePushBody` in `src/lib/artifacts.ts`) invoked bare `npx --no-install vinaya check`, 404ing against npm — the bare `vinaya` name is refused by npm's typosquat filter against `vinyl`; the real published package is `@attalabs/vinaya` (the two CI-workflow generators already had this right). Both hook bodies now say `@attalabs/vinaya`, `--no-install` unchanged. **Label-create resilience:** `applyInstall`'s label-creation pass (`src/lib/ops.ts`) had no error handling around `gh label create` — a bad/missing remote, no push access, or any `gh`-reported failure threw an unhandled rejection that killed `init`/`init product` entirely, even though every file/hook/config artifact had already applied. Each label create is now wrapped individually: a failure prints `Warning: could not create label '<name>': <gh's own stderr>` and the loop continues, so one label's failure never stops the rest or the command as a whole. Distinct from the pre-existing, still-true "no `origin` remote at all" graceful skip in `runInit`/`runInitProduct` (§ above) — this covers a *present* remote that `gh` itself rejects for any reason once a label create is actually attempted.
+
+### Correction 4 (2026-08-07) — the install-manifest diagram, and where a team goes next (#723)
+
+An adopter-facing gap: nothing in this file showed the six items landing in a consumer repo's own tree, or told a first-time reader what to open first. Both closed here, verified against a real `vinaya init` run (local source, scratch repo, never this monorepo — every path below is what that run actually created, not a description of the code):
+
+```
+your-repo/
+├── VINAYA.md                          ← doctrinePointer()     artifacts.ts:355-360
+├── vinaya.config.json                 ← starterConfig()       artifacts.ts:347-352
+├── .vinaya/
+│   └── doc-owners                     ← starterDocOwners()    artifacts.ts:363-368
+├── .github/workflows/
+│   ├── vinaya-checks.yml              ← checksWorkflow()      artifacts.ts:320
+│   └── vinaya-review.yml              ← reviewWorkflow()      artifacts.ts:321
+└── .git/hooks/  (or .husky/ if present)
+    ├── pre-commit                     ← preCommitBody()       artifacts.ts:324-333
+    └── pre-push                       ← prePushBody()         artifacts.ts:334-343
+```
+
+Plus two non-file ops, both real `ops.push(...)` entries in `buildInitOps` (`artifacts.ts:315-377`) but neither a path in the tree above: six `vinaya/tier:*`/`vinaya/needs:*` GitHub labels (`labelOps()`, `artifacts.ts:283-300`, pushed at line 371 — create-if-absent, never modified) and one printed-only branch-protection recommendation (`BRANCH_PROTECTION_NOTE`, pushed at line 374 — `vinaya` never calls the GitHub API to apply it). Every box above traces to one of these eight `ops.push` calls; there is no ninth artifact and no box here that isn't one.
+
+**Reading order — what a team does next.** `VINAYA.md` is deliberately the only thing at repo root beside `README.md` (see `doctrinePointer()`'s own doc comment, `artifacts.ts:35-37`): it is step one because it's the first thing a fresh agent or developer finds. Its own text (rendered above under "Doctrine pointer" — quoted verbatim in the Install lifecycle section above) names step two explicitly: `vinaya.config.json`, "the ruleset the gates enforce: rings, custom checks, and the brief schema." `checks: {}` starts empty — an adopter who wants their own gate runs `vinaya new check <name>`, which scaffolds `./scripts/vinaya-checks/<name>.ts` from `apps/vinaya/cli/templates/custom-check.template.ts` and prints the exact `checks` entry to paste into `vinaya.config.json` (confirmed live: `vinaya new check my-custom-rule` created `scripts/vinaya-checks/my-custom-rule.ts` and printed `{ "checks": { "my-custom-rule": { "run": "./scripts/vinaya-checks/my-custom-rule.ts", "scope": "diff" } } }`). That is the full extension path in three stops: **`VINAYA.md` → `vinaya.config.json` → `vinaya new check`.** The fourth stop is the scaffold itself: `custom-check.template.ts`'s own doc comment tells the reader exactly what's left to do — replace the example `emitCheckError` call inside `main()` with real check logic, keep the exit-code contract (`0` pass, `1` findings), and paste the printed `checks` entry into `vinaya.config.json`. Nothing past that fourth stop requires reading CLI source: the template is deliberately standalone (its own doc comment: "no import from the vinaya CLI's own source tree... it lives in YOUR repo"). See the Check engine section below (Correction 6) for what the scaffolded file must do to pass, and how the generated CI workflow above actually reaches it.
 
 ## Install lifecycle: `doctor` / `upgrade` (#386)
 
