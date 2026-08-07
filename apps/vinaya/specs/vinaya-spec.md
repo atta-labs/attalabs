@@ -291,6 +291,28 @@ Correction 1 above cut `governance/doc-owners` because it was copy-momentum from
 
 Two bugs, both reproduced live before fixing. **Package name:** the hook-body generators (`preCommitBody`/`prePushBody` in `src/lib/artifacts.ts`) invoked bare `npx --no-install vinaya check`, 404ing against npm — the bare `vinaya` name is refused by npm's typosquat filter against `vinyl`; the real published package is `@attalabs/vinaya` (the two CI-workflow generators already had this right). Both hook bodies now say `@attalabs/vinaya`, `--no-install` unchanged. **Label-create resilience:** `applyInstall`'s label-creation pass (`src/lib/ops.ts`) had no error handling around `gh label create` — a bad/missing remote, no push access, or any `gh`-reported failure threw an unhandled rejection that killed `init`/`init product` entirely, even though every file/hook/config artifact had already applied. Each label create is now wrapped individually: a failure prints `Warning: could not create label '<name>': <gh's own stderr>` and the loop continues, so one label's failure never stops the rest or the command as a whole. Distinct from the pre-existing, still-true "no `origin` remote at all" graceful skip in `runInit`/`runInitProduct` (§ above) — this covers a *present* remote that `gh` itself rejects for any reason once a label create is actually attempted.
 
+### Correction 4 (2026-08-07) — the install-manifest diagram, and where a team goes next (#723)
+
+An adopter-facing gap: nothing in this file showed the six items landing in a consumer repo's own tree, or told a first-time reader what to open first. Both closed here, verified against a real `vinaya init` run (local source, scratch repo, never this monorepo — every path below is what that run actually created, not a description of the code):
+
+```
+your-repo/
+├── VINAYA.md                          ← doctrinePointer()     artifacts.ts:355-360
+├── vinaya.config.json                 ← starterConfig()       artifacts.ts:347-352
+├── .vinaya/
+│   └── doc-owners                     ← starterDocOwners()    artifacts.ts:363-368
+├── .github/workflows/
+│   ├── vinaya-checks.yml              ← checksWorkflow()      artifacts.ts:320
+│   └── vinaya-review.yml              ← reviewWorkflow()      artifacts.ts:321
+└── .git/hooks/  (or .husky/ if present)
+    ├── pre-commit                     ← preCommitBody()       artifacts.ts:324-333
+    └── pre-push                       ← prePushBody()         artifacts.ts:334-343
+```
+
+Plus two non-file ops, both real `ops.push(...)` entries in `buildInitOps` (`artifacts.ts:315-377`) but neither a path in the tree above: six `vinaya/tier:*`/`vinaya/needs:*` GitHub labels (`labelOps()`, `artifacts.ts:283-300`, pushed at line 371 — create-if-absent, never modified) and one printed-only branch-protection recommendation (`BRANCH_PROTECTION_NOTE`, pushed at line 374 — `vinaya` never calls the GitHub API to apply it). Every box above traces to one of these eight `ops.push` calls; there is no ninth artifact and no box here that isn't one.
+
+**Reading order — what a team does next.** `VINAYA.md` is deliberately the only thing at repo root beside `README.md` (see `doctrinePointer()`'s own doc comment, `artifacts.ts:35-37`): it is step one because it's the first thing a fresh agent or developer finds. Its own text (rendered above under "Doctrine pointer" — quoted verbatim in the Install lifecycle section above) names step two explicitly: `vinaya.config.json`, "the ruleset the gates enforce: rings, custom checks, and the brief schema." `checks: {}` starts empty — an adopter who wants their own gate runs `vinaya new check <name>`, which scaffolds `./scripts/vinaya-checks/<name>.ts` from `apps/vinaya/cli/templates/custom-check.template.ts` and prints the exact `checks` entry to paste into `vinaya.config.json` (confirmed live: `vinaya new check my-custom-rule` created `scripts/vinaya-checks/my-custom-rule.ts` and printed `{ "checks": { "my-custom-rule": { "run": "./scripts/vinaya-checks/my-custom-rule.ts", "scope": "diff" } } }`). That is the full extension path in three stops: **`VINAYA.md` → `vinaya.config.json` → `vinaya new check`.** See the Check engine section below (Correction 6) for what the scaffolded file must do to pass, and how the generated CI workflow above actually reaches it.
+
 ## Install lifecycle: `doctor` / `upgrade` (#386)
 
 `vinaya doctor` diagnoses the installation `init` created; `vinaya upgrade` is the only sanctioned way back to a clean one. Together they close the lifecycle #384/#656 opened: install → diagnose → migrate → (still) eject.
