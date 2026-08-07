@@ -3,6 +3,8 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { archiveCommand } from './commands/archive.js'
+import { auditCommand } from './commands/audit.js'
 import { checkCommand } from './commands/check.js'
 import { demoBreakCommand } from './commands/demo.js'
 import { doctorCommand } from './commands/doctor.js'
@@ -70,6 +72,14 @@ try {
     }
     case 'check': {
       await checkCommand(args)
+      break
+    }
+    case 'archive': {
+      await archiveCommand(args)
+      break
+    }
+    case 'audit': {
+      await auditCommand(args)
       break
     }
     case 'new': {
