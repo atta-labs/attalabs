@@ -55,6 +55,72 @@ export function coreCheckRegistry(): CheckSpec[] {
       run: join(BIN_DIR, 'check-dispatch-readiness.ts'),
       scope: 'full',
       timeoutMs: 30_000
+    },
+    {
+      name: 'closes-n',
+      run: join(BIN_DIR, 'check-closes-n.ts'),
+      scope: 'diff',
+      timeoutMs: 15_000
+    },
+    {
+      name: 'single-plan-pr',
+      run: join(BIN_DIR, 'check-single-plan-pr.ts'),
+      scope: 'diff',
+      timeoutMs: 15_000
+    },
+    {
+      name: 'test-plan',
+      run: join(BIN_DIR, 'check-test-plan.ts'),
+      scope: 'diff',
+      timeoutMs: 15_000
+    },
+    {
+      name: 'no-disk-state',
+      run: join(BIN_DIR, 'check-no-disk-state.ts'),
+      scope: 'diff',
+      timeoutMs: 15_000
+    },
+    {
+      name: 'registry-gates',
+      run: join(BIN_DIR, 'check-registry-gates.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'review-gate',
+      run: join(BIN_DIR, 'check-review-gate.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'branch-topology',
+      run: join(BIN_DIR, 'check-branch-topology.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'dead-branch-push',
+      run: join(BIN_DIR, 'check-dead-branch-push.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'first-push-dispatch',
+      run: join(BIN_DIR, 'check-first-push-dispatch.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
+    },
+    {
+      name: 'doc-coverage-push',
+      run: join(BIN_DIR, 'check-doc-coverage-push.ts'),
+      scope: 'diff',
+      timeoutMs: 15_000
+    },
+    {
+      name: 'issue-assignment',
+      run: join(BIN_DIR, 'check-issue-assignment.ts'),
+      scope: 'full',
+      timeoutMs: 30_000
     }
   ]
 }

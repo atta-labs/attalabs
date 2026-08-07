@@ -62,10 +62,28 @@ describe('RC1 — packageRoot() resolves regardless of the calling module’s de
 })
 
 describe('RC3 — reader-resolvable-prose is not part of the adopter-facing registry', () => {
-  it('coreCheckRegistry() no longer contains a reader-resolvable-prose entry (5 checks → 4)', () => {
+  it("coreCheckRegistry() never contains a reader-resolvable-prose entry, task 4's 11 new registrations included", () => {
     const specs = coreCheckRegistry()
-    expect(specs.length).toBe(4)
-    expect(specs.map((s) => s.name).sort()).toEqual(['brief-shape', 'coherence', 'dispatch-readiness', 'doc-coverage'])
+    expect(specs.length).toBe(15)
+    expect(specs.map((s) => s.name).sort()).toEqual(
+      [
+        'brief-shape',
+        'branch-topology',
+        'closes-n',
+        'coherence',
+        'dead-branch-push',
+        'dispatch-readiness',
+        'doc-coverage',
+        'doc-coverage-push',
+        'first-push-dispatch',
+        'issue-assignment',
+        'no-disk-state',
+        'registry-gates',
+        'review-gate',
+        'single-plan-pr',
+        'test-plan'
+      ].sort()
+    )
     expect(specs.find((s) => s.name === 'reader-resolvable-prose')).toBeUndefined()
   })
 
