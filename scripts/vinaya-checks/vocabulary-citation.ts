@@ -54,6 +54,48 @@
  * "leaks" is a meaning judgment this regex-based check cannot make, and
  * triaging those 17 files is exactly the doctrine-tree sweep task 8 owns,
  * not this task.
+ *
+ * Task 8 (2026-08-06 amendment) — scope widened to the three product trees
+ * every pattern was previously blind to: `apps/vada-ai/specs`,
+ * `apps/vada-ai/CLAUDE.md`, `apps/herald-ai/specs`, `apps/herald-ai/CLAUDE.md`,
+ * `apps/attalabs/specs`, `apps/attalabs/CLAUDE.md`, plus the root `CLAUDE.md`
+ * (unreachable by any prior scope entry).
+ *
+ * Resolved judgment call (task 8's own to make, per Issue #746's Boundary):
+ * `consumer-product-name` is NOT widened to these three trees.
+ * `evaluateVocabularyCitation`'s own "real leak" test for this pattern is
+ * explicitly qualified — Class 1, per task 6's amendment — to "a surface
+ * that ships or claims portability." `apps/vada-ai`, `apps/herald-ai`,
+ * `apps/attalabs`, and root `CLAUDE.md` are internal-only monorepo
+ * engineering doctrine: none of them ship to an adopter or claim
+ * portability the way `apps/vinaya` (its CLI ships), `aeg-root` (copied out
+ * by `vinaya init`), or `aeg-core`/`aeg-forge-state` (code the ship depends
+ * on) do. Sampling the widened run before settling this (616 findings, 423
+ * from `consumer-product-name` alone) confirmed the theory: the overwhelming
+ * majority were internal file-path citations (`apps/vada-ai/web/...`),
+ * cross-references between sibling products in the same monorepo ("Herald
+ * byte-identity", "Herald's `JDInput`..."), or a product naming its own
+ * domain/package (`vada.ai`, `@vada/agents`) — none of which read as an
+ * unexplained citation to a reader who, by construction, is always inside
+ * this same repo for these three trees. Widening it anyway would have
+ * produced a true-positive rate far under half, the exact condition Issue
+ * #746 names as a task-6 scoping defect rather than something to
+ * hand-triage around.
+ *
+ * The other five patterns (`harness-claude-path`, `harness-husky-path`,
+ * `harness-scripts-file`, `harness-role-vocabulary`, `forge-number`) ARE
+ * widened to all four surfaces below. None of their doc comments carry the
+ * same portability qualifier — a bare `.claude/`/`.husky/`/`scripts/*.ts`
+ * citation or forge number is unexplained-citation debt regardless of
+ * whether the surface ships, the same standard already enforced against
+ * `aeg-root` (itself not directly shipped either, only copied out by
+ * `vinaya init`) since task 6. `apps/vinaya` is unchanged in these five
+ * patterns' scope: task 6 deliberately scoped Class 2 to `aeg-root` only,
+ * and this task does not reopen that choice. `apps/vinaya` is likewise
+ * unchanged in `consumer-product-name`'s scope — its own doctrine is
+ * already reachable via the existing `apps/vinaya` scope entry on
+ * `consumer-product-name`, and the harness patterns' pre-existing exclusion
+ * of `apps/vinaya` was task 6's own deliberate choice, not reopened here.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -143,7 +185,15 @@ const GLOBAL_EXEMPT = [
   // itself: this file's own unit tests cite product names and harness
   // paths as fixture data to prove the evaluator's decision logic, not as
   // real citations.
-  'packages/aeg-core/src/vocabulary-citation.test.ts'
+  'packages/aeg-core/src/vocabulary-citation.test.ts',
+  // Task 8 — same frozen-archive class as `aeg-root/tranches/completed/`
+  // and the `docs/` entries above, extended to a tree that happens to live
+  // under `specs/` instead: `specs/legacy/README.md` states its own purpose
+  // as "Historical specs — superseded," the identical characterization the
+  // other frozen-archive entries in this list share. Citation hygiene is
+  // not a meaningful obligation for content the product itself has already
+  // marked retired.
+  'apps/vada-ai/specs/legacy/'
 ]
 
 const PATTERNS: VocabularyPattern[] = [
@@ -168,26 +218,60 @@ const PATTERNS: VocabularyPattern[] = [
     // rather than path-scoped on purpose: `apps/vinaya/specs/vinaya-spec.md`
     // carries 18 of these AND is a surface where real leakage could appear, so
     // exempting the file would blind the pattern to the thing it exists for.
-    exemptContent: ['@attalabs/', 'attalabs.dev']
+    //
+    // Task 8 — `attalabs' own` added as the same false-positive class,
+    // found recurring during the doctrine sweep: `vinaya-spec.md`'s "Vinaya's
+    // own vs. attalabs' own" section uses this idiom six times to describe
+    // the parent monorepo's own unshipped tooling/CI, as distinct from what
+    // Vinaya ships — the section's entire purpose is explaining that
+    // boundary, not leaking an unexplained reference to it.
+    exemptContent: ['@attalabs/', 'attalabs.dev', "attalabs' own"]
   },
   {
     id: 'harness-claude-path',
     pattern: String.raw`\.claude/`,
-    scope: ['aeg-root'],
+    scope: [
+      'aeg-root',
+      'apps/vada-ai/specs',
+      'apps/vada-ai/CLAUDE.md',
+      'apps/herald-ai/specs',
+      'apps/herald-ai/CLAUDE.md',
+      'apps/attalabs/specs',
+      'apps/attalabs/CLAUDE.md',
+      'CLAUDE.md'
+    ],
     sample: 'wired via .claude/hooks/check-skill.sh',
     exemptTableRow: true
   },
   {
     id: 'harness-husky-path',
     pattern: String.raw`\.husky/`,
-    scope: ['aeg-root'],
+    scope: [
+      'aeg-root',
+      'apps/vada-ai/specs',
+      'apps/vada-ai/CLAUDE.md',
+      'apps/herald-ai/specs',
+      'apps/herald-ai/CLAUDE.md',
+      'apps/attalabs/specs',
+      'apps/attalabs/CLAUDE.md',
+      'CLAUDE.md'
+    ],
     sample: 'runs from .husky/pre-push',
     exemptTableRow: true
   },
   {
     id: 'harness-scripts-file',
     pattern: String.raw`scripts/[a-zA-Z0-9_/-]+\.(ts|js|sh|mjs)`,
-    scope: ['aeg-root'],
+    scope: [
+      'aeg-root',
+      'apps/vada-ai/specs',
+      'apps/vada-ai/CLAUDE.md',
+      'apps/herald-ai/specs',
+      'apps/herald-ai/CLAUDE.md',
+      'apps/attalabs/specs',
+      'apps/attalabs/CLAUDE.md',
+      'CLAUDE.md'
+    ],
     sample: 'run scripts/vinaya-checks/vocabulary-citation.ts to check',
     exemptTableRow: true
   },
@@ -196,7 +280,17 @@ const PATTERNS: VocabularyPattern[] = [
     pattern: String.raw`\bPrincipal-ratifiable\b`,
     // packages/models/src: the 2026-08-06 amendment's shared-package scope
     // (the exact string PR #742 removed from this package's source).
-    scope: ['aeg-root', 'packages/models/src'],
+    scope: [
+      'aeg-root',
+      'packages/models/src',
+      'apps/vada-ai/specs',
+      'apps/vada-ai/CLAUDE.md',
+      'apps/herald-ai/specs',
+      'apps/herald-ai/CLAUDE.md',
+      'apps/attalabs/specs',
+      'apps/attalabs/CLAUDE.md',
+      'CLAUDE.md'
+    ],
     sample: 'a Principal-ratifiable mapping'
   },
   {
@@ -208,6 +302,21 @@ const PATTERNS: VocabularyPattern[] = [
     // task's surface): a forge number resolves only inside this repo's own
     // tracker, meaningless to an adopter reading the installed doc or
     // shared-package source.
+    //
+    // Task 8 — NOT widened to the three new product trees, same resolved
+    // judgment call as `consumer-product-name` above and for the identical
+    // reason: this pattern's own rationale ("meaningless to an adopter
+    // reading the installed doc") is a portability test, and
+    // `apps/vada-ai`/`apps/herald-ai`/`apps/attalabs`/root `CLAUDE.md` are
+    // never installed by an adopter. Empirically confirmed before deciding:
+    // widening it produced 126 findings concentrated in citation-dense,
+    // ratified engineering design records (`generic-flow-refactor.md`,
+    // `vada-state.md`) where the PR/task number IS the document's actual
+    // content — a shipped-feature changelog's entire value is precise
+    // provenance. Stripping those citations to satisfy the check would
+    // degrade a correct document to fix a mis-scoped surface, the same
+    // anti-pattern `roles/developer.md` names for implementation bugs
+    // ("the doc is correct, fix the implementation") applied here to scope.
     scope: ['aeg-root', 'packages/models/src'],
     sample: 'documented in #294'
   }
