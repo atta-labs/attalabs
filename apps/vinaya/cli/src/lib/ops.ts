@@ -324,12 +324,21 @@ export async function applyInstall(
   }
   onFilesRecorded?.(base)
 
-  // Pass 2: labels (network-bound, create-if-absent).
+  // Pass 2: labels (network-bound, create-if-absent). A single label failure
+  // (bad/missing remote, no push access, anything `gh` itself reports) must
+  // never take down the whole command — every file/hook/config artifact has
+  // already applied by this point. Warn with `gh`'s own stderr, verbatim, and
+  // move on to the next label.
   for (const e of plan.entries) {
     if (e.kind !== 'create-label') continue
-    if (!(await labels.exists(e.op.name))) {
-      await labels.create(e.op.name, e.op.color, e.op.description)
-      createdLabels.push(e.op.name)
+    try {
+      if (!(await labels.exists(e.op.name))) {
+        await labels.create(e.op.name, e.op.color, e.op.description)
+        createdLabels.push(e.op.name)
+      }
+    } catch (err) {
+      const reason = (err as { stderr?: string }).stderr?.trim() || (err as Error).message
+      console.warn(`Warning: could not create label '${e.op.name}': ${reason}`)
     }
   }
 

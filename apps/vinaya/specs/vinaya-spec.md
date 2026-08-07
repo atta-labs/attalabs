@@ -236,7 +236,7 @@ A separate false-positive class was fixed rather than deferred: `attalabs` insid
 The six installed items:
 
 1. **`vinaya.config.json`** — the starter ruleset, with **`checks: {}` empty**.
-2. **Git hooks** — thin pre-commit + pre-push managed-block stubs invoking `vinaya check` (`.husky/` if present, else raw `.git/hooks`; never a new dependency).
+2. **Git hooks** — thin pre-commit + pre-push managed-block stubs invoking `npx --no-install @attalabs/vinaya check` (`.husky/` if present, else raw `.git/hooks`; never a new dependency) — the real published package name, not the bare `vinaya` name npm's typosquat filter refuses (see Correction 3).
 3. **Two workflows** — `.github/workflows/vinaya-checks.yml` + `vinaya-review.yml`.
 4. **Root `VINAYA.md`** — the doctrine pointer.
 5. **`.vinaya/doc-owners`** — an empty, self-teaching starter for the C5 code → doc coherence seam (#665). Grammar-only (format line, glob syntax, pointer forms, the `# no-doc:` escape hatch, the dormancy note) reproduced as comments from this monorepo's own `.vinaya/doc-owners` header; zero real bindings ship — an adopter's bindings are theirs to add.
@@ -262,6 +262,10 @@ Ruling (Issue #384, 2026-07-23 amendment; PR #656 Principal directive): **`init`
 ### Correction 2 (2026-08-06) — the doc-owners starter is a different artifact than the one Correction 1 cut (#665)
 
 Correction 1 above cut `governance/doc-owners` because it was copy-momentum from this monorepo's internal `.vinaya/` — a disposition of THIS repo's files, not a product surface. The item added as manifest item 5 above (`.vinaya/doc-owners`) is not that artifact reappearing: it is the starter for the **C5 code → doc coherence seam**, whose reader (`packages/aeg-core/src/doc-owners.ts`, `packages/aeg-core/bin/verify-docs.ts`) already ships and is already live — it was simply dormant on every adopter repo because `init` never wrote anything at the path the reader looks for (`DOC_OWNERS_PATH = '.vinaya/doc-owners'`). This task makes `init` write an empty, self-teaching copy of that file (grammar only, zero bindings) so the seam an adopter's repo already runs is no longer silently inert; `eject` reverses it through the same generic `create-file` mechanism every other artifact uses — no new op kind, no eject-specific code.
+
+### Correction 3 (2026-08-07) — hook package name + label-create resilience (#757)
+
+Two bugs, both reproduced live before fixing. **Package name:** the hook-body generators (`preCommitBody`/`prePushBody` in `src/lib/artifacts.ts`) invoked bare `npx --no-install vinaya check`, 404ing against npm — the bare `vinaya` name is refused by npm's typosquat filter against `vinyl`; the real published package is `@attalabs/vinaya` (the two CI-workflow generators already had this right). Both hook bodies now say `@attalabs/vinaya`, `--no-install` unchanged. **Label-create resilience:** `applyInstall`'s label-creation pass (`src/lib/ops.ts`) had no error handling around `gh label create` — a bad/missing remote, no push access, or any `gh`-reported failure threw an unhandled rejection that killed `init`/`init product` entirely, even though every file/hook/config artifact had already applied. Each label create is now wrapped individually: a failure prints `Warning: could not create label '<name>': <gh's own stderr>` and the loop continues, so one label's failure never stops the rest or the command as a whole. Distinct from the pre-existing, still-true "no `origin` remote at all" graceful skip in `runInit`/`runInitProduct` (§ above) — this covers a *present* remote that `gh` itself rejects for any reason once a label create is actually attempted.
 
 ## Install lifecycle: `doctor` / `upgrade` (#386)
 

@@ -407,7 +407,7 @@ describe('eject path-traversal safety (security finding 1)', () => {
 })
 
 describe('partial-failure ownership recording (review finding 3)', () => {
-  it('persists the files+blocks manifest before labels, so a label-create throw cannot orphan files', async () => {
+  it('persists the files+blocks manifest before labels, so a label-create failure cannot orphan files', async () => {
     const throwing: LabelGateway = {
       async exists() {
         return false
@@ -416,13 +416,13 @@ describe('partial-failure ownership recording (review finding 3)', () => {
         throw new Error('gh rate limit')
       }
     }
-    let threw = false
-    try {
-      await runInit(['--yes'], makeDeps({ labelGateway: () => throwing }))
-    } catch {
-      threw = true
-    }
-    expect(threw).toBe(true)
+    let rc = -1
+    await captureStdout(async () => {
+      rc = await runInit(['--yes'], makeDeps({ labelGateway: () => throwing }))
+    })
+    // A label-create failure is a warning, not a crash — every other artifact
+    // already applied, so the command still finishes with exit 0.
+    expect(rc).toBe(0)
     // files were written AND recorded despite the label failure
     expect(existsSync(join(root, CHECKS_WORKFLOW_PATH))).toBe(true)
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
@@ -432,5 +432,34 @@ describe('partial-failure ownership recording (review finding 3)', () => {
     await runEject(['--yes'], ejectDeps())
     expect(snapshot(root)).not.toEqual(before)
     expect(existsSync(join(root, CHECKS_WORKFLOW_PATH))).toBe(false)
+  })
+
+  it('warns with the specific label name and the gateway failure reason, and continues to the next label', async () => {
+    const flaky: LabelGateway = {
+      async exists() {
+        return false
+      },
+      async create(name) {
+        if (name.endsWith('tier:0')) throw new Error('HTTP 404: Not Found')
+        createdLabels.push(name)
+      }
+    }
+    const originalWarn = console.warn
+    const warnings: string[] = []
+    console.warn = ((...args: unknown[]) => {
+      warnings.push(args.join(' '))
+    }) as typeof console.warn
+    let rc = -1
+    try {
+      await captureStdout(async () => {
+        rc = await runInit(['--yes'], makeDeps({ labelGateway: () => flaky }))
+      })
+    } finally {
+      console.warn = originalWarn
+    }
+    expect(rc).toBe(0)
+    expect(warnings.some((w) => w.includes('tier:0') && w.includes('HTTP 404: Not Found'))).toBe(true)
+    // every other label still gets created — one failure doesn't stop the loop
+    expect(createdLabels.length).toBeGreaterThan(0)
   })
 })
