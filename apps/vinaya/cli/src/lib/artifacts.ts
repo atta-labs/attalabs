@@ -3,15 +3,16 @@
 // Every artifact `vinaya init` writes into an adopter repo lives here as
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
 // Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
-// what a shipped check consumes.** The manifest is exactly six items —
-// `vinaya.config.json` (starter ruleset, `checks: {}` empty), two `vinaya-`
-// workflows, git-hook managed blocks, a root `VINAYA.md`
-// doctrine pointer (reading-order convention), an empty `.vinaya/doc-owners`
-// starter manifest (#665), and labels. Everything
-// else the earlier amendment-4 manifest carried (GitHub templates, the
-// governance/ scaffold, example check scripts) was this monorepo's own
-// operational apparatus, not product surface — no shipped check consumes it,
-// so it is cut from the installer.
+// what a shipped check or ring-2 mechanism consumes.** The manifest is
+// exactly six items — `vinaya.config.json` (starter ruleset, `checks: {}`
+// empty), three `vinaya-` workflows (checks, review, and — since #761 —
+// the archivist's ring-2 post-merge/scheduled jobs), git-hook managed
+// blocks, a root `VINAYA.md` doctrine pointer (reading-order convention),
+// an empty `.vinaya/doc-owners` starter manifest (#665), and labels.
+// Everything else the earlier amendment-4 manifest carried (GitHub
+// templates, the governance/ scaffold, example check scripts) was this
+// monorepo's own operational apparatus, not product surface — no shipped
+// check consumes it, so it is cut from the installer.
 //
 // The starter ruleset seeded into `vinaya.config.json` is EXTRACTED from this
 // repo's own battle-tested gates, not invented blanks — the failure it
@@ -38,6 +39,7 @@ export const CONFIG_PATH = 'vinaya.config.json'
 export const DOCTRINE_POINTER_PATH = 'VINAYA.md'
 export const CHECKS_WORKFLOW_PATH = '.github/workflows/vinaya-checks.yml'
 export const REVIEW_WORKFLOW_PATH = '.github/workflows/vinaya-review.yml'
+export const ARCHIVIST_WORKFLOW_PATH = '.github/workflows/vinaya-archivist.yml'
 
 const MANAGED_NOTE =
   'Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.'
@@ -164,6 +166,93 @@ jobs:
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: npx --yes @attalabs/vinaya check --all
+`
+}
+
+// The ring-2 post-merge/scheduled mechanisms — same three-job shape as this
+// monorepo's own live `.github/workflows/archivist.yml` (triggers,
+// permissions, `continue-on-error` on the drift job), calling `vinaya
+// archive`/`vinaya audit` instead of a repo-internal `bun packages/aeg-core/
+// bin/*.ts` invocation, so any vinaya-init'd repo gets the same post-merge
+// provenance/close-out, dead-branch drift notification, and direct-main-push
+// detection — not just this one.
+function archivistWorkflow(): string {
+  return `# ${MANAGED_NOTE}
+#
+# The ring-2 post-merge/scheduled mechanisms: per-task Archivist provenance
+# + close-out (post-merge), dead-branch-push drift (daily-drift, a
+# notification channel — never fails red), and direct-main-push detection
+# (direct-main-push-detection, a real pass/fail).
+name: Vinaya Archivist
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"  # daily at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  post-merge:
+    name: Post-Merge Archivist
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run vinaya archive
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes @attalabs/vinaya archive --merge-sha=\${{ github.sha }}
+
+  daily-drift:
+    name: Daily Drift Check (dead-branch pushes)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run vinaya audit --only=dead-branches
+        continue-on-error: true # never-red — this job is a notification channel, not a gate
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes @attalabs/vinaya audit --only=dead-branches
+
+  direct-main-push-detection:
+    name: Direct-Main-Push Detection
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run vinaya audit --only=direct-push
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes @attalabs/vinaya audit --only=direct-push --sha=\${{ github.sha }}
 `
 }
 
@@ -319,6 +408,7 @@ export function buildInitOps(ctx: InitContext): Op[] {
   // Workflows (refuse-if-foreign create-file).
   ops.push({ kind: 'create-file', path: CHECKS_WORKFLOW_PATH, content: checksWorkflow(), group: 'CI workflows' })
   ops.push({ kind: 'create-file', path: REVIEW_WORKFLOW_PATH, content: reviewWorkflow(), group: 'CI workflows' })
+  ops.push({ kind: 'create-file', path: ARCHIVIST_WORKFLOW_PATH, content: archivistWorkflow(), group: 'CI workflows' })
 
   // Git hooks (marker-delimited managed blocks; never clobber).
   ops.push({

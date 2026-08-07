@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import {
+  ARCHIVIST_WORKFLOW_PATH,
   buildInitOps,
   CHECKS_WORKFLOW_PATH,
   CONFIG_PATH,
@@ -98,14 +99,17 @@ describe('vinaya init', () => {
     })
     expect(rc).toBe(0)
 
-    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665): config +
-    // root VINAYA.md + two workflows (tracked) + two hook stubs + the
-    // .vinaya/doc-owners starter. Nothing else is written.
+    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665; the
+    // workflows item grew from two files to three with the archivist
+    // workflow, #761 — item count unchanged): config + root VINAYA.md +
+    // three workflows (tracked) + two hook stubs + the .vinaya/doc-owners
+    // starter. Nothing else is written.
     for (const p of [
       CONFIG_PATH,
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
       DOC_OWNERS_PATH
@@ -123,6 +127,7 @@ describe('vinaya init', () => {
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
       DOC_OWNERS_PATH
