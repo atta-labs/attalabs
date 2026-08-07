@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import {
+  ARCHIVIST_WORKFLOW_PATH,
   buildInitOps,
   CHECKS_WORKFLOW_PATH,
   CONFIG_PATH,
@@ -91,21 +92,23 @@ afterEach(() => {
 })
 
 describe('vinaya init', () => {
-  it('installs exactly the 6-item minimal manifest on a clean repo', async () => {
+  it('installs exactly the 7-item minimal manifest on a clean repo', async () => {
     let rc = -1
     await captureStdout(async () => {
       rc = await runInit(['--yes'], makeDeps())
     })
     expect(rc).toBe(0)
 
-    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665): config +
-    // root VINAYA.md + two workflows (tracked) + two hook stubs + the
-    // .vinaya/doc-owners starter. Nothing else is written.
+    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665, +the
+    // archivist workflow #761): config + root VINAYA.md + three workflows
+    // (tracked) + two hook stubs + the .vinaya/doc-owners starter. Nothing
+    // else is written.
     for (const p of [
       CONFIG_PATH,
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
       DOC_OWNERS_PATH
@@ -123,6 +126,7 @@ describe('vinaya init', () => {
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
       DOC_OWNERS_PATH
