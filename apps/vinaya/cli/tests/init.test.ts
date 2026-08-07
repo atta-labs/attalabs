@@ -92,17 +92,18 @@ afterEach(() => {
 })
 
 describe('vinaya init', () => {
-  it('installs exactly the 7-item minimal manifest on a clean repo', async () => {
+  it('installs exactly the 6-item minimal manifest on a clean repo', async () => {
     let rc = -1
     await captureStdout(async () => {
       rc = await runInit(['--yes'], makeDeps())
     })
     expect(rc).toBe(0)
 
-    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665, +the
-    // archivist workflow #761): config + root VINAYA.md + three workflows
-    // (tracked) + two hook stubs + the .vinaya/doc-owners starter. Nothing
-    // else is written.
+    // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665; the
+    // workflows item grew from two files to three with the archivist
+    // workflow, #761 — item count unchanged): config + root VINAYA.md +
+    // three workflows (tracked) + two hook stubs + the .vinaya/doc-owners
+    // starter. Nothing else is written.
     for (const p of [
       CONFIG_PATH,
       DOCTRINE_POINTER_PATH,

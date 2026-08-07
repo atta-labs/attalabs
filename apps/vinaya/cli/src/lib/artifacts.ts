@@ -4,15 +4,15 @@
 // content + a typed `Op` (see lib/ops.ts). Naming and collision rules follow
 // Issue #384's 2026-07-23 MINIMAL-MANIFEST re-ruling: **init installs only
 // what a shipped check or ring-2 mechanism consumes.** The manifest is
-// seven items — `vinaya.config.json` (starter ruleset, `checks: {}` empty),
-// three `vinaya-` workflows (checks, review, and — since #761 — the
-// archivist's ring-2 post-merge/scheduled jobs), git-hook managed blocks, a
-// root `VINAYA.md` doctrine pointer (reading-order convention), an empty
-// `.vinaya/doc-owners` starter manifest (#665), and labels. Everything else
-// the earlier amendment-4 manifest carried (GitHub templates, the
-// governance/ scaffold, example check scripts) was this monorepo's own
-// operational apparatus, not product surface — no shipped check consumes it,
-// so it is cut from the installer.
+// exactly six items — `vinaya.config.json` (starter ruleset, `checks: {}`
+// empty), three `vinaya-` workflows (checks, review, and — since #761 —
+// the archivist's ring-2 post-merge/scheduled jobs), git-hook managed
+// blocks, a root `VINAYA.md` doctrine pointer (reading-order convention),
+// an empty `.vinaya/doc-owners` starter manifest (#665), and labels.
+// Everything else the earlier amendment-4 manifest carried (GitHub
+// templates, the governance/ scaffold, example check scripts) was this
+// monorepo's own operational apparatus, not product surface — no shipped
+// check consumes it, so it is cut from the installer.
 //
 // The starter ruleset seeded into `vinaya.config.json` is EXTRACTED from this
 // repo's own battle-tested gates, not invented blanks — the failure it

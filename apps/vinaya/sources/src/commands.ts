@@ -140,6 +140,30 @@ export const COMMANDS: readonly Command[] = [
     status: 'shipped'
   },
   {
+    name: 'archive',
+    description: 'Run the post-merge Archivist directly: provenance + Issue close-out for a merged task PR',
+    flags: [{ flag: '--merge-sha', description: 'The merge commit to resolve (defaults to the current HEAD)' }],
+    details: [
+      "Resolves the merge commit's associated PR via `gh`, and — if it's a task PR without a provenance comment yet — posts the provenance block and closes the linked Issue. Idempotent: re-running against an already-archived PR is a no-op.",
+      "The same logic the generated `vinaya-archivist.yml` workflow's `post-merge` job runs on every push to `main` — callable directly for a one-off run or local verification."
+    ],
+    status: 'shipped'
+  },
+  {
+    name: 'audit',
+    description: 'Run the ring-2 dead-branch-push and direct-main-push detection checks directly',
+    flags: [
+      { flag: '--only', description: "Scope to one check: 'dead-branches' or 'direct-push'" },
+      { flag: '--sha', description: 'The commit to check for direct-main-push (defaults to the current HEAD)' },
+      { flag: '--json', description: 'Enveloped JSON output' }
+    ],
+    details: [
+      'Dead-branch-push is never-red — a notification channel that flags (label + PR comment) any `task/*` branch whose tip commit lands after its own PR already resolved. Direct-main-push is a real pass/fail — it opens an incident Issue and exits 1 if a commit on `main` has no associated merged PR.',
+      "The same logic the generated `vinaya-archivist.yml` workflow's `daily-drift` and `direct-main-push-detection` jobs run on schedule / on every push to `main` — callable directly for a one-off run or local verification."
+    ],
+    status: 'shipped'
+  },
+  {
     name: 'eject',
     description: 'Remove every Vinaya-installed artifact, restoring the repo to stock',
     flags: [
