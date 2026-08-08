@@ -60,7 +60,7 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' }
     ],
     details: [
-      "Warns (stderr, every output mode, never affecting the exit code) for any check whose executable reads `process.env`/`Bun.env`/`Deno.env` directly with no `env` declared on its `CheckSpec` — those checks will lose environment access once the env allowlist is wired as the spawn default in a later minor. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) to silence the warning ahead of that flip."
+      "Each spawned check's child process sees only a fixed baseline (`PATH`, `LANG`, `HOME`, `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `TMPDIR`) plus whatever its `CheckSpec['env']` declaration explicitly forwards — never the full parent environment. A required (`true`) or unsatisfied `anyOf` declaration missing from the caller's environment synthesizes a `CheckError` before the check ever spawns. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) for any check that reads `process.env`/`Bun.env`/`Deno.env` directly — `vinaya doctor` carries the permanent diagnostic for one that doesn't."
     ],
     status: 'shipped'
   },

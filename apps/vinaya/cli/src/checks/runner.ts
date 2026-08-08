@@ -11,6 +11,13 @@ export type RunOptions = {
   /** null = full scope (no skip logic applies, regardless of `diffOnly`). */
   changedFiles: string[] | null
   defaultTimeoutMs: number
+  /**
+   * Caller environment used both for the pre-spawn required-env check and
+   * `buildCheckEnv`'s construction. Defaults to `process.env` — overridable
+   * so tests can assert against a synthetic environment instead of the real
+   * one the test process happens to be running under.
+   */
+  callerEnv?: NodeJS.ProcessEnv
 }
 
 /** A sane cpu-derived default — callers may override via `--parallel`. */
@@ -91,12 +98,10 @@ function installSignalForwarding(): void {
 const ENV_BASELINE_KEYS = ['PATH', 'LANG', 'HOME', 'HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY', 'TMPDIR'] as const
 
 /**
- * Builds the env object a check's child process WOULD receive once
- * allowlist construction is wired as the spawn default — a later minor
- * (this task ships the warn release only; `runOne` below still calls
- * `spawn()` with no `env` override, so the child inherits the full parent
- * environment). This function is exported and unit-tested ahead of that
- * flip so the construction logic is proven correct before it goes live.
+ * Builds the env object a check's child process actually receives —
+ * `runOne` below passes this as `spawn()`'s `env` option, the spawn default
+ * since the flip (task 3, #776). Exported and unit-tested independently of
+ * the spawn path itself.
  *
  * Expansion, never spread: the baseline keys above are forwarded from
  * `callerEnv` when set, then each declared entry in `spec.env` layers on
@@ -141,17 +146,70 @@ export function buildCheckEnv(
   return out
 }
 
-async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome> {
+/**
+ * Pre-spawn required-env check, run before a check's process ever exists. A
+ * `true` declaration absent from `callerEnv`, or an `anyOf` group with no
+ * member set, synthesizes a `CheckError` — same shape as the
+ * missing-executable error below, since both are "the check could not run
+ * at all" outcomes. `{ optional: true }` and a literal string never
+ * synthesize: optional-by-declaration means absence is tolerated by
+ * contract, and a literal never depends on the caller's environment.
+ */
+function missingEnvErrors(spec: CheckSpec, callerEnv: NodeJS.ProcessEnv): CheckError[] {
+  if (!spec.env) return []
+  const errors: CheckError[] = []
+  for (const [key, decl] of Object.entries(spec.env)) {
+    if (decl === true) {
+      if (callerEnv[key] === undefined) {
+        errors.push({
+          schema: CHECK_SCHEMA_VERSION,
+          check: spec.name,
+          severity: 'error',
+          message: `Could not run check "${spec.name}": required environment variable \`${key}\` is not set.`,
+          agent_recovery_prompt: `Set \`${key}\` in the environment before re-running \`vinaya check ${spec.name}\`, or relax its declaration to \`{ optional: true }\` in its \`env\` registration if the check can tolerate absence.`
+        })
+      }
+    } else if (typeof decl === 'object' && decl !== null && 'anyOf' in decl) {
+      const satisfied = decl.anyOf.some((member) => callerEnv[member] !== undefined)
+      if (!satisfied) {
+        errors.push({
+          schema: CHECK_SCHEMA_VERSION,
+          check: spec.name,
+          severity: 'error',
+          message: `Could not run check "${spec.name}": none of its required environment variables (${decl.anyOf.join(', ')}) are set.`,
+          agent_recovery_prompt: `Set one of ${decl.anyOf.join(', ')} in the environment before re-running \`vinaya check ${spec.name}\`.`
+        })
+      }
+    }
+  }
+  return errors
+}
+
+async function runOne(spec: CheckSpec, timeoutMs: number, callerEnv: NodeJS.ProcessEnv): Promise<CheckOutcome> {
   const start = performance.now()
-  // Same `node:child_process` shape as `spawnDev` in src/commands/studio.ts —
-  // no `env` override, so the child inherits the full parent environment
-  // (`buildCheckEnv` above is built and tested, but not yet wired here —
-  // that flip is a later minor). `detached: true` puts the child in its OWN
-  // process group (pid becomes the group's pgid on POSIX) so the timeout
-  // handler below can kill the whole tree, not just this direct child.
+
+  const envErrors = missingEnvErrors(spec, callerEnv)
+  if (envErrors.length > 0) {
+    return {
+      name: spec.name,
+      status: 'error',
+      exitCode: null,
+      errors: envErrors,
+      durationMs: performance.now() - start
+    }
+  }
+
+  // Same `node:child_process` shape as `spawnDev` in src/commands/studio.ts.
+  // `env` is the constructed baseline+allowlist object (`buildCheckEnv`),
+  // the spawn default since the flip (task 3, #776) — the child no longer
+  // inherits the full parent environment. `detached: true` puts the child
+  // in its OWN process group (pid becomes the group's pgid on POSIX) so the
+  // timeout handler below can kill the whole tree, not just this direct
+  // child.
   const proc = spawn(spec.run, spec.args ?? [], {
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true
+    detached: true,
+    env: buildCheckEnv(spec.env, callerEnv)
   })
 
   // Best-effort process-GROUP kill: negative pid targets every process in
@@ -376,19 +434,19 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
  * check's `killTree` is registered in `activeKillers`, and a SIGINT/SIGTERM
  * to the CLI itself forwards to all of them before the CLI exits.
  *
- * Known hardening gap, not yet addressed (documented rather than silently
- * ignored): the spawn still inherits the full parent environment — the
- * contract's "no-network-by-default" rule is convention-only, nothing here
- * sandboxes or scrubs a check's network access or secret visibility.
- * `CheckSpec['env']` + `buildCheckEnv` above are the allowlist grammar and
- * construction logic for closing this gap, built and tested but not yet
- * wired as the spawn default — this task ships the warn release only
- * (`vinaya check`/`vinaya doctor` warn when a check reads `process.env`
- * with no `env` declaration); a later minor flips `spawn()` to pass
- * `buildCheckEnv(spec.env)` as its `env` option, at which point this
- * comment updates again.
+ * Env allowlist, live since the flip (task 3, #776): a spawned check's
+ * child process sees only the fixed baseline plus its own declared `env`
+ * keys (`buildCheckEnv`), never the full parent environment. A `true` or
+ * unsatisfied `anyOf` declaration missing from the caller's environment
+ * synthesizes a `CheckError` and the check never spawns at all
+ * (`missingEnvErrors`, above) — the contract's no-privileged-API invariant
+ * extended to the check's own process environment, not just its spawn path.
+ * The skip decision above (`shouldSkip`) runs before any of this: a
+ * `scope: 'diff'` check skipped by `--diff-only` never reaches `runOne`, so
+ * it can never fail over an env var it was never going to read.
  */
 export async function runChecks(specs: CheckSpec[], opts: RunOptions): Promise<CheckOutcome[]> {
+  const callerEnv = opts.callerEnv ?? process.env
   const results: CheckOutcome[] = new Array(specs.length)
   const toRun: number[] = []
 
@@ -407,7 +465,7 @@ export async function runChecks(specs: CheckSpec[], opts: RunOptions): Promise<C
       const idx = toRun[cursor] as number
       cursor += 1
       const spec = specs[idx] as CheckSpec
-      results[idx] = await runOne(spec, spec.timeoutMs ?? opts.defaultTimeoutMs)
+      results[idx] = await runOne(spec, spec.timeoutMs ?? opts.defaultTimeoutMs, callerEnv)
     }
   }
 

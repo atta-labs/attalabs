@@ -13,6 +13,7 @@ const STUBBORN_SLEEPER = join(FIXTURES, 'stubborn-sleeper.ts')
 const SPAWNS_GRANDCHILD = join(FIXTURES, 'spawns-grandchild.ts')
 const SPAWNS_STUBBORN_GRANDCHILD = join(FIXTURES, 'spawns-stubborn-grandchild.ts')
 const RUN_AND_HANG = join(FIXTURES, 'run-and-hang.ts')
+const ENV_PROBE = join(FIXTURES, 'env-probe.ts')
 
 function fullScope(overrides: Partial<CheckSpec> & Pick<CheckSpec, 'name' | 'run'>): CheckSpec {
   return { scope: 'full', ...overrides }
@@ -183,6 +184,92 @@ describe('runChecks', () => {
     }).trim()
     expect(survivors).toBe('')
   }, 10_000)
+})
+
+describe('runChecks — env allowlist flip (task 3, #776)', () => {
+  // Real PATH so bun's shebang (`#!/usr/bin/env bun`) actually resolves —
+  // everything else in this synthetic caller env is deliberately minimal so
+  // each test controls exactly which keys the spawned check can see.
+  const REAL_PATH = { PATH: process.env.PATH as string }
+
+  it('an undeclared env var is invisible to the check — baseline only, no full-environment inheritance', async () => {
+    const spec = fullScope({ name: 'probe', run: ENV_PROBE, args: ['UNDECLARED_VAR'] })
+    const [outcome] = await runChecks([spec], {
+      ...BASE_OPTS,
+      callerEnv: { ...REAL_PATH, UNDECLARED_VAR: 'leaked' }
+    })
+    expect(outcome?.status).toBe('pass')
+    expect(outcome?.errors[0]?.message).toBe('UNDECLARED_VAR=<unset>')
+  })
+
+  it('a declared env var is forwarded on top of the baseline', async () => {
+    const spec = fullScope({ name: 'probe', run: ENV_PROBE, args: ['MY_VAR'], env: { MY_VAR: true } })
+    const [outcome] = await runChecks([spec], {
+      ...BASE_OPTS,
+      callerEnv: { ...REAL_PATH, MY_VAR: 'forwarded' }
+    })
+    expect(outcome?.status).toBe('pass')
+    expect(outcome?.errors[0]?.message).toBe('MY_VAR=forwarded')
+  })
+
+  it('a missing `true` env var synthesizes a CheckError and the check never spawns', async () => {
+    const spec = fullScope({
+      name: 'needs-token',
+      run: join(FIXTURES, 'no-such-executable'),
+      env: { MISSING_TOKEN: true }
+    })
+    const [outcome] = await runChecks([spec], { ...BASE_OPTS, callerEnv: { ...REAL_PATH } })
+    expect(outcome?.status).toBe('error')
+    expect(outcome?.exitCode).toBeNull()
+    expect(outcome?.errors).toHaveLength(1)
+    // Names the missing var, not a "not found on PATH" spawn failure — proof
+    // the pre-spawn env check ran before the (nonexistent) executable was
+    // ever attempted.
+    expect(outcome?.errors[0]?.message).toContain('MISSING_TOKEN')
+    expect(outcome?.errors[0]?.message).not.toContain('was not found on PATH')
+  })
+
+  it('an anyOf group with no member set synthesizes a CheckError and the check never spawns', async () => {
+    const spec = fullScope({
+      name: 'needs-one-of',
+      run: join(FIXTURES, 'no-such-executable'),
+      env: { GITHUB_TOKEN: { anyOf: ['GITHUB_TOKEN', 'GH_TOKEN'] } }
+    })
+    const [outcome] = await runChecks([spec], { ...BASE_OPTS, callerEnv: { ...REAL_PATH } })
+    expect(outcome?.status).toBe('error')
+    expect(outcome?.errors).toHaveLength(1)
+    expect(outcome?.errors[0]?.message).toContain('GITHUB_TOKEN')
+    expect(outcome?.errors[0]?.message).toContain('GH_TOKEN')
+  })
+
+  it('`{ optional: true }` and a literal string never synthesize a pre-spawn error, even when unset', async () => {
+    const spec = fullScope({
+      name: 'optional-and-literal',
+      run: PASSING,
+      env: { MAYBE_SET: { optional: true }, FIXED: 'a-literal-value' }
+    })
+    const [outcome] = await runChecks([spec], { ...BASE_OPTS, callerEnv: { ...REAL_PATH } })
+    expect(outcome?.status).toBe('pass')
+    expect(outcome?.errors).toEqual([])
+  })
+
+  it('skip-before-env: a diff-scoped check with unmatched globs and a missing required var is skipped, never errors', async () => {
+    const spec = fullScope({
+      name: 'diff-scoped-needs-token',
+      run: join(FIXTURES, 'no-such-executable'),
+      scope: 'diff',
+      include: ['apps/other/**'],
+      env: { MISSING_TOKEN: true }
+    })
+    const [outcome] = await runChecks([spec], {
+      ...BASE_OPTS,
+      diffOnly: true,
+      changedFiles: ['apps/vinaya/cli/src/index.ts'],
+      callerEnv: { ...REAL_PATH }
+    })
+    expect(outcome?.status).toBe('skipped')
+    expect(outcome?.errors).toEqual([])
+  })
 })
 
 describe('buildCheckEnv', () => {
