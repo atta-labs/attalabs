@@ -57,10 +57,15 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--all', description: 'Run every registered check instead of one named check' },
       { flag: '--json', description: 'Enveloped JSON output (schema: 1)' },
       { flag: '--diff-only', description: 'Scope diff-declared checks to changed files' },
-      { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' }
+      { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' },
+      {
+        flag: '--plan',
+        description: 'Print the resolved check registry (default/overridden/additive) without running anything'
+      }
     ],
     details: [
-      "Each spawned check's child process sees only a fixed baseline (`PATH`, `LANG`, `HOME`, `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `TMPDIR`) plus whatever its `CheckSpec['env']` declaration explicitly forwards — never the full parent environment. A required (`true`) or unsatisfied `anyOf` declaration missing from the caller's environment synthesizes a `CheckError` before the check ever spawns. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) for any check that reads `process.env`/`Bun.env`/`Deno.env` directly — `vinaya doctor` carries the permanent diagnostic for one that doesn't."
+      "Each spawned check's child process sees only a fixed baseline (`PATH`, `LANG`, `HOME`, `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `TMPDIR`) plus whatever its `CheckSpec['env']` declaration explicitly forwards — never the full parent environment. A required (`true`) or unsatisfied `anyOf` declaration missing from the caller's environment synthesizes a `CheckError` before the check ever spawns. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) for any check that reads `process.env`/`Bun.env`/`Deno.env` directly — `vinaya doctor` carries the permanent diagnostic for one that doesn't.",
+      "`--plan` composes with `--json`. It requires zero env vars and never prints an env value — only how each one resolves (passthrough, optional, literal, or anyOf). A `FAIL_CLOSED` entry (a bare key with no namespace matching no core check) always renders inline rather than being dropped, and exits non-zero. `--plan` previews what the next minor's execution will enforce — `vinaya check` itself still runs the flat, unvalidated registry this release."
     ],
     status: 'shipped'
   },
