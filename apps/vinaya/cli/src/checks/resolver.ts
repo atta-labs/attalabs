@@ -86,3 +86,18 @@ export function resolveChecks(core: CheckSpec[], configChecks: Record<string, Ch
 
   return { resolved, failures }
 }
+
+/**
+ * Shared message builders for the two classification-warning classes —
+ * `vinaya check`'s own (non-`--plan`) output and `vinaya doctor`'s permanent
+ * diagnostics reuse the exact same strings so the two surfaces cannot drift
+ * apart, the same discipline `env-lint.ts` already keeps for the env
+ * diagnostic.
+ */
+export function overriddenNextMinorWarning(name: string): string {
+  return `check "${name}" shares its name with a core check — it will replace the core check starting next minor (currently it runs alongside it under the flat registry).`
+}
+
+export function bareKeyNextMinorWarning(key: string): string {
+  return `check "${key}" has no namespace and matches no core check — it will be rejected starting next minor. Rename it to "<yourname>/x".`
+}
