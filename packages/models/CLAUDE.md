@@ -104,6 +104,8 @@ We tag only ~15 notable models in the overlay. Everything else appears in the pi
 
 Heuristic tier classification (regex on model names) was considered and rejected — too fragile, too many false positives.
 
+Tested with `bun test` (`"test": "bun test"` in `package.json`), reached by the repo's `bunx turbo test`. `transform.test.ts`, `tiers.test.ts`, and `deprecations.test.ts` run in the normal gate.
+
 ## Capability ordering (`tiers.ts`)
 
 `tier` is more than display metadata — `resolveDispatchModel` (`dispatch.ts`) already matches on it as a namespace. `tiers.ts` adds a linear **capability floor** over the same field: `frontier > balanced > fast`, with `reasoning` deliberately unranked (fails every floor — see the doc comment in `tiers.ts` for why). This is a separate concept from the picker's own display-sort `TIER_ORDER` (`packages/ui`); see [.claude/skills/model-picker/SKILL.md](../../.claude/skills/model-picker/SKILL.md) for the full distinction. `OVERLAY` tier values are curated, not inferred — propose new rows in review, never assign silently.
