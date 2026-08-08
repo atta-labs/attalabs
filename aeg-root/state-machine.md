@@ -443,9 +443,20 @@ For each changed code file in the PR, glob-match against every binding. Per **ma
 |---|---|
 | **Strong-pass** | The in-repo pointer is in the PR diff. |
 | **URL-ack** | The pointer is a URL **and** the PR body carries `Doc-ack: <pointer> — <note>` whose `<pointer>` exactly matches the binding's URL. |
+| **Neutral-edit** | The pointer is in-repo, absent from the diff, **and** the PR body carries `Doc-neutral: <pointer> — <note>` whose `<pointer>` exactly matches the binding's doc, **and** the diff of every matched code file is comment/whitespace-only (see below). Both the declaration and the evidence are required — either alone fails. |
 | **Waiver** | The pull request carries the `vinaya/waiver:docs` label, AND the actor of that label's most recent labeling timeline event is a configured principal. PR-wide, not per-binding — one verified label satisfies every fired binding in the PR. Label presence alone is never sufficient; there is no PR-body waiver field. |
 
 If none of the above hold, C5 fails the PR. A binding whose in-repo pointer **does not exist on disk** is a distinct *dangling* failure (fix the binding or add the doc) — never silently ignored, because a dangling pointer is the failure mode the seam was built to prevent.
+
+### The Neutral-edit branch — an honest path for nothing-owed changes
+
+The bind-or-waive rule is purely path-based: any edit to a bound file fires its binding, including comment fixes and mechanically-equivalent refactors that owe no doc update. Before this branch existed, a Developer facing one of these had exactly two honest options — write a no-op doc edit to satisfy strong-pass (which is what "correctness of the covered doc" in the table above exists to catch as a BLOCKER), or ask a principal for a `vinaya/waiver:docs` label on a change that isn't actually contested. Neither fits a change nothing is owed for.
+
+`Doc-neutral: <pointer> — <note>` (`evaluateC5` in `packages/aeg-core/src/doc-owners.ts`) closes that gap **without weakening bind-or-waive's default** (silence is still always a failure) and **without touching waiver machinery** (the label stays a principal-only, forge-authenticated escape for genuinely contested cases). It is deliberately not self-serve: the declaration is necessary but not sufficient. `evaluateC5` also reads the unified diff of every code file the binding matched and requires **every** added/removed line, once trimmed, to be blank or a comment-line prefix (`isMechanicallyNeutralDiff`) — a Developer cannot type the field over a real behavior change and have it pass. A declaration whose diff fails that check is a distinct failure, `C5 doc-neutral-unverified`, not a silent pass-through.
+
+This is bounded scope, by design: "mechanically neutral" here means comment/whitespace-only, not an open-ended semantic-equivalence judgment (reordering, dead-code removal, or a refactor that preserves behavior but changes tokens all still require strong-pass, URL-ack, or a waiver). The evidence stays diff-visible in both the PR body (the declaration + its `<note>`) and, mechanically, in the diff itself — a reviewer can judge both without re-deriving the claim from nothing, which is what keeps this branch honest under an agent that wants to pass the gate.
+
+`--pr` and `--push` (ring 0) share the identical `evaluateC5` call — the Neutral-edit evidence check is one predicate evaluated at both enforcement points, never two implementations that could drift.
 
 ### Dormancy (silent no-op)
 
@@ -460,15 +471,16 @@ The seam has no opinion until the repo teaches it one. This is what makes the ga
 
 The tier system (Section 9) is class-level — "what kind of work is this, and what docs does that kind of work require?" The coherence seam is per-change — "this specific edit moved this specific surface; the doc bound to that surface must move with it." A Tier 0 PR that edits a bound code surface MUST satisfy C5; a Tier 3 PR that touches no bound code surface satisfies C5 trivially. Both gates run on every PR; both must pass.
 
-### `Doc-ack:` — the one remaining PR-body field; the waiver is a label, not a field
+### `Doc-ack:` and `Doc-neutral:` — the PR-body fields; the waiver is a label, not a field
 
-`Doc-ack:` is a **PR-body field**, parsed from the body text — *not* a GitHub label. It lives alongside `Tier:` in the canonical PR body (form in `roles/developer.md` § PR body — canonical form).
+`Doc-ack:` and `Doc-neutral:` are **PR-body fields**, parsed from the body text — *not* GitHub labels. Both live alongside `Tier:` in the canonical PR body (form in `roles/developer.md` § PR body — canonical form).
 
 - `Doc-ack: <pointer> — <note>` — acknowledgment for URL bindings. Unaffected — an acknowledgment, not a bypass.
+- `Doc-neutral: <pointer> — <note>` — declares a fired in-repo binding's doc is not owed because the matched code diff is comment/whitespace-only. Never sufficient alone — see the Neutral-edit branch above; `evaluateC5` cross-checks the actual diff before honoring it.
 
 The waiver itself is **not** a PR-body field. removed `Doc-waiver:` entirely — the escape hatch is the `vinaya/waiver:docs` label instead (Section 14), added to the closed label set specifically because a waiver must be a forge-authenticated act (an actor-verified labeling timeline event), and a body field can never carry that verification — anyone who can edit the body can type any string.
 
-The separator between `<pointer>` and `<note>` in `Doc-ack:` is **flexible**: em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted by `verify-docs`. The em-dash form remains canonical in templates and prose, but a human typing `Doc-ack: <pointer> - <note>` on a US keyboard parses identically. Required whitespace around the ASCII hyphen disambiguates it from hyphens that legitimately appear inside pointers (e.g. `.vinaya/doc-owners`, `.claude/skills/ui-components/SKILL.md`); writers do not need to think about it as long as they put a space on each side.
+The separator between `<pointer>` and `<note>` in `Doc-ack:` and `Doc-neutral:` is **flexible**: em-dash `—`, en-dash `–`, or a plain ASCII hyphen `-` (with surrounding whitespace) are all accepted by `verify-docs`. The em-dash form remains canonical in templates and prose, but a human typing `Doc-ack: <pointer> - <note>` on a US keyboard parses identically. Required whitespace around the ASCII hyphen disambiguates it from hyphens that legitimately appear inside pointers (e.g. `.vinaya/doc-owners`, `.claude/skills/ui-components/SKILL.md`); writers do not need to think about it as long as they put a space on each side.
 
 ### Where this leaves the Reviewer
 
