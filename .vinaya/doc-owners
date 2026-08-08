@@ -102,7 +102,7 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # task's edit surface (root CLAUDE.md is not in the audited 23-skill +
 # 97-spec universe).
 
-# ── vinaya-configurability-v1 task 2 (#775, 2026-08-08) ────────────────────
+# ── env-allowlist warn release, task 2 (#775, 2026-08-08) ─────────────────
 # Command surface behavior lives in the shared COMMANDS registry, not the CLI
 # package itself; config schema/grammar changes belong in the product spec;
 # the core check registry's env audit is an enforcement-doctrine fact.
