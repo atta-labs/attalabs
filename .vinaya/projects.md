@@ -25,7 +25,7 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
 | aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
-| vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | `apps/vinaya/aeg-project/`    |
+| vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | Issue #768 (pinned)                  |
 
 > **admin** — `tools/admin`: the internal Sanity-backed admin tool for managing per-product theme/library config across every AttaLabs product (not a product itself, no `.attalabs.dev` domain). Had real code and a task PR (#557, the Library-picker feature) before ever getting a registry row — added retroactively once that gap was noticed. `tools/*` carries no `-ai` suffix (internal-tooling convention, like `apps/desktop`, `apps/attalabs`).
 
