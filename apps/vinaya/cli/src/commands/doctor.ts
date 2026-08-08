@@ -10,8 +10,16 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CheckSpec } from '../checks/contract.js'
 import { coreCheckRegistry } from '../checks/registry.js'
+import { bareKeyNextMinorWarning, overriddenNextMinorWarning, resolveChecks } from '../checks/resolver.js'
 import { buildInitOps, CONFIG_PATH, DOCTRINE_POINTER_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
-import { type ManagedManifest, type VinayaConfig, VinayaConfigSchema, lintEnvDeclarations } from '../lib/config.js'
+import {
+  GLOBAL_CONFIG_PATH,
+  globalChecksIgnoredWarning,
+  type ManagedManifest,
+  type VinayaConfig,
+  VinayaConfigSchema,
+  lintEnvDeclarations
+} from '../lib/config.js'
 import {
   branchProtectionConfigured,
   detectGitRepo,
@@ -256,6 +264,48 @@ function diagnoseEnvDeclarations(repoRoot: string, config: VinayaConfig | null):
 }
 
 // ---------------------------------------------------------------------------
+// checks-classification diagnostics (Part 4) — the resolver's own two
+// FAIL_CLOSED-adjacent classes, surfaced permanently (not warn-phase-only
+// like `vinaya check`'s own print): an `overridden` core ID ("will replace
+// the core check next minor") and a bare, un-namespaced key matching no
+// core ID ("will be rejected next minor"). Reuses the exact same message
+// strings `vinaya check` prints (`checks/resolver.js`) so the two surfaces
+// cannot drift apart — the same discipline the env diagnostic already
+// keeps between this file and `check.ts` via `lib/env-lint.ts`.
+// ---------------------------------------------------------------------------
+function diagnoseCheckClassification(config: VinayaConfig | null): Finding[] {
+  const classification = resolveChecks(coreCheckRegistry(), config?.checks)
+  const findings: Finding[] = []
+  for (const entry of classification.resolved) {
+    if (entry.state === 'overridden') findings.push(warn('checks', overriddenNextMinorWarning(entry.name)))
+  }
+  for (const failure of classification.failures) {
+    findings.push(warn('checks', bareKeyNextMinorWarning(failure.key)))
+  }
+  return findings
+}
+
+// `readConfig(repoRoot)` above reads `<repoRoot>/vinaya.config.json` directly
+// and never touches the global path, so doctor cannot observe "the global
+// config declared `checks`" from its own config read. Read
+// `GLOBAL_CONFIG_PATH` separately here — a parse failure is `info`, not
+// `error`: doctor is diagnosing the LOCAL repo, and a broken global file is
+// a softer signal than a broken local one.
+function diagnoseGlobalConfigChecks(): Finding[] {
+  if (!existsSync(GLOBAL_CONFIG_PATH)) return []
+  let raw: unknown
+  try {
+    raw = JSON.parse(readFileSync(GLOBAL_CONFIG_PATH, 'utf-8'))
+  } catch (err) {
+    return [info('checks', `${GLOBAL_CONFIG_PATH} is invalid JSON — ${(err as Error).message}`)]
+  }
+  const parsed = VinayaConfigSchema.safeParse(raw)
+  if (!parsed.success) return []
+  if (!parsed.data.checks || Object.keys(parsed.data.checks).length === 0) return []
+  return [warn('checks', globalChecksIgnoredWarning(GLOBAL_CONFIG_PATH))]
+}
+
+// ---------------------------------------------------------------------------
 // Check 5 — environment (gh auth + scope, Node/Bun, package-vs-artifact skew)
 // ---------------------------------------------------------------------------
 async function diagnoseEnvironment(deps: DoctorDeps, hasDrift: boolean): Promise<Finding[]> {
@@ -356,6 +406,8 @@ export async function runDoctor(args: string[], deps: DoctorDeps): Promise<numbe
   }
 
   findings.push(...diagnoseEnvDeclarations(repo.repoRoot, configRead.kind === 'ok' ? configRead.config : null))
+  findings.push(...diagnoseCheckClassification(configRead.kind === 'ok' ? configRead.config : null))
+  findings.push(...diagnoseGlobalConfigChecks())
   findings.push(...(await diagnoseEnvironment(deps, hasDrift)))
   findings.push(await diagnoseBranchProtection(deps, repo.owner, repo.repo))
 

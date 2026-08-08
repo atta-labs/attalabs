@@ -137,3 +137,9 @@ apps/vinaya/cli/src/checks/registry.ts                aeg-root/enforcement.md
 # already stacks under its own narrower mcp-server/home-sections bindings.
 
 apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
+
+# ── resolver + vinaya check --plan, task 4 (#777, 2026-08-08) ─────────────
+# The resolver's namespace grammar and FAIL_CLOSED refusal are an
+# enforcement-doctrine fact, same discipline as the env-allowlist block above.
+
+apps/vinaya/cli/src/checks/resolver.ts                aeg-root/enforcement.md
