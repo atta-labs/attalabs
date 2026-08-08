@@ -97,7 +97,7 @@ Something existing on disk under `apps/vinaya/cli` does not mean it reaches an a
 - ❌ Computing a derived status, a dispatch verdict, or graph layout logic inside `web/` — that is `aeg-core`'s job; `web` fetches and renders.
 - ❌ Adding a second command-list literal instead of extending `COMMANDS`.
 - ❌ A `CheckSpec` field or behavior only a core check can use — breaks the no-privileged-API invariant `tests/checks/no-privileged-api.test.ts` exists to prove.
-- ❌ A check reading `process.env` directly with no `env` declared on its `CheckSpec` — invisible to the child process once the allowlist is enforced, and flagged by `vinaya doctor`'s permanent missing-declaration diagnostic even before then.
+- ❌ A check reading `process.env` directly with no `env` declared on its `CheckSpec` — the allowlist is enforced, so such a read is invisible to the child process, and `vinaya doctor`'s permanent missing-declaration diagnostic flags the missing declaration.
 - ❌ Hardcoding this monorepo's own paths/product names into anything meant to ship in the `@attalabs/vinaya` tarball — the same portability discipline `aeg-core`/`aeg-forge-state` follow applies here, since this workspace is what actually ships.
 - ❌ Assuming a design chapter in `specs/vinaya-spec.md` (e.g. the configurability architecture) is fully built because it's documented — check its own Correction/Status notes; several land in stages across multiple minors.
 

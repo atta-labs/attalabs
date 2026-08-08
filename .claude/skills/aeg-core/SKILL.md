@@ -23,7 +23,7 @@ The caller — a `packages/aeg-core/bin/*.ts` CLI, a `vinaya check` adapter in `
 
 ### File shape — one evaluator, one concern, paired test
 
-The package is ~70 files, almost all in `src/` as `<concern>.ts` + `<concern>.test.ts` pairs, re-exported through one barrel (`index.ts`). Representative families:
+The package is just under 100 files (~95 in `src/`), almost all as `<concern>.ts` + `<concern>.test.ts` pairs, re-exported through one barrel (`index.ts`). Representative families:
 
 | Family | Files | What it evaluates |
 |---|---|---|
