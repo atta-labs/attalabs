@@ -21,6 +21,10 @@ Vinaya uses a handful of words in a specific, non-obvious sense — on the pages
 
 **Ratification** — Sign-off, from the person ultimately accountable for the product, on a decision or a piece of work that would be hard to undo. Higher-impact changes wait for a scheduled sign-off window rather than merging the moment they're technically ready.
 
+**Registry ID / rendering ID** — Two names for the same role that can differ. The registry ID is the config key an adopter uses to claim or add a role — namespaced for an additive one. The rendering ID is the role file's own `role_id`, always slash-free, what every diagram and downstream reader actually sees. An override's rendering ID must equal its registry ID exactly; an additive role's rendering ID must equal the key's segment after the `/`.
+
+**Resolution state** — One of three states — `default`, `overridden`, or `additive` — that every check or role ID resolves to. `default` means shipped-and-unmodified; `overridden` means a config entry currently claims that ID and satisfies its contract; `additive` means a wholly new, namespaced entry the shipped product has no opinion on.
+
 **Seam** — The handoff point between two people or roles, where one produces something — a document, a decision, a record — and the other consumes it. Each seam is written down once, in its own place, so both sides can agree on exactly what crosses it.
 
 **Step 0** — The literal first command someone runs before touching any code on a task: the one that creates that task's own isolated copy of the repository and its own branch. Nothing else happens until this command has run.
