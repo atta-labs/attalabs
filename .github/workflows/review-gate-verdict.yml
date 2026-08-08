@@ -94,6 +94,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.pr.outputs.sha }}
+          # This job executes PR-branch content; don't leave the (read-only,
+          # ephemeral) token in .git/config for postinstalls to read.
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -126,9 +129,14 @@ jobs:
           BRANCH: ${{ needs.evaluate_on_comment.outputs.branch }}
         run: |
           # Most recent COMPLETED pull_request-event run of the required
-          # workflow on this branch. In-progress runs are excluded: rerun
-          # would 409, and a running evaluation will read the same live
-          # comments this evaluation just judged clean anyway.
+          # workflow on this branch. In-progress runs are excluded (rerun
+          # would 409). Residual race, named honestly: an in-flight run may
+          # have fetched comments BEFORE the verdict landed and conclude
+          # red; this job then reruns an older completed run or nothing.
+          # Narrow window (this job's own checkout/install usually outlasts
+          # the in-flight run), and every outcome degrades to the prior
+          # status quo — a standing red plus one manual rerun — never a
+          # wrong green.
           RUN_ID=$(gh run list --repo "${{ github.repository }}" \
             --workflow review-gate.yml --branch "$BRANCH" \
             --status completed \

@@ -97,7 +97,8 @@ name: "Vinaya: Review Gate"
 # dispatched reviewers' verdict comments produced two separate, both-
 # `success` "Review gate" check-run objects on the identical SHA.
 #
-# Fix: `evaluate` now fires ONLY on `pull_request` — one honest implicit
+# Fix (mechanism since removed — see Fifth bug below; kept as history):
+# `evaluate` now fires ONLY on `pull_request` — one honest implicit
 # check-run per push, the same way any other CI check behaves (refreshing
 # per commit is normal, not "duplication"). The `issue_comment` path is
 # split into its own job, `evaluate_on_comment` — identical steps and
@@ -133,7 +134,6 @@ on:
 jobs:
   evaluate:
     name: Review gate
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -170,6 +170,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.pr.outputs.sha }}
+          # This job executes PR-branch content; don't leave the (read-only,
+          # ephemeral) token in .git/config for postinstalls to read.
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:

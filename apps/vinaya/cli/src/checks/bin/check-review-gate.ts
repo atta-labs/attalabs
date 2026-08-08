@@ -32,7 +32,11 @@ function git(args: string[]): string {
   }
 }
 
-type PrView = { number: number; comments: { body: string }[]; labels: { name: string }[] }
+type PrView = {
+  number: number
+  comments: { body: string; author?: { login?: string } | null }[]
+  labels: { name: string }[]
+}
 
 function fetchPr(prNumber: number): PrView | null {
   try {
@@ -94,7 +98,11 @@ function main(): void {
     ? fetchWaiverLabelActor(prNumber, WAIVER_LABEL_REVIEW)
     : null
 
-  const result = checkReviewGate({ comments: pr.comments.map((c) => c.body), labels, waiverLabelActor })
+  const result = checkReviewGate({
+    comments: pr.comments.map((c) => ({ body: c.body, author: c.author?.login ?? null })),
+    labels,
+    waiverLabelActor
+  })
 
   if (result.verdict === 'fail') {
     emitCheckError({
