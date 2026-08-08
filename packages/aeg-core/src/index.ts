@@ -10,6 +10,8 @@ export { parseLedger, rowFromCells } from './parse-ledger'
 export { sumLedger } from './sum-ledger'
 export { aggregateTaskTokenRows, parseTokenReportEntries, parseTokensLines } from './parse-token-report'
 export type { TokenSourcePr } from './parse-token-report'
+export { formatBreakdown, formatTokensLine, summarizeTranscript } from './report-tokens'
+export type { TokensLineInput, TranscriptSummary, UsageComponents } from './report-tokens'
 export { isCodeFile, isDocFile, isSpecFile } from './file-classify'
 export { hasStatusBlock } from './status-block'
 export {
