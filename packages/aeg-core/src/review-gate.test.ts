@@ -138,7 +138,9 @@ describe('checkReviewGate — verdict-author verification (security finding, PR 
       waiverLabelActor: null
     })
     expect(result.verdict).toBe('fail')
-    expect(result.reason).toContain('2 comment(s) from authors outside the principal allowlist were ignored')
+    expect(result.reason).toContain(
+      '2 verdict-shaped comment(s) from authors outside the principal allowlist were ignored'
+    )
   })
 
   it('a forged later APPROVE does not override a real REQUEST_CHANGES', () => {
@@ -158,6 +160,20 @@ describe('checkReviewGate — verdict-author verification (security finding, PR 
       waiverLabelActor: null
     })
     expect(result.verdict).toBe('fail')
+  })
+
+  it('non-verdict bot chatter is not counted as ignored', () => {
+    const result = checkReviewGate({
+      comments: [
+        { body: 'Deployment failed for project herald-ai', author: 'vercel[bot]' },
+        REQUEST_CHANGES_COMMENT,
+        PASS_COMMENT
+      ],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reason).not.toContain('were ignored')
   })
 
   it('verified verdicts still pass with forged noise present', () => {

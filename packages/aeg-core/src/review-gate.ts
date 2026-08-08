@@ -97,7 +97,12 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
   // agents post under the principal's own `gh` identity, so the legitimate
   // flow is unchanged.
   const verified = input.comments.filter((c) => c.author !== null && PRINCIPAL_ALLOWLIST.includes(c.author))
-  const ignoredCount = input.comments.length - verified.length
+  // Count only VERDICT-shaped ignored comments — deployment bots and ordinary
+  // chat are also non-allowlisted, and counting them would imply forgery
+  // where there is only noise (review finding, PR #806).
+  const ignoredCount = input.comments.filter(
+    (c) => (c.author === null || !PRINCIPAL_ALLOWLIST.includes(c.author)) && c.body.includes('VERDICT')
+  ).length
   const verifiedBodies = verified.map((c) => c.body)
 
   const codeReview = extractCodeReviewVerdict(verifiedBodies)
@@ -118,7 +123,7 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
   if (!securityClean) problems.push(`security-review verdict is not a clean PASS (found: ${security.value})`)
   const ignoredNote =
     ignoredCount > 0
-      ? ` ${ignoredCount} comment(s) from authors outside the principal allowlist were ignored for verdict extraction.`
+      ? ` ${ignoredCount} verdict-shaped comment(s) from authors outside the principal allowlist were ignored.`
       : ''
 
   return {
