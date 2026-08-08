@@ -243,6 +243,15 @@ export function configPath(): string | null {
 }
 
 /**
+ * Shared with `vinaya doctor`'s permanent diagnostic (Part 4) so the
+ * stderr-at-load-time warning and the doctor finding can never say something
+ * different about the same fact.
+ */
+export function globalChecksIgnoredWarning(path: string): string {
+  return `${path}: "checks" registration in the global config is ignored — checks may only be registered from a repo-local vinaya.config.json.`
+}
+
+/**
  * `checks` registration from the global config is explicitly out of scope
  * (spec chapter, "Explicitly out of scope for this design") — stripped at
  * config-*loading* time, never resolved, with a loud warning naming the
@@ -256,15 +265,6 @@ export function configPath(): string | null {
  * `.passthrough()` on `VinayaConfigSchema`). A `roles` field belongs to a
  * later task, not this one.
  */
-/**
- * Shared with `vinaya doctor`'s permanent diagnostic (Part 4) so the
- * stderr-at-load-time warning and the doctor finding can never say something
- * different about the same fact.
- */
-export function globalChecksIgnoredWarning(path: string): string {
-  return `${path}: "checks" registration in the global config is ignored — checks may only be registered from a repo-local vinaya.config.json.`
-}
-
 function stripGlobalChecks(config: VinayaConfig, path: string): VinayaConfig {
   if (path !== GLOBAL_CONFIG_PATH || !config.checks || Object.keys(config.checks).length === 0) return config
   console.error(`⚠ ${globalChecksIgnoredWarning(path)}`)

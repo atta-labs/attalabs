@@ -8,7 +8,7 @@ import {
   type ResolveResult
 } from '../checks/resolver'
 import { defaultParallelism, runChecks } from '../checks/runner'
-import { type ConfigLoadResult, loadConfigChecked } from '../lib/config'
+import { type CheckEntry, type ConfigLoadResult, loadConfigChecked } from '../lib/config'
 import { printJson } from '../lib/envelope'
 
 // Array-form execFileSync — no shell, so `base` (env-controlled) is passed
@@ -56,13 +56,19 @@ function configErrorOutcome(path: string, error: string): CheckOutcome {
  * `null` that makes `vinaya check --all` print green over a broken
  * registration.
  */
-function customSpecsFromConfig(): { specs: CheckSpec[]; errorOutcome: CheckOutcome | null } {
+type CustomSpecsResult = {
+  specs: CheckSpec[]
+  errorOutcome: CheckOutcome | null
+  checks: Record<string, CheckEntry> | undefined
+}
+
+function customSpecsFromConfig(): CustomSpecsResult {
   const result = loadConfigChecked()
-  if (!result.ok) return { specs: [], errorOutcome: configErrorOutcome(result.path, result.error) }
+  if (!result.ok) return { specs: [], errorOutcome: configErrorOutcome(result.path, result.error), checks: undefined }
   const checks = result.config?.checks
-  if (!checks) return { specs: [], errorOutcome: null }
+  if (!checks) return { specs: [], errorOutcome: null, checks: undefined }
   const specs: CheckSpec[] = Object.entries(checks).map(([name, entry]) => ({ name, ...entry }))
-  return { specs, errorOutcome: null }
+  return { specs, errorOutcome: null, checks }
 }
 
 type EnvLabel = 'passthrough' | 'optional' | 'literal' | 'anyOf'
@@ -167,10 +173,13 @@ function resolveForPlan(configResult: ConfigLoadResult): ResolveResult {
  * the same predicates the resolver uses, describing what next minor —
  * once execution wires onto the resolver — will do. Print-only; must never
  * affect `specsToRun`/`allOutcomes`/the exit code of the non-plan path.
+ *
+ * Takes the already-loaded `checks` record from `customSpecsFromConfig()`
+ * rather than calling `loadConfigChecked()` again — a second load re-runs
+ * `stripGlobalChecks`'s stderr side effect, double-printing the
+ * global-config-ignored warning for every invocation of this path.
  */
-function printClassificationWarnings(): void {
-  const configResult = loadConfigChecked()
-  const configChecks = configResult.ok ? configResult.config?.checks : undefined
+function printClassificationWarnings(configChecks: Record<string, CheckEntry> | undefined): void {
   const classification = resolveChecks(coreCheckRegistry(), configChecks)
   for (const entry of classification.resolved) {
     if (entry.state === 'overridden') process.stdout.write(`${overriddenNextMinorWarning(entry.name)}\n`)
@@ -204,7 +213,7 @@ export async function checkCommand(args: string[]): Promise<void> {
     process.exit(2)
   }
 
-  const { specs: customSpecs, errorOutcome } = customSpecsFromConfig()
+  const { specs: customSpecs, errorOutcome, checks: configChecks } = customSpecsFromConfig()
   const allSpecs = [...coreCheckRegistry(), ...customSpecs]
 
   const specsToRun = allRequested ? allSpecs : allSpecs.filter((s) => s.name === requestedName)
@@ -241,7 +250,7 @@ export async function checkCommand(args: string[]): Promise<void> {
       process.stdout.write(`${symbol} ${o.name}: ${o.status} (${Math.round(o.durationMs)}ms)\n`)
       for (const e of o.errors) process.stdout.write(`    ${e.severity}: ${e.message}\n`)
     }
-    printClassificationWarnings()
+    printClassificationWarnings(configChecks)
   }
 
   const failed = allOutcomes.some((o) => o.status === 'fail' || o.status === 'error' || o.status === 'timeout')
