@@ -8,8 +8,10 @@
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import type { CheckSpec } from '../checks/contract.js'
+import { coreCheckRegistry } from '../checks/registry.js'
 import { buildInitOps, CONFIG_PATH, DOCTRINE_POINTER_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
-import { type ManagedManifest, type VinayaConfig, VinayaConfigSchema } from '../lib/config.js'
+import { type ManagedManifest, type VinayaConfig, VinayaConfigSchema, lintEnvDeclarations } from '../lib/config.js'
 import {
   branchProtectionConfigured,
   detectGitRepo,
@@ -20,6 +22,7 @@ import {
   resolveHookDir
 } from '../lib/detect.js'
 import { printJson } from '../lib/envelope.js'
+import { checksMissingEnvDeclaration, envDeclarationWarning } from '../lib/env-lint.js'
 import { markerLines, renderBlock } from '../lib/ops.js'
 import { packageRoot } from '../lib/package-root.js'
 
@@ -222,6 +225,37 @@ function diagnoseCustomChecks(repoRoot: string, config: VinayaConfig): Finding[]
 }
 
 // ---------------------------------------------------------------------------
+// env-loss diagnostics — permanent (not warn-phase-only like `vinaya
+// check`'s equivalent print): a check reading `process.env`/`Bun.env`/
+// `Deno.env` directly with no `env` declaration, across BOTH the core
+// registry and this repo's own `vinaya.config.json` custom checks. Shares
+// the exact same grep heuristic `vinaya check` uses (`lib/env-lint.ts`) so
+// the two surfaces can't drift apart. `info` severity — this never fails
+// `vinaya doctor`'s exit code, matching the "not a wall of noise" scope:
+// the heuristic only fires on checks that genuinely have no declaration,
+// which core checks won't after task 2's audit.
+// ---------------------------------------------------------------------------
+function diagnoseEnvDeclarations(repoRoot: string, config: VinayaConfig | null): Finding[] {
+  const customSpecs: CheckSpec[] = Object.entries(config?.checks ?? {}).map(([name, entry]) => ({
+    name,
+    ...entry,
+    run: join(repoRoot, entry.run)
+  }))
+  const missing = checksMissingEnvDeclaration([...coreCheckRegistry(), ...customSpecs])
+  const findings = missing.map((name) => info('env', envDeclarationWarning(name)))
+
+  // Load-time lint over literal-string `env` forms (a stray `"true"`/
+  // `"false"`, a high-entropy literal that reads like a leaked secret) —
+  // `warn`, not `info`: unlike the missing-declaration case above, this
+  // flags a declaration that IS present but looks like a mistake.
+  for (const message of lintEnvDeclarations(config?.checks)) {
+    findings.push(warn('env', message))
+  }
+
+  return findings
+}
+
+// ---------------------------------------------------------------------------
 // Check 5 — environment (gh auth + scope, Node/Bun, package-vs-artifact skew)
 // ---------------------------------------------------------------------------
 async function diagnoseEnvironment(deps: DoctorDeps, hasDrift: boolean): Promise<Finding[]> {
@@ -321,6 +355,7 @@ export async function runDoctor(args: string[], deps: DoctorDeps): Promise<numbe
     findings.push(...diagnoseCustomChecks(repo.repoRoot, configRead.config))
   }
 
+  findings.push(...diagnoseEnvDeclarations(repo.repoRoot, configRead.kind === 'ok' ? configRead.config : null))
   findings.push(...(await diagnoseEnvironment(deps, hasDrift)))
   findings.push(await diagnoseBranchProtection(deps, repo.owner, repo.repo))
 
