@@ -154,6 +154,8 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 `hover:text-primary` for emphasis and leave `bg-accent` to component hover fills** — see
 `.claude/skills/ui-theme-tokens/SKILL.md`.
 
+**retro's `Badge` has no `size` variant** (only `variant`) since the retroui relaunch (`d2bca515`) — `SessionCard.tsx` carried a stale `size='xs'` prop until fixed here; grep `<Badge` call sites for a stray `size=` before reusing this pattern elsewhere in Vāda.
+
 ## Locked Architectural Decisions
 
 | Decision | Reason |
