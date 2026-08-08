@@ -1,11 +1,19 @@
 import { COMMANDS } from '@atta/vinaya-sources'
 import { Badge, Code } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
+import { getPublishedVersion } from '@/lib/published-version'
 import { CommandBlock } from './_components/CommandBlock'
 import { DetailText } from './_components/DetailText'
 import { commandSlug } from './_components/command-slug'
+import { unpublishedBadgeLabel } from './_components/unpublished-badge'
 
-export default function CliPage() {
+export default async function CliPage() {
+  const publishedVersion = await getPublishedVersion()
+  const versionStamp =
+    'version' in publishedVersion
+      ? `documented against @attalabs/vinaya@${publishedVersion.version}`
+      : 'documented from source — the published package version could not be verified'
+
   return (
     <div className='flex flex-col gap-10'>
       <section className='flex flex-col gap-4'>
@@ -15,11 +23,15 @@ export default function CliPage() {
         <Text className='font-sans' muted>
           Vinaya&rsquo;s command reference.
         </Text>
+        <Text size='sm' className='font-sans' muted>
+          {versionStamp}
+        </Text>
       </section>
 
       <section className='flex flex-col gap-8'>
         {COMMANDS.map((command) => {
           const synopsis = command.name === 'init' ? `npx @attalabs/vinaya ${command.name}` : `vinaya ${command.name}`
+          const notPublishedLabel = unpublishedBadgeLabel(command, publishedVersion)
           return (
             // `scroll-mt-6` offsets the anchor target so a click/scroll-spy
             // jump lands the heading just below the pane's top edge, not flush.
@@ -28,7 +40,11 @@ export default function CliPage() {
                 <Heading level={3} className='font-serif'>
                   {command.name}
                 </Heading>
-                {command.status === 'planned' && <Badge variant='outline'>Coming soon</Badge>}
+                {notPublishedLabel && (
+                  <Badge className='text-muted-foreground' variant='outline'>
+                    {notPublishedLabel}
+                  </Badge>
+                )}
               </div>
 
               <CommandBlock command={synopsis} />
