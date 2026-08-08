@@ -57,7 +57,7 @@ export function SessionCard({
             ) : null
           })()}
           <div className='flex shrink-0 flex-col items-end gap-1.5'>
-            <Badge variant='outline' size='xs' className={cn('uppercase tracking-wider', stateClass)}>
+            <Badge variant='outline' className={cn('uppercase tracking-wider', stateClass)}>
               {stateLabel}
             </Badge>
             <Text as='small' size='xs' muted className='tabular-nums'>
