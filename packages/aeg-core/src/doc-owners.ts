@@ -143,32 +143,67 @@ export function readDocNeutrals(body: string): DocNeutral[] {
   return readPointerNoteField(body, 'Doc-neutral')
 }
 
-// Line-comment / block-comment markers across the languages this repo's
-// bound code surfaces use (TS/JS `//` `/* */`, shell/python/YAML `#`, SQL
-// `--`, HTML/MD `<!-- -->`). A changed line is "neutral content" only if,
-// once trimmed, it is blank or starts with one of these — i.e. it cannot
-// be carrying a code-meaningful token.
-const COMMENT_LINE_PREFIXES = ['//', '#', '/*', '*', '*/', '--', '<!--', '-->']
+/**
+ * Full-line comment markers, scoped per source-language file extension. A
+ * marker is listed for a language ONLY if no legitimate code construct in
+ * that language can start a trimmed line with it — that constraint is what
+ * keeps this fail-closed rather than a bare per-line prefix table (review
+ * finding, task 4 code review): a flat asterisk/hash/double-dash/block-
+ * comment-delimiter table misclassifies real code as comment — a TS/JS
+ * generator method (`*gen() {`), a TS/JS private class field
+ * (`#count = 0`), SQL's `--` also being C-style pre-decrement (`--i;`), and
+ * a block-comment-close delimiter hiding trailing code on the same line are
+ * all real collisions, not hypothetical ones. `//` is the only marker kept
+ * for TS/JS/JSX because no such language construct starts a trimmed line
+ * with `//`. An unrecognized extension gets no safe marker at all, so
+ * `isMechanicallyNeutralDiff` can never classify it neutral — fail-closed
+ * under uncertainty, not an attempt at full per-language comment/string-
+ * region parsing (out of this task's bounded "comment/whitespace-only"
+ * scope).
+ */
+const LANGUAGE_COMMENT_PREFIXES: ReadonlyArray<{ test: RegExp; prefixes: readonly string[] }> = [
+  { test: /\.(ts|tsx|js|jsx|mjs|cjs)$/, prefixes: ['//'] },
+  { test: /(^|\/)(pre-push|pre-commit|pre-merge-commit)$/, prefixes: ['#'] },
+  { test: /\.(sh|bash)$/, prefixes: ['#'] },
+  { test: /\.ya?ml$/, prefixes: ['#'] },
+  { test: /\.py$/, prefixes: ['#'] }
+]
 
-function isNeutralDiffContentLine(line: string): boolean {
+function commentPrefixesForPath(path: string): readonly string[] {
+  for (const { test, prefixes } of LANGUAGE_COMMENT_PREFIXES) {
+    if (test.test(path)) return prefixes
+  }
+  return []
+}
+
+function isNeutralDiffContentLine(line: string, prefixes: readonly string[]): boolean {
   const t = line.trim()
-  return t === '' || COMMENT_LINE_PREFIXES.some((p) => t.startsWith(p))
+  if (t === '') return true
+  // A shebang is comment-shaped but changes what interpreter runs the
+  // file — real behavior, never neutral, even though it starts with `#`.
+  if (t.startsWith('#!')) return false
+  return prefixes.some((p) => t.startsWith(p))
 }
 
 /**
  * The evidence half of the neutral-edit path: given a unified diff for one
- * file, true only if every added/removed line is comment-only or
- * whitespace-only. Context lines and the `+++`/`---`/`@@` headers are not
- * evidence either way. A diff with zero +/- content lines is not "a change"
- * at all, so it returns false rather than vacuously true — there must be at
- * least one actual edited line for a neutrality claim to mean anything.
+ * file and that file's path (for language-scoped comment-marker selection),
+ * true only if every added/removed line is comment-only or whitespace-only.
+ * Context lines and the `+++`/`---`/`@@` headers are not evidence either
+ * way. A diff with zero +/- content lines is not "a change" at all, so it
+ * returns false rather than vacuously true — there must be at least one
+ * actual edited line for a neutrality claim to mean anything. An
+ * unrecognized file extension (`commentPrefixesForPath` returns `[]`)
+ * always returns false — no fired binding on an unrecognized language can
+ * take the Doc-neutral path.
  */
-export function isMechanicallyNeutralDiff(diffText: string): boolean {
+export function isMechanicallyNeutralDiff(diffText: string, path: string): boolean {
+  const prefixes = commentPrefixesForPath(path)
   let sawChange = false
   for (const raw of diffText.split('\n')) {
     if (raw.startsWith('+++ ') || raw.startsWith('--- ') || raw.startsWith('@@')) continue
     if (raw.startsWith('+') || raw.startsWith('-')) {
-      if (!isNeutralDiffContentLine(raw.slice(1))) return false
+      if (!isNeutralDiffContentLine(raw.slice(1), prefixes)) return false
       sawChange = true
     }
   }
@@ -256,7 +291,7 @@ export function evaluateC5(
         getDiff !== undefined &&
         matchedFiles.every((f) => {
           const diff = getDiff(f)
-          return diff !== null && isMechanicallyNeutralDiff(diff)
+          return diff !== null && isMechanicallyNeutralDiff(diff, f)
         })
       if (evidenced) {
         out.notes.push(

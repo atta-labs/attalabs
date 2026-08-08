@@ -69,7 +69,7 @@
  * routes).
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -116,6 +116,25 @@ const notes: string[] = []
 function sh(cmd: string): string {
   try {
     return execSync(cmd, { encoding: 'utf8' }).trim()
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Array-form execFileSync — no shell, so no injection surface. `path` here
+ * is a changed-file path drawn from `git diff --name-only`, which the PR
+ * author fully controls (any file matching a doc-owners glob's suffix
+ * regex, no character restriction) — unlike `sh()`'s other call sites in
+ * this file, which only ever interpolate fixed literals or a
+ * principal/CI-set `BASE_SHA`. A single-quoted `sh()` call here would let a
+ * crafted filename (a stray `'`) break out of the quoting and run arbitrary
+ * shell (security review, task 4). `base`/`path` are passed as
+ * separate argv elements instead, so no value can ever reach a shell.
+ */
+function shFile(cmd: string, args: string[]): string {
+  try {
+    return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
   } catch {
     return ''
   }
@@ -170,7 +189,7 @@ function waiverActiveFromEnv(): boolean {
 function runC5(changed: string[], base: string): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
   const getDiff = (path: string): string | null => {
-    const out = sh(`git diff ${base}...HEAD -- '${path}'`)
+    const out = shFile('git', ['diff', `${base}...HEAD`, '--', path])
     return out === '' ? null : out
   }
   const result = evaluateC5(changed, content, resolvePrBody(), existsSync, waiverActiveFromEnv(), getDiff)

@@ -219,20 +219,83 @@ describe('isMechanicallyNeutralDiff — the Doc-neutral evidence predicate', () 
     ' }'
   ].join('\n')
 
+  const PATH = 'packages/aeg-core/bin/verify-docs.ts'
+
   it('comment-only +/- lines → neutral', () => {
-    expect(isMechanicallyNeutralDiff(NEUTRAL_DIFF)).toBe(true)
+    expect(isMechanicallyNeutralDiff(NEUTRAL_DIFF, PATH)).toBe(true)
   })
 
   it('a real logic change on a +/- line → not neutral', () => {
-    expect(isMechanicallyNeutralDiff(BEHAVIOR_DIFF)).toBe(false)
+    expect(isMechanicallyNeutralDiff(BEHAVIOR_DIFF, PATH)).toBe(false)
   })
 
   it('a mix of comment and behavior lines → not neutral (one bad line fails the whole diff)', () => {
-    expect(isMechanicallyNeutralDiff(`${NEUTRAL_DIFF}\n-  return 1\n+  return 2`)).toBe(false)
+    expect(isMechanicallyNeutralDiff(`${NEUTRAL_DIFF}\n-  return 1\n+  return 2`, PATH)).toBe(false)
   })
 
   it('no +/- content lines at all → not neutral (nothing to claim)', () => {
-    expect(isMechanicallyNeutralDiff('--- a/x.ts\n+++ b/x.ts\n@@ -1 +1 @@\n context only')).toBe(false)
+    expect(isMechanicallyNeutralDiff('--- a/x.ts\n+++ b/x.ts\n@@ -1 +1 @@\n context only', PATH)).toBe(false)
+  })
+
+  describe('adversarial — real code shaped like a comment prefix (code-review finding, task 4)', () => {
+    it('TS generator method (`*gen() {`) is NOT misclassified as a `*`-prefixed comment continuation', () => {
+      const diff = [
+        '--- a/packages/aeg-core/src/foo.ts',
+        '+++ b/packages/aeg-core/src/foo.ts',
+        '@@ -1,3 +1,3 @@',
+        '-  gen() { return 1 }',
+        '+  *gen() { return 2 }'
+      ].join('\n')
+      expect(isMechanicallyNeutralDiff(diff, 'packages/aeg-core/src/foo.ts')).toBe(false)
+    })
+
+    it('TS private class field (`#count = 0`) is NOT misclassified as a `#`-prefixed comment', () => {
+      const diff = [
+        '--- a/packages/aeg-core/src/foo.ts',
+        '+++ b/packages/aeg-core/src/foo.ts',
+        '@@ -1 +1 @@',
+        '-  #count = 0',
+        '+  #count = 100'
+      ].join('\n')
+      expect(isMechanicallyNeutralDiff(diff, 'packages/aeg-core/src/foo.ts')).toBe(false)
+    })
+
+    it('a shebang change (`#!/bin/bash` → `#!/usr/bin/env bash`) is NOT neutral even though it starts with `#`', () => {
+      const diff = [
+        '--- a/.husky/pre-push',
+        '+++ b/.husky/pre-push',
+        '@@ -1 +1 @@',
+        '-#!/bin/bash',
+        '+#!/usr/bin/env bash'
+      ].join('\n')
+      expect(isMechanicallyNeutralDiff(diff, '.husky/pre-push')).toBe(false)
+    })
+
+    it('a genuine `#`-comment edit in the same shell file still passes (the fix is not blanket-hostile)', () => {
+      const diff = [
+        '--- a/.husky/pre-push',
+        '+++ b/.husky/pre-push',
+        '@@ -1 +1 @@',
+        '-# old note',
+        '+# updated note'
+      ].join('\n')
+      expect(isMechanicallyNeutralDiff(diff, '.husky/pre-push')).toBe(true)
+    })
+
+    it('an unrecognized file extension can never be classified neutral (fail-closed default)', () => {
+      const diff = ['--- a/config.json', '+++ b/config.json', '@@ -1 +1 @@', '-  "x": 1', '+  "x": 2'].join('\n')
+      expect(isMechanicallyNeutralDiff(diff, 'config.json')).toBe(false)
+      // Even an all-`#`-shaped diff on an unrecognized extension stays closed —
+      // there is no language rule that makes `#` a comment marker there.
+      const commentShaped = [
+        '--- a/config.json',
+        '+++ b/config.json',
+        '@@ -1 +1 @@',
+        '-# note',
+        '+# updated note'
+      ].join('\n')
+      expect(isMechanicallyNeutralDiff(commentShaped, 'config.json')).toBe(false)
+    })
   })
 })
 
@@ -291,6 +354,31 @@ describe('evaluateC5 — the Doc-neutral two-sided verification story (task 677/
     expect(r.errors.length).toBe(1)
     expect(r.errors[0]).toMatch(/C5 doc-neutral-unverified/)
   })
+
+  it(
+    'adversarial self-serve resistance — a real behavior change shaped like a comment prefix ' +
+      '(TS generator method) does NOT satisfy a false Doc-neutral declaration (code-review finding, task 4)',
+    () => {
+      const generatorCollisionDiff = [
+        '--- a/packages/ui/topbar/index.tsx',
+        '+++ b/packages/ui/topbar/index.tsx',
+        '@@ -1,3 +1,3 @@',
+        '-  gen() { return 1 }',
+        '+  *gen() { return 2 }'
+      ].join('\n')
+      const body = `Doc-neutral: ${POINTER} — just a comment tweak`
+      const r = evaluateC5(
+        [CHANGED_FILE],
+        OWNERS,
+        body,
+        fileExists,
+        false,
+        getDiff({ [CHANGED_FILE]: generatorCollisionDiff })
+      )
+      expect(r.errors.length).toBe(1)
+      expect(r.errors[0]).toMatch(/C5 doc-neutral-unverified/)
+    }
+  )
 
   it(
     'ring-0 parity — --pr and --push both funnel through the same evaluateC5 call, so identical ' +
