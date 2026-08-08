@@ -90,7 +90,7 @@ describe('nodeDocRoute: against the real model', () => {
 
   it('every ring-0 gate resolves onto /docs/rings/ring-0, incl. the git-commit anchor', () => {
     const ring0 = model.nodes.filter((n) => n.kind === 'gate' && n.ringIndex === 0)
-    expect(ring0.length).toBe(11)
+    expect(ring0.length).toBe(12)
     for (const g of ring0) expect(nodeDocRoute(g)?.route).toBe('/docs/rings/ring-0')
     expect(model.nodes.some((n) => n.kind === 'gate' && nodeDocRoute(n)?.slug === 'git-commit')).toBe(true)
   })
