@@ -101,3 +101,12 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # packages/agents/") is stale — see audit artifact; out of this
 # task's edit surface (root CLAUDE.md is not in the audited 23-skill +
 # 97-spec universe).
+
+# ── vinaya-configurability-v1 task 2 (#775, 2026-08-08) ────────────────────
+# Command surface behavior lives in the shared COMMANDS registry, not the CLI
+# package itself; config schema/grammar changes belong in the product spec;
+# the core check registry's env audit is an enforcement-doctrine fact.
+
+apps/vinaya/cli/src/commands/**                       apps/vinaya/sources/src/commands.ts
+apps/vinaya/cli/src/lib/config.ts                     apps/vinaya/specs/vinaya-spec.md
+apps/vinaya/cli/src/checks/registry.ts                aeg-root/enforcement.md

@@ -59,6 +59,9 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--diff-only', description: 'Scope diff-declared checks to changed files' },
       { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' }
     ],
+    details: [
+      "Warns (stderr, every output mode, never affecting the exit code) for any check whose executable reads `process.env`/`Bun.env`/`Deno.env` directly with no `env` declared on its `CheckSpec` — those checks will lose environment access once the env allowlist is wired as the spawn default in a later minor. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) to silence the warning ahead of that flip."
+    ],
     status: 'shipped'
   },
   {
@@ -128,6 +131,9 @@ export const COMMANDS: readonly Command[] = [
     name: 'doctor',
     description: 'Diagnose hook, workflow, and config health — report only, never mutates',
     flags: [{ flag: '--json', description: 'Enveloped JSON output (schema: 1)' }],
+    details: [
+      'Carries the same env-declaration diagnostic `vinaya check` warns with — permanently, at `info` severity, not just ahead of the spawn-default flip — plus a `warn`-severity lint over suspicious `env` literal forms (a stray `"true"`/`"false"` string, or a high-entropy literal that reads like a leaked secret committed to config).'
+    ],
     status: 'shipped'
   },
   {
