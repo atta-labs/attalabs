@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { cache } from 'react'
 import { db, schema } from '.'
 
 export async function getUserByClerkId(clerkId: string) {
@@ -6,7 +7,7 @@ export async function getUserByClerkId(clerkId: string) {
   return rows[0] ?? null
 }
 
-export async function getUserByUsername(username: string) {
+export const getUserByUsername = cache(async (username: string) => {
   try {
     const rows = await db
       .select()
@@ -21,7 +22,7 @@ export async function getUserByUsername(username: string) {
     console.error('[getUserByUsername] DB error:', err instanceof Error ? err.message : err)
     return null
   }
-}
+})
 
 export async function isUsernameTaken(username: string): Promise<boolean> {
   const rows = await db
