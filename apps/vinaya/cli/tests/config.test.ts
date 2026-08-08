@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CheckSpec } from '../src/checks/contract'
 import { runChecks } from '../src/checks/runner'
-import { VinayaConfigSchema } from '../src/lib/config'
+import { lintEnvDeclarations, VinayaConfigSchema } from '../src/lib/config'
 
 // We test config.ts functions by changing process.cwd() via chdir
 // and by testing the config path logic with temp dirs.
@@ -195,6 +195,95 @@ describe('config', () => {
     if (checked.ok) {
       expect(checked.config?.rings?.ring1_forgeWriteInterception).toBe(true)
     }
+  })
+})
+
+describe('CheckEntrySchema env field', () => {
+  const base = { run: './check.ts', scope: 'diff' as const }
+
+  it('accepts the `true` form', () => {
+    const parsed = VinayaConfigSchema.safeParse({ checks: { c: { ...base, env: { AEG_REPO: true } } } })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('accepts the `{ optional: true }` form', () => {
+    const parsed = VinayaConfigSchema.safeParse({ checks: { c: { ...base, env: { PR_BODY: { optional: true } } } } })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('accepts the literal-string form', () => {
+    const parsed = VinayaConfigSchema.safeParse({ checks: { c: { ...base, env: { NODE_ENV: 'production' } } } })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('accepts a valid `anyOf` form where the key is one of its own members', () => {
+    const parsed = VinayaConfigSchema.safeParse({
+      checks: { c: { ...base, env: { GITHUB_TOKEN: { anyOf: ['GITHUB_TOKEN', 'GH_TOKEN'] } } } }
+    })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('rejects `anyOf` with fewer than 2 members', () => {
+    const parsed = VinayaConfigSchema.safeParse({
+      checks: { c: { ...base, env: { GITHUB_TOKEN: { anyOf: ['GITHUB_TOKEN'] } } } }
+    })
+    expect(parsed.success).toBe(false)
+  })
+
+  it('rejects `anyOf` with duplicate members', () => {
+    const parsed = VinayaConfigSchema.safeParse({
+      checks: { c: { ...base, env: { GITHUB_TOKEN: { anyOf: ['GITHUB_TOKEN', 'GITHUB_TOKEN'] } } } }
+    })
+    expect(parsed.success).toBe(false)
+  })
+
+  it('rejects `anyOf` where the key is not one of its own members', () => {
+    const parsed = VinayaConfigSchema.safeParse({
+      checks: { c: { ...base, env: { GITHUB_TOKEN: { anyOf: ['GH_TOKEN', 'GHE_TOKEN'] } } } }
+    })
+    expect(parsed.success).toBe(false)
+  })
+
+  it('rejects an unrecognized env-entry shape', () => {
+    const parsed = VinayaConfigSchema.safeParse({ checks: { c: { ...base, env: { X: { bogus: true } } } } })
+    expect(parsed.success).toBe(false)
+  })
+})
+
+describe('lintEnvDeclarations', () => {
+  it('warns on the literal string "true"', () => {
+    const warnings = lintEnvDeclarations({ c: { run: './c.ts', scope: 'diff', env: { FOO: 'true' } } })
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('FOO')
+  })
+
+  it('warns on the literal string "false"', () => {
+    const warnings = lintEnvDeclarations({ c: { run: './c.ts', scope: 'diff', env: { FOO: 'false' } } })
+    expect(warnings).toHaveLength(1)
+  })
+
+  it('warns on a high-entropy literal that looks like a leaked secret', () => {
+    const warnings = lintEnvDeclarations({
+      c: { run: './c.ts', scope: 'diff', env: { API_KEY: 'sk_live_A1b2C3d4E5f6G7h8I9j0' } }
+    })
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('high-entropy')
+  })
+
+  it('does not warn on an ordinary short literal', () => {
+    const warnings = lintEnvDeclarations({ c: { run: './c.ts', scope: 'diff', env: { NODE_ENV: 'production' } } })
+    expect(warnings).toEqual([])
+  })
+
+  it('does not warn on `true` or `{ optional: true }` forms', () => {
+    const warnings = lintEnvDeclarations({
+      c: { run: './c.ts', scope: 'diff', env: { AEG_REPO: true, PR_BODY: { optional: true } } }
+    })
+    expect(warnings).toEqual([])
+  })
+
+  it('returns no warnings when no checks are registered', () => {
+    expect(lintEnvDeclarations(undefined)).toEqual([])
   })
 })
 

@@ -48,13 +48,97 @@ function shouldSkip(spec: CheckSpec, opts: RunOptions): boolean {
 /** Grace period between SIGTERM and SIGKILL for a timed-out check. */
 const KILL_GRACE_MS = 2000
 
+/**
+ * The fixed baseline every constructed env starts from — always forwarded
+ * from the caller's env when present, and never removed by a declared
+ * entry (an entry may only override a baseline key's VALUE).
+ */
+const ENV_BASELINE_KEYS = ['PATH', 'LANG', 'HOME', 'HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY', 'TMPDIR'] as const
+
+/**
+ * Builds the env object a check's child process WOULD receive once
+ * allowlist construction is wired as the spawn default — a later minor
+ * (this task ships the warn release only; `runOne` below still calls
+ * `spawn()` with no `env` override, so the child inherits the full parent
+ * environment). This function is exported and unit-tested ahead of that
+ * flip so the construction logic is proven correct before it goes live.
+ *
+ * Expansion, never spread: the baseline keys above are forwarded from
+ * `callerEnv` when set, then each declared entry in `spec.env` layers on
+ * top, per its own form:
+ *   - `true` / `{ optional: true }` — forward `callerEnv[key]` if set;
+ *     both forms behave identically here (the difference between them is a
+ *     documentation-time contract — "this check hard-needs it" vs "this
+ *     check tolerates its absence" — not a construction-time one).
+ *   - `{ anyOf: [...] }` — for each member, forward `callerEnv[member]`
+ *     under ITS OWN name if the caller has it set — never renamed to `key`.
+ *   - a literal string — set `key` to that exact string, ignoring
+ *     `callerEnv` entirely (never interpolated: `"$PATH"` is four literal
+ *     characters, not an expansion).
+ */
+export function buildCheckEnv(
+  env: CheckSpec['env'],
+  callerEnv: NodeJS.ProcessEnv = process.env
+): Record<string, string> {
+  const out: Record<string, string> = {}
+
+  for (const key of ENV_BASELINE_KEYS) {
+    const value = callerEnv[key]
+    if (value !== undefined) out[key] = value
+  }
+
+  if (!env) return out
+
+  for (const [key, decl] of Object.entries(env)) {
+    if (decl === true || (typeof decl === 'object' && 'optional' in decl)) {
+      const value = callerEnv[key]
+      if (value !== undefined) out[key] = value
+    } else if (typeof decl === 'object' && 'anyOf' in decl) {
+      for (const member of decl.anyOf) {
+        const value = callerEnv[member]
+        if (value !== undefined) out[member] = value
+      }
+    } else if (typeof decl === 'string') {
+      out[key] = decl
+    }
+  }
+
+  return out
+}
+
 async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome> {
   const start = performance.now()
   // Same `node:child_process` shape as `spawnDev` in src/commands/studio.ts —
-  // no `env` override, so the child inherits the full parent environment.
+  // no `env` override, so the child inherits the full parent environment
+  // (`buildCheckEnv` above is built and tested, but not yet wired here —
+  // that flip is a later minor). `detached: true` puts the child in its OWN
+  // process group (pid becomes the group's pgid on POSIX) so the timeout
+  // handler below can kill the whole tree, not just this direct child.
   const proc = spawn(spec.run, spec.args ?? [], {
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true
   })
+
+  // Best-effort process-GROUP kill: negative pid targets every process in
+  // the child's group, reaching a grandchild the check itself shelled out
+  // to (previously survived the timeout entirely — the direct-child-only
+  // `proc.kill()` never reached it). Falls back to the single-pid form if
+  // the group kill throws (e.g. the group already exited, or a platform
+  // where negative-pid signaling isn't supported) — never left as the ONLY
+  // attempt, since a thrown group-kill must not mean "gave up."
+  function killTree(signal: NodeJS.Signals): void {
+    const pid = proc.pid
+    if (pid === undefined) return
+    try {
+      process.kill(-pid, signal)
+    } catch {
+      try {
+        proc.kill(signal)
+      } catch {
+        // Already gone — nothing left to signal.
+      }
+    }
+  }
 
   let timedOut = false
   let killTimer: ReturnType<typeof setTimeout> | undefined
@@ -63,8 +147,8 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
     // SIGTERM first; a check that traps/ignores it would otherwise run
     // forever past its declared timeout — escalate to SIGKILL after a
     // grace period so "the runner enforces the timeout" is actually true.
-    proc.kill('SIGTERM')
-    killTimer = setTimeout(() => proc.kill('SIGKILL'), KILL_GRACE_MS)
+    killTree('SIGTERM')
+    killTimer = setTimeout(() => killTree('SIGKILL'), KILL_GRACE_MS)
   }, timeoutMs)
 
   let stderrText = ''
@@ -170,16 +254,23 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
  * see `tests/checks/no-privileged-api.test.ts` for the mechanical proof.
  *
  * The runner enforces the per-check timeout itself (spawn, SIGTERM, escalate
- * to SIGKILL after `KILL_GRACE_MS`) — a check trusted to time itself out
- * cannot be trusted at all.
+ * to SIGKILL after `KILL_GRACE_MS`, both targeting the check's whole process
+ * GROUP via `detached: true` + negative-pid signaling — closed live, this
+ * task) — a check trusted to time itself out cannot be trusted at all, and a
+ * check trusted to kill its own children on the way out cannot be trusted
+ * at that either.
  *
- * Known hardening gaps, not addressed by this task (documented rather than
- * silently ignored): the spawn inherits the full parent environment — the
+ * Known hardening gap, not yet addressed (documented rather than silently
+ * ignored): the spawn still inherits the full parent environment — the
  * contract's "no-network-by-default" rule is convention-only, nothing here
- * sandboxes or scrubs a check's network access or secret visibility; and the
- * timeout kill targets only the direct child, not a process group/tree, so a
- * check that itself shells out to a further subprocess can leave that
- * grandchild running past the kill.
+ * sandboxes or scrubs a check's network access or secret visibility.
+ * `CheckSpec['env']` + `buildCheckEnv` above are the allowlist grammar and
+ * construction logic for closing this gap, built and tested but not yet
+ * wired as the spawn default — this task ships the warn release only
+ * (`vinaya check`/`vinaya doctor` warn when a check reads `process.env`
+ * with no `env` declaration); a later minor flips `spawn()` to pass
+ * `buildCheckEnv(spec.env)` as its `env` option, at which point this
+ * comment updates again.
  */
 export async function runChecks(specs: CheckSpec[], opts: RunOptions): Promise<CheckOutcome[]> {
   const results: CheckOutcome[] = new Array(specs.length)
