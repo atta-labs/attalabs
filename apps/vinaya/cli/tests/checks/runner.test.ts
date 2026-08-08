@@ -11,6 +11,8 @@ const MALFORMED = join(FIXTURES, 'malformed-check.ts')
 const SLEEPER = join(FIXTURES, 'sleeper.ts')
 const STUBBORN_SLEEPER = join(FIXTURES, 'stubborn-sleeper.ts')
 const SPAWNS_GRANDCHILD = join(FIXTURES, 'spawns-grandchild.ts')
+const SPAWNS_STUBBORN_GRANDCHILD = join(FIXTURES, 'spawns-stubborn-grandchild.ts')
+const RUN_AND_HANG = join(FIXTURES, 'run-and-hang.ts')
 
 function fullScope(overrides: Partial<CheckSpec> & Pick<CheckSpec, 'name' | 'run'>): CheckSpec {
   return { scope: 'full', ...overrides }
@@ -132,6 +134,51 @@ describe('runChecks', () => {
     await new Promise((resolve) => setTimeout(resolve, 2500))
 
     const survivors = execSync('ps -eo pid,command | grep "sleep 60" | grep -v grep || true', {
+      encoding: 'utf8'
+    }).trim()
+    expect(survivors).toBe('')
+  }, 10_000)
+
+  it("kills a SIGTERM-trapping grandchild even though the DIRECT child's own close fires almost immediately", async () => {
+    // The direct child (spawns-stubborn-grandchild.ts) does not trap
+    // SIGTERM, so it dies on the group's initial signal well inside
+    // KILL_GRACE_MS — its own 'close' event resolving early is exactly the
+    // condition that used to cancel the pending SIGKILL escalation. The
+    // grandchild it spawned (stubborn-sleeper.ts) DOES trap SIGTERM and can
+    // only be reaped by that escalation actually running to completion.
+    const [outcome] = await runChecks(
+      [fullScope({ name: 'stubborn-grandchild', run: SPAWNS_STUBBORN_GRANDCHILD, timeoutMs: 500 })],
+      BASE_OPTS
+    )
+    expect(outcome?.status).toBe('timeout')
+
+    // No extra sleep needed here (unlike the plain-grandchild test above):
+    // `runOne` now awaits the escalation decision before returning, so by
+    // the time `outcome` resolves the grandchild is already confirmed dead.
+    const survivors = execSync('ps -eo pid,command | grep "stubborn-sleeper" | grep -v grep || true', {
+      encoding: 'utf8'
+    }).trim()
+    expect(survivors).toBe('')
+  }, 10_000)
+
+  it('forwards SIGINT to every in-flight check so Ctrl+C does not orphan them', async () => {
+    // Runs in a SEPARATE process (not this test process) — sending SIGINT
+    // to the test runner itself would kill the whole suite, not exercise
+    // the runner's own forwarding path.
+    const wrapper = Bun.spawn(['bun', RUN_AND_HANG], { stdio: ['ignore', 'ignore', 'ignore'] })
+
+    // Give the wrapper time to start and spawn its own (detached) check
+    // child before interrupting it.
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    wrapper.kill('SIGINT')
+    await wrapper.exited
+
+    // Grace period for the forwarded SIGTERM/SIGKILL escalation to finish
+    // reaping the detached check group.
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+
+    const survivors = execSync('ps -eo pid,command | grep "fixtures/checks/sleeper.ts" | grep -v grep || true', {
       encoding: 'utf8'
     }).trim()
     expect(survivors).toBe('')
