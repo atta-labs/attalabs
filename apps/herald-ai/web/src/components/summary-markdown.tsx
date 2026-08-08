@@ -41,7 +41,12 @@ export function SummaryMarkdown({ text }: { text: string }) {
         code: ({ children }) => (
           <code className='rounded bg-muted px-1 font-mono text-xs text-foreground'>{children}</code>
         ),
-        strong: ({ children }) => <strong className='text-base font-medium text-foreground'>{children}</strong>
+        strong: ({ children }) => <strong className='text-base font-medium text-foreground'>{children}</strong>,
+        a: ({ children, href }) => (
+          <a href={href} target='_blank' rel='noopener noreferrer' className='text-primary underline'>
+            {children}
+          </a>
+        )
       }}
     >
       {text}
