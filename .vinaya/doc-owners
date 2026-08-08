@@ -15,7 +15,8 @@
 #   in-repo path with anchor e.g. `aeg-root/state-machine.md#section-9`
 #   URL                      e.g. `https://example.com/docs/x`
 #
-# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`):
+# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`; a
+# missing/unsatisfied binding below surfaces as a `C5 doc-coverage: …` error):
 #   When a code file in the PR matches a glob:
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
@@ -25,6 +26,17 @@
 #     configured principal suppresses every fired binding for that PR — a
 #     forge-authenticated human act, never a parseable string. There is no
 #     PR-body waiver field; label presence alone is never sufficient.
+#   Neutral-edit path (state-machine.md Section 15):
+#     A fired in-repo binding whose doc is genuinely not owed — the matched
+#     code diff is comment/whitespace-only, not a behavior change — is
+#     satisfied by `Doc-neutral: <pointer> — <note>` in the PR body, where
+#     <pointer> is the binding's doc pointer. The declaration alone never
+#     passes: `evaluateC5` reads the actual diff of every matched file and
+#     requires every changed (+/-) line to be blank or comment-only before
+#     honoring the claim (`isMechanicallyNeutralDiff`). A declared-but-
+#     unevidenced claim is a distinct failure (`C5 doc-neutral-unverified`),
+#     not a silent pass — this is what keeps the escape from being self-serve.
+#     Silence (no doc, no Doc-neutral, no waiver) is still always FAIL.
 #
 # Dormancy:
 #   This file absent, OR no glob matches any changed code file → silent no-op.

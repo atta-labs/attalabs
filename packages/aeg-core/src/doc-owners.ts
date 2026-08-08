@@ -101,6 +101,7 @@ export function pointerToPath(p: string): string {
 }
 
 export type DocAck = { surface: string; note: string }
+export type DocNeutral = { surface: string; note: string }
 
 // Separator between <pointer> and <note>. Tolerates em-dash (—),
 // en-dash (–), or a plain ASCII hyphen-minus (-) with REQUIRED surrounding
@@ -112,13 +113,101 @@ export type DocAck = { surface: string; note: string }
 // the pointer character set.
 const SEPARATOR = /(?:[ \t]*[—–][ \t]*|[ \t]+-[ \t]+)/.source
 
-export function readDocAcks(body: string): DocAck[] {
-  const acks: DocAck[] = []
-  const re = new RegExp(`^[ \\t]*Doc-ack[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
+/** Shared by `Doc-ack:` and `Doc-neutral:` — both are `<field>: <pointer> <sep> <note>` PR-body lines. */
+function readPointerNoteField(body: string, field: string): { surface: string; note: string }[] {
+  const out: { surface: string; note: string }[] = []
+  const re = new RegExp(`^[ \\t]*${field}[ \\t]*:[ \\t]*(.+?)${SEPARATOR}(.+?)[ \\t]*$`, 'gim')
   for (const m of body.matchAll(re)) {
-    acks.push({ surface: (m[1] ?? '').trim(), note: (m[2] ?? '').trim() })
+    out.push({ surface: (m[1] ?? '').trim(), note: (m[2] ?? '').trim() })
   }
-  return acks
+  return out
+}
+
+export function readDocAcks(body: string): DocAck[] {
+  return readPointerNoteField(body, 'Doc-ack')
+}
+
+/**
+ * `Doc-neutral: <pointer> — <note>` — declares that the doc a fired binding
+ * would otherwise require is not owed because the matched code change is
+ * mechanically neutral (comment/whitespace-only). Mirrors `Doc-ack:`'s
+ * grammar deliberately, so it reads as the same PR-body-field family.
+ *
+ * The declaration alone is never sufficient — see `isMechanicallyNeutralDiff`
+ * below, which `evaluateC5` requires as corroborating evidence before this
+ * declaration satisfies a fired binding. An unevidenced declaration is a
+ * distinct failure (`C5 doc-neutral-unverified`), not a silent pass — that
+ * asymmetry is what keeps this from being a self-serve exemption.
+ */
+export function readDocNeutrals(body: string): DocNeutral[] {
+  return readPointerNoteField(body, 'Doc-neutral')
+}
+
+/**
+ * Full-line comment markers, scoped per source-language file extension. A
+ * marker is listed for a language ONLY if no legitimate code construct in
+ * that language can start a trimmed line with it — that constraint is what
+ * keeps this fail-closed rather than a bare per-line prefix table (review
+ * finding, task 4 code review): a flat asterisk/hash/double-dash/block-
+ * comment-delimiter table misclassifies real code as comment — a TS/JS
+ * generator method (`*gen() {`), a TS/JS private class field
+ * (`#count = 0`), SQL's `--` also being C-style pre-decrement (`--i;`), and
+ * a block-comment-close delimiter hiding trailing code on the same line are
+ * all real collisions, not hypothetical ones. `//` is the only marker kept
+ * for TS/JS/JSX because no such language construct starts a trimmed line
+ * with `//`. An unrecognized extension gets no safe marker at all, so
+ * `isMechanicallyNeutralDiff` can never classify it neutral — fail-closed
+ * under uncertainty, not an attempt at full per-language comment/string-
+ * region parsing (out of this task's bounded "comment/whitespace-only"
+ * scope).
+ */
+const LANGUAGE_COMMENT_PREFIXES: ReadonlyArray<{ test: RegExp; prefixes: readonly string[] }> = [
+  { test: /\.(ts|tsx|js|jsx|mjs|cjs)$/, prefixes: ['//'] },
+  { test: /(^|\/)(pre-push|pre-commit|pre-merge-commit)$/, prefixes: ['#'] },
+  { test: /\.(sh|bash)$/, prefixes: ['#'] },
+  { test: /\.ya?ml$/, prefixes: ['#'] },
+  { test: /\.py$/, prefixes: ['#'] }
+]
+
+function commentPrefixesForPath(path: string): readonly string[] {
+  for (const { test, prefixes } of LANGUAGE_COMMENT_PREFIXES) {
+    if (test.test(path)) return prefixes
+  }
+  return []
+}
+
+function isNeutralDiffContentLine(line: string, prefixes: readonly string[]): boolean {
+  const t = line.trim()
+  if (t === '') return true
+  // A shebang is comment-shaped but changes what interpreter runs the
+  // file — real behavior, never neutral, even though it starts with `#`.
+  if (t.startsWith('#!')) return false
+  return prefixes.some((p) => t.startsWith(p))
+}
+
+/**
+ * The evidence half of the neutral-edit path: given a unified diff for one
+ * file and that file's path (for language-scoped comment-marker selection),
+ * true only if every added/removed line is comment-only or whitespace-only.
+ * Context lines and the `+++`/`---`/`@@` headers are not evidence either
+ * way. A diff with zero +/- content lines is not "a change" at all, so it
+ * returns false rather than vacuously true — there must be at least one
+ * actual edited line for a neutrality claim to mean anything. An
+ * unrecognized file extension (`commentPrefixesForPath` returns `[]`)
+ * always returns false — no fired binding on an unrecognized language can
+ * take the Doc-neutral path.
+ */
+export function isMechanicallyNeutralDiff(diffText: string, path: string): boolean {
+  const prefixes = commentPrefixesForPath(path)
+  let sawChange = false
+  for (const raw of diffText.split('\n')) {
+    if (raw.startsWith('+++ ') || raw.startsWith('--- ') || raw.startsWith('@@')) continue
+    if (raw.startsWith('+') || raw.startsWith('-')) {
+      if (!isNeutralDiffContentLine(raw.slice(1), prefixes)) return false
+      sawChange = true
+    }
+  }
+  return sawChange
 }
 
 /**
@@ -134,13 +223,21 @@ export function readDocAcks(body: string): DocAck[] {
  * `isWaiverLabelActorVerified`, itself a mechanized read of a forge fact.
  * There is no agent-emittable `Doc-waiver:` string anymore; a waiver is
  * either verified true PR-wide, or not.
+ *
+ * `getDiff` is optional and injectable (unit tests; also absent whenever a
+ * caller has no diff-content source) — it resolves the unified diff for one
+ * matched code file, feeding the `Doc-neutral:` evidence check below. Its
+ * absence never produces a pass: a declared-but-unevidenced neutral claim
+ * fails the same as if it evidence didn't check out, preserving silence =
+ * failure (state-machine.md Section 15).
  */
 export function evaluateC5(
   changed: string[],
   docOwnersContent: string | null,
   prBody: string,
   fileExists: (p: string) => boolean,
-  waiverActive: boolean
+  waiverActive: boolean,
+  getDiff?: (p: string) => string | null
 ): C5Result {
   const out: C5Result = { errors: [], notes: [] }
 
@@ -151,16 +248,18 @@ export function evaluateC5(
   if (bindings.length === 0) return out
 
   const codeFiles = changed.filter(isCodeFile)
-  const fired: DocOwnersBinding[] = []
+  const fired: { binding: DocOwnersBinding; matchedFiles: string[] }[] = []
   for (const b of bindings) {
     const re = globToRegex(b.glob)
-    if (codeFiles.some((f) => re.test(f))) fired.push(b)
+    const matchedFiles = codeFiles.filter((f) => re.test(f))
+    if (matchedFiles.length > 0) fired.push({ binding: b, matchedFiles })
   }
   if (fired.length === 0) return out
 
   const acks = readDocAcks(prBody)
+  const neutrals = readDocNeutrals(prBody)
 
-  for (const b of fired) {
+  for (const { binding: b, matchedFiles } of fired) {
     if (waiverActive) {
       out.notes.push(`C5 doc-waiver active for ${b.pointer} (binding ${DOC_OWNERS_PATH}:${b.lineNum})`)
       continue
@@ -184,11 +283,31 @@ export function evaluateC5(
       continue
     }
 
-    if (!changed.includes(pointerPath)) {
+    if (changed.includes(pointerPath)) continue
+
+    const declared = neutrals.find((n) => n.surface === b.pointer)
+    if (declared) {
+      const evidenced =
+        getDiff !== undefined &&
+        matchedFiles.every((f) => {
+          const diff = getDiff(f)
+          return diff !== null && isMechanicallyNeutralDiff(diff, f)
+        })
+      if (evidenced) {
+        out.notes.push(
+          `C5 doc-neutral: ${b.pointer} not required for ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\`) — declared neutral ("${declared.note}"), diff of ${matchedFiles.join(', ')} confirmed comment/whitespace-only.`
+        )
+        continue
+      }
       out.errors.push(
-        `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, or have a principal apply the \`${WAIVER_LABEL}\` label.`
+        `C5 doc-neutral-unverified: ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}) declared \`Doc-neutral: ${b.pointer} — ${declared.note}\`, but the diff of ${matchedFiles.join(', ')} contains changes beyond comments/whitespace. Update ${pointerPath}, or have a principal apply the \`${WAIVER_LABEL}\` label.`
       )
+      continue
     }
+
+    out.errors.push(
+      `C5 doc-coverage: code change matched ${DOC_OWNERS_PATH}:${b.lineNum} (glob \`${b.glob}\` → ${b.pointer}), but ${pointerPath} is not in the PR diff. Update it, declare \`Doc-neutral: ${b.pointer} — <why>\` if the change is genuinely mechanically-neutral, or have a principal apply the \`${WAIVER_LABEL}\` label.`
+    )
   }
 
   return out

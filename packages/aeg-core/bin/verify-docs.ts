@@ -19,7 +19,13 @@
  *                     `Doc-waiver:` PR-body/commit-trailer grammar is gone — it is no
  *                     longer parsed anywhere. `Doc-ack:` (URL-pointer acknowledgment) is
  *                     unaffected — still a PR-body field, still an acknowledgment, not
- *                     a bypass.
+ *                     a bypass. `Doc-neutral: <pointer> — <note>` (state-machine.md
+ *                     Section 15) is the third satisfying branch: a fired binding whose
+ *                     doc genuinely isn't owed because the matched code diff is
+ *                     comment/whitespace-only. The declaration alone never satisfies it —
+ *                     `evaluateC5` cross-checks the actual diff via
+ *                     `isMechanicallyNeutralDiff` before honoring it, so it can't be
+ *                     self-served the way a bare claim could.
  *   --push            Diff-based, C5 only. Ring-0 gate for `.husky/pre-push`: the
  *                     branch's cumulative diff vs origin/main is checked against doc-owners
  *                     coverage. An owned-doc violation on push is
@@ -63,7 +69,7 @@
  * routes).
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -116,6 +122,25 @@ function sh(cmd: string): string {
 }
 
 /**
+ * Array-form execFileSync — no shell, so no injection surface. `path` here
+ * is a changed-file path drawn from `git diff --name-only`, which the PR
+ * author fully controls (any file matching a doc-owners glob's suffix
+ * regex, no character restriction) — unlike `sh()`'s other call sites in
+ * this file, which only ever interpolate fixed literals or a
+ * principal/CI-set `BASE_SHA`. A single-quoted `sh()` call here would let a
+ * crafted filename (a stray `'`) break out of the quoting and run arbitrary
+ * shell (security review, task 4). `base`/`path` are passed as
+ * separate argv elements instead, so no value can ever reach a shell.
+ */
+function shFile(cmd: string, args: string[]): string {
+  try {
+    return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+  } catch {
+    return ''
+  }
+}
+
+/**
  * PR_BODY takes precedence when set (the PR-mode caller always sets it).
  * PR_BODY_FILE is the push-mode fallback for a branch with no PR yet — a
  * local path to the drafted PR body, so `Doc-ack:` lines are available
@@ -152,9 +177,22 @@ function waiverActiveFromEnv(): boolean {
   })
 }
 
-function runC5(changed: string[]): void {
+/**
+ * `base` must be the exact base ref the caller resolved `changed` against —
+ * `runPrMode`'s local-run fallback (`origin/main` → `main`) means that ref
+ * isn't always `BASE_SHA`/`origin/main` itself, and `Doc-neutral:`'s diff
+ * evidence has to be read against the same range `changed` came from.
+ * `--pr` and `--push` both funnel through this one function, so the
+ * Doc-neutral evidence check is one predicate shared by both enforcement
+ * points, not two implementations that can drift apart.
+ */
+function runC5(changed: string[], base: string): void {
   const content = existsSync(DOC_OWNERS_PATH) ? readFileSync(DOC_OWNERS_PATH, 'utf8') : null
-  const result = evaluateC5(changed, content, resolvePrBody(), existsSync, waiverActiveFromEnv())
+  const getDiff = (path: string): string | null => {
+    const out = shFile('git', ['diff', `${base}...HEAD`, '--', path])
+    return out === '' ? null : out
+  }
+  const result = evaluateC5(changed, content, resolvePrBody(), existsSync, waiverActiveFromEnv(), getDiff)
   for (const e of result.errors) errors.push(e)
   for (const n of result.notes) notes.push(n)
 }
@@ -174,6 +212,7 @@ function runPrMode(): void {
   }
 
   const base = process.env.BASE_SHA || 'origin/main'
+  let effectiveBase = base
   let changed = sh(`git diff --name-only ${base}...HEAD`)
     .split('\n')
     .map((s) => s.trim())
@@ -181,6 +220,7 @@ function runPrMode(): void {
 
   if (changed.length === 0) {
     // Fallback for local runs without an explicit base.
+    effectiveBase = 'main'
     changed = sh('git diff --name-only main...HEAD')
       .split('\n')
       .map((s) => s.trim())
@@ -224,7 +264,7 @@ function runPrMode(): void {
   }
 
   // C5 — code→doc coverage via .vinaya/doc-owners (dormant when absent).
-  runC5(changed)
+  runC5(changed, effectiveBase)
 
   // C7 — published prose, scoped to the doctrine files this PR actually
   // changed. Blocking here (this is the gate CI runs); the repo-wide sweep is
@@ -255,7 +295,7 @@ function runPushMode(): void {
     console.log('verify-docs: no changed files vs base; nothing to check.')
     return
   }
-  runC5(changed)
+  runC5(changed, base)
 
   for (const n of notes) console.log(`verify-docs note: ${n}`)
 
