@@ -4,6 +4,7 @@ import { Flex, Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { getPublishedVersion, type PublishedVersion } from '@/lib/published-version'
 import { CommandLine } from '../_components/CommandLine'
 import { PackageManagerTabs } from '../_components/PackageManagerTabs'
 import { renderProse } from '../_components/prose'
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
 // have to parse.
 type StepBodyItem = { kind: 'prose'; text: string } | { kind: 'list'; items: string[] }
 
+function versionStampText(publishedVersion: PublishedVersion): string {
+  return 'version' in publishedVersion
+    ? `documented against @attalabs/vinaya@${publishedVersion.version}`
+    : 'documented from source — the published package version could not be verified'
+}
+
 // Four fixed steps: install / `init` / `init product` / start working. Each of
 // the first three names the real files it touches and links onward to `/cli`
 // for the full command reference — the CLI page owns command detail, this
@@ -27,7 +34,7 @@ const STEPS: {
   number: number
   title: string
   body: StepBodyItem[]
-  render: () => ReactNode
+  render: (publishedVersion: PublishedVersion) => ReactNode
   cliHref?: string
 }[] = [
   {
@@ -39,15 +46,20 @@ const STEPS: {
         text: 'Pick your package manager. Each command installs Vinaya and runs `init` in the same breath — nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff in the next step.'
       }
     ],
-    render: () => (
-      <PackageManagerTabs
-        commands={{
-          npm: 'npx @attalabs/vinaya init',
-          pnpm: 'pnpm dlx @attalabs/vinaya init',
-          yarn: 'yarn dlx @attalabs/vinaya init',
-          bun: 'bunx @attalabs/vinaya init'
-        }}
-      />
+    render: (publishedVersion) => (
+      <>
+        <PackageManagerTabs
+          commands={{
+            npm: 'npx @attalabs/vinaya init',
+            pnpm: 'pnpm dlx @attalabs/vinaya init',
+            yarn: 'yarn dlx @attalabs/vinaya init',
+            bun: 'bunx @attalabs/vinaya init'
+          }}
+        />
+        <Text size='sm' muted className='font-sans'>
+          {versionStampText(publishedVersion)}
+        </Text>
+      </>
     )
   },
   {
@@ -103,7 +115,9 @@ const STEPS: {
   }
 ]
 
-export default function StartQuickPage() {
+export default async function StartQuickPage() {
+  const publishedVersion = await getPublishedVersion()
+
   return (
     <article className='flex flex-col gap-10'>
       <header className='flex flex-col gap-3'>
@@ -160,7 +174,7 @@ export default function StartQuickPage() {
                     </Text>
                   )
                 )}
-                {step.render()}
+                {step.render(publishedVersion)}
               </CardContent>
             </Card>
           </div>
