@@ -15,7 +15,8 @@
 #   in-repo path with anchor e.g. `aeg-root/state-machine.md#section-9`
 #   URL                      e.g. `https://example.com/docs/x`
 #
-# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`):
+# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`; a
+# missing/unsatisfied binding below surfaces as a `C5 doc-coverage: …` error):
 #   When a code file in the PR matches a glob:
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
 #     - URL pointer      → require a `Doc-ack: <pointer> — <note>` PR-body line
