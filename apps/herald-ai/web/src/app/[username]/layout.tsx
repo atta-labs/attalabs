@@ -1,10 +1,20 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { getUserByUsername } from '@/db/queries'
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
+  const icons = { icon: `/${username}/icon` }
+
+  const user = await getUserByUsername(username)
+  if (!user?.isPublished) {
+    return { icons }
+  }
+
   return {
-    icons: { icon: `/${username}/icon` }
+    title: user.name,
+    description: user.title,
+    icons
   }
 }
 
