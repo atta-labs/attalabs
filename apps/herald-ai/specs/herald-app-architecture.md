@@ -27,7 +27,7 @@ app/(app)/layout.tsx              shared signed-in layout: auth guard + Candidat
 app/(app)/bulk-audit/             /bulk-audit             logged-in home, the audit tool
 app/(app)/onboarding/             /onboarding             AIOnboarding gate
 app/(marketing)/                  marketing / landing
-app/[username]/layout.tsx         metadata-only passthrough (icon route)
+app/[username]/layout.tsx         generateMetadata (title/description gated on isPublished + icon route)
 app/[username]/(profile)/         /[username]             public profile + EnvoyShell + EnvoyLibraryShell (user library)
 app/[username]/(owner)/layout.tsx auth-gate + CandidateShell(build-time library) + HeraldTopBar
 app/[username]/(owner)/ui/        /[username]/ui          public-profile appearance editor (owner-only)
@@ -37,7 +37,7 @@ app/[username]/(owner)/settings/  /[username]/settings    Profile / Experience /
 - Logged-in home is `/bulk-audit`.
 - Onboarding gate: signed-in but `!onboardingComplete` → `/onboarding`; complete → `/bulk-audit`. The owner layout enforces the same gate before its ownership check so a half-onboarded user (still username-less) routes to `/onboarding` instead of 404.
 - **Owner gate:** `/[username]/(owner)/*` resolves the signed-in user; redirects anonymous to `/sign-in`; calls `notFound()` if the signed-in user's `username` does not match the `[username]` URL segment. The public profile `/[username]` remains open and unaffected.
-- Route groups (parentheses) add no URL segment: the public URL of `(profile)/page.tsx` is `/[username]`; the owner URLs are `/[username]/ui` and `/[username]/settings`. The `[username]/layout.tsx` is intentionally a no-op wrapper (returns `children` plus the icon metadata) — putting any `LibraryProvider` there would cross the build-time/runtime library paths.
+- Route groups (parentheses) add no URL segment: the public URL of `(profile)/page.tsx` is `/[username]`; the owner URLs are `/[username]/ui` and `/[username]/settings`. The `[username]/layout.tsx` returns `children` unwrapped and owns only `generateMetadata` (title/description from the resolved user, gated on `isPublished`, plus the icon route) — it never wraps children in a `LibraryProvider`; putting one there would cross the build-time/runtime library paths.
 - There is no "Dashboard" concept. Nav from the main `HeraldTopBar` is **Bulk Audit · /username** (UI + Settings are now right-cluster icon buttons, see §3).
 
 ---
@@ -88,7 +88,7 @@ Concretely (inheriting the central-CMS resolution):
   - `app/(app)/layout.tsx` feeds `CandidateShell` → `LibraryProvider` the build-time library id (`getProductConfig('herald').userInterface.library.id`). It deliberately ignores `user.library`. Wraps `/bulk-audit` and `/onboarding`.
   - `app/[username]/(owner)/layout.tsx` mirrors the `(app)` layout: feeds `CandidateShell` the **build-time** library id, then renders the same `HeraldTopBar` + main. Wraps `/[username]/ui` and `/[username]/settings`. Two layouts, one library-resolution rule — adding a third app-chrome surface follows this template.
   - `app/[username]/(profile)/layout.tsx` feeds `EnvoyLibraryShell` → `LibraryProvider` the **user's** `user.library`. This is the only place `user.library` drives rendering.
-  - `app/[username]/layout.tsx` is a metadata-only passthrough (icon route + `return children`). It deliberately does **not** wrap children in a `LibraryProvider` — putting one there would cross the build-time and user paths and reintroduce the earlier library-resolution regression. The `(owner)` and `(profile)` route groups exist precisely so the two sibling layouts can feed their own providers without inheriting a parent provider.
+  - `app/[username]/layout.tsx` owns `generateMetadata` (title/description from the resolved user, gated on `isPublished`, plus the icon route) and `return children` unwrapped. It deliberately does **not** wrap children in a `LibraryProvider` — putting one there would cross the build-time and user paths and reintroduce the earlier library-resolution regression. The `(owner)` and `(profile)` route groups exist precisely so the two sibling layouts can feed their own providers without inheriting a parent provider.
   - App-chrome components that pick components must import from `@atta/ui/components` (build-time) — not via `useComponents()` against a user-library provider. (`useComponents()` is correct only inside an app-chrome tree if and only if that tree's provider is fed the build-time id, which `(app)/layout.tsx` and `(owner)/layout.tsx` both do.)
 
 **Verification recipe:** set `user.library` to something other than the build-time library (e.g. `retro`). The main app chrome (`HeraldTopBar` on `/bulk-audit`, `/onboarding`) must stay on the build-time library; the owner editors at `/[username]/ui` and `/[username]/settings` must stay on the build-time library; only `/[username]` (the public profile) renders the user's choice. The three surfaces are independent — and they all resolve their library id through the same central-CMS path, so confirming `getProductConfig('herald').userInterface.library.id` returns the expected string is sufficient to know the build-time generation was correct.
