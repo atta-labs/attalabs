@@ -6,7 +6,12 @@ const FIXTURE: ModelsDevResponse = {
   anthropic: {
     id: 'anthropic',
     models: {
-      'claude-opus-4-8': { id: 'claude-opus-4-8', name: 'Claude Opus 4.8' }
+      // Synthetic id, never a real release — guaranteed absent from OVERLAY
+      // regardless of which Anthropic models get curated over time.
+      'claude-test-fixture-uncurated': {
+        id: 'claude-test-fixture-uncurated',
+        name: 'Claude Test Fixture (uncurated)'
+      }
     }
   },
   groq: {
@@ -24,7 +29,7 @@ const FIXTURE: ModelsDevResponse = {
 describe('transformModelsDev', () => {
   it('surfaces an Anthropic model absent from OVERLAY (no per-vendor allowlist gate)', () => {
     const entries = transformModelsDev(FIXTURE)
-    const entry = entries.find((e) => e.id === 'anthropic/claude-opus-4-8')
+    const entry = entries.find((e) => e.id === 'anthropic/claude-test-fixture-uncurated')
     expect(entry).toBeDefined()
     expect(entry?.tier).toBe('balanced')
     expect(entry?.description).toBeUndefined()

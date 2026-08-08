@@ -198,6 +198,10 @@ This answers a different question: "is this model strong enough for a given role
 
 ---
 
+## Testing
+
+`@atta/models` ships `transform.test.ts`, `deprecations.test.ts`, and `tiers.test.ts` (`bun test`, wired into `packages/models/package.json`'s `test` script and reached by the repo's `bunx turbo test`). See "Curation strategy" in [packages/models/CLAUDE.md](../../../packages/models/CLAUDE.md) for the testing note.
+
 ## Troubleshooting
 
 **Picker is empty or stuck on fallback models:** `models.dev/api.json` fetch probably failing. Check logs. The fallback catalog (5 entries in `fallback.ts`) kicks in on any error.
