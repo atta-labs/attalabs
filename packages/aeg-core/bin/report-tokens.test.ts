@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseArgs, resolveTranscriptPath, sanitizeKey, transcriptPointerPath } from './report-tokens'
+import { main, parseArgs, resolveTranscriptPath, sanitizeKey, transcriptPointerPath } from './report-tokens'
 
 describe('sanitizeKey / transcriptPointerPath', () => {
   it('replaces every run of non-alphanumeric characters with a single hyphen', () => {
@@ -98,5 +98,66 @@ describe('resolveTranscriptPath', () => {
       readFile: () => 'session-abc\t/some/transcript.jsonl\n'
     })
     expect(resolved).toBe('/some/transcript.jsonl')
+  })
+
+  it('throws on a stale pointer — the current session id disagrees with the one the pointer was written for', () => {
+    // Regression (code review, PR #800): a worktree reused across sessions
+    // can hold a pointer written by a PREVIOUS session, still present
+    // because the new session's own Stop hook hasn't fired yet. Silently
+    // reading it would reproduce the exact wrong-session-attribution bug
+    // this reporter exists to prevent, one session later.
+    expect(() =>
+      resolveTranscriptPath(undefined, {
+        ...baseDeps,
+        env: { ...baseDeps.env, CLAUDE_CODE_SESSION_ID: 'current-session' },
+        exists: () => true,
+        readFile: () => 'previous-session\t/home/user/.claude/projects/-repo/previous-session.jsonl\n'
+      })
+    ).toThrow(/stale/)
+  })
+
+  it('succeeds when the current session id matches the pointer', () => {
+    const resolved = resolveTranscriptPath(undefined, {
+      ...baseDeps,
+      env: { ...baseDeps.env, CLAUDE_CODE_SESSION_ID: 'same-session' },
+      exists: () => true,
+      readFile: () => 'same-session\t/home/user/.claude/projects/-repo/same-session.jsonl\n'
+    })
+    expect(resolved).toBe('/home/user/.claude/projects/-repo/same-session.jsonl')
+  })
+
+  it('trusts the pointer with no staleness check when CLAUDE_CODE_SESSION_ID is unavailable', () => {
+    // The env var is confirmed present in every Claude Code Bash tool call
+    // but isn't part of the documented public hook JSON schema — treated as
+    // a best-effort cross-check, not a hard requirement.
+    const resolved = resolveTranscriptPath(undefined, {
+      ...baseDeps,
+      exists: () => true,
+      readFile: () => 'some-session\t/home/user/.claude/projects/-repo/some-session.jsonl\n'
+    })
+    expect(resolved).toBe('/home/user/.claude/projects/-repo/some-session.jsonl')
+  })
+})
+
+describe('main', () => {
+  const runDeps = (overrides: Partial<Parameters<typeof main>[1]> = {}) => ({
+    env: {},
+    cwd: '/repo',
+    exists: () => false,
+    readFile: () => '',
+    ...overrides
+  })
+
+  it('throws rather than emitting a plausible-looking `0/0/—` for a transcript with zero usable messages', () => {
+    // Regression (code review, PR #800): an empty, unparseable, or
+    // not-yet-flushed transcript previously formatted as an exact `0/0/—`
+    // line — indistinguishable, once parsed, from a session that genuinely
+    // spent zero tokens.
+    expect(() =>
+      main(
+        ['--phase', '1: develop', '--role', 'Developer', '/tmp/empty.jsonl'],
+        runDeps({ readFile: (path) => (path === '/tmp/empty.jsonl' ? '' : '') })
+      )
+    ).toThrow(/zero assistant messages/)
   })
 })
