@@ -12,13 +12,95 @@ import { z } from 'zod'
 // (`if`/`unless`/`except`) are never part of this grammar. Any entry here
 // produces the exact same `CheckSpec` shape the built-in registry does
 // (`src/checks/registry.ts`) — no privileged field either side can carry.
-const CheckEntrySchema = z.object({
-  run: z.string(),
-  scope: z.enum(['diff', 'full']),
-  include: z.array(z.string()).optional(),
-  args: z.array(z.string()).optional(),
-  timeoutMs: z.number().optional()
-})
+// `env`: the per-check env-allowlist declaration (see `CheckSpec['env']` in
+// `src/checks/contract.ts` for the full grammar). `anyOf` requires >= 2
+// unique members — a single-member anyOf is just `true` under a different
+// name and would only hide the simpler form. Load-time lint warnings (a
+// literal `"true"`/`"false"` string, a high-entropy literal that looks like
+// a leaked secret rather than a real config value) are the caller's
+// responsibility (`loadConfigChecked`'s callers), not this schema — Zod
+// validates SHAPE, never content heuristics.
+const EnvEntrySchema = z.union([
+  z.literal(true),
+  z.object({ optional: z.literal(true) }),
+  z.object({ anyOf: z.array(z.string()).min(2) }),
+  z.string()
+])
+
+const CheckEntrySchema = z
+  .object({
+    run: z.string(),
+    scope: z.enum(['diff', 'full']),
+    include: z.array(z.string()).optional(),
+    args: z.array(z.string()).optional(),
+    timeoutMs: z.number().optional(),
+    env: z.record(z.string(), EnvEntrySchema).optional()
+  })
+  // `anyOf` is keyed BY the variable name it expands to (`{"GITHUB_TOKEN":
+  // {"anyOf":["GITHUB_TOKEN","GH_TOKEN"]}}`) — the key must be one of its own
+  // members, or the declaration can never actually resolve to that key. Zod's
+  // `record` validates each value's shape but has no cross-reference to its
+  // own key, hence this refine pass on top.
+  .superRefine((entry, ctx) => {
+    if (!entry.env) return
+    for (const [key, value] of Object.entries(entry.env)) {
+      if (typeof value !== 'object' || value === null || !('anyOf' in value)) continue
+      const members = value.anyOf
+      if (new Set(members).size !== members.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `env.${key}.anyOf has duplicate members`,
+          path: ['env', key, 'anyOf']
+        })
+      }
+      if (!members.includes(key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `env.${key}.anyOf must include "${key}" itself as a member`,
+          path: ['env', key, 'anyOf']
+        })
+      }
+    }
+  })
+
+export type CheckEntry = z.infer<typeof CheckEntrySchema>
+
+const HIGH_ENTROPY_MIN_LENGTH = 20
+
+/** Loose heuristic, not a secret scanner: a long literal mixing char classes with no whitespace reads more like a pasted token than a hand-typed config value. */
+function looksHighEntropy(value: string): boolean {
+  if (value.length < HIGH_ENTROPY_MIN_LENGTH) return false
+  if (/\s/.test(value)) return false
+  const classes = [/[a-z]/.test(value), /[A-Z]/.test(value), /[0-9]/.test(value)].filter(Boolean).length
+  return classes >= 2
+}
+
+/**
+ * Load-time lint warnings over `checks[*].env` literal-string forms — never
+ * a schema-validation failure (a suspicious literal is still valid config;
+ * this is advisory, surfaced by `vinaya check`'s warn output and `vinaya
+ * doctor`, never a load-time refusal).
+ */
+export function lintEnvDeclarations(checks: Record<string, CheckEntry> | undefined): string[] {
+  const warnings: string[] = []
+  if (!checks) return warnings
+  for (const [checkName, entry] of Object.entries(checks)) {
+    if (!entry.env) continue
+    for (const [key, value] of Object.entries(entry.env)) {
+      if (typeof value !== 'string') continue
+      if (value === 'true' || value === 'false') {
+        warnings.push(
+          `check "${checkName}" env.${key} is the literal string "${value}" — did you mean the boolean form \`${key}: true\` (forward the caller's value) rather than a hardcoded literal?`
+        )
+      } else if (looksHighEntropy(value)) {
+        warnings.push(
+          `check "${checkName}" env.${key} looks like a high-entropy literal (possible secret committed to config) — env declarations should reference variable NAMES the caller sets, not literal secret values.`
+        )
+      }
+    }
+  }
+  return warnings
+}
 
 // briefSchema: the config-defined brief schema
 // the forge-write commands validate a body against. WHICH sections a `pr`/

@@ -45,6 +45,25 @@ export type CheckSpec = {
   include?: string[]
   /** Advisory — the RUNNER enforces the actual timeout, never the check itself. */
   timeoutMs?: number
+  /**
+   * The env allowlist declaration for this check, keyed by variable name.
+   * Additive grammar, no conditionals:
+   *   - `true`          — forward the caller's value for this key verbatim.
+   *   - `{ optional: true }` — forward the caller's value if set; if unset,
+   *     the child simply doesn't see the key (the check's own code must
+   *     already tolerate that — most checks do, via a documented fallback).
+   *   - `{ anyOf: [...] }` — forward each named member under its own name
+   *     if the caller has it set. Adopter-facing only: no core check may use
+   *     this form unless its bin provably hard-requires one-of with no
+   *     fallback path.
+   *   - a literal string    — set the key to this exact value, never
+   *     interpolated (`"$PATH"` is four characters, not an expansion).
+   * Construction (not yet wired as the spawn default — see runner.ts) always
+   * starts from a fixed baseline (`PATH`, `LANG`, `HOME`, `HTTPS_PROXY`,
+   * `HTTP_PROXY`, `NO_PROXY`, `TMPDIR`) and only ADDS declared keys on top —
+   * it never removes a baseline key.
+   */
+  env?: Record<string, true | { optional: true } | { anyOf: string[] } | string>
 }
 
 /**

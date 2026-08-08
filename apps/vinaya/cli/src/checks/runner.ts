@@ -48,23 +48,200 @@ function shouldSkip(spec: CheckSpec, opts: RunOptions): boolean {
 /** Grace period between SIGTERM and SIGKILL for a timed-out check. */
 const KILL_GRACE_MS = 2000
 
+/**
+ * Every `killTree` currently in flight. `detached: true` below (needed so
+ * the TIMEOUT path can reach a check's whole process tree) has a side
+ * effect: it also removes each check from the terminal's own foreground
+ * process group, so a terminal Ctrl+C (SIGINT) no longer reaches them at
+ * all — without this registry, the CLI parent would die immediately
+ * (Node's default SIGINT disposition, no handler installed) and orphan
+ * every in-flight check exactly like the bug this whole file exists to
+ * close, just reachable via interrupt instead of timeout.
+ */
+const activeKillers = new Set<(signal: NodeJS.Signals) => void>()
+let signalForwardingInstalled = false
+
+/**
+ * Installed once per process (guarded, so repeated `runChecks` calls in a
+ * long-lived host — or in this file's own test suite — never pile up
+ * duplicate listeners). On SIGINT/SIGTERM: SIGTERM every active check's
+ * group, grace period, SIGKILL whatever's still alive, then exit with the
+ * conventional 128+signal code — mirroring the per-check escalation below
+ * at the whole-CLI level.
+ */
+function installSignalForwarding(): void {
+  if (signalForwardingInstalled) return
+  signalForwardingInstalled = true
+  const forward = (_signal: NodeJS.Signals, exitCode: number): void => {
+    for (const kill of activeKillers) kill('SIGTERM')
+    setTimeout(() => {
+      for (const kill of activeKillers) kill('SIGKILL')
+      process.exit(exitCode)
+    }, KILL_GRACE_MS)
+  }
+  process.on('SIGINT', () => forward('SIGINT', 130))
+  process.on('SIGTERM', () => forward('SIGTERM', 143))
+}
+
+/**
+ * The fixed baseline every constructed env starts from — always forwarded
+ * from the caller's env when present, and never removed by a declared
+ * entry (an entry may only override a baseline key's VALUE).
+ */
+const ENV_BASELINE_KEYS = ['PATH', 'LANG', 'HOME', 'HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY', 'TMPDIR'] as const
+
+/**
+ * Builds the env object a check's child process WOULD receive once
+ * allowlist construction is wired as the spawn default — a later minor
+ * (this task ships the warn release only; `runOne` below still calls
+ * `spawn()` with no `env` override, so the child inherits the full parent
+ * environment). This function is exported and unit-tested ahead of that
+ * flip so the construction logic is proven correct before it goes live.
+ *
+ * Expansion, never spread: the baseline keys above are forwarded from
+ * `callerEnv` when set, then each declared entry in `spec.env` layers on
+ * top, per its own form:
+ *   - `true` / `{ optional: true }` — forward `callerEnv[key]` if set;
+ *     both forms behave identically here (the difference between them is a
+ *     documentation-time contract — "this check hard-needs it" vs "this
+ *     check tolerates its absence" — not a construction-time one).
+ *   - `{ anyOf: [...] }` — for each member, forward `callerEnv[member]`
+ *     under ITS OWN name if the caller has it set — never renamed to `key`.
+ *   - a literal string — set `key` to that exact string, ignoring
+ *     `callerEnv` entirely (never interpolated: `"$PATH"` is four literal
+ *     characters, not an expansion).
+ */
+export function buildCheckEnv(
+  env: CheckSpec['env'],
+  callerEnv: NodeJS.ProcessEnv = process.env
+): Record<string, string> {
+  const out: Record<string, string> = {}
+
+  for (const key of ENV_BASELINE_KEYS) {
+    const value = callerEnv[key]
+    if (value !== undefined) out[key] = value
+  }
+
+  if (!env) return out
+
+  for (const [key, decl] of Object.entries(env)) {
+    if (decl === true || (typeof decl === 'object' && 'optional' in decl)) {
+      const value = callerEnv[key]
+      if (value !== undefined) out[key] = value
+    } else if (typeof decl === 'object' && 'anyOf' in decl) {
+      for (const member of decl.anyOf) {
+        const value = callerEnv[member]
+        if (value !== undefined) out[member] = value
+      }
+    } else if (typeof decl === 'string') {
+      out[key] = decl
+    }
+  }
+
+  return out
+}
+
 async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome> {
   const start = performance.now()
   // Same `node:child_process` shape as `spawnDev` in src/commands/studio.ts —
-  // no `env` override, so the child inherits the full parent environment.
+  // no `env` override, so the child inherits the full parent environment
+  // (`buildCheckEnv` above is built and tested, but not yet wired here —
+  // that flip is a later minor). `detached: true` puts the child in its OWN
+  // process group (pid becomes the group's pgid on POSIX) so the timeout
+  // handler below can kill the whole tree, not just this direct child.
   const proc = spawn(spec.run, spec.args ?? [], {
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true
   })
 
+  // Best-effort process-GROUP kill: negative pid targets every process in
+  // the child's group, reaching a grandchild the check itself shelled out
+  // to (previously survived the timeout entirely — the direct-child-only
+  // `proc.kill()` never reached it). Falls back to the single-pid form if
+  // the group kill throws (e.g. the group already exited, or a platform
+  // where negative-pid signaling isn't supported) — never left as the ONLY
+  // attempt, since a thrown group-kill must not mean "gave up."
+  function killTree(signal: NodeJS.Signals): void {
+    const pid = proc.pid
+    if (pid === undefined) return
+    try {
+      process.kill(-pid, signal)
+    } catch {
+      try {
+        proc.kill(signal)
+      } catch {
+        // Already gone — nothing left to signal.
+      }
+    }
+  }
+
+  installSignalForwarding()
+  activeKillers.add(killTree)
+
+  /**
+   * True once the child's own PID is confirmed gone — but a process GROUP
+   * can outlive its own leader (a grandchild the check spawned before
+   * dying). `process.kill(-pid, 0)` sends no real signal, it only probes
+   * whether the group still has a live member; ESRCH means it doesn't.
+   */
+  function groupStillAlive(pid: number): boolean {
+    try {
+      process.kill(-pid, 0)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   let timedOut = false
-  let killTimer: ReturnType<typeof setTimeout> | undefined
+  // Resolves once the escalation decision is actually made (grace period
+  // elapsed, group-liveness probed, SIGKILL sent if still needed) — awaited
+  // below before `runOne` returns, so the caller (and therefore the CLI
+  // process, which exits right after `runChecks` resolves) cannot exit out
+  // from under a still-pending escalation. A bare `setTimeout` with no
+  // await on it was the earlier bug's other half: the direct child's own
+  // 'close' let `runOne` return, and the CLI exited, before the scheduled
+  // SIGKILL ever got to fire — the escalation existed but nothing waited
+  // for it.
+  let escalationDone: Promise<void> = Promise.resolve()
+  // Lets the post-exitCode fast path (below) skip the rest of the grace
+  // period once it can already SEE the whole group is dead, instead of
+  // blocking every timed-out check for a full `KILL_GRACE_MS` regardless —
+  // the common case (nothing traps SIGTERM, direct child and every
+  // grandchild all die on the first group-wide signal).
+  let cancelEscalation: (() => void) | undefined
   const timer = setTimeout(() => {
     timedOut = true
     // SIGTERM first; a check that traps/ignores it would otherwise run
     // forever past its declared timeout — escalate to SIGKILL after a
     // grace period so "the runner enforces the timeout" is actually true.
-    proc.kill('SIGTERM')
-    killTimer = setTimeout(() => proc.kill('SIGKILL'), KILL_GRACE_MS)
+    killTree('SIGTERM')
+    escalationDone = new Promise((resolve) => {
+      // NOT cancelled merely because the DIRECT child's own 'close' fires
+      // (a group-wide SIGTERM commonly kills the direct child fast, well
+      // inside this grace period, while a grandchild that traps SIGTERM is
+      // still alive) — the group-liveness probe is the actual cancellation
+      // condition, applied by the caller via `cancelEscalation` once it can
+      // confirm the group's really gone. Gating on "direct child closed"
+      // alone (the previous shape) left a SIGTERM-trapping grandchild
+      // unreaped even though its group DID receive the escalation window.
+      const graceTimer = setTimeout(() => {
+        const pid = proc.pid
+        // Only signal if the group still has a live member. Sending
+        // SIGKILL to a group that has already fully exited risks hitting
+        // an OS-recycled, unrelated pgid instead — the group-liveness
+        // probe is the guard against that, not a correctness guarantee
+        // against every possible recycling race (POSIX gives no atomic
+        // "is this still MY group" check), but it closes the window from
+        // KILL_GRACE_MS down to this callback's own execution.
+        if (pid !== undefined && groupStillAlive(pid)) killTree('SIGKILL')
+        resolve()
+      }, KILL_GRACE_MS)
+      cancelEscalation = () => {
+        clearTimeout(graceTimer)
+        resolve()
+      }
+    })
   }, timeoutMs)
 
   let stderrText = ''
@@ -92,7 +269,20 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
     })
   })
   clearTimeout(timer)
-  clearTimeout(killTimer)
+  if (timedOut) {
+    // Fast path: the direct child's own close/error just fired — if the
+    // WHOLE group is already confirmed dead, skip the rest of the grace
+    // period instead of blocking this check for a full `KILL_GRACE_MS` for
+    // nothing. If anything in the group is still alive (a SIGTERM-trapping
+    // grandchild), leave the already-scheduled grace timer to run to its
+    // full duration — `escalationDone` below then blocks on ITS resolution.
+    const pid = proc.pid
+    if (pid === undefined || !groupStillAlive(pid)) cancelEscalation?.()
+    // Blocks until the escalation decision is actually made, not just
+    // scheduled — see the comment on `escalationDone` above.
+    await escalationDone
+  }
+  activeKillers.delete(killTree)
   const durationMs = performance.now() - start
 
   if (timedOut) {
@@ -170,16 +360,33 @@ async function runOne(spec: CheckSpec, timeoutMs: number): Promise<CheckOutcome>
  * see `tests/checks/no-privileged-api.test.ts` for the mechanical proof.
  *
  * The runner enforces the per-check timeout itself (spawn, SIGTERM, escalate
- * to SIGKILL after `KILL_GRACE_MS`) — a check trusted to time itself out
- * cannot be trusted at all.
+ * to SIGKILL after `KILL_GRACE_MS`, both targeting the check's whole process
+ * GROUP via `detached: true` + negative-pid signaling — closed live, this
+ * task) — a check trusted to time itself out cannot be trusted at all, and a
+ * check trusted to kill its own children on the way out cannot be trusted
+ * at that either. The SIGKILL escalation is awaited (`escalationDone`), not
+ * fire-and-forget: `runOne` does not return until the grace period has
+ * elapsed AND a group-liveness probe (`process.kill(-pid, 0)`) has run —
+ * cancelling it merely because the DIRECT child's own `'close'` fired left a
+ * SIGTERM-trapping grandchild unreaped, and not awaiting it at all let the
+ * CLI exit (right after `runChecks` resolves) before the scheduled SIGKILL
+ * ever got to fire. `detached: true`'s other side effect — removing every
+ * check from the terminal's foreground process group, so Ctrl+C no longer
+ * reaches them — is closed by `installSignalForwarding`: every in-flight
+ * check's `killTree` is registered in `activeKillers`, and a SIGINT/SIGTERM
+ * to the CLI itself forwards to all of them before the CLI exits.
  *
- * Known hardening gaps, not addressed by this task (documented rather than
- * silently ignored): the spawn inherits the full parent environment — the
+ * Known hardening gap, not yet addressed (documented rather than silently
+ * ignored): the spawn still inherits the full parent environment — the
  * contract's "no-network-by-default" rule is convention-only, nothing here
- * sandboxes or scrubs a check's network access or secret visibility; and the
- * timeout kill targets only the direct child, not a process group/tree, so a
- * check that itself shells out to a further subprocess can leave that
- * grandchild running past the kill.
+ * sandboxes or scrubs a check's network access or secret visibility.
+ * `CheckSpec['env']` + `buildCheckEnv` above are the allowlist grammar and
+ * construction logic for closing this gap, built and tested but not yet
+ * wired as the spawn default — this task ships the warn release only
+ * (`vinaya check`/`vinaya doctor` warn when a check reads `process.env`
+ * with no `env` declaration); a later minor flips `spawn()` to pass
+ * `buildCheckEnv(spec.env)` as its `env` option, at which point this
+ * comment updates again.
  */
 export async function runChecks(specs: CheckSpec[], opts: RunOptions): Promise<CheckOutcome[]> {
   const results: CheckOutcome[] = new Array(specs.length)

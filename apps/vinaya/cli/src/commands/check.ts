@@ -4,6 +4,7 @@ import { coreCheckRegistry } from '../checks/registry'
 import { defaultParallelism, runChecks } from '../checks/runner'
 import { loadConfigChecked } from '../lib/config'
 import { printJson } from '../lib/envelope'
+import { checksMissingEnvDeclaration, envDeclarationWarning } from '../lib/env-lint'
 
 // Array-form execFileSync — no shell, so `base` (env-controlled) is passed
 // to git as an inert literal argv element, never shell-interpreted.
@@ -79,6 +80,17 @@ export async function checkCommand(args: string[]): Promise<void> {
   if (!allRequested && specsToRun.length === 0) {
     console.error(`Unknown check: ${requestedName}`)
     process.exit(2)
+  }
+
+  // Warn-phase-only (task 2/#775 Part 1: spawn still inherits the caller's
+  // full environment — this print is advisory, ahead of the later minor
+  // that wires `buildCheckEnv` as the spawn default). Printed to stderr, on
+  // every output mode, and never folded into the exit code below — the run
+  // still exits by check results, not by this warning. Remove this call
+  // (not `checksMissingEnvDeclaration` itself, which `vinaya doctor` keeps
+  // using permanently) once construction is wired as the default.
+  for (const name of checksMissingEnvDeclaration(specsToRun)) {
+    console.error(`⚠ ${envDeclarationWarning(name)}`)
   }
 
   const changed = diffOnly ? changedFiles() : null

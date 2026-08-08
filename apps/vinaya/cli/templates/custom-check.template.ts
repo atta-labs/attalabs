@@ -7,6 +7,16 @@
  * never sleep past it inside this file. This file is standalone (no import
  * from the vinaya CLI's own source tree) because it lives in YOUR repo, not
  * inside `@attalabs/vinaya`.
+ *
+ * If this check reads `process.env` directly, declare which variables it
+ * needs on its REGISTRATION in `vinaya.config.json` (not in this file —
+ * there is no CheckSpec type to attach it to here) via `checks.{{CHECK_NAME}}.env`.
+ * Four forms: `"MY_VAR": true` forwards your value verbatim; `{ "optional":
+ * true }` forwards it if set, tolerating absence; `{ "anyOf": ["A", "B"] }`
+ * forwards whichever of those you've set, each under its own name; a
+ * literal string sets the key to that exact value. Example:
+ *   { "checks": { "{{CHECK_NAME}}": { "run": "...", "scope": "diff",
+ *       "env": { "MY_TOKEN": { "optional": true } } } } }
  */
 
 type CheckError = {

@@ -12,7 +12,7 @@ import { runChecks } from '../../src/checks/runner'
 
 const FIXTURE = join(import.meta.dir, '..', 'fixtures', 'checks', 'passing-check.ts')
 
-const ALLOWED_KEYS = new Set<keyof CheckSpec>(['name', 'run', 'args', 'scope', 'include', 'timeoutMs'])
+const ALLOWED_KEYS = new Set<keyof CheckSpec>(['name', 'run', 'args', 'scope', 'include', 'timeoutMs', 'env'])
 
 describe('no-privileged-api', () => {
   it('core registry CheckSpecs carry no field a config-derived CheckSpec cannot carry', () => {
