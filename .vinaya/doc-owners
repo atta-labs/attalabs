@@ -122,3 +122,18 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 apps/vinaya/cli/src/commands/**                       apps/vinaya/sources/src/commands.ts
 apps/vinaya/cli/src/lib/config.ts                     apps/vinaya/specs/vinaya-spec.md
 apps/vinaya/cli/src/checks/registry.ts                aeg-root/enforcement.md
+
+# ── governance-skill-coverage residual, task 5 (#678, 2026-08-08) ─────────
+# apps/vinaya's residual (web/**, sources/**, and the rest of cli/** beyond
+# the three narrow bindings above) is real product code with a real
+# architecture doc behind it — apps/vinaya/specs/vinaya-spec.md documents
+# the routes, check engine, config, install lifecycle, forge writes, and
+# renderer contract in depth, and .claude/skills/vinaya-architecture/SKILL.md
+# (this task) distills that spec into the same architecture-first shape
+# .claude/skills/vada-architecture/SKILL.md already uses for its own
+# apps/vada-ai/** binding below — same pattern, same honesty bar. This
+# binding stacks with the three narrower ones above (a commands/** change
+# still owes sources/src/commands.ts too), matching how apps/vada-ai/**
+# already stacks under its own narrower mcp-server/home-sections bindings.
+
+apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md

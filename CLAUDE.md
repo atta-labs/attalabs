@@ -168,6 +168,10 @@ In-depth guides for specific domains. Reference when working in that area.
 | Atta Adapter | [.claude/skills/atta-adapter-langgraph/SKILL.md](.claude/skills/atta-adapter-langgraph/SKILL.md) | LangGraph execution + cognitive router |
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
+| AEG Model | [.claude/skills/aeg-model/SKILL.md](.claude/skills/aeg-model/SKILL.md) | Governance doctrine (`aeg-root/**`) — four truth domains, three-ring enforcement, tranche lifecycle, role/contract seam |
+| AEG Core | [.claude/skills/aeg-core/SKILL.md](.claude/skills/aeg-core/SKILL.md) | `@atta/aeg-core`'s pure gate evaluators — dispatch readiness, doc-coverage C5, coherence oracle, diagram model |
+| AEG Forge State | [.claude/skills/aeg-forge-state/SKILL.md](.claude/skills/aeg-forge-state/SKILL.md) | `@atta/aeg-forge-state`'s forge-derivation adapter — Milestones + labeled Issues, zero topology file |
+| Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — CLI/web/sources split, check engine, install lifecycle, renderer contract |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Brief Authoring | [aeg-root/skills/brief-authoring/SKILL.md](aeg-root/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |
