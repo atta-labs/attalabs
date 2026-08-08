@@ -59,91 +59,198 @@ export function coreCheckRegistry(): CheckSpec[] {
       name: 'brief-shape',
       run: bin('check-brief-shape'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // `process.env.PR_BODY ?? ''` — a missing PR_BODY is the documented
+      // "local dev outside a CI/PR context — nothing to do" bypass, not a
+      // hard requirement.
+      env: { PR_BODY: { optional: true } }
     },
     {
       name: 'doc-coverage',
       run: bin('check-doc-coverage'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // `resolvePrBody()` falls through to `''` when neither PR_BODY nor
+      // PR_BODY_FILE is set — the legitimate ring-0 "no PR exists yet" case.
+      // BASE_SHA/PR_LABELS/WAIVER_LABEL_ACTOR each already default via
+      // `|| 'origin/main'` / `|| ''` / `|| null` in the bin itself.
+      env: {
+        BASE_SHA: { optional: true },
+        PR_BODY: { optional: true },
+        PR_BODY_FILE: { optional: true },
+        PR_LABELS: { optional: true },
+        WAIVER_LABEL_ACTOR: { optional: true }
+      }
     },
     {
       name: 'coherence',
       run: bin('check-coherence'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // `resolveToken()`'s three-tier fallback (GITHUB_TOKEN, then GH_TOKEN,
+      // then a `gh auth token` subprocess) means neither var is ever
+      // hard-required — the subprocess path is the documented reason zero
+      // pre-spawn env coverage is the correct outcome here, not a gap.
+      // AEG_REPO/BRANCH each fall back to `git remote`/`git rev-parse`.
+      env: {
+        AEG_REPO: { optional: true },
+        BRANCH: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
+      }
     },
     {
       name: 'dispatch-readiness',
       run: bin('check-dispatch-readiness'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // Identical `resolveToken()` three-tier fallback to `coherence` above
+      // — same reasoning, same declaration.
+      env: {
+        AEG_REPO: { optional: true },
+        BRANCH: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
+      }
     },
     {
       name: 'closes-n',
       run: bin('check-closes-n'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // `process.env.PR_BODY ?? ''`; BRANCH/AEG_REPO both fall back to git
+      // (`rev-parse --abbrev-ref HEAD` / `remote get-url origin`).
+      env: {
+        BRANCH: { optional: true },
+        PR_BODY: { optional: true },
+        AEG_REPO: { optional: true }
+      }
     },
     {
       name: 'single-plan-pr',
       run: bin('check-single-plan-pr'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // BASE_SHA defaults to `'origin/main'`; PR_NUMBER's absence takes the
+      // explicit `? Number(...) : null` branch — both tolerate absence.
+      env: {
+        BASE_SHA: { optional: true },
+        PR_NUMBER: { optional: true }
+      }
     },
     {
       name: 'test-plan',
       run: bin('check-test-plan'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // `process.env.PR_BODY ?? ''` / `process.env.BRANCH ?? ''` — both
+      // plain absence-tolerant fall-throughs.
+      env: {
+        PR_BODY: { optional: true },
+        BRANCH: { optional: true }
+      }
     },
     {
       name: 'no-disk-state',
       run: bin('check-no-disk-state'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // BASE_SHA defaults to `'origin/main'`, with a further `main...HEAD`
+      // fallback in the bin itself when that yields no files.
+      env: { BASE_SHA: { optional: true } }
     },
     {
       name: 'registry-gates',
       run: bin('check-registry-gates'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // `resolveRepo()`'s only env read; falls back to `git remote get-url
+      // origin` when unset. The bin is otherwise dormant (exit 0) when
+      // `aeg-root/enforcement.md` doesn't exist — no other env dependency.
+      env: { AEG_REPO: { optional: true } }
     },
     {
       name: 'review-gate',
       run: bin('check-review-gate'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // BRANCH falls back to git; PR_NUMBER's absence takes the explicit
+      // "no PR to evaluate yet (local dev, pre-push before a PR exists)"
+      // bypass documented in the bin's own module comment.
+      env: {
+        BRANCH: { optional: true },
+        PR_NUMBER: { optional: true }
+      }
     },
     {
       name: 'branch-topology',
       run: bin('check-branch-topology'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // BRANCH falls back to git; AEG_REPO falls back to `git remote`.
+      env: {
+        BRANCH: { optional: true },
+        AEG_REPO: { optional: true }
+      }
     },
     {
       name: 'dead-branch-push',
       run: bin('check-dead-branch-push'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // BRANCH falls back to `git rev-parse --abbrev-ref HEAD`; the bin's
+      // own module comment documents fail-open (UNKNOWN → allow) for every
+      // other forge-reachability gap, unrelated to env absence.
+      env: { BRANCH: { optional: true } }
     },
     {
       name: 'first-push-dispatch',
       run: bin('check-first-push-dispatch'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // BRANCH/AEG_REPO fall back to git; GITHUB_TOKEN/GH_TOKEN read as
+      // `process.env.GITHUB_TOKEN || process.env.GH_TOKEN || ''` inside
+      // `classifyReadiness` — absence degrades to an empty token, which
+      // `fetchOpenIssuesByLabel` tolerates (fail-open, per the bin's own
+      // module comment on forge-reachability failures).
+      env: {
+        BRANCH: { optional: true },
+        AEG_REPO: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
+      }
     },
     {
       name: 'doc-coverage-push',
       run: bin('check-doc-coverage-push'),
       scope: 'diff',
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      // Same `resolvePrBody()`/BASE_SHA/PR_LABELS/WAIVER_LABEL_ACTOR
+      // absence-tolerance as `doc-coverage` above, plus OVERRIDE_DOCS
+      // (`overrideActive()`'s first, env-only check) which is opt-in by
+      // design — absence is the default, unremarkable path.
+      env: {
+        OVERRIDE_DOCS: { optional: true },
+        BASE_SHA: { optional: true },
+        PR_BODY: { optional: true },
+        PR_BODY_FILE: { optional: true },
+        PR_LABELS: { optional: true },
+        WAIVER_LABEL_ACTOR: { optional: true }
+      }
     },
     {
       name: 'issue-assignment',
       run: bin('check-issue-assignment'),
       scope: 'full',
-      timeoutMs: 30_000
+      timeoutMs: 30_000,
+      // AEG_REPO/BRANCH both fall back to git. Every other fact this bin
+      // needs (remote-ref existence, assignees, the authenticated login)
+      // comes from `gh` subprocess calls gated behind `parsed &&
+      // !remoteRefExists`, never a raw env read.
+      env: {
+        AEG_REPO: { optional: true },
+        BRANCH: { optional: true }
+      }
     }
   ]
 }
