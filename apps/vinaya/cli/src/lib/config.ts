@@ -243,6 +243,28 @@ export function configPath(): string | null {
 }
 
 /**
+ * `checks` registration from the global config is explicitly out of scope
+ * (spec chapter, "Explicitly out of scope for this design") — stripped at
+ * config-*loading* time, never resolved, with a loud warning naming the
+ * file. This is what keeps the resolver itself source-blind: it takes one
+ * `config` parameter with no notion of "this came from global vs. local,"
+ * because every caller already sees an already-stripped config.
+ *
+ * There is no `roles` key to strip yet — `VinayaConfigSchema` has no `roles`
+ * field, so a global config's hypothetical `roles` key is already silently
+ * dropped by Zod's default parse behavior (unknown keys are stripped, no
+ * `.passthrough()` on `VinayaConfigSchema`). A `roles` field belongs to a
+ * later task, not this one.
+ */
+function stripGlobalChecks(config: VinayaConfig, path: string): VinayaConfig {
+  if (path !== GLOBAL_CONFIG_PATH || !config.checks || Object.keys(config.checks).length === 0) return config
+  console.error(
+    `⚠ ${path}: "checks" registration in the global config is ignored — checks may only be registered from a repo-local vinaya.config.json.`
+  )
+  return { ...config, checks: undefined }
+}
+
+/**
  * Hierarchical config loader:
  * 1. Repo-local vinaya.config.json (walk up from cwd)
  * 2. Global ~/.vinaya/config.json
@@ -253,7 +275,7 @@ export function loadConfig(): VinayaConfig | null {
   if (!path) return null
   try {
     const raw = JSON.parse(readFileSync(path, 'utf-8'))
-    return VinayaConfigSchema.parse(raw)
+    return stripGlobalChecks(VinayaConfigSchema.parse(raw), path)
   } catch {
     return null
   }
@@ -287,7 +309,7 @@ export function loadConfigChecked(): ConfigLoadResult {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; ')
     return { ok: false, path, error: detail }
   }
-  return { ok: true, config: parsed.data }
+  return { ok: true, config: stripGlobalChecks(parsed.data, path) }
 }
 
 /**
