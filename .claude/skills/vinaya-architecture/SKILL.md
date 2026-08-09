@@ -48,7 +48,11 @@ CheckSpec { name, run, args?, scope: 'diff'|'full', include?, timeoutMs?, env? }
    ├─ scope:'full'  → always runs (coherence, dispatch-readiness — both read live forge state)
    └─ env           → declared allowlist; child spawns with ONLY the fixed baseline
                        (PATH/LANG/HOME/HTTPS_PROXY/HTTP_PROXY/NO_PROXY/TMPDIR) plus
-                       whatever the check explicitly forwards — never the full parent env
+                       whatever the check explicitly forwards — never the full parent env.
+                       Any core check whose bin spawns `gh` (any call shape) or reaches
+                       the forge via token resolution must forward GITHUB_TOKEN/GH_TOKEN
+                       `{ optional: true }` — on CI runners those vars are `gh`'s only
+                       auth path; coupling-tested in tests/checks/registry-env.test.ts
    ▼
 runner.ts:  spawn → race timeoutMs → parse stderr as CheckError JSON lines → CheckOutcome
    ▼
