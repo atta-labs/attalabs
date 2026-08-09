@@ -128,6 +128,17 @@ export const REQUIRED_COMPONENTS = [
   'BreadcrumbPage',
   'BreadcrumbSeparator',
 
+  // Navigation — NavigationMenu
+  'NavigationMenu',
+  'NavigationMenuContent',
+  'NavigationMenuIndicator',
+  'NavigationMenuItem',
+  'NavigationMenuLink',
+  'NavigationMenuList',
+  'NavigationMenuTrigger',
+  'NavigationMenuViewport',
+  'navigationMenuTriggerStyle',
+
   // Table
   'Table',
   'TableBody',
@@ -279,6 +290,16 @@ export const REQUIRED_TYPES = [
   'BreadcrumbPageProps',
   'BreadcrumbSeparatorProps',
   'BreadcrumbEllipsisProps',
+
+  // Navigation — NavigationMenu
+  'NavigationMenuProps',
+  'NavigationMenuListProps',
+  'NavigationMenuItemProps',
+  'NavigationMenuTriggerProps',
+  'NavigationMenuContentProps',
+  'NavigationMenuLinkProps',
+  'NavigationMenuIndicatorProps',
+  'NavigationMenuViewportProps',
 
   // Typography — Heading
   'HeadingLevel',

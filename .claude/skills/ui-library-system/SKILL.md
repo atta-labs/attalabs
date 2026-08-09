@@ -707,6 +707,33 @@ consumer may legitimately override, not a universal default like Button's `leadi
 which merges last precisely so it always wins. If retroui fixes the flavor upstream,
 re-paste `installed/` and delete the adapter; do not hand-edit `installed/` either way.
 
+**`NavigationMenu`** (#817) joined the contract as nine
+component names (`NavigationMenu`, `NavigationMenuList`, `NavigationMenuItem`,
+`NavigationMenuTrigger`, `NavigationMenuContent`, `NavigationMenuLink`,
+`NavigationMenuIndicator`, `NavigationMenuViewport`,
+`navigationMenuTriggerStyle`) plus eight structural Props types
+(`packages/ui/types/navigation/navigation-menu.ts`, the breadcrumb pattern —
+each type keyed off the underlying HTML element, not a specific Radix
+primitive, so it stays stable across the three genuinely different upstream
+pastes below). `basic` ← shadcn's `navigation-menu` (per-component
+`@radix-ui/react-navigation-menu` import, added to `packages/ui/package.json`);
+`retro` ← `https://retroui.dev/r/radix/navigation-menu.json` (consolidated
+`radix-ui` import, native); `brutal` ← `https://www.neobrutalism.dev/r/navigation-menu.json`
+(also Radix-based, native — unlike Toggle, this registry item exists and its
+export set matches the contract, so brutal vendors its own rather than falling
+back to basic). `animate` has no upstream equivalent (registry 404s, verified
+against `https://animate-ui.com/r/navigation-menu.json`) and falls back to
+basic's `installed/navigation-menu.tsx`, same as `Breadcrumb`.
+
+Three of the four libraries — basic, retro, brutal — ship their OWN vendored
+`installed/navigation-menu.tsx`, which makes this the first contracted
+component where a **majority** of libraries have real upstream parity rather
+than one canonical plus basic fallbacks (contrast `Breadcrumb`, still
+three-of-four fallback). No wrapper was needed anywhere: all three upstreams
+export the same flat component names Radix's `NavigationMenu` primitive
+defines, so each library's `components/index.ts` re-exports straight from its
+own `installed/`.
+
 ### Governance — shared composites resolve NO library; consumers inject
 
 > **Rule:** A shared composite component MUST NOT import from any concrete

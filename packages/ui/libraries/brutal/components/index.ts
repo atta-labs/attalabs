@@ -87,7 +87,7 @@ export {
 // Layout
 export { Separator } from '../installed/separator'
 
-// Navigation — falls back to basic (no neobrutalism equivalent yet)
+// Navigation — Breadcrumb falls back to basic (no neobrutalism equivalent yet)
 export {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -97,6 +97,19 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '../../basic/installed/breadcrumb'
+
+// Navigation — NavigationMenu is native neobrutalism
+export {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuIndicator,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
+  navigationMenuTriggerStyle
+} from '../installed/navigation-menu'
 
 // Content — Table
 export { Table } from './table'
