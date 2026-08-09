@@ -87,7 +87,7 @@ const STEPS: {
       }
     ],
     render: () => <CommandLine command='vinaya init' />,
-    cliHref: '/cli#command-init'
+    cliHref: '/docs/cli#command-init'
   },
   {
     number: 3,
@@ -99,7 +99,7 @@ const STEPS: {
       }
     ],
     render: () => <CommandLine command='vinaya init product <name>' />,
-    cliHref: '/cli#command-init-product'
+    cliHref: '/docs/cli#command-init-product'
   },
   {
     number: 4,

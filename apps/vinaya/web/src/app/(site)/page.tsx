@@ -58,10 +58,10 @@ export default function HomePage() {
         product='vinaya'
         tagline='Execution governance for software teams'
         links={[
-          { label: 'The Harness', href: '/the-harness' },
+          { label: 'The Harness', href: '/docs/harness' },
           { label: 'Studio', href: '/the-studio' },
           { label: 'Start', href: '/start' },
-          { label: 'CLI', href: '/cli' },
+          { label: 'CLI', href: '/docs/cli' },
           { label: 'Docs', href: '/docs' }
         ]}
       />

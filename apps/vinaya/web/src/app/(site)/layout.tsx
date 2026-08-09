@@ -8,14 +8,17 @@ import { ElectricLabel } from './_components/ElectricLabel'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/', exact: true },
-  { label: 'The Harness', href: '/the-harness' },
+  { label: 'The Harness', href: '/docs/harness' },
   // Beside The Harness: both are code-derived reference pages — that one draws
   // the enforcement model, this one renders the state machine's own tables.
-  { label: 'State Machine', href: '/state-machine' },
+  { label: 'State Machine', href: '/docs/state-machine' },
   { label: 'Start', href: '/start' },
-  { label: 'CLI', href: '/cli' },
+  { label: 'CLI', href: '/docs/cli' },
   { label: 'Config', href: '/config' },
-  { label: 'Docs', href: '/docs' },
+  // `exact: true` — otherwise the `/docs` prefix-match lights this item up
+  // for every moved child too (harness/state-machine/cli/reference all now
+  // live under `/docs/*`), alongside whichever of those is actually active.
+  { label: 'Docs', href: '/docs', exact: true },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Roadmap', href: '/roadmap' }
 ]
