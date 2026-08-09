@@ -41,6 +41,7 @@ export const CONFIG_PATH = 'vinaya.config.json'
 export const DOCTRINE_POINTER_PATH = 'VINAYA.md'
 export const CHECKS_WORKFLOW_PATH = '.github/workflows/vinaya-checks.yml'
 export const REVIEW_WORKFLOW_PATH = '.github/workflows/vinaya-review.yml'
+export const REVIEW_VERDICT_WORKFLOW_PATH = '.github/workflows/vinaya-review-verdict.yml'
 export const ARCHIVIST_WORKFLOW_PATH = '.github/workflows/vinaya-archivist.yml'
 
 const MANAGED_NOTE =
@@ -117,30 +118,80 @@ jobs:
 function reviewWorkflow(): string {
   return `# ${MANAGED_NOTE}
 #
-# The review gate — split from the checks suite so a verdict *comment*
-# re-triggers it. GitHub fires \`issue_comment\` for a new PR comment, a
-# different event from \`pull_request\`; the checks workflow (pull_request only)
-# structurally cannot receive it. A cheap \`contains(..., 'VERDICT')\` guard
-# runs before any checkout cost, so ordinary PR chat spends no billed minute.
+# The required review gate — pull_request events only. The verdict-comment
+# half lives in its own workflow (vinaya-review-verdict.yml): a new PR
+# comment fires a different GitHub event that this pull_request-only
+# workflow structurally cannot receive — and keeping the comment path in a
+# separate FILE means this workflow's runs never list permanently-skipped
+# comment jobs on the PR's checks panel. When a clean final verdict lands,
+# the verdict workflow re-runs this one, so the required check below goes
+# green natively with no manual rerun.
 name: Vinaya Review Gate
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
-  issue_comment:
-    types: [created]
 
 jobs:
   vinaya-review:
     name: vinaya review gate
-    if: >
-      github.event_name == 'pull_request' ||
-      (github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
       issues: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # This job executes repo content; don't leave the token in
+          # .git/config for scripts to read.
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Review gate
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes @attalabs/vinaya check --all
+`
+}
+
+function reviewVerdictWorkflow(): string {
+  return `# ${MANAGED_NOTE}
+#
+# The verdict-comment half of the review gate. A reviewer's verdict arrives
+# as a PR comment (\`VERDICT: APPROVE\` / \`VERDICT: PASS\`), which fires
+# GitHub's \`issue_comment\` event — an event the required pull_request
+# workflow cannot receive. This workflow evaluates the gate on that comment
+# and, when the evaluation is clean, RE-RUNS the required workflow so its
+# check goes green natively with no manual rerun. (Writing check-run
+# conclusions directly is no longer possible: GitHub's 2025-02-12 change
+# restricts check-run updates to the owning workflow — re-running is the
+# supported channel.)
+#
+# Privilege split, deliberate: \`evaluate\` checks out and executes repo
+# content and therefore holds NO write permission; \`retrigger\` holds
+# \`actions: write\` but checks out and executes nothing — its only inputs
+# are the evaluator's outputs, resolved via \`gh pr view\` before any repo
+# content ran. A malicious branch can at worst fail its own evaluation.
+name: Vinaya Review Gate (on verdict)
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  evaluate:
+    name: vinaya review gate (verdict check)
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, 'VERDICT')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    outputs:
+      branch: \${{ steps.pr.outputs.branch }}
     steps:
       # issue_comment payloads carry no PR head SHA/branch — resolve them
       # before checkout, and check out that exact commit (the event's default
@@ -150,24 +201,49 @@ jobs:
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "\${{ github.event_name }}" = "pull_request" ]; then
-            NUMBER="\${{ github.event.pull_request.number }}"
-          else
-            NUMBER="\${{ github.event.issue.number }}"
-          fi
+          NUMBER="\${{ github.event.issue.number }}"
+          BRANCH=$(gh pr view "$NUMBER" --repo "\${{ github.repository }}" --json headRefName -q .headRefName)
           SHA=$(gh pr view "$NUMBER" --repo "\${{ github.repository }}" --json headRefOid -q .headRefOid)
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           ref: \${{ steps.pr.outputs.sha }}
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Review gate
+      - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya check --all
+        run: npx --yes @attalabs/vinaya check review-gate
+
+  # Executes nothing; consumes only the evaluator's outputs. Fires only on a
+  # clean evaluation — a failed one leaves the standing red untouched.
+  retrigger:
+    name: vinaya review gate (retrigger)
+    if: needs.evaluate.result == 'success'
+    needs: evaluate
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run the required review gate for this branch
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          BRANCH: \${{ needs.evaluate.outputs.branch }}
+        run: |
+          RUN_ID=$(gh run list --repo "\${{ github.repository }}" \\
+            --workflow vinaya-review.yml --branch "$BRANCH" \\
+            --status completed \\
+            --json databaseId,event \\
+            --jq '[.[] | select(.event=="pull_request")][0].databaseId // empty')
+          if [ -z "$RUN_ID" ]; then
+            echo "No completed pull_request run of vinaya-review.yml for branch $BRANCH - nothing to re-run."
+            exit 0
+          fi
+          gh run rerun "$RUN_ID" --repo "\${{ github.repository }}"
 `
 }
 
@@ -411,6 +487,12 @@ export function buildInitOps(ctx: InitContext): Op[] {
   // Workflows (refuse-if-foreign create-file).
   ops.push({ kind: 'create-file', path: CHECKS_WORKFLOW_PATH, content: checksWorkflow(), group: 'CI workflows' })
   ops.push({ kind: 'create-file', path: REVIEW_WORKFLOW_PATH, content: reviewWorkflow(), group: 'CI workflows' })
+  ops.push({
+    kind: 'create-file',
+    path: REVIEW_VERDICT_WORKFLOW_PATH,
+    content: reviewVerdictWorkflow(),
+    group: 'CI workflows'
+  })
   ops.push({ kind: 'create-file', path: ARCHIVIST_WORKFLOW_PATH, content: archivistWorkflow(), group: 'CI workflows' })
 
   // Git hooks (marker-delimited managed blocks; never clobber).
