@@ -599,7 +599,7 @@ look). Lives at
 `ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
 
 **Why it exists — the float must not be uniform.** The consumer (the shared
-`@atta/ui/topbar`, and the Vinaya `/docs`, `/cli` rails + the `/the-harness`
+`@atta/ui/topbar`, and the Vinaya `/docs/reference`, `/docs/cli` rails + the `/docs/harness`
 panel) supplies only the *shared inner layout* via `className` (the topbar's
 `relative`/`h-14` row, a rail's scroll box) and the *content* via `children`; the
 frame supplies the *margin + surface*. So the float is retro's alone — it can

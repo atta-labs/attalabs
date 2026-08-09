@@ -17,14 +17,14 @@ import type { Doc, DocNav } from '@atta/aeg-core/docs'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 
-/** The map at `/docs` — where the "The Harness" title used to link. A plain
- * title reads as decoration, not a link, so the overview is its own item. */
+/** The map at `/docs/reference` — where the "The Harness" title used to link. A
+ * plain title reads as decoration, not a link, so the overview is its own item. */
 const OVERVIEW_DOC: Doc = {
   slug: 'overview',
   title: 'Overview',
   section: 'Overview',
   order: 0,
-  href: '/docs',
+  href: '/docs/reference',
   filePath: ''
 }
 

@@ -8,14 +8,17 @@ import { ElectricLabel } from './_components/ElectricLabel'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/', exact: true },
-  { label: 'The Harness', href: '/the-harness' },
+  { label: 'The Harness', href: '/docs/harness' },
   // Beside The Harness: both are code-derived reference pages — that one draws
   // the enforcement model, this one renders the state machine's own tables.
-  { label: 'State Machine', href: '/state-machine' },
+  { label: 'State Machine', href: '/docs/state-machine' },
   { label: 'Start', href: '/start' },
-  { label: 'CLI', href: '/cli' },
+  { label: 'CLI', href: '/docs/cli' },
   { label: 'Config', href: '/config' },
-  { label: 'Docs', href: '/docs' },
+  // `exact: true` — otherwise the `/docs` prefix-match lights this item up
+  // for every moved child too (harness/state-machine/cli/reference all now
+  // live under `/docs/*`), alongside whichever of those is actually active.
+  { label: 'Docs', href: '/docs', exact: true },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Roadmap', href: '/roadmap' }
 ]
@@ -40,8 +43,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   // App-shell height: the shell is a full-viewport flex column — TopBar keeps
   // its own intrinsic height, the content region takes exactly the rest. Pages
-  // that want to fill the viewport (the diagram, docs) use `h-full` against
-  // this region; long pages (Home) scroll inside it. No page hardcodes the
+  // that want to fill the viewport (docs/harness, docs/reference and its
+  // sibling doctrine pages) use `h-full` against this region; long pages
+  // (Home, the /docs hub) scroll inside it. No page hardcodes the
   // TopBar's pixel height (the old `calc(100dvh-56px)`), so the shell can never
   // drift a few pixels into a stray window scroll.
   return (

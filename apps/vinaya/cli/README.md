@@ -62,7 +62,7 @@ Glob scoping (`include`) is permitted; conditional logic (`if`/`unless`/`except`
 
 ## Check contract — quick reference
 
-Full field-by-field reference: [vinaya.attalabs.dev/cli](https://vinaya.attalabs.dev/cli). The short version — what an executable must do to be a valid check:
+Full field-by-field reference: [vinaya.attalabs.dev/docs/cli](https://vinaya.attalabs.dev/docs/cli). The short version — what an executable must do to be a valid check:
 
 - Exit `0` to pass, `1` to report findings. Any other exit code reads as `status: 'error'` to the runner.
 - Emit findings as JSON lines on stderr, one per line: `{ schema: 1, check, severity: 'error' | 'warning', message, agent_recovery_prompt, file?, line? }`.
@@ -84,7 +84,7 @@ Custom checks are any executable you register in `vinaya.config.json`, in any la
 
 ## Documentation
 
-Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/cli](https://vinaya.attalabs.dev/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
+Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/docs/cli](https://vinaya.attalabs.dev/docs/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
 
 ## License
 

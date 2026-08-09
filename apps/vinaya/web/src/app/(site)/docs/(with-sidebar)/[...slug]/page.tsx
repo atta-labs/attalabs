@@ -2,12 +2,16 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ACTIONS, type DiagramModel, type DiagramNode } from '@atta/aeg-core'
 import { findDoc, getNextDoc, getPrevDoc, nodeDocRoute, publishedDoctrineBody } from '@atta/aeg-core/docs'
-import { badgeLabels, humanLabel } from '../../the-harness/_lib/display-label'
-import { loadDiagramModel } from '../../the-harness/_lib/load-diagram'
+import { badgeLabels, humanLabel } from '../../(standalone)/harness/_lib/display-label'
+import { loadDiagramModel } from '../../(standalone)/harness/_lib/load-diagram'
 import { githubBlobUrl } from '@/lib/github-links'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
-import { DocPage } from '../_components/DocPage'
-import { type HarnessSection, type HarnessSectionGroup, HarnessSectionsPage } from '../_components/HarnessSectionsPage'
+import { DocPage } from '../../_components/DocPage'
+import {
+  type HarnessSection,
+  type HarnessSectionGroup,
+  HarnessSectionsPage
+} from '../../_components/HarnessSectionsPage'
 
 type Params = { slug: string[] }
 

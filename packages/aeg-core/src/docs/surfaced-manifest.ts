@@ -2,8 +2,8 @@
  * The canonical "surfaced doc" manifest for `aeg-root/`. Defines, as
  * data, which docs a public AEG page shows. The rule is **model-backed**: a
  * doc is surfaced if and only if a `DiagramModel` node points at it.
- * The same `DiagramModel` that `/the-harness` renders is the allowlist for
- * `/docs` — the two surfaces are two renderers of one model, and the doc that
+ * The same `DiagramModel` that `/docs/harness` renders is the allowlist for
+ * `/docs/reference` — the two surfaces are two renderers of one model, and the doc that
  * backs no reachable node stops being public, every build.
  *
  * The node→doc mapping (`modelBackedDocPaths`) is the same one `read-more.ts`
@@ -37,7 +37,7 @@ import type { DocFrontmatter } from './types'
 /**
  * The set of `aeg-root/`-relative doc paths a `DiagramModel` points at — the
  * allowlist. Mirrors `read-more.ts`'s `docRoute` resolution exactly, so
- * `/docs`'s surfaced set and `/the-harness`'s "Read more" targets can never
+ * `/docs/reference`'s surfaced set and `/docs/harness`'s "Read more" targets can never
  * name different files: gate/check → `enforcement.md`, role → `roles/<id>.md`,
  * contract → `contracts/<id>.md`. A node's `label` is its doctrine id
  * (`role.roleId` / `contract.contractId`), and every `roles/*.md` /

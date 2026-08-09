@@ -26,7 +26,7 @@ function versionStampText(publishedVersion: PublishedVersion): string {
 }
 
 // Four fixed steps: install / `init` / `init product` / start working. Each of
-// the first three names the real files it touches and links onward to `/cli`
+// the first three names the real files it touches and links onward to `/docs/cli`
 // for the full command reference — the CLI page owns command detail, this
 // page owns the path. No forge dependency, same reasoning as `/roadmap` and
 // `/start`.
@@ -87,7 +87,7 @@ const STEPS: {
       }
     ],
     render: () => <CommandLine command='vinaya init' />,
-    cliHref: '/cli#command-init'
+    cliHref: '/docs/cli#command-init'
   },
   {
     number: 3,
@@ -99,7 +99,7 @@ const STEPS: {
       }
     ],
     render: () => <CommandLine command='vinaya init product <name>' />,
-    cliHref: '/cli#command-init-product'
+    cliHref: '/docs/cli#command-init-product'
   },
   {
     number: 4,

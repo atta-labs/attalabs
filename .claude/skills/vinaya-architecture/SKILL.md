@@ -27,7 +27,7 @@ apps/vinaya/
 
 This workspace is the seam both `cli` and `web` sit on top of without crossing each other:
 
-- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and `web`'s `/cli` page are two renderers over this one registry — never a hand-transcribed second list.
+- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and `web`'s `/docs/cli` page are two renderers over this one registry — never a hand-transcribed second list.
 - **`forge-adapter.ts`'s `createForgeSource`** (primary) — wires `@atta/aeg-forge-state`'s `deriveTrancheFromForge` behind aeg-core's `StateSource` contract.
 - **`file-adapter.ts`'s `createFileSource`** (transitional, deliberately deleted once every consumer is forge-backed) — wraps `parseTranche` over a configurable governance root.
 - **`select-source.ts`** — config-driven choice between the two.
@@ -75,7 +75,9 @@ One of those 15, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 **The renderer contract, stated as a rule:** *"Studio renders, it never re-derives."* Governance state enters `web` through exactly two permitted paths — `@atta/aeg-core`'s public API, or a `StateSource`/`DoctrineSource` adapter from `@atta/vinaya-sources` — an OR, not a hierarchy; do not "fix" an aeg-core-direct call site into a `StateSource` one on this rule's strength alone. Fetching facts (an HTTP call, a `gh` shell-out inside a `StateSource` adapter) is fine; **computing** a derived status, a dispatch verdict, or a diagram layout inside `web/` is the violation — the derivation must happen inside `aeg-core`, even if the I/O that feeds it happens in `web`.
 
-**`DiagramModel` is the one derivation, N consumers principle made concrete:** `deriveDiagramModel` (in `aeg-core`) turns doctrine + config + a live tranche into one renderer-agnostic model; `/the-harness`, `/docs`, and Studio's own dashboard all draw from it, so none re-implements which gate guards which action.
+**`DiagramModel` is the one derivation, N consumers principle made concrete:** `deriveDiagramModel` (in `aeg-core`) turns doctrine + config + a live tranche into one renderer-agnostic model; `/docs/harness`, `/docs/reference`, and Studio's own dashboard all draw from it, so none re-implements which gate guards which action.
+
+**`/docs` IA:** `/docs` is a 4-card hub (Harness, State Machine, CLI, Reference), not a page in its own right. Its children split across two route groups under `web/src/app/(site)/docs/`: `(with-sidebar)/` — `layout.tsx` (the `DocSidebarHost` shell), `[...slug]/` (the doctrine catch-all: roles/contracts/rings/actions/glossary), and `reference/` (the generated harness-map, formerly `/docs` itself) — versus `(standalone)/` — `harness/`, `state-machine/`, `cli/`, each full-bleed or bringing its own layout, none wrapped in the doc sidebar. Static route directories take precedence over the `[...slug]` catch-all, so `harness`/`state-machine`/`cli`/`reference` can never collide with a doctrine slug (checked at dispatch time against `loadAegDocs()`'s `nav.flat`, which only ever emits `roles/*`, `contracts/*`, `actions`, `rings`, `rings/ring-*`, `glossary`). The pre-move paths (`/the-harness`, `/state-machine`, `/cli`, and `/install`) are permanent-redirect stubs pointing at their `/docs/*` equivalents — `/install` points straight at `/docs/cli`, never through an intermediate redirect.
 
 **Route inventory and status** live in `specs/vinaya-spec.md`'s "Pages" table — treat that table, not this skill, as the up-to-date map of what's live versus not-yet-applied; it is kept current per-route and would drift immediately if duplicated here.
 

@@ -4,7 +4,7 @@ import { createFileDoctrineSource } from '@atta/vinaya-sources'
 import { findAegRoot } from '@/lib/github-links'
 
 /**
- * Request-time data spine for `/the-harness`: reads doctrine off disk and
+ * Request-time data spine for `/docs/harness`: reads doctrine off disk and
  * derives the render model. `config` is `null` — v1 ships no
  * `vinaya.config.json` UI, so nothing is disabled. `tranche` is `null` —
  * `DiagramModel.tranche` is passthrough task-lifecycle data with no

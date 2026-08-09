@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react'
 import { commandSlug } from './command-slug'
 
 /**
- * Desktop-only command sidebar for `/cli` — the cli.github.com/manual
+ * Desktop-only command sidebar for `/docs/cli` — the cli.github.com/manual
  * shape. Reuses the `/docs` sidebar primitives (SidebarProvider + SidebarMenu),
  * but drives active state from scroll position (an on-page TOC) rather than the
  * pathname, since every command lives on this one page. Hidden below `lg`.

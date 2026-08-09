@@ -17,7 +17,7 @@ const DESTINATIONS = [
     title: 'UNDERSTAND THE HARNESS',
     body: 'See how roles, contracts, checks, and merges fit together.',
     label: 'Explore the Harness',
-    href: '/the-harness'
+    href: '/docs/harness'
   },
   {
     title: 'READ THE RULEBOOK',

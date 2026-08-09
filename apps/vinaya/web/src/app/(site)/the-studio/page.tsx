@@ -120,7 +120,7 @@ const SECTIONS = [
 ] as const
 
 const CLOSING_LINKS = [
-  { label: 'The CLI', href: '/cli' },
+  { label: 'The CLI', href: '/docs/cli' },
   { label: 'Get started', href: '/start' },
   { label: 'Studio on the web', href: '/roadmap', soon: true }
 ] as const
@@ -213,10 +213,10 @@ export default function TheStudioPage() {
         product='vinaya'
         tagline='Execution governance for software teams'
         links={[
-          { label: 'The Harness', href: '/the-harness' },
+          { label: 'The Harness', href: '/docs/harness' },
           { label: 'Studio', href: '/the-studio' },
           { label: 'Start', href: '/start' },
-          { label: 'CLI', href: '/cli' },
+          { label: 'CLI', href: '/docs/cli' },
           { label: 'Docs', href: '/docs' }
         ]}
       />
