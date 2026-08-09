@@ -89,7 +89,7 @@ export {
 // Layout
 export { Separator } from '../installed/separator'
 
-// Navigation — falls back to basic (no retroui equivalent yet)
+// Navigation — Breadcrumb falls back to basic (no retroui equivalent yet)
 export {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -99,6 +99,19 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '../../basic/installed/breadcrumb'
+
+// Navigation — NavigationMenu is native retro (Radix flavor)
+export {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuIndicator,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
+  navigationMenuTriggerStyle
+} from '../installed/navigation-menu'
 
 // Content — Table
 export { Table, TableCell } from './table'
