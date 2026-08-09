@@ -6,6 +6,11 @@
  * (`verdict-extraction.ts`) the post-merge Archivist automation already runs,
  * now gated pre-merge and blocking instead of post-merge and advisory-only.
  *
+ * Verdict comments are ONLY counted when their author is on the same
+ * `PRINCIPAL_ALLOWLIST` the waiver actor-check trusts (security finding,
+ * PR #806): body-shape alone is never sufficient on a public repo. Unverified
+ * comments are ignored, not fatal.
+ *
  * A verified `vinaya/waiver:review` label (the exact actor-verification pattern,
  * `isWaiverLabelActorVerified` reused directly and parameterized by label —
  * see `waiver-label.ts`) lets a principal explicitly skip the requirement for
@@ -28,9 +33,15 @@ export type ReviewGateResult = {
   waived: boolean
 }
 
+export type ReviewGateComment = {
+  body: string
+  /** The comment author's GitHub login, or `null` when the caller could not resolve one. */
+  author: string | null
+}
+
 export type ReviewGateInput = {
-  /** Every comment body on the PR. */
-  comments: string[]
+  /** Every comment on the PR, with its author. */
+  comments: ReviewGateComment[]
   /** Every label currently applied to the PR. */
   labels: string[]
   /** Actor of the most recent `vinaya/waiver:review` labeling timeline event, or `null` when none exists. */
@@ -75,8 +86,27 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
     }
   }
 
-  const codeReview = extractCodeReviewVerdict(input.comments)
-  const security = extractSecurityReviewVerdict(input.comments)
+  // Verdict-AUTHOR verification (security finding on PR #806): on a public
+  // repo any GitHub account can post a `VERDICT: APPROVE`-shaped comment, and
+  // most-recent-clear-hit-wins extraction would let a forged later APPROVE
+  // override a real earlier REQUEST CHANGES. Only comments whose author is on
+  // the same `PRINCIPAL_ALLOWLIST` the waiver's actor check already trusts
+  // participate in verdict extraction; everything else — unknown authors and
+  // unresolvable (`null`) ones alike — is IGNORED, never fatal, so a drive-by
+  // comment cannot brick evaluation, only fail to count. Dispatched reviewer
+  // agents post under the principal's own `gh` identity, so the legitimate
+  // flow is unchanged.
+  const verified = input.comments.filter((c) => c.author !== null && PRINCIPAL_ALLOWLIST.includes(c.author))
+  // Count only VERDICT-shaped ignored comments — deployment bots and ordinary
+  // chat are also non-allowlisted, and counting them would imply forgery
+  // where there is only noise (review finding, PR #806).
+  const ignoredCount = input.comments.filter(
+    (c) => (c.author === null || !PRINCIPAL_ALLOWLIST.includes(c.author)) && c.body.includes('VERDICT')
+  ).length
+  const verifiedBodies = verified.map((c) => c.body)
+
+  const codeReview = extractCodeReviewVerdict(verifiedBodies)
+  const security = extractSecurityReviewVerdict(verifiedBodies)
   const codeReviewClean = codeReview.value === 'APPROVE'
   const securityClean = security.value === 'PASS'
 
@@ -91,10 +121,14 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
   const problems: string[] = []
   if (!codeReviewClean) problems.push(`code-reviewer verdict is not a clean APPROVE (found: ${codeReview.value})`)
   if (!securityClean) problems.push(`security-review verdict is not a clean PASS (found: ${security.value})`)
+  const ignoredNote =
+    ignoredCount > 0
+      ? ` ${ignoredCount} verdict-shaped comment(s) from authors outside the principal allowlist were ignored.`
+      : ''
 
   return {
     verdict: 'fail',
-    reason: `${problems.join('; ')}. A principal can apply an actor-verified \`${WAIVER_LABEL_REVIEW}\` label to skip this requirement, or post the missing/clean verdict comment(s).`,
+    reason: `${problems.join('; ')}. A principal can apply an actor-verified \`${WAIVER_LABEL_REVIEW}\` label to skip this requirement, or post the missing/clean verdict comment(s).${ignoredNote}`,
     waived: false
   }
 }

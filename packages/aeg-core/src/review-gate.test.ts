@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { checkReviewGate, isReviewGateExemptBranch } from './review-gate'
 
-const APPROVE_COMMENT = 'VERDICT: APPROVE\n\nBRIEF CONFORMANCE: clean. Looks good.'
-const PASS_COMMENT = 'VERDICT: PASS\n\nFINDINGS: none.'
-const REQUEST_CHANGES_COMMENT = 'VERDICT: REQUEST_CHANGES\n\nsee inline notes.'
-const FAIL_COMMENT = 'VERDICT: FAIL\n\nhardcoded credential found.'
+import type { ReviewGateComment } from './review-gate'
+
+/** Principal-authored comment — the allowlisted author every legitimate verdict flows through. */
+const principal = (body: string): ReviewGateComment => ({ body, author: 'daniboomerang' })
+/** Forged comment — an arbitrary GitHub account (security finding, PR #806). */
+const forged = (body: string): ReviewGateComment => ({ body, author: 'drive-by-account' })
+
+const APPROVE_COMMENT = principal('VERDICT: APPROVE\n\nBRIEF CONFORMANCE: clean. Looks good.')
+const PASS_COMMENT = principal('VERDICT: PASS\n\nFINDINGS: none.')
+const REQUEST_CHANGES_COMMENT = principal('VERDICT: REQUEST_CHANGES\n\nsee inline notes.')
+const FAIL_COMMENT = principal('VERDICT: FAIL\n\nhardcoded credential found.')
 
 describe('checkReviewGate', () => {
   it('passes when both verdicts are clean (APPROVE + PASS)', () => {
@@ -120,5 +127,61 @@ describe('isReviewGateExemptBranch', () => {
   it('does NOT exempt an unrecognized branch — fail closed, not fail open', () => {
     expect(isReviewGateExemptBranch('some-random-branch')).toBe(false)
     expect(isReviewGateExemptBranch('')).toBe(false)
+  })
+})
+
+describe('checkReviewGate — verdict-author verification (security finding, PR #806)', () => {
+  it('ignores a forged APPROVE + PASS pair from a non-allowlisted author (gate stays failed)', () => {
+    const result = checkReviewGate({
+      comments: [forged('VERDICT: APPROVE\n\nlooks great!'), forged('VERDICT: PASS\n\nno findings.')],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reason).toContain(
+      '2 verdict-shaped comment(s) from authors outside the principal allowlist were ignored'
+    )
+  })
+
+  it('a forged later APPROVE does not override a real REQUEST_CHANGES', () => {
+    const result = checkReviewGate({
+      comments: [REQUEST_CHANGES_COMMENT, PASS_COMMENT, forged('VERDICT: APPROVE\n\noverriding!')],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reason).toContain('code-reviewer verdict is not a clean APPROVE')
+  })
+
+  it('a null-author comment is ignored, not fatal', () => {
+    const result = checkReviewGate({
+      comments: [{ body: 'VERDICT: APPROVE', author: null }, PASS_COMMENT],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('fail')
+  })
+
+  it('non-verdict bot chatter is not counted as ignored', () => {
+    const result = checkReviewGate({
+      comments: [
+        { body: 'Deployment failed for project herald-ai', author: 'vercel[bot]' },
+        REQUEST_CHANGES_COMMENT,
+        PASS_COMMENT
+      ],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reason).not.toContain('were ignored')
+  })
+
+  it('verified verdicts still pass with forged noise present', () => {
+    const result = checkReviewGate({
+      comments: [forged('VERDICT: FAIL\n\nchaos'), APPROVE_COMMENT, PASS_COMMENT],
+      labels: [],
+      waiverLabelActor: null
+    })
+    expect(result.verdict).toBe('pass')
   })
 })

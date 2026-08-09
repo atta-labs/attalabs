@@ -43,7 +43,7 @@ process.chdir(REPO_ROOT)
 
 type PrView = {
   number: number
-  comments: { body: string }[]
+  comments: { body: string; author?: { login?: string } | null }[]
   labels: { name: string }[]
 }
 
@@ -78,7 +78,7 @@ export function main(prNumber: number): void {
     : null
 
   const result = checkReviewGate({
-    comments: pr.comments.map((c) => c.body),
+    comments: pr.comments.map((c) => ({ body: c.body, author: c.author?.login ?? null })),
     labels,
     waiverLabelActor
   })
