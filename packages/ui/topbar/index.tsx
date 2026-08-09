@@ -61,6 +61,17 @@ function navItemKey(item: TopBarNavItem): string {
   return isTopBarGroup(item) ? (item.items[0]?.href ?? String(item.label)) : item.href
 }
 
+/** A flat link row's content — icon + label when an icon is present, bare label otherwise (no empty wrapper). */
+function linkRowContent(icon: ReactNode, label: ReactNode) {
+  if (!icon) return label
+  return (
+    <span className='flex items-center gap-1.5'>
+      <span className='size-4'>{icon}</span>
+      {label}
+    </span>
+  )
+}
+
 export interface TopBarProps {
   /** Pre-built logo node rendered as-is (no link wrapper added). Takes precedence over logoText/logoUrl. */
   logo?: ReactNode
@@ -309,14 +320,7 @@ function TopBarWithAuth({
                 className='whitespace-nowrap text-xs'
                 {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
               >
-                {icon ? (
-                  <span className='flex items-center gap-1.5'>
-                    <span className='size-4'>{icon}</span>
-                    {label}
-                  </span>
-                ) : (
-                  label
-                )}
+                {linkRowContent(icon, label)}
               </NextLink>
             )
           })}
@@ -391,14 +395,7 @@ function TopBarWithAuth({
                         />
                       }
                     >
-                      {icon ? (
-                        <span className='flex items-center gap-1.5'>
-                          <span className='size-4'>{icon}</span>
-                          {label}
-                        </span>
-                      ) : (
-                        label
-                      )}
+                      {linkRowContent(icon, label)}
                     </SheetClose>
                   )
                 })}
@@ -497,14 +494,7 @@ function TopBarNoAuth({
                 className='whitespace-nowrap text-xs'
                 {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
               >
-                {icon ? (
-                  <span className='flex items-center gap-1.5'>
-                    <span className='size-4'>{icon}</span>
-                    {label}
-                  </span>
-                ) : (
-                  label
-                )}
+                {linkRowContent(icon, label)}
               </NextLink>
             )
           })}
@@ -562,14 +552,7 @@ function TopBarNoAuth({
                           />
                         }
                       >
-                        {icon ? (
-                          <span className='flex items-center gap-1.5'>
-                            <span className='size-4'>{icon}</span>
-                            {label}
-                          </span>
-                        ) : (
-                          label
-                        )}
+                        {linkRowContent(icon, label)}
                       </SheetClose>
                     )
                   })}
