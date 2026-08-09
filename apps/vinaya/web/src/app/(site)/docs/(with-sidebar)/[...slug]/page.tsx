@@ -1,8 +1,15 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ACTIONS, type DiagramModel, type DiagramNode } from '@atta/aeg-core'
-import { findDoc, getNextDoc, getPrevDoc, nodeDocRoute, publishedDoctrineBody } from '@atta/aeg-core/docs'
-import { badgeLabels, humanLabel } from '../../(standalone)/harness/_lib/display-label'
+import {
+  findDoc,
+  getNextDoc,
+  getPrevDoc,
+  legacyAnchorSlugs,
+  nodeDocRoute,
+  publishedDoctrineBody
+} from '@atta/aeg-core/docs'
+import { badgeLabels, humanLabel, shortLabel } from '../../(standalone)/harness/_lib/display-label'
 import { loadDiagramModel } from '../../(standalone)/harness/_lib/load-diagram'
 import { githubBlobUrl } from '@/lib/github-links'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
@@ -96,19 +103,36 @@ function guardsByNode(model: DiagramModel): Map<string, string[]> {
   return out
 }
 
+/** A ring heading matches its anchor only when the anchor itself was cut for
+ * length — `nodeSlug()`'s over-length fallback in aeg-core, mirrored here by
+ * checking the same id-stamped slug length it checks. Applying `shortLabel`
+ * unconditionally would also clause-cut headings that were never touched
+ * (e.g. the 84-character `vinaya check` row, or hard-truncate a G-coded
+ * heading with no clause separator like "No seventh way into GitHub") —
+ * regressing rows this task leaves alone. 100 mirrors aeg-core's own
+ * `MAX_ANCHOR_SLUG_LENGTH` reasoning; kept as a literal here rather than a
+ * cross-package export since the two thresholds guard different things (a
+ * URL byte length vs. a heading's readability) and are free to diverge. */
+const LONG_HEADING_THRESHOLD = 100
+
 function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection[] {
   const guards = guardsByNode(model)
   return model.nodes
     .filter((n): n is DiagramNode => (n.kind === 'gate' || n.kind === 'check') && n.ringIndex === ringIndex)
-    .map((n) => ({
-      slug: nodeDocRoute(n)?.slug ?? n.id,
-      heading: humanLabel(n.label),
-      badges: badgeLabels(n),
-      guards: guards.get(n.id),
-      summary: n.summary,
-      detail: n.detail,
-      viewSourceHref: githubBlobUrl('aeg-root/enforcement.md', n.sourceLine)
-    }))
+    .map((n) => {
+      const rawSlug = n.id.slice(n.kind.length + 1)
+      const heading = humanLabel(n.label)
+      return {
+        slug: nodeDocRoute(n)?.slug ?? n.id,
+        heading: rawSlug.length > LONG_HEADING_THRESHOLD ? shortLabel(heading) : heading,
+        badges: badgeLabels(n),
+        guards: guards.get(n.id),
+        summary: n.summary,
+        detail: n.detail,
+        viewSourceHref: githubBlobUrl('aeg-root/enforcement.md', n.sourceLine),
+        legacySlugs: legacyAnchorSlugs(n)
+      }
+    })
 }
 
 /**
