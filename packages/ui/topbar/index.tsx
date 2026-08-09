@@ -9,8 +9,17 @@ import { ChromeFrame as BasicChromeFrame } from '../libraries/basic/components/c
 import { useComponents } from '../lib/library-provider'
 import { Logo } from '../libraries/shared/components/display/logo'
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../libraries/basic/installed/sheet'
+import {
+  NavigationMenu as BasicNavigationMenu,
+  NavigationMenuContent as BasicNavigationMenuContent,
+  NavigationMenuItem as BasicNavigationMenuItem,
+  NavigationMenuLink as BasicNavigationMenuLink,
+  NavigationMenuList as BasicNavigationMenuList,
+  NavigationMenuTrigger as BasicNavigationMenuTrigger
+} from '../libraries/basic/installed/navigation-menu'
 import { ColorSchemeToggle } from '../lib/color-scheme-toggle'
 import { NextLink } from '../lib/next-link'
+import { cn } from '../lib/utils'
 
 export interface TopBarLink {
   /**
@@ -111,6 +120,84 @@ function buildDefaultLogo(logoUrl: string | null | undefined, logoText: string, 
   return <span className='font-sans text-lg tracking-tight'>{logoText}</span>
 }
 
+type DesktopNavComponents = {
+  NavigationMenu: typeof BasicNavigationMenu
+  NavigationMenuList: typeof BasicNavigationMenuList
+  NavigationMenuItem: typeof BasicNavigationMenuItem
+  NavigationMenuTrigger: typeof BasicNavigationMenuTrigger
+  NavigationMenuContent: typeof BasicNavigationMenuContent
+  NavigationMenuLink: typeof BasicNavigationMenuLink
+}
+
+/** Trigger styled to sit alongside a plain `NextLink variant='nav'` — same size/color metrics, no button chrome. */
+function groupTriggerClassName(active: boolean) {
+  return cn(
+    'h-auto shrink-0 gap-1.5 whitespace-nowrap rounded-none bg-transparent px-0 py-0 text-xs font-normal text-muted-foreground',
+    'hover:bg-transparent hover:text-primary focus:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-primary',
+    active && 'text-primary font-medium'
+  )
+}
+
+/** A group's desktop dropdown — its own NavigationMenu instance sitting inline among the flat NextLinks. */
+function DesktopNavGroup({
+  item,
+  isActive,
+  nav
+}: {
+  item: TopBarLinkGroup
+  isActive: (href: string, exact?: boolean) => boolean
+  nav: DesktopNavComponents
+}) {
+  const {
+    NavigationMenu,
+    NavigationMenuList,
+    NavigationMenuItem,
+    NavigationMenuTrigger,
+    NavigationMenuContent,
+    NavigationMenuLink
+  } = nav
+  const groupActive = item.items.some((groupItem) => isActive(groupItem.href, groupItem.exact))
+
+  return (
+    <NavigationMenu className='max-w-none flex-none'>
+      <NavigationMenuList>
+        <NavigationMenuItem>
+          <NavigationMenuTrigger className={groupTriggerClassName(groupActive)}>
+            {item.icon && <span className='size-4'>{item.icon}</span>}
+            {item.label}
+          </NavigationMenuTrigger>
+          <NavigationMenuContent>
+            <ul className='grid w-64 gap-1 p-2'>
+              {item.items.map((groupItem) => (
+                <li key={groupItem.href}>
+                  <NavigationMenuLink asChild active={isActive(groupItem.href, groupItem.exact)}>
+                    <NextLink
+                      variant='unstyled'
+                      href={groupItem.href}
+                      className='flex items-start gap-2 rounded-sm p-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+                      {...(groupItem.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                    >
+                      {groupItem.icon && (
+                        <span className='mt-0.5 size-4 shrink-0 text-muted-foreground'>{groupItem.icon}</span>
+                      )}
+                      <span className='flex flex-col gap-0.5'>
+                        <span>{groupItem.label}</span>
+                        {groupItem.description && (
+                          <span className='text-xs text-muted-foreground'>{groupItem.description}</span>
+                        )}
+                      </span>
+                    </NextLink>
+                  </NavigationMenuLink>
+                </li>
+              ))}
+            </ul>
+          </NavigationMenuContent>
+        </NavigationMenuItem>
+      </NavigationMenuList>
+    </NavigationMenu>
+  )
+}
+
 // ─── With Clerk auth ───────────────────────────────────────────────────────────
 
 function TopBarWithAuth({
@@ -133,6 +220,21 @@ function TopBarWithAuth({
   // libraries render a full-width bar. Falls back to basic's flush frame while
   // the runtime library import is still resolving.
   const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
+  // Library-resolved NavigationMenu for grouped nav dropdowns — same fallback
+  // precedent as Button/ChromeFrame above.
+  const navComponents: DesktopNavComponents = {
+    NavigationMenu: (comps.NavigationMenu as typeof BasicNavigationMenu | undefined) ?? BasicNavigationMenu,
+    NavigationMenuList:
+      (comps.NavigationMenuList as typeof BasicNavigationMenuList | undefined) ?? BasicNavigationMenuList,
+    NavigationMenuItem:
+      (comps.NavigationMenuItem as typeof BasicNavigationMenuItem | undefined) ?? BasicNavigationMenuItem,
+    NavigationMenuTrigger:
+      (comps.NavigationMenuTrigger as typeof BasicNavigationMenuTrigger | undefined) ?? BasicNavigationMenuTrigger,
+    NavigationMenuContent:
+      (comps.NavigationMenuContent as typeof BasicNavigationMenuContent | undefined) ?? BasicNavigationMenuContent,
+    NavigationMenuLink:
+      (comps.NavigationMenuLink as typeof BasicNavigationMenuLink | undefined) ?? BasicNavigationMenuLink
+  }
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -158,7 +260,9 @@ function TopBarWithAuth({
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
           {visibleLinks.map((item) => {
-            if (isTopBarGroup(item)) return null // group desktop rendering lands in Part 2
+            if (isTopBarGroup(item)) {
+              return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
+            }
             const { href, label, exact, external } = item
             return (
               <NextLink
@@ -291,6 +395,21 @@ function TopBarNoAuth({
   // libraries render a full-width bar. Falls back to basic's flush frame while
   // the runtime library import is still resolving.
   const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
+  // Library-resolved NavigationMenu for grouped nav dropdowns — same fallback
+  // precedent as Button/ChromeFrame above.
+  const navComponents: DesktopNavComponents = {
+    NavigationMenu: (comps.NavigationMenu as typeof BasicNavigationMenu | undefined) ?? BasicNavigationMenu,
+    NavigationMenuList:
+      (comps.NavigationMenuList as typeof BasicNavigationMenuList | undefined) ?? BasicNavigationMenuList,
+    NavigationMenuItem:
+      (comps.NavigationMenuItem as typeof BasicNavigationMenuItem | undefined) ?? BasicNavigationMenuItem,
+    NavigationMenuTrigger:
+      (comps.NavigationMenuTrigger as typeof BasicNavigationMenuTrigger | undefined) ?? BasicNavigationMenuTrigger,
+    NavigationMenuContent:
+      (comps.NavigationMenuContent as typeof BasicNavigationMenuContent | undefined) ?? BasicNavigationMenuContent,
+    NavigationMenuLink:
+      (comps.NavigationMenuLink as typeof BasicNavigationMenuLink | undefined) ?? BasicNavigationMenuLink
+  }
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -313,7 +432,9 @@ function TopBarNoAuth({
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
           {links.map((item) => {
-            if (isTopBarGroup(item)) return null // group desktop rendering lands in Part 2
+            if (isTopBarGroup(item)) {
+              return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
+            }
             const { href, label, exact, external } = item
             return (
               <NextLink
