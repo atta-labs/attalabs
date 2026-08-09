@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: 'State Machine', href: '/state-machine' },
   { label: 'Start', href: '/start' },
   { label: 'CLI', href: '/cli' },
+  { label: 'Config', href: '/config' },
   { label: 'Docs', href: '/docs' },
   { label: 'Studio', href: '/the-studio' },
   { label: 'Roadmap', href: '/roadmap' }
