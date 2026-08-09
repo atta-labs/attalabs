@@ -299,7 +299,7 @@ function TopBarWithAuth({
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
             }
-            const { href, label, exact, external } = item
+            const { href, label, exact, external, icon } = item
             return (
               <NextLink
                 key={navItemKey(item)}
@@ -309,7 +309,14 @@ function TopBarWithAuth({
                 className='whitespace-nowrap text-xs'
                 {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
               >
-                {label}
+                {icon ? (
+                  <span className='flex items-center gap-1.5'>
+                    <span className='size-4'>{icon}</span>
+                    {label}
+                  </span>
+                ) : (
+                  label
+                )}
               </NextLink>
             )
           })}
@@ -369,7 +376,7 @@ function TopBarWithAuth({
                   if (isTopBarGroup(item)) {
                     return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
                   }
-                  const { href, label, exact, external } = item
+                  const { href, label, exact, external, icon } = item
                   return (
                     <SheetClose
                       key={navItemKey(item)}
@@ -384,7 +391,14 @@ function TopBarWithAuth({
                         />
                       }
                     >
-                      {label}
+                      {icon ? (
+                        <span className='flex items-center gap-1.5'>
+                          <span className='size-4'>{icon}</span>
+                          {label}
+                        </span>
+                      ) : (
+                        label
+                      )}
                     </SheetClose>
                   )
                 })}
@@ -473,7 +487,7 @@ function TopBarNoAuth({
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
             }
-            const { href, label, exact, external } = item
+            const { href, label, exact, external, icon } = item
             return (
               <NextLink
                 key={navItemKey(item)}
@@ -483,7 +497,14 @@ function TopBarNoAuth({
                 className='whitespace-nowrap text-xs'
                 {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
               >
-                {label}
+                {icon ? (
+                  <span className='flex items-center gap-1.5'>
+                    <span className='size-4'>{icon}</span>
+                    {label}
+                  </span>
+                ) : (
+                  label
+                )}
               </NextLink>
             )
           })}
