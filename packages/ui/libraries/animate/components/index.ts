@@ -37,6 +37,18 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '../../basic/installed/breadcrumb'
+// Navigation — NavigationMenu falls back to basic (no animate-ui equivalent)
+export {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuIndicator,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
+  navigationMenuTriggerStyle
+} from '../../basic/installed/navigation-menu'
 // Form — falls back to basic
 export { Slider } from '../../basic/installed/slider'
 // Table
