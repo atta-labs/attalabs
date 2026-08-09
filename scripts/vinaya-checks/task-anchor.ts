@@ -37,7 +37,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { type AnchorSourceFile, checkLocalAnchorCoverage } from '@atta/aeg-core'
 
-const CHECK_NAME = 'task-anchor'
+const CHECK_NAME = 'attalabs/task-anchor'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 process.chdir(REPO_ROOT)
 

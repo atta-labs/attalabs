@@ -1,11 +1,11 @@
 {
   "checks": {
-    "vocabulary-citation": {
+    "attalabs/vocabulary-citation": {
       "run": "./scripts/vinaya-checks/vocabulary-citation.ts",
       "scope": "full",
       "timeoutMs": 30000
     },
-    "task-anchor": {
+    "attalabs/task-anchor": {
       "run": "./scripts/vinaya-checks/task-anchor.ts",
       "scope": "full",
       "timeoutMs": 30000
