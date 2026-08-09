@@ -172,11 +172,11 @@ meetsMinTier('fast', 'balanced')      // false — 1 < 2
 meetsMinTier('reasoning', 'fast')     // false — fails closed, see below
 ```
 
-This answers a different question: "is this model strong enough for a given role's demands". A future per-role `min_tier` gate (not yet built — see #740) would call `meetsMinTier` to hard-block sub-tier models in the picker.
+This answers a different question: "is this model strong enough for a given role's demands". A future per-role `min_tier` gate (not yet built) would call `meetsMinTier` to hard-block sub-tier models in the picker.
 
 **Do not collapse the two.** Sort order and capability floor happen to share tier vocabulary but answer different questions — reusing, moving, or unifying the picker's `TIER_ORDER` into this primitive (or vice versa) would silently turn a sort order into a safety gate or a safety gate into a mere sort hint.
 
-**`reasoning` is unranked, and gates fail closed against it.** `isRankedTier('reasoning')` is `false`; `meetsMinTier` returns `false` for any minTier when the model's own tier is `reasoning` — a reasoning-tier model satisfies no floor until a role opts it in explicitly. Reason: whether reasoning-optimized models (o3, deepseek-r1) outperform a frontier model at strict-JSON synthesis over large multi-agent inputs is unmeasured; ranking `reasoning` either way would hardcode an unmeasured claim into a safety floor. Issue #186's benchmark is what will settle it.
+**`reasoning` is unranked, and gates fail closed against it.** `isRankedTier('reasoning')` is `false`; `meetsMinTier` returns `false` for any minTier when the model's own tier is `reasoning` — a reasoning-tier model satisfies no floor until a role opts it in explicitly. Reason: whether reasoning-optimized models (o3, deepseek-r1) outperform a frontier model at strict-JSON synthesis over large multi-agent inputs is unmeasured; ranking `reasoning` either way would hardcode an unmeasured claim into a safety floor. A benchmark comparing reasoning-tier and frontier-tier performance on this workload is what will settle it.
 
 ---
 
@@ -189,9 +189,9 @@ This answers a different question: "is this model strong enough for a given role
 2. No other code changes needed. Next SSR pulls the new model from models.dev, overlay tags it, picker renders it at the top of the OpenAI group.
 
    Same no-gate rule as RULE #1 above — including for Anthropic
-   (#469, removed the `OVERLAY_ONLY_PROVIDERS`
-   gate that used to hide un-curated Anthropic models). Claude Opus 4.8 and
-   Sonnet 5 (task 14, #524) are the worked example: both were reachable in
+   (the `OVERLAY_ONLY_PROVIDERS` gate that used to hide un-curated Anthropic
+   models has been removed). Claude Opus 4.8 and
+   Sonnet 5 are the worked example: both were reachable in
    the picker the moment the gate was removed, then tagged
    `frontier`/`balanced` here so they sort to the top like every prior
    flagship generation.

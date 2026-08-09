@@ -64,7 +64,7 @@ description: How the @atta/ui multi-library system works — build-time generati
 
 ## Per-library `installed/*` — CLI sources, doctrine, and contract rule
 
-The banner above states the rule; this section is the operational reference. Codified 2026-06-28 after PR #207's Tabs + Button reconciliation.
+The banner above states the rule; this section is the operational reference. Codified 2026-06-28 after a Tabs + Button reconciliation across all four libraries.
 
 ### Upstream-source mapping (CLI install commands)
 
@@ -94,8 +94,8 @@ Props) and, if `...props`-spread, leaks `asChild` onto the DOM at runtime.
 `asChild`→`render` adapter in its **wrapper layer** (`libraries/<lib>/components/…`), never in
 `installed/*`. The adapter resolves the single element child and forwards it as
 `render` (`resolveSingleChild` — factor one shared helper when 3+ wrappers need it; basic's
-lives at `libraries/basic/components/as-child.ts`). This is the same pattern task 1 (#536)
-built for retro's Base UI Button before retro was re-based onto Radix.
+lives at `libraries/basic/components/as-child.ts`). This is the same pattern built for retro's
+Base UI Button before retro was re-based onto Radix.
 
 **Flavor matrix — TODAY** (per `installed/*` import; `radix` = native `asChild`, `base-ui` =
 needs the adapter; `→basic` = no own installed file, re-exports basic's). The earlier claim
@@ -113,7 +113,7 @@ that basic is Radix was wrong — basic is the current Base UI holdout:
 | Toggle | radix | own | →basic (wrapper) | radix |
 
 Adapters exist where an app actually passes `asChild` AND the resolved primitive is Base UI:
-`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic (#539).
+`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic.
 `Dialog`/`Tooltip` are Base UI in basic too but no app uses them with `asChild` yet — add the
 same adapter if that changes. animate/brutal fall back to basic's Sheet, so they re-export the
 basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
@@ -127,10 +127,10 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
    class strings, variants, types, or formatting. Don't run Biome `--write` against the
    file — the ignore glob exists for that.
 3. **Wrap only if the upstream shape differs from the cross-library contract:**
-   - As of the Radix-flavor switch (#539, 2026-07-12) retro's
+   - As of the Radix-flavor switch (2026-07-12) retro's
      upstream matches the contract natively — Tabs exports flat (`Tabs`, `TabsList`,
      `TabsTrigger`, `TabsContent`) and Button supports `asChild` via Radix `Slot`. Both the
-     old dotted-Tabs adapter and the `asChild`→`render` Button adapter (task 1, #536) were
+     old dotted-Tabs adapter and the `asChild`→`render` Button adapter were
      **deleted** by that switch. retro's Button wrapper now only bakes in the universal
      `leading-none` default; `installed/button.tsx` already bundles `cursor-pointer`.
    - The only surviving retro wrappers adapt OUR own extensions, not an upstream mismatch:
@@ -150,7 +150,7 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
   We previously kept cross-library `ButtonVariant` / `ButtonSize` / `ButtonVariantsFn` types
   forcing every library to extend with a shared name set. That gave consumers no real
   cross-library guarantee (a `variant='ai'` rendered in `basic` would render as the default
-  in `brutal`) and forced bespoke implementations. Removed by PR #207. Consumer
+  in `brutal`) and forced bespoke implementations. Removed in the Tabs + Button reconciliation. Consumer
   code that wants cross-library certainty for a specific call site should pick a variant
   every library exports (default / outline / ghost, depending on coverage) or hard-import
   from a single library.
@@ -365,11 +365,11 @@ When a consumer needs visual behavior the canonical component does not ship by d
 - `Button.variant = 'ghost-pill'` (basic) — bordered text-style pill with accent hover. Animate inherits via the shared `buttonVariants` import; retro/brutal use their own `cva` maps and fall back to default styling for unknown variants, which is acceptable since the contract is structural.
 - `Textarea.variant = 'bare'` (basic) — strips border/rounded/bg/focus-ring/resize/min-h-16 for nesting inside a styled container.
 
-Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro and brutal each have their own `components/form/textarea.tsx` wrapper (#540) implementing the full `TextareaVariant` union against their own `installed/textarea.tsx` idiom (retro: `outline`-based focus; brutal: `ring`-based focus) — previously these were bare passthroughs that silently ignored every variant, which broke Herald's `JDInput` (`textareaVariant='bare'` had no effect, rendering an opaque boxed textarea instead of blending into the popover surface). If you add an EIGHTH variant to the shared `TextareaVariant` union, propagate it to all four wrappers, not just basic's.
+Animate's `Textarea` re-exports basic's, so adding to basic automatically reaches animate. Retro and brutal each have their own `components/form/textarea.tsx` wrapper implementing the full `TextareaVariant` union against their own `installed/textarea.tsx` idiom (retro: `outline`-based focus; brutal: `ring`-based focus) — previously these were bare passthroughs that silently ignored every variant, which broke Herald's `JDInput` (`textareaVariant='bare'` had no effect, rendering an opaque boxed textarea instead of blending into the popover surface). If you add an EIGHTH variant to the shared `TextareaVariant` union, propagate it to all four wrappers, not just basic's.
 
 **Add a prop (preferred for behavior controls).** Same playbook for typed presets like `Heading.weight`, `SmartPromptInput.surface`, `SmartPromptInput.textareaVariant`. Defaults must preserve byte-identical render for omitting callers. Default to `undefined` and conditionally spread (`{...(prop !== undefined && { variant: prop })}`) when the prop forwards into a vendor primitive that might not understand it — that keeps existing consumers' renders unchanged.
 
-**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback — animate and brutal still do this. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight`. Both `basic` and `retro` (#540) ship their OWN twin, each wrapping its own library's `DropdownMenuItem` so a retro dropdown renders retro's item styling rather than basic's. The wrapper accepts `selected?: boolean`, applying `cn('group', selected && 'bg-accent text-accent-foreground', className)` on top of the canonical `focus:bg-accent`/`data-[highlighted]:bg-accent` hover — so a selected item keeps the accent fill as a PERSISTENT commitment even when not focused or hovered.
+**Add a wrapper (preferred when the change requires reaching into TWO conflicting Tailwind modifier families at once, or when the install file is intentionally locked).** Wrappers live next to the component they extend (`libraries/{name}/components/interactive/{wrapper}.tsx`) and are exported from each library's `components/index.ts`. Libraries that don't customize the underlying primitive can re-export the basic wrapper as a fallback — animate and brutal still do this. Add the wrapper + its `Props` type to `component-contract.mjs`. Canonical example: `DropdownMenuItemTextHighlight`. Both `basic` and `retro` ship their OWN twin, each wrapping its own library's `DropdownMenuItem` so a retro dropdown renders retro's item styling rather than basic's. The wrapper accepts `selected?: boolean`, applying `cn('group', selected && 'bg-accent text-accent-foreground', className)` on top of the canonical `focus:bg-accent`/`data-[highlighted]:bg-accent` hover — so a selected item keeps the accent fill as a PERSISTENT commitment even when not focused or hovered.
 
 **Add a universal default (preferred when EVERY consumer needs the same fix, and the install file is intentionally locked).** Not every wrapper adapts a mismatched upstream API or adds an opt-in variant/prop — some exist purely to bake in a default so no call site has to remember a class. Canonical example: `Button`'s `leading-none` default, one wrapper per library (`basic`, `retro`, `brutal`, `animate`), each merging `cn(className, 'leading-none')` before forwarding to its own `installed/button.tsx`. Buttons are single-line UI; the label's default line-height box is taller than a typical `h-4 w-4` icon, so an icon+label button looks vertically off even though `items-center` centers it correctly. Adding `leading-none` at each call site (three Herald topbar buttons did, briefly) is the anti-pattern this section warns against — it works for that one instance and leaves every other button (including ones not yet written) with the same latent bug. A universal-default wrapper takes unconditional `className` (not a variant flag) precisely because there's no case where a button should keep the un-collapsed line-height.
 
@@ -434,7 +434,7 @@ If a component (e.g. `Tabs` or `Badge`) renders using the `basic` library styles
   * `"."` → `./libraries/basic/components/index.ts` — **catches the bare form, hardcoding `basic`.**
 
   So `@atta/ui` is not "the flat import" — it is the second way to pin yourself to `basic`. Only the exact aliased string reaches `packages/ui/generated/{app}/components.ts`, which is what re-exports the CMS-configured library. **"Flat" here means "no subpath *after* `/components`", never "drop the `/components`".**
-* **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (#568: this section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
+* **Why this is easy to get wrong:** both wrong forms typecheck, and both render correctly on any app whose active library *is* `basic` — the bug is invisible until a product switches to `retro`/`animate`/`brutal`, at which point bare-imported surfaces keep rendering `basic` while their correctly-imported siblings switch. A half-themed app, with no error. (This section previously named only the subpath form, and a brief citing a bare-import call site as "correct precedent" propagated it to 12 files across two products.)
 * **Not this bug:** `@atta/ui/shared`, `@atta/ui/topbar`, `@atta/ui/footer`, `@atta/ui/canvas`, `@atta/ui/lib/*`, `@atta/ui/smart-prompt-input`, `@atta/ui/doc-collector`. These resolve to library-independent code (shared primitives, composites, utilities) — they are not library-swapped, so there is no per-app index for them to miss.
 
 **Build-time apps:**
@@ -528,7 +528,7 @@ to the basic implementation via `export { TextReveal } from '../../basic/...'`).
 Use `import { TextReveal } from '@atta/ui'` from consumer code; no
 injection contract — it resolves like any other library primitive.
 
-**`Breadcrumb`** (#553) joined the same way, and is the
+**`Breadcrumb`** joined the same way, and is the
 plainest worked example of "Adding a Component to a Library" above: seven
 components (`Breadcrumb`, `BreadcrumbList`, `BreadcrumbItem`, `BreadcrumbLink`,
 `BreadcrumbPage`, `BreadcrumbSeparator`, `BreadcrumbEllipsis`) plus their seven
@@ -544,7 +544,7 @@ state, not a TODO. Give one its own `installed/breadcrumb.tsx` when that
 upstream actually has a breadcrumb worth swapping in — the contract already
 holds the export, so nothing else moves.
 
-**`Code` / `CodeBlock`** (#569) joined the contract the
+**`Code` / `CodeBlock`** joined the contract the
 same way — and is the first contracted component with **no upstream canonical in
 any library**. That makes it the precedent for a question `Breadcrumb` doesn't
 answer: *where does a contracted component live when there is nothing to paste
@@ -584,7 +584,7 @@ merges last *because* it must always win). Both are hook-free and carry no
 button would force a client boundary on every consumer and is deliberately not
 part of the contract.
 
-**`ChromeFrame`** (#621) is the same no-upstream ⇒
+**`ChromeFrame`** is the same no-upstream ⇒
 wrapper-layer shape as `Code`, and it is the mechanism for **per-library app
 chrome**. It takes `variant: 'topbar' | 'bar' | 'rail' | 'panel'` + `className` +
 `children` and owns ONE thing: the per-library *edge* treatment of a chrome
@@ -604,17 +604,17 @@ panel) supplies only the *shared inner layout* via `className` (the topbar's
 `relative`/`h-14` row, a rail's scroll box) and the *content* via `children`; the
 frame supplies the *margin + surface*. So the float is retro's alone — it can
 never leak onto animate/basic the way a hardcoded `px-2 pt-2` on the shared
-topbar did (which detached Herald's animate topbar too, #621 review). No
+topbar did (which detached Herald's animate topbar too, caught in review). No
 `library === '…'` branch anywhere: the shared topbar just calls
 `useComponents().ChromeFrame` (fallback: basic's flush frame during the runtime
 import window), and each build-time consumer imports it from `@atta/ui/components`.
 `className` merges LAST onto the surface (same rationale as `Code`) so a consumer
 tunes the content box, not the float. This **supersedes** the earlier
-`bg-secondary`-token topbar approach (#653's first cut) — a shared token gave
+`bg-secondary`-token topbar approach — a shared token gave
 every library the *same* frame, which is the exact per-library difference this
 restores.
 
-**`Toggle`** (#626) joined the contract as `Toggle` +
+**`Toggle`** joined the contract as `Toggle` +
 `toggleVariants` + `ToggleProps`, and is the case where three of the four
 libraries each had their **own** upstream to paste. `basic` ← shadcn's
 `toggle` (Radix `@radix-ui/react-toggle`, added to `packages/ui/package.json`);
@@ -669,7 +669,7 @@ Fixing it properly means either an upstream fix or composing the primitives
 directly in the wrapper — the latter would duplicate upstream's cva string,
 which is the drift this doctrine exists to prevent, so it is deliberately not done here.
 
-**`Switch`** (#622) joined as `Switch` + `SwitchProps`, and is
+**`Switch`** joined as `Switch` + `SwitchProps`, and is
 the first contracted component where **all four** libraries had their own upstream —
 no fallback anywhere. `basic` ← shadcn's `switch` (new-york style, matching the
 per-component `@radix-ui/react-*` import idiom the rest of basic's `installed/` uses —
@@ -707,7 +707,7 @@ consumer may legitimately override, not a universal default like Button's `leadi
 which merges last precisely so it always wins. If retroui fixes the flavor upstream,
 re-paste `installed/` and delete the adapter; do not hand-edit `installed/` either way.
 
-**`NavigationMenu`** (#817) joined the contract as nine
+**`NavigationMenu`** joined the contract as nine
 component names (`NavigationMenu`, `NavigationMenuList`, `NavigationMenuItem`,
 `NavigationMenuTrigger`, `NavigationMenuContent`, `NavigationMenuLink`,
 `NavigationMenuIndicator`, `NavigationMenuViewport`,
@@ -742,7 +742,7 @@ own `installed/`.
 > prop. The consuming app injects its active library's primitives from
 > `@atta/ui` (build-time pattern) or `useComponents()` (runtime pattern).
 
-This is the `#213` lesson: when a shared input hard-imports `libraries/basic/installed/*`,
+The rule exists because a shared input once hard-imported `libraries/basic/installed/*`:
 products on `animate` / `retro` / `brutal` silently render the basic
 versions inside it, breaking visual coherence and theme-token discipline.
 It also forecloses a runtime per-user library — a user who has chosen
@@ -841,7 +841,7 @@ basic primitive. That was always the intent — the previous hardcoded
 `libraries/basic/...` import was a bug.
 
 The earlier "byte-identical default" promise on the Herald `JDInput` render
-path no longer holds: post-PR #207, Herald's `JDInput` opts in to
+path no longer holds: Herald's `JDInput` now opts in to
 `textareaVariant='bare'` and `surface='popover'` to align visually with
 Vāda's hero. This was an explicit Principal call, not a regression. Any
 future addition to the composite must still preserve the Herald-equivalent

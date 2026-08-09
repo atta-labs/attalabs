@@ -17,7 +17,7 @@ Vāda is a YAML-driven multi-agent deliberation runtime, shipping as an MCP serv
 
 The product surface today is the catalog of YAML team specs at `packages/agents/vada-deliberation/yamls/`. The engine treats every YAML identically — there are no per-team code branches. As of the generic flow refactor (May 12-13, 2026), the YAML schema is `2.0` and all flows are expressed as a sequence of rounds.
 
-**Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture. (Confirmed: the additive `Conclusion.estimatedCostUsd` / `MatchReport.estimatedCostUsd` field is Herald/adapter-level, not a Vāda deliberation-catalog change. Same for #520: the additive `MatchReport.githubSignals` field and its per-invocation capture live entirely in `forensic-hiring-auditor`, Herald-only content.)
+**Scope note:** `packages/agents/` is a shared namespace, not exclusively Vāda's — it also hosts standalone, non-Vāda packages (e.g. `forensic-hiring-auditor`, Herald's forensic match-audit engine; see `.claude/skills/herald-engine/SKILL.md`). This skill documents only the Vāda deliberation catalog above; a change elsewhere under `packages/agents/` doesn't necessarily touch Vāda's architecture. (Confirmed: the additive `Conclusion.estimatedCostUsd` / `MatchReport.estimatedCostUsd` field is Herald/adapter-level, not a Vāda deliberation-catalog change. Same for the additive `MatchReport.githubSignals` field: its per-invocation capture lives entirely in `forensic-hiring-auditor`, Herald-only content.)
 
 ---
 
@@ -43,9 +43,9 @@ Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Re
 | `vada-reviewers` | Reviewers | brokered-no-synth | **Published** |
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | brokered-synth | **Published** |
 | `vada-fusion-native` | Outside Read | rounds-audit | **Published** (`vada__consult` spec_id) |
-| `sparring` | Sparring | rounds-audit | Experimental (PR #31 unpublished) |
-| `crucible` | Crucible | rounds-audit | Experimental (PR #31 unpublished) |
-| `war-room` | War Room | rounds-audit | Experimental (PR #31 unpublished) |
+| `sparring` | Sparring | rounds-audit | Experimental (unpublished) |
+| `crucible` | Crucible | rounds-audit | Experimental (unpublished) |
+| `war-room` | War Room | rounds-audit | Experimental (unpublished) |
 
 ---
 
