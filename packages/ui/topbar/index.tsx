@@ -198,6 +198,42 @@ function DesktopNavGroup({
   )
 }
 
+/** A group's mobile sheet rows — a non-navigating header row, then its items indented below. No dropdown inside the sheet. */
+function SheetNavGroup({
+  item,
+  isActive
+}: {
+  item: TopBarLinkGroup
+  isActive: (href: string, exact?: boolean) => boolean
+}) {
+  return (
+    <>
+      <div className='flex h-14 items-center gap-1.5 border-b border-border/30 text-sm text-muted-foreground'>
+        {item.icon && <span className='size-4'>{item.icon}</span>}
+        {item.label}
+      </div>
+      {item.items.map((groupItem) => (
+        <SheetClose
+          key={groupItem.href}
+          nativeButton={false}
+          render={
+            <NextLink
+              variant='nav'
+              active={isActive(groupItem.href, groupItem.exact)}
+              href={groupItem.href}
+              {...(groupItem.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              className='flex h-14 items-center gap-1.5 border-b border-border/30 pl-4 text-sm'
+            />
+          }
+        >
+          {groupItem.icon && <span className='size-4'>{groupItem.icon}</span>}
+          {groupItem.label}
+        </SheetClose>
+      ))}
+    </>
+  )
+}
+
 // ─── With Clerk auth ───────────────────────────────────────────────────────────
 
 function TopBarWithAuth({
@@ -330,7 +366,9 @@ function TopBarWithAuth({
               </div>
               <nav className='flex flex-col px-6'>
                 {visibleLinks.map((item) => {
-                  if (isTopBarGroup(item)) return null // group sheet rendering lands in Part 3
+                  if (isTopBarGroup(item)) {
+                    return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                  }
                   const { href, label, exact, external } = item
                   return (
                     <SheetClose
@@ -485,7 +523,9 @@ function TopBarNoAuth({
                 </div>
                 <nav className='flex flex-col px-6'>
                   {links.map((item) => {
-                    if (isTopBarGroup(item)) return null // group sheet rendering lands in Part 3
+                    if (isTopBarGroup(item)) {
+                      return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                    }
                     const { href, label, exact, external } = item
                     return (
                       <SheetClose
