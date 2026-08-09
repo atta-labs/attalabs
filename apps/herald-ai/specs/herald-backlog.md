@@ -4,7 +4,7 @@
 
 **Out of the AEG flow.** Held / future items for Herald (standalone forensic CV/JD audit tool, sibling AttaLabs product). Reference the Planner reads when choosing the next iteration slice; the flow never operates on it.
 
-Rewritten 2026-06-18 to reflect herald-onto-engine iteration complete (PRs #104, #107, #112, #113, #115, #117, #120, #123, #132).
+Rewritten 2026-06-18 to reflect herald-onto-engine iteration complete.
 
 ---
 
@@ -27,7 +27,7 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 | Multi-vendor BYOK + audit model selector | task 3b | #112 | ✅ done |
 | N×M matrix UI (Bulk Audit accepts N CVs × M JDs) | task 4 | #117 | ✅ done |
 | Polymorphic inputs (JD link/text; CV text/.md/.pdf/profile) | task 5 | #123 | ✅ done |
-| Per-key rate limit / cap on profile audits | task 6 / #93 | #113 | ✅ done (enforcement degraded — Upstash creds expired; see below) |
+| Per-key rate limit / cap on profile audits | task 6 | #113 | ✅ done (enforcement degraded — Upstash creds expired; see below) |
 | Custom client-side tool execution in engine | — | #115 | ✅ done (shared, Vāda in blast radius) |
 | GitHub tool declared in auditor YAML | task 7b | #120 | ✅ done |
 | Auditor quality fix (max_tokens, stale model, JD charset) | — | #132 | ✅ done |
@@ -36,7 +36,7 @@ All items below merged as part of the herald-onto-engine AEG iteration.
 
 ## Smaller / open
 
-- **Profile-audit abuse cap** — per-key rate limit shipped (task 6 / #93), but enforcement depends on fresh Upstash Redis creds (see Parked / pending manual ops below). Once creds are fresh, enforcement is active with no code change needed.
+- **Profile-audit abuse cap** — per-key rate limit shipped (task 6), but enforcement depends on fresh Upstash Redis creds (see Parked / pending manual ops below). Once creds are fresh, enforcement is active with no code change needed.
 - **/ui editor library note** — the appearance editor previews the user's library in an iframe while the surrounding chrome stays on the build-time library (correct, by design). If confusing, a small "previewing — not saved" hint could be added. Nicety, not a bug.
 
 ---

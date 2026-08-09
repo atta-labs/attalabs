@@ -240,7 +240,7 @@ rounds:
       Please synthesize…
 ```
 
-Prior to the generic flow refactor a `{{reviewerResponses}}` variable was referenced in the v1 `vada-reviewers-synthesis` YAML — that variable was never populated by the engine, so the synthesizer ran blind. The v2 migration fixed this in PR #47.
+Prior to the generic flow refactor a `{{reviewerResponses}}` variable was referenced in the v1 `vada-reviewers-synthesis` YAML — that variable was never populated by the engine, so the synthesizer ran blind. The v2 migration (the generic flow refactor) fixed this.
 
 ---
 
@@ -422,9 +422,9 @@ All built-in specs live at `packages/agents/vada-deliberation/yamls/`. New specs
 | `brokered-quartet.yaml` | brokered-no-synth | Experimental |
 | `vada-reviewers.yaml` | brokered-no-synth | Published |
 | `vada-reviewers-synthesis.yaml` | brokered-synth | Published |
-| `sparring.yaml` | rounds-audit | Experimental (PR #31 unpublished) |
-| `crucible.yaml` | rounds-audit | Experimental (PR #31 unpublished) |
-| `war-room.yaml` | rounds-audit | Experimental (PR #31 unpublished) |
+| `sparring.yaml` | rounds-audit | Experimental (unpublished) |
+| `crucible.yaml` | rounds-audit | Experimental (unpublished) |
+| `war-room.yaml` | rounds-audit | Experimental (unpublished) |
 
 The 7 experimental YAMLs are filtered out of the public `/teams` catalog by the `experimental: true` flag (`listPublicSpecs()` returns the 2 published only).
 
@@ -439,4 +439,4 @@ For specs predating the generic flow refactor, the migration is structural — s
 - `flow.synthesis: { agent, message_template }` (v1) → a separate single-agent round after the parallel rounds
 - `flow.audit: { agents, message_template, revision }` (v1) → a separate round with `on_failure: { action: revise, target: <synthesis-round-id>, max_revisions, signal }`
 
-All 9 catalog YAMLs were migrated in PR #47 (the generic flow refactor's second PR).
+All 9 catalog YAMLs were migrated in the generic flow refactor's second PR.
