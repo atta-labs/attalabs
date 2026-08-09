@@ -43,8 +43,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   // App-shell height: the shell is a full-viewport flex column — TopBar keeps
   // its own intrinsic height, the content region takes exactly the rest. Pages
-  // that want to fill the viewport (the diagram, docs) use `h-full` against
-  // this region; long pages (Home) scroll inside it. No page hardcodes the
+  // that want to fill the viewport (docs/harness, docs/reference and its
+  // sibling doctrine pages) use `h-full` against this region; long pages
+  // (Home, the /docs hub) scroll inside it. No page hardcodes the
   // TopBar's pixel height (the old `calc(100dvh-56px)`), so the shell can never
   // drift a few pixels into a stray window scroll.
   return (
