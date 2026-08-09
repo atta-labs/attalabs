@@ -171,7 +171,15 @@ export function coreCheckRegistry(): CheckSpec[] {
       // `resolveRepo()`'s only env read; falls back to `git remote get-url
       // origin` when unset. The bin is otherwise dormant (exit 0) when
       // `aeg-root/enforcement.md` doesn't exist — no other env dependency.
-      env: { AEG_REPO: { optional: true } }
+      // Tokens forwarded so its `gh auth status` / `gh issue|pr view`
+      // string-form shell-outs authenticate on CI runners (without them
+      // `ghReachable()` reports false there and the forge-number
+      // resolution degrades, exactly like the execFileSync siblings).
+      env: {
+        AEG_REPO: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
+      }
     },
     {
       name: 'review-gate',
@@ -199,9 +207,17 @@ export function coreCheckRegistry(): CheckSpec[] {
       scope: 'full',
       timeoutMs: 30_000,
       // BRANCH falls back to git; AEG_REPO falls back to `git remote`.
+      // Tokens forwarded because the bin reaches the forge through
+      // `createForgeSource` → `@atta/aeg-forge-state`'s token resolution
+      // (GITHUB_TOKEN, then GH_TOKEN, then a `gh auth token` subprocess)
+      // — the subprocess tier fails on CI runners, so without forwarding
+      // the check cannot reach the forge there. Same reasoning as
+      // `coherence`/`dispatch-readiness` above.
       env: {
         BRANCH: { optional: true },
-        AEG_REPO: { optional: true }
+        AEG_REPO: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
