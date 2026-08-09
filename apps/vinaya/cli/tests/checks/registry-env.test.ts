@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { CheckSpec } from '../../src/checks/contract'
 import { coreCheckRegistry } from '../../src/checks/registry'
@@ -45,6 +47,28 @@ describe('registry env declarations', () => {
         if (typeof decl === 'object' && decl !== null && 'anyOf' in decl) {
           offenders.push(`${spec.name}.${key}`)
         }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('every check whose bin shells to `gh` forwards GITHUB_TOKEN and GH_TOKEN', () => {
+    // The runner spawns children with ONLY the baseline env plus declared
+    // keys. On a CI runner `gh` authenticates exclusively from
+    // GITHUB_TOKEN/GH_TOKEN — a bin that shells to `gh` without forwarding
+    // them runs unauthenticated there: hard-fail (review-gate, pre-fix) or
+    // silently vacuous fail-open (single-plan-pr, dead-branch-push,
+    // issue-assignment, pre-fix). Coupling: read each bin's source, detect
+    // the `gh` shell-out, demand both token declarations.
+    const SRC_BIN_DIR = join(import.meta.dir, '..', '..', 'src', 'checks', 'bin')
+    const offenders: string[] = []
+    for (const spec of specs) {
+      const srcPath = join(SRC_BIN_DIR, `${basename(spec.run).replace(/\.(js|ts)$/, '')}.ts`)
+      const source = readFileSync(srcPath, 'utf8')
+      if (!source.includes("'gh'")) continue
+      const env = spec.env ?? {}
+      if (!('GITHUB_TOKEN' in env) || !('GH_TOKEN' in env)) {
+        offenders.push(spec.name)
       }
     }
     expect(offenders).toEqual([])

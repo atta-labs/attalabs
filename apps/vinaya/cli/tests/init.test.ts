@@ -10,6 +10,7 @@ import {
   CONFIG_PATH,
   DOCTRINE_POINTER_PATH,
   REVIEW_WORKFLOW_PATH,
+  REVIEW_VERDICT_WORKFLOW_PATH,
   starterConfig
 } from '../src/lib/artifacts.js'
 import type { InitDeps } from '../src/commands/init.js'
@@ -100,15 +101,18 @@ describe('vinaya init', () => {
     expect(rc).toBe(0)
 
     // The minimal manifest (2026-07-23 re-ruling, +doc-owners #665; the
-    // workflows item grew from two files to three with the archivist
-    // workflow, #761 — item count unchanged): config + root VINAYA.md +
-    // three workflows (tracked) + two hook stubs + the .vinaya/doc-owners
-    // starter. Nothing else is written.
+    // workflows item grew to three with the archivist workflow #761, and to
+    // four with the review-verdict workflow — the comment half of the review
+    // gate split into its own file so verdict comments can re-trigger the
+    // required run): config + root VINAYA.md + four workflows (tracked) +
+    // two hook stubs + the .vinaya/doc-owners starter. Nothing else is
+    // written.
     for (const p of [
       CONFIG_PATH,
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      REVIEW_VERDICT_WORKFLOW_PATH,
       ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
@@ -127,6 +131,7 @@ describe('vinaya init', () => {
       DOCTRINE_POINTER_PATH,
       CHECKS_WORKFLOW_PATH,
       REVIEW_WORKFLOW_PATH,
+      REVIEW_VERDICT_WORKFLOW_PATH,
       ARCHIVIST_WORKFLOW_PATH,
       '.husky/pre-commit',
       '.husky/pre-push',
@@ -292,16 +297,33 @@ describe('never-clobber', () => {
 })
 
 describe('workflows', () => {
-  it('installs both workflows; review triggers on issue_comment, checks does not', async () => {
+  it('splits the review gate: required half on pull_request only, verdict half on issue_comment', async () => {
     await runInit(['--yes'], makeDeps())
     const checks = readFileSync(join(root, CHECKS_WORKFLOW_PATH), 'utf-8')
     const review = readFileSync(join(root, REVIEW_WORKFLOW_PATH), 'utf-8')
+    const verdict = readFileSync(join(root, REVIEW_VERDICT_WORKFLOW_PATH), 'utf-8')
     expect(checks).toContain('pull_request')
     expect(checks).not.toContain('issue_comment')
+    // Required half: pull_request only — no comment path, so its runs never
+    // list permanently-skipped comment jobs.
     expect(review).toContain('pull_request')
-    expect(review).toContain('issue_comment')
-    expect(review).toContain('VERDICT') // cheap verdict guard before checkout
+    expect(review).not.toContain('issue_comment')
+    // Verdict half: comment-triggered, VERDICT-guarded before checkout cost,
+    // evaluator holds no write permission, retrigger re-runs the required run.
+    expect(verdict).toContain('issue_comment')
+    expect(verdict).toContain('VERDICT')
+    expect(verdict).toContain('actions: write')
+    expect(verdict).toContain('gh run rerun')
+    expect(verdict).toContain('vinaya-review.yml')
     expect(checks).toContain('vinaya check --all --diff-only')
+    // PR_NUMBER wiring is what makes the review-gate adapter EVALUATE —
+    // without it the check reads "local dev" and exits 0 unconditionally,
+    // a vacuous gate (PR #813 review blocker). Guard all three PR-facing
+    // workflows.
+    expect(review).toContain('PR_NUMBER')
+    expect(checks).toContain('PR_NUMBER')
+    expect(verdict).toContain('PR_NUMBER')
+    expect(verdict).toContain('steps.pr.outputs.number')
   })
 })
 

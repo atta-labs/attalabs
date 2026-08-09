@@ -133,9 +133,13 @@ export function coreCheckRegistry(): CheckSpec[] {
       timeoutMs: 15_000,
       // BASE_SHA defaults to `'origin/main'`; PR_NUMBER's absence takes the
       // explicit `? Number(...) : null` branch — both tolerate absence.
+      // Tokens forwarded so the bin's `gh pr list` authenticates on CI
+      // runners (fail-open to [] without them — silently vacuous there).
       env: {
         BASE_SHA: { optional: true },
-        PR_NUMBER: { optional: true }
+        PR_NUMBER: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
@@ -176,10 +180,17 @@ export function coreCheckRegistry(): CheckSpec[] {
       timeoutMs: 30_000,
       // BRANCH falls back to git; PR_NUMBER's absence takes the explicit
       // "no PR to evaluate yet (local dev, pre-push before a PR exists)"
-      // bypass documented in the bin's own module comment.
+      // bypass documented in the bin's own module comment. The bin shells
+      // to `gh` directly (no `resolveToken()`), and on a CI runner `gh`
+      // authenticates ONLY from GH_TOKEN/GITHUB_TOKEN — without forwarding
+      // them the allowlist strips the workflow-provided token and every
+      // `gh pr view` fails. Optional because local runs use `gh`'s own
+      // keyring auth with no env var at all.
       env: {
         BRANCH: { optional: true },
-        PR_NUMBER: { optional: true }
+        PR_NUMBER: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
@@ -200,8 +211,14 @@ export function coreCheckRegistry(): CheckSpec[] {
       timeoutMs: 30_000,
       // BRANCH falls back to `git rev-parse --abbrev-ref HEAD`; the bin's
       // own module comment documents fail-open (UNKNOWN → allow) for every
-      // other forge-reachability gap, unrelated to env absence.
-      env: { BRANCH: { optional: true } }
+      // other forge-reachability gap, unrelated to env absence. Tokens
+      // forwarded so `gh pr list` authenticates on CI runners instead of
+      // taking that UNKNOWN branch on every run.
+      env: {
+        BRANCH: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
+      }
     },
     {
       name: 'first-push-dispatch',
@@ -246,10 +263,13 @@ export function coreCheckRegistry(): CheckSpec[] {
       // AEG_REPO/BRANCH both fall back to git. Every other fact this bin
       // needs (remote-ref existence, assignees, the authenticated login)
       // comes from `gh` subprocess calls gated behind `parsed &&
-      // !remoteRefExists`, never a raw env read.
+      // !remoteRefExists`, never a raw env read — tokens forwarded so
+      // those calls authenticate on CI runners instead of null-skipping.
       env: {
         AEG_REPO: { optional: true },
-        BRANCH: { optional: true }
+        BRANCH: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     }
   ]
