@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkG1, checkG2, checkG3, checkG4, checkG5 } from './registry-checks'
 import type { GateRow } from './registry-parse'
@@ -92,6 +94,28 @@ describe('checkG4', () => {
     const result = checkG4(content, () => true)
     expect(result.status).toBe('pass')
     expect(result.findings).toHaveLength(0)
+  })
+
+  /**
+   * Vacuity demonstration (Issue #693): `enforcement.md`'s own body carries
+   * zero forge citations today — G4's real scan surface, not a synthetic
+   * proxy string, is empty by policy (task 3 stripped citations from
+   * `aeg-root/**` as doctrine). That leaves an open question the two tests
+   * above cannot answer on their own: does the check merely happen to be
+   * quiet right now, or would it actually fire if the real file carried a
+   * fabricated citation? This test appends one fabricated, non-resolving
+   * citation to the *real* file content and asserts `checkG4` still catches
+   * it — proving the gate can see what it bans, the same discipline
+   * `retired-vocabulary.test.ts` already applies to itself.
+   */
+  it('fires against the real enforcement.md content plus one fabricated citation', () => {
+    const realContent = readFileSync(join(import.meta.dirname, '../../../aeg-root/enforcement.md'), 'utf8')
+    const fabricatedNumber = 900001
+    const content = `${realContent}\n\nFabricated citation for vacuity test: #${fabricatedNumber}.\n`
+    const resolveFn = (n: number) => n !== fabricatedNumber
+    const result = checkG4(content, resolveFn)
+    expect(result.status).toBe('fail')
+    expect(result.findings.some((f) => f.reason.includes(String(fabricatedNumber)))).toBe(true)
   })
 })
 
