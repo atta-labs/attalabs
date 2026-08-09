@@ -24,7 +24,7 @@ const OVERVIEW_DOC: Doc = {
   title: 'Overview',
   section: 'Overview',
   order: 0,
-  href: '/docs',
+  href: '/docs/reference',
   filePath: ''
 }
 

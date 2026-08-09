@@ -1,5 +1,5 @@
 import 'server-only'
-import { loadDiagramModel } from '@/app/(site)/the-harness/_lib/load-diagram'
+import { loadDiagramModel } from '@/app/(site)/docs/(standalone)/harness/_lib/load-diagram'
 
 /**
  * Every diagram node's `summary` field, doctrine-wide — written as a rhetorical
