@@ -25,8 +25,8 @@ export function ConfigFieldSection({ field }: { field: ConfigField }) {
         </Badge>
       </div>
 
-      {field.semantics.map((sentence) => (
-        <FieldProse key={sentence} text={sentence} />
+      {field.semantics.map((sentence, index) => (
+        <FieldProse key={`${field.key}-${index}`} text={sentence} />
       ))}
 
       <CodeBlock className='my-0'>{field.example}</CodeBlock>

@@ -389,7 +389,7 @@ Global-config `checks` stripping (this chapter's "Explicitly out of scope" secti
 
 ### Correction 12 (2026-08-09) — `/config`, the documented reference (task 9, #782)
 
-Every key above (`rings`, `checks` including `CheckEntrySchema`'s six fields and the four `env` forms, `briefSchema`, `managed`) and the `--plan --json` envelope this Correction's own section 336 describes now render at `/config` from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` — an authored registry, not a schema introspection, mechanically proven complete against `VinayaConfigSchema`'s real shape by `apps/vinaya/cli/tests/checks/config-reference-coverage.test.ts`. See the Pages table's `/config` row for the full description.
+Every key above (`rings`, `checks` including `CheckEntrySchema`'s six fields and the four `env` forms, `briefSchema`, `managed`) and the `--plan --json` envelope this chapter's own "`vinaya check --plan` / `--plan --json`" section describes now render at `/config` from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` — an authored registry, not a schema introspection, mechanically proven complete against `VinayaConfigSchema`'s real shape by `apps/vinaya/cli/tests/checks/config-reference-coverage.test.ts`. See the Pages table's `/config` row for the full description.
 
 ## Forge writes (#385)
 

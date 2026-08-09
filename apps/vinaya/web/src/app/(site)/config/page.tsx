@@ -6,7 +6,7 @@ import { ConfigFieldSection } from './_components/ConfigFieldSection'
 
 export const metadata: Metadata = {
   title: 'Config Reference · Vinaya',
-  description: 'Every vinaya.config.json key, documented from the schema — and the vinaya check --plan --json shape.'
+  description: 'Every vinaya.config.json key, documented by hand — and the vinaya check --plan --json shape.'
 }
 
 /**
