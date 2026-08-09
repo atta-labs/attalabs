@@ -10,7 +10,7 @@ import { bucketTaskStatuses, type TaskBuckets } from './task-buckets'
  * folded into `todo`.
  *
  * The status list is read from `@atta/aeg-core`'s own `DERIVED_STATUSES`
- * rather than hand-copied here (the same import `(site)/state-machine`'s
+ * rather than hand-copied here (the same import `(site)/docs/(standalone)/state-machine`'s
  * loader test uses), so a status added upstream reaches this suite instead of
  * quietly falling outside a local literal that still passes.
  */

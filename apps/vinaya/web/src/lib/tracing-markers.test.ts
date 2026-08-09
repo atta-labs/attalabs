@@ -21,7 +21,8 @@ import { describe, expect, it } from 'vitest'
  * `vinaya.config.json` AND split off `.vinaya/projects.md` as
  * `read-root.ts`'s own marker, updated the include list for the second, and
  * never declared the first — a commit that looked complete, built green, and
- * left `/the-harness` and `/docs` returning 500 in production only (#707).
+ * left the two doctrine-reading routes (then `/the-harness` and `/docs`, today
+ * `/docs/harness` and `/docs/reference`) returning 500 in production only (#707).
  *
  * Constants are parsed out of source rather than imported because these
  * modules are `server-only` and reach `node:child_process` transitively —

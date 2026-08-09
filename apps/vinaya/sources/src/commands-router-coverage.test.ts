@@ -8,7 +8,7 @@ import { COMMANDS } from './commands'
 // every name the router actually dispatches has a COMMANDS row — the
 // failure mode that test can't see is a NEW `case` landing in `index.ts`
 // with no matching registry entry (silently undocumented, never
-// `printHelp()`-visible, never on the web `/cli` reference).
+// `printHelp()`-visible, never on the web `/docs/cli` reference).
 const INDEX_PATH = fileURLToPath(new URL('../../cli/src/index.ts', import.meta.url))
 const INDEX_SOURCE = readFileSync(INDEX_PATH, 'utf-8')
 

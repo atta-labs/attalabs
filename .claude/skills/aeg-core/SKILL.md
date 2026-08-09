@@ -33,7 +33,7 @@ The package is just under 100 files (~95 in `src/`), almost all as `<concern>.ts
 | **Brief/Issue grammar** | `brief-validation.ts`, `issue-validation.ts`, `premise-check.ts`, `pr-tier.ts` | Every gate-read PR-body/Issue-body field: `Tier:`, `Project:`, the Test Plan section, the Premise block, the Planner-rationale sections |
 | **Review/provenance** | `review-gate.ts`, `verdict-extraction.ts`, `archive-task.ts`, `waiver-label.ts` | The review-gate verdict extraction, the post-merge provenance block, actor-verified waiver labels |
 | **Registry self-check** | `registry-parse.ts`, `registry-checks.ts`, `actions.ts` | G1–G5 — proving `enforcement.md`'s own registry matches installed reality |
-| **Rendering model** | `diagram-model.ts`, `state-machine-model.ts`, `markdown-table.ts` | `DiagramModel`/`deriveStatusFromModel` — the one derivation N renderers (Studio, `/the-harness`, `/state-machine`) consume |
+| **Rendering model** | `diagram-model.ts`, `state-machine-model.ts`, `markdown-table.ts` | `DiagramModel`/`deriveStatusFromModel` — the one derivation N renderers (Studio, `/docs/harness`, `/docs/state-machine`) consume |
 | **Ledger/tokens** | `parse-ledger.ts`, `sum-ledger.ts`, `parse-token-report.ts`, `report-tokens.ts` | The append-only token ledger's parse + derive-at-read-time sum |
 
 ### The seam types (`types.ts`, `state-source.ts`, `doctrine-source.ts`)

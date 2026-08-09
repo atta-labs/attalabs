@@ -27,7 +27,7 @@ apps/vinaya/
 
 This workspace is the seam both `cli` and `web` sit on top of without crossing each other:
 
-- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and `web`'s `/cli` page are two renderers over this one registry — never a hand-transcribed second list.
+- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and `web`'s `/docs/cli` page are two renderers over this one registry — never a hand-transcribed second list.
 - **`forge-adapter.ts`'s `createForgeSource`** (primary) — wires `@atta/aeg-forge-state`'s `deriveTrancheFromForge` behind aeg-core's `StateSource` contract.
 - **`file-adapter.ts`'s `createFileSource`** (transitional, deliberately deleted once every consumer is forge-backed) — wraps `parseTranche` over a configurable governance root.
 - **`select-source.ts`** — config-driven choice between the two.

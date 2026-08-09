@@ -84,7 +84,7 @@ Custom checks are any executable you register in `vinaya.config.json`, in any la
 
 ## Documentation
 
-Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/cli](https://vinaya.attalabs.dev/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
+Full documentation at [vinaya.attalabs.dev](https://vinaya.attalabs.dev) — the command reference lives at [/docs/cli](https://vinaya.attalabs.dev/docs/cli), and [/start](https://vinaya.attalabs.dev/start) walks the path from install to a governed repository.
 
 ## License
 

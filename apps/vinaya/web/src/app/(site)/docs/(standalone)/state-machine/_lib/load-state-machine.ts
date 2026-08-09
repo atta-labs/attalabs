@@ -11,8 +11,8 @@ import {
 import { type Label, LABELS } from '@atta/aeg-forge-state/labels'
 
 /**
- * Build-time data spine for `/state-machine`: the four datasets the page
- * renders, read straight off the code-owned model. Unlike `/the-harness`'s
+ * Build-time data spine for `/docs/state-machine`: the four datasets the page
+ * renders, read straight off the code-owned model. Unlike `/docs/harness`'s
  * loader there is no doctrine source and no derivation — these are static
  * exports, so this is a passthrough whose only real job is the SERVER
  * BOUNDARY: `@atta/aeg-core`'s barrel reaches `@atta/aeg-forge-state`'s
