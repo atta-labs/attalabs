@@ -24,6 +24,32 @@ export interface TopBarLink {
   /** Match exact path for active state. Defaults to prefix match. */
   exact?: boolean
   external?: boolean
+  /** Rendered before the label, both in the desktop row and the mobile sheet row. */
+  icon?: ReactNode
+}
+
+export interface TopBarGroupItem extends TopBarLink {
+  /** Muted one-line description shown under the label inside a group's dropdown panel. */
+  description?: ReactNode
+}
+
+export interface TopBarLinkGroup {
+  label: ReactNode
+  icon?: ReactNode
+  /** Items shown in the dropdown panel (desktop) / nested rows (mobile sheet). */
+  items: TopBarGroupItem[]
+}
+
+/** A group is discriminated by carrying `items` — flat links never do. */
+export type TopBarNavItem = TopBarLink | TopBarLinkGroup
+
+function isTopBarGroup(item: TopBarNavItem): item is TopBarLinkGroup {
+  return 'items' in item
+}
+
+/** Stable React key for a nav item — groups have no `href` to key on. */
+function navItemKey(item: TopBarNavItem): string {
+  return isTopBarGroup(item) ? (item.items[0]?.href ?? String(item.label)) : item.href
 }
 
 export interface TopBarProps {
@@ -35,9 +61,9 @@ export interface TopBarProps {
   /** Two-line tagline rendered next to the logo. First element is the top line, second is the bottom. */
   logoTagline?: [string, string]
   /** Links shown to all users. */
-  links?: TopBarLink[]
+  links?: TopBarNavItem[]
   /** Links shown only to signed-in users. Ignored when withAuth={false}. */
-  signedInLinks?: TopBarLink[]
+  signedInLinks?: TopBarNavItem[]
   /**
    * Extra actions rendered in the right section, next to `ColorSchemeToggle`.
    * When `withAuth`, shown only when signed in. When `withAuth={false}`,
@@ -131,18 +157,22 @@ function TopBarWithAuth({
 
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
-          {visibleLinks.map(({ href, label, exact, external }) => (
-            <NextLink
-              key={href}
-              variant='nav'
-              active={isActive(href, exact)}
-              href={href}
-              className='whitespace-nowrap text-xs'
-              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-            >
-              {label}
-            </NextLink>
-          ))}
+          {visibleLinks.map((item) => {
+            if (isTopBarGroup(item)) return null // group desktop rendering lands in Part 2
+            const { href, label, exact, external } = item
+            return (
+              <NextLink
+                key={navItemKey(item)}
+                variant='nav'
+                active={isActive(href, exact)}
+                href={href}
+                className='whitespace-nowrap text-xs'
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                {label}
+              </NextLink>
+            )
+          })}
         </div>
 
         {/* Desktop actions — pinned right */}
@@ -195,23 +225,27 @@ function TopBarWithAuth({
                 </SheetClose>
               </div>
               <nav className='flex flex-col px-6'>
-                {visibleLinks.map(({ href, label, exact, external }) => (
-                  <SheetClose
-                    key={href}
-                    nativeButton={false}
-                    render={
-                      <NextLink
-                        variant='nav'
-                        active={isActive(href, exact)}
-                        href={href}
-                        {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                        className='flex h-14 items-center border-b border-border/30 text-sm'
-                      />
-                    }
-                  >
-                    {label}
-                  </SheetClose>
-                ))}
+                {visibleLinks.map((item) => {
+                  if (isTopBarGroup(item)) return null // group sheet rendering lands in Part 3
+                  const { href, label, exact, external } = item
+                  return (
+                    <SheetClose
+                      key={navItemKey(item)}
+                      nativeButton={false}
+                      render={
+                        <NextLink
+                          variant='nav'
+                          active={isActive(href, exact)}
+                          href={href}
+                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                          className='flex h-14 items-center border-b border-border/30 text-sm'
+                        />
+                      }
+                    >
+                      {label}
+                    </SheetClose>
+                  )
+                })}
                 {isSignedIn && extraActions && (
                   <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
                 )}
@@ -278,18 +312,22 @@ function TopBarNoAuth({
 
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
-          {links.map(({ href, label, exact, external }) => (
-            <NextLink
-              key={href}
-              variant='nav'
-              active={isActive(href, exact)}
-              href={href}
-              className='whitespace-nowrap text-xs'
-              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-            >
-              {label}
-            </NextLink>
-          ))}
+          {links.map((item) => {
+            if (isTopBarGroup(item)) return null // group desktop rendering lands in Part 2
+            const { href, label, exact, external } = item
+            return (
+              <NextLink
+                key={navItemKey(item)}
+                variant='nav'
+                active={isActive(href, exact)}
+                href={href}
+                className='whitespace-nowrap text-xs'
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                {label}
+              </NextLink>
+            )
+          })}
         </div>
 
         {/* Desktop actions — pinned right (no auth UI) */}
@@ -325,23 +363,27 @@ function TopBarNoAuth({
                   </SheetClose>
                 </div>
                 <nav className='flex flex-col px-6'>
-                  {links.map(({ href, label, exact, external }) => (
-                    <SheetClose
-                      key={href}
-                      nativeButton={false}
-                      render={
-                        <NextLink
-                          variant='nav'
-                          active={isActive(href, exact)}
-                          href={href}
-                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                          className='flex h-14 items-center border-b border-border/30 text-sm'
-                        />
-                      }
-                    >
-                      {label}
-                    </SheetClose>
-                  ))}
+                  {links.map((item) => {
+                    if (isTopBarGroup(item)) return null // group sheet rendering lands in Part 3
+                    const { href, label, exact, external } = item
+                    return (
+                      <SheetClose
+                        key={navItemKey(item)}
+                        nativeButton={false}
+                        render={
+                          <NextLink
+                            variant='nav'
+                            active={isActive(href, exact)}
+                            href={href}
+                            {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                            className='flex h-14 items-center border-b border-border/30 text-sm'
+                          />
+                        }
+                      >
+                        {label}
+                      </SheetClose>
+                    )
+                  })}
                   {extraActions && (
                     <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
                   )}
