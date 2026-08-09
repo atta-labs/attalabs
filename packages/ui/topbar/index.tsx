@@ -547,7 +547,7 @@ function TopBarNoAuth({
                     if (isTopBarGroup(item)) {
                       return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
                     }
-                    const { href, label, exact, external } = item
+                    const { href, label, exact, external, icon } = item
                     return (
                       <SheetClose
                         key={navItemKey(item)}
@@ -562,7 +562,14 @@ function TopBarNoAuth({
                           />
                         }
                       >
-                        {label}
+                        {icon ? (
+                          <span className='flex items-center gap-1.5'>
+                            <span className='size-4'>{icon}</span>
+                            {label}
+                          </span>
+                        ) : (
+                          label
+                        )}
                       </SheetClose>
                     )
                   })}
