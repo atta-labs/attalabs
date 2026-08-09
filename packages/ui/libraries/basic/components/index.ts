@@ -90,6 +90,17 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '../installed/breadcrumb'
+export {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuIndicator,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
+  navigationMenuTriggerStyle
+} from '../installed/navigation-menu'
 export { Slider } from '../installed/slider'
 // Table
 export { Table } from './table'
