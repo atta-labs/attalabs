@@ -6,19 +6,13 @@
  * local source. The coverage set is derived from `@atta/vinaya-sources`'
  * `COMMANDS` registry (current source), not hand-maintained here.
  *
- * KNOWN, TRACKED GAP (https://github.com/daniboomerang/attalabs/issues/705,
- * https://github.com/daniboomerang/attalabs/issues/705#issuecomment-5199855023):
- * the currently-published `@attalabs/vinaya@0.1.0` predates `demo break` and
- * `waiver` (#387), predates the `reader-resolvable-prose` exclusion from
- * `check --all`'s adopter-facing set, and predates the `.vinaya/doc-owners`
- * manifest item (#665, added to source 2026-08-06 per `vinaya-spec.md`'s
- * Correction 2 — after 0.1.0 published). All four are the same root cause —
- * current source has moved ahead of the last publish — not four separate
- * defects. Running this script against that published version today is
- * EXPECTED to report `demo break`, `waiver`, `check`'s check-count, and
- * `init`'s missing `.vinaya/doc-owners` as FAILED — that is this script
- * correctly detecting the already-reported gap, not a new regression. See
- * the PASS/FAIL table's own banner for the same note at run time.
+ * `PACKAGE_SPEC` pins the version under test — bump it as part of each
+ * publish's release discipline, then run this script green before calling
+ * the release verified. A red row here after a version bump means the
+ * published artifact genuinely diverges from what current source promises
+ * (the 0.1.0-era run of this script caught exactly that four ways at once:
+ * `demo break`/`waiver` missing, a stale check count, and a missing
+ * `.vinaya/doc-owners` — all one root cause, source ahead of publish).
  */
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -27,9 +21,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { COMMANDS } from '@atta/vinaya-sources'
 
-const PACKAGE_SPEC = '@attalabs/vinaya@0.1.0'
-const KNOWN_GAP_ISSUE = 'https://github.com/daniboomerang/attalabs/issues/705'
-const DOC_OWNERS_GAP_COMMENT = 'https://github.com/daniboomerang/attalabs/issues/705#issuecomment-5199855023'
+const PACKAGE_SPEC = '@attalabs/vinaya@0.4.1'
+const PUBLISHED_VERSION = PACKAGE_SPEC.slice(PACKAGE_SPEC.lastIndexOf('@') + 1)
 
 // ---------------------------------------------------------------------------
 // Workspace-root guard — the whole point is testing the PUBLISHED artifact in
@@ -143,7 +136,7 @@ function git(cwd: string, args: string[]): string {
 // before any network/filesystem work, so a registry that grows silently
 // under-covered fails loudly instead of quietly passing fewer commands.
 // ---------------------------------------------------------------------------
-type Outcome = { status: 'pass' | 'fail'; detail: string; knownGap?: boolean }
+type Outcome = { status: 'pass' | 'fail'; detail: string }
 type Ctx = { bin: string; fixtureDir: string }
 
 // The 5 (of 6) manifest artifacts every downstream exercise needs `init` to
@@ -195,6 +188,16 @@ exercise; never actually opened (--validate-only, no network write).
 `
 
 const EXEMPTIONS: Record<string, string> = {
+  archive:
+    '`archive` is a ring-2 post-merge mechanism: it resolves merged PRs and their associated Issues from the ' +
+    'live forge (`gh` reads against real merge history) UNCONDITIONALLY — there is no dry-run path that skips ' +
+    'the forge. Exercising it genuinely would require a real repo with real merged task PRs and real `gh` ' +
+    "credentials reaching the network beyond the npm install, which this script's boundary forbids (same " +
+    "reasoning as `issue edit`'s exemption).",
+  audit:
+    '`audit` is a ring-2 scheduled mechanism: dead-branch drift and direct-main-push detection both derive ' +
+    'from live forge state (`gh` branch/PR reads) UNCONDITIONALLY — no offline path exists. Same forge/' +
+    'credential boundary as `archive` above; exempt for the same reason as `issue edit`.',
   'issue edit':
     "`issue edit` fetches the target Issue's real labels from the forge (`gh issue view`) UNCONDITIONALLY, " +
     'even under --validate-only — there is no code path that skips it. Exercising it genuinely would require a ' +
@@ -220,11 +223,11 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
     let jsonOk = false
     try {
       const parsed = JSON.parse(json.stdout) as { schema?: number; data?: { version?: string } }
-      jsonOk = parsed.schema === 1 && parsed.data?.version === '0.1.0'
+      jsonOk = parsed.schema === 1 && parsed.data?.version === PUBLISHED_VERSION
     } catch {
       jsonOk = false
     }
-    const ok = plain.status === 0 && plain.stdout.trim() === '0.1.0' && json.status === 0 && jsonOk
+    const ok = plain.status === 0 && plain.stdout.trim() === PUBLISHED_VERSION && json.status === 0 && jsonOk
     return { status: ok ? 'pass' : 'fail', detail: `plain: "${plain.stdout.trim()}", --json schema/version: ${jsonOk}` }
   },
 
@@ -239,9 +242,8 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
       detail: coreOk
         ? docOwnersWritten
           ? `exit ${r.status}, all 6 manifest artifacts written, hook installed`
-          : `exit ${r.status}, 5/6 manifest artifacts written (hook installed) — ${DOC_OWNERS_PATH} missing from published output`
-        : `exit ${r.status}, core artifacts written: ${coreWritten}, hook installed: ${hookInstalled}`,
-      knownGap: coreOk && !docOwnersWritten
+          : `exit ${r.status}, ${DOC_OWNERS_PATH} missing from published output`
+        : `exit ${r.status}, core artifacts written: ${coreWritten}, hook installed: ${hookInstalled}`
     }
   },
 
@@ -262,11 +264,10 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
     } catch {
       count = -1
     }
-    const ok = count === 4
+    const ok = count === 15
     return {
       status: ok ? 'pass' : 'fail',
-      detail: `expected 4 registered checks (current source excludes reader-resolvable-prose), published reports ${count}`,
-      knownGap: !ok
+      detail: `expected 15 registered core checks (reader-resolvable-prose excluded), published reports ${count}`
     }
   },
 
@@ -348,26 +349,33 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
   },
 
   'demo break': ({ bin, fixtureDir }) => {
+    // Git-local end to end (branch + fixture commit + hook rejection + its own
+    // cleanup) — network-free, so it is exercised for real. It refuses on a
+    // dirty tree, and earlier exercises leave untracked fixture files behind:
+    // commit them first so the refusal path isn't what gets measured.
+    git(fixtureDir, ['add', '-A'])
+    git(fixtureDir, ['commit', '-m', 'Chore: absorb lifecycle fixtures pre demo-break', '--no-verify', '--allow-empty'])
     const r = run(bin, ['demo', 'break'], fixtureDir)
     const ok = r.status === 0
     return {
       status: ok ? 'pass' : 'fail',
-      detail: `exit ${r.status}: ${(r.stderr || r.stdout).trim().split('\n')[0]} — published @0.1.0 predates #387`,
-      knownGap: !ok
+      detail: `exit ${r.status}: ${(r.stdout || r.stderr).trim().split('\n').filter(Boolean).pop()}`
     }
   },
 
   waiver: ({ bin, fixtureDir }) => {
+    // --print-only executes nothing — it prints the `gh` commands a human
+    // would run. A real, network-free exercise of the command's whole
+    // argument/validation path.
     const r = run(
       bin,
       ['waiver', 'docs', '1', '--reason', 'verify-published-lifecycle fixture', '--print-only'],
       fixtureDir
     )
-    const ok = r.status === 0
+    const ok = r.status === 0 && /nothing below was executed/i.test(r.stdout)
     return {
       status: ok ? 'pass' : 'fail',
-      detail: `exit ${r.status}: ${(r.stderr || r.stdout).trim().split('\n')[0]} — published @0.1.0 predates #387`,
-      knownGap: !ok
+      detail: `exit ${r.status}: ${(r.stdout || r.stderr).trim().split('\n')[0]}`
     }
   },
 
@@ -505,14 +513,7 @@ async function main(): Promise<void> {
 }
 
 function printReport(results: Map<string, Outcome>): void {
-  process.stdout.write('\nvinaya verify-published-lifecycle\n\n')
-  process.stdout.write(`Known gap (tracked — ${KNOWN_GAP_ISSUE}, ${DOC_OWNERS_GAP_COMMENT}):\n`)
-  process.stdout.write(
-    "  `demo break`, `waiver`, `check`'s check-count, and `init`'s missing `.vinaya/doc-owners` are EXPECTED to\n" +
-      '  fail against the currently-published @attalabs/vinaya@0.1.0 — same root cause (current source has moved\n' +
-      '  ahead of the last publish), four instances of it. A red result on exactly these below is the known,\n' +
-      '  already-reported gap, not a new regression.\n\n'
-  )
+  process.stdout.write(`\nvinaya verify-published-lifecycle — against ${PACKAGE_SPEC}\n\n`)
 
   let pass = 0
   let fail = 0
@@ -521,8 +522,7 @@ function printReport(results: Map<string, Outcome>): void {
     const o = results.get(c.name)
     if (!o) continue
     const symbol = o.status === 'pass' ? '✓' : '✗'
-    const gapNote = o.knownGap ? ' [known gap — #705]' : ''
-    process.stdout.write(`${symbol} ${c.name.padEnd(16)} ${o.detail}${gapNote}\n`)
+    process.stdout.write(`${symbol} ${c.name.padEnd(16)} ${o.detail}\n`)
     if (o.status === 'pass') pass += 1
     else fail += 1
   }
