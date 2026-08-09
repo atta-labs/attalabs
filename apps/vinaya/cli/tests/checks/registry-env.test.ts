@@ -65,7 +65,12 @@ describe('registry env declarations', () => {
     for (const spec of specs) {
       const srcPath = join(SRC_BIN_DIR, `${basename(spec.run).replace(/\.(js|ts)$/, '')}.ts`)
       const source = readFileSync(srcPath, 'utf8')
-      if (!source.includes("'gh'")) continue
+      // Detect `gh` as a spawned command in ANY call shape: execFileSync's
+      // array form (`'gh'`), execSync's string form (`'gh auth status'`),
+      // and template-literal commands (`` `gh issue view ${n}` ``) — the
+      // string forms slipped past an earlier exact-`'gh'` match and left
+      // check-registry-gates undeclared.
+      if (!/['"`]gh['"`\s]/.test(source)) continue
       const env = spec.env ?? {}
       if (!('GITHUB_TOKEN' in env) || !('GH_TOKEN' in env)) {
         offenders.push(spec.name)
