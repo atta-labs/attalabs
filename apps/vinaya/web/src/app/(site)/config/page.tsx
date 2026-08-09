@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  * silently drift behind the schema: it walks `VinayaConfigSchema`'s own keys
  * and fails if one has no row here.
  *
- * A flat stacked column, like `/state-machine` — not `/cli`'s two-pane
+ * A flat stacked column, like `/docs/state-machine` — not `/docs/cli`'s two-pane
  * sidebar shape. `CONFIG_REFERENCE` is small enough (four top-level keys)
  * that a scroll-spy TOC would add machinery this page doesn't need.
  */

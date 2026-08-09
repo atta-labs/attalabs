@@ -60,7 +60,7 @@ A **task is a forge Issue.** Its status is never written anywhere — it is **de
 | `dropped` | Issue closed `NOT_PLANNED` — decided against, not done |
 | `incoherent` | Issue closed `COMPLETED` with no merged PR — done-but-unprovable, surfaced for a human |
 
-This table is a **reader's summary, not the source.** The authoritative list is `DERIVED_STATUSES` + the ordered `DERIVATION_RULES` in `packages/aeg-core/src/state-machine-model.ts`, rendered live at `/state-machine`; order is load-bearing there in ways a flat table cannot show.
+This table is a **reader's summary, not the source.** The authoritative list is `DERIVED_STATUSES` + the ordered `DERIVATION_RULES` in `packages/aeg-core/src/state-machine-model.ts`, rendered live at `/docs/state-machine`; order is load-bearing there in ways a flat table cannot show.
 
 So **no role ever writes status.** Opening the PR *is* the in-review signal; merging *is* the done signal. To see the board you query the forge (`gh pr list`, the Issues view, a project board) — you never read status from a file. The thin tranche file holds only topology (task→issue, dependency/conflict edges); see `tranche-model.md`.
 

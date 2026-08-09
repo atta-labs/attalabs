@@ -1,7 +1,7 @@
 import { Code } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 
-// Same deliberately-dumb backtick splitter as `/cli`'s `DetailText` — kept as
+// Same deliberately-dumb backtick splitter as `/docs/cli`'s `DetailText` — kept as
 // a local copy rather than a cross-route import, since `_components` folders
 // are route-private by convention. Split on backticks, odd-indexed runs
 // render as inline `Code`.

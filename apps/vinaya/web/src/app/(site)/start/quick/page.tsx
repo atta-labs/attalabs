@@ -26,7 +26,7 @@ function versionStampText(publishedVersion: PublishedVersion): string {
 }
 
 // Four fixed steps: install / `init` / `init product` / start working. Each of
-// the first three names the real files it touches and links onward to `/cli`
+// the first three names the real files it touches and links onward to `/docs/cli`
 // for the full command reference — the CLI page owns command detail, this
 // page owns the path. No forge dependency, same reasoning as `/roadmap` and
 // `/start`.
