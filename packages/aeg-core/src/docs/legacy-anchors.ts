@@ -17,6 +17,22 @@ import type { DiagramNode } from '../diagram-model'
 import { nodeDocRoute } from './node-route'
 
 /**
+ * A doctrine cell's own text renamed outright (not a G-code strip, not an
+ * over-length cut) is the one case this file cannot derive. `node.id` is
+ * `slugify(row.action)` computed fresh from whatever `enforcement.md` says
+ * RIGHT NOW — by the time a rename lands, the old text is gone from the
+ * doctrine snapshot entirely, so there is nothing left in `node.id`/
+ * `node.label` for a derivation to diff against. This is not a second
+ * routing authority — `nodeSlug()`/`nodeDocRoute()` still compute every
+ * live anchor unconditionally; this map only remembers what one specific
+ * anchor used to be before an editor rewrote the cell it came from, and it
+ * grows by exactly one entry, once, at the moment of a rename. Keyed by the
+ * node id the rename produced. */
+const RENAMED_CELL_ALIASES: Record<string, string> = {
+  'check:coherence-check': 'coherence-oracle'
+}
+
+/**
  * The anchor slugs this node used to publish and must continue to answer
  * to. `[]` when the node's canonical slug is unchanged — most nodes, since
  * `nodeSlug()`'s cleanup is a no-op on an already-clean display form.
@@ -24,6 +40,9 @@ import { nodeDocRoute } from './node-route'
 export function legacyAnchorSlugs(node: DiagramNode): string[] {
   const rawSlug = node.id.slice(node.kind.length + 1)
   const canonicalSlug = nodeDocRoute(node)?.slug
-  if (!canonicalSlug || canonicalSlug === rawSlug) return []
-  return [rawSlug]
+  const aliases = new Set<string>()
+  if (canonicalSlug && canonicalSlug !== rawSlug) aliases.add(rawSlug)
+  const renamed = RENAMED_CELL_ALIASES[node.id]
+  if (renamed) aliases.add(renamed)
+  return [...aliases]
 }

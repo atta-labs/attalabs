@@ -30,4 +30,8 @@ describe('legacyAnchorSlugs', () => {
     const n: DiagramNode = { id: 'check:orphan', kind: 'check', label: 'Orphan', renderState: 'active' }
     expect(legacyAnchorSlugs(n)).toEqual([])
   })
+
+  it('the renamed Coherence oracle cell answers to its pre-rename slug too', () => {
+    expect(legacyAnchorSlugs(node('check:coherence-check', 'Coherence check'))).toEqual(['coherence-oracle'])
+  })
 })
