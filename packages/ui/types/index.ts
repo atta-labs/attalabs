@@ -39,6 +39,16 @@ export type {
   BreadcrumbProps,
   BreadcrumbSeparatorProps
 } from './navigation/breadcrumb'
+export type {
+  NavigationMenuContentProps,
+  NavigationMenuIndicatorProps,
+  NavigationMenuItemProps,
+  NavigationMenuLinkProps,
+  NavigationMenuListProps,
+  NavigationMenuProps,
+  NavigationMenuTriggerProps,
+  NavigationMenuViewportProps
+} from './navigation/navigation-menu'
 
 // Typography
 export type { HeadingLevel, HeadingProps, HeadingSize, HeadingWeight } from './typography/heading'
