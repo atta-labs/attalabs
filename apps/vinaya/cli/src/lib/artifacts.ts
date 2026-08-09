@@ -103,6 +103,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
+      issues: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,6 +113,10 @@ jobs:
         with:
           node-version: 20
       - name: Run checks
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: \${{ github.event.pull_request.number }}
+          BRANCH: \${{ github.head_ref }}
         run: npx --yes @attalabs/vinaya check --all --diff-only
 `
 }
@@ -153,6 +159,11 @@ jobs:
       - name: Review gate
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          # PR_NUMBER is what makes the review-gate check EVALUATE: without
+          # it the adapter reads "no PR yet — local dev" and exits 0, and
+          # the gate is green regardless of review state.
+          PR_NUMBER: \${{ github.event.pull_request.number }}
+          BRANCH: \${{ github.head_ref }}
         run: npx --yes @attalabs/vinaya check --all
 `
 }
@@ -204,6 +215,7 @@ jobs:
           NUMBER="\${{ github.event.issue.number }}"
           BRANCH=$(gh pr view "$NUMBER" --repo "\${{ github.repository }}" --json headRefName -q .headRefName)
           SHA=$(gh pr view "$NUMBER" --repo "\${{ github.repository }}" --json headRefOid -q .headRefOid)
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
@@ -217,6 +229,10 @@ jobs:
       - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          # Same wiring as the required workflow: PR_NUMBER is what makes
+          # the adapter evaluate instead of no-op'ing as "local dev".
+          PR_NUMBER: \${{ steps.pr.outputs.number }}
+          BRANCH: \${{ steps.pr.outputs.branch }}
         run: npx --yes @attalabs/vinaya check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs. Fires only on a

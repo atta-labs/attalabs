@@ -316,6 +316,14 @@ describe('workflows', () => {
     expect(verdict).toContain('gh run rerun')
     expect(verdict).toContain('vinaya-review.yml')
     expect(checks).toContain('vinaya check --all --diff-only')
+    // PR_NUMBER wiring is what makes the review-gate adapter EVALUATE —
+    // without it the check reads "local dev" and exits 0 unconditionally,
+    // a vacuous gate (PR #813 review blocker). Guard all three PR-facing
+    // workflows.
+    expect(review).toContain('PR_NUMBER')
+    expect(checks).toContain('PR_NUMBER')
+    expect(verdict).toContain('PR_NUMBER')
+    expect(verdict).toContain('steps.pr.outputs.number')
   })
 })
 
