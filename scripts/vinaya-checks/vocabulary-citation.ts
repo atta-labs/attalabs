@@ -103,7 +103,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { evaluateVocabularyCitation, type VocabularyHit, type VocabularyPattern } from '@atta/aeg-core'
 
-const CHECK_NAME = 'vocabulary-citation'
+const CHECK_NAME = 'attalabs/vocabulary-citation'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 type CheckError = {
