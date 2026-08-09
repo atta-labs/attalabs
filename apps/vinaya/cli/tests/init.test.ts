@@ -162,6 +162,23 @@ describe('vinaya init', () => {
     expect(statSync(join(root, '.husky/pre-commit')).mode & 0o111).not.toBe(0)
   })
 
+  it('hook stubs pin the exact installed version with --yes (npx cache-key regression)', () => {
+    // A bare/`@latest`-spec npx cache entry does not satisfy `--no-install
+    // @attalabs/vinaya` — on a fresh machine the first commit after init died
+    // on npx's non-interactive cancel. The exact-version `--yes` pin is the
+    // fix; this locks it.
+    const pkg = JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf-8')) as { version: string }
+    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' }).filter(
+      (op) => op.kind === 'managed-block' && /pre-(commit|push)/.test(op.path)
+    )
+    expect(hookOps.length).toBe(2)
+    for (const op of hookOps) {
+      if (op.kind !== 'managed-block') continue
+      expect(op.body).toContain(`npx --yes @attalabs/vinaya@${pkg.version} check`)
+      expect(op.body).not.toContain('--no-install')
+    }
+  })
+
   it('--dry-run writes nothing but shows the exact content install would write', async () => {
     const before = snapshot(root)
     const out = await captureStdout(() => runInit(['--dry-run'], makeDeps()))

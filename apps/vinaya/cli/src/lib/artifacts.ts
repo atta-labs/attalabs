@@ -18,6 +18,7 @@
 // repo's own battle-tested gates, not invented blanks — the failure it
 // kills is blank-config paralysis.
 
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DOC_OWNERS_PATH, label } from '@atta/aeg-core'
 import type { VinayaConfig } from './config.js'
@@ -353,18 +354,36 @@ jobs:
 // ---------------------------------------------------------------------------
 // Git-hook stubs — thin, marker-delimited, invoke the vinaya binary ONLY
 // (never inline check logic, never path into any repo-internal bin).
+//
+// `npx --yes @attalabs/vinaya@<exact-version>`, NOT `--no-install` bare:
+// npx's cache is keyed by the invoked spec, and a cache entry written by
+// `npx @attalabs/vinaya init` (bare or `@latest`) does NOT satisfy a later
+// `--no-install @attalabs/vinaya` lookup — reproduced live 2026-08-09: on
+// any machine that never ran the exact spec, the very first commit after
+// init died with npx's non-interactive "canceled due to missing packages
+// and no YES option". The exact-version pin makes the cache key stable
+// (one download at most, offline afterwards) and pins the gate's version
+// to the installer that wrote the hook; `vinaya upgrade` re-pins it.
 // ---------------------------------------------------------------------------
 const HOOK_PREAMBLE = '#!/usr/bin/env sh\n'
+
+/** This installed package's own version — the hook pins to it. */
+function ownVersion(): string {
+  const pkg = JSON.parse(readFileSync(join(packageRoot(import.meta.url), 'package.json'), 'utf-8')) as {
+    version: string
+  }
+  return pkg.version
+}
 
 function preCommitBody(): string {
   return `# Vinaya commit-time gate. Runs the deterministic checks over your staged
 # diff before the commit lands.
-npx --no-install @attalabs/vinaya check --all --diff-only || exit 1`
+npx --yes @attalabs/vinaya@${ownVersion()} check --all --diff-only || exit 1`
 }
 
 function prePushBody(): string {
   return `# Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
-npx --no-install @attalabs/vinaya check --all || exit 1`
+npx --yes @attalabs/vinaya@${ownVersion()} check --all || exit 1`
 }
 
 // ---------------------------------------------------------------------------
