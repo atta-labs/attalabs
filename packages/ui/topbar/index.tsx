@@ -9,8 +9,17 @@ import { ChromeFrame as BasicChromeFrame } from '../libraries/basic/components/c
 import { useComponents } from '../lib/library-provider'
 import { Logo } from '../libraries/shared/components/display/logo'
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../libraries/basic/installed/sheet'
+import {
+  NavigationMenu as BasicNavigationMenu,
+  NavigationMenuContent as BasicNavigationMenuContent,
+  NavigationMenuItem as BasicNavigationMenuItem,
+  NavigationMenuLink as BasicNavigationMenuLink,
+  NavigationMenuList as BasicNavigationMenuList,
+  NavigationMenuTrigger as BasicNavigationMenuTrigger
+} from '../libraries/basic/installed/navigation-menu'
 import { ColorSchemeToggle } from '../lib/color-scheme-toggle'
 import { NextLink } from '../lib/next-link'
+import { cn } from '../lib/utils'
 
 export interface TopBarLink {
   /**
@@ -24,6 +33,43 @@ export interface TopBarLink {
   /** Match exact path for active state. Defaults to prefix match. */
   exact?: boolean
   external?: boolean
+  /** Rendered before the label, both in the desktop row and the mobile sheet row. */
+  icon?: ReactNode
+}
+
+export interface TopBarGroupItem extends TopBarLink {
+  /** Muted one-line description shown under the label inside a group's dropdown panel. */
+  description?: ReactNode
+}
+
+export interface TopBarLinkGroup {
+  label: ReactNode
+  icon?: ReactNode
+  /** Items shown in the dropdown panel (desktop) / nested rows (mobile sheet). */
+  items: TopBarGroupItem[]
+}
+
+/** A group is discriminated by carrying `items` — flat links never do. */
+export type TopBarNavItem = TopBarLink | TopBarLinkGroup
+
+function isTopBarGroup(item: TopBarNavItem): item is TopBarLinkGroup {
+  return 'items' in item
+}
+
+/** Stable React key for a nav item — groups have no `href` to key on. */
+function navItemKey(item: TopBarNavItem): string {
+  return isTopBarGroup(item) ? (item.items[0]?.href ?? String(item.label)) : item.href
+}
+
+/** A flat link row's content — icon + label when an icon is present, bare label otherwise (no empty wrapper). */
+function linkRowContent(icon: ReactNode, label: ReactNode) {
+  if (!icon) return label
+  return (
+    <span className='flex items-center gap-1.5'>
+      <span className='size-4'>{icon}</span>
+      {label}
+    </span>
+  )
 }
 
 export interface TopBarProps {
@@ -35,9 +81,9 @@ export interface TopBarProps {
   /** Two-line tagline rendered next to the logo. First element is the top line, second is the bottom. */
   logoTagline?: [string, string]
   /** Links shown to all users. */
-  links?: TopBarLink[]
+  links?: TopBarNavItem[]
   /** Links shown only to signed-in users. Ignored when withAuth={false}. */
-  signedInLinks?: TopBarLink[]
+  signedInLinks?: TopBarNavItem[]
   /**
    * Extra actions rendered in the right section, next to `ColorSchemeToggle`.
    * When `withAuth`, shown only when signed in. When `withAuth={false}`,
@@ -85,6 +131,120 @@ function buildDefaultLogo(logoUrl: string | null | undefined, logoText: string, 
   return <span className='font-sans text-lg tracking-tight'>{logoText}</span>
 }
 
+type DesktopNavComponents = {
+  NavigationMenu: typeof BasicNavigationMenu
+  NavigationMenuList: typeof BasicNavigationMenuList
+  NavigationMenuItem: typeof BasicNavigationMenuItem
+  NavigationMenuTrigger: typeof BasicNavigationMenuTrigger
+  NavigationMenuContent: typeof BasicNavigationMenuContent
+  NavigationMenuLink: typeof BasicNavigationMenuLink
+}
+
+/** Trigger styled to sit alongside a plain `NextLink variant='nav'` — same size/color metrics, no button chrome. */
+function groupTriggerClassName(active: boolean) {
+  return cn(
+    'h-auto shrink-0 gap-1.5 whitespace-nowrap rounded-none bg-transparent px-0 py-0 text-xs font-normal text-muted-foreground',
+    'hover:bg-transparent hover:text-primary focus:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-primary',
+    active && 'text-primary font-medium'
+  )
+}
+
+/** A group's desktop dropdown — its own NavigationMenu instance sitting inline among the flat NextLinks. */
+function DesktopNavGroup({
+  item,
+  isActive,
+  nav
+}: {
+  item: TopBarLinkGroup
+  isActive: (href: string, exact?: boolean) => boolean
+  nav: DesktopNavComponents
+}) {
+  const {
+    NavigationMenu,
+    NavigationMenuList,
+    NavigationMenuItem,
+    NavigationMenuTrigger,
+    NavigationMenuContent,
+    NavigationMenuLink
+  } = nav
+  const groupActive = item.items.some((groupItem) => isActive(groupItem.href, groupItem.exact))
+
+  return (
+    <NavigationMenu className='max-w-none flex-none'>
+      <NavigationMenuList>
+        <NavigationMenuItem>
+          <NavigationMenuTrigger className={groupTriggerClassName(groupActive)}>
+            {item.icon && <span className='size-4'>{item.icon}</span>}
+            {item.label}
+          </NavigationMenuTrigger>
+          <NavigationMenuContent>
+            <ul className='grid w-64 gap-1 p-2'>
+              {item.items.map((groupItem) => (
+                <li key={groupItem.href}>
+                  <NavigationMenuLink asChild active={isActive(groupItem.href, groupItem.exact)}>
+                    <NextLink
+                      variant='unstyled'
+                      href={groupItem.href}
+                      className='flex items-start gap-2 rounded-sm p-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+                      {...(groupItem.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                    >
+                      {groupItem.icon && (
+                        <span className='mt-0.5 size-4 shrink-0 text-muted-foreground'>{groupItem.icon}</span>
+                      )}
+                      <span className='flex flex-col gap-0.5'>
+                        <span>{groupItem.label}</span>
+                        {groupItem.description && (
+                          <span className='text-xs text-muted-foreground'>{groupItem.description}</span>
+                        )}
+                      </span>
+                    </NextLink>
+                  </NavigationMenuLink>
+                </li>
+              ))}
+            </ul>
+          </NavigationMenuContent>
+        </NavigationMenuItem>
+      </NavigationMenuList>
+    </NavigationMenu>
+  )
+}
+
+/** A group's mobile sheet rows — a non-navigating header row, then its items indented below. No dropdown inside the sheet. */
+function SheetNavGroup({
+  item,
+  isActive
+}: {
+  item: TopBarLinkGroup
+  isActive: (href: string, exact?: boolean) => boolean
+}) {
+  return (
+    <>
+      <div className='flex h-14 items-center gap-1.5 border-b border-border/30 text-sm text-muted-foreground'>
+        {item.icon && <span className='size-4'>{item.icon}</span>}
+        {item.label}
+      </div>
+      {item.items.map((groupItem) => (
+        <SheetClose
+          key={groupItem.href}
+          nativeButton={false}
+          render={
+            <NextLink
+              variant='nav'
+              active={isActive(groupItem.href, groupItem.exact)}
+              href={groupItem.href}
+              {...(groupItem.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              className='flex h-14 items-center gap-1.5 border-b border-border/30 pl-4 text-sm'
+            />
+          }
+        >
+          {groupItem.icon && <span className='size-4'>{groupItem.icon}</span>}
+          {groupItem.label}
+        </SheetClose>
+      ))}
+    </>
+  )
+}
+
 // ─── With Clerk auth ───────────────────────────────────────────────────────────
 
 function TopBarWithAuth({
@@ -107,6 +267,21 @@ function TopBarWithAuth({
   // libraries render a full-width bar. Falls back to basic's flush frame while
   // the runtime library import is still resolving.
   const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
+  // Library-resolved NavigationMenu for grouped nav dropdowns — same fallback
+  // precedent as Button/ChromeFrame above.
+  const navComponents: DesktopNavComponents = {
+    NavigationMenu: (comps.NavigationMenu as typeof BasicNavigationMenu | undefined) ?? BasicNavigationMenu,
+    NavigationMenuList:
+      (comps.NavigationMenuList as typeof BasicNavigationMenuList | undefined) ?? BasicNavigationMenuList,
+    NavigationMenuItem:
+      (comps.NavigationMenuItem as typeof BasicNavigationMenuItem | undefined) ?? BasicNavigationMenuItem,
+    NavigationMenuTrigger:
+      (comps.NavigationMenuTrigger as typeof BasicNavigationMenuTrigger | undefined) ?? BasicNavigationMenuTrigger,
+    NavigationMenuContent:
+      (comps.NavigationMenuContent as typeof BasicNavigationMenuContent | undefined) ?? BasicNavigationMenuContent,
+    NavigationMenuLink:
+      (comps.NavigationMenuLink as typeof BasicNavigationMenuLink | undefined) ?? BasicNavigationMenuLink
+  }
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -131,18 +306,24 @@ function TopBarWithAuth({
 
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
-          {visibleLinks.map(({ href, label, exact, external }) => (
-            <NextLink
-              key={href}
-              variant='nav'
-              active={isActive(href, exact)}
-              href={href}
-              className='whitespace-nowrap text-xs'
-              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-            >
-              {label}
-            </NextLink>
-          ))}
+          {visibleLinks.map((item) => {
+            if (isTopBarGroup(item)) {
+              return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
+            }
+            const { href, label, exact, external, icon } = item
+            return (
+              <NextLink
+                key={navItemKey(item)}
+                variant='nav'
+                active={isActive(href, exact)}
+                href={href}
+                className='whitespace-nowrap text-xs'
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                {linkRowContent(icon, label)}
+              </NextLink>
+            )
+          })}
         </div>
 
         {/* Desktop actions — pinned right */}
@@ -195,23 +376,29 @@ function TopBarWithAuth({
                 </SheetClose>
               </div>
               <nav className='flex flex-col px-6'>
-                {visibleLinks.map(({ href, label, exact, external }) => (
-                  <SheetClose
-                    key={href}
-                    nativeButton={false}
-                    render={
-                      <NextLink
-                        variant='nav'
-                        active={isActive(href, exact)}
-                        href={href}
-                        {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                        className='flex h-14 items-center border-b border-border/30 text-sm'
-                      />
-                    }
-                  >
-                    {label}
-                  </SheetClose>
-                ))}
+                {visibleLinks.map((item) => {
+                  if (isTopBarGroup(item)) {
+                    return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                  }
+                  const { href, label, exact, external, icon } = item
+                  return (
+                    <SheetClose
+                      key={navItemKey(item)}
+                      nativeButton={false}
+                      render={
+                        <NextLink
+                          variant='nav'
+                          active={isActive(href, exact)}
+                          href={href}
+                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                          className='flex h-14 items-center border-b border-border/30 text-sm'
+                        />
+                      }
+                    >
+                      {linkRowContent(icon, label)}
+                    </SheetClose>
+                  )
+                })}
                 {isSignedIn && extraActions && (
                   <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
                 )}
@@ -257,6 +444,21 @@ function TopBarNoAuth({
   // libraries render a full-width bar. Falls back to basic's flush frame while
   // the runtime library import is still resolving.
   const ChromeFrame = (comps.ChromeFrame as typeof BasicChromeFrame | undefined) ?? BasicChromeFrame
+  // Library-resolved NavigationMenu for grouped nav dropdowns — same fallback
+  // precedent as Button/ChromeFrame above.
+  const navComponents: DesktopNavComponents = {
+    NavigationMenu: (comps.NavigationMenu as typeof BasicNavigationMenu | undefined) ?? BasicNavigationMenu,
+    NavigationMenuList:
+      (comps.NavigationMenuList as typeof BasicNavigationMenuList | undefined) ?? BasicNavigationMenuList,
+    NavigationMenuItem:
+      (comps.NavigationMenuItem as typeof BasicNavigationMenuItem | undefined) ?? BasicNavigationMenuItem,
+    NavigationMenuTrigger:
+      (comps.NavigationMenuTrigger as typeof BasicNavigationMenuTrigger | undefined) ?? BasicNavigationMenuTrigger,
+    NavigationMenuContent:
+      (comps.NavigationMenuContent as typeof BasicNavigationMenuContent | undefined) ?? BasicNavigationMenuContent,
+    NavigationMenuLink:
+      (comps.NavigationMenuLink as typeof BasicNavigationMenuLink | undefined) ?? BasicNavigationMenuLink
+  }
 
   const isActive = (href: string, exact = false) => (exact ? pathname === href : pathname.startsWith(href))
 
@@ -278,18 +480,24 @@ function TopBarNoAuth({
 
         {/* Desktop nav links — absolutely centered */}
         <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
-          {links.map(({ href, label, exact, external }) => (
-            <NextLink
-              key={href}
-              variant='nav'
-              active={isActive(href, exact)}
-              href={href}
-              className='whitespace-nowrap text-xs'
-              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-            >
-              {label}
-            </NextLink>
-          ))}
+          {links.map((item) => {
+            if (isTopBarGroup(item)) {
+              return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
+            }
+            const { href, label, exact, external, icon } = item
+            return (
+              <NextLink
+                key={navItemKey(item)}
+                variant='nav'
+                active={isActive(href, exact)}
+                href={href}
+                className='whitespace-nowrap text-xs'
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                {linkRowContent(icon, label)}
+              </NextLink>
+            )
+          })}
         </div>
 
         {/* Desktop actions — pinned right (no auth UI) */}
@@ -325,23 +533,29 @@ function TopBarNoAuth({
                   </SheetClose>
                 </div>
                 <nav className='flex flex-col px-6'>
-                  {links.map(({ href, label, exact, external }) => (
-                    <SheetClose
-                      key={href}
-                      nativeButton={false}
-                      render={
-                        <NextLink
-                          variant='nav'
-                          active={isActive(href, exact)}
-                          href={href}
-                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                          className='flex h-14 items-center border-b border-border/30 text-sm'
-                        />
-                      }
-                    >
-                      {label}
-                    </SheetClose>
-                  ))}
+                  {links.map((item) => {
+                    if (isTopBarGroup(item)) {
+                      return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                    }
+                    const { href, label, exact, external, icon } = item
+                    return (
+                      <SheetClose
+                        key={navItemKey(item)}
+                        nativeButton={false}
+                        render={
+                          <NextLink
+                            variant='nav'
+                            active={isActive(href, exact)}
+                            href={href}
+                            {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                            className='flex h-14 items-center border-b border-border/30 text-sm'
+                          />
+                        }
+                      >
+                        {linkRowContent(icon, label)}
+                      </SheetClose>
+                    )
+                  })}
                   {extraActions && (
                     <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
                   )}
