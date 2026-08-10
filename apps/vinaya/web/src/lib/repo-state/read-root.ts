@@ -130,12 +130,10 @@ export type TrancheSummary = {
 }
 
 let cachedRoot: string | null = null
-let rootSearched = false
 
 /** Test-only: resets the module-level cache between test cases. Not exported from any public index. */
 export function __resetAegRootCacheForTests(): void {
   cachedRoot = null
-  rootSearched = false
 }
 
 /**
@@ -147,11 +145,16 @@ export function __resetAegRootCacheForTests(): void {
  * `null` as "no local repo-state to read" and degrades to the same
  * safe-empty behavior `resolveRepo() === null` already gets throughout this
  * file — never a crash.
+ *
+ * Only a SUCCESSFUL search is cached (`cachedRoot`) — a failed search is
+ * never memoized, so a registry file created after process start (e.g.
+ * `vinaya init product` run against an already-running dev server) is picked
+ * up on the very next call, matching the pre-null-return behavior where a
+ * failed search threw every call and self-healed the moment the file
+ * appeared.
  */
 export function findAegRoot(startDir: string = process.cwd()): string | null {
   if (cachedRoot) return cachedRoot
-  if (rootSearched) return null
-  rootSearched = true
   let dir = startDir
   for (let i = 0; i < 8; i++) {
     const candidate = path.join(dir, CONFIG_DIR, REGISTRY_FILE)

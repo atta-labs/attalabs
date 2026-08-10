@@ -63,4 +63,14 @@ describe('read-root — missing .vinaya/projects.md (single-project repos, #830)
     expect(() => findAegRoot(dir)).not.toThrow()
     expect(findAegRoot(dir)).toBeNull()
   })
+
+  it('a failed search is never cached — a registry created after the first call is picked up by the next, same-process call with no reset', () => {
+    expect(findAegRoot(dir)).toBeNull()
+    mkdirSync(join(dir, '.vinaya'), { recursive: true })
+    writeFileSync(
+      join(dir, '.vinaya', 'projects.md'),
+      '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n'
+    )
+    expect(findAegRoot(dir)).toBe(join(dir, 'aeg-root'))
+  })
 })
