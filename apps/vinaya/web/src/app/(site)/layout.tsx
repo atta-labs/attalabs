@@ -5,6 +5,7 @@ import { TopBar } from '@atta/ui/topbar'
 import type { TopBarNavItem } from '@atta/ui/topbar'
 import {
   BookOpen,
+  ChevronDown,
   GitBranch,
   Home,
   LayoutDashboard,
@@ -78,11 +79,23 @@ const links: TopBarNavItem[] = [
   // every group child lives under `/docs/*` (task 3) — a single prefix
   // suffices, no multi-prefix machinery needed.
   {
+    // The chevron is OUR OWN, not the installed trigger's auto-appended one —
+    // `groupTriggerClassName` hides that one (`[&>svg:last-child]:hidden`,
+    // packages/ui/topbar/index.tsx) so this one, living inside the
+    // ElectricLabel wrapper, is what the lightning border actually encloses.
+    // `group-data-[state=open]:rotate-180` targets the trigger button's own
+    // (plain, unnamed) `group` class + Radix's `data-state` attribute; the
+    // hover-flip rule already targets any `.lucide-chevron-down` descendant,
+    // which this shares by virtue of being the same lucide icon.
     label: (
       <ElectricLabel href='/docs'>
         <span className='flex items-center gap-1.5'>
           <BookOpen className='size-4' aria-hidden />
           Docs
+          <ChevronDown
+            className='size-3 transition-transform duration-300 group-data-[state=open]:rotate-180'
+            aria-hidden
+          />
         </span>
       </ElectricLabel>
     ),

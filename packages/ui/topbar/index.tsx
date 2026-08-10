@@ -143,19 +143,27 @@ type DesktopNavComponents = {
 /**
  * Trigger styled to sit alongside a plain `NextLink variant='nav'` — same
  * size/color metrics, no button chrome. `leading-none` matches the native
- * `<button>`'s default line-height to the `<a>` siblings' — without it the
- * trigger's text/chevron sits a couple px lower than the flat nav items.
- * `[&:hover_.lucide-chevron-down]:rotate-180` flips the chevron on hover,
- * before the panel opens — the installed component's own rotation is
- * open-state-only; this targets ONLY the chevron via lucide's own
- * auto-generated icon-name class (not `[&:hover_svg]:...`, which would also
- * catch a caller's own icon inside the trigger's label).
+ * `<button>`'s default line-height to the `<a>` siblings' (belt-and-braces —
+ * the real fix is `DesktopNavGroup`'s `NavigationMenuItem className='flex
+ * items-center'`, see its own comment; `leading-none` alone wasn't
+ * sufficient, a `<li>` inheriting a taller ambient line-height than the
+ * trigger's own `text-xs` still misaligned it).
+ * `[&>svg:last-child]:hidden` hides the installed trigger's own
+ * auto-appended chevron — a consumer wanting the chevron to sit INSIDE a
+ * decorated label's own active-state border (e.g. `ElectricLabel`'s
+ * lightning) can't relocate that installed chevron there, so it renders its
+ * own inside the label instead and this hides the original rather than
+ * showing two. `[&:hover_.lucide-chevron-down]:rotate-180` then targets
+ * whichever chevron IS visible (a caller's own replacement, or the installed
+ * one for a consumer that didn't opt out) via lucide's own auto-generated
+ * icon-name class — flipping it on hover, before the panel opens, since the
+ * installed component's own rotation is open-state-only.
  */
 function groupTriggerClassName(active: boolean) {
   return cn(
     'h-auto shrink-0 gap-1.5 whitespace-nowrap rounded-none bg-transparent px-0 py-0 text-xs font-normal leading-none text-muted-foreground',
     'hover:bg-transparent hover:text-primary focus:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-primary',
-    '[&:hover_.lucide-chevron-down]:rotate-180',
+    '[&>svg:last-child]:hidden [&:hover_.lucide-chevron-down]:rotate-180',
     active && 'text-primary font-medium'
   )
 }
@@ -183,7 +191,14 @@ function DesktopNavGroup({
   return (
     <NavigationMenu className='max-w-none flex-none'>
       <NavigationMenuList>
-        <NavigationMenuItem>
+        {/* `flex items-center` on the ITEM, not just `leading-none` on the trigger — the
+            installed `<li>` (`display: list-item`) inherits an ambient line-height taller
+            than the trigger's own `text-xs`, and a `list-item` box doesn't flex-center its
+            child, so the trigger sat flush at the `<li>`'s top instead of centered in it
+            (measured via CDP: trigger centerY off by ~3px from the flat `<a>` siblings).
+            Making the `<li>` itself a flex container centers its one child directly,
+            independent of any residual font-metric strut. */}
+        <NavigationMenuItem className='flex items-center'>
           <NavigationMenuTrigger className={groupTriggerClassName(groupActive)}>
             {item.icon && <span className='size-4'>{item.icon}</span>}
             {item.label}
