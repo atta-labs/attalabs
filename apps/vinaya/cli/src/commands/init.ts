@@ -167,6 +167,19 @@ function pathFlag(args: string[]): string {
   return i !== -1 && args[i + 1] ? (args[i + 1] as string) : '.'
 }
 
+/**
+ * Unlike `name` (checked against the strict `PRODUCT_NAME_RE` slug before
+ * use), `--path` is written raw into a `.vinaya/projects.md` markdown table
+ * row (`registry-write.ts`'s `rowLine`) — a `|` or newline in it would
+ * corrupt the table or splice in an extra fake row. Not a trust-boundary
+ * issue (local CLI, operator-supplied input, same trust level as
+ * hand-editing the file), but cheap to reject outright.
+ */
+const PATH_INJECTION_RE = /[|\r\n]/
+function validPathFlag(path: string): boolean {
+  return !PATH_INJECTION_RE.test(path)
+}
+
 export async function runInitProduct(args: string[], deps: InitDeps): Promise<number> {
   const { dryRun, yes } = flags(args)
   const name = args.filter((a) => !a.startsWith('--'))[0]
@@ -175,7 +188,11 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
     return 2
   }
   const productPath = pathFlag(args)
-  const specsPath = productPath === '.' ? 'specs' : `${productPath}/specs`
+  if (!validPathFlag(productPath)) {
+    console.error("Error: --path must not contain '|' or a newline (it is written into a markdown table row).")
+    return 2
+  }
+  const specsPath = productPath === '.' ? 'specs/' : `${productPath}/specs/`
   // Strict slug — the name becomes a filesystem path segment
   // (governance/products/<name>/…) and a manifest record, so a `..` or path
   // separator would let user input escape the intended directory.
@@ -219,7 +236,7 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
   const registryPlan = planRegistryRow(repo.repoRoot, name, productPath, specsPath)
 
   process.stdout.write(`vinaya init product ${name} — the full diff:\n\n`)
-  process.stdout.write(`${renderInstallDiff(plan)}`)
+  process.stdout.write(`${renderInstallDiff(plan)}\n`)
   process.stdout.write('── Project registry ─────────────────────────────\n')
   process.stdout.write(`${renderRegistryRowDiffLine(registryPlan)}\n\n`)
 

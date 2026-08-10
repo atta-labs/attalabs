@@ -262,7 +262,7 @@ describe('remoteless graceful-skip (spec D3)', () => {
     expect(createdLabels).toEqual([])
   })
 
-  it('init product scaffolds nothing (its only op is a label) but still exits clean', async () => {
+  it('init product skips only the label (the one forge-reaching op) — the registry write is a pure local file op and still happens', async () => {
     await runInit(['--yes'], makeDeps())
     createdLabels = []
     const rc = await runInitProduct(
@@ -271,6 +271,8 @@ describe('remoteless graceful-skip (spec D3)', () => {
     )
     expect(rc).toBe(0)
     expect(createdLabels).toEqual([])
+    expect(existsSync(join(root, '.vinaya/projects.md'))).toBe(true)
+    expect(readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')).toContain('| mobile |')
   })
 })
 
@@ -414,7 +416,7 @@ describe('vinaya init product', () => {
     const newPaths = [...treeAfterProduct.keys()].filter((p) => !treeAfterInit.has(p))
     expect(newPaths).toEqual(['.vinaya/projects.md'])
     const registry = readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')
-    expect(registry).toContain('| mobile | `apps/mobile` | `apps/mobile/specs` |')
+    expect(registry).toContain('| mobile | `apps/mobile` | `apps/mobile/specs/` |')
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
     expect(cfg.managed.labels).toContain('project:mobile')
     expect(cfg.managed.files).not.toContain('.vinaya/projects.md')
@@ -449,6 +451,18 @@ describe('vinaya init product', () => {
     }
     expect(snapshot(root)).toEqual(before)
     expect(createdLabels).toEqual([]) // no label leaked for a bad name
+  })
+
+  it('rejects a --path containing a pipe or newline, writing nothing to the registry (review finding 1)', async () => {
+    await runInit(['--yes'], makeDeps())
+    const before = snapshot(root)
+    createdLabels = []
+    for (const bad of ['apps/evil | injected | row', 'apps/evil\nrow']) {
+      const rc = await runInitProduct(['mobile', '--path', bad, '--yes'], makeDeps())
+      expect(rc).toBe(2)
+    }
+    expect(snapshot(root)).toEqual(before)
+    expect(createdLabels).toEqual([])
   })
 })
 
