@@ -131,9 +131,31 @@ export type TrancheSummary = {
 
 let cachedRoot: string | null = null
 
-export function findAegRoot(): string {
+/** Test-only: resets the module-level cache between test cases. Not exported from any public index. */
+export function __resetAegRootCacheForTests(): void {
+  cachedRoot = null
+}
+
+/**
+ * Walks up from `process.cwd()` for `.vinaya/projects.md`. Returns `null`,
+ * never throws, when none is found — a single-project repo has no
+ * `.vinaya/projects.md` at all (per that file's own doctrine: "the field is
+ * omitted" when there's nothing to disambiguate), so a missing registry is a
+ * normal, common state, not an error. Every caller in this module treats
+ * `null` as "no local repo-state to read" and degrades to the same
+ * safe-empty behavior `resolveRepo() === null` already gets throughout this
+ * file — never a crash.
+ *
+ * Only a SUCCESSFUL search is cached (`cachedRoot`) — a failed search is
+ * never memoized, so a registry file created after process start (e.g.
+ * `vinaya init product` run against an already-running dev server) is picked
+ * up on the very next call, matching the pre-null-return behavior where a
+ * failed search threw every call and self-healed the moment the file
+ * appeared.
+ */
+export function findAegRoot(startDir: string = process.cwd()): string | null {
   if (cachedRoot) return cachedRoot
-  let dir = process.cwd()
+  let dir = startDir
   for (let i = 0; i < 8; i++) {
     const candidate = path.join(dir, CONFIG_DIR, REGISTRY_FILE)
     if (existsSync(candidate)) {
@@ -144,11 +166,12 @@ export function findAegRoot(): string {
     if (parent === dir) break
     dir = parent
   }
-  throw new Error('Could not locate aeg-root/ above process.cwd()')
+  return null
 }
 
-export async function readRegistry(): Promise<Registry> {
-  const root = findAegRoot()
+export async function readRegistry(startDir?: string): Promise<Registry> {
+  const root = findAegRoot(startDir)
+  if (root === null) return []
   const repoRoot = path.dirname(root)
   const raw = await fs.readFile(path.join(repoRoot, CONFIG_DIR, REGISTRY_FILE), 'utf8')
   return parseRegistry(raw)
@@ -294,6 +317,7 @@ async function readActiveTranche(fileSlug: string): Promise<{ fileSlug: string; 
 
 async function listCompletedFileSlugs(): Promise<string[]> {
   const root = findAegRoot()
+  if (root === null) return []
   const dir = path.join(root, TRANCHES_DIR, 'completed')
   if (!existsSync(dir)) return []
   const names = await fs.readdir(dir)
@@ -302,6 +326,7 @@ async function listCompletedFileSlugs(): Promise<string[]> {
 
 async function readCompletedFile(fileSlug: string): Promise<Tranche | null> {
   const root = findAegRoot()
+  if (root === null) return null
   const completedPath = path.join(root, TRANCHES_DIR, 'completed', `${fileSlug}.md`)
   if (!existsSync(completedPath)) return null
   const raw = await fs.readFile(completedPath, 'utf8')

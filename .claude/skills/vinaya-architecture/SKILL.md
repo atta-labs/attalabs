@@ -81,6 +81,8 @@ One of those 15, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 **Route inventory and status** live in `specs/vinaya-spec.md`'s "Pages" table — treat that table, not this skill, as the up-to-date map of what's live versus not-yet-applied; it is kept current per-route and would drift immediately if duplicated here.
 
+**A missing `.vinaya/projects.md` is a normal state, not an error.** `web/src/lib/repo-state/read-root.ts`'s `findAegRoot()` walks up from cwd for the file and returns `null` (never throws) when it isn't found — a single-project repo legitimately has no registry at all. Every caller (`readRegistry`, the legacy `completed/*.md` archived-tranche supplement, `api/coherence/route.ts`) treats `null` the same way this file already treats `resolveRepo() === null` everywhere else: a safe empty default, not a crash. The already-existing board-less UX (`boardHref`'s `NO_BOARD_REASON`, described above) is what actually renders in that state — this fix doesn't add new UI, it makes the existing graceful path reachable instead of an uncaught throw pre-empting it.
+
 ## Rules
 
 ### Every command's identity lives in ONE registry
