@@ -12,6 +12,9 @@ build/
 # Build-time copy of the doctrine subset into the CLI package (bundle-doctrine.ts)
 # — scoped precisely, never the real doctrine source at repo-root aeg-root/.
 /apps/vinaya/cli/aeg-root/
+# Build-time standalone Studio bundle (bundle-studio.ts) — the built,
+# packageable copy of apps/vinaya/web, not the app's own source.
+/apps/vinaya/cli/studio-standalone/
 docs/
 # Re-include AEG docs renderer (aeg-core).
 !packages/aeg-core/src/docs/
