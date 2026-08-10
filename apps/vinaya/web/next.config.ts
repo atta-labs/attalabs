@@ -6,6 +6,7 @@ export default async function config(): Promise<NextConfig> {
   await generateUIIndex('vinaya')
   const componentsRelPath = '../../../packages/ui/generated/vinaya/components.ts'
   return {
+    output: 'standalone',
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       return config
