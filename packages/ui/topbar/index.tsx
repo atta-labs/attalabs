@@ -331,7 +331,7 @@ function TopBarWithAuth({
         </div>
 
         {/* Desktop nav links — absolutely centered */}
-        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex'>
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-3 lg:flex'>
           {visibleLinks.map((item) => {
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
@@ -353,7 +353,7 @@ function TopBarWithAuth({
         </div>
 
         {/* Desktop actions — pinned right */}
-        <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
+        <div className='hidden flex-1 items-center justify-end gap-3 lg:flex'>
           <ColorSchemeToggle />
           {isSignedIn ? (
             <>
@@ -371,13 +371,16 @@ function TopBarWithAuth({
         </div>
 
         {/* Mobile actions.
-            Below md the topbar collapses to logo · ColorSchemeToggle · hamburger.
+            Below lg the topbar collapses to logo · ColorSchemeToggle · hamburger — `lg`,
+            not `md`, so this switch lands at the same breakpoint as Vinaya's own `/start`
+            sidebar (`StartSidebarHost`'s `lg:hidden`/`lg`+ rail split), rather than two
+            different responsive points disagreeing about what counts as "narrow."
             Everything else — nav links, signed-in `extraActions`, the `accountMenu`
             (Sign out), and the signed-out Sign-in — lives inside the hamburger sheet,
             so the bar stays uncluttered at narrow widths. The hamburger therefore
-            renders unconditionally below md: there is always at least Sign-in or
+            renders unconditionally below lg: there is always at least Sign-in or
             account UI to surface. */}
-        <div className='ml-auto flex items-center gap-2 md:hidden'>
+        <div className='ml-auto flex items-center gap-2 lg:hidden'>
           <ColorSchemeToggle />
           <Sheet>
             <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
@@ -505,7 +508,7 @@ function TopBarNoAuth({
         </div>
 
         {/* Desktop nav links — absolutely centered */}
-        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex'>
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-3 lg:flex'>
           {links.map((item) => {
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
@@ -527,13 +530,13 @@ function TopBarNoAuth({
         </div>
 
         {/* Desktop actions — pinned right (no auth UI) */}
-        <div className='hidden flex-1 items-center justify-end gap-3 md:flex'>
+        <div className='hidden flex-1 items-center justify-end gap-3 lg:flex'>
           <ColorSchemeToggle />
           {extraActions}
         </div>
 
         {/* Mobile actions */}
-        <div className='ml-auto flex items-center gap-2 md:hidden'>
+        <div className='ml-auto flex items-center gap-2 lg:hidden'>
           <ColorSchemeToggle />
           {links.length > 0 && (
             <Sheet>

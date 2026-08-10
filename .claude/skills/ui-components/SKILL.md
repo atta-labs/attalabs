@@ -304,7 +304,7 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 | `accountMenu` (Sign out / `<UserButton/>`) | At the end of the right cluster | Inside the hamburger sheet, **below** `extraActions`. **Ignored when `withAuth={false}`.** |
 | `SignInButton` (signed-out only) | In the right cluster, alone | Inside the hamburger sheet. **Ignored when `withAuth={false}`.** |
 
-**Below `md` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `md` because there is always at least Sign-in or account UI to surface (`withAuth={true}`) or nav links (`withAuth={false}`).
+**Below `lg` the topbar collapses to: logo · `ColorSchemeToggle` · hamburger.** Nothing else renders inline. The hamburger renders unconditionally below `lg` because there is always at least Sign-in or account UI to surface (`withAuth={true}`) or nav links (`withAuth={false}`). This is `lg`, not `md` (#816) — Vinaya's own `/start` section switches its sidebar to a drawer at the same `lg` breakpoint (`StartSidebarHost`), and the two disagreeing was confusing (the topbar staying in desktop mode while a page's own sidebar had already collapsed). The breakpoint is a single shared value — every `TopBar` consumer moved together, not a per-app override.
 
 **`extraActions` on `withAuth={false}`:** unlike `signedInLinks`/`accountMenu`/`SignInButton`, `extraActions` is NOT gated on auth mode — it renders unconditionally on both `TopBarWithAuth` and `TopBarNoAuth`, since there is no signed-in state to gate it on in the no-auth variant. Use it for content that must appear regardless of auth (e.g. a product switch next to `ColorSchemeToggle`) even on a `withAuth={false}` consumer.
 
