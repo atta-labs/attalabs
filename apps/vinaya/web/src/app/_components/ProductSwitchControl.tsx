@@ -13,12 +13,12 @@ type Segment = 'portal' | 'studio'
  * component that renders this one, so an unauthorized request never ships this
  * control to the browser at all.
  *
- * The visible STUDIO label exists because the bare switch's purpose was
- * unreadable to a first-time visitor — nothing in the topbar's right cluster
- * hinted that it was a destination toggle at all. The accessible name
- * (`aria-label`, which states the current surface outright) is unchanged and
- * unduplicated by the new text — the label names the destination, the
- * `aria-label` still carries the current-surface state a screen reader needs.
+ * The visible label exists because the bare switch's purpose was unreadable
+ * to a first-time visitor — nothing in the topbar's right cluster hinted
+ * that it was a destination toggle at all. It states the DESTINATION ("Switch
+ * to Studio" / "Switch to Portal"), not the current surface — the current
+ * surface is what `aria-label` already states, so the two read as
+ * complementary rather than duplicated.
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
@@ -27,7 +27,7 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
   return (
     <div className='flex flex-col items-center'>
       <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-        Studio
+        {isStudio ? 'Switch to Portal' : 'Switch to Studio'}
       </Text>
       <Switch
         // `size` is a RETRO-ONLY prop, outside the cross-library contract — that

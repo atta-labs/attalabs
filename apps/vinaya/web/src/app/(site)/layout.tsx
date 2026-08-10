@@ -22,17 +22,21 @@ import { ElectricLabel } from './_components/ElectricLabel'
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
 // itself, mirroring TopBar's own `isActive`), so it reads as "you are here,"
-// not decoration. This app's only such use.
+// not decoration. This app's only such use. The icon lives INSIDE the
+// ElectricLabel's children (not TopBar's separate `icon` slot) so it sits
+// inside the lightning border when active, not stranded outside it.
 function flatLink(label: string, href: string, icon: ReactNode, exact?: boolean) {
   return {
     label: (
       <ElectricLabel href={href} exact={exact}>
-        {label}
+        <span className='flex items-center gap-1.5'>
+          {icon}
+          {label}
+        </span>
       </ElectricLabel>
     ),
     href,
-    exact,
-    icon
+    exact
   }
 }
 
@@ -74,8 +78,14 @@ const links: TopBarNavItem[] = [
   // every group child lives under `/docs/*` (task 3) — a single prefix
   // suffices, no multi-prefix machinery needed.
   {
-    label: <ElectricLabel href='/docs'>Docs</ElectricLabel>,
-    icon: <BookOpen className='size-4' aria-hidden />,
+    label: (
+      <ElectricLabel href='/docs'>
+        <span className='flex items-center gap-1.5'>
+          <BookOpen className='size-4' aria-hidden />
+          Docs
+        </span>
+      </ElectricLabel>
+    ),
     items: DOCS_ITEMS
   },
   flatLink('Config', '/config', <Settings className='size-4' aria-hidden />),

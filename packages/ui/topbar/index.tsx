@@ -140,11 +140,22 @@ type DesktopNavComponents = {
   NavigationMenuLink: typeof BasicNavigationMenuLink
 }
 
-/** Trigger styled to sit alongside a plain `NextLink variant='nav'` — same size/color metrics, no button chrome. */
+/**
+ * Trigger styled to sit alongside a plain `NextLink variant='nav'` — same
+ * size/color metrics, no button chrome. `leading-none` matches the native
+ * `<button>`'s default line-height to the `<a>` siblings' — without it the
+ * trigger's text/chevron sits a couple px lower than the flat nav items.
+ * `[&:hover_.lucide-chevron-down]:rotate-180` flips the chevron on hover,
+ * before the panel opens — the installed component's own rotation is
+ * open-state-only; this targets ONLY the chevron via lucide's own
+ * auto-generated icon-name class (not `[&:hover_svg]:...`, which would also
+ * catch a caller's own icon inside the trigger's label).
+ */
 function groupTriggerClassName(active: boolean) {
   return cn(
-    'h-auto shrink-0 gap-1.5 whitespace-nowrap rounded-none bg-transparent px-0 py-0 text-xs font-normal text-muted-foreground',
+    'h-auto shrink-0 gap-1.5 whitespace-nowrap rounded-none bg-transparent px-0 py-0 text-xs font-normal leading-none text-muted-foreground',
     'hover:bg-transparent hover:text-primary focus:bg-transparent data-[state=open]:bg-transparent data-[state=open]:text-primary',
+    '[&:hover_.lucide-chevron-down]:rotate-180',
     active && 'text-primary font-medium'
   )
 }
