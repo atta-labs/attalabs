@@ -41,10 +41,19 @@ export function ChromeFrame({ variant, className, children, ...props }: ChromeFr
       </div>
     )
   }
+  // `overflow-visible` overrides retro's `Card` base `overflow-hidden` (later
+  // class wins under tailwind-merge) — the topbar variant is the one surface
+  // that must let a child escape its own box: `@atta/ui/topbar`'s
+  // NavigationMenu dropdown positions its viewport `absolute top-full`,
+  // below the bar, and `overflow-hidden` here clipped it to nothing before
+  // it could ever paint (only the trigger's own rounded corner showed).
   return (
     <div className='w-full px-2 pt-2'>
       <Card
-        className={cn('relative flex h-14 w-full flex-row items-center gap-0 rounded px-6 py-0', className)}
+        className={cn(
+          'relative flex h-14 w-full flex-row items-center gap-0 rounded px-6 py-0 overflow-visible',
+          className
+        )}
         {...props}
       >
         {children}
