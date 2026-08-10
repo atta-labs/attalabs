@@ -403,6 +403,8 @@ An agent working in this repo follows the governed flow by reading two things:
 
 1. **This pointer** — the tool-agnostic entry point at the conventional
    reading-order path (repo root). It names where the doctrine lives.
+   Start at \`${doctrineRoot}/skills/aeg/SKILL.md\` — the doctrine's own
+   front door, read first every session regardless of role.
 2. **\`${CONFIG_PATH}\`** — the ruleset the gates enforce: rings, custom checks,
    and the brief schema a PR/Issue body must satisfy.
 

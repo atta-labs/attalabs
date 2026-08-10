@@ -85,6 +85,8 @@ One of those 15, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 **A missing `.vinaya/projects.md` is a normal state, not an error.** `web/src/lib/repo-state/read-root.ts`'s `findAegRoot()` walks up from cwd for the file and returns `null` (never throws) when it isn't found — a single-project repo legitimately has no registry at all. Every caller (`readRegistry`, the legacy `completed/*.md` archived-tranche supplement, `api/coherence/route.ts`) treats `null` the same way this file already treats `resolveRepo() === null` everywhere else: a safe empty default, not a crash. The already-existing board-less UX (`boardHref`'s `NO_BOARD_REASON`, described above) is what actually renders in that state — this fix doesn't add new UI, it makes the existing graceful path reachable instead of an uncaught throw pre-empting it.
 
+**`VINAYA.md`'s pointer names the doctrine's own front door, not just its categories.** `doctrinePointer()` (`cli/src/lib/artifacts.ts`) previously described the doctrine only in prose ("roles, contracts, the state machine, the ring gates") without naming a specific first file to open — a cold agent had to discover `aeg-root/skills/aeg/SKILL.md` exists on its own. The generated text now names it directly, resolved relative to `doctrineRoot` (the installed package's own bundled `aeg-root`) the same way the function's existing "read the doctrine text" path already is — a pointer, not a restatement of what that file says.
+
 ## Rules
 
 ### Every command's identity lives in ONE registry
