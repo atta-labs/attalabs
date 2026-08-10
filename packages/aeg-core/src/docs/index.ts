@@ -8,6 +8,7 @@ export { isSurfacedDoc, surfacedDocs, modelBackedDocPaths } from './surfaced-man
 export type { SurfacedManifestEntry } from './surfaced-manifest'
 export { nodeDocRoute, nodeDocHref } from './node-route'
 export type { NodeDocRoute } from './node-route'
+export { legacyAnchorSlugs } from './legacy-anchors'
 export { evaluateDocsCoherence } from './docs-coherence'
 export type { DocsCoherenceEntry, DocsCoherenceResult } from './docs-coherence'
 export {

@@ -94,7 +94,7 @@ describe('parseEnforcementRegistry', () => {
     expect(ring0?.summary).toBe('Ever had someone accidentally push straight to main?')
     expect(ring0?.category).toBe('hook')
 
-    const ring1 = rows.find((r) => r.ring === 'ring1' && r.action === 'Coherence oracle')
+    const ring1 = rows.find((r) => r.ring === 'ring1' && r.action === 'Coherence check')
     expect(ring1?.summary).toBe('Ever found a task marked "done" that was never actually merged?')
     expect(ring1?.category).toBe('ci')
 

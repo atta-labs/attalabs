@@ -25,6 +25,12 @@ export type HarnessSection = {
   summary?: string
   detail?: string
   viewSourceHref?: string
+  /** Anchor slugs this section used to publish under, from
+   * `@atta/aeg-core`'s `legacyAnchorSlugs`. A deep link built against the
+   * old slug (bookmarked, or still live on another surface) must keep
+   * landing here — each renders as its own empty, non-visual anchor
+   * carrying the same scroll offset as the canonical heading. */
+  legacySlugs?: string[]
 }
 
 /** A titled, `#`-anchored group of sections (e.g. the Actions page's "Reaches
@@ -49,58 +55,63 @@ export type HarnessSectionsPageProps = {
 
 function SectionBlock({ section }: { section: HarnessSection }) {
   return (
-    <section id={section.slug} className='scroll-mt-24 space-y-2'>
-      <Heading level={3} size='xl' className='font-mono text-card-foreground text-base uppercase tracking-widest'>
-        {section.heading}
-      </Heading>
+    <>
+      {section.legacySlugs?.map((slug) => (
+        <span key={slug} id={slug} className='scroll-mt-24 block' aria-hidden='true' />
+      ))}
+      <section id={section.slug} className='scroll-mt-24 space-y-2'>
+        <Heading level={3} size='xl' className='font-mono text-card-foreground text-base uppercase tracking-widest'>
+          {section.heading}
+        </Heading>
 
-      {section.badges.length > 0 && (
-        <div className='flex flex-wrap gap-1.5'>
-          {section.badges.map((label) => (
-            <Badge key={label} className='w-fit font-mono text-xs uppercase'>
-              {label}
-            </Badge>
-          ))}
-        </div>
-      )}
+        {section.badges.length > 0 && (
+          <div className='flex flex-wrap gap-1.5'>
+            {section.badges.map((label) => (
+              <Badge key={label} className='w-fit font-mono text-xs uppercase'>
+                {label}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-      {section.summary && (
-        <Text size='lg' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
-          {section.summary}
-        </Text>
-      )}
+        {section.summary && (
+          <Text size='lg' weight='semibold' className='font-serif text-card-foreground italic leading-snug'>
+            {section.summary}
+          </Text>
+        )}
 
-      {section.detail && (
-        <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
-          {section.detail}
-        </Text>
-      )}
+        {section.detail && (
+          <Text size='md' className='font-sans text-card-foreground leading-relaxed'>
+            {section.detail}
+          </Text>
+        )}
 
-      {section.guards && section.guards.length > 0 && (
-        <Text size='sm' muted className='font-sans leading-relaxed'>
-          Guards: {section.guards.join(', ')}
-        </Text>
-      )}
+        {section.guards && section.guards.length > 0 && (
+          <Text size='sm' muted className='font-sans leading-relaxed'>
+            Guards: {section.guards.join(', ')}
+          </Text>
+        )}
 
-      {section.performedBy && section.performedBy.length > 0 && (
-        <Text size='sm' muted className='font-sans leading-relaxed'>
-          Performed by: {section.performedBy.join(', ')}
-        </Text>
-      )}
+        {section.performedBy && section.performedBy.length > 0 && (
+          <Text size='sm' muted className='font-sans leading-relaxed'>
+            Performed by: {section.performedBy.join(', ')}
+          </Text>
+        )}
 
-      {section.viewSourceHref && (
-        <NextLink
-          href={section.viewSourceHref}
-          target='_blank'
-          rel='noreferrer'
-          variant='link'
-          className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-primary'
-        >
-          View source
-          <ArrowUpRight className='h-3.5 w-3.5' />
-        </NextLink>
-      )}
-    </section>
+        {section.viewSourceHref && (
+          <NextLink
+            href={section.viewSourceHref}
+            target='_blank'
+            rel='noreferrer'
+            variant='link'
+            className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-primary'
+          >
+            View source
+            <ArrowUpRight className='h-3.5 w-3.5' />
+          </NextLink>
+        )}
+      </section>
+    </>
   )
 }
 
