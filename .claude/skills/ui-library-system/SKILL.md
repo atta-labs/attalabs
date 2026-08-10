@@ -599,7 +599,7 @@ look). Lives at
 `ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
 
 **retro's `topbar` variant overrides its own Card to `overflow-visible`**
-(vinaya-topbar-v1 task 4, #816). retro's `installed/card.tsx` hardcodes
+(#816). retro's `installed/card.tsx` hardcodes
 `overflow-hidden` (for image-corner clipping); the `topbar` variant's Card
 merges `overflow-visible` on top (later class wins under `cn`/tailwind-merge)
 because `@atta/ui/topbar`'s `NavigationMenu` dropdown positions its panel
