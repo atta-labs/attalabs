@@ -95,7 +95,7 @@ const STEPS: {
     body: [
       {
         kind: 'prose',
-        text: 'Working in a monorepo with more than one governed area? `vinaya init product <name>` extends an already-initialized repo with one more — it creates a single `project:<name>` label, create-if-absent, under the same diff-and-confirm contract as `init` itself. It refuses if `init` has not run yet.'
+        text: "Working in a monorepo with more than one governed area? `vinaya init product <name> [--path <path>]` extends an already-initialized repo with one more — it writes a row to `.vinaya/projects.md` (the registry Studio's tranche board resolves a project's board link against) plus a `project:<name>` label, create-if-absent, under the same diff-and-confirm contract as `init` itself. It refuses if `init` has not run yet."
       }
     ],
     render: () => <CommandLine command='vinaya init product <name>' />,

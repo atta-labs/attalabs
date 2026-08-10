@@ -262,7 +262,7 @@ describe('remoteless graceful-skip (spec D3)', () => {
     expect(createdLabels).toEqual([])
   })
 
-  it('init product scaffolds nothing (its only op is a label) but still exits clean', async () => {
+  it('init product skips only the label (the one forge-reaching op) — the registry write is a pure local file op and still happens', async () => {
     await runInit(['--yes'], makeDeps())
     createdLabels = []
     const rc = await runInitProduct(
@@ -271,6 +271,8 @@ describe('remoteless graceful-skip (spec D3)', () => {
     )
     expect(rc).toBe(0)
     expect(createdLabels).toEqual([])
+    expect(existsSync(join(root, '.vinaya/projects.md'))).toBe(true)
+    expect(readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')).toContain('| mobile |')
   })
 })
 
@@ -392,7 +394,7 @@ describe('round-trip: init then eject returns the repo to pre-init state', () =>
 })
 
 describe('vinaya init product', () => {
-  it('refuses before init, then creates only the project:<name> label after', async () => {
+  it('refuses before init, then creates the project:<name> label and a .vinaya/projects.md row after', async () => {
     // before init
     const rcBefore = await runInitProduct(['mobile'], makeDeps())
     expect(rcBefore).toBe(1)
@@ -401,17 +403,42 @@ describe('vinaya init product', () => {
     const treeAfterInit = snapshot(root)
     createdLabels = [] // isolate what `init product` creates
 
-    const rc = await runInitProduct(['mobile', '--yes'], makeDeps())
+    const rc = await runInitProduct(['mobile', '--path', 'apps/mobile', '--yes'], makeDeps())
     expect(rc).toBe(0)
-    // minimal manifest: init product shrinks to the project:<name> label only —
-    // no governance/ files are written.
+    // minimal manifest: init product's only forge-reaching op is the
+    // project:<name> label — no governance/ files are written.
     expect(createdLabels).toEqual(['project:mobile'])
     expect(existsSync(join(root, 'governance'))).toBe(false)
-    // the only filesystem change is the manifest recording the new label.
+    // the registry row IS a new local file, so the tree grows by exactly
+    // `.vinaya/projects.md` — it is deliberately not tracked in the managed
+    // manifest (adopter-declared data, not vinaya-owned scaffolding).
     const treeAfterProduct = snapshot(root)
-    expect([...treeAfterProduct.keys()].sort()).toEqual([...treeAfterInit.keys()].sort())
+    const newPaths = [...treeAfterProduct.keys()].filter((p) => !treeAfterInit.has(p))
+    expect(newPaths).toEqual(['.vinaya/projects.md'])
+    const registry = readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')
+    expect(registry).toContain('| mobile | `apps/mobile` | `apps/mobile/specs/` |')
     const cfg = JSON.parse(readFileSync(join(root, CONFIG_PATH), 'utf-8'))
     expect(cfg.managed.labels).toContain('project:mobile')
+    expect(cfg.managed.files).not.toContain('.vinaya/projects.md')
+  })
+
+  it('re-running init product for the same name is idempotent (no duplicate row)', async () => {
+    await runInit(['--yes'], makeDeps())
+    await runInitProduct(['mobile', '--path', 'apps/mobile', '--yes'], makeDeps())
+    const rc = await runInitProduct(['mobile', '--path', 'apps/mobile', '--yes'], makeDeps())
+    expect(rc).toBe(0)
+    const registry = readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')
+    const rows = registry.split('\n').filter((l) => l.trim().startsWith('| mobile |'))
+    expect(rows).toHaveLength(1)
+  })
+
+  it('appends a second row for a second product without disturbing the first', async () => {
+    await runInit(['--yes'], makeDeps())
+    await runInitProduct(['mobile', '--path', 'apps/mobile', '--yes'], makeDeps())
+    await runInitProduct(['web', '--path', 'apps/web', '--yes'], makeDeps())
+    const registry = readFileSync(join(root, '.vinaya/projects.md'), 'utf-8')
+    expect(registry).toContain('| mobile | `apps/mobile` |')
+    expect(registry).toContain('| web | `apps/web` |')
   })
 
   it('rejects a product name with path traversal, creating nothing (security finding 2)', async () => {
@@ -424,6 +451,18 @@ describe('vinaya init product', () => {
     }
     expect(snapshot(root)).toEqual(before)
     expect(createdLabels).toEqual([]) // no label leaked for a bad name
+  })
+
+  it('rejects a --path containing a pipe or newline, writing nothing to the registry (review finding 1)', async () => {
+    await runInit(['--yes'], makeDeps())
+    const before = snapshot(root)
+    createdLabels = []
+    for (const bad of ['apps/evil | injected | row', 'apps/evil\nrow']) {
+      const rc = await runInitProduct(['mobile', '--path', bad, '--yes'], makeDeps())
+      expect(rc).toBe(2)
+    }
+    expect(snapshot(root)).toEqual(before)
+    expect(createdLabels).toEqual([])
   })
 })
 

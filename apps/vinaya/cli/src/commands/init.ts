@@ -21,6 +21,7 @@ import {
 } from '../lib/detect.js'
 import { applyInstall, type LabelGateway, planInstall, renderInstallDiff } from '../lib/ops.js'
 import { closeStdin, promptYesNo } from '../lib/prompt.js'
+import { applyRegistryRow, planRegistryRow, renderRegistryRowDiffLine } from '../lib/registry-write.js'
 
 export type InitDeps = {
   detectRepo: () => Promise<RepoInfo | null>
@@ -160,13 +161,38 @@ export async function runInit(args: string[], deps: InitDeps): Promise<number> {
 // ---------------------------------------------------------------------------
 // vinaya init product <name>
 // ---------------------------------------------------------------------------
+/** `--path <value>` — the product's home folder, declared not derived (matches `aeg-root/projects.md`'s own doctrine). Defaults to repo root. */
+function pathFlag(args: string[]): string {
+  const i = args.indexOf('--path')
+  return i !== -1 && args[i + 1] ? (args[i + 1] as string) : '.'
+}
+
+/**
+ * Unlike `name` (checked against the strict `PRODUCT_NAME_RE` slug before
+ * use), `--path` is written raw into a `.vinaya/projects.md` markdown table
+ * row (`registry-write.ts`'s `rowLine`) — a `|` or newline in it would
+ * corrupt the table or splice in an extra fake row. Not a trust-boundary
+ * issue (local CLI, operator-supplied input, same trust level as
+ * hand-editing the file), but cheap to reject outright.
+ */
+const PATH_INJECTION_RE = /[|\r\n]/
+function validPathFlag(path: string): boolean {
+  return !PATH_INJECTION_RE.test(path)
+}
+
 export async function runInitProduct(args: string[], deps: InitDeps): Promise<number> {
   const { dryRun, yes } = flags(args)
   const name = args.filter((a) => !a.startsWith('--'))[0]
   if (!name) {
-    console.error('Usage: vinaya init product <name>')
+    console.error('Usage: vinaya init product <name> [--path <path>]')
     return 2
   }
+  const productPath = pathFlag(args)
+  if (!validPathFlag(productPath)) {
+    console.error("Error: --path must not contain '|' or a newline (it is written into a markdown table row).")
+    return 2
+  }
+  const specsPath = productPath === '.' ? 'specs/' : `${productPath}/specs/`
   // Strict slug — the name becomes a filesystem path segment
   // (governance/products/<name>/…) and a manifest record, so a `..` or path
   // separator would let user input escape the intended directory.
@@ -193,23 +219,26 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
     return 1
   }
 
-  // Same remoteless graceful-skip as `vinaya init` (spec D3): the only op
-  // here is a label, so a repo with no GitHub remote has nothing to install.
+  // A missing/non-GitHub remote only blocks the LABEL (the one forge-reaching
+  // op) — the `.vinaya/projects.md` row is a pure local write, so it still
+  // happens (spec D3 was scoped to "the only op here is a label", which
+  // stopped being true once this command started writing the registry too).
   const noRemote = !repo.owner || !repo.repo
   if (noRemote) {
     console.warn(
       'Warning: no `origin` remote (or it is not a GitHub URL) — skipping label creation. ' +
         `Re-run 'vinaya init product ${name}' after adding a GitHub remote to create it.`
     )
-    process.stdout.write(`\nNothing to scaffold for '${name}' without a GitHub remote.\n`)
-    return 0
   }
 
-  const ops = buildInitProductOps(name)
+  const ops = noRemote ? [] : buildInitProductOps(name)
   const plan = planInstall(ops, repo.repoRoot, new Set(existing.files))
+  const registryPlan = planRegistryRow(repo.repoRoot, name, productPath, specsPath)
 
   process.stdout.write(`vinaya init product ${name} — the full diff:\n\n`)
   process.stdout.write(`${renderInstallDiff(plan)}\n`)
+  process.stdout.write('── Project registry ─────────────────────────────\n')
+  process.stdout.write(`${renderRegistryRowDiffLine(registryPlan)}\n\n`)
 
   if (dryRun) {
     process.stdout.write('--dry-run: nothing was written.\n')
@@ -224,6 +253,7 @@ export async function runInitProduct(args: string[], deps: InitDeps): Promise<nu
     }
   }
 
+  applyRegistryRow(repo.repoRoot, registryPlan, name, productPath, specsPath)
   const added = await applyInstall(plan, repo.repoRoot, deps.labelGateway(repo.repoRoot))
   const merged: ManagedManifest = {
     version: existing.version,

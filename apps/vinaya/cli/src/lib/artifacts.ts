@@ -588,10 +588,15 @@ export function buildInitOps(ctx: InitContext): Op[] {
 
 /**
  * The change-set for `vinaya init product <name>` — a new governed area.
- * Per the 2026-07-23 minimal-manifest re-ruling this shrinks to a single
+ * Per the 2026-07-23 minimal-manifest re-ruling this shrank to a single
  * `project:<name>` label (create-if-absent): the governance/ scaffold the old
- * op-list wrote (a `projects.md` row + a per-product decision record) is cut with
- * the rest of the governance folder — no shipped check consumes it.
+ * op-list wrote (a per-product decision record + the rest of the governance
+ * folder) is cut — no shipped check consumed it. The `.vinaya/projects.md`
+ * row is back, though, as a SEPARATE write (`lib/registry-write.ts`, called
+ * from `runInitProduct` in `commands/init.ts`, not modeled as an `Op` here):
+ * Vinaya Studio's tranche board started reading it (#829) — a shipped
+ * consumer, distinct from a "check", which the
+ * 2026-07-23 premise didn't anticipate.
  */
 export function buildInitProductOps(name: string): Op[] {
   const safe = name.trim()
