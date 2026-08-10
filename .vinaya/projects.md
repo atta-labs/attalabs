@@ -24,6 +24,7 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | `apps/vada-ai/aeg-project/`   |
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
 | aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
+| aeg-forge-state | `packages/aeg-forge-state` | `packages/aeg-forge-state/specs/` | (state tracked globally for now) |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
 | vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | Issue #768 (pinned)                  |
 
@@ -34,6 +35,8 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 > **attalabs** — The AttaLabs ecosystem hub app (`@atta/attalabs-web`/`-mobile`/`-mcp-server`, serving `attalabs.dev`), distinct from **Atta** (the deep-thinking AI product — Vāda+Vitakka+Sati; its dedicated app scaffold, `apps/atta-ai`, was retired — Atta remains a real, code-less concept, not a registered project). Registered here because it has real code and its own `apps/attalabs/specs/`, but had no registry row until it was added retroactively (found while sizing an unrelated task's `Project(s)` field). `apps/attalabs` carries no `-ai` suffix (meta/infra-app convention, like `apps/desktop`).
 
 > **aeg-core** — `@atta/aeg-core` (`packages/aeg-core`): the pure, no-I/O package the AEG product runs on. Two capabilities: parse a repo's AEG artifacts (registry, tranche files) into a typed model, and `deriveTranche(tranche, forgeFacts)` → per-task derived status + the dependency/conflict graph + dispatch eligibility, mirroring `tranche-model.md` §3 exactly. Both **AEG Studio** (local, the first consumer) and the future **Portal** (hosted) read through this same substrate; they differ only in how they fetch the inputs. Registered as a project because a task declares `Project: aeg-core` — a package may be a project, per this file's framing above.
+
+> **aeg-forge-state** — `@atta/aeg-forge-state` (`packages/aeg-forge-state`): the one sanctioned adapter that reads live GitHub forge state (Milestone + labeled Issues) and derives the typed `Tranche`/`Task` shapes `aeg-core`'s pure evaluators consume — `gh`-CLI-only, read-only, zero topology file. Listed in `.aeg/packages` as its own collision domain (distinct from `aeg-core`) since before this row, but had no registry row of its own — any task editing its `src/**` had no `Project:` whose declared path actually covered it, forcing every prior task to fall back on a `blast-radius-ack:` line instead of a real ownership match. Registered retroactively (found while planning follow-on forge-adapter test-coverage and label-vocabulary work) for the same reason `attalabs` and `admin` were: real code, its own collision domain, no row.
 
 ## How `Project` is validated
 
