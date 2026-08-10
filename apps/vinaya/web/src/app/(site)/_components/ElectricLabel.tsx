@@ -192,9 +192,15 @@ function sidePoints(
  *
  * Active-route matching mirrors `@atta/ui/topbar`'s own `isActive` exactly (`exact` →
  * `pathname === href`, else a prefix match) so this control and the link's own text-color
- * highlight can never disagree about which nav item is "current." Inactive routes render
- * as plain children — no canvas, no `requestAnimationFrame` loop — so only the one active
- * item ever animates, not all 8.
+ * highlight can never disagree about which nav item is "current." The `p-2`-padded wrapper
+ * `<span>` renders UNCONDITIONALLY, active or not — an item's active state must change only
+ * ITS OWN paint, never its own or a sibling's box size. Reserving the padding always, not
+ * only while active, is what keeps activating an item from growing its box and shifting
+ * every later item in the row (a real regression found live: the whole nav visibly
+ * shifted right the moment `Home` went active on load). Only the `<canvas>` element and its
+ * `requestAnimationFrame` loop stay conditional on `isActive` — no canvas, no RAF, on any
+ * of the other items — so the zero-cost-when-inactive property this component exists for
+ * is preserved; only the box-size cost was the bug, not the animation cost.
  *
  * Vinaya-only: composed in via `TopBarLink.label`'s `ReactNode` slot (`@atta/ui/topbar`),
  * so the shared TopBar itself stays agnostic to it.
@@ -306,12 +312,10 @@ export function ElectricLabel({
     }
   }, [isActive])
 
-  if (!isActive) return <>{children}</>
-
   return (
     <span ref={wrapRef} className='relative inline-flex items-center justify-center p-2'>
       {children}
-      <canvas ref={canvasRef} className='pointer-events-none absolute inset-0 h-full w-full' />
+      {isActive && <canvas ref={canvasRef} className='pointer-events-none absolute inset-0 h-full w-full' />}
     </span>
   )
 }

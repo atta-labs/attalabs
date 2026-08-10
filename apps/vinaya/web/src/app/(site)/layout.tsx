@@ -2,40 +2,111 @@ import { getProductCms } from '@atta/cms'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
+import type { TopBarNavItem } from '@atta/ui/topbar'
+import {
+  BookOpen,
+  ChevronDown,
+  GitBranch,
+  Home,
+  LayoutDashboard,
+  Library,
+  Map as MapIcon,
+  Rocket,
+  Terminal,
+  Workflow
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ProductSwitch } from '@/app/_components/ProductSwitch'
 import { ElectricLabel } from './_components/ElectricLabel'
+import { GatesMark } from './roadmap/_components/RoadmapMarks'
 
-const NAV_ITEMS = [
-  { label: 'Home', href: '/', exact: true },
-  { label: 'The Harness', href: '/docs/harness' },
-  // Beside The Harness: both are code-derived reference pages — that one draws
-  // the enforcement model, this one renders the state machine's own tables.
-  { label: 'State Machine', href: '/docs/state-machine' },
-  { label: 'Start', href: '/start' },
-  { label: 'CLI', href: '/docs/cli' },
-  { label: 'Config', href: '/config' },
-  // `exact: true` — otherwise the `/docs` prefix-match lights this item up
-  // for every moved child too (harness/state-machine/cli/reference all now
-  // live under `/docs/*`), alongside whichever of those is actually active.
-  { label: 'Docs', href: '/docs', exact: true },
-  { label: 'Studio', href: '/the-studio' },
-  { label: 'Roadmap', href: '/roadmap' }
+// Every flat item gets a crackling border that lights up only while its own
+// route is active (`ElectricLabel` compares `href` against `usePathname()`
+// itself, mirroring TopBar's own `isActive`), so it reads as "you are here,"
+// not decoration. This app's only such use. The icon lives INSIDE the
+// ElectricLabel's children (not TopBar's separate `icon` slot) so it sits
+// inside the lightning border when active, not stranded outside it.
+function flatLink(label: string, href: string, icon: ReactNode, exact?: boolean) {
+  return {
+    label: (
+      <ElectricLabel href={href} exact={exact}>
+        <span className='flex items-center gap-1.5'>
+          {icon}
+          {label}
+        </span>
+      </ElectricLabel>
+    ),
+    href,
+    exact
+  }
+}
+
+// Group panel items are plain labels — the panel has its own hover
+// treatment, so lightning stays reserved for top-level nav (constant cost
+// zero on inactive items, per `ElectricLabel`'s own doc comment).
+const DOCS_ITEMS = [
+  {
+    label: 'Harness',
+    href: '/docs/harness',
+    icon: <Workflow className='size-4' aria-hidden />,
+    description: 'Live map of every role, contract, gate, and check.'
+  },
+  {
+    label: 'State Machine',
+    href: '/docs/state-machine',
+    icon: <GitBranch className='size-4' aria-hidden />,
+    description: 'How forge facts and labels derive task status.'
+  },
+  {
+    label: 'CLI',
+    href: '/docs/cli',
+    icon: <Terminal className='size-4' aria-hidden />,
+    description: 'Every vinaya command — flags, behavior, status.'
+  },
+  {
+    label: 'Reference',
+    href: '/docs/reference',
+    icon: <Library className='size-4' aria-hidden />,
+    description: 'The harness, part by part, as one browsable map.'
+  }
 ]
 
-// `label` takes a `ReactNode` (`@atta/ui/topbar`'s `TopBarLink.label`) — every item gets
-// a crackling border that lights up only while its own route is the active one
-// (`ElectricLabel` compares `href` against `usePathname()` itself, mirroring TopBar's own
-// `isActive`), so it reads as "you are here," not decoration. This app's only such use.
-const links = NAV_ITEMS.map(({ label, href, exact }) => ({
-  label: (
-    <ElectricLabel href={href} exact={exact}>
-      {label}
-    </ElectricLabel>
-  ),
-  href,
-  exact
-}))
+const links: TopBarNavItem[] = [
+  flatLink('Home', '/', <Home className='size-4' aria-hidden />, true),
+  flatLink('Start', '/start', <Rocket className='size-4' aria-hidden />),
+  // No `href` on the group — the trigger opens the panel, only items
+  // navigate. `exact` defaults false: a plain `/docs` prefix match, since
+  // every group child lives under `/docs/*` (task 3) — a single prefix
+  // suffices, no multi-prefix machinery needed.
+  {
+    // The chevron is OUR OWN, not the installed trigger's auto-appended one —
+    // `groupTriggerClassName` hides that one (`[&>svg:last-child]:hidden`,
+    // packages/ui/topbar/index.tsx) so this one, living inside the
+    // ElectricLabel wrapper, is what the lightning border actually encloses.
+    // `group-data-[state=open]:rotate-180` targets the trigger button's own
+    // (plain, unnamed) `group` class + Radix's `data-state` attribute; the
+    // hover-flip rule already targets any `.lucide-chevron-down` descendant,
+    // which this shares by virtue of being the same lucide icon.
+    label: (
+      <ElectricLabel href='/docs'>
+        <span className='flex items-center gap-1.5'>
+          <BookOpen className='size-4' aria-hidden />
+          Docs
+          <ChevronDown
+            className='size-3 transition-transform duration-300 group-data-[state=open]:rotate-180'
+            aria-hidden
+          />
+        </span>
+      </ElectricLabel>
+    ),
+    items: DOCS_ITEMS
+  },
+  // Same bespoke mark `/roadmap`'s "Configurable forge" card uses — the
+  // literal subject of `/config`, not a generic gear stand-in.
+  flatLink('Config', '/config', <GatesMark className='size-4' />),
+  flatLink('Studio', '/the-studio', <LayoutDashboard className='size-4' aria-hidden />),
+  flatLink('Roadmap', '/roadmap', <MapIcon className='size-4' aria-hidden />)
+]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
   const { branding } = await getProductCms('vinaya')

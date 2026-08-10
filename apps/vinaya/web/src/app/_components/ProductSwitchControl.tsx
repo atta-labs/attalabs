@@ -13,22 +13,33 @@ type Segment = 'portal' | 'studio'
  * component that renders this one, so an unauthorized request never ships this
  * control to the browser at all.
  *
- * The visible STUDIO label exists because the bare switch's purpose was
- * unreadable to a first-time visitor — nothing in the topbar's right cluster
- * hinted that it was a destination toggle at all. The accessible name
- * (`aria-label`, which states the current surface outright) is unchanged and
- * unduplicated by the new text — the label names the destination, the
- * `aria-label` still carries the current-surface state a screen reader needs.
+ * The visible label exists because the bare switch's purpose was unreadable
+ * to a first-time visitor — nothing in the topbar's right cluster hinted
+ * that it was a destination toggle at all.
+ *
+ * `TopBar` mounts `extraActions` TWICE — once in the desktop right cluster,
+ * once inside the mobile hamburger sheet's nav — as two independent React
+ * instances of this same component, not one shared node. There is no prop
+ * to tell one instance it's "the mobile one," so the two viewport-specific
+ * copies vary their text via a plain CSS breakpoint on the SAME component,
+ * not two components: the compact desktop pill keeps the short static
+ * "Studio" (there's no room there for "Switch to Studio", and the desktop
+ * cluster already has other affordances); the mobile sheet — genuinely more
+ * room, and a first-time-visitor context — states the DESTINATION ("Switch
+ * to Studio" / "Switch to Portal"). Either way `aria-label` already states
+ * the current surface, so the visible text naming the destination never
+ * duplicates it. The breakpoint is `lg`, matching `TopBar`'s own
+ * desktop/mobile split (#816) — it was still `md` from when this text split
+ * first landed, a leftover that would have shown the short "Studio" form
+ * inside the mobile sheet itself between 768–1024px, the exact window `lg`
+ * (not `md`) now claims for mobile.
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
   const isStudio = current === 'studio'
 
   return (
-    <div className='flex flex-col items-center'>
-      <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-        Studio
-      </Text>
+    <div className='flex items-center gap-2'>
       <Switch
         // `size` is a RETRO-ONLY prop, outside the cross-library contract — that
         // contract covers the component NAME, not this prop: each library derives
@@ -53,6 +64,10 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
         onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
         aria-label={isStudio ? 'Currently on Studio. Switch to Portal.' : 'Currently on Portal. Switch to Studio.'}
       />
+      <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+        <span className='lg:hidden'>{isStudio ? 'Switch to Portal' : 'Switch to Studio'}</span>
+        <span className='hidden lg:inline'>Studio</span>
+      </Text>
     </div>
   )
 }
