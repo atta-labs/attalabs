@@ -426,10 +426,13 @@ function TopBarWithAuth({
                     {defaultLogo}
                   </SheetClose>
                 )}
-                <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
-                  <X className='h-4 w-4' />
-                  <span className='sr-only'>Close menu</span>
-                </SheetClose>
+                <div className='flex items-center gap-2'>
+                  <ColorSchemeToggle />
+                  <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
+                    <X className='h-4 w-4' />
+                    <span className='sr-only'>Close menu</span>
+                  </SheetClose>
+                </div>
               </div>
               <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
                 {/* `my-auto`, not `justify-center` on `<nav>` itself — `justify-center`
@@ -464,15 +467,6 @@ function TopBarWithAuth({
                       </SheetClose>
                     )
                   })}
-                  {/* The desktop cluster's `ColorSchemeToggle` sits OUTSIDE this sheet
-                      (in the collapsed bar next to the hamburger trigger), so opening
-                      the sheet — a full-screen overlay — left theme unreachable without
-                      closing the menu first. A row here, matching every other row's
-                      icon-then-label shape, closes that gap. */}
-                  <div className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 text-sm'>
-                    <ColorSchemeToggle />
-                    <span>Theme</span>
-                  </div>
                   {isSignedIn && extraActions && (
                     <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
                   )}
@@ -607,10 +601,13 @@ function TopBarNoAuth({
                       {defaultLogo}
                     </SheetClose>
                   )}
-                  <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
-                    <X className='h-4 w-4' />
-                    <span className='sr-only'>Close menu</span>
-                  </SheetClose>
+                  <div className='flex items-center gap-2'>
+                    <ColorSchemeToggle />
+                    <SheetClose render={<Button variant='outline' size='icon' aria-label='Close menu' />}>
+                      <X className='h-4 w-4' />
+                      <span className='sr-only'>Close menu</span>
+                    </SheetClose>
+                  </div>
                 </div>
                 <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
                   {/* `my-auto`, not `justify-center` on the scroll container — see the
@@ -641,11 +638,6 @@ function TopBarNoAuth({
                         </SheetClose>
                       )
                     })}
-                    {/* Matching `TopBarWithAuth`'s own row — see its comment for why. */}
-                    <div className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 text-sm'>
-                      <ColorSchemeToggle />
-                      <span>Theme</span>
-                    </div>
                     {extraActions && (
                       <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
                     )}
