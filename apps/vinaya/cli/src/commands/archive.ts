@@ -71,7 +71,7 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
 
   const associated = shJson<AssociatedPr[]>(['gh', 'api', `repos/${repoFlag}/commits/${mergeSha}/pulls`])
   if (associated.length === 0) {
-    console.log(`[vinaya archive] no associated PR for merge ${mergeSha} — skip.`)
+    process.stdout.write(`[vinaya archive] no associated PR for merge ${mergeSha} — skip.\n`)
     return 0
   }
 
@@ -110,8 +110,8 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
   }
 
   if (!isEligibleForProvenance(ref, issueLabels)) {
-    console.log(
-      `[vinaya archive] non-task branch (${pr.headRefName}) and closing Issue carries no vinaya/tranche:* label — skip.`
+    process.stdout.write(
+      `[vinaya archive] non-task branch (${pr.headRefName}) and closing Issue carries no vinaya/tranche:* label — skip.\n`
     )
     return 0
   }

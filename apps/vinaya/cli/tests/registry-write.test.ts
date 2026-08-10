@@ -6,9 +6,7 @@ describe('registry-write', () => {
   it('freshProjectsRegistry produces content parseRegistry can read', () => {
     const content = freshProjectsRegistry('mobile', 'apps/mobile', 'apps/mobile/specs')
     const rows = parseRegistry(content)
-    expect(rows).toEqual([
-      { name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }
-    ])
+    expect(rows).toEqual([{ name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }])
   })
 
   it('appendRegistryRow inserts after the last existing row, keeping earlier rows intact', () => {
@@ -24,9 +22,7 @@ describe('registry-write', () => {
     expect(after).toContain('# Some other file')
     expect(after).toContain('No registry here.')
     const rows = parseRegistry(after)
-    expect(rows).toEqual([
-      { name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }
-    ])
+    expect(rows).toEqual([{ name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }])
   })
 
   it('planRegistryRow classifies create-host / append-row / skip-present correctly', () => {

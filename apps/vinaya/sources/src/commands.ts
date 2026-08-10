@@ -47,12 +47,16 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     name: 'init product',
-    description: 'Register a project in .vinaya/projects.md (and its project:<name> label) in an already-initialized repo',
+    description:
+      'Register a project in .vinaya/projects.md (and its project:<name> label) in an already-initialized repo',
     flags: [
-      { flag: '--path <path>', description: "The project's home folder — declared, not derived. Defaults to the repo root." }
+      {
+        flag: '--path <path>',
+        description: "The project's home folder — declared, not derived. Defaults to the repo root."
+      }
     ],
     details: [
-      'Writes (or appends to) `.vinaya/projects.md` — the registry Vinaya Studio\'s tranche board resolves a project\'s board link against. Idempotent: re-running with the same name updates nothing.',
+      "Writes (or appends to) `.vinaya/projects.md` — the registry Vinaya Studio's tranche board resolves a project's board link against. Idempotent: re-running with the same name updates nothing.",
       'Also creates a `project:<name>` label (create-if-absent) — informational only, not read by any shipped check or by Studio.',
       'A missing GitHub remote skips the label (the one forge-reaching op) but still writes the registry row, which is a pure local file write.'
     ],
