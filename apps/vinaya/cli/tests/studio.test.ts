@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -100,21 +101,34 @@ describe('runStudio', () => {
     }
   })
 
-  it('spawns the bundled server.js with the CALLER cwd, not the package dir', async () => {
+  it('spawns the bundled server.js with the CALLER cwd and a derived AEG_REPO, not the package dir', async () => {
     const fakeInstallRoot = join(tmpDir, 'node_modules', '@attalabs', 'vinaya')
     const standaloneWebDir = join(fakeInstallRoot, 'studio-standalone', 'apps', 'vinaya', 'web')
     mkdirSync(standaloneWebDir, { recursive: true })
     writeFileSync(join(fakeInstallRoot, 'package.json'), JSON.stringify({ name: '@attalabs/vinaya' }))
 
+    // A REAL git repo with a REAL origin remote — this is the regression
+    // case: Next's generated server.js does `process.chdir(__dirname)` as
+    // its own first line, so by the time app code reads `process.cwd()` for
+    // its own `git remote get-url origin` call, it's back on the installed
+    // package (not a git repo at all) rather than this guest repo. Without
+    // studio.ts resolving AEG_REPO here — BEFORE that chdir happens — and
+    // forcing it into the child's env, the chdir would silently break the
+    // exact "your repo's real tranches/board" promise this task exists for.
     const guestRepo = join(tmpDir, 'guest-repo')
     mkdirSync(guestRepo, { recursive: true })
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: guestRepo })
+    execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/fixture-owner/fixture-repo.git'], {
+      cwd: guestRepo
+    })
+
     const cwdProofFile = join(tmpDir, 'cwd-proof.txt')
     // A fake server.js: proves what cwd/env it was actually spawned with,
     // then exits with a recognizable non-zero code — no real Next server
     // needed to test the spawn contract itself.
     writeFileSync(
       join(standaloneWebDir, 'server.js'),
-      `require('fs').writeFileSync(${JSON.stringify(cwdProofFile)}, JSON.stringify({ cwd: process.cwd(), port: process.env.PORT }))\nprocess.exit(42)\n`
+      `require('fs').writeFileSync(${JSON.stringify(cwdProofFile)}, JSON.stringify({ cwd: process.cwd(), port: process.env.PORT, aegRepo: process.env.AEG_REPO }))\nprocess.exit(42)\n`
     )
 
     const fakeModuleUrl = pathToFileURL(join(fakeInstallRoot, 'dist', 'index.js')).href
@@ -123,6 +137,7 @@ describe('runStudio', () => {
     expect(code).toBe(42)
     const proof = JSON.parse(readFileSync(cwdProofFile, 'utf-8'))
     expect(realpathSync(proof.cwd)).toBe(realpathSync(guestRepo))
+    expect(proof.aegRepo).toBe('fixture-owner/fixture-repo')
     // 3006 unless something else on the machine already holds it, in which
     // case the same fallback dev.ts already relies on kicks in — either is
     // a correct result, not just an acceptable one.

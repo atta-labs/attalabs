@@ -15,14 +15,26 @@
  * flatten that. `server.js`'s own require/static resolution is relative to
  * its own file location, not `process.cwd()` (verified live: it serves
  * pages and `/_next/static/*` assets correctly when launched from an
- * unrelated cwd) — that cwd-independence is exactly what lets
- * `studio.ts`'s package branch spawn it with the *caller's* cwd, so the
- * app's own repo-root walks (`.vinaya/projects.md`, `resolveRepo()`) target
- * the guest's repo, not this installed package.
+ * unrelated cwd) — BUT that same generated `server.js` also runs
+ * `process.chdir(__dirname)` as its own first line (every standalone build
+ * does this, not something this script controls), so by the time app code
+ * reads `process.cwd()` the process has moved off the caller's cwd and back
+ * onto this installed package. `studio.ts`'s package branch works around
+ * that — see its own `spawnStandalone` doc comment.
+ *
+ * The bundle's `node_modules` (holding `next`, `react`, `sharp`, … —
+ * `server.js`'s own real runtime requires) gets renamed to `_node_modules`
+ * as the final step. npm/bun's packer strips ANY directory literally named
+ * `node_modules` from a published tarball, unconditionally — confirmed
+ * live: `bun pm pack` silently drops this one, and the installed package
+ * then fails at `require('next')`. `studio.ts`'s package branch renames it
+ * back on first run (see its own comment for why that's a lazy runtime
+ * repair rather than a `postinstall` script).
  */
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { STUDIO_NODE_MODULES_PACKED_DIRNAME } from '../src/lib/studio-bundle.js'
 
 const pkgRoot = join(import.meta.dir, '..')
 const monorepoRoot = join(pkgRoot, '..', '..', '..')
@@ -33,6 +45,16 @@ if (!existsSync(webRoot)) {
   console.error(`bundle-studio: source ${webRoot} does not exist — run from within the attalabs monorepo.`)
   process.exit(1)
 }
+
+// MUST run before the build, not just before the copy: `next build`'s
+// tracer roots at the monorepo (`outputFileTracingRoot`), and a stale
+// `studio-standalone/` left on disk from a prior run gets swept back into
+// the NEW standalone output as a real, non-symlinked nested copy of this
+// very directory — confirmed live: a second build produced
+// `studio-standalone/apps/vinaya/cli/studio-standalone/...` recursively.
+// Cleaning the target first means there's nothing stale for the tracer to
+// find.
+if (existsSync(targetRoot)) rmSync(targetRoot, { recursive: true, force: true })
 
 console.log('bundle-studio: building apps/vinaya/web (next build, output: standalone)...')
 const build = spawnSync('bun', ['run', 'build'], { cwd: webRoot, stdio: 'inherit' })
@@ -53,10 +75,14 @@ if (!existsSync(join(standaloneWebDir, 'server.js'))) {
   process.exit(1)
 }
 
-if (existsSync(targetRoot)) rmSync(targetRoot, { recursive: true, force: true })
-
 cpSync(standaloneDir, targetRoot, { recursive: true })
 cpSync(staticDir, join(targetRoot, 'apps', 'vinaya', 'web', '.next', 'static'), { recursive: true })
 cpSync(publicDir, join(targetRoot, 'apps', 'vinaya', 'web', 'public'), { recursive: true })
+
+const realNodeModules = join(targetRoot, 'node_modules')
+const packedNodeModules = join(targetRoot, STUDIO_NODE_MODULES_PACKED_DIRNAME)
+if (existsSync(realNodeModules)) {
+  renameSync(realNodeModules, packedNodeModules)
+}
 
 console.log(`bundle-studio: copied standalone build into ${targetRoot}`)
