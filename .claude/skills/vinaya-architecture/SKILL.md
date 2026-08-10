@@ -37,7 +37,7 @@ Both adapters are proven equivalent by a golden comparison test (`golden-forge-v
 
 ### `cli` — the shipped package
 
-**Router:** `vinaya help`/`version`, `check <name>|--all`, `new check`, `pr|issue create|edit`, `init|init product|eject`, `doctor|upgrade`, `archive|audit`, `demo break|waiver`, `studio`. The per-command source of truth is `COMMANDS`, above — this list drifts; the registry does not.
+**Router:** `vinaya help`/`version`, `check <name>|--all`, `new check`, `pr|issue create|edit`, `init|init product|eject`, `doctor|upgrade`, `archive|archive tranche|audit`, `demo break|waiver`, `studio`. The per-command source of truth is `COMMANDS`, above — this list drifts; the registry does not. `archive tranche <slug>` (`cli/src/commands/archive.ts`) is the tranche-level bookend to `init product`: it closes the GitHub Milestone, refusing outright if any task Issue attached to it is still open — the same refuse-by-default posture as every other forge-write here, so a tranche can never be closed with unresolved work by accident.
 
 **Check engine (`cli/src/checks/`)** — the mechanism every gate reaches an adopter through:
 

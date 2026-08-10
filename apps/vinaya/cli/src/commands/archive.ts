@@ -21,6 +21,7 @@ import {
   type MergedPrFacts
 } from '@atta/aeg-core'
 import { detectGitRepo, type RepoInfo } from '../lib/detect.js'
+import { closeStdin, promptYesNo } from '../lib/prompt.js'
 
 export type ArchiveDeps = {
   detectRepo: () => Promise<RepoInfo | null>
@@ -169,4 +170,77 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
 
 export async function archiveCommand(args: string[]): Promise<void> {
   process.exit(await runArchive(args, realDeps()))
+}
+
+// ---------------------------------------------------------------------------
+// vinaya archive tranche <slug> — the tranche-level bookend, closing the
+// GitHub Milestone. Refuses (no --force) if any task Issue attached to it is
+// still open — closing a tranche with unresolved work is never silently
+// allowed, matching this product's refuse-by-default posture everywhere
+// else. --yes skips the confirm prompt, same convention as init/eject/upgrade.
+// ---------------------------------------------------------------------------
+
+type Milestone = { number: number; title: string }
+type OpenIssueRef = { number: number; title: string }
+
+function parseTrancheArgs(args: string[]): { slug: string | null; yes: boolean } {
+  const yes = args.includes('--yes')
+  const slug = args.find((a) => !a.startsWith('--')) ?? null
+  return { slug, yes }
+}
+
+export async function runArchiveTranche(args: string[], deps: ArchiveDeps): Promise<number> {
+  const { slug, yes } = parseTrancheArgs(args)
+  if (!slug) {
+    console.error('Usage: vinaya archive tranche <slug> [--yes]')
+    return 2
+  }
+
+  const repo = await deps.detectRepo()
+  if (!repo) {
+    console.error('Error: not a git repository. Run `vinaya archive tranche` from inside your repo.')
+    return 1
+  }
+  if (!repo.owner || !repo.repo) {
+    console.error('Error: could not resolve a GitHub owner/repo from the `origin` remote.')
+    return 1
+  }
+  const repoFlag = `${repo.owner}/${repo.repo}`
+
+  const milestones = shJson<Milestone[]>(['gh', 'api', `repos/${repoFlag}/milestones?state=open&per_page=100`])
+  const milestone = milestones.find((m) => m.title === slug)
+  if (!milestone) {
+    console.error(`Error: no open tranche milestone named '${slug}' found in ${repoFlag}.`)
+    return 1
+  }
+
+  const openIssues = shJson<OpenIssueRef[]>([
+    'gh',
+    'api',
+    `repos/${repoFlag}/issues?milestone=${milestone.number}&state=open&per_page=100`
+  ])
+  if (openIssues.length > 0) {
+    console.error(
+      `Error: tranche '${slug}' still has ${openIssues.length} open task(s) — refusing to close:\n` +
+        openIssues.map((i) => `  #${i.number} — ${i.title}`).join('\n')
+    )
+    return 1
+  }
+
+  if (!yes) {
+    const ok = await promptYesNo(`Close tranche '${slug}' (Milestone #${milestone.number}, all tasks closed)?`, false)
+    closeStdin()
+    if (!ok) {
+      console.log('Aborted. Nothing was changed.')
+      return 0
+    }
+  }
+
+  sh(['gh', 'api', '-X', 'PATCH', `repos/${repoFlag}/milestones/${milestone.number}`, '-f', 'state=closed'])
+  console.log(`Tranche '${slug}' closed (Milestone #${milestone.number}).`)
+  return 0
+}
+
+export async function archiveTrancheCommand(args: string[]): Promise<void> {
+  process.exit(await runArchiveTranche(args, realDeps()))
 }

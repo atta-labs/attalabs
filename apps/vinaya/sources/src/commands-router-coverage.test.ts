@@ -60,6 +60,7 @@ describe('router -> COMMANDS coverage', () => {
         'upgrade',
         'check',
         'archive',
+        'archive tranche',
         'audit',
         'new check',
         'pr create',

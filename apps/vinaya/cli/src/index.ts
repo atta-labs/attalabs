@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { archiveCommand } from './commands/archive.js'
+import { archiveCommand, archiveTrancheCommand } from './commands/archive.js'
 import { auditCommand } from './commands/audit.js'
 import { checkCommand } from './commands/check.js'
 import { demoBreakCommand } from './commands/demo.js'
@@ -75,7 +75,12 @@ try {
       break
     }
     case 'archive': {
-      await archiveCommand(args)
+      const [subcommand, ...rest] = args
+      if (subcommand === 'tranche') {
+        await archiveTrancheCommand(rest)
+      } else {
+        await archiveCommand(args)
+      }
       break
     }
     case 'audit': {
