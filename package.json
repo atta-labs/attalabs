@@ -29,7 +29,7 @@
     "format:fix": "biome format --fix .",
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check --fix .",
-    "check": "turbo typecheck && biome check . && turbo test --filter=@atta/cms --filter=@atta/aeg-core && bun scripts/check-forbidden-colors.ts",
+    "check": "turbo typecheck && biome check . && turbo test --affected && bun scripts/check-forbidden-colors.ts",
     "test": "turbo test",
     "docs:index": "node scripts/generate-docs-index.mjs",
     "verify-docs": "bun run packages/aeg-core/bin/verify-docs.ts",
