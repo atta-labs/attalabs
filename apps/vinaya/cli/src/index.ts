@@ -13,6 +13,7 @@ import { initCommand, initProductCommand } from './commands/init.js'
 import { issueCreateCommand, issueEditCommand } from './commands/issue.js'
 import { newCheckCommand } from './commands/new-check.js'
 import { prCreateCommand, prEditCommand } from './commands/pr.js'
+import { quickstartCommand } from './commands/quickstart.js'
 import { runStudio } from './commands/studio.js'
 import { upgradeCommand } from './commands/upgrade.js'
 import { waiverCommand } from './commands/waiver.js'
@@ -133,6 +134,10 @@ try {
     }
     case 'waiver': {
       await waiverCommand(args)
+      break
+    }
+    case 'quickstart': {
+      await quickstartCommand(args)
       break
     }
     default:

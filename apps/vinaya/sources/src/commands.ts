@@ -233,5 +233,14 @@ export const COMMANDS: readonly Command[] = [
     name: 'studio',
     description: 'Launch local Vinaya Studio against this repo (requires a Vinaya workspace checkout)',
     status: 'shipped'
+  },
+  {
+    name: 'quickstart',
+    description: 'Guided wizard: init, doc-owners, project, commit, demo break, doctor, push — one command',
+    details: [
+      "Calls `init`'s own diff-and-confirm flow unchanged, then Y/n-prompts through the workarounds a guest used to run by hand: binding a `.vinaya/doc-owners` pair, registering a tracked project (`init product`), committing the install, running `demo break` as proof the gates actually work (default yes — the one step this wizard makes hardest to skip), running `doctor`, and pushing. Each declined prompt skips only that step; the install commit itself is never prompt-gated — it just no-ops when there is genuinely nothing to commit.",
+      'Never reimplements or edits `init`/`init product`/`demo break`/`doctor` — it only calls their existing, unmodified entry points in sequence.'
+    ],
+    status: 'shipped'
   }
 ]
