@@ -173,6 +173,16 @@ export const COMMANDS: readonly Command[] = [
     status: 'shipped'
   },
   {
+    name: 'archive tranche',
+    description: 'Close a tranche — the tranche-level bookend to `init product`, closing the Milestone via the CLI',
+    flags: [{ flag: '--yes', description: 'Skip the confirmation prompt' }],
+    details: [
+      'Refuses if any task Issue attached to the named tranche is still open, naming each one — closing a tranche with unresolved work is never silently allowed.',
+      'Once every task Issue is closed, prompts for confirmation (unless `--yes`) and closes the GitHub Milestone.'
+    ],
+    status: 'shipped'
+  },
+  {
     name: 'audit',
     description: 'Run the ring-2 dead-branch-push and direct-main-push detection checks directly',
     flags: [
