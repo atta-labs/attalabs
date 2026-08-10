@@ -331,7 +331,7 @@ function TopBarWithAuth({
         </div>
 
         {/* Desktop nav links — absolutely centered */}
-        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex'>
           {visibleLinks.map((item) => {
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
@@ -505,7 +505,7 @@ function TopBarNoAuth({
         </div>
 
         {/* Desktop nav links — absolutely centered */}
-        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex'>
+        <div className='absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex'>
           {links.map((item) => {
             if (isTopBarGroup(item)) {
               return <DesktopNavGroup key={navItemKey(item)} item={item} isActive={isActive} nav={navComponents} />
