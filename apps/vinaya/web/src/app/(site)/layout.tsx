@@ -11,13 +11,13 @@ import {
   Library,
   Map as MapIcon,
   Rocket,
-  Settings,
   Terminal,
   Workflow
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ProductSwitch } from '@/app/_components/ProductSwitch'
 import { ElectricLabel } from './_components/ElectricLabel'
+import { GatesMark } from './roadmap/_components/RoadmapMarks'
 
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
@@ -88,7 +88,9 @@ const links: TopBarNavItem[] = [
     ),
     items: DOCS_ITEMS
   },
-  flatLink('Config', '/config', <Settings className='size-4' aria-hidden />),
+  // Same bespoke mark `/roadmap`'s "Configurable forge" card uses — the
+  // literal subject of `/config`, not a generic gear stand-in.
+  flatLink('Config', '/config', <GatesMark className='size-4' />),
   flatLink('Studio', '/the-studio', <LayoutDashboard className='size-4' aria-hidden />),
   flatLink('Roadmap', '/roadmap', <MapIcon className='size-4' aria-hidden />)
 ]

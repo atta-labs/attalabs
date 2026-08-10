@@ -15,10 +15,20 @@ type Segment = 'portal' | 'studio'
  *
  * The visible label exists because the bare switch's purpose was unreadable
  * to a first-time visitor — nothing in the topbar's right cluster hinted
- * that it was a destination toggle at all. It states the DESTINATION ("Switch
- * to Studio" / "Switch to Portal"), not the current surface — the current
- * surface is what `aria-label` already states, so the two read as
- * complementary rather than duplicated.
+ * that it was a destination toggle at all.
+ *
+ * `TopBar` mounts `extraActions` TWICE — once in the desktop right cluster,
+ * once inside the mobile hamburger sheet's nav — as two independent React
+ * instances of this same component, not one shared node. There is no prop
+ * to tell one instance it's "the mobile one," so the two viewport-specific
+ * copies vary their text via a plain CSS breakpoint on the SAME component,
+ * not two components: the compact desktop pill keeps the short static
+ * "Studio" (there's no room there for "Switch to Studio", and the desktop
+ * cluster already has other affordances); the mobile sheet — genuinely more
+ * room, and a first-time-visitor context — states the DESTINATION ("Switch
+ * to Studio" / "Switch to Portal"). Either way `aria-label` already states
+ * the current surface, so the visible text naming the destination never
+ * duplicates it.
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
@@ -27,7 +37,8 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
   return (
     <div className='flex flex-col items-center'>
       <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-        {isStudio ? 'Switch to Portal' : 'Switch to Studio'}
+        <span className='md:hidden'>{isStudio ? 'Switch to Portal' : 'Switch to Studio'}</span>
+        <span className='hidden md:inline'>Studio</span>
       </Text>
       <Switch
         // `size` is a RETRO-ONLY prop, outside the cross-library contract — that
