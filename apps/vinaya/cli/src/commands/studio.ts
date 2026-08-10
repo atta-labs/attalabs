@@ -124,7 +124,21 @@ function ensureStudioNodeModules(bundleRoot: string): void {
  *  thing standing between this task and the exact manual "AEG_REPO env var
  *  trick" workaround the Issue names as what package mode should retire; an
  *  explicit `AEG_REPO` the caller already set is preserved (`resolveRepo`
- *  checks it first internally, so this never overrides a real override). */
+ *  checks it first internally, so this never overrides a real override).
+ *
+ *  `HOSTNAME` is forced to loopback-only (`127.0.0.1`) unless the caller's
+ *  own environment already sets it. The bundled `server.js` reads
+ *  `process.env.HOSTNAME || '0.0.0.0'` — unset, it binds every interface,
+ *  which for `next dev` inside this monorepo is a pre-existing, narrow
+ *  exposure (only reachable by someone who already has this checkout and
+ *  runs it themselves). Shipping the *package* branch on the public npm
+ *  registry is a different exposure: it turns the same unauthenticated
+ *  bind into a default for any `npx @attalabs/vinaya studio` invocation,
+ *  in any adopter's repo, reachable by anything else on the same network
+ *  for the life of the process, serving that repo's real forge-derived
+ *  tranche/task data with no auth (security review, PR #855). Loopback-only
+ *  is the safe default; an operator who genuinely wants LAN access can
+ *  still set `HOSTNAME` themselves. */
 async function spawnStandalone(cwd: string, serverPath: string, bundleRoot: string): Promise<number> {
   ensureStudioNodeModules(bundleRoot)
 
@@ -135,7 +149,7 @@ async function spawnStandalone(cwd: string, serverPath: string, bundleRoot: stri
     console.info(`[studio] port ${PRIMARY_PORT} is taken — falling back to ${FALLBACK_PORT}`)
   }
 
-  const env: NodeJS.ProcessEnv = { ...process.env, PORT: String(port) }
+  const env: NodeJS.ProcessEnv = { HOSTNAME: '127.0.0.1', ...process.env, PORT: String(port) }
   if (repo) env.AEG_REPO = `${repo.owner}/${repo.repo}`
 
   return new Promise((resolve) => {

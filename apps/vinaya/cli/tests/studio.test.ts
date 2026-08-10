@@ -128,7 +128,7 @@ describe('runStudio', () => {
     // needed to test the spawn contract itself.
     writeFileSync(
       join(standaloneWebDir, 'server.js'),
-      `require('fs').writeFileSync(${JSON.stringify(cwdProofFile)}, JSON.stringify({ cwd: process.cwd(), port: process.env.PORT, aegRepo: process.env.AEG_REPO }))\nprocess.exit(42)\n`
+      `require('fs').writeFileSync(${JSON.stringify(cwdProofFile)}, JSON.stringify({ cwd: process.cwd(), port: process.env.PORT, aegRepo: process.env.AEG_REPO, hostname: process.env.HOSTNAME }))\nprocess.exit(42)\n`
     )
 
     const fakeModuleUrl = pathToFileURL(join(fakeInstallRoot, 'dist', 'index.js')).href
@@ -138,9 +138,44 @@ describe('runStudio', () => {
     const proof = JSON.parse(readFileSync(cwdProofFile, 'utf-8'))
     expect(realpathSync(proof.cwd)).toBe(realpathSync(guestRepo))
     expect(proof.aegRepo).toBe('fixture-owner/fixture-repo')
+    // Security review, PR #855: the bundled server.js binds
+    // process.env.HOSTNAME || '0.0.0.0' — unset, it's reachable by anything
+    // on the local network. Loopback-only must be the default.
+    expect(proof.hostname).toBe('127.0.0.1')
     // 3006 unless something else on the machine already holds it, in which
     // case the same fallback dev.ts already relies on kicks in — either is
     // a correct result, not just an acceptable one.
     expect(['3006', '3106']).toContain(proof.port)
+  })
+
+  it('preserves an operator-set HOSTNAME instead of forcing loopback', async () => {
+    const fakeInstallRoot = join(tmpDir, 'node_modules', '@attalabs', 'vinaya')
+    const standaloneWebDir = join(fakeInstallRoot, 'studio-standalone', 'apps', 'vinaya', 'web')
+    mkdirSync(standaloneWebDir, { recursive: true })
+    writeFileSync(join(fakeInstallRoot, 'package.json'), JSON.stringify({ name: '@attalabs/vinaya' }))
+
+    const guestRepo = join(tmpDir, 'guest-repo')
+    mkdirSync(guestRepo, { recursive: true })
+
+    const hostnameProofFile = join(tmpDir, 'hostname-proof.txt')
+    writeFileSync(
+      join(standaloneWebDir, 'server.js'),
+      `require('fs').writeFileSync(${JSON.stringify(hostnameProofFile)}, process.env.HOSTNAME || '')\nprocess.exit(0)\n`
+    )
+
+    const fakeModuleUrl = pathToFileURL(join(fakeInstallRoot, 'dist', 'index.js')).href
+    const originalHostname = process.env.HOSTNAME
+    process.env.HOSTNAME = '0.0.0.0'
+    try {
+      const code = await runStudio(guestRepo, [], fakeModuleUrl)
+      expect(code).toBe(0)
+      expect(readFileSync(hostnameProofFile, 'utf-8')).toBe('0.0.0.0')
+    } finally {
+      if (originalHostname === undefined) {
+        delete process.env.HOSTNAME
+      } else {
+        process.env.HOSTNAME = originalHostname
+      }
+    }
   })
 })
