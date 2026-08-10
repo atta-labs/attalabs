@@ -594,8 +594,8 @@ export function buildInitOps(ctx: InitContext): Op[] {
  * folder) is cut — no shipped check consumed it. The `.vinaya/projects.md`
  * row is back, though, as a SEPARATE write (`lib/registry-write.ts`, called
  * from `runInitProduct` in `commands/init.ts`, not modeled as an `Op` here):
- * Vinaya Studio's tranche board started reading it (`vinaya-demo-hardening-v1`
- * task 1, #829) — a shipped consumer, distinct from a "check", which the
+ * Vinaya Studio's tranche board started reading it (#829) — a shipped
+ * consumer, distinct from a "check", which the
  * 2026-07-23 premise didn't anticipate.
  */
 export function buildInitProductOps(name: string): Op[] {
