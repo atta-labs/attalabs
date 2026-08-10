@@ -180,6 +180,12 @@ describe('vinaya quickstart', () => {
     expect(out).toContain('✓ Commit passed — the fix worked.')
     expect(git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads/vinaya/demo-break-*'])).toBe('')
 
+    // the working tree is previewed before the commit lands (review finding, PR
+    // #838) — status is captured BEFORE `git add -A` runs, so new files are
+    // still untracked (`??`), not staged (`A`).
+    expect(out).toContain('Working tree before commit')
+    expect(out).toContain('?? vinaya.config.json')
+
     // doctor ran.
     expect(out).toContain('vinaya doctor')
 
@@ -213,6 +219,10 @@ describe('vinaya quickstart', () => {
     expect(existsSync(join(root, 'vinaya.config.json'))).toBe(false)
     expect(existsSync(join(root, '.vinaya'))).toBe(false)
     expect(existsSync(join(root, PROJECTS_REGISTRY_PATH))).toBe(false)
+
+    // the working tree preview still fires even when there's nothing to show.
+    expect(out).toContain('Working tree before commit')
+    expect(out).toContain('(clean)')
 
     // the commit step is NOT gated by a prompt — it always runs — but since
     // nothing changed, it must no-op rather than create an empty commit.
@@ -276,6 +286,49 @@ describe('vinaya quickstart', () => {
     const docOwners = readFileSync(join(root, DOC_OWNERS_PATH), 'utf-8')
     expect(docOwners).toContain('apps/bar/src/**  apps/bar/specs/bar.md')
     expect(existsSync(join(root, PROJECTS_REGISTRY_PATH))).toBe(false)
+  }, 15_000)
+
+  it('rejects a project name or path containing whitespace/pipe/newline before calling `runInitProduct` (review finding, PR #838)', async () => {
+    // console.error goes to stderr, which captureStdout does not capture —
+    // absence of the registry file is the observable proof the guard fired
+    // and runInitProduct was never called, matching this file's own style
+    // for the other declined-step tests.
+    const { deps: depsBadName } = makeDeps(root, [
+      'y', // init
+      'n', // bind doc-owner — declined
+      'y', // register project
+      'bad name', // whitespace in name — invalid
+      '.',
+      'n', // demo break — declined
+      'n' // push — declined
+    ])
+    let rc = -1
+    await captureStdout(async () => {
+      rc = await runQuickstart([], depsBadName)
+    })
+    expect(rc).toBe(0)
+    expect(existsSync(join(root, PROJECTS_REGISTRY_PATH))).toBe(false)
+
+    const root2 = initFixture() // separate fixture for the second sub-case
+    try {
+      const { deps: depsBadPath } = makeDeps(root2, [
+        'y', // init
+        'n', // bind doc-owner — declined
+        'y', // register project
+        'demo',
+        'apps/foo|bar', // pipe in path — invalid
+        'n', // demo break — declined
+        'n' // push — declined
+      ])
+      let rc2 = -1
+      await captureStdout(async () => {
+        rc2 = await runQuickstart([], depsBadPath)
+      })
+      expect(rc2).toBe(0)
+      expect(existsSync(join(root2, PROJECTS_REGISTRY_PATH))).toBe(false)
+    } finally {
+      rmSync(root2, { recursive: true, force: true })
+    }
   }, 15_000)
 
   it('closeStdin() is called exactly once when `vinaya init` itself fails (no prompt was ever opened)', async () => {

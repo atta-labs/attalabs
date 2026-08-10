@@ -56,6 +56,12 @@ export type QuickstartDeps = {
 
 const GLOB_INJECTION_RE = /[\s\r\n]/
 const POINTER_INJECTION_RE = /[\r\n]/
+// Mirrors `commands/init.ts`'s own `validPathFlag`/`PRODUCT_NAME_RE` — quickstart
+// catches the same bad input a step earlier, before it ever reaches
+// `runInitProduct`, for the same reason the doc-owners glob/pointer are
+// pre-validated above rather than left entirely to the downstream writer.
+const NAME_INJECTION_RE = /[\s|\r\n]/
+const PATH_INJECTION_RE = /[|\r\n]/
 
 function readPackageVersion(): string {
   const pkg = JSON.parse(readFileSync(join(packageRoot(import.meta.url), 'package.json'), 'utf-8'))
@@ -97,6 +103,19 @@ function errorDetail(err: unknown): string {
   const stderr = (err as { stderr?: Buffer | string }).stderr
   if (stderr) return stderr.toString().trim()
   return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * `git status --short` of the FULL working tree, before anything is staged —
+ * printed ahead of the commit (review finding, PR #838): `quickstart` targets
+ * a bare/first-run repo, exactly the profile most likely to still carry an
+ * ungitignored secret file, and `git add -A` below stages everything with no
+ * per-file review. `vinaya init`'s own diff-and-confirm only covers Vinaya's
+ * generated artifacts, not the rest of the tree, so this is the one point in
+ * the flow that surfaces what else is about to be committed.
+ */
+function gitStatusShort(repoRoot: string): string {
+  return execGit(repoRoot, ['status', '--short'])
 }
 
 /** `git add -A` then commit, unless there is genuinely nothing staged — never gated by a prompt. */
@@ -166,11 +185,19 @@ export async function runQuickstart(_args: string[], deps: QuickstartDeps): Prom
       const path = rawPath || '.'
       if (!name) {
         process.stdout.write('No project name provided — skipping project registration.\n')
+      } else if (NAME_INJECTION_RE.test(name) || PATH_INJECTION_RE.test(path)) {
+        console.error(
+          'Error: project name must not contain whitespace or a pipe, and the path must not contain a pipe or a newline — skipping.'
+        )
       } else {
         const rc = await runInitProduct([name, '--path', path, '--yes'], deps.initDeps)
         if (rc !== 0) console.error(`\`vinaya init product\` exited with code ${rc}.`)
       }
     }
+
+    const status = gitStatusShort(repo.repoRoot)
+    process.stdout.write('\nWorking tree before commit (review before it lands — `git add -A` runs next):\n')
+    process.stdout.write(status ? `${status}\n` : '(clean)\n')
 
     process.stdout.write('\n→ Committing the install…\n')
     const commitResult = commitInstall(repo.repoRoot)
