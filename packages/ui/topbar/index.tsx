@@ -245,7 +245,7 @@ function SheetNavGroup({
 }) {
   return (
     <>
-      <div className='flex h-14 items-center gap-1.5 border-b border-border/30 text-sm text-muted-foreground'>
+      <div className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 text-sm text-muted-foreground'>
         {item.icon && <span className='size-4'>{item.icon}</span>}
         {item.label}
       </div>
@@ -259,7 +259,7 @@ function SheetNavGroup({
               active={isActive(groupItem.href, groupItem.exact)}
               href={groupItem.href}
               {...(groupItem.external ? { target: '_blank', rel: 'noreferrer' } : {})}
-              className='flex h-14 items-center gap-1.5 border-b border-border/30 pl-4 text-sm'
+              className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 pl-4 text-sm'
             />
           }
         >
@@ -387,7 +387,7 @@ function TopBarWithAuth({
               <Menu className='h-4 w-4' />
               <span className='sr-only'>Open menu</span>
             </SheetTrigger>
-            <SheetContent side='top' showCloseButton={false} className='flex flex-col p-0 data-[side=top]:h-dvh'>
+            <SheetContent side='top' showCloseButton={false} className='flex flex-col gap-0 p-0 data-[side=top]:h-dvh'>
               <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
                 {logo ? (
                   logo
@@ -404,7 +404,7 @@ function TopBarWithAuth({
                   <span className='sr-only'>Close menu</span>
                 </SheetClose>
               </div>
-              <nav className='flex flex-col px-6'>
+              <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
                 {visibleLinks.map((item) => {
                   if (isTopBarGroup(item)) {
                     return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
@@ -420,7 +420,7 @@ function TopBarWithAuth({
                           active={isActive(href, exact)}
                           href={href}
                           {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                          className='flex h-14 items-center border-b border-border/30 text-sm'
+                          className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
                         />
                       }
                     >
@@ -429,15 +429,15 @@ function TopBarWithAuth({
                   )
                 })}
                 {isSignedIn && extraActions && (
-                  <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
+                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
                 )}
                 {isSignedIn && (
-                  <div className='flex h-14 items-center border-b border-border/30'>
+                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
                     {accountMenu ?? <UserButton />}
                   </div>
                 )}
                 {!isSignedIn && (
-                  <div className='flex h-14 items-center border-b border-border/30'>
+                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
                     <SignInButton mode='modal'>
                       <Button variant='outline' className='gap-2 text-sm'>
                         <LogIn className='h-4 w-4' />
@@ -544,7 +544,11 @@ function TopBarNoAuth({
                 <Menu className='h-4 w-4' />
                 <span className='sr-only'>Open menu</span>
               </SheetTrigger>
-              <SheetContent side='top' showCloseButton={false} className='flex flex-col p-0 data-[side=top]:h-dvh'>
+              <SheetContent
+                side='top'
+                showCloseButton={false}
+                className='flex flex-col gap-0 p-0 data-[side=top]:h-dvh'
+              >
                 <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
                   {logo ? (
                     logo
@@ -561,7 +565,7 @@ function TopBarNoAuth({
                     <span className='sr-only'>Close menu</span>
                   </SheetClose>
                 </div>
-                <nav className='flex flex-col px-6'>
+                <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
                   {links.map((item) => {
                     if (isTopBarGroup(item)) {
                       return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
@@ -577,7 +581,7 @@ function TopBarNoAuth({
                             active={isActive(href, exact)}
                             href={href}
                             {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                            className='flex h-14 items-center border-b border-border/30 text-sm'
+                            className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
                           />
                         }
                       >
@@ -586,7 +590,7 @@ function TopBarNoAuth({
                     )
                   })}
                   {extraActions && (
-                    <div className='flex h-14 items-center border-b border-border/30'>{extraActions}</div>
+                    <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
                   )}
                 </nav>
               </SheetContent>
