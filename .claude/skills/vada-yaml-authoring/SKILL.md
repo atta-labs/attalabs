@@ -180,7 +180,7 @@ rounds:
 
 This is `brokered-synth`; `compileFlow` emits node ids `reviewer-{name}` + `brokered-synthesis`.
 
-**Critical**: the synthesis template must use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` to receive the reviewer responses. The old v1 YAML referenced `{{reviewerResponses}}` — the engine never populated that variable, and the synthesizer ran blind in production. The PR #47 migration fixed this; do not reintroduce the broken pattern.
+**Critical**: the synthesis template must use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` to receive the reviewer responses. The old v1 YAML referenced `{{reviewerResponses}}` — the engine never populated that variable, and the synthesizer ran blind in production. The generic flow refactor's migration fixed this; do not reintroduce the broken pattern.
 
 ---
 
@@ -311,7 +311,7 @@ New YAMLs are **auto-discovered**. The engine's `listPublicSpecs()` uses `readdi
 
 **Deployment coupling.** `listPublicSpecs()`/`loadYamlFromCatalog` read this directory from disk at runtime with `readdirSync`. Vercel's tracer cannot detect a dynamically-joined path, so `apps/vada-ai/web/next.config.ts`'s `outputFileTracingIncludes` must separately name the catalog directory. Moving or renaming `packages/agents/vada-deliberation/yamls/` without updating that entry breaks every catalog-backed route (`/teams`, `/teams/[slug]`, `/deliberate`, `/deliberation/[id]`, `api/deliberation/start`, `api/deliberation/[id]/workflow/run`) in production only — the build stays green and local dev is unaffected, since the local filesystem always has the real files.
 
-To hide a spec from the public `/teams` catalog (while keeping it in the catalog for benchmarks), set `experimental: true` at the top level. The 7 experimental YAMLs use this today (PR #31 unpublished Crucible, Sparring, War Room).
+To hide a spec from the public `/teams` catalog (while keeping it in the catalog for benchmarks), set `experimental: true` at the top level. The 7 experimental YAMLs use this today (unpublished — Crucible, Sparring, War Room).
 
 To make a spec addressable by a short alias from `vada__deliberate`, add it to the `ALIASES` map in `spec-registry.ts`:
 
@@ -354,7 +354,7 @@ Run with: `ANTHROPIC_API_KEY=sk-... bun run scripts/verify-my-spec.ts`
 
 Valid terminal states: `CLEAN`, `REVISED`, `MAX_REVISIONS` — all three are success.
 
-Note the API surface: `loadFlow` and `compileFlow` replaced the v1 `loadSpec` / `compileSpec` in PR #47. The old names no longer exist in `@atta/engine`.
+Note the API surface: `loadFlow` and `compileFlow` replaced the v1 `loadSpec` / `compileSpec` in the generic flow refactor. The old names no longer exist in `@atta/engine`.
 
 ---
 
@@ -437,7 +437,7 @@ Only omit `classifier` entirely for agents with no tools declared. For agents wi
 
 - ❌ Using `schema_version: "1.0"` — v1 is gone. The engine accepts `schema_version: "2.0"` only.
 - ❌ Using v1 keys (`flow.rounds`, `flow.synthesis`, `flow.audit`, top-level `reviewers`, `response`) — the engine no longer parses them. Use `rounds[]` with one entry per phase.
-- ❌ Importing `loadSpec` or `compileSpec` from `@atta/engine` — those exports were deleted in PR #47. Use `loadFlow` / `compileFlow`.
+- ❌ Importing `loadSpec` or `compileSpec` from `@atta/engine` — those exports were deleted in the generic flow refactor. Use `loadFlow` / `compileFlow`.
 - ❌ Referencing `{{reviewerResponses}}` in a synthesis template — that variable was never populated. Use `{{#each allPreviousOutputs}}[{{this.agentName}}] {{this.content}}{{/each}}` instead.
 - ❌ Setting `signal.type: 'equals'` or `'matches'` — v2 ships with `contains` only. The engine throws explicitly on others. The schema reserves them for future extensibility, but compileFlow currently rejects them.
 - ❌ Defining team logic in TypeScript — it belongs in YAML (`@vada/teams` was deleted long before the generic flow refactor).

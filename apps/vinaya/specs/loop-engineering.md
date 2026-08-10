@@ -4,7 +4,7 @@
 
 Proposal / design capture — nothing here is decided. This doc preserves the thinking from the 2026-07-19 session so it survives to a future planning pass. It is not a spec to build against until a Type-1 decision ratifies the model.
 
-**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it rests on, and how it graduates safely. Companion to the `iteration → tranche` rename, which was this doc's one prerequisite and has since landed (#669) — see below.
+**Scope:** how "loop engineering" scales AEG + Vinaya — where the loop lives, what it does, the vocabulary it rests on, and how it graduates safely. Companion to the `iteration → tranche` rename, which was this doc's one prerequisite and has since landed — see below.
 
 ---
 
@@ -59,7 +59,7 @@ The hard part of loop engineering — "when does a pass stop?" — is already so
 
 ## Vocabulary the loop forces (the rename: done)
 
-Adding loops made the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would otherwise both claim the word "iteration". That rename has landed (#669): the batch of tasks is a `tranche` throughout the code and the doctrine, and `iteration` is free for the sense below. The forge labels were renamed from `vinaya/iteration:*` to `vinaya/tranche:*` as a separate act after that work merged, and the reading seam that spanned the window while the forge caught up has since been retired (#671) — matching is canonical-only again. The three-way split this table describes is the vocabulary the loop work now builds on, not a precondition it is waiting for:
+Adding loops made the `iteration → tranche` rename **mandatory**, because a loop genuinely iterates — two objects would otherwise both claim the word "iteration". That rename has landed: the batch of tasks is a `tranche` throughout the code and the doctrine, and `iteration` is free for the sense below. The forge labels were renamed from `vinaya/iteration:*` to `vinaya/tranche:*` as a separate act after that work merged, and the reading seam that spanned the window while the forge caught up has since been retired — matching is canonical-only again. The three-way split this table describes is the vocabulary the loop work now builds on, not a precondition it is waiting for:
 
 | Concept | Name | Note |
 |---------|------|------|
@@ -91,4 +91,4 @@ You plan the cut, press start, supervise, approve the few human moments.
 
 ---
 
-*Captured 2026-07-19. Prerequisite: the `iteration → tranche` rename — landed (Issue #669).*
+*Captured 2026-07-19. Prerequisite: the `iteration → tranche` rename — landed.*

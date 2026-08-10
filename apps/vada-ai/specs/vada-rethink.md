@@ -2,7 +2,7 @@
 
 **Status:** draft · positioning / research backlog (out of the AEG flow; not a ratified spec)
 **Date:** June 28, 2026
-**Context:** Captured mid-way through `vada-production-v1` while finishing the deliberate page work (PR #207). Nothing here blocks #207 — these decisions ride on top, post-merge.
+**Context:** Captured mid-way through `vada-production-v1` while finishing the deliberate page work. Nothing here blocks that work — these decisions ride on top, post-merge.
 
 ---
 
@@ -10,7 +10,7 @@
 
 On June 28, mid-way through the `vada-production-v1` deliberate-page work, the Principal surfaced that Vāda's named "Council" team doesn't match what it does, which opened a full reconsideration of Vāda's positioning, team taxonomy, model sources, and competitive landscape. This doc captures that thinking before it's lost.
 
-It is a positioning/research backlog, not a task backlog. Nothing here blocks #207 — #207 ships the deliberate view + four working teams; these decisions ride on top, post-merge.
+It is a positioning/research backlog, not a task backlog. Nothing here blocks the deliberate-page work — that work ships the deliberate view + four working teams; these decisions ride on top, post-merge.
 
 ---
 

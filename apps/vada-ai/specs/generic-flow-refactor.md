@@ -224,14 +224,14 @@ For the full YAML examples by shape, see `apps/vada-ai/specs/yaml-schema-referen
 
 ## Cross-stack changes (status)
 
-### Schema + types — SHIPPED (PR #41)
+### Schema + types — SHIPPED
 
 - New TypeScript types in `packages/engine/src/flow-types.ts`: `Flow`, `Round`, `AgentInRound`, `OnFailureSpec`. Shipped.
 - Deleted: `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow`, the `Workflow` union, `Team`. All deleted in PR #47.
 - New: `validateFlow(flow)` replaces the per-workflow validators. Shipped in PR #41.
 - 10 validation rules — all shipped and tested.
 
-### Engine compiler — SHIPPED (PR #47, with shape-detection pragmatic weakening)
+### Engine compiler — SHIPPED (with shape-detection pragmatic weakening)
 
 - One function: `compileFlow(flow, question, model?, customVars?) → Plan`. Shipped.
 - Replaces: `compileBrokered`, `compileRounds`, `compileSolo`, `compileCustom`. All deleted in PR #47.
@@ -245,7 +245,7 @@ For the full YAML examples by shape, see `apps/vada-ai/specs/yaml-schema-referen
 - `vada__deliberate` input shape unchanged.
 - The `agent_config` rename is PR 3 work.
 
-### Web route handler — PARTIALLY SHIPPED (PR #47)
+### Web route handler — PARTIALLY SHIPPED
 
 - Reads new schema via `loadFromCatalog` (delegates to `loadFlow`). Shipped.
 - Same `agentVendorOverrides` construction as today (the vendor registry stays). Shipped.
@@ -277,11 +277,11 @@ The universal round-based YAML schema and its cleanup follow-up are both Vāda-i
 
 Working branches: `feat/generic-flow-refactor-pr1` (PR #41), `feat/generic-flow-refactor-pr2` (PR #47), `chore/d033-signal-and-revision-cleanup` (PR #48).
 
-### PR 1 — Schema + types + validation — SHIPPED (PR #41, May 12)
+### PR 1 — Schema + types + validation — SHIPPED (May 12)
 
 Landed as designed. New types, new `validateFlow`, 30 unit tests. Build stayed green. The old engine surface continued to work. Stub for `compileFlow` was not required — PR 2 followed immediately.
 
-### PR 2 — `compileFlow` + YAML migration — SHIPPED (PR #47, May 13)
+### PR 2 — `compileFlow` + YAML migration — SHIPPED (May 13)
 
 Landed with broader scope than originally planned: also included full deletion of v1 engine surface, atomic migration of 29 consumer files, `flow-helpers.ts` extraction, and the `{{reviewerResponses}}` → `{{#each allPreviousOutputs}}` bug fix. Principal rejected the proposed `compileSpec = compileFlow`-with-aliasing backwards-compat shim in favour of full migration. Result: 60 files touched, +477/-2637 lines. Build green; all tests pass.
 
@@ -296,7 +296,7 @@ Not yet started. The original brief is captured here for the eventual implemente
 
 Not yet started. Captures the dependency on PR 3 emitting the new events.
 
-### Cleanup PR — SHIPPED (PR #48, May 13)
+### Cleanup PR — SHIPPED (May 13)
 
 Not in the original plan; emerged during PR #47 review.
 - `buildRevisionCondition` throws explicitly on unsupported signal types

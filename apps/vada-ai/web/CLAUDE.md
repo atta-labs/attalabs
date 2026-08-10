@@ -169,7 +169,7 @@ Specs live at the product level (`apps/vada-ai/specs/`), not the surface level.
 | Current state | [../specs/vada-state.md](../specs/vada-state.md) | Project status and milestones |
 | Decisions log | [../docs/vada-decisions-legacy.md](../docs/vada-decisions-legacy.md) | Architectural decision rationale |
 | Science of deliberation | [../specs/vada-science-of-deliberation.md](../specs/vada-science-of-deliberation.md) | Deliberation theory |
-| Brokered deliberation | [../specs/brokered-deliberation/](../specs/brokered-deliberation/) | `vada__consult` MCP tool spec (00–06) |
+| Brokered deliberation | [../specs/vada-teams-catalog/](../specs/vada-teams-catalog/) | `vada__consult` MCP tool spec (00–06) |
 | Engine design decisions | [../specs/engine/design-decisions.md](../specs/engine/design-decisions.md) | Architectural decisions with rationale |
 | Flow configurations | [../specs/engine/flow-configurations.md](../specs/engine/flow-configurations.md) | RoundsWorkflow variants reference |
 | YAML schema reference | [../specs/yaml-schema-reference.md](../specs/yaml-schema-reference.md) | Complete YAML spec schema — fields, templates, modes |

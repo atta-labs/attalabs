@@ -1250,7 +1250,7 @@ The five-way comparison among A1, VR-NS, VR-S-same, VR-S-cross, and MW is what w
 
 This conditions list does not include a separate VR-CLI condition because CLI mode is not in v1. v1.5 will add CLI conditions once the cognitive design is validated by the v1 conditions.
 
-The repeatable benchmark harness (T9, Issue #184) runs these six plus two conditions added after this section was written — FUSION-default and FUSION-native — against identical per-question input. See §6a for the full eight-condition input/artifact protocol.
+The repeatable benchmark harness runs these six plus two conditions added after this section was written — FUSION-default and FUSION-native — against identical per-question input. See §6a for the full eight-condition input/artifact protocol.
 
 ### 5.3 Judging method
 
@@ -1344,9 +1344,9 @@ The v2 bucket is for cognitive enhancements with less certain payoff. Each is te
 
 ## 6a. Comparison protocol — pinned before any benchmark run
 
-This section is the harness contract: for each condition, the exact common input, the artifact a judge (T10) evaluates, and any per-condition invocation parameters. Pinned by `vada-production-v1` T9 (Issue #184) before the first dry run. Implemented by `apps/vada-ai/web/scripts/run-benchmark.ts`.
+This section is the harness contract: for each condition, the exact common input, the artifact a judge evaluates, and any per-condition invocation parameters. Pinned before the first dry run. Implemented by `apps/vada-ai/web/scripts/run-benchmark.ts`.
 
-§5.2 locked six conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW). Two more were added to the harness matrix after §5.2 was written, once `vada-fusion` (A2 external benchmark, Issue #179) and `vada-fusion-native` (Outside Read engine, Issue #180) existed: **FUSION-default** and **FUSION-native**. All eight run against identical per-question input.
+§5.2 locked six conditions (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW). Two more were added to the harness matrix after §5.2 was written, once `vada-fusion` (A2 external benchmark) and `vada-fusion-native` (Outside Read engine) existed: **FUSION-default** and **FUSION-native**. All eight run against identical per-question input.
 
 ### Common input contract
 
@@ -1406,7 +1406,7 @@ The rev 2 compromise: still no enforced schema on reviewers in v1 (to preserve f
 
 ~~Reviewers in v1 API mode have no tool access (no web search, no filesystem, no code execution). This is a known fidelity gap.~~
 
-**Resolved (T3a + T3a follow-up, 2026-06-24):** `web_search` has been added to the Gemini, GPT, and Grok reviewer agents in both teams — `vada-reviewers.yaml` (T3a, PR #205) and `vada-reviewers-synthesis.yaml` (T3a follow-up). The Synthesizer agent (Claude/Anthropic) deliberately has no tools — it operates on reviewer transcripts only. Remaining fidelity gap: product harness system prompts and conversation memory (no change from before).
+**Resolved (T3a + T3a follow-up, 2026-06-24):** `web_search` has been added to the Gemini, GPT, and Grok reviewer agents in both teams — `vada-reviewers.yaml` (T3a) and `vada-reviewers-synthesis.yaml` (T3a follow-up). The Synthesizer agent (Claude/Anthropic) deliberately has no tools — it operates on reviewer transcripts only. Remaining fidelity gap: product harness system prompts and conversation memory (no change from before).
 
 ~~**Still open:** even in API mode, providers like Anthropic and OpenAI now support tool use via API. We could selectively grant web search to reviewers when the brief asks them to verify external claims. The cost is added latency and complexity; the benefit is closing part of the fidelity gap without committing to CLI mode.~~
 
@@ -1470,7 +1470,7 @@ To avoid ambiguity for implementers, here is what is decided in rev 4 versus wha
 - Dani reviews brief-authoring documentation before benchmark runs (rev 3)
 - **CLI mode subprocess discipline (v1.5) has four mandatory mitigations** (mktemp -d, redirect-to-file, trap cleanup, wait per PID) — all required, not optional (rev 4, §3.5)
 - Engine constraints: dynamic agent instances, per-vendor binding, conditional sequential node, failure surfacing, API-only execution path
-- **Battlefield-map phantom-consensus guard (`vada-fusion-native`, Outside Read team; vada-production-v1 T8, Issue #183).** Analogue of the VR synthesizer's phantom-consensus detection above (§4.1.2): the `BattlefieldSynthesizer` must not manufacture agreement where the four-vector attack panel actually diverged. Prompt-level invariant, enforced in the `BattlefieldSynthesizer` system prompt in `vada-fusion-native.yaml` (not in the output schema — the schema is locked, this is a prompt-only guard): if `irreducible_conflict` is non-empty, `core_agreement` must be strictly weaker than the single strongest claim made by any one panelist. Concretely: two panelists reaching the same surface conclusion through incompatible reasoning (e.g., one via a hidden-assumption argument, another via a base-rate argument that contradicts the first reviewer's premise) is phantom consensus, not real consensus — the synthesizer must route the underlying disagreement into `irreducible_conflict` rather than folding it into a confident `core_agreement`. `BlindCritic`'s audit prompt independently checks this same invariant (does `core_agreement` match or exceed a single panelist's own strongest claim?) as a second, blind pass before the map reaches the caller.
+- **Battlefield-map phantom-consensus guard (`vada-fusion-native`, Outside Read team; vada-production-v1 T8).** Analogue of the VR synthesizer's phantom-consensus detection above (§4.1.2): the `BattlefieldSynthesizer` must not manufacture agreement where the four-vector attack panel actually diverged. Prompt-level invariant, enforced in the `BattlefieldSynthesizer` system prompt in `vada-fusion-native.yaml` (not in the output schema — the schema is locked, this is a prompt-only guard): if `irreducible_conflict` is non-empty, `core_agreement` must be strictly weaker than the single strongest claim made by any one panelist. Concretely: two panelists reaching the same surface conclusion through incompatible reasoning (e.g., one via a hidden-assumption argument, another via a base-rate argument that contradicts the first reviewer's premise) is phantom consensus, not real consensus — the synthesizer must route the underlying disagreement into `irreducible_conflict` rather than folding it into a confident `core_agreement`. `BlindCritic`'s audit prompt independently checks this same invariant (does `core_agreement` match or exceed a single panelist's own strongest claim?) as a second, blind pass before the map reaches the caller.
 
 **Deferred (open questions to be resolved during v1 implementation, by benchmark, or by future reviewers):**
 

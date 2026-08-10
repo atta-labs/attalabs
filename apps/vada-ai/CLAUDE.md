@@ -43,7 +43,7 @@ Agent display metadata (`VadaAgentVisual` type + per-agent configs) lives in `we
 
 ### Vāda Teams Catalog (`specs/vada-teams-catalog/`)
 
-`vada__consult` MCP tool — full spec in read order (00 → 05).
+`vada__consult` MCP tool — full spec in read order (00 → 06).
 
 | Spec | Purpose |
 |------|---------|
@@ -53,6 +53,7 @@ Agent display metadata (`VadaAgentVisual` type + per-agent configs) lives in `we
 | [03-reviewer-personas.md](specs/vada-teams-catalog/03-reviewer-personas.md) | System prompts for each persona, output formats |
 | [04-caller-claude-protocol.md](specs/vada-teams-catalog/04-caller-claude-protocol.md) | How Caller Claude uses Vāda, when to invoke |
 | [05-orchestration-rules.md](specs/vada-teams-catalog/05-orchestration-rules.md) | When to escalate, when to add rounds |
+| [06-outside-read.md](specs/vada-teams-catalog/06-outside-read.md) | Outside Read team design |
 
 ### Engine (`specs/engine/`)
 

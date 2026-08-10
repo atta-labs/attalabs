@@ -22,7 +22,7 @@ Vāda's MCP server exists as two distinct surfaces that share the same tool surf
    - BYOK: provider keys envelope-encrypted at rest (AES-256-GCM, env-var master key), decrypted per-request
    - Sessions log to Vāda's production DB
    - Used for: AI assistants (Claude.ai, Cursor, etc.), clients that can't run local processes
-   - Status: shipped May 4, 2026 (PRs #9 + #10). Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
+   - Status: shipped May 4, 2026. Phases 1-4 of the original implementation plan are complete. Phase 5 (session URL fix) and Phase 6 (hardening: rate limiting, audit log) remain as future work.
 
 ---
 
@@ -75,7 +75,7 @@ Key behaviors:
 
 Agent definitions live in the YAML spec loaded via `lookupSpec` (auto-discovered from `packages/agents/vada-deliberation/yamls/`).
 
-**Per-reviewer model overrides (`reviewer_config`, May 11, PR #31).** Optional `reviewer_config: Record<agentName, modelId>` parameter overrides the per-agent YAML default model on a per-call basis. Used primarily for configurable teams like Vāda Reviewers and Vāda Reviewers + Synthesis where each slot is independently vendor-bound. Example: `reviewer_config: { "Gemini": "gemini-2.5-pro", "GPT": "gpt-4o" }`. Validated against the vendor registry (`packages/models/src/vendors.ts`):
+**Per-reviewer model overrides (`reviewer_config`, added May 11).** Optional `reviewer_config: Record<agentName, modelId>` parameter overrides the per-agent YAML default model on a per-call basis. Used primarily for configurable teams like Vāda Reviewers and Vāda Reviewers + Synthesis where each slot is independently vendor-bound. Example: `reviewer_config: { "Gemini": "gemini-2.5-pro", "GPT": "gpt-4o" }`. Validated against the vendor registry (`packages/models/src/vendors.ts`):
 
 - Each `[agentName, modelId]` is resolved via `findModelEntryByModelId(catalog, modelId)` (catalog-aware) or `resolveVendorByPrefix(modelId)` (fallback)
 - Refused with structured `local_only_vendor` error if the resolved vendor has `localOnly: true` (e.g., `ollama`) — hosted MCP is production by definition
@@ -90,7 +90,7 @@ Caller provides a question and a team name. The server looks up the named YAML s
 
 `deliberate.ts` calls `lookupSpec(teamName)` from `spec-registry.ts`, then `compileFlow(flow, question, model)`.
 
-The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (PR #31, May 11). The remaining experimental specs are still reachable via `vada__consult`'s explicit `spec_id` — see Spec Registry below for the full list and why they're held back.
+The `team` enum is pruned to the currently published specs only: `vada-reviewers`, `vada-reviewers-synthesis` (as of May 11). The remaining experimental specs are still reachable via `vada__consult`'s explicit `spec_id` — see Spec Registry below for the full list and why they're held back.
 
 ---
 
@@ -115,7 +115,7 @@ const specs = listPublicSpecs()          // Returns: vada-reviewers, vada-review
 
 `validateAllSpecs()` runs at startup. A malformed YAML causes a startup crash — preferable to a runtime error mid-session.
 
-Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewers`, `vada-reviewers-synthesis`), **7 experimental** (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`). Crucible, Sparring, and War Room were marked `experimental: true` in PR #31 — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. All experimental specs remain accessible by explicit `spec_id` via `vada__consult` but are filtered from the public `/teams` page and from the `vada__deliberate` enum.
+Current catalog (May 11, 2026): 9 YAMLs total — **2 published** (`vada-reviewers`, `vada-reviewers-synthesis`), **7 experimental** (`crucible`, `sparring`, `war-room`, `a0-baseline`, `a1-baseline`, `brokered-trio`, `brokered-quartet`). Crucible, Sparring, and War Room were marked `experimental: true` — flow design, system prompts, and inter-agent interactions all need iteration before they should be re-exposed publicly. All experimental specs remain accessible by explicit `spec_id` via `vada__consult` but are filtered from the public `/teams` page and from the `vada__deliberate` enum.
 
 `brokered-trio` and `brokered-quartet` have no short-name alias — they are accessible by full id but not exposed as named options in `vada__deliberate`.
 
@@ -200,6 +200,6 @@ Brief summary only. Full architecture detail lives in `apps/vada-ai/specs/mcp-ar
 - No env vars (auth via API key)
 - No local process (HTTP transport)
 - Keys server-managed (vs env var — different trust model)
-- Tool surface identical, including `reviewer_config` parameter on `vada__consult` (May 11, PR #31)
+- Tool surface identical, including `reviewer_config` parameter on `vada__consult` (added May 11)
 
 **For full architecture detail:** `apps/vada-ai/specs/mcp-architecture.md`

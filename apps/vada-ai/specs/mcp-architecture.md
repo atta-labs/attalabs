@@ -2,7 +2,7 @@
 
 Status: ratified
 
-**Status:** Shipped (May 4, 2026 — PRs #9 + #10). Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log retention, hardening) remain as future work.
+**Status:** Shipped (May 4, 2026). Phase 5 (stdio session URL fix) and Phase 6 (rate limiting, audit log retention, hardening) remain as future work.
 **Owner:** Vāda
 **Last updated:** May 8, 2026
 
@@ -253,17 +253,17 @@ The hosted server is the path for users who:
 - Streamable HTTP transport (POST + SSE)
 - Request parsing and JSON-RPC dispatch
 
-**Phase 2 — Authentication** ✅ Complete (PR #10, May 4, 2026)
+**Phase 2 — Authentication** ✅ Complete (May 4, 2026)
 - `api_keys` DB table (key hash, user ID, label, revoked flag, timestamps)
 - Key generation UI in Settings → API Keys
 - Bearer token validation via `verifyApiKeyBearer` in `packages/auth/src/api-key-auth.ts`
 
-**Phase 3 — Provider key storage** ✅ Complete (PR #10, May 4, 2026)
+**Phase 3 — Provider key storage** ✅ Complete (May 4, 2026)
 - `user_provider_keys` DB table
 - Envelope encryption via `MASTER_ENCRYPTION_KEY` env var; KMS migration deferred to V2 (`kms_key_id` field reserved)
 - Key save/update/delete UI in Settings → API Keys
 
-**Phase 4 — Tool execution** ✅ Complete (PR #10, May 4, 2026)
+**Phase 4 — Tool execution** ✅ Complete (May 4, 2026)
 - Wire `vada__consult` and `vada__deliberate` to the hosted handler
 - Decryption → provider SDK instantiation → tool execution
 - Session logging to existing `sessions` table

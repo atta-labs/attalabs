@@ -9,7 +9,7 @@ description: Atta engine internals — Flow → Plan compilation via compileFlow
 
 `@atta/engine` is a **pure library**. It takes a `Flow` (loaded from a v2 YAML file) and compiles it into a Plan: a declarative JSON-serializable execution DAG. Zero runtime dependencies (no LangGraph, no Anthropic SDK, no fetch, no LangChain — see "Rules" below). The engine compiles; the adapter executes. These responsibilities never cross.
 
-The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in PR #47 (the generic flow refactor's second PR, May 12-13, 2026).
+The authoring interface is: YAML file → `loadFlow()` → `Flow` → `compileFlow()` → `Plan`. Direct TypeScript Team / Workflow construction is gone; the `Team` type and `Workflow` union were deleted in the generic flow refactor's second PR (May 12-13, 2026).
 
 The engine powers Vāda today and will power Vitakka and Atta-the-product when those are built. It is part of AttaLabs infrastructure, sitting under `packages/engine`. See root `CLAUDE.md`'s naming bullets for the v2 brand framing (AttaLabs as the dev/lab ecosystem; Atta as one product within it).
 
@@ -32,7 +32,7 @@ Plan (JSON DAG)
 [handed to adapter]
 ```
 
-File tree (post-PR #47, May 13, 2026):
+File tree (post generic flow refactor, May 13, 2026):
 
 ```
 packages/engine/src/
@@ -52,7 +52,7 @@ packages/engine/src/
 └── index.ts                  # Public exports
 ```
 
-Deleted in PR #47 (do not reintroduce): `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `validate.ts`, `compile.ts`, the entire `compilers/` directory (`spec.ts`, `solo.ts`, `rounds.ts`, `custom.ts`, `brokered.ts`).
+Deleted in the generic flow refactor (do not reintroduce): `spec-types.ts`, `spec-schema.ts`, `spec-loader.ts`, `validate.ts`, `compile.ts`, the entire `compilers/` directory (`spec.ts`, `solo.ts`, `rounds.ts`, `custom.ts`, `brokered.ts`).
 
 ---
 
@@ -106,7 +106,7 @@ import type {
 | `Plan` family | Compiled output types (consumed by adapter) |
 | `Agent` | Re-exported from `@atta/agents`; the engine never owns Agent types |
 
-The old `loadSpec`, `compileSpec`, `specToTeam`, `DeliberationSpec`, `SpecAgent`, `FlowSpec`, `ReviewerSpec`, `Team`, `Workflow`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow` exports are **gone**. No backwards-compat shim. PR #47 migrated all 29 consumer files to the new surface atomically.
+The old `loadSpec`, `compileSpec`, `specToTeam`, `DeliberationSpec`, `SpecAgent`, `FlowSpec`, `ReviewerSpec`, `Team`, `Workflow`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow` exports are **gone**. No backwards-compat shim. The generic flow refactor migrated all 29 consumer files to the new surface atomically.
 
 ---
 
@@ -163,7 +163,7 @@ interface OnFailureSpec {
 }
 ```
 
-The schema accepts all three `signal.type` values for forward extensibility. The engine emits Plans only for `contains` — `compileFlow.buildRevisionCondition` throws explicitly on `equals` and `matches` (cleanup, PR #48). Schema reserves the types; compiler refuses them.
+The schema accepts all three `signal.type` values for forward extensibility. The engine emits Plans only for `contains` — `compileFlow.buildRevisionCondition` throws explicitly on `equals` and `matches` — a later cleanup restricting the schema's forward-extensibility placeholder. Schema reserves the types; compiler refuses them.
 
 **RevisionCondition** (single-variant interface)
 ```ts
@@ -174,7 +174,7 @@ interface RevisionCondition {
 }
 ```
 
-The v1 union variants (`json-field-equals`, `json-field-truthy`) and their `getJsonField` adapter helpers were deleted in PR #48 — they were unreachable from any catalog YAML.
+The v1 union variants (`json-field-equals`, `json-field-truthy`) and their `getJsonField` adapter helpers were deleted — they were unreachable from any catalog YAML.
 
 **Plan** — compiled output. Pure JSON, JSON-serializable. Consumed by adapter.
 ```ts
@@ -346,7 +346,7 @@ The runtime executes auditors in parallel by virtue of how `compileFlow` wires t
 
 ## Adding YAML specs is the workflow now
 
-PR #47 (the generic flow refactor's second PR) removed the option of adding a new compiler. There is no `compilers/` directory anymore — `compileFlow` is the only entrypoint. New deliberation patterns are expressed as YAML.
+The generic flow refactor's second PR removed the option of adding a new compiler. There is no `compilers/` directory anymore — `compileFlow` is the only entrypoint. New deliberation patterns are expressed as YAML.
 
 For most additions:
 
@@ -373,7 +373,7 @@ This is engine internals — the YAML author never touches it.
 - ❌ Content injection (prompts, examples) into compiled Plans
 - ❌ `Agent.tools` as boolean — use `string[]` always, `[]` for explicit none
 - ❌ Renaming node IDs without grepping adapter + mcp-server + `flow-helpers.ts` for dependencies
-- ❌ Importing `loadSpec` / `compileSpec` / `specToTeam` / `Team` / `Workflow` from `@atta/engine` — those exports were deleted in PR #47
+- ❌ Importing `loadSpec` / `compileSpec` / `specToTeam` / `Team` / `Workflow` from `@atta/engine` — those exports were deleted in the generic flow refactor
 - ❌ Reintroducing per-shape compilers (`compilers/solo.ts`, etc.) — the generic flow refactor collapsed them deliberately
 - ❌ Treating `MAX_REVISIONS` as a failure — it's a valid terminal state
 - ❌ Adding new terminal states without Principal approval (contract with adapter + mcp-server)

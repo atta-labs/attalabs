@@ -14,7 +14,7 @@ Migrated from the retired global `roadmap.md` (June 3, 2026; roadmap retired whe
 
 These are judgment/iteration loops, not clean "agent → PR" tasks. They belong here, not in an execution iteration.
 
-- **Reviewer system-prompt iteration (B-3b).** Run `vada__consult` with `spec_id: "vada-reviewers"`, read the 3 reviewer responses, judge behavior, tweak, re-run. Starting prompt: rev 5 spec §4.1.1. Unblocked (PR #31, PR #65).
+- **Reviewer system-prompt iteration (B-3b).** Run `vada__consult` with `spec_id: "vada-reviewers"`, read the 3 reviewer responses, judge behavior, tweak, re-run. Starting prompt: rev 5 spec §4.1.1. Unblocked.
 - **Synthesizer system-prompt iteration (B-3c).** Same shape; starting prompt rev 5 spec §4.1.2.
 - **First benchmark run (B-4).** Six conditions per test case (A0, A1, VR-NS, VR-S-same, VR-S-cross, MW-where-available). Manual judging by Claude in fresh context, Dani final arbiter. Per-question-type breakdown required.
 - **Iterate or ship (B-5).** Decide recommended synthesis mode from data, not philosophy.

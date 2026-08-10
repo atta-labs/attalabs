@@ -4,7 +4,7 @@
 
 **Out of the AEG flow.** Held / future / research items for Vinaya. Reference the Planner reads when choosing the next tranche slice; the flow never operates on it.
 
-This file was first created (#381), per the brief's §2 correction (`vinaya-spec.md` already existed at dig time; this backlog file did not).
+This file was first created per the brief's §2 correction (`vinaya-spec.md` already existed at dig time; this backlog file did not).
 
 ---
 
