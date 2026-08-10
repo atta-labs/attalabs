@@ -598,6 +598,17 @@ look). Lives at
 `{basic,retro}/components/chrome/chrome-frame.tsx`; `ChromeFrameProps` /
 `ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
 
+**retro's `topbar` variant overrides its own Card to `overflow-visible`**
+(vinaya-topbar-v1 task 4, #816). retro's `installed/card.tsx` hardcodes
+`overflow-hidden` (for image-corner clipping); the `topbar` variant's Card
+merges `overflow-visible` on top (later class wins under `cn`/tailwind-merge)
+because `@atta/ui/topbar`'s `NavigationMenu` dropdown positions its panel
+`absolute top-full` — below the bar, outside the Card's own box — and
+`overflow-hidden` clipped it to nothing before it could ever paint (only the
+trigger's rounded corner showed). Scoped to `topbar` alone: `rail`/`panel`/`bar`
+keep `overflow-hidden`/`overflow-y-auto` unchanged, since none of them hosts
+a dropdown that needs to escape its frame.
+
 **Why it exists — the float must not be uniform.** The consumer (the shared
 `@atta/ui/topbar`, and the Vinaya `/docs/reference`, `/docs/cli` rails + the `/docs/harness`
 panel) supplies only the *shared inner layout* via `className` (the topbar's
