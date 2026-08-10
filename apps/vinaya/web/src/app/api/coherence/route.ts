@@ -62,10 +62,8 @@ export type CoherenceResponse = {
 }
 
 export async function GET(): Promise<NextResponse<CoherenceResponse>> {
-  let aegRoot: string
-  try {
-    aegRoot = findAegRoot()
-  } catch {
+  const aegRoot = findAegRoot()
+  if (aegRoot === null) {
     return NextResponse.json({
       summary: { passed: 0, failed: 0, info: 0 },
       forgeUnavailable: true,
