@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { SignInButton, UserButton, useUser } from '@atta/auth'
 import { LogIn, Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
@@ -129,6 +130,31 @@ function buildDefaultLogo(logoUrl: string | null | undefined, logoText: string, 
     )
   }
   return <span className='font-sans text-lg tracking-tight'>{logoText}</span>
+}
+
+/**
+ * The mobile hamburger sheet's `lg:hidden` trigger button only hides the
+ * BUTTON below `lg` — it says nothing about an ALREADY-OPEN sheet. Radix's
+ * `Dialog`/`Sheet` open state is plain React state, not CSS, so opening the
+ * sheet at a narrow width and then widening the browser back past `lg` left
+ * it stuck open, full-screen, on top of the (now-available) desktop nav — a
+ * real bug found live, not a hypothetical. Lifting the sheet to controlled
+ * state and watching `(min-width: 1024px)` closes it the instant the
+ * viewport crosses back into desktop range, matching `lg`'s own breakpoint
+ * value (Tailwind's default, unchanged here) so the two can never disagree.
+ */
+function useAutoCloseMobileSheet() {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)')
+    const closeIfDesktop = (e: MediaQueryList | MediaQueryListEvent) => {
+      if (e.matches) setOpen(false)
+    }
+    closeIfDesktop(mql)
+    mql.addEventListener('change', closeIfDesktop)
+    return () => mql.removeEventListener('change', closeIfDesktop)
+  }, [])
+  return [open, setOpen] as const
 }
 
 type DesktopNavComponents = {
@@ -287,6 +313,7 @@ function TopBarWithAuth({
 }: InnerProps) {
   const { user } = useUser()
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useAutoCloseMobileSheet()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
   // Library-resolved chrome edge: retro floats (Card + margin), the flush
@@ -382,7 +409,7 @@ function TopBarWithAuth({
             account UI to surface. */}
         <div className='ml-auto flex items-center gap-2 lg:hidden'>
           <ColorSchemeToggle />
-          <Sheet>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
               <Menu className='h-4 w-4' />
               <span className='sr-only'>Open menu</span>
@@ -405,47 +432,66 @@ function TopBarWithAuth({
                 </SheetClose>
               </div>
               <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
-                {visibleLinks.map((item) => {
-                  if (isTopBarGroup(item)) {
-                    return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
-                  }
-                  const { href, label, exact, external, icon } = item
-                  return (
-                    <SheetClose
-                      key={navItemKey(item)}
-                      nativeButton={false}
-                      render={
-                        <NextLink
-                          variant='nav'
-                          active={isActive(href, exact)}
-                          href={href}
-                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                          className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
-                        />
-                      }
-                    >
-                      {linkRowContent(icon, label)}
-                    </SheetClose>
-                  )
-                })}
-                {isSignedIn && extraActions && (
-                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
-                )}
-                {isSignedIn && (
-                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
-                    {accountMenu ?? <UserButton />}
+                {/* `my-auto`, not `justify-center` on `<nav>` itself — `justify-center`
+                    on the SCROLL container centers the overflow symmetrically on both
+                    sides, which clips the first row above `scrollTop: 0` with no way to
+                    scroll back up to it (verified via CDP: `firstRow.top` sat at -66px
+                    even at minimum scroll). `margin: auto` on this inner wrapper centers
+                    it ONLY when there's surplus space in `<nav>`; the moment content
+                    exceeds the available height the auto margins collapse to 0 and the
+                    list simply starts at the top, scrollable in full either way. */}
+                <div className='my-auto [&>*:last-child]:border-b-0'>
+                  {visibleLinks.map((item) => {
+                    if (isTopBarGroup(item)) {
+                      return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                    }
+                    const { href, label, exact, external, icon } = item
+                    return (
+                      <SheetClose
+                        key={navItemKey(item)}
+                        nativeButton={false}
+                        render={
+                          <NextLink
+                            variant='nav'
+                            active={isActive(href, exact)}
+                            href={href}
+                            {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                            className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
+                          />
+                        }
+                      >
+                        {linkRowContent(icon, label)}
+                      </SheetClose>
+                    )
+                  })}
+                  {/* The desktop cluster's `ColorSchemeToggle` sits OUTSIDE this sheet
+                      (in the collapsed bar next to the hamburger trigger), so opening
+                      the sheet — a full-screen overlay — left theme unreachable without
+                      closing the menu first. A row here, matching every other row's
+                      icon-then-label shape, closes that gap. */}
+                  <div className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 text-sm'>
+                    <ColorSchemeToggle />
+                    <span>Theme</span>
                   </div>
-                )}
-                {!isSignedIn && (
-                  <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
-                    <SignInButton mode='modal'>
-                      <Button variant='outline' className='gap-2 text-sm'>
-                        <LogIn className='h-4 w-4' />
-                        <span>Sign in</span>
-                      </Button>
-                    </SignInButton>
-                  </div>
-                )}
+                  {isSignedIn && extraActions && (
+                    <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
+                  )}
+                  {isSignedIn && (
+                    <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
+                      {accountMenu ?? <UserButton />}
+                    </div>
+                  )}
+                  {!isSignedIn && (
+                    <div className='flex h-12 shrink-0 items-center border-b border-border/30'>
+                      <SignInButton mode='modal'>
+                        <Button variant='outline' className='gap-2 text-sm'>
+                          <LogIn className='h-4 w-4' />
+                          <span>Sign in</span>
+                        </Button>
+                      </SignInButton>
+                    </div>
+                  )}
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
@@ -467,6 +513,7 @@ function TopBarNoAuth({
   extraActions
 }: InnerProps) {
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useAutoCloseMobileSheet()
   const comps = useComponents()
   const Button = (comps.Button as typeof BasicButton | undefined) ?? BasicButton
   // Library-resolved chrome edge: retro floats (Card + margin), the flush
@@ -539,7 +586,7 @@ function TopBarNoAuth({
         <div className='ml-auto flex items-center gap-2 lg:hidden'>
           <ColorSchemeToggle />
           {links.length > 0 && (
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger render={<Button variant='outline' size='icon' aria-label='Open menu' />}>
                 <Menu className='h-4 w-4' />
                 <span className='sr-only'>Open menu</span>
@@ -566,32 +613,43 @@ function TopBarNoAuth({
                   </SheetClose>
                 </div>
                 <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
-                  {links.map((item) => {
-                    if (isTopBarGroup(item)) {
-                      return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
-                    }
-                    const { href, label, exact, external, icon } = item
-                    return (
-                      <SheetClose
-                        key={navItemKey(item)}
-                        nativeButton={false}
-                        render={
-                          <NextLink
-                            variant='nav'
-                            active={isActive(href, exact)}
-                            href={href}
-                            {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                            className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
-                          />
-                        }
-                      >
-                        {linkRowContent(icon, label)}
-                      </SheetClose>
-                    )
-                  })}
-                  {extraActions && (
-                    <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
-                  )}
+                  {/* `my-auto`, not `justify-center` on the scroll container — see the
+                      matching comment in `TopBarWithAuth` for why: `justify-center`
+                      clips the first row above the reachable scroll range once content
+                      overflows, while `my-auto` degrades to top-aligned automatically. */}
+                  <div className='my-auto [&>*:last-child]:border-b-0'>
+                    {links.map((item) => {
+                      if (isTopBarGroup(item)) {
+                        return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
+                      }
+                      const { href, label, exact, external, icon } = item
+                      return (
+                        <SheetClose
+                          key={navItemKey(item)}
+                          nativeButton={false}
+                          render={
+                            <NextLink
+                              variant='nav'
+                              active={isActive(href, exact)}
+                              href={href}
+                              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                              className='flex h-12 shrink-0 items-center border-b border-border/30 text-sm'
+                            />
+                          }
+                        >
+                          {linkRowContent(icon, label)}
+                        </SheetClose>
+                      )
+                    })}
+                    {/* Matching `TopBarWithAuth`'s own row — see its comment for why. */}
+                    <div className='flex h-12 shrink-0 items-center gap-1.5 border-b border-border/30 text-sm'>
+                      <ColorSchemeToggle />
+                      <span>Theme</span>
+                    </div>
+                    {extraActions && (
+                      <div className='flex h-12 shrink-0 items-center border-b border-border/30'>{extraActions}</div>
+                    )}
+                  </div>
                 </nav>
               </SheetContent>
             </Sheet>

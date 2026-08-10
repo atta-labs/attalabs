@@ -28,18 +28,18 @@ type Segment = 'portal' | 'studio'
  * room, and a first-time-visitor context — states the DESTINATION ("Switch
  * to Studio" / "Switch to Portal"). Either way `aria-label` already states
  * the current surface, so the visible text naming the destination never
- * duplicates it.
+ * duplicates it. The breakpoint is `lg`, matching `TopBar`'s own
+ * desktop/mobile split (#816) — it was still `md` from when this text split
+ * first landed, a leftover that would have shown the short "Studio" form
+ * inside the mobile sheet itself between 768–1024px, the exact window `lg`
+ * (not `md`) now claims for mobile.
  */
 export function ProductSwitchControl({ current }: { current: Segment }) {
   const router = useRouter()
   const isStudio = current === 'studio'
 
   return (
-    <div className='flex flex-col items-center'>
-      <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-        <span className='md:hidden'>{isStudio ? 'Switch to Portal' : 'Switch to Studio'}</span>
-        <span className='hidden md:inline'>Studio</span>
-      </Text>
+    <div className='flex items-center gap-2'>
       <Switch
         // `size` is a RETRO-ONLY prop, outside the cross-library contract — that
         // contract covers the component NAME, not this prop: each library derives
@@ -64,6 +64,10 @@ export function ProductSwitchControl({ current }: { current: Segment }) {
         onCheckedChange={(checked) => router.push(checked ? '/studio' : '/')}
         aria-label={isStudio ? 'Currently on Studio. Switch to Portal.' : 'Currently on Portal. Switch to Studio.'}
       />
+      <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+        <span className='lg:hidden'>{isStudio ? 'Switch to Portal' : 'Switch to Studio'}</span>
+        <span className='hidden lg:inline'>Studio</span>
+      </Text>
     </div>
   )
 }
