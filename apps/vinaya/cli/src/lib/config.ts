@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -303,9 +304,42 @@ function stripGlobalOnlyKeys(config: VinayaConfig, path: string): VinayaConfig {
  * every-existing-install-stays-identical case). Shared by every check bin
  * that verifies a review verdict or a waiver-label actor, so they can never
  * resolve this differently from each other.
+ *
+ * **Callers MUST pass a config loaded from the base ref (`loadConfigFromRef`),
+ * never `loadConfig()`/the PR branch's own working tree.** `principals` names
+ * who is trusted to approve a merge — reading it from the PR being evaluated
+ * lets that same PR redefine its own trust anchor and then self-approve
+ * (security finding, PR #862 review: a PR that edits `vinaya.config.json` to
+ * add its own author, then posts its own `VERDICT: APPROVE`/`PASS` comment,
+ * passed review-gate against itself). Reading from the base ref instead means
+ * changing who is trusted still requires an EXISTING principal's approval —
+ * the change only takes effect for PRs opened after it merges.
  */
 export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[] {
   return config?.principals ?? PRINCIPAL_ALLOWLIST
+}
+
+/**
+ * Reads `vinaya.config.json` as committed at `ref` — via `git show`, never
+ * the working tree — so a trust-anchor read (`resolvePrincipalAllowlist`)
+ * can be pinned to the base branch regardless of what the PR being evaluated
+ * has changed locally. Malformed/unparseable content, or the file simply not
+ * existing at that ref (a fresh repo whose first PR adds `vinaya.config.json`
+ * for the first time), both resolve to `null` — the safe direction: a
+ * caller combining this with `resolvePrincipalAllowlist` falls back to the
+ * hardcoded `PRINCIPAL_ALLOWLIST`, never to trusting unreviewed content.
+ */
+export function loadConfigFromRef(ref: string): VinayaConfig | null {
+  try {
+    const raw = execFileSync('git', ['show', `${ref}:${LOCAL_CONFIG_FILENAME}`], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    const parsed = VinayaConfigSchema.safeParse(JSON.parse(raw))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
 }
 
 /**

@@ -39,7 +39,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { DOC_OWNERS_PATH, evaluateC5, isWaiverLabelActorVerified, overrideActive, WAIVER_LABEL } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
-import { loadConfig, resolvePrincipalAllowlist } from '../../lib/config'
+import { loadConfigFromRef, resolvePrincipalAllowlist } from '../../lib/config'
 
 const CHECK_NAME = 'doc-coverage-push'
 
@@ -75,11 +75,13 @@ function waiverActiveFromEnv(): boolean {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
+  // Base-ref, never the PR's own working tree — same reasoning as
+  // check-review-gate.ts (security finding, PR #862 review).
   return isWaiverLabelActorVerified({
     label: WAIVER_LABEL,
     labels,
     labelActor: process.env.WAIVER_LABEL_ACTOR || null,
-    principalAllowlist: resolvePrincipalAllowlist(loadConfig())
+    principalAllowlist: resolvePrincipalAllowlist(loadConfigFromRef(process.env.BASE_SHA || 'origin/main'))
   })
 }
 

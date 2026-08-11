@@ -21,7 +21,7 @@
 import { execFileSync } from 'node:child_process'
 import { checkReviewGate, isReviewGateExemptBranch, WAIVER_LABEL_REVIEW } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
-import { loadConfig, resolvePrincipalAllowlist } from '../../lib/config'
+import { loadConfigFromRef, resolvePrincipalAllowlist } from '../../lib/config'
 
 const CHECK_NAME = 'review-gate'
 
@@ -99,11 +99,16 @@ function main(): void {
     ? fetchWaiverLabelActor(prNumber, WAIVER_LABEL_REVIEW)
     : null
 
+  // Base-ref, never the PR's own working tree — reading `principals` from
+  // HEAD would let this same PR redefine its own trust anchor and then
+  // self-approve (security finding, PR #862 review). See
+  // `resolvePrincipalAllowlist`'s doc comment in lib/config.ts.
+  const baseRef = process.env.BASE_SHA || 'origin/main'
   const result = checkReviewGate({
     comments: pr.comments.map((c) => ({ body: c.body, author: c.author?.login ?? null })),
     labels,
     waiverLabelActor,
-    principalAllowlist: resolvePrincipalAllowlist(loadConfig())
+    principalAllowlist: resolvePrincipalAllowlist(loadConfigFromRef(baseRef))
   })
 
   if (result.verdict === 'fail') {

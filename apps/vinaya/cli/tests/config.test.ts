@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CheckSpec } from '../src/checks/contract'
 import { runChecks } from '../src/checks/runner'
 import { PRINCIPAL_ALLOWLIST } from '@atta/aeg-core'
-import { lintEnvDeclarations, VinayaConfigSchema } from '../src/lib/config'
+import { lintEnvDeclarations, loadConfigFromRef, VinayaConfigSchema } from '../src/lib/config'
 
 // We test config.ts functions by changing process.cwd() via chdir
 // and by testing the config path logic with temp dirs.
@@ -217,6 +218,73 @@ describe('config', () => {
     if (checked.ok) {
       expect(checked.config?.rings?.ring1_forgeWriteInterception).toBe(true)
     }
+  })
+})
+
+// Security regression (PR #862 review, both code-reviewer and security-reviewer
+// independently found the same hole): resolving `principals` from HEAD instead
+// of the base branch let a PR redefine its own trust anchor and self-approve.
+// This proves the actual attack scenario is closed end-to-end through real git
+// history, not just that the pure functions compose correctly in isolation.
+describe('loadConfigFromRef — trust-anchor base-ref resolution (security)', () => {
+  let repoDir: string
+  let originalCwd: string
+
+  function git(args: string[]): string {
+    return execFileSync('git', args, { cwd: repoDir, encoding: 'utf8' }).trim()
+  }
+
+  beforeEach(() => {
+    repoDir = join(tmpdir(), `vinaya-loadconfigfromref-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    mkdirSync(repoDir, { recursive: true })
+    originalCwd = process.cwd()
+    git(['init', '-q', '-b', 'main'])
+    git(['config', 'user.email', 'test@example.com'])
+    git(['config', 'user.name', 'Test'])
+    writeFileSync(join(repoDir, 'vinaya.config.json'), JSON.stringify({ principals: ['legit-reviewer'] }), 'utf-8')
+    git(['add', '.'])
+    git(['commit', '-q', '-m', 'Chore: initial commit'])
+    process.chdir(repoDir)
+  })
+
+  afterEach(() => {
+    process.chdir(originalCwd)
+    rmSync(repoDir, { recursive: true, force: true })
+  })
+
+  it('the attack scenario: a PR that edits its own vinaya.config.json to add an attacker login does NOT get that login trusted when resolved against the base ref', () => {
+    git(['checkout', '-q', '-b', 'task/attacker/1'])
+    // Simulates a malicious PR diff: the attacker adds themselves to principals
+    // in the SAME branch/commit that will carry their own forged VERDICT comment.
+    writeFileSync(
+      join(repoDir, 'vinaya.config.json'),
+      JSON.stringify({ principals: ['legit-reviewer', 'attacker-login'] }),
+      'utf-8'
+    )
+    git(['add', '.'])
+    git(['commit', '-q', '-m', 'Chore: add myself as a principal'])
+
+    // The PR branch's OWN working tree/HEAD now has the attacker in principals —
+    // proving loadConfig() (cwd-based) would be fooled, loadConfigFromRef('main')
+    // (base-ref-based) must not be.
+    const headConfig = JSON.parse(readFileSync(join(repoDir, 'vinaya.config.json'), 'utf-8'))
+    expect(headConfig.principals).toContain('attacker-login')
+
+    const baseConfig = loadConfigFromRef('main')
+    expect(baseConfig?.principals).toEqual(['legit-reviewer'])
+    expect(baseConfig?.principals).not.toContain('attacker-login')
+  })
+
+  it('returns null (safe fallback territory) when vinaya.config.json does not exist yet at the given ref', () => {
+    git(['checkout', '-q', '-b', 'orphan-check'])
+    const result = loadConfigFromRef('refs/heads/orphan-check~999999') // unreachable/invalid ref
+    expect(result).toBeNull()
+  })
+
+  it('reads the real config content at an arbitrary valid ref, not just "main"', () => {
+    const sha = git(['rev-parse', 'HEAD'])
+    const result = loadConfigFromRef(sha)
+    expect(result?.principals).toEqual(['legit-reviewer'])
   })
 })
 
