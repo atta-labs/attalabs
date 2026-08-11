@@ -150,16 +150,21 @@ const CORE_INIT_ARTIFACTS = [
   '.github/workflows/vinaya-review.yml'
 ]
 const DOC_OWNERS_PATH = '.vinaya/doc-owners'
+const PROJECTS_REGISTRY_PATH_LOCAL = '.vinaya/projects.md'
 
 // This script's OWN scratch files, written by the exercises that run between
 // the pre-init and post-eject snapshots (`pr create`/`issue create` fixture
-// bodies, `new check`'s scaffold). Never vinaya-owned, never touched by
-// `eject` — real byte-identity noise unrelated to the question "does eject
-// reverse init exactly", so excluded from the Part 4 diff.
+// bodies, `new check`'s scaffold, `init product`'s registry row). Never
+// vinaya-owned, never touched by `eject` — real byte-identity noise unrelated
+// to the question "does eject reverse init exactly", so excluded from the
+// Part 4 diff. `.vinaya/projects.md` in particular is deliberately excluded
+// from `eject`'s reversal by design (vinaya-architecture skill) — the
+// registry row is adopter-declared data, not vinaya-owned scaffolding.
 const SCRATCH_FIXTURE_PATHS = new Set([
   '.pr-body-fixture.md',
   '.issue-body-fixture.md',
-  'scripts/vinaya-checks/proof-check.ts'
+  'scripts/vinaya-checks/proof-check.ts',
+  PROJECTS_REGISTRY_PATH_LOCAL
 ])
 
 const PR_BODY_FIXTURE = `Tier: 1
@@ -194,10 +199,30 @@ const EXEMPTIONS: Record<string, string> = {
     'the forge. Exercising it genuinely would require a real repo with real merged task PRs and real `gh` ' +
     "credentials reaching the network beyond the npm install, which this script's boundary forbids (same " +
     "reasoning as `issue edit`'s exemption).",
+  'archive tranche':
+    '`archive tranche` resolves an open Milestone by title and lists its Issues via live `gh api` reads ' +
+    'UNCONDITIONALLY — there is no dry-run path that skips the forge. Same real-repo/real-credentials boundary ' +
+    'as `archive` above; exempt for the same reason.',
+  quickstart:
+    '`quickstart` is a pure orchestrator over `init`/`init product`/`demo break`/`doctor` — it calls their ' +
+    'existing, unmodified entry points in sequence with Y/n prompts between steps, never reimplements their ' +
+    'internals (vinaya-architecture skill). Every one of those four commands is already exercised for real ' +
+    'against the published artifact elsewhere in this script (`init` inline, `init product`, `demo break`, ' +
+    "`doctor` in EXERCISES). Scripting quickstart's own interactive prompt sequence here would also disturb " +
+    "this script's carefully ordered shared fixtureDir state (re-running init/demo-break mid-sequence risks " +
+    'breaking the Part 4 eject byte-identity diff). The orchestration logic itself — prompt ordering, ' +
+    'closeStdin-once discipline, partial-decline paths — is proven by tests/quickstart.test.ts against this ' +
+    "workspace's own source, with real (non-mocked) git/hook behavior.",
   audit:
     '`audit` is a ring-2 scheduled mechanism: dead-branch drift and direct-main-push detection both derive ' +
     'from live forge state (`gh` branch/PR reads) UNCONDITIONALLY — no offline path exists. Same forge/' +
     'credential boundary as `archive` above; exempt for the same reason as `issue edit`.',
+  studio:
+    '`studio` now (since Studio standalone shipped) starts a real, long-running Next server when it finds a ' +
+    "real target — it never exits on its own. This script's `run()` helper is `spawnSync`, which blocks until " +
+    'the child exits, so calling it for real here would hang the whole prover forever. Exercising it safely ' +
+    'would need an async spawn-then-probe-then-kill harness this script does not have; a harness rewrite for ' +
+    'one command is out of scope for a coverage fix. Manually verified separately outside this script.',
   'issue edit':
     "`issue edit` fetches the target Issue's real labels from the forge (`gh issue view`) UNCONDITIONALLY, " +
     'even under --validate-only — there is no code path that skips it. Exercising it genuinely would require a ' +
@@ -249,10 +274,16 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
 
   'init product': ({ bin, fixtureDir }) => {
     const r = run(bin, ['init', 'product', 'demo-product', '--yes'], fixtureDir)
-    // No `origin` remote (by design, §11) — the only op is a label, so this is
-    // the graceful no-op path, not a crash.
-    const ok = r.status === 0 && /Nothing to scaffold/.test(r.stdout)
-    return { status: ok ? 'pass' : 'fail', detail: `exit ${r.status}: ${r.stdout.trim().split('\n').pop()}` }
+    // No `origin` remote (by design, §11) — the label write is skipped, but
+    // the registry row write is NOT: `runInitProduct` writes/appends
+    // `.vinaya/projects.md` unconditionally (vinaya-architecture skill).
+    const registryPath = join(fixtureDir, PROJECTS_REGISTRY_PATH_LOCAL)
+    const registryWritten = existsSync(registryPath) && readFileSync(registryPath, 'utf-8').includes('| demo-product |')
+    const ok = r.status === 0 && /scaffolded/.test(r.stdout) && registryWritten
+    return {
+      status: ok ? 'pass' : 'fail',
+      detail: `exit ${r.status}: ${r.stdout.trim().split('\n').pop()}, registry row written: ${registryWritten}`
+    }
   },
 
   check: ({ bin, fixtureDir }) => {
@@ -377,15 +408,6 @@ const EXERCISES: Record<string, (ctx: Ctx) => Outcome> = {
       status: ok ? 'pass' : 'fail',
       detail: `exit ${r.status}: ${(r.stdout || r.stderr).trim().split('\n')[0]}`
     }
-  },
-
-  studio: ({ bin, fixtureDir }) => {
-    const r = run(bin, ['studio'], fixtureDir)
-    // The clean, always-expected `missing` refusal (never a real server) —
-    // resolveStudioTarget finds no `apps/vinaya/web` walking up from a
-    // scratch dir outside the monorepo. Not the demo/waiver/check-count gap.
-    const ok = r.status === 1 && /isn't available here/.test(r.stderr)
-    return { status: ok ? 'pass' : 'fail', detail: `exit ${r.status}: ${r.stderr.trim()}` }
   }
 }
 
@@ -475,8 +497,7 @@ async function main(): Promise<void> {
       'doctor',
       'upgrade',
       'demo break',
-      'waiver',
-      'studio'
+      'waiver'
     ]) {
       const exercise = EXERCISES[name]
       if (!exercise) continue
