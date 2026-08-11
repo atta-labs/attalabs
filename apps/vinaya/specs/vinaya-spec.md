@@ -390,7 +390,11 @@ Global-config `checks` stripping (this chapter's "Explicitly out of scope" secti
 
 ### Correction 12 (2026-08-09) — `/config`, the documented reference
 
-Every key above (`rings`, `checks` including `CheckEntrySchema`'s six fields and the four `env` forms, `briefSchema`, `managed`) and the `--plan --json` envelope this chapter's own "`vinaya check --plan` / `--plan --json`" section describes now render at `/config` from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` — an authored registry, not a schema introspection, mechanically proven complete against `VinayaConfigSchema`'s real shape by `apps/vinaya/cli/tests/checks/config-reference-coverage.test.ts`. See the Pages table's `/config` row for the full description.
+Every key above (`rings`, `checks` including `CheckEntrySchema`'s seven fields and the four `env` forms, `briefSchema`, `managed`) and the `--plan --json` envelope this chapter's own "`vinaya check --plan` / `--plan --json`" section describes now render at `/config` from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` — an authored registry, not a schema introspection, mechanically proven complete against `VinayaConfigSchema`'s real shape by `apps/vinaya/cli/tests/checks/config-reference-coverage.test.ts`. See the Pages table's `/config` row for the full description.
+
+### Correction 13 (2026-08-11) — `requiresOpenPr`
+
+`CheckSpec` (`src/checks/contract.ts`) and `CheckEntrySchema` (`src/lib/config.ts`) both gained a seventh field, `requiresOpenPr?: boolean` — same no-privileged-field discipline as `env`: a custom check can declare it exactly like a core one. It marks a check that can only evaluate meaningfully once a pull request exists (reads the real PR body/number, not local git state); `runner.ts`'s `RunOptions.localOnly` skips any check declaring it, set by the generated `pre-commit`/`pre-push` hooks (`vinaya check --all [--diff-only] --local`) and never by CI. Fixes a real bootstrap deadlock found live: the core `closes-n`/`test-plan` checks previously ran unconditionally in both hooks, so the first commit on a fresh task branch could never satisfy them — no PR exists yet at commit or push time, only after. `vinaya-checks.yml` (CI, `pull_request`-triggered) omits `--local`, so both checks still run for real, against the real PR body, once one exists.
 
 ## Forge writes
 
