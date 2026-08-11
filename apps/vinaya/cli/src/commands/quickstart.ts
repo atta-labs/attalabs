@@ -21,7 +21,7 @@
 // carrying the same `InitDeps` shape.
 
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { runDemoBreak } from './demo.js'
 import type { DoctorDeps } from './doctor.js'
@@ -54,6 +54,51 @@ export type QuickstartDeps = {
   closeStdin: () => void
 }
 
+// Color only when connected to a real terminal — inert (plain text, byte-
+// identical to before) whenever stdout is piped/captured, which is exactly
+// every test in tests/quickstart.test.ts and every CI run. Never gate a
+// substring assertion on these; `useColor` guarantees they never fire there.
+const useColor = process.stdout.isTTY === true
+function paint(code: string, s: string): string {
+  return useColor ? `\x1b[${code}m${s}\x1b[0m` : s
+}
+const bold = (s: string) => paint('1', s)
+const cyan = (s: string) => paint('36', s)
+const green = (s: string) => paint('32', s)
+const red = (s: string) => paint('31', s)
+
+// A small hand-rolled block font — just the letters "VINAYA HARNESS" needs —
+// for the one-time banner at quickstart's start. Not a general-purpose
+// figlet: every glyph is 5 rows tall, hand-authored, added on demand.
+const BLOCK_FONT: Record<string, string[]> = {
+  V: ['█   █', '█   █', '█   █', ' █ █ ', '  █  '],
+  I: ['█████', '  █  ', '  █  ', '  █  ', '█████'],
+  N: ['█   █', '██  █', '█ █ █', '█  ██', '█   █'],
+  A: [' ███ ', '█   █', '█████', '█   █', '█   █'],
+  Y: ['█   █', ' █ █ ', '  █  ', '  █  ', '  █  '],
+  H: ['█   █', '█   █', '█████', '█   █', '█   █'],
+  R: ['████ ', '█   █', '████ ', '█ █  ', '█  █ '],
+  E: ['█████', '█    ', '████ ', '█    ', '█████'],
+  S: [' ████', '█    ', ' ███ ', '    █', '████ ']
+}
+const BLANK_GLYPH = ['   ', '   ', '   ', '   ', '   ']
+
+function blockBanner(text: string): string {
+  const glyphs = text
+    .toUpperCase()
+    .split('')
+    .map((ch) => (ch === ' ' ? BLANK_GLYPH : (BLOCK_FONT[ch] ?? ['     ', '     ', '     ', '     ', '     '])))
+  const rows: string[] = []
+  for (let r = 0; r < 5; r++) rows.push(glyphs.map((g) => g[r]).join(' '))
+  return rows.join('\n')
+}
+
+const TOTAL_STEPS = 7
+function stepHeader(n: number, title: string, caption: string): string {
+  const rule = cyan('━'.repeat(56))
+  return `\n${rule}\n${bold(cyan(`STEP ${n} of ${TOTAL_STEPS}`))} — ${bold(title)}\n${rule}\n${caption}\n`
+}
+
 const GLOB_INJECTION_RE = /[\s\r\n]/
 const POINTER_INJECTION_RE = /[\r\n]/
 // Mirrors `commands/init.ts`'s own `validPathFlag`/`PRODUCT_NAME_RE` — quickstart
@@ -62,6 +107,91 @@ const POINTER_INJECTION_RE = /[\r\n]/
 // pre-validated above rather than left entirely to the downstream writer.
 const NAME_INJECTION_RE = /[\s|\r\n]/
 const PATH_INJECTION_RE = /[|\r\n]/
+
+/**
+ * True when `pointer` is an in-repo path/anchor form (not a URL) and that
+ * path does not exist on disk. Injection-safety (`POINTER_INJECTION_RE`)
+ * only rejects newlines — it says nothing about whether the pointer is a
+ * real doc, so a typo like `2121` was previously accepted and written
+ * straight into `.vinaya/doc-owners` (found live). URL pointers are exempt
+ * — `.vinaya/doc-owners`'s own doctrine allows an external pointer with no
+ * local existence to check.
+ */
+function pointerIsMissingLocalFile(repoRoot: string, pointer: string): boolean {
+  if (/^https?:\/\//i.test(pointer)) return false
+  const path = pointer.split('#')[0] ?? pointer
+  return !existsSync(join(repoRoot, path))
+}
+
+/**
+ * Loops the doc-owners bind prompt on bad input instead of silently
+ * skipping (review finding, live) — empty answers still skip immediately
+ * (that's an intentional "nothing to bind" opt-out, not a mistake to
+ * recover from), but a validation failure now offers a retry before giving
+ * up. Also loops across MULTIPLE bindings (review finding, live: the
+ * one-shot flow only ever let a guest bind a single doc→code pair, no path
+ * to a second) — `any` tracks whether at least one binding has already
+ * landed, so "Bind another?" is offered only after a real success, never
+ * layered onto the initial skip/decline messages.
+ */
+async function bindDocOwnerLoop(deps: QuickstartDeps, repoRoot: string): Promise<void> {
+  let any = false
+  for (;;) {
+    if (any && !(await deps.confirm('Bind another doc→code pair?', false))) return
+    const glob = (await deps.ask('Code glob to bind (e.g. apps/foo/src/**): ')).trim()
+    const pointer = (await deps.ask('Doc pointer (in-repo path, path#anchor, or URL): ')).trim()
+    if (!glob || !pointer) {
+      if (!any) process.stdout.write(red('✗ Skipped — no glob/pointer provided, no doc-owners binding created.\n'))
+      return
+    }
+    if (GLOB_INJECTION_RE.test(glob) || POINTER_INJECTION_RE.test(pointer)) {
+      console.error(red('Error: glob must not contain whitespace, and the pointer must not contain a newline.'))
+    } else if (pointerIsMissingLocalFile(repoRoot, pointer)) {
+      console.error(red(`✗ "${pointer}" does not exist in this repo (and isn't a URL).`))
+    } else {
+      const plan = planDocOwnersBinding(repoRoot, glob, pointer)
+      applyDocOwnersBinding(repoRoot, plan, glob, pointer)
+      process.stdout.write(`${green(renderDocOwnersBindingDiffLine(plan))}\n`)
+      any = true
+      continue
+    }
+    if (!(await deps.confirm('Try again?', true))) {
+      if (!any) process.stdout.write(red('✗ Skipped — no doc-owners binding created.\n'))
+      return
+    }
+  }
+}
+
+/** Same retry-on-bad-input AND loop-across-multiple shape as `bindDocOwnerLoop` — see its doc comment. */
+async function registerProjectLoop(deps: QuickstartDeps): Promise<void> {
+  let any = false
+  for (;;) {
+    if (any && !(await deps.confirm('Register another project?', false))) return
+    const name = (await deps.ask('Project name (lower-case slug): ')).trim()
+    const rawPath = (await deps.ask('Project path (relative to repo root) [.]: ')).trim()
+    const path = rawPath || '.'
+    if (!name) {
+      if (!any) process.stdout.write(red('✗ Skipped — no project name provided, no project registered.\n'))
+      return
+    }
+    if (NAME_INJECTION_RE.test(name) || PATH_INJECTION_RE.test(path)) {
+      console.error(
+        red(
+          'Error: project name must not contain whitespace or a pipe, and the path must not contain a pipe or a newline.'
+        )
+      )
+    } else {
+      const rc = await runInitProduct([name, '--path', path, '--yes'], deps.initDeps)
+      if (rc !== 0) console.error(red(`\`vinaya init product\` exited with code ${rc}.`))
+      any = true
+      continue
+    }
+    if (!(await deps.confirm('Try again?', true))) {
+      if (!any) process.stdout.write(red('✗ Skipped — no project registered.\n'))
+      return
+    }
+  }
+}
 
 function readPackageVersion(): string {
   const pkg = JSON.parse(readFileSync(join(packageRoot(import.meta.url), 'package.json'), 'utf-8'))
@@ -155,75 +285,94 @@ export async function runQuickstart(_args: string[], deps: QuickstartDeps): Prom
   }
 
   try {
-    process.stdout.write('vinaya quickstart — guided install\n\n')
+    process.stdout.write(`${cyan(blockBanner('VINAYA HARNESS'))}\n\n${bold('Quickstart')} — guided install\n`)
 
+    process.stdout.write(
+      stepHeader(
+        1,
+        'Install',
+        'Runs `vinaya init` — shows the full diff of what would be installed (config, workflows, git hooks, doctrine pointer), then asks you to confirm before writing anything.'
+      )
+    )
+    await deps.ask('Press Enter to see the diff and continue: ')
     const initRc = await runInit([], deps.initDeps)
     if (initRc !== 0) {
-      console.error(`\n\`vinaya init\` exited with code ${initRc} — quickstart cannot continue.`)
+      console.error(red(`\n\`vinaya init\` exited with code ${initRc} — quickstart cannot continue.`))
       return initRc
     }
 
+    process.stdout.write(
+      stepHeader(
+        2,
+        'Bind a doc → code pair',
+        "Optional. Tells Vinaya which code maps to which doc, so the doc-coverage check can enforce it later. Skip with N — you'll be asked to bind another after each one."
+      )
+    )
     const bindDoc = await deps.confirm('Bind a doc→code pair now?', false)
-    if (bindDoc) {
-      const glob = (await deps.ask('Code glob to bind (e.g. apps/foo/src/**): ')).trim()
-      const pointer = (await deps.ask('Doc pointer (in-repo path, path#anchor, or URL): ')).trim()
-      if (!glob || !pointer) {
-        process.stdout.write('No glob/pointer provided — skipping the doc-owners binding.\n')
-      } else if (GLOB_INJECTION_RE.test(glob) || POINTER_INJECTION_RE.test(pointer)) {
-        console.error('Error: glob must not contain whitespace, and the pointer must not contain a newline — skipping.')
-      } else {
-        const plan = planDocOwnersBinding(repo.repoRoot, glob, pointer)
-        applyDocOwnersBinding(repo.repoRoot, plan, glob, pointer)
-        process.stdout.write(`${renderDocOwnersBindingDiffLine(plan)}\n`)
-      }
-    }
+    if (bindDoc) await bindDocOwnerLoop(deps, repo.repoRoot)
 
+    process.stdout.write(
+      stepHeader(
+        3,
+        'Register a project',
+        "Optional. Writes `.vinaya/projects.md` so Studio's board can resolve this project. Skip with N — you'll be asked to register another after each one."
+      )
+    )
     const registerProject = await deps.confirm('Register this as a tracked project?', false)
-    if (registerProject) {
-      const name = (await deps.ask('Project name (lower-case slug): ')).trim()
-      const rawPath = (await deps.ask('Project path (relative to repo root) [.]: ')).trim()
-      const path = rawPath || '.'
-      if (!name) {
-        process.stdout.write('No project name provided — skipping project registration.\n')
-      } else if (NAME_INJECTION_RE.test(name) || PATH_INJECTION_RE.test(path)) {
-        console.error(
-          'Error: project name must not contain whitespace or a pipe, and the path must not contain a pipe or a newline — skipping.'
-        )
-      } else {
-        const rc = await runInitProduct([name, '--path', path, '--yes'], deps.initDeps)
-        if (rc !== 0) console.error(`\`vinaya init product\` exited with code ${rc}.`)
-      }
-    }
+    if (registerProject) await registerProjectLoop(deps)
 
+    process.stdout.write(
+      stepHeader(
+        4,
+        'Review and commit',
+        'Shows `git status` for the full working tree, then commits everything as one `Chore: install Vinaya` commit. Not gated by a prompt — always runs, no-ops if there is genuinely nothing to commit.'
+      )
+    )
     const status = gitStatusShort(repo.repoRoot)
-    process.stdout.write('\nWorking tree before commit (review before it lands — `git add -A` runs next):\n')
+    process.stdout.write('Working tree before commit (review before it lands — `git add -A` runs next):\n')
     process.stdout.write(status ? `${status}\n` : '(clean)\n')
 
-    process.stdout.write('\n→ Committing the install…\n')
+    process.stdout.write(`\n${bold('→ Committing the install…')}\n`)
     const commitResult = commitInstall(repo.repoRoot)
-    process.stdout.write(`${commitResult.message}\n`)
+    process.stdout.write(`${commitResult.committed ? green(commitResult.message) : commitResult.message}\n`)
 
+    process.stdout.write(
+      stepHeader(
+        5,
+        'Refusal-then-fix proof',
+        'Runs a real broken commit through the hook just installed, shows it get refused, fixes it, and cleans up — proves the install actually works. Recommended, defaults to Y.'
+      )
+    )
     const ranDemoBreak = await deps.confirm(
       'Run the refusal-then-fix proof now? (recommended — proves the install actually works)',
       true
     )
     if (ranDemoBreak) {
       const rc = await runDemoBreak(repo.repoRoot, [])
-      if (rc !== 0) console.error(`\`vinaya demo break\` exited with code ${rc}.`)
+      if (rc !== 0) console.error(red(`\`vinaya demo break\` exited with code ${rc}.`))
     }
 
-    process.stdout.write('\n→ Running `vinaya doctor`…\n')
+    process.stdout.write(
+      stepHeader(
+        6,
+        'Doctor',
+        'Runs `vinaya doctor` — confirms every installed artifact matches what should be there. Read-only, mutates nothing.'
+      )
+    )
     await runDoctor([], deps.doctorDeps)
 
+    process.stdout.write(
+      stepHeader(7, 'Push', 'Pushes the install commit to your remote, if you have one. Recommended, defaults to Y.')
+    )
     let pushed = false
     const wantsPush = await deps.confirm('Push to the remote now?', true)
     if (wantsPush) {
       const pushResult = pushInstall(repo.repoRoot)
-      process.stdout.write(`\n${pushResult.message}\n`)
+      process.stdout.write(`\n${pushResult.pushed ? green(pushResult.message) : red(pushResult.message)}\n`)
       pushed = pushResult.pushed
     }
 
-    process.stdout.write('\nNext steps:\n')
+    process.stdout.write(`\n${bold('Next steps:')}\n`)
     process.stdout.write('  vinaya studio\n')
     if (!ranDemoBreak) process.stdout.write('  vinaya demo break\n')
     process.stdout.write('  vinaya check --all\n')

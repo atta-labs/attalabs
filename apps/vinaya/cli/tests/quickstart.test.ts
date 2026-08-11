@@ -37,7 +37,15 @@ function initFixture(): string {
   git(root, ['config', 'user.email', 'test@example.com'])
   git(root, ['config', 'user.name', 'Test'])
   writeFileSync(join(root, 'README.md'), '# fixture\n')
-  git(root, ['add', 'README.md'])
+  // Doc pointers this file's own tests bind — quickstart now refuses a
+  // pointer that doesn't exist on disk (review finding: a typo'd pointer was
+  // previously written straight into .vinaya/doc-owners with no check), so
+  // the fixture must carry real files at the paths the tests actually bind.
+  mkdirSync(join(root, 'apps/foo/specs'), { recursive: true })
+  writeFileSync(join(root, 'apps/foo/specs/foo.md'), '# foo\n')
+  mkdirSync(join(root, 'apps/bar/specs'), { recursive: true })
+  writeFileSync(join(root, 'apps/bar/specs/bar.md'), '# bar\n')
+  git(root, ['add', '-A'])
   git(root, ['commit', '-q', '-m', 'Chore: initial commit'])
   return root
 }
@@ -149,13 +157,16 @@ afterEach(() => {
 describe('vinaya quickstart', () => {
   it('accept-everything: installs, binds a doc-owner, registers a project, commits, proves the install, and gracefully reports a failed push (no remote)', async () => {
     const { deps, closeStdinCalls } = makeDeps(root, [
+      '', // press-enter pause before the diff
       'y', // vinaya init's own confirm
       'y', // bind a doc-owner pair?
       'apps/foo/src/**', // glob
       'apps/foo/specs/foo.md', // pointer
+      'n', // bind another? — declined
       'y', // register project?
       'demo', // project name
       '', // project path — empty, default '.'
+      'n', // register another? — declined
       'y', // run demo break?
       'y' // push?
     ])
@@ -211,6 +222,7 @@ describe('vinaya quickstart', () => {
 
   it('decline-everything: nothing installed, no commit, no stray artifacts — closeStdin still called exactly once', async () => {
     const { deps, closeStdinCalls } = makeDeps(root, [
+      '', // press-enter pause before the diff
       'n', // vinaya init's own confirm — declined
       'n', // bind a doc-owner pair? — declined, no sub-prompts follow
       'n', // register project? — declined, no sub-prompts follow
@@ -255,11 +267,13 @@ describe('vinaya quickstart', () => {
 
   it('declining just the doc-owner prompt skips only that step, keeping project registration', async () => {
     const { deps } = makeDeps(root, [
+      '', // press-enter pause before the diff
       'y', // init
       'n', // bind doc-owner — declined
       'y', // register project
       'demo',
       '.',
+      'n', // register another? — declined
       'n', // demo break — declined, keep the test fast
       'n' // push — declined
     ])
@@ -277,10 +291,12 @@ describe('vinaya quickstart', () => {
 
   it('declining just the project-registration prompt skips only that step, keeping the doc-owner binding', async () => {
     const { deps } = makeDeps(root, [
+      '', // press-enter pause before the diff
       'y', // init
       'y', // bind doc-owner
       'apps/bar/src/**',
       'apps/bar/specs/bar.md',
+      'n', // bind another? — declined
       'n', // register project — declined
       'n', // demo break — declined
       'n' // push — declined
@@ -297,17 +313,19 @@ describe('vinaya quickstart', () => {
     expect(existsSync(join(root, PROJECTS_REGISTRY_PATH))).toBe(false)
   }, 15_000)
 
-  it('rejects a project name or path containing whitespace/pipe/newline before calling `runInitProduct` (review finding, PR #838)', async () => {
+  it('rejects a project name or path containing whitespace/pipe/newline, offers a retry, and skips cleanly on decline (review finding, PR #838)', async () => {
     // console.error goes to stderr, which captureStdout does not capture —
     // absence of the registry file is the observable proof the guard fired
     // and runInitProduct was never called, matching this file's own style
     // for the other declined-step tests.
     const { deps: depsBadName } = makeDeps(root, [
+      '', // press-enter pause before the diff
       'y', // init
       'n', // bind doc-owner — declined
       'y', // register project
       'bad name', // whitespace in name — invalid
       '.',
+      'n', // "Try again?" — declined
       'n', // demo break — declined
       'n' // push — declined
     ])
@@ -321,11 +339,13 @@ describe('vinaya quickstart', () => {
     const root2 = initFixture() // separate fixture for the second sub-case
     try {
       const { deps: depsBadPath } = makeDeps(root2, [
+        '', // press-enter pause before the diff
         'y', // init
         'n', // bind doc-owner — declined
         'y', // register project
         'demo',
         'apps/foo|bar', // pipe in path — invalid
+        'n', // "Try again?" — declined
         'n', // demo break — declined
         'n' // push — declined
       ])
@@ -340,8 +360,74 @@ describe('vinaya quickstart', () => {
     }
   }, 15_000)
 
-  it('closeStdin() is called exactly once when `vinaya init` itself fails (no prompt was ever opened)', async () => {
-    const { deps, closeStdinCalls } = makeDeps(root, [])
+  it('retries the doc-owner bind after a bad pointer and succeeds on the second attempt', async () => {
+    const { deps } = makeDeps(root, [
+      '', // press-enter pause before the diff
+      'y', // init
+      'y', // bind doc-owner
+      'apps/foo/src/**', // glob (valid)
+      'does-not-exist.md', // pointer — no such file, first attempt fails
+      'y', // "Try again?" — accepted
+      'apps/foo/src/**', // glob, retried
+      'apps/foo/specs/foo.md', // pointer — a real file this time
+      'n', // bind another? — declined
+      'n', // register project — declined
+      'n', // demo break — declined
+      'n' // push — declined
+    ])
+
+    let rc = -1
+    const out = await captureStdout(async () => {
+      rc = await runQuickstart([], deps)
+    })
+    expect(rc, out).toBe(0)
+
+    const docOwners = readFileSync(join(root, DOC_OWNERS_PATH), 'utf-8')
+    expect(docOwners).toContain('apps/foo/src/**  apps/foo/specs/foo.md')
+  }, 15_000)
+
+  it('binds two doc-owner pairs and registers two projects in one run (review finding, live: was one-shot only)', async () => {
+    const { deps } = makeDeps(root, [
+      '', // press-enter pause before the diff
+      'y', // init
+      'y', // bind doc-owner
+      'apps/foo/src/**',
+      'apps/foo/specs/foo.md',
+      'y', // bind another? — accepted
+      'apps/bar/src/**',
+      'apps/bar/specs/bar.md',
+      'n', // bind another? — declined
+      'y', // register project
+      'foo',
+      'apps/foo',
+      'y', // register another? — accepted
+      'bar',
+      'apps/bar',
+      'n', // register another? — declined
+      'n', // demo break — declined, keep the test fast
+      'n' // push — declined
+    ])
+
+    let rc = -1
+    const out = await captureStdout(async () => {
+      rc = await runQuickstart([], deps)
+    })
+    expect(rc, out).toBe(0)
+
+    const docOwners = readFileSync(join(root, DOC_OWNERS_PATH), 'utf-8')
+    expect(docOwners).toContain('apps/foo/src/**  apps/foo/specs/foo.md')
+    expect(docOwners).toContain('apps/bar/src/**  apps/bar/specs/bar.md')
+
+    const registry = readFileSync(join(root, PROJECTS_REGISTRY_PATH), 'utf-8')
+    expect(registry).toContain('| foo |')
+    expect(registry).toContain('| bar |')
+  }, 15_000)
+
+  it('closeStdin() is called exactly once when `vinaya init` itself fails', async () => {
+    // One answer now: the press-enter pause fires before quickstart even
+    // calls runInit, so it's no longer prompt-free — the failure it forces
+    // still happens with no FURTHER prompt.
+    const { deps, closeStdinCalls } = makeDeps(root, [''])
     deps.initDeps.detectRepo = async () => null // forces runInit to fail fast with rc=1
 
     let rc = -1
@@ -353,7 +439,7 @@ describe('vinaya quickstart', () => {
   })
 
   it('closeStdin() is called even when a step throws mid-flow', async () => {
-    const { deps, closeStdinCalls } = makeDeps(root, ['y', 'y', 'apps/foo/src/**'])
+    const { deps, closeStdinCalls } = makeDeps(root, ['', 'y', 'y', 'apps/foo/src/**'])
     // the pointer prompt throws instead of answering — simulates an
     // unexpected failure partway through the flow.
     const realAsk = deps.ask

@@ -152,8 +152,19 @@ export function __resetAegRootCacheForTests(): void {
  * up on the very next call, matching the pre-null-return behavior where a
  * failed search threw every call and self-healed the moment the file
  * appeared.
+ *
+ * The default's `process.env.VINAYA_REPO_ROOT ?? process.cwd()` exists for
+ * standalone Studio: Next's generated `server.js` does
+ * `process.chdir(__dirname)` at its own startup, before any request runs, so
+ * by the time this default is evaluated `process.cwd()` alone would be the
+ * installed package's own directory, never the guest repo.
+ * `VINAYA_REPO_ROOT` is the guest repo's real cwd, captured and forwarded by
+ * `spawnStandalone()` (`cli/src/commands/studio.ts`) the same way `AEG_REPO`
+ * already is — `github-links.ts`'s `findRepoRoot()` and
+ * `docs/load-aeg-docs.ts`'s `findAegRoot()` share the identical hazard and
+ * fix.
  */
-export function findAegRoot(startDir: string = process.cwd()): string | null {
+export function findAegRoot(startDir: string = process.env.VINAYA_REPO_ROOT ?? process.cwd()): string | null {
   if (cachedRoot) return cachedRoot
   let dir = startDir
   for (let i = 0; i < 8; i++) {

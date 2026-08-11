@@ -138,7 +138,19 @@ function ensureStudioNodeModules(bundleRoot: string): void {
  *  for the life of the process, serving that repo's real forge-derived
  *  tranche/task data with no auth (security review, PR #855). Loopback-only
  *  is the safe default; an operator who genuinely wants LAN access can
- *  still set `HOSTNAME` themselves. */
+ *  still set `HOSTNAME` themselves.
+ *
+ *  `VINAYA_REPO_ROOT` closes the gap the paragraph above flags but doesn't
+ *  fix: `AEG_REPO` only survives the chdir for git-remote/GitHub-API reads
+ *  (`resolveRepo()`). The app's FILE-based repo-root walks — `.vinaya/
+ *  projects.md` (`web/src/lib/repo-state/read-root.ts`), `vinaya.config.json`
+ *  (`web/src/lib/github-links.ts`), and `aeg-root/` (`web/src/lib/docs/
+ *  load-aeg-docs.ts`) — all default to a bare `process.cwd()` walk with no
+ *  override, so they silently resolved the installed package's own tree
+ *  post-chdir and returned empty/missing state (found live: Projects showed
+ *  "No projects registered" despite a real `.vinaya/projects.md` existing).
+ *  Same fix shape as `AEG_REPO`: capture `cwd` here, before the chdir,
+ *  force it into the child's env. */
 async function spawnStandalone(cwd: string, serverPath: string, bundleRoot: string): Promise<number> {
   ensureStudioNodeModules(bundleRoot)
 
@@ -149,7 +161,7 @@ async function spawnStandalone(cwd: string, serverPath: string, bundleRoot: stri
     console.info(`[studio] port ${PRIMARY_PORT} is taken — falling back to ${FALLBACK_PORT}`)
   }
 
-  const env: NodeJS.ProcessEnv = { HOSTNAME: '127.0.0.1', ...process.env, PORT: String(port) }
+  const env: NodeJS.ProcessEnv = { HOSTNAME: '127.0.0.1', ...process.env, PORT: String(port), VINAYA_REPO_ROOT: cwd }
   if (repo) env.AEG_REPO = `${repo.owner}/${repo.repo}`
 
   return new Promise((resolve) => {

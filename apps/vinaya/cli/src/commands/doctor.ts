@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import type { CheckSpec } from '../checks/contract.js'
 import { coreCheckRegistry } from '../checks/registry.js'
 import { bareKeyNextMinorWarning, overriddenNextMinorWarning, resolveChecks } from '../checks/resolver.js'
+import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import { buildInitOps, CONFIG_PATH, DOCTRINE_POINTER_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
 import {
   GLOBAL_CONFIG_PATH,
@@ -146,9 +147,15 @@ function diagnoseInstall(
         continue
       }
 
-      if (op.path === CONFIG_PATH) {
-        // vinaya.config.json's semantic content (rings/checks/briefSchema) is
-        // adopter-owned from day one — doctor never diffs it byte-for-byte.
+      if (op.path === CONFIG_PATH || op.path === DOC_OWNERS_PATH) {
+        // vinaya.config.json's semantic content (rings/checks/briefSchema)
+        // and .vinaya/doc-owners' bindings are BOTH adopter-owned from day
+        // one — doctor never diffs either byte-for-byte. Found live: without
+        // this exemption, any real binding added after install reads as
+        // "drift" from the pristine empty starter, and doctor's own warning
+        // recommends `vinaya upgrade` — which (before this fix) would
+        // silently regenerate the file back to empty, destroying the
+        // binding. Same fix shape, same reasoning, as CONFIG_PATH.
         findings.push(ok(check, `${op.path} present and vinaya-managed.`))
         continue
       }
