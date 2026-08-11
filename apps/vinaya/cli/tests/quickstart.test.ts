@@ -102,16 +102,25 @@ function makeDeps(
     bunVersion: () => 'test-bun',
     packageVersion: () => '0.1.0-test'
   }
+  let hookSwapped = false
   const deps: QuickstartDeps = {
     detectRepo: async () => ({ repoRoot: root, owner: 'acme', repo: 'widget' }),
     initDeps,
     doctorDeps,
     confirm: async (q, defaultYes) => {
       questions.push(q)
-      // demo break shells to the REAL installed hook — swap it for the
-      // fast/local one right before that prompt resolves, so a `y` answer
-      // here never triggers a real npx network call.
-      if (q.startsWith('Run the refusal-then-fix proof')) makeHookLocal(root)
+      // `runInit` (already run by the time quickstart's OWN confirm is first
+      // called) installs the REAL hook — a real `npx --yes @attalabs/vinaya@…`
+      // invocation. `commitInstall()` runs before the demo-break prompt and
+      // triggers that same hook on its own `git commit`, so the swap must
+      // happen on quickstart's first confirm call (right after `runInit`
+      // returns), not gated on the demo-break question text — that gate
+      // fired too late, after `commitInstall()` had already hit the real
+      // hook and failed in this network-free sandbox.
+      if (!hookSwapped) {
+        makeHookLocal(root)
+        hookSwapped = true
+      }
       const raw = next()
       if (raw === '') return defaultYes
       return raw.toLowerCase().startsWith('y')
