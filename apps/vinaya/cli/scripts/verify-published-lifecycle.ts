@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { COMMANDS } from '@atta/vinaya-sources'
 
-const PACKAGE_SPEC = '@attalabs/vinaya@0.4.2'
+const PACKAGE_SPEC = '@attalabs/vinaya@0.4.3'
 const PUBLISHED_VERSION = PACKAGE_SPEC.slice(PACKAGE_SPEC.lastIndexOf('@') + 1)
 
 // ---------------------------------------------------------------------------
