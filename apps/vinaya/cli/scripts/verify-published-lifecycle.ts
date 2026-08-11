@@ -194,6 +194,20 @@ const EXEMPTIONS: Record<string, string> = {
     'the forge. Exercising it genuinely would require a real repo with real merged task PRs and real `gh` ' +
     "credentials reaching the network beyond the npm install, which this script's boundary forbids (same " +
     "reasoning as `issue edit`'s exemption).",
+  'archive tranche':
+    '`archive tranche` resolves an open Milestone by title and lists its Issues via live `gh api` reads ' +
+    'UNCONDITIONALLY — there is no dry-run path that skips the forge. Same real-repo/real-credentials boundary ' +
+    'as `archive` above; exempt for the same reason.',
+  quickstart:
+    '`quickstart` is a pure orchestrator over `init`/`init product`/`demo break`/`doctor` — it calls their ' +
+    'existing, unmodified entry points in sequence with Y/n prompts between steps, never reimplements their ' +
+    'internals (vinaya-architecture skill). Every one of those four commands is already exercised for real ' +
+    'against the published artifact elsewhere in this script (`init` inline, `init product`, `demo break`, ' +
+    "`doctor` in EXERCISES). Scripting quickstart's own interactive prompt sequence here would also disturb " +
+    "this script's carefully ordered shared fixtureDir state (re-running init/demo-break mid-sequence risks " +
+    'breaking the Part 4 eject byte-identity diff). The orchestration logic itself — prompt ordering, ' +
+    'closeStdin-once discipline, partial-decline paths — is proven by tests/quickstart.test.ts against this ' +
+    "workspace's own source, with real (non-mocked) git/hook behavior.",
   audit:
     '`audit` is a ring-2 scheduled mechanism: dead-branch drift and direct-main-push detection both derive ' +
     'from live forge state (`gh` branch/PR reads) UNCONDITIONALLY — no offline path exists. Same forge/' +
