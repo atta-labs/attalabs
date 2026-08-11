@@ -212,14 +212,19 @@ export function coreCheckRegistry(): CheckSpec[] {
       // authenticates ONLY from GH_TOKEN/GITHUB_TOKEN — without forwarding
       // them the allowlist strips the workflow-provided token and every
       // `gh pr view` fails. Optional because local runs use `gh`'s own
-      // keyring auth with no env var at all. BASE_SHA (defaults to
-      // 'origin/main') is where `principals` is resolved FROM — the PR's
-      // own working tree is never trusted for its own trust anchor
-      // (security finding, PR #862 review; see lib/config.ts).
+      // keyring auth with no env var at all. Deliberately NO `BASE_SHA` (or
+      // any other caller-suppliable ref) here: `principals` is resolved from
+      // the hardcoded `TRUST_ANCHOR_REF` (lib/config.ts), never a value this
+      // check's own env could carry — a `BASE_SHA` declaration here was
+      // tried and reverted the same day (security finding, PR #862 second
+      // review pass): a `pull_request`-triggered workflow runs the PR's own
+      // (PR-editable) YAML, so any env var this check accepts as an
+      // override is itself attacker-steerable, and a caller-supplied ref
+      // for a trust-anchor read reopens exactly the hole it was meant to
+      // close, one layer removed.
       env: {
         BRANCH: { optional: true },
         PR_NUMBER: { optional: true },
-        BASE_SHA: { optional: true },
         GITHUB_TOKEN: { optional: true },
         GH_TOKEN: { optional: true }
       }

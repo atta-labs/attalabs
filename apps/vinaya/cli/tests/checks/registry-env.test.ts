@@ -95,4 +95,28 @@ describe('registry env declarations', () => {
       expect(extra, `check "${spec.name}" carries an unexpected field: ${extra.join(', ')}`).toEqual([])
     }
   })
+
+  // Security regression, second pass on PR #862's own fix: a `BASE_SHA`
+  // declaration was briefly added to review-gate's env, forwarding an
+  // attacker-steerable ref (a pull_request-triggered workflow runs the PR's
+  // own YAML) into a trust-anchor read. Never again — review-gate's
+  // principals resolution is hardcoded to TRUST_ANCHOR_REF and must never
+  // accept a caller-suppliable ref of any kind.
+  it('review-gate never declares BASE_SHA — its trust-anchor read is hardcoded, never caller-suppliable', () => {
+    const reviewGate = specs.find((s) => s.name === 'review-gate')
+    expect(reviewGate?.env).toBeDefined()
+    expect(Object.keys(reviewGate?.env ?? {})).not.toContain('BASE_SHA')
+  })
+
+  it('no check bin ever calls loadConfigFromRef with anything but TRUST_ANCHOR_REF — source-text guard against the same env-steering mistake creeping back in', () => {
+    const bins = ['check-review-gate.ts', 'check-doc-coverage.ts', 'check-doc-coverage-push.ts']
+    for (const name of bins) {
+      const src = readFileSync(join(import.meta.dir, '..', '..', 'src', 'checks', 'bin', name), 'utf-8')
+      const calls = src.match(/loadConfigFromRef\(([^)]*)\)/g) ?? []
+      expect(calls.length, `${name} should call loadConfigFromRef exactly once`).toBe(1)
+      expect(calls[0], `${name} must pass TRUST_ANCHOR_REF, never an env-derived value`).toBe(
+        'loadConfigFromRef(TRUST_ANCHOR_REF)'
+      )
+    }
+  })
 })

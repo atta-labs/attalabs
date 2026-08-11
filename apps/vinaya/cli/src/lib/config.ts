@@ -320,6 +320,36 @@ export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[]
 }
 
 /**
+ * The ONLY ref every trust-anchor read (`resolvePrincipalAllowlist` via
+ * `loadConfigFromRef`) may use. A literal constant, never taken from an env
+ * var, CLI flag, or anything else a workflow's own YAML could set.
+ *
+ * **Security finding, second pass on PR #862's own fix:** the first cut of
+ * `loadConfigFromRef` accepted a `BASE_SHA` env var as an override (mirroring
+ * `check-doc-coverage.ts`'s pre-existing, legitimate diff-scoping use of
+ * `BASE_SHA`). That reopened the exact hole it closed, one layer removed:
+ * `checksWorkflow()`/`reviewWorkflow()` run on the plain `pull_request`
+ * trigger (not `pull_request_target`), so GitHub executes the workflow YAML
+ * AS IT EXISTS IN THE PR'S OWN HEAD — a PR can add `BASE_SHA:
+ * ${{ github.event.pull_request.head.sha }}` to its own copy of the
+ * generated workflow file, in the same diff that edits `principals`, and
+ * `loadConfigFromRef` would then read the attacker's own head instead of the
+ * real base — full self-approval bypass again, just moved one indirection
+ * later. The fix is not a smarter default; it is that trust-anchor
+ * resolution must never accept a caller-supplied ref AT ALL. `origin/main`
+ * (the literal git ref, fetched via `actions/checkout@v4`'s `fetch-depth: 0`
+ * from GitHub's own protected remote state) cannot be rewritten by a PR —
+ * only someone with actual push access to `main` can move it, a completely
+ * different privilege boundary than "can open a PR."
+ *
+ * `check-doc-coverage.ts`/`check-doc-coverage-push.ts` keep their own,
+ * separate, still-overridable `BASE_SHA` for diff-SCOPING (which files count
+ * as "changed") — that is not a trust decision, and conflating the two was
+ * the mistake. Never reuse that variable for a principals/trust read.
+ */
+export const TRUST_ANCHOR_REF = 'origin/main'
+
+/**
  * Reads `vinaya.config.json` as committed at `ref` — via `git show`, never
  * the working tree — so a trust-anchor read (`resolvePrincipalAllowlist`)
  * can be pinned to the base branch regardless of what the PR being evaluated
@@ -328,6 +358,11 @@ export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[]
  * for the first time), both resolve to `null` — the safe direction: a
  * caller combining this with `resolvePrincipalAllowlist` falls back to the
  * hardcoded `PRINCIPAL_ALLOWLIST`, never to trusting unreviewed content.
+ *
+ * `ref` must be `TRUST_ANCHOR_REF` for every principals-resolution caller —
+ * this function stays generic (any ref) because `config.test.ts` also uses
+ * it to exercise an arbitrary SHA, but no CheckSpec may ever forward an env
+ * var into it. See `TRUST_ANCHOR_REF`'s own doc comment for why.
  */
 export function loadConfigFromRef(ref: string): VinayaConfig | null {
   try {
