@@ -80,7 +80,16 @@ describe('registry env declarations', () => {
   })
 
   it('core registry CheckSpecs still carry no field a config-derived CheckSpec cannot carry, env included', () => {
-    const ALLOWED_KEYS = new Set<keyof CheckSpec>(['name', 'run', 'args', 'scope', 'include', 'timeoutMs', 'env'])
+    const ALLOWED_KEYS = new Set<keyof CheckSpec>([
+      'name',
+      'run',
+      'args',
+      'scope',
+      'include',
+      'timeoutMs',
+      'env',
+      'requiresOpenPr'
+    ])
     for (const spec of specs) {
       const extra = (Object.keys(spec) as Array<keyof CheckSpec>).filter((k) => !ALLOWED_KEYS.has(k))
       expect(extra, `check "${spec.name}" carries an unexpected field: ${extra.join(', ')}`).toEqual([])

@@ -14,6 +14,7 @@
 
 import { type AnchorField, anchoredRegion, stripCode } from './anchored-region'
 import { parsePremiseBlock } from './premise-check'
+import { locateTestPlanSection } from './test-plan-section'
 
 export type BriefSectionResult = { status: 'pass' | 'fail'; errors: string[] }
 
@@ -99,6 +100,26 @@ export function checkTierField(prBody: string, readTier: (body: string) => 0 | 1
 const TEST_PLAN_UNIT_TESTS_ONLY_RE = /(?:\*\*)?Test Plan(?:\*\*)?\s*:\s*(?:\*\*)?\s*unit-tests-only/i
 
 /**
+ * The Test Plan section text these three checks scan — never the raw body.
+ * Delegates to `locateTestPlanSection` (the same locator `test-plan.ts`'s
+ * merge-gate check uses) so an `AEG:TEST-PLAN` anchor pair is authoritative
+ * here exactly as it already is there. Without this, a body that anchors its
+ * real Test Plan AND carries a pasted verbatim reference copy of the brief
+ * (the template's own instruction) has its checkbox lines double-counted:
+ * `checkTestPlanExclusivity`/`checkPrincipalPlaceholder` scanned the whole
+ * body and fired on checkboxes living only in the quoted reference copy,
+ * disagreeing with `test-plan.ts` about which bytes are the real field
+ * (found live: a well-formed anchored brief failed `brief-shape` while
+ * `test-plan` passed the same body). Falls back to the full body when no
+ * section is locatable, matching every other anchor consumer's "anchors are
+ * additive, never required" contract.
+ */
+function testPlanRegion(prBody: string): string {
+  const located = locateTestPlanSection(prBody)
+  return located.found ? located.section : prBody
+}
+
+/**
  * Test Plan — pass iff the body contains the `Test Plan: unit-tests-only`
  * sentinel (bolded or not — see `TEST_PLAN_UNIT_TESTS_ONLY_RE`), OR at least one
  * `**[agent]**`/`**[principal]**`-tagged checklist line. Presence-only: does not
@@ -106,8 +127,9 @@ const TEST_PLAN_UNIT_TESTS_ONLY_RE = /(?:\*\*)?Test Plan(?:\*\*)?\s*:\s*(?:\*\*)
  * justified by the surface map.
  */
 export function checkTestPlan(prBody: string): BriefSectionResult {
-  if (TEST_PLAN_UNIT_TESTS_ONLY_RE.test(prBody)) return { status: 'pass', errors: [] }
-  if (/\*\*\[(?:agent|principal)\]\*\*/.test(prBody)) return { status: 'pass', errors: [] }
+  const region = testPlanRegion(prBody)
+  if (TEST_PLAN_UNIT_TESTS_ONLY_RE.test(region)) return { status: 'pass', errors: [] }
+  if (/\*\*\[(?:agent|principal)\]\*\*/.test(region)) return { status: 'pass', errors: [] }
   return {
     status: 'fail',
     errors: [
@@ -128,8 +150,9 @@ export function checkTestPlan(prBody: string): BriefSectionResult {
  * previously let through.
  */
 export function checkTestPlanExclusivity(prBody: string): BriefSectionResult {
-  if (!TEST_PLAN_UNIT_TESTS_ONLY_RE.test(prBody)) return { status: 'pass', errors: [] }
-  if (/^-\s*\[[ xX]\]\s*\*{2}\[(?:agent|principal)\]\*{2}/im.test(prBody)) {
+  const region = testPlanRegion(prBody)
+  if (!TEST_PLAN_UNIT_TESTS_ONLY_RE.test(region)) return { status: 'pass', errors: [] }
+  if (/^-\s*\[[ xX]\]\s*\*{2}\[(?:agent|principal)\]\*{2}/im.test(region)) {
     return {
       status: 'fail',
       errors: [
@@ -149,8 +172,9 @@ export function checkTestPlanExclusivity(prBody: string): BriefSectionResult {
  * item must be omitted entirely, not declared and left permanently unticked.
  */
 export function checkPrincipalPlaceholder(prBody: string): BriefSectionResult {
+  const region = testPlanRegion(prBody)
   const lineRe = /^-\s*\[[ xX]\]\s*\*{2}\[principal\]\*{2}(.*)$/gim
-  for (const m of prBody.matchAll(lineRe)) {
+  for (const m of region.matchAll(lineRe)) {
     const content = m[1] ?? ''
     if (/^\s*None\b/i.test(content)) {
       return {

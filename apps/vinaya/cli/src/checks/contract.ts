@@ -64,6 +64,21 @@ export type CheckSpec = {
    * it never removes a baseline key.
    */
   env?: Record<string, true | { optional: true } | { anyOf: string[] } | string>
+  /**
+   * True for a check that can only meaningfully evaluate once a pull request
+   * exists (it reads `PR_BODY`/`PR_NUMBER` from the open PR, not from local
+   * git state) — `closes-n` and `test-plan` are the two core examples. The
+   * runner's `localOnly` mode (set by the generated `pre-commit`/`pre-push`
+   * hooks, never by CI) skips these entirely rather than running them with
+   * nothing to evaluate: before a PR exists, `closes-n` cannot find the
+   * `Closes #N` it requires and `test-plan` cannot find a merge-ready state,
+   * so running them locally is not a stricter gate, it is an unsatisfiable
+   * one — found live: the first commit on a fresh task branch could never
+   * land, because the local hook enforced two pre-merge-only predicates
+   * before the PR that would satisfy them could possibly exist. CI (which
+   * only ever runs after a PR is open) always runs these for real.
+   */
+  requiresOpenPr?: boolean
 }
 
 /**

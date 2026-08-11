@@ -111,6 +111,15 @@ export const CONFIG_REFERENCE: readonly ConfigField[] = [
     example: `{ "timeoutMs": 30000 }`
   },
   {
+    key: 'checks.requiresOpenPr',
+    type: 'boolean (optional)',
+    semantics: [
+      'Marks a check that can only meaningfully evaluate once a pull request exists — it reads the real PR body/number, not local git state. The generated `pre-commit`/`pre-push` hooks (`vinaya check --all --local`) skip a check declaring this entirely rather than running it against a PR that cannot exist yet; CI (which only ever runs after a PR is open) always runs it for real.',
+      'Use for a custom check with the same shape as the core `closes-n`/`test-plan` checks — anything that would otherwise deadlock the first commit on a fresh branch by requiring PR content before a PR can exist.'
+    ],
+    example: `{ "requiresOpenPr": true }`
+  },
+  {
     key: 'checks.env',
     type: 'Record<string, EnvEntry> (optional)',
     semantics: [

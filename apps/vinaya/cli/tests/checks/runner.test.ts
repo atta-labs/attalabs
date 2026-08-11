@@ -122,6 +122,24 @@ describe('runChecks', () => {
     expect(outcome?.status).toBe('pass')
   })
 
+  it('skips a requiresOpenPr check under localOnly, even though the fixture would fail', async () => {
+    // Uses FAILING (which always exits 1) to prove this is a real skip, not a
+    // pass that happens to coincide with a fixture that never runs a PR-only
+    // predicate — the bootstrap deadlock this exists to close (real bug found
+    // live: `closes-n`/`test-plan` failing the first commit on a fresh task
+    // branch, because a PR cannot exist yet at commit time).
+    const spec = fullScope({ name: 'pr-only', run: FAILING, requiresOpenPr: true })
+    const [outcome] = await runChecks([spec], { ...BASE_OPTS, localOnly: true })
+    expect(outcome?.status).toBe('skipped')
+    expect(outcome?.exitCode).toBeNull()
+  })
+
+  it("runs a requiresOpenPr check for real when localOnly is not set (CI's own invocation)", async () => {
+    const spec = fullScope({ name: 'pr-only', run: PASSING, requiresOpenPr: true })
+    const [outcome] = await runChecks([spec], BASE_OPTS)
+    expect(outcome?.status).toBe('pass')
+  })
+
   it("kills a timed-out check's whole process group — a grandchild it spawned does not survive", async () => {
     const [outcome] = await runChecks(
       [fullScope({ name: 'spawns-grandchild', run: SPAWNS_GRANDCHILD, timeoutMs: 1000 })],

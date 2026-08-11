@@ -375,15 +375,20 @@ function ownVersion(): string {
   return pkg.version
 }
 
+// `--local` skips every `requiresOpenPr` check (closes-n, test-plan): neither
+// hook can ever satisfy them — a PR doesn't exist yet at commit time, and
+// pushing the branch is what makes one *possible*, not what creates it. CI's
+// `vinaya-checks.yml` runs on the `pull_request` event and omits `--local`,
+// so both checks run for real, against the real PR body, once one exists.
 function preCommitBody(): string {
   return `# Vinaya commit-time gate. Runs the deterministic checks over your staged
 # diff before the commit lands.
-npx --yes @attalabs/vinaya@${ownVersion()} check --all --diff-only || exit 1`
+npx --yes @attalabs/vinaya@${ownVersion()} check --all --diff-only --local || exit 1`
 }
 
 function prePushBody(): string {
   return `# Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
-npx --yes @attalabs/vinaya@${ownVersion()} check --all || exit 1`
+npx --yes @attalabs/vinaya@${ownVersion()} check --all --local || exit 1`
 }
 
 // ---------------------------------------------------------------------------

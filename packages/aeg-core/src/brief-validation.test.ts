@@ -145,6 +145,28 @@ describe('checkTestPlanExclusivity', () => {
     const body = 'Test Plan: unit-tests-only\n\n- [ ] **[principal]** None'
     expect(checkTestPlanExclusivity(body).status).toBe('fail')
   })
+
+  it('ignores checkbox items in a pasted reference-brief copy outside the AEG:TEST-PLAN anchor (found live)', () => {
+    // The template instructs pasting the dispatched brief verbatim as a
+    // reference copy (a `<details>` block at the bottom of the PR body). A
+    // brief whose REAL Test Plan is `unit-tests-only`, anchored, must not fail
+    // just because that reference copy also contains tagged checkboxes —
+    // `test-plan.ts`'s real merge-gate check already reads only the anchor;
+    // this check disagreed about the same bytes until it did too.
+    const body = [
+      '<!-- AEG:TEST-PLAN:START -->',
+      'Test Plan: unit-tests-only — pure parser change.',
+      '<!-- AEG:TEST-PLAN:END -->',
+      '',
+      '<details><summary>Reference: dispatched brief</summary>',
+      '',
+      '- [ ] **[agent]** run the tests',
+      '- [ ] **[principal]** eyeball it',
+      '',
+      '</details>'
+    ].join('\n')
+    expect(checkTestPlanExclusivity(body).status).toBe('pass')
+  })
 })
 
 describe('checkPrincipalPlaceholder', () => {
@@ -168,6 +190,21 @@ describe('checkPrincipalPlaceholder', () => {
   it('is case-insensitive on the None placeholder', () => {
     const body = '- [x] **[principal]** none — nothing to verify here'
     expect(checkPrincipalPlaceholder(body).status).toBe('fail')
+  })
+
+  it('ignores a None placeholder living only in a pasted reference-brief copy outside the anchor', () => {
+    const body = [
+      '<!-- AEG:TEST-PLAN:START -->',
+      '- [ ] **[principal]** Sign in → upload a CV → CLEAN report with grade A/B/C/D',
+      '<!-- AEG:TEST-PLAN:END -->',
+      '',
+      '<details><summary>Reference: dispatched brief</summary>',
+      '',
+      '- [ ] **[principal]** None — no runtime surface.',
+      '',
+      '</details>'
+    ].join('\n')
+    expect(checkPrincipalPlaceholder(body).status).toBe('pass')
   })
 })
 

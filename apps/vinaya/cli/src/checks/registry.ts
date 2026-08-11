@@ -118,6 +118,10 @@ export function coreCheckRegistry(): CheckSpec[] {
       run: bin('check-closes-n'),
       scope: 'diff',
       timeoutMs: 15_000,
+      // Pre-merge-only: needs the open PR's real body to find `Closes #N`.
+      // See `CheckSpec.requiresOpenPr`'s doc comment for why the local hooks
+      // skip this rather than running it against nothing.
+      requiresOpenPr: true,
       // `process.env.PR_BODY ?? ''`; BRANCH/AEG_REPO both fall back to git
       // (`rev-parse --abbrev-ref HEAD` / `remote get-url origin`). Tokens
       // forwarded because the bin reaches the forge through
@@ -157,6 +161,11 @@ export function coreCheckRegistry(): CheckSpec[] {
       run: bin('check-test-plan'),
       scope: 'diff',
       timeoutMs: 15_000,
+      // Pre-merge-only: a `[principal]` Test Plan item is, by construction
+      // (`roles/developer.md`), never tickable by the Developer that makes
+      // the first commit — only the Principal can satisfy it, after review.
+      // See `CheckSpec.requiresOpenPr`'s doc comment.
+      requiresOpenPr: true,
       // `process.env.PR_BODY ?? ''` / `process.env.BRANCH ?? ''` — both
       // plain absence-tolerant fall-throughs.
       env: {
