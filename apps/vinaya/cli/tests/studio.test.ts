@@ -101,6 +101,15 @@ describe('runStudio', () => {
     }
   })
 
+  // Security review, PR #855, Finding 2 (MINOR): `resolveRepo()` (from
+  // `@atta/aeg-forge-state`) caches its result at MODULE scope for the
+  // process lifetime, by that module's own design — correct for a real CLI
+  // invocation (one `studio` command per process), but any OTHER caller of
+  // the shared `resolveRepo()` that runs earlier in this same `bun test`
+  // process would poison the two tests below via that cache, silently. This
+  // file is currently the only in-process (non-spawned-subprocess) caller
+  // of `resolveRepo()` in the `apps/vinaya/cli` test run — a latent footgun
+  // if that ever changes, not an active bug.
   it('spawns the bundled server.js with the CALLER cwd and a derived AEG_REPO, not the package dir', async () => {
     const fakeInstallRoot = join(tmpDir, 'node_modules', '@attalabs', 'vinaya')
     const standaloneWebDir = join(fakeInstallRoot, 'studio-standalone', 'apps', 'vinaya', 'web')
