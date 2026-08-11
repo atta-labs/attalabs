@@ -34,7 +34,8 @@ const CheckEntrySchema = z
     include: z.array(z.string()).optional(),
     args: z.array(z.string()).optional(),
     timeoutMs: z.number().optional(),
-    env: z.record(z.string(), EnvEntrySchema).optional()
+    env: z.record(z.string(), EnvEntrySchema).optional(),
+    requiresOpenPr: z.boolean().optional()
   })
   // `anyOf` is keyed BY the variable name it expands to (`{"GITHUB_TOKEN":
   // {"anyOf":["GITHUB_TOKEN","GH_TOKEN"]}}`) — the key must be one of its own

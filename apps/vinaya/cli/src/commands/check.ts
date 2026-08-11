@@ -192,6 +192,7 @@ function printClassificationWarnings(configChecks: Record<string, CheckEntry> | 
 export async function checkCommand(args: string[]): Promise<void> {
   const jsonOutput = args.includes('--json')
   const diffOnly = args.includes('--diff-only')
+  const localOnly = args.includes('--local')
   const requestedParallel = parseParallel(args)
   const allRequested = args.includes('--all')
   const planRequested = args.includes('--plan')
@@ -209,7 +210,7 @@ export async function checkCommand(args: string[]): Promise<void> {
   }
 
   if (!allRequested && !requestedName) {
-    console.error('Usage: vinaya check <name> | --all | --plan [--json] [--diff-only] [--parallel[=n]]')
+    console.error('Usage: vinaya check <name> | --all | --plan [--json] [--diff-only] [--local] [--parallel[=n]]')
     process.exit(2)
   }
 
@@ -230,7 +231,8 @@ export async function checkCommand(args: string[]): Promise<void> {
           parallel: requestedParallel ?? defaultParallelism(),
           diffOnly,
           changedFiles: changed,
-          defaultTimeoutMs: 30_000
+          defaultTimeoutMs: 30_000,
+          localOnly
         })
       : []
 

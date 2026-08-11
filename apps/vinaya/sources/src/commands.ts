@@ -69,6 +69,10 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--all', description: 'Run every registered check instead of one named check' },
       { flag: '--json', description: 'Enveloped JSON output (schema: 1)' },
       { flag: '--diff-only', description: 'Scope diff-declared checks to changed files' },
+      {
+        flag: '--local',
+        description: 'Skip every requiresOpenPr check (closes-n, test-plan) — set by the generated hooks, never by CI'
+      },
       { flag: '--parallel[=n]', description: 'Concurrency cap (default: cpu-derived)' },
       {
         flag: '--plan',
@@ -77,7 +81,8 @@ export const COMMANDS: readonly Command[] = [
     ],
     details: [
       "Each spawned check's child process sees only a fixed baseline (`PATH`, `LANG`, `HOME`, `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `TMPDIR`) plus whatever its `CheckSpec['env']` declaration explicitly forwards — never the full parent environment. A required (`true`) or unsatisfied `anyOf` declaration missing from the caller's environment synthesizes a `CheckError` before the check ever spawns. Declare `env` (a core check's own registration, or `vinaya.config.json`'s `checks.<name>.env` for a custom one) for any check that reads `process.env`/`Bun.env`/`Deno.env` directly — `vinaya doctor` carries the permanent diagnostic for one that doesn't.",
-      "`--plan` composes with `--json`. It requires zero env vars and never prints an env value — only how each one resolves (passthrough, optional, literal, or anyOf). A `FAIL_CLOSED` entry (a bare key with no namespace matching no core check) always renders inline rather than being dropped, and exits non-zero. `--plan` previews what the next minor's execution will enforce — `vinaya check` itself still runs the flat, unvalidated registry this release."
+      "`--plan` composes with `--json`. It requires zero env vars and never prints an env value — only how each one resolves (passthrough, optional, literal, or anyOf). A `FAIL_CLOSED` entry (a bare key with no namespace matching no core check) always renders inline rather than being dropped, and exits non-zero. `--plan` previews what the next minor's execution will enforce — `vinaya check` itself still runs the flat, unvalidated registry this release.",
+      "`--local` exists because a `requiresOpenPr` check (the core `closes-n`/`test-plan`, or a custom check declaring the same field) can only evaluate for real once a pull request exists — the generated `pre-commit`/`pre-push` hooks pass it so the first commit on a fresh task branch is never asked to satisfy a PR-body field before a PR can possibly exist. CI's `vinaya-checks.yml` omits it, so these checks always run for real once a PR is open."
     ],
     status: 'shipped'
   },

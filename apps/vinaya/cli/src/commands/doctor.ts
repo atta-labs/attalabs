@@ -6,8 +6,9 @@
 // precisely because a doctor that "fixes" silently destroys the support
 // story; `vinaya upgrade` is the only sanctioned path back to a clean state.
 
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import type { CheckSpec } from '../checks/contract.js'
 import { coreCheckRegistry } from '../checks/registry.js'
 import { bareKeyNextMinorWarning, overriddenNextMinorWarning, resolveChecks } from '../checks/resolver.js'
@@ -105,6 +106,33 @@ function labelForPath(path: string): string {
   return 'workflows'
 }
 
+/**
+ * A raw git hook's real on-disk path — resolved through `git rev-parse
+ * --git-common-dir` rather than a literal `join(repoRoot, '.git/hooks/…')`.
+ * Hooks are never per-worktree: every linked worktree shares the main
+ * checkout's hooks directory, and in a linked worktree `<repoRoot>/.git` is a
+ * FILE (a gitdir pointer), not a directory, so the naive join resolves
+ * nothing and always reports the hook missing. Found live: `roles/developer.md`
+ * requires every Developer to work in a linked worktree, and the hooks do
+ * fire there correctly — only this probe was wrong, misleadingly recommending
+ * `vinaya upgrade` (which would install a *second*, redundant hook one layer
+ * up, not fix anything). `.husky/*` paths are untouched: husky's directory is
+ * a real, git-tracked directory present in every worktree checkout, so the
+ * naive join is already correct there.
+ */
+function resolveManagedBlockPath(repoRoot: string, opPath: string): string {
+  if (!opPath.startsWith('.git/')) return join(repoRoot, opPath)
+  try {
+    const commonDir = execFileSync('git', ['-C', repoRoot, 'rev-parse', '--git-common-dir'], {
+      encoding: 'utf8'
+    }).trim()
+    const gitDir = isAbsolute(commonDir) ? commonDir : join(repoRoot, commonDir)
+    return join(gitDir, opPath.slice('.git/'.length))
+  } catch {
+    return join(repoRoot, opPath)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Checks 1/2/3/4 — hooks, workflows, config, VINAYA.md — one pass over the
 // SAME op list `vinaya init` builds (lib/artifacts.ts), classified against
@@ -170,7 +198,7 @@ function diagnoseInstall(
       }
     } else if (op.kind === 'managed-block') {
       const check = 'hooks'
-      const abs = join(repoRoot, op.path)
+      const abs = resolveManagedBlockPath(repoRoot, op.path)
       const owned = ownedBlocks.has(blockKey(op.path, op.marker))
 
       if (!existsSync(abs)) {

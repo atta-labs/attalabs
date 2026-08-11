@@ -18,6 +18,13 @@ export type RunOptions = {
    * one the test process happens to be running under.
    */
   callerEnv?: NodeJS.ProcessEnv
+  /**
+   * Set by the generated `pre-commit`/`pre-push` hooks — never by CI, which
+   * always runs after a PR is open. Skips every `requiresOpenPr` check
+   * (`skipped`, not run) instead of letting them fail against a PR that
+   * cannot exist yet at commit/push time. See `CheckSpec.requiresOpenPr`.
+   */
+  localOnly?: boolean
 }
 
 /** A sane cpu-derived default — callers may override via `--parallel`. */
@@ -42,8 +49,12 @@ function isCheckError(value: unknown): value is CheckError {
  * files are known, the check declares `include` globs, and none match. A
  * check with no `include` globs declares no scoping preference and is never
  * skipped on that basis alone. `scope: 'full'` checks always run.
+ *
+ * Independently, a `requiresOpenPr` check is skipped whenever `opts.localOnly`
+ * is set, regardless of scope/diff — see `RunOptions.localOnly`.
  */
 function shouldSkip(spec: CheckSpec, opts: RunOptions): boolean {
+  if (opts.localOnly && spec.requiresOpenPr) return true
   if (spec.scope !== 'diff') return false
   if (!opts.diffOnly) return false
   if (opts.changedFiles === null) return false

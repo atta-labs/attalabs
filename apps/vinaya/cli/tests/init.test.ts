@@ -179,6 +179,25 @@ describe('vinaya init', () => {
     }
   })
 
+  it('both hook stubs pass --local — neither can satisfy a requiresOpenPr check before a PR exists', () => {
+    // The bootstrap-deadlock fix: closes-n/test-plan need an open PR's real
+    // body, and neither the commit nor the push that precedes opening one can
+    // supply it. Found live: the first commit on a fresh task branch could
+    // never land, because the generated pre-commit hook ran every check
+    // unconditionally. `vinaya-checks.yml` (CI, pull_request-triggered) is
+    // deliberately NOT asserted here — it must omit --local so these checks
+    // run for real once a PR exists.
+    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' }).filter(
+      (op) => op.kind === 'managed-block' && /pre-(commit|push)/.test(op.path)
+    )
+    expect(hookOps.length).toBe(2)
+    for (const op of hookOps) {
+      if (op.kind !== 'managed-block') continue
+      expect(op.body).toContain('check --all')
+      expect(op.body).toContain('--local')
+    }
+  })
+
   it('--dry-run writes nothing but shows the exact content install would write', async () => {
     const before = snapshot(root)
     const out = await captureStdout(() => runInit(['--dry-run'], makeDeps()))

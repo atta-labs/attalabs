@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { execFileSync } from 'node:child_process'
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
@@ -266,4 +267,45 @@ describe('vinaya doctor — never mutates', () => {
     expect(auth?.severity).toBe('warn')
     expect(bp?.severity).toBe('info')
   })
+})
+
+// Regression coverage for a real hooks false-negative found live: `roles/developer.md`
+// requires every Developer to work in a linked git worktree, and in one a bare
+// `join(repoRoot, '.git/hooks/pre-commit')` never resolves — `.git` there is a
+// FILE (a gitdir pointer), not a directory — even though the hooks are present
+// and firing correctly (they are never per-worktree; every linked worktree
+// shares the main checkout's hooks). Doctor reported both hooks "missing" and
+// recommended `vinaya upgrade`, which would not have fixed anything.
+describe('vinaya doctor — raw git hooks inside a linked worktree', () => {
+  function git(cwd: string, args: string[]): string {
+    return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+  }
+
+  it('reports installed .git/hooks as present and matching, probed from a linked worktree', async () => {
+    git(root, ['init', '-q', '-b', 'main'])
+    git(root, ['config', 'user.email', 'test@example.com'])
+    git(root, ['config', 'user.name', 'Test'])
+    git(root, ['add', 'README.md'])
+    git(root, ['commit', '-q', '-m', 'Chore: initial commit'])
+
+    await runInit(['--yes'], initDeps({ hookDirFor: () => '.git/hooks' }))
+    git(root, ['add', '-A'])
+    git(root, ['commit', '-q', '-m', 'Chore: install Vinaya'])
+
+    const wtRoot = join(tmpdir(), `vinaya-doctor-wt-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    git(root, ['worktree', 'add', wtRoot, '-b', 'task/demo/1'])
+
+    try {
+      const report = await runDoctorJson({
+        detectRepo: async () => ({ repoRoot: wtRoot, owner: 'acme', repo: 'widget' }),
+        hookDirFor: () => '.git/hooks'
+      })
+      const hookFindings = report.findings.filter((f) => f.check === 'hooks')
+      expect(hookFindings.length).toBeGreaterThan(0)
+      expect(hookFindings.some((f) => f.message.includes('is missing'))).toBe(false)
+      expect(hookFindings.every((f) => f.severity === 'ok')).toBe(true)
+    } finally {
+      git(root, ['worktree', 'remove', '--force', wtRoot])
+    }
+  }, 20_000) // real `runInit` + two `git commit`s + `worktree add` — bun's 5s default is too tight on a cold CI runner
 })
