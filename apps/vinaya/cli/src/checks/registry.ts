@@ -119,11 +119,21 @@ export function coreCheckRegistry(): CheckSpec[] {
       scope: 'diff',
       timeoutMs: 15_000,
       // `process.env.PR_BODY ?? ''`; BRANCH/AEG_REPO both fall back to git
-      // (`rev-parse --abbrev-ref HEAD` / `remote get-url origin`).
+      // (`rev-parse --abbrev-ref HEAD` / `remote get-url origin`). Tokens
+      // forwarded because the bin reaches the forge through
+      // `createForgeSource` — same as `branch-topology`'s identical
+      // declaration above: the runner spawns each check with only a fixed
+      // baseline env, so without explicit forwarding this check has no way
+      // to auth to GitHub on a CI runner (found live: passed locally under
+      // a developer's own `gh auth login`, failed deterministically in CI
+      // with "no topology file found" — a misleading message, since the
+      // real cause was an unauthenticated forge read, not a missing file).
       env: {
         BRANCH: { optional: true },
         PR_BODY: { optional: true },
-        AEG_REPO: { optional: true }
+        AEG_REPO: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
