@@ -206,6 +206,16 @@ export const CONFIG_REFERENCE: readonly ConfigField[] = [
     "labels": ["tier:1"]
   }
 }`
+  },
+  {
+    key: 'principals',
+    type: 'string[] (optional, min 1)',
+    semantics: [
+      'GitHub logins trusted as THIS repo’s own principals — the only authors whose PR comments count as a review-gate verdict, and the only actors an actor-verified `vinaya/waiver:docs`/`vinaya/waiver:review` label trusts. Overrides the package’s hardcoded default principal (this monorepo’s own maintainer) entirely — a full replacement, not additive.',
+      'Repo-local only, same rule as `checks`: a global `~/.vinaya/config.json`’s `principals` key is stripped at load time with a loud stderr warning, never resolved — who is trusted to approve merges must come from the reviewed, committed per-repo file, never a machine-wide personal config.',
+      'Without this key, `vinaya`’s hardcoded default principal is the only trusted author — which makes review-gate structurally unpassable on any repo that principal doesn’t personally review. Set this to your own team’s GitHub logins to make the gate passable on your repo.'
+    ],
+    example: `{ "principals": ["alice", "bob"] }`
   }
 ] as const
 

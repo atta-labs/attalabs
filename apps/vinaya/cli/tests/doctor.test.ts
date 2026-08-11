@@ -290,7 +290,15 @@ describe('vinaya doctor — raw git hooks inside a linked worktree', () => {
 
     await runInit(['--yes'], initDeps({ hookDirFor: () => '.git/hooks' }))
     git(root, ['add', '-A'])
-    git(root, ['commit', '-q', '-m', 'Chore: install Vinaya'])
+    // --no-verify: this commit's only job is to land the files `runInit` just
+    // wrote (doctor compares their on-disk bytes against the generator, so the
+    // real hook content must survive untouched — no local-fixture swap here,
+    // unlike quickstart.test.ts). Running the real hook for real would shell
+    // to `npx --yes @attalabs/vinaya@<this workspace's current package.json
+    // version>`, which is network-dependent and fails outright whenever that
+    // version isn't published yet (e.g. mid-bump, exactly the state this repo
+    // is in right now) — orthogonal to what this test actually verifies.
+    git(root, ['commit', '-q', '-m', 'Chore: install Vinaya', '--no-verify'])
 
     const wtRoot = join(tmpdir(), `vinaya-doctor-wt-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     git(root, ['worktree', 'add', wtRoot, '-b', 'task/demo/1'])

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
+import { PRINCIPAL_ALLOWLIST } from '@atta/aeg-core'
 
 // Rings is the only schema surface this task ships — declarative
 // booleans, no conditional logic. Ring 0 (git hooks) and the
@@ -207,7 +208,15 @@ export const VinayaConfigSchema = z.object({
     .optional(),
   checks: z.record(z.string(), CheckEntrySchema).optional(),
   briefSchema: BriefSchemaSchema.optional(),
-  managed: ManagedManifestSchema.optional()
+  managed: ManagedManifestSchema.optional(),
+  // GitHub logins trusted as this repo's own principals for review-gate
+  // verdict-author verification and actor-verified waiver labels
+  // (`vinaya/waiver:docs`, `vinaya/waiver:review`) — overrides the hardcoded
+  // `PRINCIPAL_ALLOWLIST` (this monorepo's own principal) when set. Repo-local
+  // only, same as `checks` — stripped from a global config below, since who
+  // counts as a trusted approver must come from the reviewed, committed
+  // per-repo file, never a machine-wide personal config.
+  principals: z.array(z.string()).min(1).optional()
 })
 
 export type VinayaConfig = z.infer<typeof VinayaConfigSchema>
@@ -252,13 +261,20 @@ export function globalChecksIgnoredWarning(path: string): string {
   return `${path}: "checks" registration in the global config is ignored — checks may only be registered from a repo-local vinaya.config.json.`
 }
 
+/** Same reasoning as `globalChecksIgnoredWarning` — a trust decision must come from the reviewed, committed repo file, never a machine-wide personal config. */
+export function globalPrincipalsIgnoredWarning(path: string): string {
+  return `${path}: "principals" in the global config is ignored — principals may only be declared from a repo-local vinaya.config.json.`
+}
+
 /**
- * `checks` registration from the global config is explicitly out of scope
- * (spec chapter, "Explicitly out of scope for this design") — stripped at
- * config-*loading* time, never resolved, with a loud warning naming the
- * file. This is what keeps the resolver itself source-blind: it takes one
- * `config` parameter with no notion of "this came from global vs. local,"
- * because every caller already sees an already-stripped config.
+ * `checks` and `principals` from the global config are both explicitly out
+ * of scope for it (`checks`: spec chapter, "Explicitly out of scope for this
+ * design"; `principals`: a trust decision, same reasoning as
+ * `globalPrincipalsIgnoredWarning`) — both stripped at config-*loading* time,
+ * never resolved, each with its own loud warning naming the file. This is
+ * what keeps the resolver itself source-blind: it takes one `config`
+ * parameter with no notion of "this came from global vs. local," because
+ * every caller already sees an already-stripped config.
  *
  * There is no `roles` key to strip yet — `VinayaConfigSchema` has no `roles`
  * field, so a global config's hypothetical `roles` key is already silently
@@ -266,10 +282,30 @@ export function globalChecksIgnoredWarning(path: string): string {
  * `.passthrough()` on `VinayaConfigSchema`). A `roles` field belongs to a
  * later task, not this one.
  */
-function stripGlobalChecks(config: VinayaConfig, path: string): VinayaConfig {
-  if (path !== GLOBAL_CONFIG_PATH || !config.checks || Object.keys(config.checks).length === 0) return config
-  console.error(`⚠ ${globalChecksIgnoredWarning(path)}`)
-  return { ...config, checks: undefined }
+function stripGlobalOnlyKeys(config: VinayaConfig, path: string): VinayaConfig {
+  if (path !== GLOBAL_CONFIG_PATH) return config
+  let result = config
+  if (result.checks && Object.keys(result.checks).length > 0) {
+    console.error(`⚠ ${globalChecksIgnoredWarning(path)}`)
+    result = { ...result, checks: undefined }
+  }
+  if (result.principals && result.principals.length > 0) {
+    console.error(`⚠ ${globalPrincipalsIgnoredWarning(path)}`)
+    result = { ...result, principals: undefined }
+  }
+  return result
+}
+
+/**
+ * Resolves the trusted-principal allowlist for this repo: the repo-local
+ * `principals` field when set, else `PRINCIPAL_ALLOWLIST` (this monorepo's
+ * own hardcoded default — unaffected when no config sets `principals`, the
+ * every-existing-install-stays-identical case). Shared by every check bin
+ * that verifies a review verdict or a waiver-label actor, so they can never
+ * resolve this differently from each other.
+ */
+export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[] {
+  return config?.principals ?? PRINCIPAL_ALLOWLIST
 }
 
 /**
@@ -283,7 +319,7 @@ export function loadConfig(): VinayaConfig | null {
   if (!path) return null
   try {
     const raw = JSON.parse(readFileSync(path, 'utf-8'))
-    return stripGlobalChecks(VinayaConfigSchema.parse(raw), path)
+    return stripGlobalOnlyKeys(VinayaConfigSchema.parse(raw), path)
   } catch {
     return null
   }
@@ -317,7 +353,7 @@ export function loadConfigChecked(): ConfigLoadResult {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; ')
     return { ok: false, path, error: detail }
   }
-  return { ok: true, config: stripGlobalChecks(parsed.data, path) }
+  return { ok: true, config: stripGlobalOnlyKeys(parsed.data, path) }
 }
 
 /**

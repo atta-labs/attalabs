@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CheckSpec } from '../src/checks/contract'
 import { runChecks } from '../src/checks/runner'
+import { PRINCIPAL_ALLOWLIST } from '@atta/aeg-core'
 import { lintEnvDeclarations, VinayaConfigSchema } from '../src/lib/config'
 
 // We test config.ts functions by changing process.cwd() via chdir
@@ -14,6 +15,7 @@ let loadConfig: typeof import('../src/lib/config.js').loadConfig
 let loadConfigChecked: typeof import('../src/lib/config.js').loadConfigChecked
 let configPath: typeof import('../src/lib/config.js').configPath
 let writeConfig: typeof import('../src/lib/config.js').writeConfig
+let resolvePrincipalAllowlist: typeof import('../src/lib/config.js').resolvePrincipalAllowlist
 
 const TEST_CONFIG = {
   rings: { ring1_forgeWriteInterception: true, ring2_asyncAudits: false }
@@ -37,6 +39,7 @@ describe('config', () => {
     loadConfigChecked = mod.loadConfigChecked
     configPath = mod.configPath
     writeConfig = mod.writeConfig
+    resolvePrincipalAllowlist = mod.resolvePrincipalAllowlist
   })
 
   afterEach(() => {
@@ -59,6 +62,25 @@ describe('config', () => {
     expect(result).not.toBeNull()
     expect(result?.rings?.ring1_forgeWriteInterception).toBe(true)
     expect(result?.rings?.ring2_asyncAudits).toBe(false)
+  })
+
+  it('loadConfig parses a repo-local "principals" field', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    writeFileSync(localPath, JSON.stringify({ principals: ['alice', 'bob'] }), 'utf-8')
+
+    const result = loadConfig()
+    expect(result?.principals).toEqual(['alice', 'bob'])
+  })
+
+  it('resolvePrincipalAllowlist falls back to PRINCIPAL_ALLOWLIST when no config sets principals (every existing install unaffected)', () => {
+    expect(resolvePrincipalAllowlist(null)).toEqual(PRINCIPAL_ALLOWLIST)
+    expect(resolvePrincipalAllowlist({})).toEqual(PRINCIPAL_ALLOWLIST)
+  })
+
+  it('resolvePrincipalAllowlist uses the repo-local principals field as a full replacement, not additive, when set', () => {
+    const result = resolvePrincipalAllowlist({ principals: ['alice', 'bob'] })
+    expect(result).toEqual(['alice', 'bob'])
+    expect(result).not.toContain(PRINCIPAL_ALLOWLIST[0])
   })
 
   it('configPath returns local path when vinaya.config.json exists in cwd', () => {

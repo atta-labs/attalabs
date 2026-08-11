@@ -40,4 +40,26 @@ describe('vinaya check — global-config checks stripping (Part 3, non-plan path
     const matches = stderr.match(/registration in the global config is ignored/g) ?? []
     expect(matches).toHaveLength(1)
   }, 30000)
+
+  it('also strips and warns on a global-config "principals" declaration — a trust decision must come from the repo-local, reviewed file', async () => {
+    repoDir = mkdtempSync(join(tmpdir(), 'vinaya-check-repo-'))
+    homeDir = mkdtempSync(join(tmpdir(), 'vinaya-check-home-'))
+    mkdirSync(join(homeDir, '.vinaya'), { recursive: true })
+    writeFileSync(
+      join(homeDir, '.vinaya', 'config.json'),
+      JSON.stringify({ principals: ['someone-not-actually-trusted-by-this-repo'] }),
+      'utf-8'
+    )
+
+    const proc = Bun.spawn(['bun', INDEX, 'check', '--all'], {
+      cwd: repoDir,
+      env: { ...process.env, HOME: homeDir },
+      stdout: 'pipe',
+      stderr: 'pipe'
+    })
+    await proc.exited
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(stderr).toContain('"principals" in the global config is ignored')
+  }, 30000)
 })

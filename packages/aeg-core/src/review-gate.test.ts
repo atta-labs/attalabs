@@ -185,3 +185,41 @@ describe('checkReviewGate — verdict-author verification (security finding, PR 
     expect(result.verdict).toBe('pass')
   })
 })
+
+describe('checkReviewGate — configurable principalAllowlist (adopter-repo fix)', () => {
+  const adopterApprove = (author: string) => ({ body: 'VERDICT: APPROVE\n\nclean.', author })
+  const adopterPass = (author: string) => ({ body: 'VERDICT: PASS\n\nno findings.', author })
+
+  it('a caller with no principalAllowlist keeps the default PRINCIPAL_ALLOWLIST behavior (backward compatible)', () => {
+    const result = checkReviewGate({
+      comments: [adopterApprove('someone-else'), adopterPass('someone-else')],
+      labels: [],
+      waiverLabelActor: null
+      // no principalAllowlist passed
+    })
+    expect(result.verdict).toBe('fail') // 'someone-else' isn't the hardcoded default
+  })
+
+  it('an overridden principalAllowlist counts a verdict from an adopter-trusted author', () => {
+    const result = checkReviewGate({
+      comments: [adopterApprove('someone-else'), adopterPass('someone-else')],
+      labels: [],
+      waiverLabelActor: null,
+      principalAllowlist: ['someone-else']
+    })
+    expect(result.verdict).toBe('pass')
+  })
+
+  it('an overridden principalAllowlist is a true REPLACEMENT, not additive — the hardcoded default author no longer counts once overridden', () => {
+    const result = checkReviewGate({
+      comments: [adopterApprove('daniboomerang'), adopterPass('daniboomerang')],
+      labels: [],
+      waiverLabelActor: null,
+      principalAllowlist: ['someone-else'] // daniboomerang deliberately excluded
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reason).toContain(
+      '2 verdict-shaped comment(s) from authors outside the principal allowlist were ignored'
+    )
+  })
+})

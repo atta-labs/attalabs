@@ -21,6 +21,7 @@
 import { execFileSync } from 'node:child_process'
 import { checkReviewGate, isReviewGateExemptBranch, WAIVER_LABEL_REVIEW } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
+import { loadConfig, resolvePrincipalAllowlist } from '../../lib/config'
 
 const CHECK_NAME = 'review-gate'
 
@@ -101,7 +102,8 @@ function main(): void {
   const result = checkReviewGate({
     comments: pr.comments.map((c) => ({ body: c.body, author: c.author?.login ?? null })),
     labels,
-    waiverLabelActor
+    waiverLabelActor,
+    principalAllowlist: resolvePrincipalAllowlist(loadConfig())
   })
 
   if (result.verdict === 'fail') {

@@ -37,15 +37,9 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import {
-  DOC_OWNERS_PATH,
-  evaluateC5,
-  isWaiverLabelActorVerified,
-  overrideActive,
-  PRINCIPAL_ALLOWLIST,
-  WAIVER_LABEL
-} from '@atta/aeg-core'
+import { DOC_OWNERS_PATH, evaluateC5, isWaiverLabelActorVerified, overrideActive, WAIVER_LABEL } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
+import { loadConfig, resolvePrincipalAllowlist } from '../../lib/config'
 
 const CHECK_NAME = 'doc-coverage-push'
 
@@ -85,7 +79,7 @@ function waiverActiveFromEnv(): boolean {
     label: WAIVER_LABEL,
     labels,
     labelActor: process.env.WAIVER_LABEL_ACTOR || null,
-    principalAllowlist: PRINCIPAL_ALLOWLIST
+    principalAllowlist: resolvePrincipalAllowlist(loadConfig())
   })
 }
 
