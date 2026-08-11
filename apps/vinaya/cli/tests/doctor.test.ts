@@ -6,6 +6,7 @@ import type { DoctorDeps, Finding } from '../src/commands/doctor.js'
 import { runDoctor } from '../src/commands/doctor.js'
 import type { InitDeps } from '../src/commands/init.js'
 import { runInit } from '../src/commands/init.js'
+import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import { CHECKS_WORKFLOW_PATH, CONFIG_PATH, DOCTRINE_POINTER_PATH } from '../src/lib/artifacts.js'
 import type { LabelGateway } from '../src/lib/ops.js'
 
@@ -193,6 +194,16 @@ describe('vinaya doctor — never mutates', () => {
     expect(hit?.message).toContain('drifted')
 
     expect(snapshot(root)).toEqual(before)
+  })
+
+  it('does not flag .vinaya/doc-owners as drifted once a real binding is added (found live: was recommending `vinaya upgrade`, which would have wiped it)', async () => {
+    await runInit(['--yes'], initDeps())
+    writeFileSync(join(root, DOC_OWNERS_PATH), 'apps/foo/src/**  apps/foo/specs/foo.md\n', { flag: 'a' })
+
+    const report = await runDoctorJson()
+    const hit = report.findings.find((f) => f.message.includes(DOC_OWNERS_PATH))
+    expect(hit?.severity).toBe('ok')
+    expect(hit?.message).not.toContain('drift')
   })
 
   it('flags a dropped manifest entry (file present on disk, absent from `managed.files`)', async () => {

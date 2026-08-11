@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import type { DoctorDeps } from '../src/commands/doctor.js'
 import { runDoctor } from '../src/commands/doctor.js'
 import type { InitDeps } from '../src/commands/init.js'
@@ -164,6 +165,22 @@ describe('vinaya upgrade', () => {
     expect(after.checks).toEqual({ custom: { run: 'scripts/vinaya-checks/custom.ts', scope: 'full' } })
     // manifest itself was still regenerated (version stamped)
     expect(after.managed.version).toBeDefined()
+  })
+
+  it('never touches .vinaya/doc-owners once real bindings are added (found live: upgrade would regenerate it back to empty)', async () => {
+    await runInit(['--yes'], initDeps())
+    const bound = 'apps/foo/src/**  apps/foo/specs/foo.md\n'
+    writeFileSync(join(root, DOC_OWNERS_PATH), bound, { flag: 'a' })
+
+    // force a real regeneration alongside the adopter edit
+    writeFileSync(join(root, CHECKS_WORKFLOW_PATH), 'name: hand-edited\n')
+
+    const out = await captureStdout(() => runUpgrade(['--yes'], upgradeDeps()))
+
+    expect(readFileSync(join(root, DOC_OWNERS_PATH), 'utf-8')).toContain(bound)
+    // the real drift elsewhere still got regenerated — this isn't a no-op run
+    expect(readFileSync(join(root, CHECKS_WORKFLOW_PATH), 'utf-8')).not.toBe('name: hand-edited\n')
+    expect(out).not.toContain(`regenerate   ${DOC_OWNERS_PATH}`)
   })
 
   it('leaves foreign (non-vinaya-owned) content at a vinaya path untouched', async () => {

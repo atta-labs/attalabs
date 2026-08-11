@@ -11,7 +11,11 @@ import { createFileDoctrineSource } from '@atta/vinaya-sources'
 const DOCS_BASE_PATH = '/docs'
 
 function findAegRoot(): string {
-  let dir = process.cwd()
+  // Same standalone-Studio chdir hazard as github-links.ts's findRepoRoot()
+  // and repo-state/read-root.ts's findAegRoot() — see either for the full
+  // explanation. VINAYA_REPO_ROOT is set by spawnStandalone() in
+  // cli/src/commands/studio.ts.
+  let dir = process.env.VINAYA_REPO_ROOT ?? process.cwd()
   while (dir !== path.dirname(dir)) {
     const candidate = path.join(dir, 'aeg-root')
     if (existsSync(candidate)) return candidate

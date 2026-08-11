@@ -13,6 +13,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import { buildInitOps, CONFIG_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
 import { MANAGED_MANIFEST_VERSION, type ManagedManifest, VinayaConfigSchema } from '../lib/config.js'
 import { detectGitRepo, hookDirFromManifest, type RepoInfo, resolveHookDir } from '../lib/detect.js'
@@ -124,9 +125,14 @@ export function planUpgrade(ops: Op[], repoRoot: string, manifest: ManagedManife
       const exists = existsSync(abs)
       const owned = ownedFiles.has(op.path)
       let action: FileAction
-      if (op.path === CONFIG_PATH) {
-        // Semantic content (rings/checks/briefSchema) is adopter-owned;
-        // only the `managed` sub-object is regenerated, separately below.
+      if (op.path === CONFIG_PATH || op.path === DOC_OWNERS_PATH) {
+        // CONFIG_PATH: semantic content (rings/checks/briefSchema) is
+        // adopter-owned; only the `managed` sub-object is regenerated,
+        // separately below. DOC_OWNERS_PATH: real bindings are adopter-owned
+        // the same way — without this exemption, upgrade would classify any
+        // added binding as drift from the pristine empty starter and
+        // silently regenerate the file back to empty, destroying it (found
+        // live, doctor.ts carries the matching fix).
         action = 'keep'
       } else if (!owned) {
         action = exists ? 'refuse-foreign' : 'not-installed'

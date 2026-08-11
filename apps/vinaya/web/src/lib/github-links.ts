@@ -22,7 +22,11 @@ let cachedRepoRoot: string | null = null
 
 export function findRepoRoot(): string {
   if (cachedRepoRoot) return cachedRepoRoot
-  let dir = process.cwd()
+  // Standalone Studio's server.js does `process.chdir(__dirname)` at its own
+  // startup, before any request runs — `VINAYA_REPO_ROOT` is the guest
+  // repo's real cwd, captured and forwarded by `spawnStandalone()`
+  // (cli/src/commands/studio.ts) the same way `AEG_REPO` already is.
+  let dir = process.env.VINAYA_REPO_ROOT ?? process.cwd()
   for (let i = 0; i < 8; i++) {
     if (existsSync(path.join(dir, ROOT_MARKER))) {
       cachedRepoRoot = dir
