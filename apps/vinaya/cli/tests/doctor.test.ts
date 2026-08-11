@@ -307,5 +307,5 @@ describe('vinaya doctor — raw git hooks inside a linked worktree', () => {
     } finally {
       git(root, ['worktree', 'remove', '--force', wtRoot])
     }
-  })
+  }, 20_000) // real `runInit` + two `git commit`s + `worktree add` — bun's 5s default is too tight on a cold CI runner
 })
