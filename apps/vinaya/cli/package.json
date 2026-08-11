@@ -12,6 +12,7 @@
     "dist",
     "templates",
     "aeg-root",
+    "studio-standalone",
     "README.md"
   ],
   "publishConfig": {
@@ -38,7 +39,8 @@
   "scripts": {
     "build": "bun scripts/build.ts",
     "bundle-doctrine": "bun scripts/bundle-doctrine.ts",
-    "prepack": "bun scripts/build.ts && bun scripts/bundle-doctrine.ts",
+    "bundle-studio": "bun scripts/bundle-studio.ts",
+    "prepack": "bun scripts/build.ts && bun scripts/bundle-doctrine.ts && bun scripts/bundle-studio.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src tests scripts",

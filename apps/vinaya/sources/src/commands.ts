@@ -231,7 +231,8 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     name: 'studio',
-    description: 'Launch local Vinaya Studio against this repo (requires a Vinaya workspace checkout)',
+    description:
+      'Launch local Vinaya Studio against this repo — works standalone via npx, not just inside a Vinaya workspace checkout',
     status: 'shipped'
   },
   {
