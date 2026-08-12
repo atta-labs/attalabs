@@ -74,12 +74,20 @@ export function coreCheckRegistry(): CheckSpec[] {
       // PR_BODY_FILE is set — the legitimate ring-0 "no PR exists yet" case.
       // BASE_SHA/PR_LABELS/WAIVER_LABEL_ACTOR each already default via
       // `|| 'origin/main'` / `|| ''` / `|| null` in the bin itself.
+      // GITHUB_REPOSITORY/GITHUB_TOKEN/GH_TOKEN feed the trust-anchor read
+      // (`loadTrustAnchorConfig`, lib/config.ts) — a `gh api` fetch of
+      // `principals` from the DEFAULT BRANCH, never local git. All optional:
+      // absent, the fetch fails and the allowlist falls back to the hardcoded
+      // `PRINCIPAL_ALLOWLIST`, the safe direction.
       env: {
         BASE_SHA: { optional: true },
         PR_BODY: { optional: true },
         PR_BODY_FILE: { optional: true },
         PR_LABELS: { optional: true },
-        WAIVER_LABEL_ACTOR: { optional: true }
+        WAIVER_LABEL_ACTOR: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
@@ -225,6 +233,7 @@ export function coreCheckRegistry(): CheckSpec[] {
       env: {
         BRANCH: { optional: true },
         PR_NUMBER: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
         GITHUB_TOKEN: { optional: true },
         GH_TOKEN: { optional: true }
       }
@@ -290,13 +299,18 @@ export function coreCheckRegistry(): CheckSpec[] {
       // absence-tolerance as `doc-coverage` above, plus OVERRIDE_DOCS
       // (`overrideActive()`'s first, env-only check) which is opt-in by
       // design — absence is the default, unremarkable path.
+      // GITHUB_REPOSITORY/GITHUB_TOKEN/GH_TOKEN: same trust-anchor read as
+      // `doc-coverage` above — see that entry's comment.
       env: {
         OVERRIDE_DOCS: { optional: true },
         BASE_SHA: { optional: true },
         PR_BODY: { optional: true },
         PR_BODY_FILE: { optional: true },
         PR_LABELS: { optional: true },
-        WAIVER_LABEL_ACTOR: { optional: true }
+        WAIVER_LABEL_ACTOR: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {

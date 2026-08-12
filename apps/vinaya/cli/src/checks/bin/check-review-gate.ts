@@ -21,7 +21,7 @@
 import { execFileSync } from 'node:child_process'
 import { checkReviewGate, isReviewGateExemptBranch, WAIVER_LABEL_REVIEW } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, emitCheckError } from '../contract'
-import { loadConfigFromRef, resolvePrincipalAllowlist, TRUST_ANCHOR_REF } from '../../lib/config'
+import { loadTrustAnchorConfig, resolvePrincipalAllowlist } from '../../lib/config'
 
 const CHECK_NAME = 'review-gate'
 
@@ -99,15 +99,16 @@ function main(): void {
     ? fetchWaiverLabelActor(prNumber, WAIVER_LABEL_REVIEW)
     : null
 
-  // TRUST_ANCHOR_REF, never an env var — a caller-supplied ref here (even a
-  // BASE_SHA env var) is itself attacker-steerable via the PR's own
-  // (pull_request-triggered, PR-editable) workflow YAML. See
-  // `TRUST_ANCHOR_REF`'s doc comment in lib/config.ts.
+  // `principals` comes from GitHub's API (default-branch, server-side state),
+  // never local git / the PR's checkout / any env var — all three of those
+  // are rewritable by the PR being evaluated, since a `pull_request`-triggered
+  // workflow runs the PR's own YAML. See `loadTrustAnchorConfig` in
+  // lib/config.ts for the three failed attempts that established this.
   const result = checkReviewGate({
     comments: pr.comments.map((c) => ({ body: c.body, author: c.author?.login ?? null })),
     labels,
     waiverLabelActor,
-    principalAllowlist: resolvePrincipalAllowlist(loadConfigFromRef(TRUST_ANCHOR_REF))
+    principalAllowlist: resolvePrincipalAllowlist(loadTrustAnchorConfig())
   })
 
   if (result.verdict === 'fail') {

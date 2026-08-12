@@ -96,26 +96,29 @@ describe('registry env declarations', () => {
     }
   })
 
-  // Security regression, second pass on PR #862's own fix: a `BASE_SHA`
-  // declaration was briefly added to review-gate's env, forwarding an
-  // attacker-steerable ref (a pull_request-triggered workflow runs the PR's
-  // own YAML) into a trust-anchor read. Never again — review-gate's
-  // principals resolution is hardcoded to TRUST_ANCHOR_REF and must never
-  // accept a caller-suppliable ref of any kind.
-  it('review-gate never declares BASE_SHA — its trust-anchor read is hardcoded, never caller-suppliable', () => {
+  // Security regression, PR #862 rounds 2-3. Round 2 added a `BASE_SHA` env
+  // declaration to review-gate, forwarding an attacker-steerable ref into the
+  // trust-anchor read; round 3 hardcoded a local `origin/main`, which the PR's
+  // own workflow YAML could still `git update-ref`. `review-gate` must never
+  // regain a ref-shaped env knob, and no bin may resolve `principals` from
+  // any local/env source — only `loadTrustAnchorConfig()` (GitHub API).
+  it('review-gate never declares BASE_SHA — its trust anchor is never caller-suppliable', () => {
     const reviewGate = specs.find((s) => s.name === 'review-gate')
     expect(reviewGate?.env).toBeDefined()
     expect(Object.keys(reviewGate?.env ?? {})).not.toContain('BASE_SHA')
   })
 
-  it('no check bin ever calls loadConfigFromRef with anything but TRUST_ANCHOR_REF — source-text guard against the same env-steering mistake creeping back in', () => {
+  it('every principals-resolving bin calls loadTrustAnchorConfig() with NO arguments, and never a local-git/env-derived config', () => {
     const bins = ['check-review-gate.ts', 'check-doc-coverage.ts', 'check-doc-coverage-push.ts']
     for (const name of bins) {
       const src = readFileSync(join(import.meta.dir, '..', '..', 'src', 'checks', 'bin', name), 'utf-8')
-      const calls = src.match(/loadConfigFromRef\(([^)]*)\)/g) ?? []
-      expect(calls.length, `${name} should call loadConfigFromRef exactly once`).toBe(1)
-      expect(calls[0], `${name} must pass TRUST_ANCHOR_REF, never an env-derived value`).toBe(
-        'loadConfigFromRef(TRUST_ANCHOR_REF)'
+      const calls = src.match(/loadTrustAnchorConfig\(([^)]*)\)/g) ?? []
+      expect(calls.length, `${name} should call loadTrustAnchorConfig exactly once`).toBe(1)
+      expect(calls[0], `${name} must pass no argument — the fetcher param is test-only`).toBe('loadTrustAnchorConfig()')
+      // The retired, PR-rewritable sources must not reappear for this purpose.
+      expect(src, `${name} must not resolve principals from local git`).not.toContain('loadConfigFromRef')
+      expect(src, `${name} must not resolve principals from the working tree`).not.toMatch(
+        /resolvePrincipalAllowlist\(\s*loadConfig\(\)/
       )
     }
   })

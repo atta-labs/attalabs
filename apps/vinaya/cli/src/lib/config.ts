@@ -305,71 +305,104 @@ function stripGlobalOnlyKeys(config: VinayaConfig, path: string): VinayaConfig {
  * that verifies a review verdict or a waiver-label actor, so they can never
  * resolve this differently from each other.
  *
- * **Callers MUST pass a config loaded from the base ref (`loadConfigFromRef`),
- * never `loadConfig()`/the PR branch's own working tree.** `principals` names
- * who is trusted to approve a merge — reading it from the PR being evaluated
- * lets that same PR redefine its own trust anchor and then self-approve
- * (security finding, PR #862 review: a PR that edits `vinaya.config.json` to
- * add its own author, then posts its own `VERDICT: APPROVE`/`PASS` comment,
- * passed review-gate against itself). Reading from the base ref instead means
- * changing who is trusted still requires an EXISTING principal's approval —
- * the change only takes effect for PRs opened after it merges.
+ * **Callers MUST pass `loadTrustAnchorConfig()`, never `loadConfig()`, and
+ * never any config derived from local git or the working tree.** `principals`
+ * names who is trusted to approve a merge; anything the PR being evaluated can
+ * reach is something it can rewrite. See `loadTrustAnchorConfig`'s own doc
+ * comment for the three failed attempts that established this rule, and for
+ * why branch protection — not this function — is the actual boundary.
  */
 export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[] {
   return config?.principals ?? PRINCIPAL_ALLOWLIST
 }
 
 /**
- * The ONLY ref every trust-anchor read (`resolvePrincipalAllowlist` via
- * `loadConfigFromRef`) may use. A literal constant, never taken from an env
- * var, CLI flag, or anything else a workflow's own YAML could set.
+ * ⚠️ **Read this before changing anything about how `principals` is
+ * resolved.** Three consecutive attempts at this got it wrong, each fixing
+ * the previous one's lever while leaving the same class open (PR #862's own
+ * review rounds 1-3):
  *
- * **Security finding, second pass on PR #862's own fix:** the first cut of
- * `loadConfigFromRef` accepted a `BASE_SHA` env var as an override (mirroring
- * `check-doc-coverage.ts`'s pre-existing, legitimate diff-scoping use of
- * `BASE_SHA`). That reopened the exact hole it closed, one layer removed:
- * `checksWorkflow()`/`reviewWorkflow()` run on the plain `pull_request`
- * trigger (not `pull_request_target`), so GitHub executes the workflow YAML
- * AS IT EXISTS IN THE PR'S OWN HEAD — a PR can add `BASE_SHA:
- * ${{ github.event.pull_request.head.sha }}` to its own copy of the
- * generated workflow file, in the same diff that edits `principals`, and
- * `loadConfigFromRef` would then read the attacker's own head instead of the
- * real base — full self-approval bypass again, just moved one indirection
- * later. The fix is not a smarter default; it is that trust-anchor
- * resolution must never accept a caller-supplied ref AT ALL. `origin/main`
- * (the literal git ref, fetched via `actions/checkout@v4`'s `fetch-depth: 0`
- * from GitHub's own protected remote state) cannot be rewritten by a PR —
- * only someone with actual push access to `main` can move it, a completely
- * different privilege boundary than "can open a PR."
+ *   1. `loadConfig()` — read the PR's own working tree. A PR added its author
+ *      to `principals` and self-approved.
+ *   2. `git show ${BASE_SHA}:...` — `BASE_SHA` was an env var, and a
+ *      `pull_request`-triggered workflow runs the PR's OWN copy of the
+ *      workflow YAML, so the PR set `BASE_SHA` to its own head SHA.
+ *   3. `git show origin/main:...` with a hardcoded ref — but `origin/main` is
+ *      a LOCAL remote-tracking ref inside the job's own disk, and the PR's own
+ *      workflow YAML can run `git update-ref refs/remotes/origin/main HEAD`
+ *      before this check's step. Reproduced live; the doc comment claiming
+ *      "only push access to `main` can move it" conflated that local ref with
+ *      the real protected branch on GitHub.
  *
- * `check-doc-coverage.ts`/`check-doc-coverage-push.ts` keep their own,
- * separate, still-overridable `BASE_SHA` for diff-SCOPING (which files count
- * as "changed") — that is not a trust decision, and conflating the two was
- * the mistake. Never reuse that variable for a principals/trust read.
+ * The lesson those three share: **inside a `pull_request`-triggered workflow,
+ * NOTHING reachable from the job's own filesystem or environment is a trust
+ * boundary against the PR author** — the workflow definition itself comes
+ * from the PR. So this reads the file from **GitHub's API**, which serves the
+ * repository's default-branch content from server-side state the PR cannot
+ * touch, rather than from any local git or env state.
+ *
+ * **This raises the bar; it is not, by itself, the boundary.** A PR can still
+ * edit its own copy of the generated workflow to delete this step, `exit 0`,
+ * or otherwise not run the gate at all. The thing that actually makes review
+ * enforcement unbypassable is **GitHub branch protection with this check
+ * marked as a required status check** — a required check that never reports
+ * leaves the PR unmergeable, and that rule lives in repository settings,
+ * outside any PR's reach. `vinaya init` prints the branch-protection
+ * recommendation and `vinaya doctor` reports when it is missing; an adopter
+ * setting `principals` without branch protection has a useful convention, not
+ * a security control, and the docs must never imply otherwise.
  */
-export const TRUST_ANCHOR_REF = 'origin/main'
+export type TrustAnchorFetcher = () => string
 
-/**
- * Reads `vinaya.config.json` as committed at `ref` — via `git show`, never
- * the working tree — so a trust-anchor read (`resolvePrincipalAllowlist`)
- * can be pinned to the base branch regardless of what the PR being evaluated
- * has changed locally. Malformed/unparseable content, or the file simply not
- * existing at that ref (a fresh repo whose first PR adds `vinaya.config.json`
- * for the first time), both resolve to `null` — the safe direction: a
- * caller combining this with `resolvePrincipalAllowlist` falls back to the
- * hardcoded `PRINCIPAL_ALLOWLIST`, never to trusting unreviewed content.
- *
- * `ref` must be `TRUST_ANCHOR_REF` for every principals-resolution caller —
- * this function stays generic (any ref) because `config.test.ts` also uses
- * it to exercise an arbitrary SHA, but no CheckSpec may ever forward an env
- * var into it. See `TRUST_ANCHOR_REF`'s own doc comment for why.
- */
-export function loadConfigFromRef(ref: string): VinayaConfig | null {
+/** Repo identity for the trust-anchor read, preferring the Actions runner's own value. */
+function trustAnchorRepo(): string | null {
+  const fromRunner = process.env.GITHUB_REPOSITORY
+  if (fromRunner && /^[^/]+\/[^/]+$/.test(fromRunner)) return fromRunner
   try {
-    const raw = execFileSync('git', ['show', `${ref}:${LOCAL_CONFIG_FILENAME}`], {
+    const url = execFileSync('git', ['remote', 'get-url', 'origin'], {
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'pipe']
-    })
+    }).trim()
+    const m = url.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/)
+    return m?.[1] && m[2] ? `${m[1]}/${m[2]}` : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetches `vinaya.config.json` from the repository's DEFAULT BRANCH via the
+ * GitHub API — no `ref` parameter, so GitHub itself picks the default branch
+ * from server-side repo settings. Never reads local git or the working tree.
+ */
+function ghFetchTrustAnchorConfig(): string {
+  const repo = trustAnchorRepo()
+  if (!repo) throw new Error('could not resolve repo identity for the trust-anchor read')
+  return execFileSync('gh', ['api', `repos/${repo}/contents/${LOCAL_CONFIG_FILENAME}`, '--jq', '.content'], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
+}
+
+/**
+ * The trust-anchor config — `vinaya.config.json` as it exists on the
+ * repository's default branch per GitHub's own API, never the PR's checkout.
+ * The ONLY sanctioned input to `resolvePrincipalAllowlist` in any check.
+ *
+ * Every failure mode (no repo identity, `gh` unauthenticated or unreachable,
+ * file absent on the default branch, malformed JSON, schema mismatch) returns
+ * `null`, which `resolvePrincipalAllowlist` turns into the hardcoded
+ * `PRINCIPAL_ALLOWLIST` — never into trusting unreviewed content. A local run
+ * with no `gh` auth therefore behaves exactly as it did before `principals`
+ * existed.
+ *
+ * `fetcher` is injectable for tests ONLY; production callers pass nothing.
+ */
+export function loadTrustAnchorConfig(fetcher: TrustAnchorFetcher = ghFetchTrustAnchorConfig): VinayaConfig | null {
+  try {
+    const base64 = fetcher().trim()
+    if (!base64) return null
+    const raw = Buffer.from(base64, 'base64').toString('utf-8')
     const parsed = VinayaConfigSchema.safeParse(JSON.parse(raw))
     return parsed.success ? parsed.data : null
   } catch {
