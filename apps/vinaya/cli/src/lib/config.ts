@@ -373,7 +373,7 @@ export type TrustAnchorFetcher = () => string
  * only as a local-dev fallback. See `loadTrustAnchorConfig`'s doc comment for
  * why neither is a practical attack lever.
  */
-function trustAnchorRepo(): string | null {
+export function trustAnchorRepo(): string | null {
   // One shape gate both sources pass through — the remote path used to skip
   // it, and its own `(.+?)` group can capture slashes, so a crafted remote
   // could have produced an `owner/a/b`-shaped value that lands somewhere
@@ -442,8 +442,33 @@ function ghFetchTrustAnchorConfig(): string {
  *
  * `fetcher` is injectable for tests ONLY; production callers pass nothing.
  */
-function isMissingFileError(message: string): boolean {
-  return /404|not found/i.test(message)
+
+/** The first line of an error's message — what the warning quotes, so a multi-line `execFileSync` dump never floods the log. */
+function firstLine(err: unknown): string {
+  return (err as Error)?.message?.split('\n')[0] ?? 'unknown error'
+}
+
+/**
+ * Is this failure just "the file isn't on the default branch"?
+ *
+ * **Must inspect the WHOLE error, not its first line.** `execFileSync` throws
+ * with `message = "Command failed: <the entire command>\n<stderr>"`, so `gh`'s
+ * actual `Not Found (HTTP 404)` text is never on line 1 — a first-line-only
+ * test silently never matched, and every fresh adopter (no config on the
+ * default branch yet) got the spurious warning this function exists to
+ * suppress. The bug survived four review rounds because the test threw a
+ * hand-built single-line `Error('gh: HTTP 404 Not Found')` that no real
+ * `execFileSync` ever produces — the test passed while production did the
+ * opposite (review finding, PR #862). `stderr` is read directly too, since
+ * that is where `gh` actually writes it and it is the more reliable signal.
+ */
+function isMissingFileError(err: unknown): boolean {
+  const stderr = (err as { stderr?: Buffer | string })?.stderr
+  const haystack = [
+    (err as Error)?.message ?? '',
+    typeof stderr === 'string' ? stderr : (stderr?.toString() ?? '')
+  ].join('\n')
+  return /\b404\b|not found/i.test(haystack)
 }
 
 export function loadTrustAnchorConfig(fetcher: TrustAnchorFetcher = ghFetchTrustAnchorConfig): VinayaConfig | null {
@@ -456,8 +481,7 @@ export function loadTrustAnchorConfig(fetcher: TrustAnchorFetcher = ghFetchTrust
   try {
     base64 = fetcher().trim()
   } catch (err) {
-    const message = (err as Error).message.split('\n')[0] ?? 'unknown error'
-    if (!isMissingFileError(message)) warn(message)
+    if (!isMissingFileError(err)) warn(firstLine(err))
     return null
   }
   if (!base64) return null

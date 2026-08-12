@@ -10,6 +10,7 @@ import {
   lintEnvDeclarations,
   loadTrustAnchorConfig,
   resolvePrincipalAllowlist as resolvePrincipalAllowlistStatic,
+  trustAnchorRepo,
   VinayaConfigSchema
 } from '../src/lib/config'
 
@@ -324,7 +325,29 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
     expect(err).toBe('')
   })
 
-  it('stays SILENT when the file simply is not on the default branch yet — an ordinary state for a fresh adopter, not a fault', () => {
+  it('stays SILENT when the file simply is not on the default branch yet — using the REAL execFileSync error shape, where the 404 is never on line 1', () => {
+    // Regression, PR #862: the previous version of this test threw a
+    // hand-built single-line `Error('gh: HTTP 404 Not Found')`. Real
+    // `execFileSync` throws `message = "Command failed: <cmd>\n<stderr>"`, so
+    // the 404 lives on a later line and the first-line-only check never
+    // matched — the test passed while production warned on every run for a
+    // fresh adopter. This fixture is the real shape, produced by an actual
+    // failing `execFileSync` rather than described from memory.
+    let realError: unknown
+    try {
+      execFileSync('gh', ['api', 'repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json'], {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+    } catch (err) {
+      realError = err
+    }
+    // Guard the fixture itself: if `gh` is unauthenticated/absent this is not
+    // a 404 and the test would assert nothing meaningful.
+    const combined = `${(realError as Error)?.message ?? ''}\n${(realError as { stderr?: string })?.stderr ?? ''}`
+    if (!/\b404\b|not found/i.test(combined)) return // gh unavailable — skip rather than assert falsely
+    expect((realError as Error).message.split('\n')[0]).not.toMatch(/404|not found/i) // the bug's precondition
+
     const originalOut = process.stdout.write.bind(process.stdout)
     let out = ''
     process.stdout.write = ((c: string) => {
@@ -333,12 +356,39 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
     }) as typeof process.stdout.write
     try {
       loadTrustAnchorConfig(() => {
-        throw new Error('gh: HTTP 404 Not Found')
+        throw realError
       })
     } finally {
       process.stdout.write = originalOut
     }
     expect(out).toBe('')
+  })
+})
+
+describe('trustAnchorRepo — repo identity for the trust-anchor read', () => {
+  const saved = process.env.GITHUB_REPOSITORY
+  afterEach(() => {
+    if (saved === undefined) delete process.env.GITHUB_REPOSITORY
+    else process.env.GITHUB_REPOSITORY = saved
+  })
+
+  it('prefers the runner-provided GITHUB_REPOSITORY', () => {
+    process.env.GITHUB_REPOSITORY = 'acme/widget'
+    expect(trustAnchorRepo()).toBe('acme/widget')
+  })
+
+  it('rejects a malformed GITHUB_REPOSITORY rather than addressing an unintended endpoint', () => {
+    process.env.GITHUB_REPOSITORY = 'acme/widget/extra'
+    // Falls through to the git-remote path; whatever it returns must still be
+    // well-formed (exactly one slash, no whitespace) or null.
+    const result = trustAnchorRepo()
+    if (result !== null) expect(result).toMatch(/^[^/\s]+\/[^/\s]+$/)
+  })
+
+  it('never returns a slug with extra path segments, whichever source wins', () => {
+    delete process.env.GITHUB_REPOSITORY
+    const result = trustAnchorRepo()
+    if (result !== null) expect(result).toMatch(/^[^/\s]+\/[^/\s]+$/)
   })
 })
 
