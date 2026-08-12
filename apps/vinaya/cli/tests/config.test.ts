@@ -227,6 +227,31 @@ describe('config', () => {
   })
 })
 
+/**
+ * The exact error a real `execFileSync('gh', ['api', '<missing path>'])`
+ * throws, captured verbatim from a live run against this repo:
+ *
+ *   $ gh api repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json
+ *   message: "Command failed: gh api <path>\ngh: Not Found (HTTP 404)\n"
+ *   stderr:  "gh: Not Found (HTTP 404)\n"
+ *   status:  1
+ *
+ * Recorded rather than invented, and rather than re-fetched: the earlier
+ * version of this fixture WAS invented (a single-line `Error`) and hid a real
+ * bug; the version after that made a live call and was flaky with no bound.
+ * A recorded capture is both honest and deterministic. The companion test
+ * below asserts this shape still carries the property that broke the code, so
+ * it cannot decay into a tautology.
+ */
+function REAL_GH_404(): Error & { stderr: string; status: number } {
+  const err = new Error(
+    'Command failed: gh api repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json\ngh: Not Found (HTTP 404)\n'
+  ) as Error & { stderr: string; status: number }
+  err.stderr = 'gh: Not Found (HTTP 404)\n'
+  err.status = 1
+  return err
+}
+
 // Security regression, PR #862 rounds 1-3. Resolving `principals` from
 // anything the evaluated PR can reach — its own working tree (round 1), a
 // BASE_SHA env var (round 2), or the LOCAL `origin/main` remote-tracking ref
@@ -331,23 +356,17 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
     // `execFileSync` throws `message = "Command failed: <cmd>\n<stderr>"`, so
     // the 404 lives on a later line and the first-line-only check never
     // matched — the test passed while production warned on every run for a
-    // fresh adopter. This fixture is the real shape, produced by an actual
-    // failing `execFileSync` rather than described from memory.
-    let realError: unknown
-    try {
-      execFileSync('gh', ['api', 'repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json'], {
-        encoding: 'utf-8',
-        stdio: ['ignore', 'pipe', 'pipe']
-      })
-    } catch (err) {
-      realError = err
-    }
-    // Guard the fixture itself: if `gh` is unauthenticated/absent this is not
-    // a 404 and the test would assert nothing meaningful.
-    const combined = `${(realError as Error)?.message ?? ''}\n${(realError as { stderr?: string })?.stderr ?? ''}`
-    if (!/\b404\b|not found/i.test(combined)) return // gh unavailable — skip rather than assert falsely
-    expect((realError as Error).message.split('\n')[0]).not.toMatch(/404|not found/i) // the bug's precondition
-
+    // fresh adopter.
+    //
+    // The replacement first made a live `gh api` call to get a genuine error.
+    // That removed the wrong-shape problem but bought a flake: a real network
+    // call has no upper bound, so it timed out ~40% of full-suite runs, and
+    // raising the budget to 20s only made it rarer (1/16), never gone. A
+    // timeout cannot fix variance — so the call is gone and the shape it
+    // produced is REPLAYED below instead. This is deterministic and still not
+    // invented: `REAL_GH_404` is the verbatim capture of that live call,
+    // including `stderr`, which the assertion below re-proves is the shape
+    // that broke the original code.
     const originalOut = process.stdout.write.bind(process.stdout)
     let out = ''
     process.stdout.write = ((c: string) => {
@@ -356,18 +375,23 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
     }) as typeof process.stdout.write
     try {
       loadTrustAnchorConfig(() => {
-        throw realError
+        throw REAL_GH_404()
       })
     } finally {
       process.stdout.write = originalOut
     }
     expect(out).toBe('')
-    // 20s, not bun's 5s default: this test makes a REAL `gh api` call, which
-    // was measured at 2.4-5.4s and timed out on ~40% of full-suite runs at the
-    // default budget (review finding, PR #862). The network call is the point
-    // — it is what makes the fixture a real `execFileSync` error shape rather
-    // than a synthetic one — so the budget moves, not the assertion.
-  }, 20_000)
+  })
+
+  it('the recorded 404 fixture still has the property that broke the original code — the 404 is NOT on line 1', () => {
+    // Guards the fixture against becoming a tautology: if someone "simplifies"
+    // REAL_GH_404 into a single-line message, the bug it exists to catch would
+    // silently stop being reproducible and the test above would pass for the
+    // wrong reason. This is what the live call used to assert inline.
+    const err = REAL_GH_404()
+    expect(err.message.split('\n')[0]).not.toMatch(/404|not found/i)
+    expect(`${err.message}\n${err.stderr}`).toMatch(/\b404\b|not found/i)
+  })
 })
 
 describe('trustAnchorRepo — repo identity for the trust-anchor read', () => {
