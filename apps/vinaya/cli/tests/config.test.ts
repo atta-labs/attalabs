@@ -362,7 +362,12 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
       process.stdout.write = originalOut
     }
     expect(out).toBe('')
-  })
+    // 20s, not bun's 5s default: this test makes a REAL `gh api` call, which
+    // was measured at 2.4-5.4s and timed out on ~40% of full-suite runs at the
+    // default budget (review finding, PR #862). The network call is the point
+    // — it is what makes the fixture a real `execFileSync` error shape rather
+    // than a synthetic one — so the budget moves, not the assertion.
+  }, 20_000)
 })
 
 describe('trustAnchorRepo — repo identity for the trust-anchor read', () => {
