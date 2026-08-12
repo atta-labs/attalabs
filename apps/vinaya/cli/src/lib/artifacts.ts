@@ -117,6 +117,11 @@ jobs:
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: \${{ github.event.pull_request.number }}
+          # PR_BODY is what makes test-plan/closes-n EVALUATE: neither check
+          # fetches the body itself (both read \`process.env.PR_BODY\` only) —
+          # without it they read "no body — nothing to check" and pass
+          # vacuously regardless of the PR's real content, on every run.
+          PR_BODY: \${{ github.event.pull_request.body }}
           BRANCH: \${{ github.head_ref }}
         run: npx --yes @attalabs/vinaya check --all --diff-only
 `
@@ -164,6 +169,10 @@ jobs:
           # it the adapter reads "no PR yet — local dev" and exits 0, and
           # the gate is green regardless of review state.
           PR_NUMBER: \${{ github.event.pull_request.number }}
+          # Same PR_BODY gap as vinaya-checks.yml — this job also runs
+          # \`check --all\` (test-plan/closes-n included), so it needs the
+          # same wiring or those two checks pass vacuously here too.
+          PR_BODY: \${{ github.event.pull_request.body }}
           BRANCH: \${{ github.head_ref }}
         run: npx --yes @attalabs/vinaya check --all
 `

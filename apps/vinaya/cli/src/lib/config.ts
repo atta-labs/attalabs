@@ -1,7 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
+import { PRINCIPAL_ALLOWLIST } from '@atta/aeg-core'
 
 // Rings is the only schema surface this task ships — declarative
 // booleans, no conditional logic. Ring 0 (git hooks) and the
@@ -207,7 +209,15 @@ export const VinayaConfigSchema = z.object({
     .optional(),
   checks: z.record(z.string(), CheckEntrySchema).optional(),
   briefSchema: BriefSchemaSchema.optional(),
-  managed: ManagedManifestSchema.optional()
+  managed: ManagedManifestSchema.optional(),
+  // GitHub logins trusted as this repo's own principals for review-gate
+  // verdict-author verification and actor-verified waiver labels
+  // (`vinaya/waiver:docs`, `vinaya/waiver:review`) — overrides the hardcoded
+  // `PRINCIPAL_ALLOWLIST` (this monorepo's own principal) when set. Repo-local
+  // only, same as `checks` — stripped from a global config below, since who
+  // counts as a trusted approver must come from the reviewed, committed
+  // per-repo file, never a machine-wide personal config.
+  principals: z.array(z.string()).min(1).optional()
 })
 
 export type VinayaConfig = z.infer<typeof VinayaConfigSchema>
@@ -252,13 +262,20 @@ export function globalChecksIgnoredWarning(path: string): string {
   return `${path}: "checks" registration in the global config is ignored — checks may only be registered from a repo-local vinaya.config.json.`
 }
 
+/** Same reasoning as `globalChecksIgnoredWarning` — a trust decision must come from the reviewed, committed repo file, never a machine-wide personal config. */
+export function globalPrincipalsIgnoredWarning(path: string): string {
+  return `${path}: "principals" in the global config is ignored — principals may only be declared from a repo-local vinaya.config.json.`
+}
+
 /**
- * `checks` registration from the global config is explicitly out of scope
- * (spec chapter, "Explicitly out of scope for this design") — stripped at
- * config-*loading* time, never resolved, with a loud warning naming the
- * file. This is what keeps the resolver itself source-blind: it takes one
- * `config` parameter with no notion of "this came from global vs. local,"
- * because every caller already sees an already-stripped config.
+ * `checks` and `principals` from the global config are both explicitly out
+ * of scope for it (`checks`: spec chapter, "Explicitly out of scope for this
+ * design"; `principals`: a trust decision, same reasoning as
+ * `globalPrincipalsIgnoredWarning`) — both stripped at config-*loading* time,
+ * never resolved, each with its own loud warning naming the file. This is
+ * what keeps the resolver itself source-blind: it takes one `config`
+ * parameter with no notion of "this came from global vs. local," because
+ * every caller already sees an already-stripped config.
  *
  * There is no `roles` key to strip yet — `VinayaConfigSchema` has no `roles`
  * field, so a global config's hypothetical `roles` key is already silently
@@ -266,10 +283,218 @@ export function globalChecksIgnoredWarning(path: string): string {
  * `.passthrough()` on `VinayaConfigSchema`). A `roles` field belongs to a
  * later task, not this one.
  */
-function stripGlobalChecks(config: VinayaConfig, path: string): VinayaConfig {
-  if (path !== GLOBAL_CONFIG_PATH || !config.checks || Object.keys(config.checks).length === 0) return config
-  console.error(`⚠ ${globalChecksIgnoredWarning(path)}`)
-  return { ...config, checks: undefined }
+function stripGlobalOnlyKeys(config: VinayaConfig, path: string): VinayaConfig {
+  if (path !== GLOBAL_CONFIG_PATH) return config
+  let result = config
+  if (result.checks && Object.keys(result.checks).length > 0) {
+    console.error(`⚠ ${globalChecksIgnoredWarning(path)}`)
+    result = { ...result, checks: undefined }
+  }
+  if (result.principals && result.principals.length > 0) {
+    console.error(`⚠ ${globalPrincipalsIgnoredWarning(path)}`)
+    result = { ...result, principals: undefined }
+  }
+  return result
+}
+
+/**
+ * Resolves the trusted-principal allowlist for this repo: the repo-local
+ * `principals` field when set, else `PRINCIPAL_ALLOWLIST` (this monorepo's
+ * own hardcoded default — unaffected when no config sets `principals`, the
+ * every-existing-install-stays-identical case). Shared by every check bin
+ * that verifies a review verdict or a waiver-label actor, so they can never
+ * resolve this differently from each other.
+ *
+ * **Callers MUST pass `loadTrustAnchorConfig()`, never `loadConfig()`, and
+ * never any config derived from local git or the working tree.** `principals`
+ * names who is trusted to approve a merge; anything the PR being evaluated can
+ * reach is something it can rewrite. See `loadTrustAnchorConfig`'s own doc
+ * comment for the three failed attempts that established this rule, and for
+ * why branch protection — not this function — is the actual boundary.
+ */
+export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[] {
+  return config?.principals ?? PRINCIPAL_ALLOWLIST
+}
+
+/**
+ * ⚠️ **Read this before changing anything about how `principals` is
+ * resolved.** Three consecutive attempts at this got it wrong, each fixing
+ * the previous one's lever while leaving the same class open (PR #862's own
+ * review rounds 1-3):
+ *
+ *   1. `loadConfig()` — read the PR's own working tree. A PR added its author
+ *      to `principals` and self-approved.
+ *   2. `git show ${BASE_SHA}:...` — `BASE_SHA` was an env var, and a
+ *      `pull_request`-triggered workflow runs the PR's OWN copy of the
+ *      workflow YAML, so the PR set `BASE_SHA` to its own head SHA.
+ *   3. `git show origin/main:...` with a hardcoded ref — but `origin/main` is
+ *      a LOCAL remote-tracking ref inside the job's own disk, and the PR's own
+ *      workflow YAML can run `git update-ref refs/remotes/origin/main HEAD`
+ *      before this check's step. Reproduced live; the doc comment claiming
+ *      "only push access to `main` can move it" conflated that local ref with
+ *      the real protected branch on GitHub.
+ *
+ * The lesson those three share: **inside a `pull_request`-triggered workflow,
+ * NOTHING reachable from the job's own filesystem or environment is a trust
+ * boundary against the PR author** — the workflow definition itself comes
+ * from the PR. So the config CONTENT is read from **GitHub's API**, which
+ * serves the repository's default-branch bytes from server-side state the PR
+ * cannot touch, rather than from local git or the working tree.
+ *
+ * **Precisely scoped claim, because the previous two rounds were undone by
+ * overclaiming:** the CONTENT is server-side; the repository IDENTITY used to
+ * address that API call still comes from `trustAnchorRepo()`, which reads
+ * `GITHUB_REPOSITORY` (set by the Actions runner) and falls back to the
+ * `origin` remote URL. Both are PR-influenceable in principle. That is
+ * deliberate and not a practical lever: where a PR controls the workflow YAML
+ * it already holds a strictly stronger primitive (delete the step entirely),
+ * and where the YAML is trusted the runner sets `GITHUB_REPOSITORY` correctly
+ * so the remote fallback is never reached. The precedence order is therefore
+ * load-bearing — runner value first, remote only as a local-dev fallback —
+ * and must not be reordered.
+ *
+ * **This raises the bar; it is not, by itself, the boundary.** A PR can still
+ * edit its own copy of the generated workflow to delete this step, `exit 0`,
+ * or otherwise not run the gate at all. The thing that actually makes review
+ * enforcement unbypassable is **GitHub branch protection with this check
+ * marked as a required status check** — a required check that never reports
+ * leaves the PR unmergeable, and that rule lives in repository settings,
+ * outside any PR's reach. `vinaya init` prints the branch-protection
+ * recommendation and `vinaya doctor` reports when it is missing; an adopter
+ * setting `principals` without branch protection has a useful convention, not
+ * a security control, and the docs must never imply otherwise.
+ */
+export type TrustAnchorFetcher = () => string
+
+/**
+ * Repo identity for the trust-anchor read. **Order is load-bearing:** the
+ * Actions runner's own `GITHUB_REPOSITORY` first (correct and authoritative
+ * in the only context where this is a trust decision), the `origin` remote
+ * only as a local-dev fallback. See `loadTrustAnchorConfig`'s doc comment for
+ * why neither is a practical attack lever.
+ */
+export function trustAnchorRepo(): string | null {
+  // One shape gate both sources pass through — the remote path used to skip
+  // it, and its own `(.+?)` group can capture slashes, so a crafted remote
+  // could have produced an `owner/a/b`-shaped value that lands somewhere
+  // other than the intended contents endpoint (review finding, PR #862).
+  const wellFormed = (slug: string): string | null => (/^[^/\s]+\/[^/\s]+$/.test(slug) ? slug : null)
+
+  const fromRunner = process.env.GITHUB_REPOSITORY?.trim()
+  if (fromRunner) {
+    const validated = wellFormed(fromRunner)
+    if (validated) return validated
+  }
+  try {
+    const url = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    }).trim()
+    const m = url.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/)
+    return m?.[1] && m[2] ? wellFormed(`${m[1]}/${m[2]}`) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetches `vinaya.config.json` from the repository's DEFAULT BRANCH via the
+ * GitHub API — no `ref` parameter, so GitHub itself picks the default branch
+ * from server-side repo settings. The returned CONTENT never comes from local
+ * git or the working tree; only the repo identity does (`trustAnchorRepo`).
+ */
+function ghFetchTrustAnchorConfig(): string {
+  const repo = trustAnchorRepo()
+  if (!repo) throw new Error('could not resolve repo identity for the trust-anchor read')
+  return execFileSync('gh', ['api', `repos/${repo}/contents/${LOCAL_CONFIG_FILENAME}`, '--jq', '.content'], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
+}
+
+/**
+ * The trust-anchor config — `vinaya.config.json` as it exists on the
+ * repository's default branch per GitHub's own API, never the PR's checkout.
+ * The ONLY sanctioned input to `resolvePrincipalAllowlist` in any check.
+ *
+ * Every failure mode (no repo identity, `gh` unauthenticated or unreachable,
+ * file absent on the default branch, malformed JSON, schema mismatch) returns
+ * `null`, which `resolvePrincipalAllowlist` turns into the hardcoded
+ * `PRINCIPAL_ALLOWLIST` — never into trusting unreviewed content. A local run
+ * with no `gh` auth therefore behaves exactly as it did before `principals`
+ * existed.
+ *
+ * That fallback announces itself rather than degrading silently: an adopter
+ * whose `principals` failed to resolve would otherwise see their own
+ * reviewers' verdicts ignored for no visible reason — precisely the baffling
+ * gate failure this field exists to eliminate (review finding, PR #862 round
+ * 4). Two deliberate constraints on that message:
+ *
+ *   - It goes to **stdout, never stderr.** A check bin's stderr IS the
+ *     `CheckError` JSON channel (`checks/runner.ts` parses every non-blank
+ *     stderr line and marks the check `status: 'error'` on anything that
+ *     isn't a valid `CheckError`), so a plain-text warning there would turn
+ *     every fetch hiccup into a spurious check failure. `contract.ts` reserves
+ *     stdout for exactly this kind of human-readable chatter.
+ *   - A **missing file is silent.** A repo whose default branch has no
+ *     `vinaya.config.json` yet (a fresh adopter, or the very install PR that
+ *     adds it) is an ordinary state, not a fault worth warning about.
+ *
+ * `fetcher` is injectable for tests ONLY; production callers pass nothing.
+ */
+
+/** The first line of an error's message — what the warning quotes, so a multi-line `execFileSync` dump never floods the log. */
+function firstLine(err: unknown): string {
+  return (err as Error)?.message?.split('\n')[0] ?? 'unknown error'
+}
+
+/**
+ * Is this failure just "the file isn't on the default branch"?
+ *
+ * **Must inspect the WHOLE error, not its first line.** `execFileSync` throws
+ * with `message = "Command failed: <the entire command>\n<stderr>"`, so `gh`'s
+ * actual `Not Found (HTTP 404)` text is never on line 1 — a first-line-only
+ * test silently never matched, and every fresh adopter (no config on the
+ * default branch yet) got the spurious warning this function exists to
+ * suppress. The bug survived four review rounds because the test threw a
+ * hand-built single-line `Error('gh: HTTP 404 Not Found')` that no real
+ * `execFileSync` ever produces — the test passed while production did the
+ * opposite (review finding, PR #862). `stderr` is read directly too, since
+ * that is where `gh` actually writes it and it is the more reliable signal.
+ */
+function isMissingFileError(err: unknown): boolean {
+  const stderr = (err as { stderr?: Buffer | string })?.stderr
+  const haystack = [
+    (err as Error)?.message ?? '',
+    typeof stderr === 'string' ? stderr : (stderr?.toString() ?? '')
+  ].join('\n')
+  return /\b404\b|not found/i.test(haystack)
+}
+
+export function loadTrustAnchorConfig(fetcher: TrustAnchorFetcher = ghFetchTrustAnchorConfig): VinayaConfig | null {
+  const warn = (why: string) =>
+    process.stdout.write(
+      `⚠ could not read \`principals\` from the default branch (${why}) — falling back to vinaya's built-in principal allowlist.\n`
+    )
+
+  let base64: string
+  try {
+    base64 = fetcher().trim()
+  } catch (err) {
+    if (!isMissingFileError(err)) warn(firstLine(err))
+    return null
+  }
+  if (!base64) return null
+  try {
+    const raw = Buffer.from(base64, 'base64').toString('utf-8')
+    const parsed = VinayaConfigSchema.safeParse(JSON.parse(raw))
+    if (parsed.success) return parsed.data
+    warn('it did not satisfy the config schema')
+    return null
+  } catch {
+    warn('it was not readable as JSON')
+    return null
+  }
 }
 
 /**
@@ -283,7 +508,7 @@ export function loadConfig(): VinayaConfig | null {
   if (!path) return null
   try {
     const raw = JSON.parse(readFileSync(path, 'utf-8'))
-    return stripGlobalChecks(VinayaConfigSchema.parse(raw), path)
+    return stripGlobalOnlyKeys(VinayaConfigSchema.parse(raw), path)
   } catch {
     return null
   }
@@ -317,7 +542,7 @@ export function loadConfigChecked(): ConfigLoadResult {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; ')
     return { ok: false, path, error: detail }
   }
-  return { ok: true, config: stripGlobalChecks(parsed.data, path) }
+  return { ok: true, config: stripGlobalOnlyKeys(parsed.data, path) }
 }
 
 /**

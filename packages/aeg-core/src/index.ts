@@ -27,7 +27,13 @@ export {
   readDocNeutrals
 } from './doc-owners'
 export type { C5Result, DocAck, DocNeutral, DocOwnersBinding, DocOwnersManifestState } from './doc-owners'
-export { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL, WAIVER_LABEL_REVIEW } from './waiver-label'
+export {
+  isPrincipal,
+  isWaiverLabelActorVerified,
+  PRINCIPAL_ALLOWLIST,
+  WAIVER_LABEL,
+  WAIVER_LABEL_REVIEW
+} from './waiver-label'
 export { deriveSection7, globsOverlap } from './derive-section7'
 export type { Section7Match } from './derive-section7'
 export { checkManifestValidity, parseNoDocRules } from './manifest-validity'

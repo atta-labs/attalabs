@@ -362,6 +362,13 @@ describe('workflows', () => {
     expect(checks).toContain('PR_NUMBER')
     expect(verdict).toContain('PR_NUMBER')
     expect(verdict).toContain('steps.pr.outputs.number')
+    // PR_BODY wiring is what makes test-plan/closes-n EVALUATE — neither
+    // fetches the body itself, both read `process.env.PR_BODY` only, so an
+    // unwired job passes them vacuously regardless of the PR's real content
+    // (found live: reproduced against a real adopter repo's real CI run).
+    // Both jobs that run `check --all`/`--all --diff-only` need it.
+    expect(checks).toContain('github.event.pull_request.body')
+    expect(review).toContain('github.event.pull_request.body')
   })
 })
 

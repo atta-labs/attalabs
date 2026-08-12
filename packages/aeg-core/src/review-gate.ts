@@ -22,7 +22,7 @@
  * via `gh` and calls `checkReviewGate`.
  */
 
-import { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL_REVIEW } from './waiver-label'
+import { isPrincipal, isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL_REVIEW } from './waiver-label'
 import { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
 
 export type ReviewGateVerdict = 'pass' | 'fail'
@@ -46,6 +46,18 @@ export type ReviewGateInput = {
   labels: string[]
   /** Actor of the most recent `vinaya/waiver:review` labeling timeline event, or `null` when none exists. */
   waiverLabelActor: string | null
+  /**
+   * Overrides `PRINCIPAL_ALLOWLIST` for this evaluation when provided — an
+   * adopter repo's own `vinaya.config.json` `principals` field, resolved by
+   * the CLI bin before calling in (never read from here; this stays pure).
+   * Defaults to `PRINCIPAL_ALLOWLIST` when omitted, so every existing caller
+   * (this repo's own `bin/verify-review-gate.ts` included) is unaffected.
+   * `PRINCIPAL_ALLOWLIST` hardcoding this repo's own principal made the gate
+   * structurally unpassable on any adopter repo — found live on a real
+   * client repo's first dispatched task, the reviewer/security verdicts it
+   * already had counted for nobody.
+   */
+  principalAllowlist?: string[]
 }
 
 /**
@@ -72,11 +84,12 @@ export function isReviewGateExemptBranch(branch: string): boolean {
  * otherwise, naming exactly which verdict(s) are not clean.
  */
 export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
+  const principalAllowlist = input.principalAllowlist ?? PRINCIPAL_ALLOWLIST
   const waived = isWaiverLabelActorVerified({
     label: WAIVER_LABEL_REVIEW,
     labels: input.labels,
     labelActor: input.waiverLabelActor,
-    principalAllowlist: PRINCIPAL_ALLOWLIST
+    principalAllowlist
   })
   if (waived) {
     return {
@@ -96,12 +109,12 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
   // comment cannot brick evaluation, only fail to count. Dispatched reviewer
   // agents post under the principal's own `gh` identity, so the legitimate
   // flow is unchanged.
-  const verified = input.comments.filter((c) => c.author !== null && PRINCIPAL_ALLOWLIST.includes(c.author))
+  const verified = input.comments.filter((c) => isPrincipal(c.author, principalAllowlist))
   // Count only VERDICT-shaped ignored comments — deployment bots and ordinary
   // chat are also non-allowlisted, and counting them would imply forgery
   // where there is only noise (review finding, PR #806).
   const ignoredCount = input.comments.filter(
-    (c) => (c.author === null || !PRINCIPAL_ALLOWLIST.includes(c.author)) && c.body.includes('VERDICT')
+    (c) => !isPrincipal(c.author, principalAllowlist) && c.body.includes('VERDICT')
   ).length
   const verifiedBodies = verified.map((c) => c.body)
 

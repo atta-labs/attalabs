@@ -74,12 +74,20 @@ export function coreCheckRegistry(): CheckSpec[] {
       // PR_BODY_FILE is set — the legitimate ring-0 "no PR exists yet" case.
       // BASE_SHA/PR_LABELS/WAIVER_LABEL_ACTOR each already default via
       // `|| 'origin/main'` / `|| ''` / `|| null` in the bin itself.
+      // GITHUB_REPOSITORY/GITHUB_TOKEN/GH_TOKEN feed the trust-anchor read
+      // (`loadTrustAnchorConfig`, lib/config.ts) — a `gh api` fetch of
+      // `principals` from the DEFAULT BRANCH, never local git. All optional:
+      // absent, the fetch fails and the allowlist falls back to the hardcoded
+      // `PRINCIPAL_ALLOWLIST`, the safe direction.
       env: {
         BASE_SHA: { optional: true },
         PR_BODY: { optional: true },
         PR_BODY_FILE: { optional: true },
         PR_LABELS: { optional: true },
-        WAIVER_LABEL_ACTOR: { optional: true }
+        WAIVER_LABEL_ACTOR: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {
@@ -212,10 +220,22 @@ export function coreCheckRegistry(): CheckSpec[] {
       // authenticates ONLY from GH_TOKEN/GITHUB_TOKEN — without forwarding
       // them the allowlist strips the workflow-provided token and every
       // `gh pr view` fails. Optional because local runs use `gh`'s own
-      // keyring auth with no env var at all.
+      // keyring auth with no env var at all. GITHUB_REPOSITORY addresses the
+      // trust-anchor read (`loadTrustAnchorConfig`, lib/config.ts) — a `gh
+      // api` fetch of `principals` from the DEFAULT BRANCH.
+      //
+      // Deliberately NO `BASE_SHA` here, and no other ref-shaped knob: a
+      // `BASE_SHA` declaration was tried and reverted (security finding, PR
+      // #862 round 2) because a `pull_request`-triggered workflow runs the
+      // PR's own PR-editable YAML, so any ref this check accepts as an
+      // override is attacker-steerable and reopens the self-approval hole.
+      // GITHUB_REPOSITORY is not the same thing: it names WHICH repo to ask
+      // GitHub about, is runner-set in the only context where this is a trust
+      // decision, and never selects a commit — see `trustAnchorRepo`.
       env: {
         BRANCH: { optional: true },
         PR_NUMBER: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
         GITHUB_TOKEN: { optional: true },
         GH_TOKEN: { optional: true }
       }
@@ -281,13 +301,18 @@ export function coreCheckRegistry(): CheckSpec[] {
       // absence-tolerance as `doc-coverage` above, plus OVERRIDE_DOCS
       // (`overrideActive()`'s first, env-only check) which is opt-in by
       // design — absence is the default, unremarkable path.
+      // GITHUB_REPOSITORY/GITHUB_TOKEN/GH_TOKEN: same trust-anchor read as
+      // `doc-coverage` above — see that entry's comment.
       env: {
         OVERRIDE_DOCS: { optional: true },
         BASE_SHA: { optional: true },
         PR_BODY: { optional: true },
         PR_BODY_FILE: { optional: true },
         PR_LABELS: { optional: true },
-        WAIVER_LABEL_ACTOR: { optional: true }
+        WAIVER_LABEL_ACTOR: { optional: true },
+        GITHUB_REPOSITORY: { optional: true },
+        GITHUB_TOKEN: { optional: true },
+        GH_TOKEN: { optional: true }
       }
     },
     {

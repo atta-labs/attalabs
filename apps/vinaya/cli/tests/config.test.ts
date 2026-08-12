@@ -1,10 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CheckSpec } from '../src/checks/contract'
 import { runChecks } from '../src/checks/runner'
-import { lintEnvDeclarations, VinayaConfigSchema } from '../src/lib/config'
+import { PRINCIPAL_ALLOWLIST } from '@atta/aeg-core'
+import {
+  lintEnvDeclarations,
+  loadTrustAnchorConfig,
+  resolvePrincipalAllowlist as resolvePrincipalAllowlistStatic,
+  trustAnchorRepo,
+  VinayaConfigSchema
+} from '../src/lib/config'
 
 // We test config.ts functions by changing process.cwd() via chdir
 // and by testing the config path logic with temp dirs.
@@ -14,6 +22,7 @@ let loadConfig: typeof import('../src/lib/config.js').loadConfig
 let loadConfigChecked: typeof import('../src/lib/config.js').loadConfigChecked
 let configPath: typeof import('../src/lib/config.js').configPath
 let writeConfig: typeof import('../src/lib/config.js').writeConfig
+let resolvePrincipalAllowlist: typeof import('../src/lib/config.js').resolvePrincipalAllowlist
 
 const TEST_CONFIG = {
   rings: { ring1_forgeWriteInterception: true, ring2_asyncAudits: false }
@@ -37,6 +46,7 @@ describe('config', () => {
     loadConfigChecked = mod.loadConfigChecked
     configPath = mod.configPath
     writeConfig = mod.writeConfig
+    resolvePrincipalAllowlist = mod.resolvePrincipalAllowlist
   })
 
   afterEach(() => {
@@ -59,6 +69,25 @@ describe('config', () => {
     expect(result).not.toBeNull()
     expect(result?.rings?.ring1_forgeWriteInterception).toBe(true)
     expect(result?.rings?.ring2_asyncAudits).toBe(false)
+  })
+
+  it('loadConfig parses a repo-local "principals" field', () => {
+    const localPath = join(tmpDir, 'vinaya.config.json')
+    writeFileSync(localPath, JSON.stringify({ principals: ['alice', 'bob'] }), 'utf-8')
+
+    const result = loadConfig()
+    expect(result?.principals).toEqual(['alice', 'bob'])
+  })
+
+  it('resolvePrincipalAllowlist falls back to PRINCIPAL_ALLOWLIST when no config sets principals (every existing install unaffected)', () => {
+    expect(resolvePrincipalAllowlist(null)).toEqual(PRINCIPAL_ALLOWLIST)
+    expect(resolvePrincipalAllowlist({})).toEqual(PRINCIPAL_ALLOWLIST)
+  })
+
+  it('resolvePrincipalAllowlist uses the repo-local principals field as a full replacement, not additive, when set', () => {
+    const result = resolvePrincipalAllowlist({ principals: ['alice', 'bob'] })
+    expect(result).toEqual(['alice', 'bob'])
+    expect(result).not.toContain(PRINCIPAL_ALLOWLIST[0])
   })
 
   it('configPath returns local path when vinaya.config.json exists in cwd', () => {
@@ -195,6 +224,200 @@ describe('config', () => {
     if (checked.ok) {
       expect(checked.config?.rings?.ring1_forgeWriteInterception).toBe(true)
     }
+  })
+})
+
+/**
+ * The exact error a real `execFileSync('gh', ['api', '<missing path>'])`
+ * throws, captured verbatim from a live run against this repo:
+ *
+ *   $ gh api repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json
+ *   message: "Command failed: gh api <path>\ngh: Not Found (HTTP 404)\n"
+ *   stderr:  "gh: Not Found (HTTP 404)\n"
+ *   status:  1
+ *
+ * Recorded rather than invented, and rather than re-fetched: the earlier
+ * version of this fixture WAS invented (a single-line `Error`) and hid a real
+ * bug; the version after that made a live call and was flaky with no bound.
+ * A recorded capture is both honest and deterministic. The companion test
+ * below asserts this shape still carries the property that broke the code, so
+ * it cannot decay into a tautology.
+ */
+function REAL_GH_404(): Error & { stderr: string; status: number } {
+  const err = new Error(
+    'Command failed: gh api repos/daniboomerang/attalabs/contents/definitely-not-a-real-file-xyz.json\ngh: Not Found (HTTP 404)\n'
+  ) as Error & { stderr: string; status: number }
+  err.stderr = 'gh: Not Found (HTTP 404)\n'
+  err.status = 1
+  return err
+}
+
+// Security regression, PR #862 rounds 1-3. Resolving `principals` from
+// anything the evaluated PR can reach — its own working tree (round 1), a
+// BASE_SHA env var (round 2), or the LOCAL `origin/main` remote-tracking ref
+// that the PR's own workflow YAML can `git update-ref` (round 3) — let a PR
+// redefine its own trust anchor and self-approve. It now reads GitHub's API
+// (default-branch, server-side state) and nothing else.
+describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
+  let repoDir: string
+  let originalCwd: string
+
+  function git(args: string[]): string {
+    return execFileSync('git', args, { cwd: repoDir, encoding: 'utf8' })
+  }
+
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o), 'utf-8').toString('base64')
+
+  beforeEach(() => {
+    repoDir = join(tmpdir(), `vinaya-trustanchor-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    mkdirSync(repoDir, { recursive: true })
+    originalCwd = process.cwd()
+    git(['init', '-q', '-b', 'main'])
+    git(['config', 'user.email', 'test@example.com'])
+    git(['config', 'user.name', 'Test'])
+    process.chdir(repoDir)
+  })
+
+  afterEach(() => {
+    process.chdir(originalCwd)
+    rmSync(repoDir, { recursive: true, force: true })
+  })
+
+  it('reads principals from the API payload, decoding base64 exactly as the GitHub contents API returns it', () => {
+    const result = loadTrustAnchorConfig(() => b64({ principals: ['legit-reviewer'] }))
+    expect(result?.principals).toEqual(['legit-reviewer'])
+  })
+
+  it('round 3 regression: a PR that rewrites the LOCAL origin/main ref cannot influence the result — no local git is consulted at all', () => {
+    // Build the exact attack: a real repo whose local `origin/main` has been
+    // repointed at attacker content — which is precisely what the previous
+    // `git show origin/main:...` implementation would have read.
+    writeFileSync(
+      join(repoDir, 'vinaya.config.json'),
+      JSON.stringify({ principals: ['legit-reviewer', 'attacker-login'] }),
+      'utf-8'
+    )
+    git(['add', '.'])
+    git(['commit', '-q', '-m', 'Chore: attacker edits principals'])
+    git(['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+    // Proof the attack setup is genuine: the OLD implementation's read is poisoned.
+    expect(git(['show', 'origin/main:vinaya.config.json'])).toContain('attacker-login')
+
+    // The real (server-side) default branch still says only legit-reviewer, and
+    // that is the only thing consulted now.
+    const result = loadTrustAnchorConfig(() => b64({ principals: ['legit-reviewer'] }))
+    expect(result?.principals).toEqual(['legit-reviewer'])
+    expect(result?.principals).not.toContain('attacker-login')
+  })
+
+  it('fails to null — never to trusting unreviewed content — when the fetch throws (no auth, no network, no such file)', () => {
+    const result = loadTrustAnchorConfig(() => {
+      throw new Error('gh: not authenticated')
+    })
+    expect(result).toBeNull()
+    // null is exactly what resolvePrincipalAllowlist turns into the hardcoded default.
+    expect(resolvePrincipalAllowlistStatic(result)).toEqual(PRINCIPAL_ALLOWLIST)
+  })
+
+  it('fails to null on empty / non-JSON / schema-invalid payloads', () => {
+    expect(loadTrustAnchorConfig(() => '')).toBeNull()
+    expect(loadTrustAnchorConfig(() => Buffer.from('not json', 'utf-8').toString('base64'))).toBeNull()
+    expect(loadTrustAnchorConfig(() => b64({ principals: [] }))).toBeNull() // min(1) violated
+  })
+
+  it('announces a real failure on STDOUT, never stderr — stderr is the runner’s CheckError channel and plain text there marks the check errored', () => {
+    const originalOut = process.stdout.write.bind(process.stdout)
+    const originalErr = process.stderr.write.bind(process.stderr)
+    let out = ''
+    let err = ''
+    process.stdout.write = ((c: string) => {
+      out += c
+      return true
+    }) as typeof process.stdout.write
+    process.stderr.write = ((c: string) => {
+      err += c
+      return true
+    }) as typeof process.stderr.write
+    try {
+      loadTrustAnchorConfig(() => {
+        throw new Error('gh: HTTP 401 Bad credentials')
+      })
+    } finally {
+      process.stdout.write = originalOut
+      process.stderr.write = originalErr
+    }
+    expect(out).toContain('falling back')
+    expect(err).toBe('')
+  })
+
+  it('stays SILENT when the file simply is not on the default branch yet — using the REAL execFileSync error shape, where the 404 is never on line 1', () => {
+    // Regression, PR #862: the previous version of this test threw a
+    // hand-built single-line `Error('gh: HTTP 404 Not Found')`. Real
+    // `execFileSync` throws `message = "Command failed: <cmd>\n<stderr>"`, so
+    // the 404 lives on a later line and the first-line-only check never
+    // matched — the test passed while production warned on every run for a
+    // fresh adopter.
+    //
+    // The replacement first made a live `gh api` call to get a genuine error.
+    // That removed the wrong-shape problem but bought a flake: a real network
+    // call has no upper bound, so it timed out ~40% of full-suite runs, and
+    // raising the budget to 20s only made it rarer (1/16), never gone. A
+    // timeout cannot fix variance — so the call is gone and the shape it
+    // produced is REPLAYED below instead. This is deterministic and still not
+    // invented: `REAL_GH_404` is the verbatim capture of that live call,
+    // including `stderr`, which the assertion below re-proves is the shape
+    // that broke the original code.
+    const originalOut = process.stdout.write.bind(process.stdout)
+    let out = ''
+    process.stdout.write = ((c: string) => {
+      out += c
+      return true
+    }) as typeof process.stdout.write
+    try {
+      loadTrustAnchorConfig(() => {
+        throw REAL_GH_404()
+      })
+    } finally {
+      process.stdout.write = originalOut
+    }
+    expect(out).toBe('')
+  })
+
+  it('the recorded 404 fixture still has the property that broke the original code — the 404 is NOT on line 1', () => {
+    // Guards the fixture against becoming a tautology: if someone "simplifies"
+    // REAL_GH_404 into a single-line message, the bug it exists to catch would
+    // silently stop being reproducible and the test above would pass for the
+    // wrong reason. This is what the live call used to assert inline.
+    const err = REAL_GH_404()
+    expect(err.message.split('\n')[0]).not.toMatch(/404|not found/i)
+    expect(`${err.message}\n${err.stderr}`).toMatch(/\b404\b|not found/i)
+  })
+})
+
+describe('trustAnchorRepo — repo identity for the trust-anchor read', () => {
+  const saved = process.env.GITHUB_REPOSITORY
+  afterEach(() => {
+    if (saved === undefined) delete process.env.GITHUB_REPOSITORY
+    else process.env.GITHUB_REPOSITORY = saved
+  })
+
+  it('prefers the runner-provided GITHUB_REPOSITORY', () => {
+    process.env.GITHUB_REPOSITORY = 'acme/widget'
+    expect(trustAnchorRepo()).toBe('acme/widget')
+  })
+
+  it('rejects a malformed GITHUB_REPOSITORY rather than addressing an unintended endpoint', () => {
+    process.env.GITHUB_REPOSITORY = 'acme/widget/extra'
+    // Falls through to the git-remote path; whatever it returns must still be
+    // well-formed (exactly one slash, no whitespace) or null.
+    const result = trustAnchorRepo()
+    if (result !== null) expect(result).toMatch(/^[^/\s]+\/[^/\s]+$/)
+  })
+
+  it('never returns a slug with extra path segments, whichever source wins', () => {
+    delete process.env.GITHUB_REPOSITORY
+    const result = trustAnchorRepo()
+    if (result !== null) expect(result).toMatch(/^[^/\s]+\/[^/\s]+$/)
   })
 })
 
