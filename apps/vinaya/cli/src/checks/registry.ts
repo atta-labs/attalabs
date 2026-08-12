@@ -60,10 +60,14 @@ export function coreCheckRegistry(): CheckSpec[] {
       run: bin('check-brief-shape'),
       scope: 'diff',
       timeoutMs: 15_000,
-      // `process.env.PR_BODY ?? ''` — a missing PR_BODY is the documented
-      // "local dev outside a CI/PR context — nothing to do" bypass, not a
-      // hard requirement.
-      env: { PR_BODY: { optional: true } }
+      // `process.env.PR_BODY ?? ''` / `process.env.BRANCH ?? ''` — both
+      // plain absence-tolerant fall-throughs. Without BRANCH declared here
+      // the runner strips it before the child spawns and the non-task/
+      // non-brief bypass and requireClosesN gating never fire (#870).
+      env: {
+        PR_BODY: { optional: true },
+        BRANCH: { optional: true }
+      }
     },
     {
       name: 'doc-coverage',

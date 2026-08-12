@@ -386,6 +386,20 @@ export function checkPlanPrNoCloses(branch: string, prBody: string): BriefSectio
 const BRIEF_SHAPE_MARKERS = [checkSurfaceMap, checkDocUpdateList, checkStopConditions, checkAutonomyClause] as const
 
 /**
+ * A task branch, per the topology naming convention (`task/<tranche>/<n>`).
+ * The one shared copy — `bin/verify-brief.ts`, `test-plan-gate.ts`, and
+ * `archive-task.ts` each still define this pattern locally (out of this
+ * export's blast radius; not deduped onto it here), but a new consumer
+ * (`check-brief-shape.ts`, #870) reuses this one rather than adding a
+ * fourth copy.
+ */
+const TASK_BRANCH_PATTERN = /^task\/[^/]+\/[^/]+$/
+
+export function isTaskBranch(branch: string): boolean {
+  return TASK_BRANCH_PATTERN.test(branch)
+}
+
+/**
  * Is this PR body a brief? — the predicate that replaces the branch name as
  * `verify-brief`'s trigger for running `checkBriefSections`.
  *
