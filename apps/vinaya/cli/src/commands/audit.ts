@@ -24,10 +24,22 @@ import { printJson } from '../lib/envelope.js'
 
 export type AuditDeps = {
   detectRepo: () => Promise<RepoInfo | null>
+  /** Injectable override for the raw single-shot `gh api .../pulls` fetch — test-only. */
+  fetchAssociatedMergedPrs?: (sha: string, repoFlag: string) => number[]
+  /** Poll tuning — test-only; production uses DIRECT_PUSH_POLL_ATTEMPTS/DELAY_MS. */
+  pollAttempts?: number
+  pollDelayMs?: number
+  sleep?: (ms: number) => Promise<void>
+  /** Injectable override for the real (`gh issue create`) incident-open side effect — test-only. */
+  openDirectPushIncident?: (sha: string, repoFlag: string) => void
 }
 
 function realDeps(): AuditDeps {
   return { detectRepo: detectGitRepo }
+}
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 const COMMAND_TIMEOUT_MS = 20_000
@@ -212,6 +224,31 @@ function fetchAssociatedMergedPrs(sha: string, repoFlag: string): number[] {
   return prs.filter((pr) => pr.merged_at !== null).map((pr) => pr.number)
 }
 
+// `commits/{sha}/pulls` association can lag a merge by tens of seconds —
+// confirmed live against a real merge commit that read `[]` 15s post-merge
+// and only picked up the association on a later query. A single-shot read
+// misreads that lag as a genuine direct push. Bounded poll: break out the
+// instant an association appears; after the ceiling, fall through to
+// today's behavior unchanged (treat as direct-push, open the incident).
+const DIRECT_PUSH_POLL_ATTEMPTS = 6
+const DIRECT_PUSH_POLL_DELAY_MS = 20_000
+
+async function pollAssociatedMergedPrs(
+  sha: string,
+  repoFlag: string,
+  fetch: (sha: string, repoFlag: string) => number[],
+  attempts: number,
+  delayMs: number,
+  sleep: (ms: number) => Promise<void>
+): Promise<number[]> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const prs = fetch(sha, repoFlag)
+    if (prs.length > 0) return prs
+    if (attempt < attempts) await sleep(delayMs)
+  }
+  return []
+}
+
 function incidentAlreadyOpen(sha: string, repoFlag: string): boolean {
   const out = sh([
     'gh',
@@ -263,14 +300,22 @@ function openDirectPushIncident(sha: string, repoFlag: string): void {
   ])
 }
 
-function runDirectMainPushCheck(
+async function runDirectMainPushCheck(
   sha: string,
-  repoFlag: string
-): { verdict: 'legitimate' | 'direct-push'; mergedPrNumber?: number } {
-  const associatedMergedPrNumbers = fetchAssociatedMergedPrs(sha, repoFlag)
+  repoFlag: string,
+  deps: AuditDeps
+): Promise<{ verdict: 'legitimate' | 'direct-push'; mergedPrNumber?: number }> {
+  const associatedMergedPrNumbers = await pollAssociatedMergedPrs(
+    sha,
+    repoFlag,
+    deps.fetchAssociatedMergedPrs ?? fetchAssociatedMergedPrs,
+    deps.pollAttempts ?? DIRECT_PUSH_POLL_ATTEMPTS,
+    deps.pollDelayMs ?? DIRECT_PUSH_POLL_DELAY_MS,
+    deps.sleep ?? defaultSleep
+  )
   const result = checkDirectMainPush({ sha, associatedMergedPrNumbers })
   if (result.verdict === 'direct-push') {
-    openDirectPushIncident(sha, repoFlag)
+    ;(deps.openDirectPushIncident ?? openDirectPushIncident)(sha, repoFlag)
     return { verdict: 'direct-push' }
   }
   return { verdict: 'legitimate', mergedPrNumber: result.mergedPrNumber }
@@ -314,7 +359,7 @@ export async function runAudit(args: string[], deps: AuditDeps): Promise<number>
   const sha = parseSha(args) ?? sh(['git', 'rev-parse', 'HEAD'])
 
   const deadBranch = only === 'direct-push' ? { scanned: 0, findings: [] } : runDeadBranchAudit(repoFlag)
-  const directPush = only === 'dead-branches' ? null : runDirectMainPushCheck(sha, repoFlag)
+  const directPush = only === 'dead-branches' ? null : await runDirectMainPushCheck(sha, repoFlag, deps)
 
   const failed = directPush?.verdict === 'direct-push'
 
