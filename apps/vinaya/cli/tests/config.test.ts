@@ -298,6 +298,48 @@ describe('loadTrustAnchorConfig — trust-anchor resolution (security)', () => {
     expect(loadTrustAnchorConfig(() => Buffer.from('not json', 'utf-8').toString('base64'))).toBeNull()
     expect(loadTrustAnchorConfig(() => b64({ principals: [] }))).toBeNull() // min(1) violated
   })
+
+  it('announces a real failure on STDOUT, never stderr — stderr is the runner’s CheckError channel and plain text there marks the check errored', () => {
+    const originalOut = process.stdout.write.bind(process.stdout)
+    const originalErr = process.stderr.write.bind(process.stderr)
+    let out = ''
+    let err = ''
+    process.stdout.write = ((c: string) => {
+      out += c
+      return true
+    }) as typeof process.stdout.write
+    process.stderr.write = ((c: string) => {
+      err += c
+      return true
+    }) as typeof process.stderr.write
+    try {
+      loadTrustAnchorConfig(() => {
+        throw new Error('gh: HTTP 401 Bad credentials')
+      })
+    } finally {
+      process.stdout.write = originalOut
+      process.stderr.write = originalErr
+    }
+    expect(out).toContain('falling back')
+    expect(err).toBe('')
+  })
+
+  it('stays SILENT when the file simply is not on the default branch yet — an ordinary state for a fresh adopter, not a fault', () => {
+    const originalOut = process.stdout.write.bind(process.stdout)
+    let out = ''
+    process.stdout.write = ((c: string) => {
+      out += c
+      return true
+    }) as typeof process.stdout.write
+    try {
+      loadTrustAnchorConfig(() => {
+        throw new Error('gh: HTTP 404 Not Found')
+      })
+    } finally {
+      process.stdout.write = originalOut
+    }
+    expect(out).toBe('')
+  })
 })
 
 describe('CheckEntrySchema env field', () => {

@@ -67,9 +67,16 @@ function waiverActiveFromEnv(): boolean {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-  // GitHub-API default-branch read, never BASE_SHA (that env var is for
-  // diff-SCOPING only, below) and never local git — both are rewritable by
-  // the PR being evaluated. See `loadTrustAnchorConfig` in lib/config.ts.
+  // Short-circuit BEFORE resolving the allowlist. `loadTrustAnchorConfig()`
+  // makes a real `gh api` call (~0.5s), and this function is an eagerly
+  // evaluated argument to `evaluateC5` below — without this guard every local
+  // pre-commit/pre-push paid that latency even though `PR_LABELS` is empty
+  // outside CI, so the waiver could never have been active anyway (review
+  // finding, PR #862 round 4).
+  if (!labels.includes(WAIVER_LABEL)) return false
+  // Trust anchor: GitHub-API default-branch read, never BASE_SHA (that env var
+  // is for diff-SCOPING only, below) and never the PR's own checkout. See
+  // `loadTrustAnchorConfig` in lib/config.ts.
   return isWaiverLabelActorVerified({
     label: WAIVER_LABEL,
     labels,

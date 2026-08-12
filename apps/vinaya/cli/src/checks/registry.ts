@@ -220,16 +220,18 @@ export function coreCheckRegistry(): CheckSpec[] {
       // authenticates ONLY from GH_TOKEN/GITHUB_TOKEN — without forwarding
       // them the allowlist strips the workflow-provided token and every
       // `gh pr view` fails. Optional because local runs use `gh`'s own
-      // keyring auth with no env var at all. Deliberately NO `BASE_SHA` (or
-      // any other caller-suppliable ref) here: `principals` is resolved from
-      // the hardcoded `TRUST_ANCHOR_REF` (lib/config.ts), never a value this
-      // check's own env could carry — a `BASE_SHA` declaration here was
-      // tried and reverted the same day (security finding, PR #862 second
-      // review pass): a `pull_request`-triggered workflow runs the PR's own
-      // (PR-editable) YAML, so any env var this check accepts as an
-      // override is itself attacker-steerable, and a caller-supplied ref
-      // for a trust-anchor read reopens exactly the hole it was meant to
-      // close, one layer removed.
+      // keyring auth with no env var at all. GITHUB_REPOSITORY addresses the
+      // trust-anchor read (`loadTrustAnchorConfig`, lib/config.ts) — a `gh
+      // api` fetch of `principals` from the DEFAULT BRANCH.
+      //
+      // Deliberately NO `BASE_SHA` here, and no other ref-shaped knob: a
+      // `BASE_SHA` declaration was tried and reverted (security finding, PR
+      // #862 round 2) because a `pull_request`-triggered workflow runs the
+      // PR's own PR-editable YAML, so any ref this check accepts as an
+      // override is attacker-steerable and reopens the self-approval hole.
+      // GITHUB_REPOSITORY is not the same thing: it names WHICH repo to ask
+      // GitHub about, is runner-set in the only context where this is a trust
+      // decision, and never selects a commit — see `trustAnchorRepo`.
       env: {
         BRANCH: { optional: true },
         PR_NUMBER: { optional: true },

@@ -75,6 +75,10 @@ function waiverActiveFromEnv(): boolean {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
+  // Short-circuit before the `gh api` trust-anchor call — identical reasoning
+  // to check-doc-coverage.ts's own guard (PR #862 round 4): this runs on every
+  // local push, where PR_LABELS is empty and no waiver can be active.
+  if (!labels.includes(WAIVER_LABEL)) return false
   // GitHub-API default-branch read — see check-doc-coverage.ts's identical
   // comment / `loadTrustAnchorConfig`'s doc comment in lib/config.ts.
   return isWaiverLabelActorVerified({

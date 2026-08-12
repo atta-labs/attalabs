@@ -337,9 +337,21 @@ export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[]
  * The lesson those three share: **inside a `pull_request`-triggered workflow,
  * NOTHING reachable from the job's own filesystem or environment is a trust
  * boundary against the PR author** — the workflow definition itself comes
- * from the PR. So this reads the file from **GitHub's API**, which serves the
- * repository's default-branch content from server-side state the PR cannot
- * touch, rather than from any local git or env state.
+ * from the PR. So the config CONTENT is read from **GitHub's API**, which
+ * serves the repository's default-branch bytes from server-side state the PR
+ * cannot touch, rather than from local git or the working tree.
+ *
+ * **Precisely scoped claim, because the previous two rounds were undone by
+ * overclaiming:** the CONTENT is server-side; the repository IDENTITY used to
+ * address that API call still comes from `trustAnchorRepo()`, which reads
+ * `GITHUB_REPOSITORY` (set by the Actions runner) and falls back to the
+ * `origin` remote URL. Both are PR-influenceable in principle. That is
+ * deliberate and not a practical lever: where a PR controls the workflow YAML
+ * it already holds a strictly stronger primitive (delete the step entirely),
+ * and where the YAML is trusted the runner sets `GITHUB_REPOSITORY` correctly
+ * so the remote fallback is never reached. The precedence order is therefore
+ * load-bearing — runner value first, remote only as a local-dev fallback —
+ * and must not be reordered.
  *
  * **This raises the bar; it is not, by itself, the boundary.** A PR can still
  * edit its own copy of the generated workflow to delete this step, `exit 0`,
@@ -354,7 +366,13 @@ export function resolvePrincipalAllowlist(config: VinayaConfig | null): string[]
  */
 export type TrustAnchorFetcher = () => string
 
-/** Repo identity for the trust-anchor read, preferring the Actions runner's own value. */
+/**
+ * Repo identity for the trust-anchor read. **Order is load-bearing:** the
+ * Actions runner's own `GITHUB_REPOSITORY` first (correct and authoritative
+ * in the only context where this is a trust decision), the `origin` remote
+ * only as a local-dev fallback. See `loadTrustAnchorConfig`'s doc comment for
+ * why neither is a practical attack lever.
+ */
 function trustAnchorRepo(): string | null {
   const fromRunner = process.env.GITHUB_REPOSITORY
   if (fromRunner && /^[^/]+\/[^/]+$/.test(fromRunner)) return fromRunner
@@ -373,7 +391,8 @@ function trustAnchorRepo(): string | null {
 /**
  * Fetches `vinaya.config.json` from the repository's DEFAULT BRANCH via the
  * GitHub API — no `ref` parameter, so GitHub itself picks the default branch
- * from server-side repo settings. Never reads local git or the working tree.
+ * from server-side repo settings. The returned CONTENT never comes from local
+ * git or the working tree; only the repo identity does (`trustAnchorRepo`).
  */
 function ghFetchTrustAnchorConfig(): string {
   const repo = trustAnchorRepo()
@@ -396,16 +415,51 @@ function ghFetchTrustAnchorConfig(): string {
  * with no `gh` auth therefore behaves exactly as it did before `principals`
  * existed.
  *
+ * That fallback announces itself rather than degrading silently: an adopter
+ * whose `principals` failed to resolve would otherwise see their own
+ * reviewers' verdicts ignored for no visible reason — precisely the baffling
+ * gate failure this field exists to eliminate (review finding, PR #862 round
+ * 4). Two deliberate constraints on that message:
+ *
+ *   - It goes to **stdout, never stderr.** A check bin's stderr IS the
+ *     `CheckError` JSON channel (`checks/runner.ts` parses every non-blank
+ *     stderr line and marks the check `status: 'error'` on anything that
+ *     isn't a valid `CheckError`), so a plain-text warning there would turn
+ *     every fetch hiccup into a spurious check failure. `contract.ts` reserves
+ *     stdout for exactly this kind of human-readable chatter.
+ *   - A **missing file is silent.** A repo whose default branch has no
+ *     `vinaya.config.json` yet (a fresh adopter, or the very install PR that
+ *     adds it) is an ordinary state, not a fault worth warning about.
+ *
  * `fetcher` is injectable for tests ONLY; production callers pass nothing.
  */
+function isMissingFileError(message: string): boolean {
+  return /404|not found/i.test(message)
+}
+
 export function loadTrustAnchorConfig(fetcher: TrustAnchorFetcher = ghFetchTrustAnchorConfig): VinayaConfig | null {
+  const warn = (why: string) =>
+    process.stdout.write(
+      `⚠ could not read \`principals\` from the default branch (${why}) — falling back to vinaya's built-in principal allowlist.\n`
+    )
+
+  let base64: string
   try {
-    const base64 = fetcher().trim()
-    if (!base64) return null
+    base64 = fetcher().trim()
+  } catch (err) {
+    const message = (err as Error).message.split('\n')[0] ?? 'unknown error'
+    if (!isMissingFileError(message)) warn(message)
+    return null
+  }
+  if (!base64) return null
+  try {
     const raw = Buffer.from(base64, 'base64').toString('utf-8')
     const parsed = VinayaConfigSchema.safeParse(JSON.parse(raw))
-    return parsed.success ? parsed.data : null
+    if (parsed.success) return parsed.data
+    warn('it did not satisfy the config schema')
+    return null
   } catch {
+    warn('it was not readable as JSON')
     return null
   }
 }
