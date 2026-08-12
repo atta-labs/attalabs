@@ -22,7 +22,7 @@
  * via `gh` and calls `checkReviewGate`.
  */
 
-import { isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL_REVIEW } from './waiver-label'
+import { isPrincipal, isWaiverLabelActorVerified, PRINCIPAL_ALLOWLIST, WAIVER_LABEL_REVIEW } from './waiver-label'
 import { extractCodeReviewVerdict, extractSecurityReviewVerdict } from './verdict-extraction'
 
 export type ReviewGateVerdict = 'pass' | 'fail'
@@ -109,12 +109,12 @@ export function checkReviewGate(input: ReviewGateInput): ReviewGateResult {
   // comment cannot brick evaluation, only fail to count. Dispatched reviewer
   // agents post under the principal's own `gh` identity, so the legitimate
   // flow is unchanged.
-  const verified = input.comments.filter((c) => c.author !== null && principalAllowlist.includes(c.author))
+  const verified = input.comments.filter((c) => isPrincipal(c.author, principalAllowlist))
   // Count only VERDICT-shaped ignored comments — deployment bots and ordinary
   // chat are also non-allowlisted, and counting them would imply forgery
   // where there is only noise (review finding, PR #806).
   const ignoredCount = input.comments.filter(
-    (c) => (c.author === null || !principalAllowlist.includes(c.author)) && c.body.includes('VERDICT')
+    (c) => !isPrincipal(c.author, principalAllowlist) && c.body.includes('VERDICT')
   ).length
   const verifiedBodies = verified.map((c) => c.body)
 

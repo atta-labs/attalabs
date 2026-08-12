@@ -23,6 +23,24 @@ export const WAIVER_LABEL = labelFor('waiver-docs')
 export const WAIVER_LABEL_REVIEW = labelFor('waiver-review')
 export const PRINCIPAL_ALLOWLIST = ['daniboomerang']
 
+/**
+ * Membership test for a principal allowlist. **Case-insensitive, because
+ * GitHub logins are** — `Alice` and `alice` address the same account, and the
+ * forge may return either casing depending on the API surface. An exact-match
+ * test fails closed, but it fails closed *invisibly*: an adopter who wrote
+ * `"principals": ["Alice"]` would watch Alice's genuine verdicts land as
+ * DANGLING with no stated reason — precisely the baffling symptom the
+ * `principals` field exists to remove (review finding, PR #862).
+ *
+ * Shared by every allowlist consumer so the waiver check and the review gate
+ * can never disagree about whether a given login is a principal.
+ */
+export function isPrincipal(login: string | null, principalAllowlist: string[]): boolean {
+  if (login === null) return false
+  const normalized = login.toLowerCase()
+  return principalAllowlist.some((p) => p.toLowerCase() === normalized)
+}
+
 export function isWaiverLabelActorVerified(opts: {
   label: string
   labels: string[]
@@ -30,6 +48,5 @@ export function isWaiverLabelActorVerified(opts: {
   principalAllowlist: string[]
 }): boolean {
   if (!opts.labels.includes(opts.label)) return false
-  if (opts.labelActor === null) return false
-  return opts.principalAllowlist.includes(opts.labelActor)
+  return isPrincipal(opts.labelActor, opts.principalAllowlist)
 }

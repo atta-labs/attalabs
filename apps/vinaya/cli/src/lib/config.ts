@@ -374,15 +374,24 @@ export type TrustAnchorFetcher = () => string
  * why neither is a practical attack lever.
  */
 function trustAnchorRepo(): string | null {
-  const fromRunner = process.env.GITHUB_REPOSITORY
-  if (fromRunner && /^[^/]+\/[^/]+$/.test(fromRunner)) return fromRunner
+  // One shape gate both sources pass through — the remote path used to skip
+  // it, and its own `(.+?)` group can capture slashes, so a crafted remote
+  // could have produced an `owner/a/b`-shaped value that lands somewhere
+  // other than the intended contents endpoint (review finding, PR #862).
+  const wellFormed = (slug: string): string | null => (/^[^/\s]+\/[^/\s]+$/.test(slug) ? slug : null)
+
+  const fromRunner = process.env.GITHUB_REPOSITORY?.trim()
+  if (fromRunner) {
+    const validated = wellFormed(fromRunner)
+    if (validated) return validated
+  }
   try {
     const url = execFileSync('git', ['remote', 'get-url', 'origin'], {
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'pipe']
     }).trim()
     const m = url.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/)
-    return m?.[1] && m[2] ? `${m[1]}/${m[2]}` : null
+    return m?.[1] && m[2] ? wellFormed(`${m[1]}/${m[2]}`) : null
   } catch {
     return null
   }

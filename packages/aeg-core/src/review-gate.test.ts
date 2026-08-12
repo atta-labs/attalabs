@@ -210,6 +210,26 @@ describe('checkReviewGate — configurable principalAllowlist (adopter-repo fix)
     expect(result.verdict).toBe('pass')
   })
 
+  it('matches logins case-insensitively, as GitHub itself does — a config that wrote "Alice" still counts alice’s verdicts', () => {
+    const result = checkReviewGate({
+      comments: [adopterApprove('alice'), adopterPass('ALICE')],
+      labels: [],
+      waiverLabelActor: null,
+      principalAllowlist: ['Alice']
+    })
+    expect(result.verdict).toBe('pass')
+  })
+
+  it('case-insensitivity does not widen trust — a genuinely different login is still ignored', () => {
+    const result = checkReviewGate({
+      comments: [adopterApprove('alice-bot'), adopterPass('alice-bot')],
+      labels: [],
+      waiverLabelActor: null,
+      principalAllowlist: ['Alice']
+    })
+    expect(result.verdict).toBe('fail')
+  })
+
   it('an overridden principalAllowlist is a true REPLACEMENT, not additive — the hardcoded default author no longer counts once overridden', () => {
     const result = checkReviewGate({
       comments: [adopterApprove('daniboomerang'), adopterPass('daniboomerang')],
