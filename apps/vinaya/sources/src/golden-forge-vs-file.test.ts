@@ -17,7 +17,7 @@ import { describe, expect, it } from 'bun:test'
  * or Issues it was derived from, which still exist on GitHub.
  */
 
-const OWNER = 'daniboomerang'
+const OWNER = 'atta-labs'
 const REPO = 'attalabs'
 const SLUG = 'aeg-forge-state-v1'
 const PINNED_COMMIT = '8112a295'
