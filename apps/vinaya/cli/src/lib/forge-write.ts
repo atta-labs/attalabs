@@ -205,18 +205,17 @@ export type ForgeValidationInput = {
    * The branch this write lands on, when it can be resolved — the current
    * checkout for `pr create`, the PR's `headRefName` for `pr edit`.
    *
-   * Present ONLY so this authoring-time gate applies the same branch grammar
-   * the CI-time gate already applies (`checks/bin/check-brief-shape.ts`).
-   * Before this fix it did not exist, so `pr create` graded every branch as if it
-   * were a task branch and refused a non-task PR that CI would pass — the two
-   * enforcement points of one grammar disagreeing, which is exactly what
-   * `aeg-root/enforcement.md`'s "one codebase, two enforcement points, so the
-   * local gates and CI can never disagree" exists to prevent.
+   * Present so this authoring-time gate applies the same branch grammar the
+   * CI-time gate applies (`checks/bin/check-brief-shape.ts`). Without it a
+   * standalone `fix/*` PR is refused here for a `Closes #N` its branch cannot
+   * carry, while CI passes the identical body — the divergence
+   * `aeg-root/enforcement.md` rules out: "one codebase, two enforcement
+   * points, so the local gates and CI can never disagree".
    *
    * Omitted, empty, or the literal `HEAD` (git's detached-HEAD sentinel) all
    * mean "branch not resolvable", and the validation stays fail-closed: every
-   * configured section is enforced, byte-for-byte the behaviour before this
-   * change. Issue writes never set it (an Issue has no branch).
+   * configured section is enforced. Issue writes never set it (an Issue has
+   * no branch).
    *
    * Note this is deliberately STRICTER than the CI-time check on that one
    * axis: `check-brief-shape.ts` reads `BRANCH` from the environment and

@@ -174,12 +174,11 @@ describe('arg extraction', () => {
   })
 })
 
-// The authoring-time gate must apply the SAME branch grammar the
-// CI-time gate (`checks/bin/check-brief-shape.ts`) already applies. Before
-// this, `pr create` graded every branch as a task branch and refused a
-// non-task PR that CI would pass — one grammar, two enforcement points,
-// disagreeing. Live repro: `vinaya pr create` on `chore/vinaya-upgrade-0.4.5`
-// refused with "Closes #N: no `Closes #<N>` ... found in the PR body".
+// The authoring-time gate must apply the SAME branch grammar the CI-time
+// gate (`checks/bin/check-brief-shape.ts`) applies. Grading every branch as
+// a task branch refuses a standalone `fix/*` PR for a `Closes #N` its branch
+// cannot carry, while CI passes the identical body — the divergence
+// `aeg-root/enforcement.md` rules out.
 describe('validateForgeWrite — branch grammar', () => {
   // A body carrying ≥2 brief-shape markers, so it is graded as a brief and the
   // non-brief-shaped bypass below cannot be what makes these cases pass.
@@ -240,14 +239,12 @@ describe('validateForgeWrite — branch grammar', () => {
   })
 
   it("treats the literal 'HEAD' as unresolvable, not as a non-task branch", () => {
-    // The detached-HEAD fail-open, caught in review: `git rev-parse
-    // --abbrev-ref HEAD` prints the literal string `HEAD` (exit 0) rather
-    // than an empty string, so the first cut of this change read a detached
-    // HEAD as a resolvable non-task branch and skipped EVERY section — the
-    // exact fail-open the branch grammar exists to prevent. `pr create` now
-    // resolves via `symbolic-ref --quiet --short`, which yields '' when
-    // detached; this pins the runner's own half so a future call site that
-    // reintroduces the sentinel cannot silently relax the gate.
+    // `git rev-parse --abbrev-ref HEAD` prints the literal string `HEAD`,
+    // exit 0, when HEAD is detached. Read as an ordinary non-task branch it
+    // takes the relaxed path and skips EVERY section — the fail-open this
+    // grammar exists to prevent. `pr create` resolves so the sentinel never
+    // arrives; this pins the runner's own half, so a future call site that
+    // reintroduces it cannot silently relax the gate.
     //
     // Lossless by construction: git refuses to create a branch named `HEAD`
     // (`git check-ref-format --branch HEAD` fails), so mapping it to

@@ -147,22 +147,26 @@ export function prCreateCommand(args: string[]): void {
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
 
-  // The branch this PR will open from. Neither git command answers this
-  // alone — measured, not assumed (git 2.50.1):
+  // The branch this PR will open from. No single git query answers this;
+  // each one reports a plausible-looking branch in a state where there is
+  // none. Measured on git 2.50.1 — `out`/`exit`, and `git()` above maps any
+  // non-zero exit to '':
   //
-  //   state     symbolic-ref --short   rev-parse --abbrev-ref
-  //   normal    main                   main
-  //   detached  '' (exit 1)            HEAD      <- literal, NOT empty
-  //   unborn    main                   HEAD      <- a branch with no commit
-  //   no repo   ''                     ''
+  //   state     symbolic-ref --quiet --short   rev-parse --abbrev-ref
+  //   normal    main            exit 0         main   exit 0
+  //   detached  ''              exit 1         HEAD   exit 0    <- literal, and exit 0
+  //   unborn    main            exit 0         HEAD   exit 128
+  //   no repo   ''              exit 128       ''     exit 128
   //
-  // `rev-parse --abbrev-ref` reports the literal `HEAD` when detached, and
-  // `symbolic-ref` reports the not-yet-created branch when HEAD is unborn.
-  // Reading either as an ordinary non-task branch is a fail-OPEN: it takes
-  // the relaxed path and, for a non-brief-shaped body, skips every section.
-  // So a branch counts as resolvable only when HEAD is a symbolic ref AND
-  // resolves to a commit; every other state yields '' and `validateForgeWrite`
-  // enforces everything.
+  // `symbolic-ref` names a branch that has no commit yet (unborn);
+  // `rev-parse --abbrev-ref` returns the literal string `HEAD` with a clean
+  // exit 0 when detached. Taking either at face value is a fail-OPEN: the
+  // value reads as an ordinary non-task branch, takes the relaxed path, and
+  // for a non-brief-shaped body skips every configured section.
+  //
+  // So resolvable means both: HEAD is a symbolic ref AND it resolves to a
+  // commit. Every other state yields '' and `validateForgeWrite` enforces
+  // every section.
   const headCommit = git(['rev-parse', '--verify', '--quiet', 'HEAD'])
   const branch = headCommit === '' ? '' : git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
 
