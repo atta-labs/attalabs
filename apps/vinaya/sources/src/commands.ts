@@ -173,7 +173,8 @@ export const COMMANDS: readonly Command[] = [
     flags: [{ flag: '--merge-sha', description: 'The merge commit to resolve (defaults to the current HEAD)' }],
     details: [
       "Resolves the merge commit's associated PR via `gh`, and — if it's a task PR without a provenance comment yet — posts the provenance block and closes the linked Issue. Idempotent: re-running against an already-archived PR is a no-op.",
-      "The same logic the generated `vinaya-archivist.yml` workflow's `post-merge` job runs on every push to `main` — callable directly for a one-off run or local verification."
+      "The same logic the generated `vinaya-archivist.yml` workflow's `post-merge` job runs on every push to `main` — callable directly for a one-off run or local verification.",
+      'All progress output writes through `process.stdout.write`/`process.stderr.write` (never bare `console.*`), so piping this command into a log file or a CI step captures every line in order.'
     ],
     status: 'shipped'
   },
@@ -197,7 +198,8 @@ export const COMMANDS: readonly Command[] = [
     ],
     details: [
       'Dead-branch-push is never-red — a notification channel that flags (label + PR comment) any `task/*` branch whose tip commit lands after its own PR already resolved. Direct-main-push is a real pass/fail — it polls the merge-association API for up to ~100s before deciding, then opens an incident Issue and exits 1 if a commit on `main` genuinely has no associated merged PR.',
-      "The same logic the generated `vinaya-archivist.yml` workflow's `daily-drift` and `direct-main-push-detection` jobs run on schedule / on every push to `main` — callable directly for a one-off run or local verification."
+      "The same logic the generated `vinaya-archivist.yml` workflow's `daily-drift` and `direct-main-push-detection` jobs run on schedule / on every push to `main` — callable directly for a one-off run or local verification.",
+      'All progress output writes through `process.stdout.write`/`process.stderr.write` (never bare `console.*`), so piping this command into a log file or a CI step captures every line in order.'
     ],
     status: 'shipped'
   },
