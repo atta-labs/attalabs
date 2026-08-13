@@ -72,7 +72,7 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
 
   const associated = shJson<AssociatedPr[]>(['gh', 'api', `repos/${repoFlag}/commits/${mergeSha}/pulls`])
   if (associated.length === 0) {
-    console.log(`[vinaya archive] no associated PR for merge ${mergeSha} — skip.`)
+    process.stdout.write(`[vinaya archive] no associated PR for merge ${mergeSha} — skip.\n`)
     return 0
   }
 
@@ -111,15 +111,15 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
   }
 
   if (!isEligibleForProvenance(ref, issueLabels)) {
-    console.log(
-      `[vinaya archive] non-task branch (${pr.headRefName}) and closing Issue carries no vinaya/tranche:* label — skip.`
+    process.stdout.write(
+      `[vinaya archive] non-task branch (${pr.headRefName}) and closing Issue carries no vinaya/tranche:* label — skip.\n`
     )
     return 0
   }
 
   const comments = pr.comments.map((c) => c.body)
   if (hasProvenance(comments)) {
-    console.log(`[vinaya archive] provenance already present on PR #${pr.number} — skip (idempotent).`)
+    process.stdout.write(`[vinaya archive] provenance already present on PR #${pr.number} — skip (idempotent).\n`)
     return 0
   }
 
@@ -134,16 +134,16 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
 
   const { block, issue, dangling } = buildProvenanceBlock(facts)
 
-  console.log(`[vinaya archive] posting provenance block to PR #${pr.number}...`)
+  process.stdout.write(`[vinaya archive] posting provenance block to PR #${pr.number}...\n`)
   sh(['gh', 'pr', 'comment', String(pr.number), '-R', repoFlag, '--body-file', '-'], block)
-  console.log(`[vinaya archive] provenance block posted to PR #${pr.number}.`)
+  process.stdout.write(`[vinaya archive] provenance block posted to PR #${pr.number}.\n`)
 
   if (dangling.length > 0) {
-    console.log(`[vinaya archive] DANGLING (${dangling.length}): ${dangling.join('; ')}`)
+    process.stdout.write(`[vinaya archive] DANGLING (${dangling.length}): ${dangling.join('; ')}\n`)
   }
 
   if (issue !== null) {
-    console.log(`[vinaya archive] closing Issue #${issue}...`)
+    process.stdout.write(`[vinaya archive] closing Issue #${issue}...\n`)
     sh(['gh', 'issue', 'close', String(issue), '-R', repoFlag])
     const state = shJson<{ state: string }>([
       'gh',
@@ -159,12 +159,12 @@ export async function runArchive(args: string[], deps: ArchiveDeps): Promise<num
       console.error(`[vinaya archive] FAILED — Issue #${issue} did not confirm CLOSED (state: ${state}).`)
       return 1
     }
-    console.log(`[vinaya archive] Issue #${issue} confirmed CLOSED.`)
+    process.stdout.write(`[vinaya archive] Issue #${issue} confirmed CLOSED.\n`)
   } else {
-    console.log('[vinaya archive] no Issue to close — Closes #N absent from PR body.')
+    process.stdout.write('[vinaya archive] no Issue to close — Closes #N absent from PR body.\n')
   }
 
-  console.log('[vinaya archive] PASS.')
+  process.stdout.write('[vinaya archive] PASS.\n')
   return 0
 }
 
@@ -231,13 +231,13 @@ export async function runArchiveTranche(args: string[], deps: ArchiveDeps): Prom
     const ok = await promptYesNo(`Close tranche '${slug}' (Milestone #${milestone.number}, all tasks closed)?`, false)
     closeStdin()
     if (!ok) {
-      console.log('Aborted. Nothing was changed.')
+      process.stdout.write('Aborted. Nothing was changed.\n')
       return 0
     }
   }
 
   sh(['gh', 'api', '-X', 'PATCH', `repos/${repoFlag}/milestones/${milestone.number}`, '-f', 'state=closed'])
-  console.log(`Tranche '${slug}' closed (Milestone #${milestone.number}).`)
+  process.stdout.write(`Tranche '${slug}' closed (Milestone #${milestone.number}).\n`)
   return 0
 }
 

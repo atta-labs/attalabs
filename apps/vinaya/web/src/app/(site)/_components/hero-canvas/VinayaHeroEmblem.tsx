@@ -86,9 +86,9 @@ function EmblemInner() {
   // disabled (Principal-set), not deleted. Restoring it is a one-line flip:
   // uncomment the `if (seen) { ... return }` block below and nothing else.
   useEffect(() => {
-    let seen = false
+    let _seen = false
     try {
-      seen = window.localStorage.getItem(SEEN_KEY) === '1'
+      _seen = window.localStorage.getItem(SEEN_KEY) === '1'
     } catch {
       // localStorage unavailable (private mode / SSR guard) — just play the animation.
     }
