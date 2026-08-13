@@ -62,6 +62,7 @@ import {
   extractClosesReferences,
   fetchForgeFacts,
   fetchOpenIssuesByLabel,
+  parseRegistry,
   parseTranche,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
@@ -71,6 +72,18 @@ import type { CheckResult, ForgeFacts, TrancheFile, TaskEntry } from '../src/ind
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
 process.chdir(REPO_ROOT)
+
+/**
+ * The registry's project names — the authority R1's project-registry half
+ * resolves `Project:` against. Read here because `../src` is pure; absent ⇒
+ * `[]`, which leaves that half dormant (a single-project repo has no registry
+ * by design).
+ */
+function readRegisteredProjectNames(): string[] {
+  const abs = join(REPO_ROOT, '.vinaya/projects.md')
+  if (!existsSync(abs)) return []
+  return parseRegistry(readFileSync(abs, 'utf8')).map((p) => p.name)
+}
 
 /**
  * Implemented by T2; delegates to verify-docs.ts helpers.
@@ -515,7 +528,7 @@ export async function runCoherenceChecks(
     topologyIssuesBySlug.set(f.slug, nums)
   }
   results.push(scopeT2ToPlanPr(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciTrancheSlug), isPlanPr))
-  results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES))
+  results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES, readRegisteredProjectNames()))
 
   // D1 check
   results.push(checkD1(availableEntries, issueToEntry, taskToEntry))

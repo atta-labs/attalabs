@@ -56,6 +56,7 @@ import {
   checkConflictCompleteness,
   checkIssueRationale,
   checkNoBriefContent,
+  checkProjectsRegistered,
   checkRationaleNamesDocs,
   isTaskIssueLabelSet,
   type ProjectPath,
@@ -574,17 +575,26 @@ export function main(): void {
     if (sharedPackages.length === 0) {
       console.warn('[open-issue] no `.aeg/packages` collision-domain list — blast-radius check (A) is dormant.')
     }
+    const projectPaths = readProjectPaths()
+    if (projectPaths.length === 0) {
+      console.warn('[open-issue] no `.vinaya/projects.md` registry — the project-registry check is dormant.')
+    }
     const contentErrors = [
-      ...checkBlastRadiusScope(body, labels, sharedPackages, readProjectPaths()).errors,
+      ...checkBlastRadiusScope(body, labels, sharedPackages, projectPaths).errors,
+      ...checkProjectsRegistered(
+        body,
+        labels,
+        projectPaths.map((p) => p.name)
+      ).errors,
       ...checkNoBriefContent(body).errors,
       ...checkRationaleNamesDocs(body).errors
     ]
     if (contentErrors.length > 0) {
       console.error(`\n[open-issue] FAILED — ${contentErrors.length} content check(s):\n`)
       for (const e of contentErrors) console.error(`  ✗ ${e}`)
-      fail('the Issue body fails the blast-radius / brief-content / docs-read checks.')
+      fail('the Issue body fails the blast-radius / project-registry / brief-content / docs-read checks.')
     }
-    console.log('[open-issue] content gate PASS (blast radius, brief content, docs read).')
+    console.log('[open-issue] content gate PASS (blast radius, project registry, brief content, docs read).')
 
     // C — warn-only. Never blocks: an Issue declares no precise file surface,
     // so an overlapping collision domain is a hint, not a fact.

@@ -541,6 +541,18 @@ const MISSING_TRAPS_BODY = `
 **Docs to keep coherent** — none
 `
 
+/** The real 2026-08-12 shape: a complete rationale whose `Project:` names `aeg-types`, which has no registry row. */
+const UNREGISTERED_PROJECT_BODY = `
+**Boundary** — test boundary
+**Sizing** — test sizing
+**Project(s) + blast radius** — \`Project: aeg-core, aeg-types, vinaya\`
+**Dependency rationale** — none
+**Traps to avoid** — none
+**Suggested agent-class** — high
+**Stop-and-escalate** — none
+**Docs to keep coherent** — none
+`
+
 function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/tranche:iter-1']): ForgeIssue {
   return { number, body, labels }
 }
@@ -570,6 +582,26 @@ describe('R1: missing-rationale-field', () => {
 
   it('non-task Issue (no vinaya/tranche: label) is ignored', () => {
     const issuesBySlug = new Map([['iter-1', [makeForgeIssue(104, MISSING_TRAPS_BODY, ['bug'])]]])
+    passesWithNoFailures(checkR1(issuesBySlug, new Set()))
+  })
+
+  // The registry half — the ring-1 re-run of the ring-0 project-registry gate,
+  // for Issues edited by an ungated writer or predating the gate.
+  it('fail — a complete rationale whose Project: names an unregistered project', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(105, UNREGISTERED_PROJECT_BODY)]]])
+    const r = checkR1(issuesBySlug, new Set(), ['aeg-core', 'vinaya'])
+    expect(r.status).toBe('fail')
+    expect(r.failures[0]!.issue).toBe(105)
+    expect(r.failures[0]!.reason).toMatch(/aeg-types/)
+  })
+
+  it('pass — the same body once every declared project is registered', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(105, UNREGISTERED_PROJECT_BODY)]]])
+    passesWithNoFailures(checkR1(issuesBySlug, new Set(), ['aeg-core', 'aeg-types', 'vinaya']))
+  })
+
+  it('registry half is dormant when no registry is passed — prior R1 behaviour is unchanged', () => {
+    const issuesBySlug = new Map([['iter-1', [makeForgeIssue(105, UNREGISTERED_PROJECT_BODY)]]])
     passesWithNoFailures(checkR1(issuesBySlug, new Set()))
   })
 })
