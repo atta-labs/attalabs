@@ -78,7 +78,7 @@ function runGhWrite(ghCmd: string[], ghArgs: string[], bodyResult: BodyResult | 
  * #417) and its changed files (premise coverage). A failed fetch is a HARD
  * refusal, never a fall-back to the local checkout's diff.
  */
-function fetchPrForgeContext(prRef: string): { changedFiles: string[] } {
+function fetchPrForgeContext(prRef: string): { changedFiles: string[]; branch: string } {
   let viewOut: string
   try {
     viewOut = execFileSync('gh', ['pr', 'view', prRef, '--json', 'headRefName,files'], {
@@ -117,7 +117,10 @@ function fetchPrForgeContext(prRef: string): { changedFiles: string[] } {
   }
   const changedFiles = (parsed.files ?? []).map((f) => f.path)
 
-  return { changedFiles }
+  // headRefName is already fetched and hard-validated above; returning it lets
+  // `pr edit` apply the same branch grammar as `pr create` rather than
+  // grading every PR body as if it were a task branch's.
+  return { changedFiles, branch: parsed.headRefName ?? '' }
 }
 
 // --- commands ----------------------------------------------------------------
@@ -144,12 +147,36 @@ export function prCreateCommand(args: string[]): void {
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
 
+  // The branch this PR will open from. No single git query answers this;
+  // each one reports a plausible-looking branch in a state where there is
+  // none. Measured on git 2.50.1 — `out`/`exit`, and `git()` above maps any
+  // non-zero exit to '':
+  //
+  //   state     symbolic-ref --quiet --short   rev-parse --abbrev-ref
+  //   normal    main            exit 0         main   exit 0
+  //   detached  ''              exit 1         HEAD   exit 0    <- literal, and exit 0
+  //   unborn    main            exit 0         HEAD   exit 128
+  //   no repo   ''              exit 128       ''     exit 128
+  //
+  // `symbolic-ref` names a branch that has no commit yet (unborn);
+  // `rev-parse --abbrev-ref` returns the literal string `HEAD` with a clean
+  // exit 0 when detached. Taking either at face value is a fail-OPEN: the
+  // value reads as an ordinary non-task branch, takes the relaxed path, and
+  // for a non-brief-shaped body skips every configured section.
+  //
+  // So resolvable means both: HEAD is a symbolic ref AND it resolves to a
+  // commit. Every other state yields '' and `validateForgeWrite` enforces
+  // every section.
+  const headCommit = git(['rev-parse', '--verify', '--quiet', 'HEAD'])
+  const branch = headCommit === '' ? '' : git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
+
   const errors = validateForgeWrite({
     body,
     title,
     sections,
     changedFiles,
-    retryCommand: RETRY_CREATE
+    retryCommand: RETRY_CREATE,
+    branch
   })
   if (errors.length > 0) refuse(errors)
 
@@ -193,9 +220,11 @@ export function prEditCommand(args: string[]): void {
 
   const sections = resolveSections('pr', RETRY_EDIT)
   let changedFiles: string[] = []
+  let branch = ''
   if (body !== null) {
     const ctx = fetchPrForgeContext(prRef)
     changedFiles = ctx.changedFiles
+    branch = ctx.branch
   }
 
   const errors = validateForgeWrite({
@@ -203,7 +232,8 @@ export function prEditCommand(args: string[]): void {
     title,
     sections: body === null ? [] : sections,
     changedFiles,
-    retryCommand: RETRY_EDIT
+    retryCommand: RETRY_EDIT,
+    branch
   })
   if (errors.length > 0) refuse(errors)
 

@@ -41,6 +41,8 @@ import {
   checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
+  isBriefShaped,
+  isTaskBranch,
   readTierFromPrBody
 } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, type CheckError, emitCheckError } from '../checks/contract'
@@ -199,6 +201,30 @@ export type ForgeValidationInput = {
   changedFiles: string[]
   /** The exact command the agent should re-run after fixing (named in every recovery prompt). */
   retryCommand: string
+  /**
+   * The branch this write lands on, when it can be resolved — the current
+   * checkout for `pr create`, the PR's `headRefName` for `pr edit`.
+   *
+   * Present so this authoring-time gate applies the same branch grammar the
+   * CI-time gate applies (`checks/bin/check-brief-shape.ts`). Without it a
+   * standalone `fix/*` PR is refused here for a `Closes #N` its branch cannot
+   * carry, while CI passes the identical body — the divergence
+   * `aeg-root/enforcement.md` rules out: "one codebase, two enforcement
+   * points, so the local gates and CI can never disagree".
+   *
+   * Omitted, empty, or the literal `HEAD` (git's detached-HEAD sentinel) all
+   * mean "branch not resolvable", and the validation stays fail-closed: every
+   * configured section is enforced. Issue writes never set it (an Issue has
+   * no branch).
+   *
+   * Note this is deliberately STRICTER than the CI-time check on that one
+   * axis: `check-brief-shape.ts` reads `BRANCH` from the environment and
+   * drops `closesN` when it is unset, whereas an unresolvable branch here
+   * enforces everything. Erring toward enforcement is the safe direction for
+   * a prevention-layer gate, and it is what this change's own safety
+   * argument rests on.
+   */
+  branch?: string
 }
 
 const CHECK_BRIEF_SCHEMA = 'brief-schema'
@@ -319,7 +345,39 @@ export function validateForgeWrite(input: ForgeValidationInput): CheckError[] {
     }
   }
 
+  // The branch grammar. It matches `checks/bin/check-brief-shape.ts`'s on
+  // every branch that check can see; the one deliberate difference is the
+  // unresolvable case, where this side is STRICTER (see below). The title
+  // check above stays outside the grammar, since title grammar binds on every
+  // branch. An unresolvable branch keeps the pre-change fail-closed
+  // behaviour: `branchKnown` false enforces every configured section.
+  //
+  // `HEAD` counts as unresolvable, not as a branch named "HEAD". Git prints
+  // that literal for a detached HEAD (`rev-parse --abbrev-ref`), and reading
+  // it as an ordinary non-task branch is a fail-OPEN: it would take the
+  // relaxed path and, for a non-brief-shaped body, skip every section. Call
+  // sites resolve via `symbolic-ref` so the sentinel should never arrive
+  // here, but the guard is kept because the cost of a future call site
+  // reintroducing it is a silently disabled gate. Lossless: git refuses to
+  // create a branch named `HEAD`, so no real branch is swallowed.
+  const rawBranch = input.branch ?? ''
+  const branch = rawBranch === 'HEAD' ? '' : rawBranch
+  const branchKnown = branch !== ''
+  const taskBranch = isTaskBranch(branch)
+
+  // A non-task branch whose body isn't brief-shaped has no brief to grade — an
+  // ordinary one-line dependency-bump PR must not be forced to grow one.
+  if (branchKnown && !taskBranch && !isBriefShaped(input.body)) {
+    return errors
+  }
+
   for (const section of input.sections) {
+    // `Closes #N` names the task Issue a task branch closes; a standalone
+    // `fix/*` PR has none, so requiring it there is unsatisfiable by
+    // construction. Mirrors `requireClosesN: isTaskBranch(branch)`.
+    if (branchKnown && !taskBranch && 'builtin' in section && section.builtin === 'closesN') {
+      continue
+    }
     if ('builtin' in section) {
       const recovery = BUILTIN_RECOVERY[section.builtin].replace('{cmd}', input.retryCommand)
       for (const message of runBuiltin(section.builtin, input)) {

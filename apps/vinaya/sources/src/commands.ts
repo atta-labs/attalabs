@@ -102,7 +102,9 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
     ],
     details: [
-      'Runs the config-defined brief-schema gate (`briefSchema.pr` in `vinaya.config.json`) LOCALLY before any `gh` write — prevention, not detection. On any failure it refuses with the versioned CheckError contract (one JSON line per finding on stderr, exit 1) whose `agent_recovery_prompt` names the exact corrective command.'
+      'Runs the config-defined brief-schema gate (`briefSchema.pr` in `vinaya.config.json`) LOCALLY before any `gh` write — prevention, not detection. On any failure it refuses with the versioned CheckError contract (one JSON line per finding on stderr, exit 1) whose `agent_recovery_prompt` names the exact corrective command.',
+      'Which sections bind depends on the branch, matching the `brief-shape` check that runs the same grammar in CI. On a `task/<tranche>/<n>` branch every configured section binds, `closesN` included. On any other branch a body that is not brief-shaped is exempt entirely — an ordinary one-line dependency bump is not made to grow a brief — while a brief-shaped body is still graded on every other section, since a standalone fix brief is a brief; only `closesN` is dropped, because such a branch has no task Issue to close. The title grammar sits outside all of this and binds on every branch.',
+      'A branch counts as resolvable only when HEAD is a symbolic ref that also resolves to a commit. Neither git query answers that alone: `rev-parse --abbrev-ref HEAD` reports the literal string `HEAD` on a detached HEAD, and `symbolic-ref` reports the not-yet-created branch name when HEAD is unborn. Reading either as an ordinary branch would take the relaxed path, so both states — plus running outside a repo — resolve to nothing and the gate is fail-closed: every configured section is enforced.'
     ],
     status: 'shipped'
   },
@@ -116,7 +118,8 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--json', description: 'Enveloped JSON output (schema: 1)' }
     ],
     details: [
-      "The target PR's real head branch and changed files are fetched from the forge to build the validation context — a failed fetch is a hard refusal, never a fall-back to the local checkout."
+      "The target PR's real head branch and changed files are fetched from the forge to build the validation context — a failed fetch is a hard refusal, never a fall-back to the local checkout.",
+      'That fetched head branch is what selects the section set, by the same branch grammar `pr create` uses — a property of the target PR, never of whatever the local checkout happens to have checked out.'
     ],
     status: 'shipped'
   },

@@ -173,3 +173,142 @@ describe('arg extraction', () => {
     expect(extractLabels(['--label=vinaya/tranche:demo'])).toEqual(['vinaya/tranche:demo'])
   })
 })
+
+// The authoring-time gate must apply the SAME branch grammar the CI-time
+// gate (`checks/bin/check-brief-shape.ts`) applies. Grading every branch as
+// a task branch refuses a standalone `fix/*` PR for a `Closes #N` its branch
+// cannot carry, while CI passes the identical body — the divergence
+// `aeg-root/enforcement.md` rules out.
+describe('validateForgeWrite — branch grammar', () => {
+  // A body carrying ≥2 brief-shape markers, so it is graded as a brief and the
+  // non-brief-shaped bypass below cannot be what makes these cases pass.
+  const briefShapedNoCloses = [
+    '**For:** Claude',
+    '**Project:** demo',
+    '**Tier:** 0',
+    '',
+    '## Technical surface map',
+    '- a.ts',
+    '',
+    '## Documentation-update list',
+    '- None',
+    '',
+    '## Stop conditions',
+    'STOP if x.',
+    '',
+    '## Test plan',
+    'Test Plan: unit-tests-only',
+    '',
+    '> **Autonomy:** Do not stop to ask clarifying questions. Choose the most reasonable option and continue.',
+    '',
+    '```',
+    'git worktree add .worktrees/x -b x origin/main',
+    '```'
+  ].join('\n')
+
+  const closesOnly: BriefSection[] = [{ builtin: 'closesN' }]
+
+  it('requires Closes #N on a task branch', () => {
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'task/some-tranche/2'
+    })
+    expect(errors.length).toBe(1)
+    expect(errors[0]?.message).toContain('Closes #')
+  })
+
+  it('does NOT require Closes #N on a non-task branch — the regression this fixes', () => {
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'chore/vinaya-upgrade-0.4.5'
+    })
+    expect(errors).toEqual([])
+  })
+
+  it('stays fail-closed when the branch is unresolvable (empty or omitted)', () => {
+    // Outside a repo — behaviour must be byte-identical to pre-change, so an
+    // unknown branch never silently relaxes a gate.
+    const empty = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly, branch: '' })
+    const omitted = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly })
+    expect(empty.length).toBe(1)
+    expect(omitted.length).toBe(1)
+  })
+
+  it("treats the literal 'HEAD' as unresolvable, not as a non-task branch", () => {
+    // `git rev-parse --abbrev-ref HEAD` prints the literal string `HEAD`,
+    // exit 0, when HEAD is detached. Read as an ordinary non-task branch it
+    // takes the relaxed path and skips EVERY section — the fail-open this
+    // grammar exists to prevent. `pr create` resolves so the sentinel never
+    // arrives; this pins the runner's own half, so a future call site that
+    // reintroduces it cannot silently relax the gate.
+    //
+    // Lossless by construction: git refuses to create a branch named `HEAD`
+    // (`git check-ref-format --branch HEAD` fails), so mapping it to
+    // unresolvable can never swallow a real branch.
+    const asHead = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'HEAD'
+    })
+    expect(asHead.length).toBe(1)
+
+    // And the total bypass must not be reachable via the sentinel either.
+    const bypassAttempt = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: PR_SECTIONS,
+      branch: 'HEAD'
+    })
+    expect(bypassAttempt.length).toBeGreaterThan(0)
+  })
+
+  it('bypasses every section for a non-task branch whose body is not brief-shaped', () => {
+    // The ordinary one-line dependency-bump PR: no brief, must not be forced
+    // to grow one. Mirrors check-brief-shape.ts's identical bypass.
+    const errors = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: PR_SECTIONS,
+      branch: 'chore/bump-dep'
+    })
+    expect(errors).toEqual([])
+  })
+
+  it('still grades a brief-shaped body on a non-task branch (bypass is not a blanket skip)', () => {
+    // `fix/studio-tranche-href`'s failure mode: a standalone fix brief IS a
+    // brief, so its sections are still enforced — only Closes #N is dropped.
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: [{ builtin: 'tier' }, { builtin: 'project' }, { builtin: 'docUpdateList' }],
+      branch: 'fix/some-standalone-fix'
+    })
+    expect(errors).toEqual([])
+
+    const missingDocList = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses.replace('## Documentation-update list\n- None\n', ''),
+      sections: [{ builtin: 'docUpdateList' }],
+      branch: 'fix/some-standalone-fix'
+    })
+    expect(missingDocList.length).toBe(1)
+  })
+
+  it('grammar-checks the title regardless of branch', () => {
+    // The title gate binds on every branch — it sits outside the bypass.
+    const errors = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: [],
+      title: 'not a valid title',
+      branch: 'chore/bump-dep'
+    })
+    expect(errors.length).toBe(1)
+    expect(errors[0]?.check).toBe('forge-title')
+  })
+})
