@@ -174,13 +174,13 @@ describe('arg extraction', () => {
   })
 })
 
-// #873 — the authoring-time gate must apply the SAME branch grammar the
+// The authoring-time gate must apply the SAME branch grammar the
 // CI-time gate (`checks/bin/check-brief-shape.ts`) already applies. Before
 // this, `pr create` graded every branch as a task branch and refused a
 // non-task PR that CI would pass — one grammar, two enforcement points,
 // disagreeing. Live repro: `vinaya pr create` on `chore/vinaya-upgrade-0.4.5`
 // refused with "Closes #N: no `Closes #<N>` ... found in the PR body".
-describe('validateForgeWrite — branch grammar (#873)', () => {
+describe('validateForgeWrite — branch grammar', () => {
   // A body carrying ≥2 brief-shape markers, so it is graded as a brief and the
   // non-brief-shaped bypass below cannot be what makes these cases pass.
   const briefShapedNoCloses = [
@@ -220,7 +220,7 @@ describe('validateForgeWrite — branch grammar (#873)', () => {
     expect(errors[0]?.message).toContain('Closes #')
   })
 
-  it('does NOT require Closes #N on a non-task branch — the #873 regression', () => {
+  it('does NOT require Closes #N on a non-task branch — the regression this fixes', () => {
     const errors = validateForgeWrite({
       ...base,
       body: briefShapedNoCloses,
@@ -231,12 +231,43 @@ describe('validateForgeWrite — branch grammar (#873)', () => {
   })
 
   it('stays fail-closed when the branch is unresolvable (empty or omitted)', () => {
-    // Detached HEAD / outside a repo — behaviour must be byte-identical to
-    // pre-#873, so an unknown branch never silently relaxes a gate.
+    // Outside a repo — behaviour must be byte-identical to pre-change, so an
+    // unknown branch never silently relaxes a gate.
     const empty = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly, branch: '' })
     const omitted = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly })
     expect(empty.length).toBe(1)
     expect(omitted.length).toBe(1)
+  })
+
+  it("treats the literal 'HEAD' as unresolvable, not as a non-task branch", () => {
+    // The detached-HEAD fail-open, caught in review: `git rev-parse
+    // --abbrev-ref HEAD` prints the literal string `HEAD` (exit 0) rather
+    // than an empty string, so the first cut of this change read a detached
+    // HEAD as a resolvable non-task branch and skipped EVERY section — the
+    // exact fail-open the branch grammar exists to prevent. `pr create` now
+    // resolves via `symbolic-ref --quiet --short`, which yields '' when
+    // detached; this pins the runner's own half so a future call site that
+    // reintroduces the sentinel cannot silently relax the gate.
+    //
+    // Lossless by construction: git refuses to create a branch named `HEAD`
+    // (`git check-ref-format --branch HEAD` fails), so mapping it to
+    // unresolvable can never swallow a real branch.
+    const asHead = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'HEAD'
+    })
+    expect(asHead.length).toBe(1)
+
+    // And the total bypass must not be reachable via the sentinel either.
+    const bypassAttempt = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: PR_SECTIONS,
+      branch: 'HEAD'
+    })
+    expect(bypassAttempt.length).toBeGreaterThan(0)
   })
 
   it('bypasses every section for a non-task branch whose body is not brief-shaped', () => {

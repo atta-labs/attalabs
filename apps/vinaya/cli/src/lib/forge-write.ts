@@ -207,14 +207,22 @@ export type ForgeValidationInput = {
    *
    * Present ONLY so this authoring-time gate applies the same branch grammar
    * the CI-time gate already applies (`checks/bin/check-brief-shape.ts`).
-   * Before #873 it did not exist, so `pr create` graded every branch as if it
+   * Before this fix it did not exist, so `pr create` graded every branch as if it
    * were a task branch and refused a non-task PR that CI would pass — the two
    * enforcement points of one grammar disagreeing, which is exactly what
    * `aeg-root/enforcement.md`'s "one grammar, two enforcement points" forbids.
    *
-   * Omitted/empty means "branch not resolvable", and the validation stays
-   * fail-closed: every configured section is enforced, byte-for-byte the
-   * pre-#873 behaviour. Issue writes never set it (an Issue has no branch).
+   * Omitted, empty, or the literal `HEAD` (git's detached-HEAD sentinel) all
+   * mean "branch not resolvable", and the validation stays fail-closed: every
+   * configured section is enforced, byte-for-byte the behaviour before this
+   * change. Issue writes never set it (an Issue has no branch).
+   *
+   * Note this is deliberately STRICTER than the CI-time check on that one
+   * axis: `check-brief-shape.ts` reads `BRANCH` from the environment and
+   * drops `closesN` when it is unset, whereas an unresolvable branch here
+   * enforces everything. Erring toward enforcement is the safe direction for
+   * a prevention-layer gate, and it is what this change's own safety
+   * argument rests on.
    */
   branch?: string
 }
@@ -337,11 +345,23 @@ export function validateForgeWrite(input: ForgeValidationInput): CheckError[] {
     }
   }
 
-  // The branch grammar, identical to `checks/bin/check-brief-shape.ts`'s — the
-  // title check above deliberately stays outside it, since title grammar binds
-  // on every branch. An unresolvable branch keeps the pre-#873 fail-closed
-  // behaviour: `taskBranch` false + `branchKnown` false enforces everything.
-  const branch = input.branch ?? ''
+  // The branch grammar. It matches `checks/bin/check-brief-shape.ts`'s on
+  // every branch that check can see; the one deliberate difference is the
+  // unresolvable case, where this side is STRICTER (see below). The title
+  // check above stays outside the grammar, since title grammar binds on every
+  // branch. An unresolvable branch keeps the pre-change fail-closed
+  // behaviour: `branchKnown` false enforces every configured section.
+  //
+  // `HEAD` counts as unresolvable, not as a branch named "HEAD". Git prints
+  // that literal for a detached HEAD (`rev-parse --abbrev-ref`), and reading
+  // it as an ordinary non-task branch is a fail-OPEN: it would take the
+  // relaxed path and, for a non-brief-shaped body, skip every section. Call
+  // sites resolve via `symbolic-ref` so the sentinel should never arrive
+  // here, but the guard is kept because the cost of a future call site
+  // reintroducing it is a silently disabled gate. Lossless: git refuses to
+  // create a branch named `HEAD`, so no real branch is swallowed.
+  const rawBranch = input.branch ?? ''
+  const branch = rawBranch === 'HEAD' ? '' : rawBranch
   const branchKnown = branch !== ''
   const taskBranch = isTaskBranch(branch)
 

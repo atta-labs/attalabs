@@ -118,7 +118,7 @@ function fetchPrForgeContext(prRef: string): { changedFiles: string[]; branch: s
   const changedFiles = (parsed.files ?? []).map((f) => f.path)
 
   // headRefName is already fetched and hard-validated above; returning it lets
-  // `pr edit` apply the same branch grammar as `pr create` (#873) rather than
+  // `pr edit` apply the same branch grammar as `pr create` rather than
   // grading every PR body as if it were a task branch's.
   return { changedFiles, branch: parsed.headRefName ?? '' }
 }
@@ -147,10 +147,17 @@ export function prCreateCommand(args: string[]): void {
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
 
-  // The branch this PR will open from. `--abbrev-ref HEAD` is empty on a
-  // detached HEAD or outside a repo, and empty means "unresolvable" — which
-  // `validateForgeWrite` treats fail-closed, enforcing every section.
-  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'])
+  // The branch this PR will open from. `symbolic-ref`, never `rev-parse
+  // --abbrev-ref HEAD`: the latter prints the literal string `HEAD` on a
+  // detached HEAD, which is not empty and would therefore read as a
+  // resolvable non-task branch — silently taking the relaxed path and
+  // skipping every section, the exact fail-open the branch grammar exists to
+  // avoid. `symbolic-ref --quiet --short` exits non-zero and yields `''` when
+  // HEAD is detached or unborn, so every genuinely unresolvable state lands
+  // on the empty string `validateForgeWrite` treats fail-closed.
+  // `demo.ts`'s `currentBranchName` already made this same call for the same
+  // reason; this is that precedent, not a new one.
+  const branch = git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
 
   const errors = validateForgeWrite({
     body,
