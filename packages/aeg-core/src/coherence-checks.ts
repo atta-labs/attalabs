@@ -454,7 +454,10 @@ export function checkR1(
     check: 'R1',
     status,
     failures,
-    note: status === 'info' ? `${failures.length} grandfathered task Issue(s) predate the rationale grammar` : undefined
+    note:
+      status === 'info'
+        ? `${failures.length} grandfathered task Issue(s) predate this check's grammar (rationale fields and/or the project registry)`
+        : undefined
   }
 }
 

@@ -265,7 +265,7 @@ async function main(): Promise<void> {
       check: CHECK_NAME,
       severity: 'warning',
       message:
-        "coherence: no `.vinaya/projects.md` registry — R1's project-registry half is dormant (declared projects are not resolved).",
+        "coherence: no registry rows parsed from `.vinaya/projects.md` (absent, or every row malformed) — R1's project-registry half is dormant; declared projects are not resolved.",
       agent_recovery_prompt:
         "If this repo has more than one project, register them with `vinaya init product <name> --path <folder>` so R1 can resolve each task's `Project:` field. A single-project repo has no registry by design — no action needed."
     })

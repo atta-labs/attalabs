@@ -171,14 +171,11 @@ describe('declaredProjects', () => {
 const REGISTERED = REGISTRY.map((p) => p.name)
 
 /**
- * Real task-Issue bodies, saved verbatim from the forge. The first version of
- * this check was tested only through the `rationale({ projects })` helper, whose
- * shape — a `Project:` token *inside* the prose field with nothing after it on
- * the line — no live Issue has. The suite went green over two live defects: the
- * gate evaluated 4 of 61 open task Issues and invented project names out of file
- * paths on 13 more. Fixtures now come from the corpus the gate actually guards.
+ * Real task-Issue bodies, saved from the forge. Fixtures for this check must
+ * come from the live corpus: a synthetic body can carry a `Project:` shape no
+ * real Issue has, and the suite then passes over a gate that never fires.
  *
- * Copied verbatim with ONE exception: a third-party adopter repo's identifier in
+ * Verbatim with ONE exception: a third-party adopter repo's identifier in
  * `issue-870-body.md` is redacted. `packages/aeg-core` ships inside the published
  * `@attalabs/vinaya` tarball, so a real Issue body pasted in here travels further
  * than the forge. Nothing these tests assert touches the redacted span — check an
@@ -245,8 +242,11 @@ describe('checkProjectsRegistered', () => {
     expect(r.errors[0]).toMatch(/vda/)
   })
 
-  it('matches case-insensitively — a capital letter is not an unregistered project', () => {
-    expect(checkProjectsRegistered('**Project:** Vinaya', [], REGISTERED).status).toBe('pass')
+  it('matches exactly — a case variant is refused, because downstream comparison is literal', () => {
+    const r = checkProjectsRegistered('**Project:** Vinaya', [], REGISTERED)
+    expect(r.status).toBe('fail')
+    // …and says why, naming the row it differs from only in case.
+    expect(r.errors[0]).toMatch(/differs from the registered `vinaya` only in case/)
   })
 
   it('is dormant when the registry is absent — a gate with no source of truth invents none', () => {

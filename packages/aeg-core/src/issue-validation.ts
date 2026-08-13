@@ -185,23 +185,20 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
  * and the import direction is the existing one (`aeg-core → aeg-forge-state`,
  * as in `archive-task.ts`); nothing new is layered.
  *
- * The first version of this check read the **prose rationale field**
- * (`**Project(s) + blast radius** — …`) instead, and that was the defect two
- * review passes rejected: a task declares its projects on the line-anchored
- * footer field `**Project:** …`, and `PROJECT_FIELD`'s own comment says the
- * prose heading is excluded on purpose, since "nothing there puts a `:`
- * straight after the name". The gate therefore evaluated 4 of 61 live open task
- * Issues and no-opped on 57 — including its own Issue, #863, which passed
- * because no names were found rather than because its names resolved. Reading
- * the prose slice also invented projects out of the file paths that share the
- * line (`src`, `bin`, `demots`), refusing correct Issues. Both classes are one
- * bug: the wrong field. Do not re-add a second regex that "also handles" the
- * footer field — two parsers that agree today is the condition that produced it.
+ * **Never parse the `Project(s) + blast radius` prose heading here.** That
+ * heading is narrative that happens to mention project names alongside file
+ * paths; `PROJECT_FIELD` excludes it deliberately ("nothing there puts a `:`
+ * straight after the name"). Reading it makes the gate blind to the real
+ * declaration and invents projects out of the paths sharing the line. Equally,
+ * do not add a second regex that "also handles" the footer field — two parsers
+ * that agree today is exactly how the gate and the derivation drift apart.
  *
- * Matching is **case-insensitive**. Registry names are lower-case by
- * convention, and failing `Project: Vinaya` for its capital letter would block
- * correct work over a cosmetic difference — the failure this exists to catch is
- * a name with no row at all, not a name with the wrong shift key.
+ * Matching is **exact, case-sensitive**. Every downstream consumer of a
+ * project name compares it literally — `verify-dispatch`'s
+ * `t.projects.includes(project)`, the board link, the doc fan-out — so
+ * case-folding here would pass `Project: Vinaya` while the whole rest of the
+ * system resolves it to nothing. Refusing it is the honest answer; the message
+ * names the row it differs from only in case, so the fix is obvious.
  *
  * A body with no `**Project:**` line **passes**. Whether the field exists is
  * already `checkIssueRationale`'s job (`Project(s) + blast radius` is one of the
@@ -221,13 +218,21 @@ export function checkProjectsRegistered(
   registeredNames: string[]
 ): IssueSectionResult {
   if (registeredNames.length === 0) return { status: 'pass', errors: [] }
-  const known = new Set(registeredNames.map((n) => n.trim().toLowerCase()))
-  const unregistered = projectsFromBody(body).filter((p) => !known.has(p.toLowerCase()))
+  const known = new Set(registeredNames.map((n) => n.trim()))
+  const unregistered = projectsFromBody(body).filter((p) => !known.has(p))
   if (unregistered.length === 0) return { status: 'pass', errors: [] }
+  // A name differing from a real row only in case is the likeliest typo, and the
+  // least obvious from the registered list alone — call it out by name.
+  const caseHints = unregistered
+    .map((p) => {
+      const row = [...known].find((k) => k.toLowerCase() === p.toLowerCase())
+      return row ? `\`${p}\` differs from the registered \`${row}\` only in case` : null
+    })
+    .filter((h): h is string => h !== null)
   return {
     status: 'fail',
     errors: [
-      `issue-validation project registry: the \`**Project:**\` field declares ${unregistered.join(', ')} — no such row in \`.vinaya/projects.md\`, which is the authority for valid project names (registered: ${[...registeredNames].join(', ')}). Fix the name, or register the project with \`vinaya init product <name> --path <folder>\` first; an unregistered project has no specs to read and no per-project state to update. This reads the same field \`projectsFromBody\` derives the task's project from, so a name here that is not a row is a task that resolves to a project that does not exist.`
+      `issue-validation project registry: the \`**Project:**\` field declares ${unregistered.join(', ')} — no such row in \`.vinaya/projects.md\`, which is the authority for valid project names (registered: ${[...registeredNames].join(', ')}). Fix the name, or register the project with \`vinaya init product <name> --path <folder>\` first; an unregistered project has no specs to read and no per-project state to update.${caseHints.length > 0 ? ` Note: ${caseHints.join('; ')} — project names are matched exactly, because every downstream consumer compares them literally.` : ''} This reads the same field \`projectsFromBody\` derives the task's project from, so a name here that is not a row is a task that resolves to a project that does not exist.`
     ]
   }
 }
