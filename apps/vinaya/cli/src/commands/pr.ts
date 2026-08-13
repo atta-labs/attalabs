@@ -78,7 +78,7 @@ function runGhWrite(ghCmd: string[], ghArgs: string[], bodyResult: BodyResult | 
  * #417) and its changed files (premise coverage). A failed fetch is a HARD
  * refusal, never a fall-back to the local checkout's diff.
  */
-function fetchPrForgeContext(prRef: string): { changedFiles: string[] } {
+function fetchPrForgeContext(prRef: string): { changedFiles: string[]; branch: string } {
   let viewOut: string
   try {
     viewOut = execFileSync('gh', ['pr', 'view', prRef, '--json', 'headRefName,files'], {
@@ -117,7 +117,10 @@ function fetchPrForgeContext(prRef: string): { changedFiles: string[] } {
   }
   const changedFiles = (parsed.files ?? []).map((f) => f.path)
 
-  return { changedFiles }
+  // headRefName is already fetched and hard-validated above; returning it lets
+  // `pr edit` apply the same branch grammar as `pr create` (#873) rather than
+  // grading every PR body as if it were a task branch's.
+  return { changedFiles, branch: parsed.headRefName ?? '' }
 }
 
 // --- commands ----------------------------------------------------------------
@@ -144,12 +147,18 @@ export function prCreateCommand(args: string[]): void {
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
 
+  // The branch this PR will open from. `--abbrev-ref HEAD` is empty on a
+  // detached HEAD or outside a repo, and empty means "unresolvable" — which
+  // `validateForgeWrite` treats fail-closed, enforcing every section.
+  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'])
+
   const errors = validateForgeWrite({
     body,
     title,
     sections,
     changedFiles,
-    retryCommand: RETRY_CREATE
+    retryCommand: RETRY_CREATE,
+    branch
   })
   if (errors.length > 0) refuse(errors)
 
@@ -193,9 +202,11 @@ export function prEditCommand(args: string[]): void {
 
   const sections = resolveSections('pr', RETRY_EDIT)
   let changedFiles: string[] = []
+  let branch = ''
   if (body !== null) {
     const ctx = fetchPrForgeContext(prRef)
     changedFiles = ctx.changedFiles
+    branch = ctx.branch
   }
 
   const errors = validateForgeWrite({
@@ -203,7 +214,8 @@ export function prEditCommand(args: string[]): void {
     title,
     sections: body === null ? [] : sections,
     changedFiles,
-    retryCommand: RETRY_EDIT
+    retryCommand: RETRY_EDIT,
+    branch
   })
   if (errors.length > 0) refuse(errors)
 

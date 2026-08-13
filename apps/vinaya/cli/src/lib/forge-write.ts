@@ -41,6 +41,8 @@ import {
   checkTestPlanExclusivity,
   checkTierField,
   checkWorktreeStep0,
+  isBriefShaped,
+  isTaskBranch,
   readTierFromPrBody
 } from '@atta/aeg-core'
 import { CHECK_SCHEMA_VERSION, type CheckError, emitCheckError } from '../checks/contract'
@@ -199,6 +201,22 @@ export type ForgeValidationInput = {
   changedFiles: string[]
   /** The exact command the agent should re-run after fixing (named in every recovery prompt). */
   retryCommand: string
+  /**
+   * The branch this write lands on, when it can be resolved — the current
+   * checkout for `pr create`, the PR's `headRefName` for `pr edit`.
+   *
+   * Present ONLY so this authoring-time gate applies the same branch grammar
+   * the CI-time gate already applies (`checks/bin/check-brief-shape.ts`).
+   * Before #873 it did not exist, so `pr create` graded every branch as if it
+   * were a task branch and refused a non-task PR that CI would pass — the two
+   * enforcement points of one grammar disagreeing, which is exactly what
+   * `aeg-root/enforcement.md`'s "one grammar, two enforcement points" forbids.
+   *
+   * Omitted/empty means "branch not resolvable", and the validation stays
+   * fail-closed: every configured section is enforced, byte-for-byte the
+   * pre-#873 behaviour. Issue writes never set it (an Issue has no branch).
+   */
+  branch?: string
 }
 
 const CHECK_BRIEF_SCHEMA = 'brief-schema'
@@ -319,7 +337,27 @@ export function validateForgeWrite(input: ForgeValidationInput): CheckError[] {
     }
   }
 
+  // The branch grammar, identical to `checks/bin/check-brief-shape.ts`'s — the
+  // title check above deliberately stays outside it, since title grammar binds
+  // on every branch. An unresolvable branch keeps the pre-#873 fail-closed
+  // behaviour: `taskBranch` false + `branchKnown` false enforces everything.
+  const branch = input.branch ?? ''
+  const branchKnown = branch !== ''
+  const taskBranch = isTaskBranch(branch)
+
+  // A non-task branch whose body isn't brief-shaped has no brief to grade — an
+  // ordinary one-line dependency-bump PR must not be forced to grow one.
+  if (branchKnown && !taskBranch && !isBriefShaped(input.body)) {
+    return errors
+  }
+
   for (const section of input.sections) {
+    // `Closes #N` names the task Issue a task branch closes; a standalone
+    // `fix/*` PR has none, so requiring it there is unsatisfiable by
+    // construction. Mirrors `requireClosesN: isTaskBranch(branch)`.
+    if (branchKnown && !taskBranch && 'builtin' in section && section.builtin === 'closesN') {
+      continue
+    }
     if ('builtin' in section) {
       const recovery = BUILTIN_RECOVERY[section.builtin].replace('{cmd}', input.retryCommand)
       for (const message of runBuiltin(section.builtin, input)) {

@@ -173,3 +173,114 @@ describe('arg extraction', () => {
     expect(extractLabels(['--label=vinaya/tranche:demo'])).toEqual(['vinaya/tranche:demo'])
   })
 })
+
+// #873 — the authoring-time gate must apply the SAME branch grammar the
+// CI-time gate (`checks/bin/check-brief-shape.ts`) already applies. Before
+// this, `pr create` graded every branch as a task branch and refused a
+// non-task PR that CI would pass — one grammar, two enforcement points,
+// disagreeing. Live repro: `vinaya pr create` on `chore/vinaya-upgrade-0.4.5`
+// refused with "Closes #N: no `Closes #<N>` ... found in the PR body".
+describe('validateForgeWrite — branch grammar (#873)', () => {
+  // A body carrying ≥2 brief-shape markers, so it is graded as a brief and the
+  // non-brief-shaped bypass below cannot be what makes these cases pass.
+  const briefShapedNoCloses = [
+    '**For:** Claude',
+    '**Project:** demo',
+    '**Tier:** 0',
+    '',
+    '## Technical surface map',
+    '- a.ts',
+    '',
+    '## Documentation-update list',
+    '- None',
+    '',
+    '## Stop conditions',
+    'STOP if x.',
+    '',
+    '## Test plan',
+    'Test Plan: unit-tests-only',
+    '',
+    '> **Autonomy:** Do not stop to ask clarifying questions. Choose the most reasonable option and continue.',
+    '',
+    '```',
+    'git worktree add .worktrees/x -b x origin/main',
+    '```'
+  ].join('\n')
+
+  const closesOnly: BriefSection[] = [{ builtin: 'closesN' }]
+
+  it('requires Closes #N on a task branch', () => {
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'task/some-tranche/2'
+    })
+    expect(errors.length).toBe(1)
+    expect(errors[0]?.message).toContain('Closes #')
+  })
+
+  it('does NOT require Closes #N on a non-task branch — the #873 regression', () => {
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: closesOnly,
+      branch: 'chore/vinaya-upgrade-0.4.5'
+    })
+    expect(errors).toEqual([])
+  })
+
+  it('stays fail-closed when the branch is unresolvable (empty or omitted)', () => {
+    // Detached HEAD / outside a repo — behaviour must be byte-identical to
+    // pre-#873, so an unknown branch never silently relaxes a gate.
+    const empty = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly, branch: '' })
+    const omitted = validateForgeWrite({ ...base, body: briefShapedNoCloses, sections: closesOnly })
+    expect(empty.length).toBe(1)
+    expect(omitted.length).toBe(1)
+  })
+
+  it('bypasses every section for a non-task branch whose body is not brief-shaped', () => {
+    // The ordinary one-line dependency-bump PR: no brief, must not be forced
+    // to grow one. Mirrors check-brief-shape.ts's identical bypass.
+    const errors = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: PR_SECTIONS,
+      branch: 'chore/bump-dep'
+    })
+    expect(errors).toEqual([])
+  })
+
+  it('still grades a brief-shaped body on a non-task branch (bypass is not a blanket skip)', () => {
+    // `fix/studio-tranche-href`'s failure mode: a standalone fix brief IS a
+    // brief, so its sections are still enforced — only Closes #N is dropped.
+    const errors = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses,
+      sections: [{ builtin: 'tier' }, { builtin: 'project' }, { builtin: 'docUpdateList' }],
+      branch: 'fix/some-standalone-fix'
+    })
+    expect(errors).toEqual([])
+
+    const missingDocList = validateForgeWrite({
+      ...base,
+      body: briefShapedNoCloses.replace('## Documentation-update list\n- None\n', ''),
+      sections: [{ builtin: 'docUpdateList' }],
+      branch: 'fix/some-standalone-fix'
+    })
+    expect(missingDocList.length).toBe(1)
+  })
+
+  it('grammar-checks the title regardless of branch', () => {
+    // The title gate binds on every branch — it sits outside the bypass.
+    const errors = validateForgeWrite({
+      ...base,
+      body: '## Summary\nBump a dependency.',
+      sections: [],
+      title: 'not a valid title',
+      branch: 'chore/bump-dep'
+    })
+    expect(errors.length).toBe(1)
+    expect(errors[0]?.check).toBe('forge-title')
+  })
+})
