@@ -541,16 +541,24 @@ const MISSING_TRAPS_BODY = `
 **Docs to keep coherent** — none
 `
 
-/** The real 2026-08-12 shape: a complete rationale whose `Project:` names `aeg-types`, which has no registry row. */
+/**
+ * A complete rationale declaring an unregistered project on the **line-anchored
+ * `**Project:**` footer field** — the site `projectsFromBody` reads and the only
+ * site a task actually declares its projects. The earlier fixture put the name
+ * inside the prose `**Project(s) + blast radius**` heading, a shape no live Issue
+ * has, so this test passed vacuously while R1's registry half was inert.
+ */
 const UNREGISTERED_PROJECT_BODY = `
 **Boundary** — test boundary
 **Sizing** — test sizing
-**Project(s) + blast radius** — \`Project: aeg-core, aeg-types, vinaya\`
+**Project(s) + blast radius** — aeg-core, aeg-types, vinaya
 **Dependency rationale** — none
 **Traps to avoid** — none
 **Suggested agent-class** — high
 **Stop-and-escalate** — none
 **Docs to keep coherent** — none
+
+**Project:** aeg-core, aeg-types, vinaya
 `
 
 function makeForgeIssue(number: number, body: string, labels: string[] = ['vinaya/tranche:iter-1']): ForgeIssue {

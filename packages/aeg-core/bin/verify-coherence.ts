@@ -528,7 +528,11 @@ export async function runCoherenceChecks(
     topologyIssuesBySlug.set(f.slug, nums)
   }
   results.push(scopeT2ToPlanPr(checkT2(openIssueNumsBySlug, topologyIssuesBySlug, ciTrancheSlug), isPlanPr))
-  results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES, readRegisteredProjectNames()))
+  const registeredNames = readRegisteredProjectNames()
+  if (registeredNames.length === 0) {
+    console.warn("[verify-coherence] no `.vinaya/projects.md` registry — R1's project-registry half is dormant.")
+  }
+  results.push(checkR1(issuesBySlug, R1_GRANDFATHERED_ISSUES, registeredNames))
 
   // D1 check
   results.push(checkD1(availableEntries, issueToEntry, taskToEntry))

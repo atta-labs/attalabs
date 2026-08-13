@@ -72,7 +72,7 @@ Keep all of this **light** — a sentence at each seam, not paragraphs. The goal
 
 Before planning, confirm:
 - **You were given an intent + a slice of work** (tickets, a roadmap slice, or a stated goal) to turn into a tranche. If asked to write a single brief or implement, refuse: *"That's a Brief Author / Developer job. I plan whole tranches — give me the slice of work."*
-- **A project registry exists if this is a multi-project repo** (`.vinaya/projects.md`). Every `Project:` you assign must resolve to a registry row; never invent an unregistered project — *"'x' isn't registered; run `aeg add-project` first or pick a registered project."* **Mechanized** by `checkProjectsRegistered` (`packages/aeg-core`), which refuses the Issue at creation/edit and re-runs continuously inside the coherence oracle's R1 — so an unregistered name is caught, not merely discouraged. It reads the `Project(s) + blast radius` field, so declare your projects there.
+- **A project registry exists if this is a multi-project repo** (`.vinaya/projects.md`). Every `Project:` you assign must resolve to a registry row; never invent an unregistered project — *"'x' isn't registered; run `aeg add-project` first or pick a registered project."* **Mechanized** by `checkProjectsRegistered` (`packages/aeg-core`), which refuses the Issue at creation/edit and re-runs continuously inside the coherence oracle's R1. It resolves names through `projectsFromBody` — the same parser that derives the task's project everywhere else — so it reads the **line-anchored `**Project:**` field**, not the `Project(s) + blast radius` prose. Declare your projects on that field: it is what the board, dispatch, and doc fan-out all read, and a task without it derives no project at all.
 
 ---
 

@@ -16,7 +16,7 @@
  * applicability from the labels; this module only checks the body.
  */
 
-import { hasLabel, SECTION_HEADER } from '@atta/aeg-forge-state'
+import { hasLabel, projectsFromBody, SECTION_HEADER } from '@atta/aeg-forge-state'
 import { stripCode } from './anchored-region'
 
 export type IssueSectionResult = { status: 'pass' | 'fail'; errors: string[] }
@@ -161,15 +161,11 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
   return [...new Set(fromBody.filter((s) => s.length > 0))]
 }
 
-/** The `Project(s) + blast radius` rationale field's label, in the tolerant grammar `rationaleFieldText` reads. */
-const PROJECT_FIELD_PATTERN = 'Project\\(s\\)|Project(?:s)?\\s*\\+|blast radius'
-
 /**
  * **Every declared project resolves against the registry.** `planner.md` states
  * this as a hard gate — *"Unregistered project or a `Project:` that doesn't
  * resolve against `projects.md` → refuse"* — and until this function nothing
- * mechanized it: `declaredProjects` returns whatever names it finds, and no
- * caller cross-checked them. Found live on 2026-08-12 on a draft plan declaring
+ * mechanized it. Found live on 2026-08-12 on a draft plan declaring
  * `Project: aeg-core, aeg-types, vinaya`; `aeg-types` has no registry row and
  * the plan passed every gate.
  *
@@ -178,47 +174,60 @@ const PROJECT_FIELD_PATTERN = 'Project\\(s\\)|Project(?:s)?\\s*\\+|blast radius'
  * membership — never whether the *right* projects were chosen, which stays a
  * review judgment like the rest of this module.
  *
- * Reuses `declaredProjects` rather than re-parsing: a second parser would let
- * the gate and the derivation (`@atta/aeg-forge-state`'s `list-tasks.ts`, which
- * reads the same field) disagree about what a task's projects even are.
+ * **It calls `projectsFromBody` — the same function, not a matching regex.**
+ * `@atta/aeg-forge-state`'s `list-tasks.ts` is the repo's authority for what a
+ * task's project *is*: it is what fills `Task.projects`, and therefore what
+ * drives the board, dispatch, and doc fan-out. A gate that decides a project is
+ * unregistered must be reading the identical name the derivation resolved, or
+ * the two can disagree about what the task even declares — so this shares the
+ * parser by construction rather than by agreement. That is the same discipline
+ * `parseRationaleDeps`/`SECTION_HEADER` already enforce for dependency edges,
+ * and the import direction is the existing one (`aeg-core → aeg-forge-state`,
+ * as in `archive-task.ts`); nothing new is layered.
  *
- * **Scoped to the `Project(s) + blast radius` field, not the whole body** — the
- * same scoping, for the same reason, that `checkBlastRadiusScope` applies to its
- * path scan. `declaredProjects` takes the body's FIRST `Project…:` occurrence,
- * and a rationale routinely writes that token in prose long before the field
- * itself: Issue #863's own Sizing field says "a fixture Issue body declaring an
- * unregistered \`Project:\` token is refused by \`open-issue.ts\`", whose trailing
- * path then splits on `/` into `open-issuets`, `bin`, `src` — six fictional
- * "projects", every one of them a refusal of a correct Issue. Run body-wide this
- * check fails the very task that introduces it. The field slice is where a task
- * declares its projects, so that is the only text a declaration can be read from.
+ * The first version of this check read the **prose rationale field**
+ * (`**Project(s) + blast radius** — …`) instead, and that was the defect two
+ * review passes rejected: a task declares its projects on the line-anchored
+ * footer field `**Project:** …`, and `PROJECT_FIELD`'s own comment says the
+ * prose heading is excluded on purpose, since "nothing there puts a `:`
+ * straight after the name". The gate therefore evaluated 4 of 61 live open task
+ * Issues and no-opped on 57 — including its own Issue, #863, which passed
+ * because no names were found rather than because its names resolved. Reading
+ * the prose slice also invented projects out of the file paths that share the
+ * line (`src`, `bin`, `demots`), refusing correct Issues. Both classes are one
+ * bug: the wrong field. Do not re-add a second regex that "also handles" the
+ * footer field — two parsers that agree today is the condition that produced it.
  *
  * Matching is **case-insensitive**. Registry names are lower-case by
  * convention, and failing `Project: Vinaya` for its capital letter would block
  * correct work over a cosmetic difference — the failure this exists to catch is
  * a name with no row at all, not a name with the wrong shift key.
  *
- * A body whose `Project:` field parses to no names **passes**. Whether the
- * field exists is already `checkIssueRationale`'s job (`Project(s) + blast
- * radius` is one of the eight required fields); duplicating it here would put
- * one failure behind two gates with two different messages. This check answers
- * only "do the declared names resolve".
+ * A body with no `**Project:**` line **passes**. Whether the field exists is
+ * already `checkIssueRationale`'s job (`Project(s) + blast radius` is one of the
+ * eight required fields); duplicating it here would put one failure behind two
+ * gates with two different messages. This check answers only "do the declared
+ * names resolve".
  *
  * Dormant when `registeredNames` is empty (no `.vinaya/projects.md` on disk) —
  * the same seam-is-dormant-when-absent shape `checkBlastRadiusScope` and
  * `doc-owners` use. A single-project repo has no registry by design, and a
- * check with no source of truth must not invent one.
+ * check with no source of truth must not invent one. Both bin callers warn when
+ * they hand over an empty registry, so the dormancy is never silent.
  */
-export function checkProjectsRegistered(body: string, labels: string[], registeredNames: string[]): IssueSectionResult {
+export function checkProjectsRegistered(
+  body: string,
+  _labels: string[],
+  registeredNames: string[]
+): IssueSectionResult {
   if (registeredNames.length === 0) return { status: 'pass', errors: [] }
-  const field = rationaleFieldText(PATH_TEXT(body), PROJECT_FIELD_PATTERN)
   const known = new Set(registeredNames.map((n) => n.trim().toLowerCase()))
-  const unregistered = declaredProjects(field, labels).filter((p) => !known.has(p.toLowerCase()))
+  const unregistered = projectsFromBody(body).filter((p) => !known.has(p.toLowerCase()))
   if (unregistered.length === 0) return { status: 'pass', errors: [] }
   return {
     status: 'fail',
     errors: [
-      `issue-validation project registry: \`Project:\` declares ${unregistered.join(', ')} — no such row in \`.vinaya/projects.md\`, which is the authority for valid project names (registered: ${[...registeredNames].join(', ')}). Fix the name, or register the project with \`aeg add-project --path <folder>\` first; an unregistered project has no specs to read and no per-project state to update.`
+      `issue-validation project registry: the \`**Project:**\` field declares ${unregistered.join(', ')} — no such row in \`.vinaya/projects.md\`, which is the authority for valid project names (registered: ${[...registeredNames].join(', ')}). Fix the name, or register the project with \`vinaya init product <name> --path <folder>\` first; an unregistered project has no specs to read and no per-project state to update. This reads the same field \`projectsFromBody\` derives the task's project from, so a name here that is not a row is a task that resolves to a project that does not exist.`
     ]
   }
 }
