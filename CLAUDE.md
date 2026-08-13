@@ -30,6 +30,7 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
 | Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Bootstrap — landing live; CLI skeleton live (`vinaya help`/`version`), real commands not yet implemented; CMS-backed via Vitakka's reused Sanity project |
+| Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | — | `vinaya.attalabs.dev` (not yet repointed) | The public site extracted out of `apps/vinaya/web` — same product, its own app. Builds and serves every `(site)` route; the Studio app and the deletion of `apps/vinaya/web` land in later tasks |
 
 ## App Structure Convention
 
@@ -47,6 +48,8 @@ apps/{product-ai}/
 ```
 
 Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp.
+
+One product may also span more than one `apps/` directory: Vinaya's public site lives in `apps/vinaya-portal/web`, separate from `apps/vinaya/`, because the site and the local-only Studio deploy independently.
 
 ---
 
