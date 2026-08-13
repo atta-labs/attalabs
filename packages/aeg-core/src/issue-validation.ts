@@ -162,6 +162,53 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
 }
 
 /**
+ * **Every declared project resolves against the registry.** `planner.md` states
+ * this as a hard gate — *"Unregistered project or a `Project:` that doesn't
+ * resolve against `projects.md` → refuse"* — and until this function nothing
+ * mechanized it: `declaredProjects` returns whatever names it finds, and no
+ * caller cross-checked them. Found live on 2026-08-12 on a draft plan declaring
+ * `Project: aeg-core, aeg-types, vinaya`; `aeg-types` has no registry row and
+ * the plan passed every gate.
+ *
+ * `.vinaya/projects.md` is the sole authority for valid names ("A `Project:`
+ * value is valid iff every name in it is a row above"), so this check only asks
+ * membership — never whether the *right* projects were chosen, which stays a
+ * review judgment like the rest of this module.
+ *
+ * Reuses `declaredProjects` rather than re-parsing: a second parser would let
+ * the gate and the derivation (`@atta/aeg-forge-state`'s `list-tasks.ts`, which
+ * reads the same field) disagree about what a task's projects even are.
+ *
+ * Matching is **case-insensitive**. Registry names are lower-case by
+ * convention, and failing `Project: Vinaya` for its capital letter would block
+ * correct work over a cosmetic difference — the failure this exists to catch is
+ * a name with no row at all, not a name with the wrong shift key.
+ *
+ * A body whose `Project:` field parses to no names **passes**. Whether the
+ * field exists is already `checkIssueRationale`'s job (`Project(s) + blast
+ * radius` is one of the eight required fields); duplicating it here would put
+ * one failure behind two gates with two different messages. This check answers
+ * only "do the declared names resolve".
+ *
+ * Dormant when `registeredNames` is empty (no `.vinaya/projects.md` on disk) —
+ * the same seam-is-dormant-when-absent shape `checkBlastRadiusScope` and
+ * `doc-owners` use. A single-project repo has no registry by design, and a
+ * check with no source of truth must not invent one.
+ */
+export function checkProjectsRegistered(body: string, labels: string[], registeredNames: string[]): IssueSectionResult {
+  if (registeredNames.length === 0) return { status: 'pass', errors: [] }
+  const known = new Set(registeredNames.map((n) => n.trim().toLowerCase()))
+  const unregistered = declaredProjects(body, labels).filter((p) => !known.has(p.toLowerCase()))
+  if (unregistered.length === 0) return { status: 'pass', errors: [] }
+  return {
+    status: 'fail',
+    errors: [
+      `issue-validation project registry: \`Project:\` declares ${unregistered.join(', ')} — no such row in \`.vinaya/projects.md\`, which is the authority for valid project names (registered: ${[...registeredNames].join(', ')}). Fix the name, or register the project with \`aeg add-project --path <folder>\` first; an unregistered project has no specs to read and no per-project state to update.`
+    ]
+  }
+}
+
+/**
  * Does the text name a path that puts this task **inside** the collision
  * domain `path`? Matches the domain as a whole path token — `packages/ui` hits
  * `packages/ui/topbar/index.tsx` and a bare `packages/ui`, never

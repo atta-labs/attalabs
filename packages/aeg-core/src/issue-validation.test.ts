@@ -8,6 +8,7 @@ import {
   checkConflictCompleteness,
   checkIssueRationale,
   checkNoBriefContent,
+  checkProjectsRegistered,
   checkRationaleNamesDocs,
   declaredProjects,
   isTaskIssueLabelSet,
@@ -163,6 +164,52 @@ describe('declaredProjects', () => {
 
   it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
     expect(declaredProjects(rationale({ boundary: 'x' }), ['project:vada', 'vinaya/tranche:x'])).toEqual(['vinaya'])
+  })
+})
+
+/** The registry reduced to the name column — what `checkProjectsRegistered` consumes. */
+const REGISTERED = REGISTRY.map((p) => p.name)
+
+describe('checkProjectsRegistered', () => {
+  it('fails the real 2026-08-12 case — `aeg-core, aeg-types, vinaya`, where aeg-types has no row', () => {
+    const body = rationale({ boundary: 'x', projects: 'aeg-core, aeg-types, vinaya' })
+    const r = checkProjectsRegistered(body, [], REGISTERED)
+    expect(r.status).toBe('fail')
+    expect(r.errors).toHaveLength(1)
+    expect(r.errors[0]).toMatch(/aeg-types/)
+    // The message must point at the authority, so an agent can self-correct.
+    expect(r.errors[0]).toMatch(/\.vinaya\/projects\.md/)
+    // Only the unregistered name is accused; the two that do resolve are not.
+    expect(r.errors[0]).toMatch(/declares aeg-types —/)
+  })
+
+  it('names every unregistered project, not just the first', () => {
+    const body = rationale({ boundary: 'x', projects: 'aeg-types, vda' })
+    const r = checkProjectsRegistered(body, [], REGISTERED)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/aeg-types/)
+    expect(r.errors[0]).toMatch(/vda/)
+  })
+
+  it('passes when every declared project has a row', () => {
+    const body = rationale({ boundary: 'x', projects: 'aeg-core, vinaya' })
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
+  })
+
+  it('matches case-insensitively — a capital letter is not an unregistered project', () => {
+    const body = rationale({ boundary: 'x', projects: 'Vinaya' })
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
+  })
+
+  it('is dormant when the registry is absent — a gate with no source of truth invents none', () => {
+    const body = rationale({ boundary: 'x', projects: 'aeg-types' })
+    expect(checkProjectsRegistered(body, [], []).status).toBe('pass')
+  })
+
+  it('passes a body with no parseable Project: field — field presence is checkIssueRationale’s job', () => {
+    const body = 'A body with no rationale and no Project field at all.'
+    expect(declaredProjects(body, [])).toEqual([])
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
   })
 })
 
