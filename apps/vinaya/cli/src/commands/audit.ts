@@ -61,7 +61,7 @@ function shSoft(args: string[], input?: string): string {
   } catch (err) {
     const stderr = (err as { stderr?: Buffer | string }).stderr
     const message = stderr ? stderr.toString().trim() : (err as Error).message
-    console.log(`[vinaya audit] non-fatal: command failed — ${message}`)
+    process.stdout.write(`[vinaya audit] non-fatal: command failed — ${message}\n`)
     return ''
   }
 }
@@ -208,7 +208,9 @@ function runDeadBranchAudit(repoFlag: string): DeadBranchAuditResult {
     }
     return { scanned: facts.length, findings }
   } catch (err) {
-    console.log(`[vinaya audit] dead-branch scan error (never-red, reporting only): ${(err as Error).message}`)
+    process.stdout.write(
+      `[vinaya audit] dead-branch scan error (never-red, reporting only): ${(err as Error).message}\n`
+    )
     return { scanned: 0, findings: [] }
   }
 }
