@@ -25,9 +25,13 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
 | aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
 | aeg-forge-state | `packages/aeg-forge-state` | `packages/aeg-forge-state/specs/` | (state tracked globally for now) |
+| engine   | `packages/engine`     | `.claude/skills/atta-engine/` | (state tracked globally for now)   |
+| adapter  | `packages/adapter-langgraph` | `.claude/skills/atta-adapter-langgraph/` | (state tracked globally for now) |
 | ui       | `packages/ui`         | `.claude/skills/ui-*`       | (state tracked globally for now)     |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
 | vinaya   | `apps/vinaya`         | `apps/vinaya/specs/`        | Issue #768 (pinned)                  |
+
+> **engine** / **adapter** — `packages/engine` (`@atta/engine`, the plan compiler) and `packages/adapter-langgraph` (`@atta/adapter-langgraph`, LangGraph execution + the multi-vendor cognitive router): together the Atta Engine, the execution substrate Vāda runs on. Both are long-standing shared packages with their own collision domains in `.aeg/packages` and their own skills, and task Issues have declared `Project: engine, adapter` since well before this row existed — the names were simply never registered, so every such task resolved against nothing. Registered retroactively for the same reason `admin`, `attalabs`, `ui` and `aeg-forge-state` each were: real code, real collision domain, no row. Their specs live as skills rather than an `apps/*/specs/` folder, the same shape `ui` uses.
 
 > **admin** — `tools/admin`: the internal Sanity-backed admin tool for managing per-product theme/library config across every AttaLabs product (not a product itself, no `.attalabs.dev` domain). Had real code and a task PR (#557, the Library-picker feature) before ever getting a registry row — added retroactively once that gap was noticed. `tools/*` carries no `-ai` suffix (internal-tooling convention, like `apps/desktop`, `apps/attalabs`).
 
