@@ -65,7 +65,8 @@ export {
   checkWorktreeStep0,
   headerRegion,
   inferBranchFromBody,
-  isBriefShaped
+  isBriefShaped,
+  isTaskBranch
 } from './brief-validation'
 export type { BriefSectionResult, BriefSectionsOptions } from './brief-validation'
 export {

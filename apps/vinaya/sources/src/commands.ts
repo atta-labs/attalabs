@@ -196,7 +196,7 @@ export const COMMANDS: readonly Command[] = [
       { flag: '--json', description: 'Enveloped JSON output' }
     ],
     details: [
-      'Dead-branch-push is never-red — a notification channel that flags (label + PR comment) any `task/*` branch whose tip commit lands after its own PR already resolved. Direct-main-push is a real pass/fail — it opens an incident Issue and exits 1 if a commit on `main` has no associated merged PR.',
+      'Dead-branch-push is never-red — a notification channel that flags (label + PR comment) any `task/*` branch whose tip commit lands after its own PR already resolved. Direct-main-push is a real pass/fail — it polls the merge-association API for up to ~100s before deciding, then opens an incident Issue and exits 1 if a commit on `main` genuinely has no associated merged PR.',
       "The same logic the generated `vinaya-archivist.yml` workflow's `daily-drift` and `direct-main-push-detection` jobs run on schedule / on every push to `main` — callable directly for a one-off run or local verification."
     ],
     status: 'shipped'

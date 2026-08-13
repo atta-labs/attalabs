@@ -25,6 +25,49 @@ describe('vinaya audit — pre-flight', () => {
   })
 })
 
+describe('vinaya audit — direct-main-push bounded poll (#870)', () => {
+  it('finds the association on a later attempt and returns legitimate without exhausting the ceiling', async () => {
+    let calls = 0
+    const exit = await runAudit(
+      ['--only=direct-push', '--sha=abc123'],
+      auditDeps({
+        fetchAssociatedMergedPrs: () => {
+          calls++
+          return calls < 3 ? [] : [42]
+        },
+        pollAttempts: 6,
+        pollDelayMs: 1,
+        sleep: async () => {}
+      })
+    )
+    expect(exit).toBe(0)
+    expect(calls).toBe(3)
+  })
+
+  it('still returns direct-push after the ceiling when genuinely no association ever appears', async () => {
+    let calls = 0
+    let incidentOpened = 0
+    const exit = await runAudit(
+      ['--only=direct-push', '--sha=def456'],
+      auditDeps({
+        fetchAssociatedMergedPrs: () => {
+          calls++
+          return []
+        },
+        pollAttempts: 3,
+        pollDelayMs: 1,
+        sleep: async () => {},
+        openDirectPushIncident: () => {
+          incidentOpened++
+        }
+      })
+    )
+    expect(exit).toBe(1)
+    expect(calls).toBe(3)
+    expect(incidentOpened).toBe(1)
+  })
+})
+
 describe('vinaya audit — dead-branch-push detection parity', () => {
   it('flags a branch whose tip commit lands after its own PR already resolved, via the same pure findDeadBranchPushes @atta/aeg-core exports to packages/aeg-core/bin/dead-branch-audit.ts', () => {
     const findings = findDeadBranchPushes([

@@ -366,9 +366,19 @@ describe('workflows', () => {
     // fetches the body itself, both read `process.env.PR_BODY` only, so an
     // unwired job passes them vacuously regardless of the PR's real content
     // (found live: reproduced against a real adopter repo's real CI run).
-    // Both jobs that run `check --all`/`--all --diff-only` need it.
+    // The checks job runs `check --all --diff-only` (test-plan/closes-n
+    // included) and needs it; the review job runs only `check review-gate`
+    // now (#870), which never reads PR_BODY, so it must NOT carry this wiring
+    // — re-adding it would regress to the exact bug this fix closes.
     expect(checks).toContain('github.event.pull_request.body')
-    expect(review).toContain('github.event.pull_request.body')
+    expect(review).not.toContain('github.event.pull_request.body')
+    // review-gate is the review job's sole check (#870) — decoupled from the
+    // PR_BODY-driven check --all it used to run.
+    expect(review).toContain('vinaya check review-gate')
+    expect(review).not.toContain('vinaya check --all')
+    // A body-only edit must re-trigger the checks workflow so test-plan/
+    // closes-n re-evaluate against the corrected body (#870).
+    expect(checks).toContain('edited')
   })
 })
 

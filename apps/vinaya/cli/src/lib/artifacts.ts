@@ -96,7 +96,7 @@ name: Vinaya Checks
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   vinaya-checks:
@@ -169,12 +169,8 @@ jobs:
           # it the adapter reads "no PR yet — local dev" and exits 0, and
           # the gate is green regardless of review state.
           PR_NUMBER: \${{ github.event.pull_request.number }}
-          # Same PR_BODY gap as vinaya-checks.yml — this job also runs
-          # \`check --all\` (test-plan/closes-n included), so it needs the
-          # same wiring or those two checks pass vacuously here too.
-          PR_BODY: \${{ github.event.pull_request.body }}
           BRANCH: \${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya check --all
+        run: npx --yes @attalabs/vinaya check review-gate
 `
 }
 
