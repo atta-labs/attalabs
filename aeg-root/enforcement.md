@@ -8,6 +8,39 @@ sidebar_title: Enforcement Map
 provenance: >
   The normative registry of every gate lives in aeg-root/state-machine.md.
   It is unpublished, so it is not named in this file's reader-facing prose.
+
+
+  EDIT TAX — read before adding, removing, or re-categorising a ring-table
+  row. This file is parsed as DATA, and three golden-count tests in
+  packages/aeg-core assert its shape. Any row change breaks all three, and
+  they are not in the surface map of a task that only meant to add a gate:
+
+  - packages/aeg-core/src/registry-parse.test.ts asserts the TOTAL row count
+    across all three rings (currently 34).
+  - packages/aeg-core/src/markdown-table.test.ts asserts per-ring counts
+    (currently ring 0 = 12, ring 1 = 16, ring 2 = 6).
+  - packages/aeg-core/src/docs/node-route.test.ts asserts the ring-0 count
+    (currently 12) alongside the actions/roles/contracts counts.
+
+  Bumping those numbers is a mechanical consequence of a correct edit, not a
+  design change — fix them in the same commit and say so in the PR body.
+
+  The Category column is a CLOSED ENUM: exactly ci | hook | event, typed at
+  packages/aeg-core/src/registry-parse.ts and .../diagram-model.ts. It is not
+  free text. A descriptive word taken from a brief's prose ("mechanism",
+  "hook + ci") fails diagram-model.test.ts. If a row is CI-and-hook, pick the
+  ring's own mechanism for the cell and state the parity in the Description.
+
+  Both traps were rediscovered independently by two Developers inside a
+  single tranche, each paying the same rework, before being written down
+  here.
+
+
+  A third trap, found while writing this note: the checks that scan this
+  tree read the WHOLE FILE, frontmatter included. A tranche slug or a bare
+  forge number is refused here in `provenance` exactly as it is in the body,
+  despite this block never reaching a reader. Cite by description, not by
+  slug or number.
 ---
 # Enforcement Map — how the forge stays valid
 
