@@ -30,6 +30,14 @@ docs/
 !apps/vinaya/web/src/app/(site)/docs/**
 !apps/vinaya/web/src/lib/docs/
 !apps/vinaya/web/src/lib/docs/**
+# Same re-include for the extracted Portal app (vinaya-portal-studio-split-v1
+# task 1, #883). Without it the whole docs route group and its loaders are
+# silently untracked — the app builds locally off working-tree files and the
+# commit ships a Portal with no /docs at all.
+!apps/vinaya-portal/web/src/app/(site)/docs/
+!apps/vinaya-portal/web/src/app/(site)/docs/**
+!apps/vinaya-portal/web/src/lib/docs/
+!apps/vinaya-portal/web/src/lib/docs/**
 
 # Environment
 .env

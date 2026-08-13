@@ -1,0 +1,1225 @@
+import { clamp01, lerp, type Point } from './geometry'
+import type { ThemeColors } from './theme-colors'
+
+function line(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {
+  ctx.beginPath()
+  ctx.moveTo(x1, y1)
+  ctx.lineTo(x2, y2)
+  ctx.stroke()
+}
+
+/** Hand-drawn approximation of lucide's git-branch glyph — canvas can't import a React icon. */
+function drawGitBranchGlyph(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = Math.max(1, r * 0.22)
+  ctx.lineCap = 'round'
+
+  const leftX = cx - r * 0.5
+  const rightX = cx + r * 0.5
+  const topY = cy - r * 0.9
+  const midY = cy
+  const botY = cy + r * 0.9
+
+  line(ctx, leftX, topY, leftX, botY)
+
+  ctx.beginPath()
+  ctx.moveTo(leftX, midY)
+  ctx.bezierCurveTo(leftX + r * 0.5, midY, rightX - r * 0.5, topY, rightX, topY)
+  ctx.stroke()
+
+  const nodeR = r * 0.24
+  for (const [x, y] of [
+    [leftX, topY],
+    [leftX, botY],
+    [rightX, topY]
+  ] as const) {
+    ctx.beginPath()
+    ctx.arc(x, y, nodeR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+/**
+ * "Fabric of the universe" backdrop: a gently warped space-grid mesh drawn behind the
+ * whole scene, always low-alpha so the figures and sphere read on top. `turbulence` scales
+ * the warp amplitude + speed — the agents' chaotic scene gets more than the humans' calm one.
+ */
+export function drawUniverseFabric(
+  ctx: CanvasRenderingContext2D,
+  colors: ThemeColors,
+  elapsedMs: number,
+  w: number,
+  h: number,
+  reducedMotion = false,
+  turbulence = 1
+) {
+  const t = reducedMotion ? 0 : (elapsedMs / 1000) * turbulence
+  const amp = 3 * turbulence
+  ctx.save()
+
+  const cols = 9
+  const rows = 11
+  const cw = w / cols
+  const ch = h / rows
+  const warp = (gx: number, gy: number): Point => ({
+    x: gx * cw + Math.sin(gy * 0.6 + t * 0.7) * amp,
+    y: gy * ch + Math.cos(gx * 0.5 + t * 0.5) * amp
+  })
+
+  // mutedForeground (not border) — border is near-black in the dark theme and vanishes on
+  // the dark card, leaving only the stars; mutedForeground reads faintly in both themes.
+  ctx.strokeStyle = colors.mutedForeground
+  ctx.lineWidth = 0.6
+  ctx.globalAlpha = 0.22
+  for (let r = 0; r <= rows; r++) {
+    ctx.beginPath()
+    for (let c = 0; c <= cols; c++) {
+      const p = warp(c, r)
+      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
+  for (let c = 0; c <= cols; c++) {
+    ctx.beginPath()
+    for (let r = 0; r <= rows; r++) {
+      const p = warp(c, r)
+      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
+export type MainSphereVariant = 'normal' | 'light-speed' | 'protected'
+
+/**
+ * Jagged egg-crack paths for the `light-speed` variant, each a short zigzag of points
+ * (radius-relative offsets from center) rather than a single straight line. Every path
+ * stays well clear of the centered "main" label + git-branch glyph (the text zone is
+ * roughly |dx| < 0.4, dy between -0.3 and 0.5) — cracks live in the four outer corners,
+ * radiating toward the rim.
+ */
+const SPHERE_CRACKS: { phase: number; points: readonly { dx: number; dy: number }[] }[] = [
+  {
+    phase: 0,
+    points: [
+      { dx: -0.55, dy: -0.55 },
+      { dx: -0.68, dy: -0.42 },
+      { dx: -0.6, dy: -0.32 },
+      { dx: -0.8, dy: -0.24 },
+      { dx: -0.7, dy: -0.16 },
+      { dx: -0.92, dy: -0.12 }
+    ]
+  },
+  {
+    phase: 0.27,
+    points: [
+      { dx: 0.42, dy: -0.58 },
+      { dx: 0.55, dy: -0.46 },
+      { dx: 0.46, dy: -0.36 },
+      { dx: 0.68, dy: -0.3 },
+      { dx: 0.58, dy: -0.22 },
+      { dx: 0.88, dy: -0.18 }
+    ]
+  },
+  {
+    phase: 0.55,
+    points: [
+      { dx: 0.5, dy: 0.48 },
+      { dx: 0.62, dy: 0.36 },
+      { dx: 0.52, dy: 0.28 },
+      { dx: 0.75, dy: 0.22 },
+      { dx: 0.63, dy: 0.15 },
+      { dx: 0.9, dy: 0.14 }
+    ]
+  },
+  {
+    phase: 0.8,
+    points: [
+      { dx: -0.48, dy: 0.52 },
+      { dx: -0.6, dy: 0.4 },
+      { dx: -0.5, dy: 0.3 },
+      { dx: -0.72, dy: 0.24 },
+      { dx: -0.6, dy: 0.16 },
+      { dx: -0.88, dy: 0.14 }
+    ]
+  }
+]
+
+/** Draws only the first `growth` (0..1) fraction of a crack's total path length. */
+function drawGrowingCrack(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  points: readonly { dx: number; dy: number }[],
+  growth: number
+) {
+  const abs = points.map((p) => ({ x: cx + p.dx * radius, y: cy + p.dy * radius }))
+  const segLens: number[] = []
+  let total = 0
+  for (let i = 1; i < abs.length; i++) {
+    const d = Math.hypot(abs[i]!.x - abs[i - 1]!.x, abs[i]!.y - abs[i - 1]!.y)
+    segLens.push(d)
+    total += d
+  }
+  const targetLen = total * clamp01(growth)
+
+  ctx.beginPath()
+  ctx.moveTo(abs[0]!.x, abs[0]!.y)
+  let covered = 0
+  for (let i = 1; i < abs.length; i++) {
+    const segLen = segLens[i - 1]!
+    if (covered + segLen <= targetLen) {
+      ctx.lineTo(abs[i]!.x, abs[i]!.y)
+      covered += segLen
+    } else {
+      const t = segLen > 0 ? (targetLen - covered) / segLen : 0
+      ctx.lineTo(lerp(abs[i - 1]!.x, abs[i]!.x, clamp01(t)), lerp(abs[i - 1]!.y, abs[i]!.y, clamp01(t)))
+      break
+    }
+  }
+  ctx.stroke()
+}
+
+/**
+ * The shared "main" sphere every scene composes from. `crackPulse` (0..1) only affects
+ * the `light-speed` variant's crack-line opacity; `crackTime` (slowly increasing, one
+ * unit per full cycle) drives each crack growing/receding little by little, staggered
+ * by its own phase so they don't all move together; other variants ignore both.
+ */
+export function drawMainSphere(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  colors: ThemeColors,
+  variant: MainSphereVariant,
+  crackPulse: number,
+  crackTime = 0
+) {
+  ctx.save()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+  ctx.fillStyle = colors.card
+  ctx.fill()
+
+  ctx.save()
+  ctx.globalAlpha = 0.2
+  ctx.lineWidth = Math.max(1, radius * 0.02)
+  ctx.strokeStyle = colors.foreground
+  ctx.stroke()
+  ctx.restore()
+
+  if (variant === 'normal') {
+    ctx.save()
+    ctx.globalAlpha = 0.55
+    ctx.strokeStyle = colors.mutedForeground
+    ctx.lineWidth = 1
+    line(ctx, cx - radius * 0.55, cy - radius * 0.1, cx + radius * 0.2, cy + radius * 0.12)
+    line(ctx, cx - radius * 0.3, cy + radius * 0.32, cx + radius * 0.5, cy + radius * 0.18)
+    ctx.strokeStyle = colors.warning
+    line(ctx, cx - radius * 0.45, cy - radius * 0.45, cx - radius * 0.25, cy - radius * 0.3)
+    line(ctx, cx + radius * 0.3, cy + radius * 0.4, cx + radius * 0.48, cy + radius * 0.28)
+    ctx.restore()
+  }
+
+  if (variant === 'light-speed') {
+    ctx.save()
+    ctx.strokeStyle = colors.destructive
+    ctx.lineWidth = Math.max(1.5, radius * 0.025)
+    ctx.lineCap = 'round'
+    ctx.globalAlpha = 0.28 + crackPulse * 0.42
+
+    for (const crack of SPHERE_CRACKS) {
+      const growth = 0.35 + 0.65 * ((Math.sin((crackTime + crack.phase) * Math.PI * 2) + 1) / 2)
+      drawGrowingCrack(ctx, cx, cy, radius, crack.points, growth)
+    }
+    ctx.restore()
+  }
+
+  ctx.fillStyle = colors.foreground
+  ctx.font = `700 ${Math.round(radius * 0.32)}px ${colors.fontMono}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('main', cx, cy - radius * 0.12)
+
+  drawGitBranchGlyph(ctx, cx, cy + radius * 0.34, radius * 0.16, colors.mutedForeground)
+
+  ctx.restore()
+}
+
+const SHOULDER_OFFSET = { x: 0, y: -15 }
+const ARM_LENGTH = 13
+const ELBOW_BEND_MAX = 0.85
+const LUNGE_DISTANCE = 3.5
+// Kept modest on purpose: ARM_LENGTH scales with the figure, so at large HUMAN_SCALE a
+// wide swing travels far enough in absolute px to swing the hand up over the head.
+const ARM_WINDUP_DELTA = -1.3
+const ARM_RECOVER_DELTA = -0.55
+// Longer than the release/follow-through phases on purpose — a real archer's draw
+// (reaching back, nocking, pulling to full draw) is the slow, deliberate half of the
+// motion; the release itself is a snap. Rushing the windup is what made it unreadable.
+const ARM_WINDUP_END = 0.22
+const ARM_RELEASE_END = 0.3
+const ARM_FOLLOW_END = 0.42
+
+/** A held arrow (or any grabbed projectile) rests near the figure until this point in the cycle. */
+export const SPEAR_APPEAR_END = 0.06
+/** Then it's picked up, tracking the hand from here until it leaves the hand at release. */
+export const SPEAR_GRAB_END = 0.14
+/** The exact progress the arm reaches full extension at `throwAngle` — hand-off point from "held" to "ballistic". */
+export const SPEAR_RELEASE_AT = ARM_RELEASE_END
+
+function easeInCubic(t: number): number {
+  return t * t * t
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3
+}
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+}
+
+export interface ThrowPose {
+  /** Current angle of the whole arm (shoulder -> hand). */
+  angle: number
+  /** 0 = fully extended (whip release), 1 = sharply bent (cocked back). */
+  bend: number
+}
+
+/**
+ * A javelin-style windup/whip/recover cycle, not a mechanical constant-speed sweep:
+ * slow deliberate cock-back (eased out), a fast whip-through release (eased in), a
+ * brief extended follow-through, then an easing recovery back toward the next windup.
+ * Releases exactly ON `throwAngle` at `bend = 0` (arm fully extended) — the arrow's
+ * launch point is derived from this same angle+bend pair, so it can never drift.
+ */
+export function throwArmPose(throwAngle: number, progress: number): ThrowPose {
+  if (progress < ARM_WINDUP_END) {
+    const t = easeOutCubic(progress / ARM_WINDUP_END)
+    return { angle: throwAngle + lerp(0, ARM_WINDUP_DELTA, t), bend: lerp(0.3, 1, t) }
+  }
+  if (progress < ARM_RELEASE_END) {
+    const t = easeInCubic((progress - ARM_WINDUP_END) / (ARM_RELEASE_END - ARM_WINDUP_END))
+    return { angle: lerp(throwAngle + ARM_WINDUP_DELTA, throwAngle, t), bend: lerp(1, 0, t) }
+  }
+  if (progress < ARM_FOLLOW_END) {
+    return { angle: throwAngle, bend: 0 }
+  }
+  const t = easeInOutCubic((progress - ARM_FOLLOW_END) / (1 - ARM_FOLLOW_END))
+  return { angle: lerp(throwAngle, throwAngle + ARM_RECOVER_DELTA, t), bend: lerp(0, 0.3, t) }
+}
+
+function throwShoulder(x: number, y: number, scale: number, angle: number, bend: number): Point {
+  const lungeFactor = clamp01((0.5 - bend) / 0.5)
+  return {
+    x: x + SHOULDER_OFFSET.x * scale + Math.cos(angle) * lungeFactor * LUNGE_DISTANCE * scale,
+    y: y + SHOULDER_OFFSET.y * scale + Math.sin(angle) * lungeFactor * LUNGE_DISTANCE * scale
+  }
+}
+
+/**
+ * The hand's position for ANY pose — the exact same formula `drawHuman` uses internally.
+ * Single source of truth: a held arrow can track the hand through grab/windup/release by
+ * calling this at the human's current pose every frame, so it can never drift from where
+ * the arm is actually drawn.
+ */
+export function getHandPosition(x: number, y: number, scale: number, pose: ThrowPose): Point {
+  const shoulder = throwShoulder(x, y, scale, pose.angle, pose.bend)
+  return {
+    x: shoulder.x + Math.cos(pose.angle) * ARM_LENGTH * scale,
+    y: shoulder.y + Math.sin(pose.angle) * ARM_LENGTH * scale
+  }
+}
+
+/** The hand's position AT RELEASE specifically — `getHandPosition` at `{ angle: throwAngle, bend: 0 }`. */
+export function getHumanThrowPoint(x: number, y: number, scale: number, throwAngle: number): Point {
+  return getHandPosition(x, y, scale, { angle: throwAngle, bend: 0 })
+}
+
+// `drawHuman`'s own head-top-to-leg-bottom span at scale=1 (26 up + 10 down — see the
+// body below) and `drawRobot`'s own antenna-top-to-body-bottom span at scale=1 (11 up +
+// 21 down). Two figures with DIFFERENT unit-height constants need DIFFERENT scale
+// constants to render at the SAME pixel height — computing each canvas's own scale as
+// `TWO_ERAS_FIGURE_HEIGHT / *_FIGURE_HEIGHT_UNITS` (see NormalEraCanvas /
+// LightSpeedEraCanvas) is what keeps the humans-row and agents-row the same height by
+// construction, instead of two independently-guessed scale numbers silently drifting
+// apart every time either constant changes.
+export const HUMAN_FIGURE_HEIGHT_UNITS = 36
+export const ROBOT_FIGURE_HEIGHT_UNITS = 32
+/** Shared target render height (logical units) for the two-eras row figures. */
+export const TWO_ERAS_FIGURE_HEIGHT = 96
+
+/**
+ * A fuller archer than a stick figure — filled body silhouette (tapered torso), a head
+ * with a hood crest, and jointed thigh→shin legs in a slight stance — with the SAME
+ * animated throwing arm as before. The arm geometry (shoulder→elbow→hand) is byte-for-byte
+ * the old math, so the arrow still tracks `getHandPosition` exactly; only the body around
+ * it got sophisticated. Head-top (y-26·s) and feet (y+10·s) are unchanged, so the figure's
+ * unit height (HUMAN_FIGURE_HEIGHT_UNITS) still holds.
+ */
+export function drawHuman(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  pose: ThrowPose
+) {
+  const s = scale
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  const headY = y - 22 * s
+  const headR = 4.2 * s
+  const shoulderY = y - 15 * s
+  const hipY = y - 3 * s
+  const shoulderHalf = 4.6 * s
+  const hipHalf = 3 * s
+
+  // --- legs (behind torso): thigh → knee → foot, mirrored into a slight stance
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.6 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.moveTo(x + dir * hipHalf * 0.55, hipY)
+    ctx.lineTo(x + dir * (hipHalf + 1.4 * s), y + 3 * s) // knee
+    ctx.lineTo(x + dir * 6 * s, y + 10 * s) // foot
+    ctx.stroke()
+  }
+
+  // --- torso silhouette: tapered shoulders → waist, filled for body mass
+  ctx.beginPath()
+  ctx.moveTo(x - shoulderHalf, shoulderY)
+  ctx.quadraticCurveTo(x - shoulderHalf * 1.05, (shoulderY + hipY) / 2, x - hipHalf, hipY)
+  ctx.lineTo(x + hipHalf, hipY)
+  ctx.quadraticCurveTo(x + shoulderHalf * 1.05, (shoulderY + hipY) / 2, x + shoulderHalf, shoulderY)
+  ctx.closePath()
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.2 * s
+  ctx.stroke()
+
+  // --- neck
+  line(ctx, x, headY + headR * 0.6, x, shoulderY)
+
+  // --- head (filled) + a hood/hair crest across the crown
+  ctx.beginPath()
+  ctx.arc(x, headY, headR, 0, Math.PI * 2)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.lineWidth = 2.2 * s
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(x, headY, headR, Math.PI * 1.1, Math.PI * 1.9)
+  ctx.lineWidth = 2.8 * s
+  ctx.stroke()
+
+  // --- draw arm (animated) — UNCHANGED geometry so the arrow tracks getHandPosition.
+  const shoulder = throwShoulder(x, y, s, pose.angle, pose.bend)
+  const elbowAngle = pose.angle - ELBOW_BEND_MAX * pose.bend
+  const elbow = {
+    x: shoulder.x + Math.cos(elbowAngle) * ARM_LENGTH * 0.55 * s,
+    y: shoulder.y + Math.sin(elbowAngle) * ARM_LENGTH * 0.55 * s
+  }
+  const hand = {
+    x: shoulder.x + Math.cos(pose.angle) * ARM_LENGTH * s,
+    y: shoulder.y + Math.sin(pose.angle) * ARM_LENGTH * s
+  }
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.4 * s
+  ctx.beginPath()
+  ctx.moveTo(shoulder.x, shoulder.y)
+  ctx.lineTo(elbow.x, elbow.y)
+  ctx.lineTo(hand.x, hand.y)
+  ctx.stroke()
+  // hand knob at the end of the draw arm
+  ctx.beginPath()
+  ctx.arc(hand.x, hand.y, 1.5 * s, 0, Math.PI * 2)
+  ctx.fillStyle = colors.foreground
+  ctx.fill()
+
+  ctx.restore()
+}
+
+/** A workstation's monitor-top point — where a "commit" leaves the desk toward main. */
+export function getWorkstationEmitPoint(x: number, y: number, scale: number): Point {
+  return { x, y: y - 2.5 * scale }
+}
+
+/**
+ * A seated human coding: only the HEAD is visible above a forward-facing monitor on a
+ * stand, code lines glowing on the screen, a blinking caret + a gentle typing bob when
+ * `active`. The alternative to `drawHuman`'s standing archer — same head language
+ * (filled circle + hood crest) so the two read as the same person, just sat down.
+ */
+export function drawWorkstation(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  phase: number,
+  active: boolean,
+  headphones = false
+) {
+  const s = scale
+  ctx.save()
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+
+  const mw = 22 * s
+  const mh = 13 * s
+  const mx = x - mw / 2
+  const my = y - 2.5 * s
+
+  // --- head (drawn first, behind the monitor) with a hood crest + neck, gently bobbing
+  const bob = active ? Math.sin(phase * 5) * 0.5 * s : 0
+  const hy = y - 8 * s + bob
+  const hr = 4.2 * s
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  line(ctx, x, hy + hr, x, my + 1 * s) // neck disappears behind the screen's top edge
+  ctx.beginPath()
+  ctx.arc(x, hy, hr, 0, Math.PI * 2)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.stroke()
+  // hood/hair hint — a thin arc across the crown, not a heavy cap
+  ctx.beginPath()
+  ctx.arc(x, hy, hr, Math.PI * 1.12, Math.PI * 1.88)
+  ctx.lineWidth = 1.5 * s
+  ctx.stroke()
+
+  // --- optional headphones: a band over the crown + a filled ear cup on each side
+  if (headphones) {
+    const bandR = hr + 1.3 * s
+    ctx.strokeStyle = colors.foreground
+    ctx.lineWidth = 1.9 * s
+    ctx.beginPath()
+    ctx.arc(x, hy, bandR, Math.PI, Math.PI * 2) // ear to ear, over the top
+    ctx.stroke()
+    ctx.fillStyle = colors.foreground
+    const cupR = 2 * s
+    ctx.beginPath()
+    ctx.arc(x - bandR, hy, cupR, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(x + bandR, hy, cupR, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // --- monitor stand + base
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  line(ctx, x, my + mh, x, my + mh + 3 * s)
+  line(ctx, x - 4 * s, my + mh + 3 * s, x + 4 * s, my + mh + 3 * s)
+
+  // --- screen
+  ctx.beginPath()
+  ctx.roundRect(mx, my, mw, mh, 1.6 * s)
+  ctx.fillStyle = colors.card
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6 * s
+  ctx.stroke()
+
+  // --- code lines on the screen
+  ctx.strokeStyle = colors.mutedForeground
+  ctx.lineWidth = 1.1 * s
+  const codeLines: [number, number][] = [
+    [0.16, 0.62],
+    [0.22, 0.5],
+    [0.16, 0.74]
+  ]
+  for (let i = 0; i < codeLines.length; i++) {
+    const [a, b] = codeLines[i]!
+    const ly = my + mh * (0.28 + i * 0.22)
+    line(ctx, mx + mw * a, ly, mx + mw * b, ly)
+  }
+
+  // --- blinking caret while actively "coding"
+  if (active) {
+    ctx.save()
+    ctx.globalAlpha = (Math.sin(phase * 6) + 1) / 2
+    ctx.strokeStyle = colors.success
+    ctx.lineWidth = 1.4 * s
+    const cy0 = my + mh * 0.5
+    line(ctx, mx + mw * 0.78, cy0 - 1.6 * s, mx + mw * 0.78, cy0 + 1.6 * s)
+    ctx.restore()
+  }
+
+  ctx.restore()
+}
+
+const BOW_ARM_LENGTH = ARM_LENGTH * 1.05
+const BOW_TIP_SPAN = 7
+
+/**
+ * The other arm — the one `drawHuman` doesn't animate — held out steady toward `angle`,
+ * bow in hand. Static on purpose: a real archer's bow arm doesn't move through the shot,
+ * only the draw arm does (that's `drawHuman`'s animated one).
+ *
+ * `drawHand`, when given, is the draw hand's own live position (the exact same point
+ * `getHandPosition` computes for `drawHuman`'s animated arm) — the string bends back to
+ * meet it, taut at full draw and relaxing toward the tips as the arm extends through
+ * release, instead of a bow with no visible string at all.
+ */
+export function drawBow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  angle: number,
+  drawHand?: Point
+) {
+  ctx.save()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 2.4 * scale
+  ctx.lineCap = 'round'
+
+  const shoulder = { x: x + SHOULDER_OFFSET.x * scale, y: y + SHOULDER_OFFSET.y * scale }
+  const hand = {
+    x: shoulder.x + Math.cos(angle) * BOW_ARM_LENGTH * scale,
+    y: shoulder.y + Math.sin(angle) * BOW_ARM_LENGTH * scale
+  }
+  line(ctx, shoulder.x, shoulder.y, hand.x, hand.y)
+
+  ctx.save()
+  ctx.translate(hand.x, hand.y)
+  ctx.rotate(angle)
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.3 * scale
+  ctx.beginPath()
+  ctx.moveTo(0, -BOW_TIP_SPAN * scale)
+  ctx.quadraticCurveTo(2.6 * scale, 0, 0, BOW_TIP_SPAN * scale)
+  ctx.stroke()
+  ctx.restore()
+
+  // Tips are the same two points the bow arc above starts/ends at, in world space
+  // (local ±BOW_TIP_SPAN perpendicular to `angle`, at the bow hand).
+  const perpX = -Math.sin(angle)
+  const perpY = Math.cos(angle)
+  const tipA = { x: hand.x + perpX * BOW_TIP_SPAN * scale, y: hand.y + perpY * BOW_TIP_SPAN * scale }
+  const tipB = { x: hand.x - perpX * BOW_TIP_SPAN * scale, y: hand.y - perpY * BOW_TIP_SPAN * scale }
+
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1 * scale
+  ctx.beginPath()
+  ctx.moveTo(tipA.x, tipA.y)
+  if (drawHand) {
+    ctx.lineTo(drawHand.x, drawHand.y)
+    ctx.lineTo(tipB.x, tipB.y)
+  } else {
+    ctx.lineTo(tipB.x, tipB.y)
+  }
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+// x was 5 — the backpack's own near edge sits 2.3*scale inside its mouth point (see the
+// roundRect below), so a mouth at 5*scale left a visible 2.7*scale gap between the pack
+// and the spine line instead of tucking against it.
+const BACKPACK_OFFSET = { x: 2.4, y: -14 }
+
+/**
+ * Where a backpack-carried arrow rests, on the OUTWARD side of the figure's back (away
+ * from the row's center, matching how the rest of the figure mirrors via `facing`) —
+ * single source of truth shared by `drawBackpack` and the scene's own grab-phase math.
+ */
+export function getBackpackMouth(x: number, y: number, scale: number, facing: 1 | -1): Point {
+  return { x: x + BACKPACK_OFFSET.x * facing * scale, y: y + BACKPACK_OFFSET.y * scale }
+}
+
+/** A small quiver pouch on the back, with two arrow shafts already poking out of it. */
+export function drawBackpack(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  facing: 1 | -1
+) {
+  const mouth = getBackpackMouth(x, y, scale, facing)
+  ctx.save()
+
+  ctx.beginPath()
+  ctx.roundRect(mouth.x - 2.3 * scale * facing, mouth.y - 1.3 * scale, 4.6 * scale * facing, 8 * scale, 1 * scale)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.1 * scale
+  ctx.stroke()
+
+  ctx.strokeStyle = colors.mutedForeground
+  ctx.lineWidth = 0.9 * scale
+  ctx.lineCap = 'round'
+  line(ctx, mouth.x - 0.9 * scale * facing, mouth.y - 0.7 * scale, mouth.x - 2.2 * scale * facing, mouth.y - 6 * scale)
+  line(
+    ctx,
+    mouth.x + 0.9 * scale * facing,
+    mouth.y - 0.7 * scale,
+    mouth.x + 0.4 * scale * facing,
+    mouth.y - 6.5 * scale
+  )
+
+  ctx.restore()
+}
+
+/**
+ * The body square's own center — i.e. `drawRobot`'s own `bodyY + bodyH / 2` formula.
+ * Single source of truth: a projectile's origin must be this point, not the robot's
+ * anchor (which sits at the neck), or it visually erupts from above the body instead of
+ * from inside it.
+ */
+export function getRobotBodyCenter(x: number, y: number, scale: number): Point {
+  return { x, y: y + 13 * scale }
+}
+
+/**
+ * Small robot — antenna, head with two eye-dots, a square body — legible at ~20-24px.
+ * The body square is ALWAYS drawn whole, frame intact — `hatchOpen` (0..1) only reveals
+ * a glowing launch bay + door-seam lines inside it, so the firing robot's own body is
+ * visibly the missile bay without the square ever disappearing.
+ */
+export function drawRobot(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  colors: ThemeColors,
+  hatchOpen = 0
+) {
+  const s = scale
+  ctx.save()
+  ctx.lineJoin = 'round'
+  const w = 14 * s
+  const h = 10 * s
+  const headTop = y - h / 2 - 1 * s
+
+  // --- antenna + glowing sensor tip (with a faint pulse ring)
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.4 * s
+  line(ctx, x, y - h / 2 - 6 * s, x, headTop)
+  ctx.fillStyle = colors.destructive
+  ctx.beginPath()
+  ctx.arc(x, y - h / 2 - 6 * s, 1.6 * s, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.save()
+  ctx.globalAlpha = 0.4
+  ctx.strokeStyle = colors.destructive
+  ctx.lineWidth = 0.8 * s
+  ctx.beginPath()
+  ctx.arc(x, y - h / 2 - 6 * s, 2.8 * s, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  // --- side sensor pods (ears), drawn under the head so the head frame overlaps them
+  ctx.fillStyle = colors.background
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.roundRect(x + (dir * w) / 2 - (dir === 1 ? -0.4 * s : 1.2 * s), y - h * 0.18, 1.6 * s, h * 0.42, 0.5 * s)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // --- head chassis
+  ctx.beginPath()
+  ctx.roundRect(x - w / 2, headTop, w, h, 2.5 * s)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.4 * s
+  ctx.stroke()
+
+  // --- visor: a glowing bar across the eyes with two brighter cores
+  const visorY = y - h * 0.05
+  ctx.save()
+  ctx.globalAlpha = 0.9
+  ctx.fillStyle = colors.destructive
+  ctx.beginPath()
+  ctx.roundRect(x - w * 0.3, visorY - 1.4 * s, w * 0.6, 2.8 * s, 1.2 * s)
+  ctx.fill()
+  ctx.restore()
+  ctx.fillStyle = colors.background
+  ctx.beginPath()
+  ctx.arc(x - w * 0.15, visorY, 0.7 * s, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(x + w * 0.15, visorY, 0.7 * s, 0, Math.PI * 2)
+  ctx.fill()
+
+  // --- neck
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.2 * s
+  line(ctx, x, headTop + h, x, y + h / 2)
+
+  // Body chassis — bodyY / bodyH UNCHANGED so getRobotBodyCenter (y + 13·s) still holds.
+  const bodyW = w * 1.05
+  const bodyH = h * 1.6
+  const bodyY = y + h / 2
+
+  // --- shoulder pauldrons flanking the chassis top
+  ctx.fillStyle = colors.background
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.1 * s
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.roundRect(
+      x + (dir * bodyW) / 2 - (dir === 1 ? -0.3 * s : 2.4 * s),
+      bodyY + 0.5 * s,
+      2.7 * s,
+      bodyH * 0.42,
+      1 * s
+    )
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // --- chassis fill
+  ctx.beginPath()
+  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+
+  // --- launch bay (unchanged behavior): glowing bay + door seams when hatch open
+  if (hatchOpen > 0) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
+    ctx.clip()
+
+    ctx.globalAlpha = hatchOpen
+    ctx.fillStyle = colors.warning
+    ctx.beginPath()
+    ctx.arc(x, bodyY + bodyH / 2, bodyH * 0.6, 0, Math.PI * 2)
+    ctx.fill()
+
+    const seamGap = hatchOpen * bodyW * 0.32
+    ctx.globalAlpha = 1
+    ctx.strokeStyle = colors.foreground
+    ctx.lineWidth = Math.max(1, s * 0.6)
+    line(ctx, x - seamGap, bodyY, x - seamGap, bodyY + bodyH)
+    line(ctx, x + seamGap, bodyY, x + seamGap, bodyY + bodyH)
+    ctx.restore()
+  } else {
+    // Closed chassis: a panel seam + a glowing reactor core (skipped while the bay is lit)
+    ctx.save()
+    ctx.globalAlpha = 0.45
+    ctx.strokeStyle = colors.foreground
+    ctx.lineWidth = 0.8 * s
+    line(ctx, x - bodyW * 0.3, bodyY + bodyH * 0.3, x + bodyW * 0.3, bodyY + bodyH * 0.3)
+    ctx.restore()
+    ctx.fillStyle = colors.destructive
+    ctx.beginPath()
+    ctx.arc(x, bodyY + bodyH * 0.62, 1.6 * s, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.save()
+    ctx.globalAlpha = 0.35
+    ctx.fillStyle = colors.destructive
+    ctx.beginPath()
+    ctx.arc(x, bodyY + bodyH * 0.62, 3 * s, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  // --- chassis outline (over everything)
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.4 * s
+  ctx.beginPath()
+  ctx.roundRect(x - bodyW / 2, bodyY, bodyW, bodyH, 2 * s)
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+/**
+ * A fixed-length arrow translating along `(x1,y1) -> (x2,y2)` (its current animated
+ * nock/tip), oriented tip-first. Thin shaft + small triangular head + a V of fletching
+ * at the nock end — a slender arrow, not a heavy spear.
+ */
+export function drawArrow(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  colors: ThemeColors
+) {
+  const angle = Math.atan2(y2 - y1, x2 - x1)
+  const length = Math.hypot(x2 - x1, y2 - y1) || 1
+
+  ctx.save()
+  ctx.translate(x1, y1)
+  ctx.rotate(angle)
+
+  const headLen = Math.min(length * 0.18, 9)
+  const shaftLen = length - headLen
+
+  ctx.beginPath()
+  ctx.moveTo(0, -0.9)
+  ctx.lineTo(shaftLen, -0.9)
+  ctx.lineTo(shaftLen, 0.9)
+  ctx.lineTo(0, 0.9)
+  ctx.closePath()
+  ctx.fillStyle = colors.mutedForeground
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(shaftLen, -2.6)
+  ctx.lineTo(length, 0)
+  ctx.lineTo(shaftLen, 2.6)
+  ctx.closePath()
+  ctx.fillStyle = colors.warning
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(0, -0.9)
+  ctx.lineTo(-5, -3.6)
+  ctx.lineTo(1.5, 0)
+  ctx.lineTo(-5, 3.6)
+  ctx.lineTo(0, 0.9)
+  ctx.closePath()
+  ctx.fillStyle = colors.warning
+  ctx.fill()
+
+  ctx.restore()
+}
+
+const PROJECTILE_SCALE = 2.6
+
+/**
+ * A pod, not a filled blob — outline + background fill + a small colored porthole,
+ * the same construction language as `drawRobot` (outline body, background fill,
+ * colored accent dots) so the whole cast reads as one family of shapes.
+ */
+export function drawBomb(ctx: CanvasRenderingContext2D, x: number, y: number, colors: ThemeColors) {
+  ctx.save()
+  const r = 7 * PROJECTILE_SCALE
+
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6
+  ctx.stroke()
+
+  // TNT — the classic cartoon-bomb label, small enough to sit inside the body circle
+  // without crowding the outline.
+  ctx.fillStyle = colors.destructive
+  ctx.font = `700 ${Math.round(r * 0.6)}px ${colors.fontMono}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('TNT', x, y)
+
+  // Lit fuse — a curved cord from the bomb's cap to a burning tip, the classic
+  // cartoon-bomb read instead of the code-glyph this used to carry.
+  const fuseBaseX = x + r * 0.3
+  const fuseBaseY = y - r * 0.92
+  const tipX = x + r * 1.15
+  const tipY = y - r * 1.55
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.5
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(fuseBaseX, fuseBaseY)
+  ctx.quadraticCurveTo(x + r * 0.95, y - r * 1.35, tipX, tipY)
+  ctx.stroke()
+
+  // Classic comic explosion burst at the fuse tip — two layered jagged stars (a wider
+  // warning-colored flash behind a smaller destructive-colored core), not a plain spark.
+  drawStarBurst(ctx, tipX, tipY, 8, r * 0.62, r * 0.26, colors.warning, colors.foreground, 0)
+  drawStarBurst(ctx, tipX, tipY, 6, r * 0.34, r * 0.14, colors.destructive, undefined, 0.3)
+
+  ctx.restore()
+}
+
+/**
+ * A jagged alternating-radius polygon — the standard comic "BOOM" burst shape. Reused
+ * for the bomb's lit-fuse explosion; `strokeColor` is optional since the inner, smaller
+ * layer of a two-star burst reads better as a plain fill with no outline of its own.
+ */
+function drawStarBurst(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  spikes: number,
+  outerR: number,
+  innerR: number,
+  fillColor: string,
+  strokeColor: string | undefined,
+  rotation: number
+) {
+  ctx.beginPath()
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerR : innerR
+    const angle = rotation + (i * Math.PI) / spikes
+    const px = cx + Math.cos(angle) * radius
+    const py = cy + Math.sin(angle) * radius
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  ctx.fillStyle = fillColor
+  ctx.fill()
+  if (strokeColor) {
+    ctx.strokeStyle = strokeColor
+    ctx.lineWidth = 1.2
+    ctx.stroke()
+  }
+}
+
+/**
+ * Outlined pod body + fin + nose, same construction language as `drawRobot` (outline,
+ * background fill, colored accent), oriented along its actual direction of travel.
+ */
+export function drawMissile(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, colors: ThemeColors) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(angle)
+  const s = PROJECTILE_SCALE
+
+  ctx.beginPath()
+  ctx.moveTo(-9 * s, 0)
+  ctx.lineTo(-14 * s, -4.5 * s)
+  ctx.lineTo(-9 * s, -1.5 * s)
+  ctx.lineTo(-14 * s, 4.5 * s)
+  ctx.lineTo(-9 * s, 1.5 * s)
+  ctx.closePath()
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.warning
+  ctx.lineWidth = 1.4
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.roundRect(-9 * s, -3 * s, 14 * s, 6 * s, 2 * s)
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.foreground
+  ctx.lineWidth = 1.6
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(-2 * s, 0, 1.7 * s, 0, Math.PI * 2)
+  ctx.fillStyle = colors.destructive
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(5 * s, -3 * s)
+  ctx.lineTo(12 * s, 0)
+  ctx.lineTo(5 * s, 3 * s)
+  ctx.closePath()
+  ctx.fillStyle = colors.background
+  ctx.fill()
+  ctx.strokeStyle = colors.destructive
+  ctx.lineWidth = 1.4
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+/**
+ * A real explosion, not a ring — for bot-caused impacts specifically, which read as
+ * measurably more destructive than a human's thrown arrow. Layers a fireball (two
+ * starbursts, warning outer + destructive inner, using the same jagged-burst shape
+ * `drawBomb`'s fuse spark uses) UNDER a big double shockwave and a bright flash core, all
+ * keyed off the same `alpha`/life envelope `drawImpactSpark` uses so the two stay in sync
+ * when both fire in the same scene. The fireball blooms (grows then shrinks) rather than
+ * just expanding, so it visually pops distinctly from the shockwave rings around it.
+ */
+export function drawExplosion(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  alpha: number,
+  colors: ThemeColors,
+  magnitude = 1
+) {
+  if (alpha <= 0) return
+  const life = 1 - alpha
+  const easedLife = 1 - (1 - life) ** 2
+  const bloom = Math.sin(Math.min(life, 1) * Math.PI) * magnitude
+
+  ctx.save()
+
+  // Fireball — layered jagged bursts, warning behind destructive, both scaled by the
+  // bloom envelope so they flash bigger than any shockwave ring then collapse.
+  ctx.globalAlpha = alpha * 0.95
+  drawStarBurst(ctx, x, y, 10, 14 + bloom * 30, 6 + bloom * 12, colors.warning, undefined, life * 2.4)
+  ctx.globalAlpha = alpha
+  drawStarBurst(ctx, x, y, 8, 8 + bloom * 20, 3 + bloom * 8, colors.destructive, undefined, life * -1.7)
+
+  // Big double shockwave — noticeably larger radius/line-width than the human-side
+  // impact spark, so the two read as different orders of magnitude, not just recolored.
+  ctx.globalAlpha = alpha * 0.8
+  ctx.strokeStyle = colors.warning
+  ctx.lineWidth = 3.5 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (10 + easedLife * 46) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.globalAlpha = alpha * 0.55
+  ctx.strokeStyle = colors.destructive
+  ctx.lineWidth = 2 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (6 + easedLife * 26) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // Bright flash core — foreground, not a status color, so peak impact reads as a real
+  // flash of light rather than just another colored ring.
+  ctx.globalAlpha = alpha * alpha
+  ctx.fillStyle = colors.foreground
+  ctx.beginPath()
+  ctx.arc(x, y, 5 * magnitude, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
+}
+
+/**
+ * A shockwave, not a single ring: two rings expanding outward at different rates plus a
+ * bright core flash, all keyed off the same `alpha` envelope (1 at peak impact, fading
+ * to 0) — center is the exact edge-point the projectile actually landed on.
+ */
+export function drawImpactSpark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  alpha: number,
+  colors: ThemeColors,
+  tone: 'warning' | 'success',
+  magnitude = 1
+) {
+  if (alpha <= 0) return
+  const color = tone === 'success' ? colors.success : colors.warning
+  const life = 1 - alpha
+  // Ease-out: the wave expands fast at first, then visibly decelerates — a real
+  // shockwave, not a linear dilation that reads as sped up.
+  const easedLife = 1 - (1 - life) ** 2
+
+  ctx.save()
+
+  ctx.globalAlpha = alpha * 0.85
+  ctx.strokeStyle = color
+  ctx.lineWidth = 2.5 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (6 + easedLife * 26) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.globalAlpha = alpha * 0.5
+  ctx.lineWidth = 1.5 * magnitude
+  ctx.beginPath()
+  ctx.arc(x, y, (4 + easedLife * 15) * magnitude, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.globalAlpha = alpha * alpha
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(x, y, 3.5 * magnitude, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
+}
+
+export const LABEL_FONT_SIZE = 18
+
+const LABEL_EDGE_MARGIN = 4
+
+/**
+ * Always called with the projectile's own live (x, y) so text can never desync from it.
+ * `logicalWidth`, when given, clamps the text's centered x so its own measured half-width
+ * never carries it past the canvas's left/right edge — origin columns near the canvas
+ * edge (with a long action label) would otherwise draw half off-canvas and get cut off.
+ */
+export function drawLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  color: string,
+  fontMono: string,
+  fontSize: number = LABEL_FONT_SIZE,
+  logicalWidth?: number
+) {
+  ctx.save()
+  ctx.font = `600 ${fontSize}px ${fontMono}`
+  ctx.fillStyle = color
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  let drawX = x
+  if (logicalWidth !== undefined) {
+    const halfWidth = ctx.measureText(text).width / 2
+    const min = halfWidth + LABEL_EDGE_MARGIN
+    const max = logicalWidth - halfWidth - LABEL_EDGE_MARGIN
+    drawX = Math.min(Math.max(x, min), max)
+  }
+  ctx.fillText(text, drawX, y)
+  ctx.restore()
+}
+
+/**
+ * A CLEAR band — two thin border circles (outer + inner edge) with nothing solid filled
+ * between them, wide enough that the "vinaya" text (positioned separately, at the ring's
+ * own 12-o'clock point) reads as sitting inside the band. A thin dashed accent travels
+ * around the band for motion; it must stay thin, not fill the band solid.
+ */
+export function drawOrbitRing(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  dashOffset: number,
+  colors: ThemeColors
+) {
+  ctx.save()
+  // Thick enough that "checks 12/12" (the widest of the ring-band labels) has real
+  // vertical room even at its curved left/right edges, where a flat line of text sits
+  // farther from the true top/bottom of the circle than its own centered point does.
+  const bandHalfWidth = radius * 0.17
+
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = colors.border
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius + bandHalfWidth, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius - bandHalfWidth, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // Two moving dashed accents, one hugging the outer edge and one the inner edge of the
+  // band — neither sits on the centerline, where "vinaya" sits at 12 o'clock, so neither
+  // crosses the text. This is what makes the band itself read as "a ring with 2 borders",
+  // not just a static outline with one animated line.
+  ctx.lineWidth = bandHalfWidth * 0.2
+  ctx.setLineDash([radius * 0.19, radius * 0.09])
+  ctx.lineDashOffset = dashOffset
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = colors.primary
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius + bandHalfWidth * 0.85, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius - bandHalfWidth * 0.85, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.setLineDash([])
+  ctx.restore()
+}

@@ -1,0 +1,148 @@
+import { Card, CardContent, Separator } from '@atta/ui/components'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { Heading, Text } from '@atta/ui/shared'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { stageById, type StageId } from '../_lib/stages'
+import { renderProse } from './prose'
+import { MarkDefs, STAGE_IN_OUT, StageDiagram } from './StageGlyph'
+import { START_NAV } from './start-nav'
+
+export type StageQA = {
+  tool: string
+  say: string
+  result: string
+  studio: string
+}
+
+export type StagePageProps = {
+  /** This page's own slug in `START_NAV`'s "Ship with Vinaya" section —
+   * `prev`/`next` are derived from that one ordered array rather than
+   * hand-wired per page, so the sidebar order and the footer order can never
+   * drift apart. Typed as `StageId` (not `string`) because it doubles as the
+   * lookup key into `_lib/stages.ts` for this page's stage diagram and its
+   * in/out summary line — the seven stage pages need pass nothing beyond
+   * the slug they already pass. */
+  slug: StageId
+  title: string
+  intro: string[]
+  qa: StageQA
+  docsHref: string
+  docsLabel: string
+  /** Content specific to one stage that doesn't fit the four-question shape
+   * — used once, on `/start/develop`, for the retained `vinaya check --all`
+   * transcripts. Optional so every other stage page stays four questions and
+   * nothing else. */
+  extra?: ReactNode
+}
+
+const QUESTIONS: { key: keyof StageQA; label: string }[] = [
+  { key: 'tool', label: 'What kind of tool' },
+  { key: 'say', label: 'What you say to it' },
+  { key: 'result', label: 'What comes out' },
+  { key: 'studio', label: 'What to look at in Studio' }
+]
+
+const STAGE_ITEMS = START_NAV.find((section) => section.label === 'Ship with Vinaya')?.items ?? []
+
+/** One shared shape for every "Ship with Vinaya" stage page — the same four
+ * questions, in the same order, every time, so the section reads as one
+ * narrative rather than eight differently-organized pages. This is
+ * deliberately NOT `DocPage`: `/docs` renders the model's own binding text;
+ * this renders what the reader does. The rule that keeps the two from
+ * merging is one-directional: a stage page links into `/docs` and never
+ * restates a rule `/docs` owns.
+ *
+ * The chrome below (article/header spacing, the two `Separator`s, the
+ * footer) is deliberately class-for-class identical to `DocPage.tsx`'s —
+ * the two sections read as one site, not two differently-tuned ones. */
+export function StagePage({ slug, title, intro, qa, docsHref, docsLabel, extra }: StagePageProps) {
+  const index = STAGE_ITEMS.findIndex((item) => item.slug === slug)
+  const prev = index > 0 ? STAGE_ITEMS[index - 1] : undefined
+  const next = index >= 0 && index < STAGE_ITEMS.length - 1 ? STAGE_ITEMS[index + 1] : undefined
+  const stage = stageById(slug)
+
+  return (
+    <article className='space-y-4'>
+      <MarkDefs />
+      <header className='space-y-3'>
+        <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+          Ship with Vinaya
+        </Text>
+        <Heading level={1} className='font-serif font-light tracking-normal leading-tight text-foreground'>
+          {title}
+        </Heading>
+        <Text as='p' muted className='leading-relaxed'>
+          {STAGE_IN_OUT[stage.id]}
+        </Text>
+        {intro.map((paragraph) => (
+          <Text key={paragraph} as='p' size='lg' muted className='leading-relaxed'>
+            {renderProse(paragraph)}
+          </Text>
+        ))}
+      </header>
+
+      <Card>
+        <CardContent>
+          <StageDiagram stageId={stage.id} className='h-auto w-full' />
+        </CardContent>
+      </Card>
+
+      <Separator className='opacity-60' />
+
+      <dl className='flex flex-col gap-5'>
+        {QUESTIONS.map(({ key, label }) => (
+          <div key={key} className='flex flex-col gap-1.5'>
+            <dt className='font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground'>{label}</dt>
+            <dd className='font-sans text-base leading-relaxed text-foreground'>{renderProse(qa[key])}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {extra}
+
+      <Separator className='opacity-60' />
+
+      <NextLink
+        href={docsHref}
+        variant='unstyled'
+        className='inline-flex w-fit items-center gap-1.5 text-primary text-sm underline-offset-4 hover:underline'
+      >
+        <span>Read the {docsLabel} role</span>
+        <ArrowRight className='size-3.5' />
+      </NextLink>
+
+      {(prev || next) && (
+        <>
+          <Separator className='opacity-60' />
+          <footer className='flex items-center justify-between gap-4 pt-2'>
+            {prev ? (
+              <NextLink
+                href={prev.href}
+                variant='nav'
+                className='group flex items-center gap-2 font-serif text-base text-foreground'
+              >
+                <ArrowLeft className='size-4 transition-transform group-hover:-translate-x-0.5' />
+                <span>{prev.title}</span>
+              </NextLink>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <NextLink
+                href={next.href}
+                variant='nav'
+                className='group flex items-center gap-2 font-serif text-base text-foreground'
+              >
+                <span>{next.title}</span>
+                <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
+              </NextLink>
+            ) : (
+              <span />
+            )}
+          </footer>
+        </>
+      )}
+    </article>
+  )
+}
