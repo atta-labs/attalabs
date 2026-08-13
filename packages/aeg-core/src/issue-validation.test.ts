@@ -206,6 +206,33 @@ describe('checkProjectsRegistered', () => {
     expect(checkProjectsRegistered(body, [], []).status).toBe('pass')
   })
 
+  it('reads the Project(s) field, not a `Project:` token quoted in an EARLIER field (Issue #863 itself)', () => {
+    // Verbatim shape of #863: Sizing quotes the token in prose, and the path
+    // right after it splits on `/` into `bin`, `open-issuets`, … — six fictional
+    // "projects" that refuse a correct Issue if the whole body is scanned.
+    const body = `
+**Boundary** — Add the check.
+
+**Sizing** — One verification story: a fixture Issue body declaring an unregistered \`Project:\` token is refused by \`packages/aeg-core/bin/open-issue.ts\` / fails \`checkProjectsRegistered\`.
+
+**Project(s) + blast radius** — \`Project: aeg-core, vinaya\`.
+
+**Dependency rationale** — Depends-on: —.
+
+**Traps to avoid** — Read \`.claude/skills/aeg-core/SKILL.md\`.
+
+**Suggested agent-class** — mid.
+
+**Stop-and-escalate** — If X, stop.
+
+**Docs to keep coherent** — \`aeg-root/roles/planner.md\`.
+`
+    // Body-wide, `declaredProjects` reads the Sizing prose and invents projects.
+    expect(declaredProjects(body, [])).toContain('bin')
+    // Scoped to the field, the declaration is the real one — and it resolves.
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
+  })
+
   it('passes a body with no parseable Project: field — field presence is checkIssueRationale’s job', () => {
     const body = 'A body with no rationale and no Project field at all.'
     expect(declaredProjects(body, [])).toEqual([])

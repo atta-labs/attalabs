@@ -161,6 +161,9 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
   return [...new Set(fromBody.filter((s) => s.length > 0))]
 }
 
+/** The `Project(s) + blast radius` rationale field's label, in the tolerant grammar `rationaleFieldText` reads. */
+const PROJECT_FIELD_PATTERN = 'Project\\(s\\)|Project(?:s)?\\s*\\+|blast radius'
+
 /**
  * **Every declared project resolves against the registry.** `planner.md` states
  * this as a hard gate — *"Unregistered project or a `Project:` that doesn't
@@ -178,6 +181,17 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
  * Reuses `declaredProjects` rather than re-parsing: a second parser would let
  * the gate and the derivation (`@atta/aeg-forge-state`'s `list-tasks.ts`, which
  * reads the same field) disagree about what a task's projects even are.
+ *
+ * **Scoped to the `Project(s) + blast radius` field, not the whole body** — the
+ * same scoping, for the same reason, that `checkBlastRadiusScope` applies to its
+ * path scan. `declaredProjects` takes the body's FIRST `Project…:` occurrence,
+ * and a rationale routinely writes that token in prose long before the field
+ * itself: Issue #863's own Sizing field says "a fixture Issue body declaring an
+ * unregistered \`Project:\` token is refused by \`open-issue.ts\`", whose trailing
+ * path then splits on `/` into `open-issuets`, `bin`, `src` — six fictional
+ * "projects", every one of them a refusal of a correct Issue. Run body-wide this
+ * check fails the very task that introduces it. The field slice is where a task
+ * declares its projects, so that is the only text a declaration can be read from.
  *
  * Matching is **case-insensitive**. Registry names are lower-case by
  * convention, and failing `Project: Vinaya` for its capital letter would block
@@ -197,8 +211,9 @@ export function declaredProjects(body: string, _labels: string[]): string[] {
  */
 export function checkProjectsRegistered(body: string, labels: string[], registeredNames: string[]): IssueSectionResult {
   if (registeredNames.length === 0) return { status: 'pass', errors: [] }
+  const field = rationaleFieldText(PATH_TEXT(body), PROJECT_FIELD_PATTERN)
   const known = new Set(registeredNames.map((n) => n.trim().toLowerCase()))
-  const unregistered = declaredProjects(body, labels).filter((p) => !known.has(p.toLowerCase()))
+  const unregistered = declaredProjects(field, labels).filter((p) => !known.has(p.toLowerCase()))
   if (unregistered.length === 0) return { status: 'pass', errors: [] }
   return {
     status: 'fail',
