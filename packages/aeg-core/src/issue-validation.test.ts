@@ -177,6 +177,12 @@ const REGISTERED = REGISTRY.map((p) => p.name)
  * the line — no live Issue has. The suite went green over two live defects: the
  * gate evaluated 4 of 61 open task Issues and invented project names out of file
  * paths on 13 more. Fixtures now come from the corpus the gate actually guards.
+ *
+ * Copied verbatim with ONE exception: a third-party adopter repo's identifier in
+ * `issue-870-body.md` is redacted. `packages/aeg-core` ships inside the published
+ * `@attalabs/vinaya` tarball, so a real Issue body pasted in here travels further
+ * than the forge. Nothing these tests assert touches the redacted span — check an
+ * identifier before copying the next body in.
  */
 const realBody = (n: number): string => readFileSync(join(__dirname, 'fixtures', `issue-${n}-body.md`), 'utf8')
 

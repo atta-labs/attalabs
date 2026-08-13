@@ -2,7 +2,7 @@
 
 ## Planner's rationale
 
-**Boundary** — Four confirmed bugs in `@attalabs/vinaya`'s adopter-facing surface, all found live on a real adopter repo (`siot-david-marino/poc-executor`) and independently re-confirmed here against source + a fresh local `vinaya init`/`vinaya check` run, land as ONE task + ONE version bump:
+**Boundary** — Four confirmed bugs in `@attalabs/vinaya`'s adopter-facing surface, all found live on a real adopter repo (identifier redacted — a third-party adopter repo) and independently re-confirmed here against source + a fresh local `vinaya init`/`vinaya check` run, land as ONE task + ONE version bump:
 
 1. `reviewWorkflow()` (`apps/vinaya/cli/src/lib/artifacts.ts`) generates a "review gate" job that runs `vinaya check --all` — every registered check, not just `review-gate` — so an unrelated failing check (e.g. `test-plan`) fails a job whose only stated purpose is the review verdict. Fix: change the generated `run:` line to `vinaya check review-gate` and drop the now-unneeded `PR_BODY` env wiring from that workflow (the `review-gate` check's `CheckSpec.env` already declares `BRANCH`/`PR_NUMBER`/`GITHUB_REPOSITORY`/tokens as optional — confirmed in `checks/registry.ts` — no registry change needed for this half).
 2. `checksWorkflow()`'s `pull_request` trigger (`types: [opened, synchronize, reopened]`) omits `edited` — a Test Plan checkbox tick is a PR-body edit, so `test-plan`/`closes-n` (both PR_BODY-driven) never re-evaluate on a checkbox-only push. Fix: add `edited` to `checksWorkflow()`'s trigger types only. (`reviewWorkflow()` does not need this: after fix 1 it no longer runs any PR_BODY-dependent check.)
@@ -33,7 +33,7 @@ No other doc-owners binding fires — `apps/vinaya/CLAUDE.md` and `apps/vinaya/s
 
 ## Origin
 
-Principal-directed hotfix, 2026-08-12, following up on a dispatched adopter-repo audit (`siot-david-marino/poc-executor`, `@attalabs/vinaya@0.4.4`) that found and locally hand-patched three live CI bugs (PRs #13/#14/#15 in that repo) plus one unfixed brief-shape gap. Every claim in that audit was independently re-verified here against this repo's own source and a fresh local `vinaya init`/`vinaya check` run before this Issue was cut — see this task's own dig, above, not the adopter-repo audit alone.
+Principal-directed hotfix, 2026-08-12, following up on a dispatched adopter-repo audit (a third-party adopter repo (identifier redacted), `@attalabs/vinaya@0.4.4`) that found and locally hand-patched three live CI bugs (PRs #13/#14/#15 in that repo) plus one unfixed brief-shape gap. Every claim in that audit was independently re-verified here against this repo's own source and a fresh local `vinaya init`/`vinaya check` run before this Issue was cut — see this task's own dig, above, not the adopter-repo audit alone.
 
 **Tier:** 1
 **Project:** vinaya

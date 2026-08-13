@@ -88,9 +88,12 @@ function git(args: string[]): string {
 /**
  * The adopter repo's registered project names, for R1's project-registry half.
  * Resolved from the git top-level rather than a bare `cwd`, so the check works
- * when `vinaya check` is invoked from a subdirectory; `''` (an unresolvable
- * top-level) falls through to the not-found branch, never to this package's own
- * install directory. An absent registry is a normal state — a single-project
+ * when `vinaya check` is invoked from a subdirectory. `--show-toplevel` is itself
+ * cwd-relative, so it is not a defence against a `chdir` — it is correct here
+ * only because this bin deliberately performs none and the runner spawns it with
+ * the caller's cwd. Outside any repo git exits 128, `git()` returns `''`, and the
+ * check goes dormant rather than resolving an unrelated repo's registry. An
+ * absent registry is a normal state — a single-project
  * repo has no `.vinaya/projects.md` by design — so this returns `[]` and the
  * half goes dormant, with the warning below so it is never silent.
  */
@@ -251,7 +254,21 @@ async function main(): Promise<void> {
   // governance docs stated R1 re-runs it — a documented-but-absent control.
   const registeredNames = readRegisteredProjectNames()
   if (registeredNames.length === 0) {
-    process.stderr.write("[coherence] no `.vinaya/projects.md` registry — R1's project-registry half is dormant.\n")
+    // MUST go through `emitCheckError`, never a raw `process.stderr.write`: the
+    // runner parses every stderr line as a `CheckError` candidate, and one
+    // unparseable line sets `malformed` and reports `status: 'error'` whatever
+    // the exit code. A raw line here would fail a single-project adopter repo —
+    // which legitimately has no registry — on its own pre-commit hook. That is
+    // the same 2026-08-07 incident the `git()` helper above is annotated with.
+    emitCheckError({
+      schema: CHECK_SCHEMA_VERSION,
+      check: CHECK_NAME,
+      severity: 'warning',
+      message:
+        "coherence: no `.vinaya/projects.md` registry — R1's project-registry half is dormant (declared projects are not resolved).",
+      agent_recovery_prompt:
+        "If this repo has more than one project, register them with `vinaya init product <name> --path <folder>` so R1 can resolve each task's `Project:` field. A single-project repo has no registry by design — no action needed."
+    })
   }
   results.push(checkR1(openIssuesBySlug, R1_GRANDFATHERED_ISSUES, registeredNames))
 
