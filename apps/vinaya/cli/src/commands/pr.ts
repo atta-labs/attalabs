@@ -147,17 +147,24 @@ export function prCreateCommand(args: string[]): void {
   const sections = resolveSections('pr', RETRY_CREATE)
   const changedFiles = localChangedFiles()
 
-  // The branch this PR will open from. `symbolic-ref`, never `rev-parse
-  // --abbrev-ref HEAD`: the latter prints the literal string `HEAD` on a
-  // detached HEAD, which is not empty and would therefore read as a
-  // resolvable non-task branch — silently taking the relaxed path and
-  // skipping every section, the exact fail-open the branch grammar exists to
-  // avoid. `symbolic-ref --quiet --short` exits non-zero and yields `''` when
-  // HEAD is detached or unborn, so every genuinely unresolvable state lands
-  // on the empty string `validateForgeWrite` treats fail-closed.
-  // `demo.ts`'s `currentBranchName` already made this same call for the same
-  // reason; this is that precedent, not a new one.
-  const branch = git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
+  // The branch this PR will open from. Neither git command answers this
+  // alone — measured, not assumed (git 2.50.1):
+  //
+  //   state     symbolic-ref --short   rev-parse --abbrev-ref
+  //   normal    main                   main
+  //   detached  '' (exit 1)            HEAD      <- literal, NOT empty
+  //   unborn    main                   HEAD      <- a branch with no commit
+  //   no repo   ''                     ''
+  //
+  // `rev-parse --abbrev-ref` reports the literal `HEAD` when detached, and
+  // `symbolic-ref` reports the not-yet-created branch when HEAD is unborn.
+  // Reading either as an ordinary non-task branch is a fail-OPEN: it takes
+  // the relaxed path and, for a non-brief-shaped body, skips every section.
+  // So a branch counts as resolvable only when HEAD is a symbolic ref AND
+  // resolves to a commit; every other state yields '' and `validateForgeWrite`
+  // enforces everything.
+  const headCommit = git(['rev-parse', '--verify', '--quiet', 'HEAD'])
+  const branch = headCommit === '' ? '' : git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
 
   const errors = validateForgeWrite({
     body,

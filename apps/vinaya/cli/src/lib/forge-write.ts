@@ -210,7 +210,8 @@ export type ForgeValidationInput = {
    * Before this fix it did not exist, so `pr create` graded every branch as if it
    * were a task branch and refused a non-task PR that CI would pass — the two
    * enforcement points of one grammar disagreeing, which is exactly what
-   * `aeg-root/enforcement.md`'s "one grammar, two enforcement points" forbids.
+   * `aeg-root/enforcement.md`'s "one codebase, two enforcement points, so the
+   * local gates and CI can never disagree" exists to prevent.
    *
    * Omitted, empty, or the literal `HEAD` (git's detached-HEAD sentinel) all
    * mean "branch not resolvable", and the validation stays fail-closed: every
