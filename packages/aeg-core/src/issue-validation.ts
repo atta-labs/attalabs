@@ -277,10 +277,19 @@ const BLAST_RADIUS_ACK_RE = /(?:\*\*)?blast-radius-ack(?:\*\*)?\s*[:—–-]/i
  * usually admits in the same breath (#621: "**BUT edits `packages/ui`** … any
  * topbar change is seen by every product").
  *
- * Two ways to satisfy it, both deliberate: list the other consumers in
- * `Project:` (the fan-out actually widens), or write a `blast-radius-ack:` line
- * (the reach is acknowledged and the Planner has decided one lens is enough).
- * Silence is the only failure.
+ * Two ways to satisfy it, both deliberate: list the other consumers in the
+ * project field (the fan-out actually widens), or write a `blast-radius-ack:`
+ * line (the reach is acknowledged and the Planner has decided one lens is
+ * enough). Silence is the only failure.
+ *
+ * **The multi-project bypass counts registry-validated names only.** A name
+ * with no row in `.vinaya/projects.md` resolves to no specs, no state and no
+ * reviewer, so it widens nothing — counting it lets a fictional name buy the
+ * benefit of the doubt this bypass exists to give real ones. Found live on a
+ * draft plan declaring three projects, one of which had no registry row: it
+ * cleared the bypass, and the check never ran on a genuinely shared edit.
+ * `checkProjectsRegistered` refuses that name in its own right; this function
+ * merely declines to be fooled by it, so the two stay independent.
  *
  * **Ownership, not mere listing.** A domain that IS a declared project's own
  * registered path is owned by it — `Project: aeg-core` editing
@@ -326,7 +335,14 @@ export function checkBlastRadiusScope(
   const named = sharedPackages.filter((d) => namesPath(text, d))
   if (named.length === 0) return { status: 'pass', errors: [] }
 
-  const projects = projectsFromBody(body)
+  // Registry-validated, not merely declared. The bypass below widens the review
+  // fan-out on the Planner's word that a second project reviews the change — a
+  // name with no row in `.vinaya/projects.md` buys no lens, so it cannot buy the
+  // bypass either. Found live on a draft plan declaring three names, one of them
+  // fictional: it cleared the bypass and this check never ran.
+  const registered = new Set(projectPaths.map((p) => p.name.trim()))
+  const declared = projectsFromBody(body)
+  const projects = declared.filter((p) => registered.has(p))
   const ownedPaths = projectPaths.filter((p) => projects.includes(p.name)).map((p) => p.path.replace(/\/+$/, ''))
   const unowned = named.filter((d) => !ownedPaths.some((owned) => d === owned || d.startsWith(`${owned}/`)))
   if (unowned.length === 0) return { status: 'pass', errors: [] }
@@ -336,10 +352,14 @@ export function checkBlastRadiusScope(
   // it under Stop-and-escalate or Traps rather than inside Boundary.
   if (BLAST_RADIUS_ACK_RE.test(PATH_TEXT(body))) return { status: 'pass', errors: [] }
 
+  // Name the dropped names. Without this the message reads "a single project"
+  // at an author looking at three, and the real fix (register the name, or use
+  // the registered one) is invisible from here.
+  const unregistered = declared.filter((p) => !registered.has(p))
   return {
     status: 'fail',
     errors: [
-      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single project and no \`blast-radius-ack:\` line. Project(s) drives the review fan-out (.vinaya/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
+      `issue-validation blast radius: the rationale names ${unowned.join(', ')} — a shared collision domain no declared project (${projects.join(', ') || 'none'}) owns — but declares a single registered project and no \`blast-radius-ack:\` line.${unregistered.length > 0 ? ` Not counted: ${unregistered.join(', ')} — no row in \`.vinaya/projects.md\`, so it adds no review lens.` : ''} Project(s) drives the review fan-out (.vinaya/projects.md); list every consumer in the blast radius, or add \`blast-radius-ack: <why one lens is enough>\`.`
     ]
   }
 }
