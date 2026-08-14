@@ -126,7 +126,14 @@ const REGISTRY = [
   { name: 'vada', path: 'apps/vada-ai' }
 ]
 
-/** A minimally-valid rationale, parameterised on the two fields the content checks read. */
+/**
+ * A minimally-valid rationale, parameterised on the fields the content checks
+ * read. It carries BOTH shapes every live Issue does: the `Project(s) + blast
+ * radius` prose field (narrative, and where paths get named), and the
+ * line-anchored project field at the foot (the declaration — the only thing
+ * `projectsFromBody` reads, and therefore the only thing the gates read). See
+ * `issue-863-body.md` / `issue-870-body.md` for the live shape this mirrors.
+ */
 function rationale(opts: {
   boundary: string
   docs?: string
@@ -153,6 +160,8 @@ function rationale(opts: {
 
 **Docs to keep coherent** — ${opts.docs ?? 'Keep `apps/vinaya/web/CLAUDE.md` coherent.'}
 ${opts.extra ?? ''}
+
+**Project:** ${opts.projects ?? 'vinaya'}
 `
 }
 

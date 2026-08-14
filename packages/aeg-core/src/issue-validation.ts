@@ -288,6 +288,17 @@ const BLAST_RADIUS_ACK_RE = /(?:\*\*)?blast-radius-ack(?:\*\*)?\s*[:—–-]/i
  * failed. Without this, the check would block the legitimately single-project
  * shared edit, which is a gate that blocks valid work.
  *
+ * **The declared set is read through `projectsFromBody`** — the same parser
+ * `checkProjectsRegistered` and `@atta/aeg-forge-state`'s `list-tasks.ts` use,
+ * shared by construction rather than by agreement. It reads the line-anchored
+ * project field and only that. The previous body-wide read took the first
+ * field-shaped token *anywhere* in the body, which is routinely prose in Sizing
+ * or Boundary rather than the declaration: prose carries file paths, and a path
+ * fragment parses as an invented project name (#870's own blast-radius line
+ * yielded a project called `src`). Two parsers for one field is how the gate and
+ * the derivation come to disagree about what a task even declares — so do not
+ * add a second regex here, nor a pre-clean step that makes one "usually" agree.
+ *
  * Dormant when `sharedPackages` is empty (no `.aeg/packages` on disk) — the
  * same seam-is-dormant-when-absent shape `doc-owners` uses. The check cannot be
  * deterministic without its source of truth, and inventing one inline is worse
@@ -295,7 +306,7 @@ const BLAST_RADIUS_ACK_RE = /(?:\*\*)?blast-radius-ack(?:\*\*)?\s*[:—–-]/i
  */
 export function checkBlastRadiusScope(
   body: string,
-  labels: string[],
+  _labels: string[],
   sharedPackages: string[],
   projectPaths: ProjectPath[]
 ): IssueSectionResult {
@@ -315,7 +326,7 @@ export function checkBlastRadiusScope(
   const named = sharedPackages.filter((d) => namesPath(text, d))
   if (named.length === 0) return { status: 'pass', errors: [] }
 
-  const projects = declaredProjects(body, labels)
+  const projects = projectsFromBody(body)
   const ownedPaths = projectPaths.filter((p) => projects.includes(p.name)).map((p) => p.path.replace(/\/+$/, ''))
   const unowned = named.filter((d) => !ownedPaths.some((owned) => d === owned || d.startsWith(`${owned}/`)))
   if (unowned.length === 0) return { status: 'pass', errors: [] }
