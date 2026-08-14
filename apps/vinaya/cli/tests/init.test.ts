@@ -13,6 +13,7 @@ import {
   REVIEW_VERDICT_WORKFLOW_PATH,
   starterConfig
 } from '../src/lib/artifacts.js'
+import { detectVendoredVinaya } from '../src/lib/self-host.js'
 import type { InitDeps } from '../src/commands/init.js'
 import { runInit, runInitProduct } from '../src/commands/init.js'
 import { runEject } from '../src/commands/eject.js'
@@ -168,7 +169,7 @@ describe('vinaya init', () => {
     // on npx's non-interactive cancel. The exact-version `--yes` pin is the
     // fix; this locks it.
     const pkg = JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf-8')) as { version: string }
-    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' }).filter(
+    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky', selfHost: null }).filter(
       (op) => op.kind === 'managed-block' && /pre-(commit|push)/.test(op.path)
     )
     expect(hookOps.length).toBe(2)
@@ -187,7 +188,7 @@ describe('vinaya init', () => {
     // unconditionally. `vinaya-checks.yml` (CI, pull_request-triggered) is
     // deliberately NOT asserted here — it must omit --local so these checks
     // run for real once a PR exists.
-    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' }).filter(
+    const hookOps = buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky', selfHost: null }).filter(
       (op) => op.kind === 'managed-block' && /pre-(commit|push)/.test(op.path)
     )
     expect(hookOps.length).toBe(2)
@@ -204,7 +205,7 @@ describe('vinaya init', () => {
     const after = snapshot(root)
     expect(after).toEqual(before) // nothing written
     // dry-run diff shows the exact bytes a real install writes
-    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' })) {
+    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky', selfHost: null })) {
       if (op.kind === 'create-file') expect(out).toContain(op.content.trimEnd().split('\n')[0] ?? '')
     }
     expect(out).toContain('nothing was written')
@@ -212,7 +213,7 @@ describe('vinaya init', () => {
 
   it('dry-run output byte-matches what install then writes (content artifacts)', async () => {
     await runInit(['--yes'], makeDeps())
-    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky' })) {
+    for (const op of buildInitOps({ owner: 'acme', repo: 'widget', hookDir: '.husky', selfHost: null })) {
       // vinaya.config.json is the one file whose bytes legitimately differ: the
       // ownership `managed` manifest is injected at apply time. Every other
       // create-file artifact is byte-identical to what the diff showed.
@@ -379,6 +380,174 @@ describe('workflows', () => {
     // A body-only edit must re-trigger the checks workflow so test-plan/
     // closes-n re-evaluate against the corrected body (#870).
     expect(checks).toContain('edited')
+  })
+})
+
+// #929. In a repo whose workspaces glob reaches a member named
+// `@attalabs/vinaya`, npm resolves `npx --yes @attalabs/vinaya` to that local
+// member — the decision is made on the package NAME, before any version spec is
+// read — and execs its unbuilt `bin`, so every generated job died with `sh:
+// vinaya: command not found`. Both shapes are asserted here: a test that only
+// asserted the old string was asserting the defect.
+describe('generated workflows: published vs vendored invocation (#929)', () => {
+  const WORKFLOWS = [CHECKS_WORKFLOW_PATH, REVIEW_WORKFLOW_PATH, REVIEW_VERDICT_WORKFLOW_PATH, ARCHIVIST_WORKFLOW_PATH]
+  const VENDORED_BIN = 'node apps/cli/dist/index.js'
+
+  /** Make the fixture a repo that vendors the CLI as a workspace member. */
+  function vendorVinaya(dir = 'apps/cli'): void {
+    writeFileSync(
+      join(root, 'package.json'),
+      `${JSON.stringify({ name: 'vinaya', private: true, workspaces: ['apps/*', 'packages/*'] }, null, 2)}\n`
+    )
+    mkdirSync(join(root, dir), { recursive: true })
+    writeFileSync(
+      join(root, dir, 'package.json'),
+      `${JSON.stringify(
+        {
+          name: '@attalabs/vinaya',
+          version: '0.4.6',
+          bin: { vinaya: './dist/index.js' },
+          scripts: { build: 'bun scripts/build.ts' }
+        },
+        null,
+        2
+      )}\n`
+    )
+  }
+
+  function generated(): Map<string, string> {
+    return new Map(WORKFLOWS.map((p) => [p, readFileSync(join(root, p), 'utf-8')]))
+  }
+
+  /**
+   * One `KEY: ${{ expression }}` env line. Assembled from `SIGIL` rather than
+   * written inline so the literals here carry no `${`, which reads as a broken
+   * JS template to the linter.
+   */
+  const SIGIL = '$'
+  function expr(key: string, expression: string): string {
+    return `${key}: ${SIGIL}{{ ${expression} }}`
+  }
+
+  function occurrences(files: Map<string, string>, needle: string): number {
+    let n = 0
+    for (const content of files.values()) n += content.split(needle).length - 1
+    return n
+  }
+
+  it('ordinary adopter: published npx invocation everywhere, and NO build step', async () => {
+    // The constraint: an adopter has no local copy to build and must not pay
+    // for a problem they do not have.
+    await captureStdout(() => runInit(['--yes'], makeDeps()))
+    const files = generated()
+
+    expect(occurrences(files, 'npx --yes @attalabs/vinaya ')).toBe(6)
+    expect(occurrences(files, 'node apps/cli/dist/index.js')).toBe(0)
+    for (const content of files.values()) {
+      expect(content).not.toContain('setup-bun')
+      expect(content).not.toContain('bun install')
+      expect(content).not.toContain('Build the vendored Vinaya CLI')
+    }
+  })
+
+  it('vendoring repo: builds and invokes its OWN CLI by path, never npx', async () => {
+    vendorVinaya()
+    await captureStdout(() => runInit(['--yes'], makeDeps()))
+    const files = generated()
+
+    // All six invocations move — none left on the broken path.
+    expect(occurrences(files, 'npx --yes @attalabs/vinaya')).toBe(0)
+    expect(occurrences(files, VENDORED_BIN)).toBe(6)
+    // Every job carrying an invocation first builds the member it invokes.
+    expect(occurrences(files, 'oven-sh/setup-bun@v2')).toBe(6)
+    expect(occurrences(files, 'bun run --cwd apps/cli build')).toBe(6)
+
+    // Per-file: the exact subcommands, in the built-binary shape.
+    const checks = files.get(CHECKS_WORKFLOW_PATH) ?? ''
+    const review = files.get(REVIEW_WORKFLOW_PATH) ?? ''
+    const verdict = files.get(REVIEW_VERDICT_WORKFLOW_PATH) ?? ''
+    const archivist = files.get(ARCHIVIST_WORKFLOW_PATH) ?? ''
+    expect(checks).toContain(`${VENDORED_BIN} check --all --diff-only`)
+    expect(review).toContain(`${VENDORED_BIN} check review-gate`)
+    expect(verdict).toContain(`${VENDORED_BIN} check review-gate`)
+    expect(archivist).toContain(`${VENDORED_BIN} archive --merge-sha=${SIGIL}{{ github.sha }}`)
+    expect(archivist).toContain(`${VENDORED_BIN} audit --only=dead-branches`)
+    expect(archivist).toContain(`${VENDORED_BIN} audit --only=direct-push --sha=${SIGIL}{{ github.sha }}`)
+    // The retrigger job executes no repo content and gains no build step.
+    expect(occurrences(new Map([[ARCHIVIST_WORKFLOW_PATH, archivist]]), 'setup-bun')).toBe(3)
+  })
+
+  it('every env: wiring survives in BOTH shapes', async () => {
+    // PR_BODY/PR_NUMBER are what make the checks EVALUATE rather than pass
+    // vacuously; GH_TOKEN and BRANCH are load-bearing too. Changing how the
+    // binary is reached must not drop any of them.
+    for (const vendored of [false, true]) {
+      rmSync(root, { recursive: true, force: true })
+      mkdirSync(root, { recursive: true })
+      if (vendored) vendorVinaya()
+      await captureStdout(() => runInit(['--yes'], makeDeps()))
+      const files = generated()
+      const checks = files.get(CHECKS_WORKFLOW_PATH) ?? ''
+      const review = files.get(REVIEW_WORKFLOW_PATH) ?? ''
+      const verdict = files.get(REVIEW_VERDICT_WORKFLOW_PATH) ?? ''
+
+      expect(checks).toContain(expr('PR_BODY', 'github.event.pull_request.body'))
+      expect(checks).toContain(expr('PR_NUMBER', 'github.event.pull_request.number'))
+      expect(checks).toContain(expr('BRANCH', 'github.head_ref'))
+      expect(review).toContain(expr('PR_NUMBER', 'github.event.pull_request.number'))
+      expect(review).toContain(expr('BRANCH', 'github.head_ref'))
+      expect(verdict).toContain(expr('PR_NUMBER', 'steps.pr.outputs.number'))
+      expect(verdict).toContain(expr('BRANCH', 'steps.pr.outputs.branch'))
+      // GH_TOKEN on every step that talks to the forge: checks 1, review 1,
+      // verdict 3 (resolve-head, evaluate, retrigger), archivist 3.
+      expect(occurrences(files, expr('GH_TOKEN', 'secrets.GITHUB_TOKEN'))).toBe(8)
+    }
+  })
+
+  it('the hook stubs keep their own version-pinned npx — a different, still-live fix', async () => {
+    // The hooks pin `@<version>` for the npx cache-key regression, which this
+    // change does not touch. A vendoring repo's hooks stay exactly as they are.
+    vendorVinaya()
+    await captureStdout(() => runInit(['--yes'], makeDeps()))
+    const pkg = JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf-8')) as { version: string }
+    const hook = readFileSync(join(root, '.husky/pre-commit'), 'utf-8')
+    expect(hook).toContain(`npx --yes @attalabs/vinaya@${pkg.version} check`)
+  })
+})
+
+describe('detectVendoredVinaya', () => {
+  it('is null for a repo with no package.json, no workspaces, or no such member', () => {
+    expect(detectVendoredVinaya(root)).toBeNull() // bare fixture: README.md only
+
+    writeFileSync(join(root, 'package.json'), '{ "name": "widget" }\n')
+    expect(detectVendoredVinaya(root)).toBeNull() // no workspaces field
+
+    writeFileSync(join(root, 'package.json'), '{ "name": "widget", "workspaces": ["apps/*"] }\n')
+    mkdirSync(join(root, 'apps/web'), { recursive: true })
+    writeFileSync(join(root, 'apps/web/package.json'), '{ "name": "@widget/web" }\n')
+    expect(detectVendoredVinaya(root)).toBeNull() // a workspace, but not ours
+  })
+
+  it('never throws on a malformed root package.json — an adopter install must not die on it', () => {
+    writeFileSync(join(root, 'package.json'), '{ not json at all\n')
+    expect(detectVendoredVinaya(root)).toBeNull()
+  })
+
+  it('finds the member through a glob and honours its declared bin', () => {
+    writeFileSync(join(root, 'package.json'), '{ "name": "v", "workspaces": ["apps/*"] }\n')
+    mkdirSync(join(root, 'apps/cli'), { recursive: true })
+    writeFileSync(
+      join(root, 'apps/cli/package.json'),
+      '{ "name": "@attalabs/vinaya", "bin": { "vinaya": "./dist/index.js" } }\n'
+    )
+    expect(detectVendoredVinaya(root)).toEqual({ dir: 'apps/cli', bin: 'apps/cli/dist/index.js' })
+  })
+
+  it('accepts the { packages: [...] } workspaces form and a non-default bin path', () => {
+    writeFileSync(join(root, 'package.json'), '{ "name": "v", "workspaces": { "packages": ["tools/vinaya"] } }\n')
+    mkdirSync(join(root, 'tools/vinaya'), { recursive: true })
+    writeFileSync(join(root, 'tools/vinaya/package.json'), '{ "name": "@attalabs/vinaya", "bin": "build/cli.js" }\n')
+    expect(detectVendoredVinaya(root)).toEqual({ dir: 'tools/vinaya', bin: 'tools/vinaya/build/cli.js' })
   })
 })
 

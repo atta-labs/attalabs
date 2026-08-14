@@ -15,6 +15,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import { buildInitOps, CONFIG_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
+import { detectVendoredVinaya } from '../lib/self-host.js'
 import { MANAGED_MANIFEST_VERSION, type ManagedManifest, VinayaConfigSchema } from '../lib/config.js'
 import { detectGitRepo, hookDirFromManifest, type RepoInfo, resolveHookDir } from '../lib/detect.js'
 import {
@@ -303,7 +304,12 @@ export async function runUpgrade(args: string[], deps: UpgradeDeps): Promise<num
   }
 
   const hookDir = hookDirFromManifest(manifest, deps.hookDirFor(repo.repoRoot))
-  const ctx: InitContext = { owner: repo.owner, repo: repo.repo, hookDir }
+  const ctx: InitContext = {
+    owner: repo.owner,
+    repo: repo.repo,
+    hookDir,
+    selfHost: detectVendoredVinaya(repo.repoRoot)
+  }
   const ops = buildInitOps(ctx)
   const plan = planUpgrade(ops, repo.repoRoot, manifest)
 

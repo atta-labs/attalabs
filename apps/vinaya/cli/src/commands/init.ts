@@ -10,6 +10,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildInitOps, buildInitProductOps, CONFIG_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
+import { detectVendoredVinaya } from '../lib/self-host.js'
 import { type ManagedManifest, VinayaConfigSchema } from '../lib/config.js'
 import {
   checkGhAuth,
@@ -124,7 +125,12 @@ export async function runInit(args: string[], deps: InitDeps): Promise<number> {
     }
   }
 
-  const ctx: InitContext = { owner: repo.owner, repo: repo.repo, hookDir: deps.hookDirFor(repo.repoRoot) }
+  const ctx: InitContext = {
+    owner: repo.owner,
+    repo: repo.repo,
+    hookDir: deps.hookDirFor(repo.repoRoot),
+    selfHost: detectVendoredVinaya(repo.repoRoot)
+  }
   const allOps = buildInitOps(ctx)
   const ops = noRemote ? allOps.filter((op) => op.kind !== 'create-label') : allOps
   const owned = new Set(readManifest(repo.repoRoot)?.files ?? [])

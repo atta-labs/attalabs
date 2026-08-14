@@ -24,6 +24,7 @@ import { DOC_OWNERS_PATH, label } from '@atta/aeg-core'
 import type { VinayaConfig } from './config.js'
 import type { CreateLabelOp, Op } from './ops.js'
 import { packageRoot } from './package-root.js'
+import type { VendoredVinaya } from './self-host.js'
 
 export type HookDir = '.husky' | '.git/hooks'
 
@@ -32,6 +33,14 @@ export type InitContext = {
   repo: string
   /** where the git-hook stubs are installed (husky if present, else raw) */
   hookDir: HookDir
+  /**
+   * The workspace member declaring `@attalabs/vinaya`, when the repo being
+   * written into vendors the CLI itself (#929) — `null` for the ordinary
+   * adopter, which is everyone else. Callers get it from
+   * `detectVendoredVinaya(repoRoot)`; see lib/self-host.ts for why the
+   * published `npx` invocation cannot work in such a repo.
+   */
+  selfHost: VendoredVinaya | null
 }
 
 // --- neutral scaffold paths (never aeg-root / aeg-project) ------------------
@@ -85,9 +94,51 @@ export function starterConfig(): VinayaConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Workflow files (two, both refuse-if-foreign, both vinaya-prefixed)
+// Workflow files (four, all refuse-if-foreign, all vinaya-prefixed)
+//
+// How the CI jobs reach the vinaya binary has TWO shapes, chosen at generation
+// time from `ctx.selfHost` (#929):
+//
+//   - ordinary adopter (`selfHost: null`) — `npx --yes @attalabs/vinaya`, no
+//     build step. Unchanged, and deliberately so: an adopter has no local copy
+//     to build and must not pay for a problem they do not have.
+//   - repo that vendors the CLI — build the workspace member and invoke the
+//     built file by path. NEVER `npx` here: npx is the thing that misresolves
+//     (it matches on the package NAME against the workspace before reading any
+//     version spec, then execs an unbuilt `bin`). See lib/self-host.ts.
+//
+// Generation-time selection, not a runtime branch inside the YAML, because the
+// generator already holds the repo root at every call site and `doctor`'s drift
+// comparison regenerates the same bytes for the same repo — and because logic
+// living in YAML is logic the unit tests cannot execute.
 // ---------------------------------------------------------------------------
-function checksWorkflow(): string {
+
+/**
+ * The steps that make the vinaya binary available, emitted directly after
+ * `setup-node` at 6-space step indentation. Empty for the ordinary adopter —
+ * `npx` needs no preparation.
+ */
+function vinayaSetupSteps(selfHost: VendoredVinaya | null): string {
+  if (!selfHost) return ''
+  return `      - uses: oven-sh/setup-bun@v2
+      # This repo declares the \`@attalabs/vinaya\` workspace package itself, so
+      # \`npx @attalabs/vinaya\` resolves to that local member instead of the
+      # registry and dies on its unbuilt \`bin\`. Build and run this repo's own
+      # CLI — which also makes CI exercise the code in the pull request rather
+      # than a published copy predating it.
+      - name: Build the vendored Vinaya CLI
+        run: |
+          bun install --frozen-lockfile
+          bun run --cwd ${selfHost.dir} build
+`
+}
+
+/** The command that runs a vinaya subcommand, in whichever shape applies. */
+function vinayaRun(selfHost: VendoredVinaya | null, args: string): string {
+  return selfHost ? `node ${selfHost.bin} ${args}` : `npx --yes @attalabs/vinaya ${args}`
+}
+
+function checksWorkflow(selfHost: VendoredVinaya | null): string {
   return `# ${MANAGED_NOTE}
 #
 # The deterministic gate suite. Runs every registered vinaya check over the
@@ -113,7 +164,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run checks
+${vinayaSetupSteps(selfHost)}      - name: Run checks
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: \${{ github.event.pull_request.number }}
@@ -123,11 +174,11 @@ jobs:
           # vacuously regardless of the PR's real content, on every run.
           PR_BODY: \${{ github.event.pull_request.body }}
           BRANCH: \${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya check --all --diff-only
+        run: ${vinayaRun(selfHost, 'check --all --diff-only')}
 `
 }
 
-function reviewWorkflow(): string {
+function reviewWorkflow(selfHost: VendoredVinaya | null): string {
   return `# ${MANAGED_NOTE}
 #
 # The required review gate — pull_request events only. The verdict-comment
@@ -162,7 +213,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Review gate
+${vinayaSetupSteps(selfHost)}      - name: Review gate
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           # PR_NUMBER is what makes the review-gate check EVALUATE: without
@@ -170,11 +221,11 @@ jobs:
           # the gate is green regardless of review state.
           PR_NUMBER: \${{ github.event.pull_request.number }}
           BRANCH: \${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya check review-gate
+        run: ${vinayaRun(selfHost, 'check review-gate')}
 `
 }
 
-function reviewVerdictWorkflow(): string {
+function reviewVerdictWorkflow(selfHost: VendoredVinaya | null): string {
   return `# ${MANAGED_NOTE}
 #
 # The verdict-comment half of the review gate. A reviewer's verdict arrives
@@ -232,14 +283,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Review gate (verdict evaluation)
+${vinayaSetupSteps(selfHost)}      - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: \${{ steps.pr.outputs.number }}
           BRANCH: \${{ steps.pr.outputs.branch }}
-        run: npx --yes @attalabs/vinaya check review-gate
+        run: ${vinayaRun(selfHost, 'check review-gate')}
 
   # Executes nothing; consumes only the evaluator's outputs. Fires only on a
   # clean evaluation — a failed one leaves the standing red untouched.
@@ -276,7 +327,7 @@ jobs:
 // bin/*.ts` invocation, so any vinaya-init'd repo gets the same post-merge
 // provenance/close-out, dead-branch drift notification, and direct-main-push
 // detection — not just this one.
-function archivistWorkflow(): string {
+function archivistWorkflow(selfHost: VendoredVinaya | null): string {
   return `# ${MANAGED_NOTE}
 #
 # The ring-2 post-merge/scheduled mechanisms: per-task Archivist provenance
@@ -308,10 +359,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run vinaya archive
+${vinayaSetupSteps(selfHost)}      - name: Run vinaya archive
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya archive --merge-sha=\${{ github.sha }}
+        run: ${vinayaRun(selfHost, 'archive')} --merge-sha=\${{ github.sha }}
 
   daily-drift:
     name: Daily Drift Check (dead-branch pushes)
@@ -328,11 +379,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run vinaya audit --only=dead-branches
+${vinayaSetupSteps(selfHost)}      - name: Run vinaya audit --only=dead-branches
         continue-on-error: true # never-red — this job is a notification channel, not a gate
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya audit --only=dead-branches
+        run: ${vinayaRun(selfHost, 'audit --only=dead-branches')}
 
   direct-main-push-detection:
     name: Direct-Main-Push Detection
@@ -349,10 +400,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run vinaya audit --only=direct-push
+${vinayaSetupSteps(selfHost)}      - name: Run vinaya audit --only=direct-push
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya audit --only=direct-push --sha=\${{ github.sha }}
+        run: ${vinayaRun(selfHost, 'audit --only=direct-push')} --sha=\${{ github.sha }}
 `
 }
 
@@ -532,15 +583,30 @@ export function buildInitOps(ctx: InitContext): Op[] {
   const hookMode = 0o755
 
   // Workflows (refuse-if-foreign create-file).
-  ops.push({ kind: 'create-file', path: CHECKS_WORKFLOW_PATH, content: checksWorkflow(), group: 'CI workflows' })
-  ops.push({ kind: 'create-file', path: REVIEW_WORKFLOW_PATH, content: reviewWorkflow(), group: 'CI workflows' })
+  ops.push({
+    kind: 'create-file',
+    path: CHECKS_WORKFLOW_PATH,
+    content: checksWorkflow(ctx.selfHost),
+    group: 'CI workflows'
+  })
+  ops.push({
+    kind: 'create-file',
+    path: REVIEW_WORKFLOW_PATH,
+    content: reviewWorkflow(ctx.selfHost),
+    group: 'CI workflows'
+  })
   ops.push({
     kind: 'create-file',
     path: REVIEW_VERDICT_WORKFLOW_PATH,
-    content: reviewVerdictWorkflow(),
+    content: reviewVerdictWorkflow(ctx.selfHost),
     group: 'CI workflows'
   })
-  ops.push({ kind: 'create-file', path: ARCHIVIST_WORKFLOW_PATH, content: archivistWorkflow(), group: 'CI workflows' })
+  ops.push({
+    kind: 'create-file',
+    path: ARCHIVIST_WORKFLOW_PATH,
+    content: archivistWorkflow(ctx.selfHost),
+    group: 'CI workflows'
+  })
 
   // Git hooks (marker-delimited managed blocks; never clobber).
   ops.push({

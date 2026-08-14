@@ -14,6 +14,7 @@ import { coreCheckRegistry } from '../checks/registry.js'
 import { bareKeyNextMinorWarning, overriddenNextMinorWarning, resolveChecks } from '../checks/resolver.js'
 import { DOC_OWNERS_PATH } from '@atta/aeg-core'
 import { buildInitOps, CONFIG_PATH, DOCTRINE_POINTER_PATH, type HookDir, type InitContext } from '../lib/artifacts.js'
+import { detectVendoredVinaya } from '../lib/self-host.js'
 import {
   GLOBAL_CONFIG_PATH,
   globalChecksIgnoredWarning,
@@ -433,7 +434,12 @@ export async function runDoctor(args: string[], deps: DoctorDeps): Promise<numbe
   } else {
     const manifest = configRead.config.managed
     const hookDir = hookDirFromManifest(manifest, deps.hookDirFor(repo.repoRoot))
-    const ctx: InitContext = { owner: repo.owner, repo: repo.repo, hookDir }
+    const ctx: InitContext = {
+      owner: repo.owner,
+      repo: repo.repo,
+      hookDir,
+      selfHost: detectVendoredVinaya(repo.repoRoot)
+    }
     const install = diagnoseInstall(repo.repoRoot, ctx, manifest)
     findings.push(...install.findings)
     hasDrift = install.hasDrift
