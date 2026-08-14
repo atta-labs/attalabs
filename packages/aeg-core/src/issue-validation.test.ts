@@ -126,7 +126,14 @@ const REGISTRY = [
   { name: 'vada', path: 'apps/vada-ai' }
 ]
 
-/** A minimally-valid rationale, parameterised on the two fields the content checks read. */
+/**
+ * A minimally-valid rationale, parameterised on the fields the content checks
+ * read. It carries BOTH shapes every live Issue does: the `Project(s) + blast
+ * radius` prose field (narrative, and where paths get named), and the
+ * line-anchored project field at the foot (the declaration — the only thing
+ * `projectsFromBody` reads, and therefore the only thing the gates read). See
+ * `issue-863-body.md` / `issue-870-body.md` for the live shape this mirrors.
+ */
 function rationale(opts: {
   boundary: string
   docs?: string
@@ -153,6 +160,8 @@ function rationale(opts: {
 
 **Docs to keep coherent** — ${opts.docs ?? 'Keep `apps/vinaya/web/CLAUDE.md` coherent.'}
 ${opts.extra ?? ''}
+
+**Project:** ${opts.projects ?? 'vinaya'}
 `
 }
 
@@ -308,6 +317,69 @@ describe('checkBlastRadiusScope (A)', () => {
   it('is dormant when no collision-domain list is available', () => {
     const body = rationale({ boundary: 'Restyle `packages/ui/topbar/index.tsx`.' })
     expect(checkBlastRadiusScope(body, [], [], REGISTRY).status).toBe('pass')
+  })
+
+  // -------------------------------------------------------------------------
+  // The parse and the count (#864), proven on live bodies. A synthetic body can
+  // carry a project shape no real Issue has, and the suite then passes over a
+  // gate that never fires — which is how both defects below survived a green
+  // suite. Every fixture here is a body that shipped on the forge.
+  // -------------------------------------------------------------------------
+
+  it('#870 — the prose read invented five projects and bought the bypass; the field read does not', () => {
+    const body = realBody(870)
+    // What the body-wide read saw: path fragments off its own blast-radius line,
+    // parsed as project names. Five of the six are fiction, and the count alone
+    // cleared the `> 1` bypass, so this check never ran on the Issue at all.
+    const invented = declaredProjects(body, [])
+    expect(invented).toContain('src')
+    expect(invented.length).toBeGreaterThan(1)
+    // The line-anchored field, read through the one shared parser: one project.
+    expect(projectsFromBody(body)).toEqual(['vinaya'])
+    // And with the real declaration visible, the real reach is refused: a task
+    // on `vinaya` (apps/vinaya) editing `packages/aeg-core`, no ack line.
+    const r = checkBlastRadiusScope(body, [], SHARED, REGISTRY)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/packages\/aeg-core/)
+    expect(r.errors[0]).toMatch(/\(vinaya\)/)
+  })
+
+  it('#863 — passes on ownership, not on the six names its prose used to yield', () => {
+    const body = realBody(863)
+    expect(declaredProjects(body, [])).toContain('src')
+    expect(projectsFromBody(body)).toEqual(['aeg-core', 'vinaya'])
+    // `aeg-core` owns `packages/aeg-core`, so the reach is declared exactly —
+    // this pass never depended on the bypass, and still does not.
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
+  })
+
+  it('#863 with `aeg-core` unregistered — an unregistered name no longer buys the bypass', () => {
+    // Same real body, registry as the only variable: two declared names, one of
+    // which resolves to no row. Raw-token counting made that `> 1` and passed;
+    // one registry-validated name is one review lens, so it must not.
+    const r = checkBlastRadiusScope(realBody(863), [], SHARED, [{ name: 'vinaya', path: 'apps/vinaya' }])
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/packages\/aeg-core/)
+    expect(r.errors[0]).toMatch(/Not counted: aeg-core/)
+  })
+
+  it('a genuine multi-project declaration still gets the bypass — both names are rows', () => {
+    const body = rationale({
+      boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).',
+      projects: 'vinaya, vada'
+    })
+    expect(projectsFromBody(body)).toEqual(['vinaya', 'vada'])
+    expect(checkBlastRadiusScope(body, [], SHARED, REGISTRY).status).toBe('pass')
+  })
+
+  it('the same body fails once the second name is fiction — one real lens is one lens', () => {
+    const body = rationale({
+      boundary: 'Restyle the shared TopBar (`packages/ui/topbar/index.tsx`).',
+      projects: 'vinaya, aeg-types'
+    })
+    const r = checkBlastRadiusScope(body, [], SHARED, REGISTRY)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/Not counted: aeg-types/)
   })
 })
 
