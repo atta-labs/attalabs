@@ -151,6 +151,8 @@ Decide by **verification-coupling** (not by project boundaries):
 
 **Mechanized.** This rule is no longer prose you have to remember. `checkBlastRadiusScope` reads the collision-domain list in `.aeg/packages` and refuses a task Issue whose **Boundary** or **Project(s) + blast radius** names a path under a domain none of its declared projects owns (ownership resolves against `.vinaya/projects.md` — a task on `Project: aeg-core` editing `packages/aeg-core` owns its surface and passes). Satisfy it by listing the consumers, which is what this rule asks for anyway; or, when one review lens genuinely suffices, by an explicit `blast-radius-ack: <why>` line, which makes the judgment reviewable instead of silent.
 
+**Only registered names count, and only the line-anchored project field is read.** The declared set comes from `projectsFromBody` — the same parser that derives a task's project for the board and dispatch — so the gate cannot disagree with the derivation about what a task declares, and a file path written in the surrounding prose can no longer be mistaken for a project. A listed consumer with no row in `.vinaya/projects.md` buys nothing: it resolves to no specs, no state and no reviewer, so it adds no review lens and does not satisfy the rule above (it is separately refused by `checkProjectsRegistered`). Listing a name you have not registered is not a way past this gate — register the project first.
+
 **Worked example (do this):** a task adds multi-vendor structured output to a shared adapter package. That file is shared, and a downstream product runs on it. Therefore that product belongs in `Project:` even though none of its own files are edited, because it must be re-verified. Missing it off the list is a sizing error.
 
 ---
