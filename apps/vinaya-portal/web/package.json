@@ -1,0 +1,42 @@
+{
+  "name": "@atta/vinaya-portal-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "build": "next build",
+    "start": "next start",
+    "generate": "bun scripts/generate-ui.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@atta/aeg-core": "workspace:*",
+    "@atta/aeg-forge-state": "workspace:*",
+    "@atta/cms": "workspace:*",
+    "@atta/instrumentation": "workspace:*",
+    "@atta/ui": "workspace:*",
+    "@atta/vinaya-sources": "workspace:*",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@vercel/analytics": "^2.0.1",
+    "d3-shape": "^3.2.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "next": "^16.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "simple-icons": "^14.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/d3-shape": "^3.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
