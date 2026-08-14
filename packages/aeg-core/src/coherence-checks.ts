@@ -8,7 +8,7 @@
 
 import { trancheLabel, label } from '@atta/aeg-forge-state'
 import { anchoredRegion, stripCode } from './anchored-region'
-import { checkIssueRationale, isTaskIssueLabelSet } from './issue-validation'
+import { checkIssueRationale, checkProjectsRegistered, isTaskIssueLabelSet } from './issue-validation'
 import type { ForgeIssue, TaskIssueRef } from '@atta/aeg-types'
 import type { ForgeFacts, Tranche, Task } from './types'
 
@@ -405,30 +405,41 @@ export type { ForgeIssue }
 
 /**
  * R1: Every active-tranche task Issue's body carries the full eight-field
- * Planner's rationale (`aeg-root/contracts/planner-brief.md`).
+ * Planner's rationale (`aeg-root/contracts/planner-brief.md`), and every
+ * project its `Project:` field names has a `.vinaya/projects.md` row.
  * Fail class: `missing-rationale-field`
  *
- * Presence-only — delegates entirely to `checkIssueRationale` (the same
- * grammar/parser `bin/open-issue.ts` enforces at ring 0 on new/edited
- * Issues). This is the ring-1/2 half: continuous re-checking of the stock.
- * One grammar, one parser — this function does not re-implement it.
+ * Presence-only — delegates entirely to `checkIssueRationale` and
+ * `checkProjectsRegistered` (the same evaluators `bin/open-issue.ts` enforces
+ * at ring 0 on new/edited Issues). This is the ring-1/2 half: continuous
+ * re-checking of the stock, which is what catches an Issue edited by an
+ * ungated writer (the GitHub web UI, a raw API call) or one that predates the
+ * gate. One grammar, one parser — this function re-implements neither.
  *
  * `issuesBySlug`: open Issues per active tranche slug, from the same
  * batched label-scoped query T2 uses (`fetchOpenIssuesByLabel`), extended to
  * carry `body` + `labels`.
  * `grandfatheredIssues`: `R1_GRANDFATHERED_ISSUES` — pre- stock,
  * reported as `info`, never `fail`.
+ * `registeredNames`: the registry's project names, read by the caller
+ * (aeg-core is pure). Defaults to `[]`, which leaves the registry half
+ * dormant — so a caller that has no registry to hand keeps R1's prior
+ * behaviour exactly.
  */
 export function checkR1(
   issuesBySlug: Map<string, ForgeIssue[]>,
-  grandfatheredIssues: ReadonlySet<number>
+  grandfatheredIssues: ReadonlySet<number>,
+  registeredNames: string[] = []
 ): CheckResult {
   const failures: CheckFailure[] = []
   for (const [slug, issues] of issuesBySlug) {
     for (const issue of issues) {
       if (!isTaskIssueLabelSet(issue.labels)) continue
-      const { status, errors } = checkIssueRationale(issue.body)
-      if (status !== 'fail') continue
+      const errors = [
+        ...checkIssueRationale(issue.body).errors,
+        ...checkProjectsRegistered(issue.body, issue.labels, registeredNames).errors
+      ]
+      if (errors.length === 0) continue
       failures.push({
         issue: issue.number,
         tranche: slug,
@@ -443,7 +454,10 @@ export function checkR1(
     check: 'R1',
     status,
     failures,
-    note: status === 'info' ? `${failures.length} grandfathered task Issue(s) predate the rationale grammar` : undefined
+    note:
+      status === 'info'
+        ? `${failures.length} grandfathered task Issue(s) predate this check's grammar (rationale fields and/or the project registry)`
+        : undefined
   }
 }
 

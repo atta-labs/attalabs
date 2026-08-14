@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { amendRationaleDeps } from '@atta/aeg-forge-state'
+import { amendRationaleDeps, projectsFromBody } from '@atta/aeg-forge-state'
 import { describe, expect, it } from 'vitest'
 import { fenceShapes } from './fixtures/fence-shapes'
 import {
@@ -8,6 +8,7 @@ import {
   checkConflictCompleteness,
   checkIssueRationale,
   checkNoBriefContent,
+  checkProjectsRegistered,
   checkRationaleNamesDocs,
   declaredProjects,
   isTaskIssueLabelSet,
@@ -163,6 +164,99 @@ describe('declaredProjects', () => {
 
   it('ignores a residual project:* label — project is a field, never a label (#614)', () => {
     expect(declaredProjects(rationale({ boundary: 'x' }), ['project:vada', 'vinaya/tranche:x'])).toEqual(['vinaya'])
+  })
+})
+
+/** The registry reduced to the name column — what `checkProjectsRegistered` consumes. */
+const REGISTERED = REGISTRY.map((p) => p.name)
+
+/**
+ * Real task-Issue bodies, saved from the forge. Fixtures for this check must
+ * come from the live corpus: a synthetic body can carry a `Project:` shape no
+ * real Issue has, and the suite then passes over a gate that never fires.
+ *
+ * Verbatim with ONE exception: a third-party adopter repo's identifier in
+ * `issue-870-body.md` is redacted. `packages/aeg-core` ships inside the published
+ * `@attalabs/vinaya` tarball, so a real Issue body pasted in here travels further
+ * than the forge. Nothing these tests assert touches the redacted span — check an
+ * identifier before copying the next body in.
+ */
+const realBody = (n: number): string => readFileSync(join(__dirname, 'fixtures', `issue-${n}-body.md`), 'utf8')
+
+describe('checkProjectsRegistered', () => {
+  it('#863 (modern `**Project:**` footer) — EVALUATES its names, and passes on their merit', () => {
+    const body = realBody(863)
+    // The load-bearing assertion: it found names. A pass with zero names found is
+    // the vacuous pass that made the first version look green while inert.
+    expect(projectsFromBody(body)).toEqual(['aeg-core', 'vinaya'])
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
+  })
+
+  it('#863 fails once one of its real declared names is not a registry row', () => {
+    // Same real body, registry missing `vinaya` — proves the pass above is earned.
+    const r = checkProjectsRegistered(realBody(863), [], ['aeg-core', 'vada'])
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/vinaya/)
+    expect(r.errors[0]).toMatch(/\.vinaya\/projects\.md/)
+  })
+
+  it('#188 (legacy `**Project(s):**` colon style) — still fires', () => {
+    const body = realBody(188)
+    expect(projectsFromBody(body)).toEqual(['vada', 'engine', 'adapter'])
+    const r = checkProjectsRegistered(body, [], REGISTERED)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/engine/)
+    expect(r.errors[0]).toMatch(/adapter/)
+  })
+
+  it('#870 (prose field full of file paths) — invents no project named `src`', () => {
+    // Its `**Project(s) + blast radius**` line names `packages/aeg-core/src/…`.
+    // The prose-field read turned that into `src, bin, verify-briefts, …` and
+    // refused a correctly-declared Issue; the line-anchored field read cannot.
+    const body = realBody(870)
+    expect(body).toContain('packages/aeg-core/src/brief-validation.ts')
+    expect(projectsFromBody(body)).toEqual(['vinaya'])
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
+  })
+
+  it('reads the same field the derivation does — gate and `projectsFromBody` cannot disagree', () => {
+    // The reviewer's reproduction: an unregistered project declared on the footer
+    // line, invisible to the prose-field read, and resolved by the derivation.
+    const body = [
+      '**Project(s) + blast radius** — `aeg-types` owns the edited path.',
+      '',
+      '**Tier:** 1',
+      '**Project:** aeg-types'
+    ].join('\n')
+    expect(projectsFromBody(body)).toEqual(['aeg-types'])
+    const r = checkProjectsRegistered(body, [], REGISTERED)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/aeg-types/)
+  })
+
+  it('names every unregistered project, not just the first', () => {
+    const body = '**Project:** aeg-types, vda'
+    const r = checkProjectsRegistered(body, [], REGISTERED)
+    expect(r.status).toBe('fail')
+    expect(r.errors[0]).toMatch(/aeg-types/)
+    expect(r.errors[0]).toMatch(/vda/)
+  })
+
+  it('matches exactly — a case variant is refused, because downstream comparison is literal', () => {
+    const r = checkProjectsRegistered('**Project:** Vinaya', [], REGISTERED)
+    expect(r.status).toBe('fail')
+    // …and says why, naming the row it differs from only in case.
+    expect(r.errors[0]).toMatch(/differs from the registered `vinaya` only in case/)
+  })
+
+  it('is dormant when the registry is absent — a gate with no source of truth invents none', () => {
+    expect(checkProjectsRegistered('**Project:** aeg-types', [], []).status).toBe('pass')
+  })
+
+  it('passes a body with no `**Project:**` line — field presence is checkIssueRationale’s job', () => {
+    const body = 'A body with no rationale and no Project field at all.'
+    expect(projectsFromBody(body)).toEqual([])
+    expect(checkProjectsRegistered(body, [], REGISTERED).status).toBe('pass')
   })
 })
 

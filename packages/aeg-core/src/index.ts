@@ -108,6 +108,7 @@ export {
   checkConflictCompleteness,
   checkIssueRationale,
   checkNoBriefContent,
+  checkProjectsRegistered,
   checkRationaleNamesDocs,
   declaredProjects,
   isTaskIssueLabelSet

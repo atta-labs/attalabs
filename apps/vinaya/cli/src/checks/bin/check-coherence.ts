@@ -25,6 +25,8 @@
  */
 
 import { execFile, execFileSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import {
   checkA1,
@@ -38,6 +40,7 @@ import {
   checkT3,
   fetchForgeFacts,
   fetchOpenIssuesByLabel,
+  parseRegistry,
   R1_GRANDFATHERED_ISSUES,
   scopeT2ToPlanPr,
   type CheckResult,
@@ -80,6 +83,26 @@ function git(args: string[]): string {
   } catch {
     return ''
   }
+}
+
+/**
+ * The adopter repo's registered project names, for R1's project-registry half.
+ * Resolved from the git top-level rather than a bare `cwd`, so the check works
+ * when `vinaya check` is invoked from a subdirectory. `--show-toplevel` is itself
+ * cwd-relative, so it is not a defence against a `chdir` — it is correct here
+ * only because this bin deliberately performs none and the runner spawns it with
+ * the caller's cwd. Outside any repo git exits 128, `git()` returns `''`, and the
+ * check goes dormant rather than resolving an unrelated repo's registry. An
+ * absent registry is a normal state — a single-project
+ * repo has no `.vinaya/projects.md` by design — so this returns `[]` and the
+ * half goes dormant, with the warning below so it is never silent.
+ */
+function readRegisteredProjectNames(): string[] {
+  const root = git(['rev-parse', '--show-toplevel'])
+  if (!root) return []
+  const path = join(root, '.vinaya/projects.md')
+  if (!existsSync(path)) return []
+  return parseRegistry(readFileSync(path, 'utf8')).map((p) => p.name)
 }
 
 function resolveRepo(): { owner: string; repo: string } | null {
@@ -226,7 +249,28 @@ async function main(): Promise<void> {
   const topologyIssues = new Set(tranche.tasks.map((t) => t.issue).filter((n): n is number => n !== null))
   const openNums = (openIssuesBySlug.get(slug) ?? []).map((i) => i.number)
   results.push(scopeT2ToPlanPr(checkT2(new Map([[slug, openNums]]), new Map([[slug, topologyIssues]]), slug), false))
-  results.push(checkR1(openIssuesBySlug, R1_GRANDFATHERED_ISSUES))
+  // R1's project-registry half needs the registry passed in (aeg-core is pure).
+  // Omitting it left that half silently dormant in the shipped CLI while the
+  // governance docs stated R1 re-runs it — a documented-but-absent control.
+  const registeredNames = readRegisteredProjectNames()
+  if (registeredNames.length === 0) {
+    // MUST go through `emitCheckError`, never a raw `process.stderr.write`: the
+    // runner parses every stderr line as a `CheckError` candidate, and one
+    // unparseable line sets `malformed` and reports `status: 'error'` whatever
+    // the exit code. A raw line here would fail a single-project adopter repo —
+    // which legitimately has no registry — on its own pre-commit hook. That is
+    // the same 2026-08-07 incident the `git()` helper above is annotated with.
+    emitCheckError({
+      schema: CHECK_SCHEMA_VERSION,
+      check: CHECK_NAME,
+      severity: 'warning',
+      message:
+        "coherence: no registry rows parsed from `.vinaya/projects.md` (absent, or every row malformed) — R1's project-registry half is dormant; declared projects are not resolved.",
+      agent_recovery_prompt:
+        "If this repo has more than one project, register them with `vinaya init product <name> --path <folder>` so R1 can resolve each task's `Project:` field. A single-project repo has no registry by design — no action needed."
+    })
+  }
+  results.push(checkR1(openIssuesBySlug, R1_GRANDFATHERED_ISSUES, registeredNames))
 
   const failed = results.filter((r) => r.status === 'fail')
   if (failed.length > 0) {
