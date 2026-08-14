@@ -135,7 +135,9 @@ function walkingFiles(): string[] {
       // Matches any mention of `process.cwd()`, not one spelling of the walk:
       // keying discovery to `let dir = …` let `let current = process.cwd()` and
       // `let dir = resolve(process.cwd())` pass unseen. The wider match yields
-      // the same three files today and cannot silently miss a fourth.
+      // the same two files today — this app has two doctrine readers, not the
+      // original app's three, since `repo-state/read-root.ts` is Studio's — and
+      // cannot silently miss a third.
       if (/process\.cwd\(\)/.test(readFileSync(full, 'utf8'))) {
         found.push(relative(SRC_ROOT, full))
       }
