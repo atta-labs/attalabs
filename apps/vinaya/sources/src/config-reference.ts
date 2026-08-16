@@ -4,8 +4,9 @@
  * validates SHAPE only (zero `.describe()` calls); this module is the one
  * place semantics are written down in adopter-facing prose. Content is
  * reconciled from two sources of truth — `config.ts`'s own comments and
- * `specs/vinaya-spec.md`'s Configuration architecture chapter — never
- * invented.
+ * the Configuration architecture design in `atta-labs/vinaya` (moved out
+ * of this repo's spec; no prose mirror of that design exists there yet,
+ * so this reconciles against the design's own source) — never invented.
  *
  * `apps/vinaya/cli/tests/checks/config-reference-coverage.test.ts` proves
  * every `VinayaConfigSchema` top-level key and every `CheckEntrySchema` key
