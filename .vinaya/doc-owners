@@ -138,7 +138,7 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 
 apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
 
-# ── vinaya-portal-studio-split-v1, task 3 (#885, 2026-08-16) ──────────────
+# ── Portal/Studio split, task 3 (#885, 2026-08-16) ────────────────────────
 # The glob above is segment-wise, not a prefix match, so it does not cover
 # `apps/vinaya-studio/**` — measured on task 1's PR #917 (`bb43ff2b`), where
 # the identical gap for `apps/vinaya-portal/**` pushed `verify-docs --full`'s

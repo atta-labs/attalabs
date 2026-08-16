@@ -11,7 +11,7 @@ Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` t
 
 ## Architecture — one web surface split into two apps, plus sources and (extracted) cli
 
-The original single `web` workspace (`apps/vinaya/web`) served both the public marketing/docs site and the local-only Studio dashboard behind a runtime `isVercelDeploy()` gate — one deployment, two products, one gate that had to be correct on every route. The Portal/Studio split (`vinaya-portal-studio-split-v1`) replaces that runtime answer with a structural one: the public surface and the local-only surface are now two separate apps that never share a deployment.
+The original single `web` workspace (`apps/vinaya/web`) served both the public marketing/docs site and the local-only Studio dashboard behind a runtime `isVercelDeploy()` gate — one deployment, two products, one gate that had to be correct on every route. The Portal/Studio split replaces that runtime answer with a structural one: the public surface and the local-only surface are now two separate apps that never share a deployment.
 
 ```
 apps/vinaya/
