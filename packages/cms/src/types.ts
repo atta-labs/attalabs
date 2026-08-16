@@ -86,7 +86,7 @@ export interface CMSBrandingImage {
 
 export interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'
+  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'
   productName: string
   paliRoot?: string
   paliMeaning?: string
@@ -125,6 +125,8 @@ export interface PortalUiConfig {
 export type HeraldConfig = PortalUiConfig
 export type AttaConfig = PortalUiConfig
 export type VinayaConfig = PortalUiConfig
+export type VinayaPortalConfig = PortalUiConfig
+export type VinayaStudioConfig = PortalUiConfig
 export type VadaConfig = PortalUiConfig
 export type AttalabsConfig = PortalUiConfig
 

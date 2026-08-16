@@ -133,7 +133,7 @@ Each product has a `branding` document in Sanity storing logo SVG files, the ful
 | `logos`     | `logoOutlineLight/Dark`, `logoSolidLight/Dark`, `logoLockupOutlineLight/Dark`, `logoLockupSolidLight/Dark` (SVG `file` assets) |
 | `favicons`  | Shared `appleTouchIcon` + `faviconLight` + `faviconDark` objects, each set with `ico` + 7 PNG sizes (16/32/48/64/128/256/512) |
 
-Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vinaya`
+Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vinaya`, `branding-vinayaPortal`, `branding-vinayaStudio`
 
 Query functions:
 ```ts
@@ -169,14 +169,18 @@ Each product has a singleton document in Sanity that stores:
 | `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
 | `userInterface.library` | ref → `uiLibrary` | Active component library |
 
-Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `attalabsConfig`
+Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `vinayaPortalConfig`, `vinayaStudioConfig`, `attalabsConfig`
 
 Query functions:
 ```ts
 import { getProductConfig } from '@atta/cms'
 
-const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'
+const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'
 ```
+
+`vinayaPortal` and `vinayaStudio` are additional product documents inside `vinaya`'s
+own Sanity project (same `PROJECT_IDS` entry), registered ahead of any app reading
+them — see `.claude/skills/ui-cms-theme/SKILL.md`.
 
 ### What You Configure in Each Studio
 

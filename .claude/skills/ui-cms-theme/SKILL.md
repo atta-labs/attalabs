@@ -116,6 +116,15 @@ lives in code. Pass the key of the product whose *content* you want: a consumer
 that deliberately borrows another product's identity passes that product's key, and the
 call site says so out loud.
 
+`ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'`.
+`vinayaPortal` (`vinayaPortalConfig` / `branding-vinayaPortal`) and `vinayaStudio`
+(`vinayaStudioConfig` / `branding-vinayaStudio`) are two additional product documents
+inside `vinaya`'s own Sanity project — not new projects, so `PROJECT_IDS` maps all three
+keys to the same project id. No call site passes either key yet; every app still passes
+`vinaya`. This is the same pattern "Adding a New Product Theme" below describes, minus
+step 1 (no new project id to add) — a product can register its own config/branding
+documents ahead of any app reading them, inside a project it shares with another product.
+
 `getProductCms` is the root-layout entry point. It fetches both documents in parallel and
 owns the graceful-degradation policy — on failure it returns `null` for that document, and
 logs the reason outside production. Do not wrap it in `.catch(() => null)`; that is what
@@ -133,6 +142,14 @@ interface PortalUiConfig {
   }
 }
 ```
+
+**`userInterface.library` is currently decisive, but only until the library resolution
+that reads it moves off a live build-time Sanity fetch.** Today `packages/ui/scripts/generate-ui.ts`
+reads this field at build time and that value *is* the active library. A planned change
+replaces that live read with a repo-committed pin; once it lands, this field becomes a
+proposal a maintainer can act on rather than the thing that decides the build. Don't
+treat it as load-bearing when deciding whether a new product document is safely additive
+— its authority is already scheduled to move.
 
 ---
 
@@ -453,6 +470,13 @@ This exact mistake shipped in Herald: a per-user profile theme was saved correct
    `NextWebShell` with a unique `styleId`
 
 No new query function is needed — that was the old per-product pattern, since deleted.
+
+**Two products can share one Sanity project.** When a new product is a variant of an
+existing one rather than a genuinely separate identity — e.g. `vinayaPortal` and
+`vinayaStudio` inside `vinaya`'s project — skip step 1 and map the new key to the
+existing project id in `PROJECT_IDS` instead of adding one. Everything else is the same:
+its own `{key}Config` schema type and its own `branding-{key}` document, resolved
+through the same `getProductCms(key)` call once a layout is written to pass that key.
 
 ---
 

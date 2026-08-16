@@ -23,7 +23,9 @@ export type {
   ThemeSpacing,
   ThemeTypography,
   VadaConfig,
-  VinayaConfig
+  VinayaConfig,
+  VinayaPortalConfig,
+  VinayaStudioConfig
 } from './types'
 export { FIELD_TO_CSS_VAR, SHADOW_TO_CSS_VAR } from './types'
 
