@@ -1,8 +1,0 @@
-{
-  "checks": {
-    "typo-check": {
-      "run": "./tests/fixtures/checks/passing-check.ts",
-      "scop": "diff"
-    }
-  }
-}

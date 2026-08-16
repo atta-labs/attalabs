@@ -7,7 +7,9 @@ description: "@atta/aeg-core" internals — the pure evaluators that mechanize A
 
 ## Context
 
-`@atta/aeg-core` is the shared implementation behind `enforcement.md`'s load-bearing claim: *"the same check runs at ring 0 and ring 1."* Every predicate a hook (`.husky/pre-push`, `.claude/hooks/check-skill.sh`) or a CI job (`forge-lifecycle.yml`) evaluates lives here once, as a pure function, and is called from both a local `bin/*.ts` CLI shim and the CI workflow — never re-implemented per call site. This package is the *gate logic*; it does not fetch anything itself, and it does not mechanize any UI. `packages/aeg-forge-state` fetches; `apps/vinaya/web` and `apps/vinaya/cli` render/spawn; `aeg-core` decides.
+`@atta/aeg-core` is the shared implementation behind `enforcement.md`'s load-bearing claim: *"the same check runs at ring 0 and ring 1."* Every predicate a hook (`.husky/pre-push`, `.claude/hooks/check-skill.sh`) evaluates lives here once, as a pure function. This package is the *gate logic*; it does not fetch anything itself, and it does not mechanize any UI. `packages/aeg-forge-state` fetches; `apps/vinaya/web` renders; `aeg-core` decides.
+
+**How ring 1 consumes this package changed when attalabs adopted the published CLI.** CI no longer calls these evaluators from this workspace: the managed `vinaya-checks.yml` runs the published `@attalabs/vinaya`, which bundles a *published* copy of this package (the vendored CLI workspace and the old `forge-lifecycle.yml` are both deleted; `conventions.yml` still calls `bin/verify-coherence.ts`/`bin/verify-brief.ts` from this workspace, but only for non-blocking labeling side effects). Consequence: an evaluator change here does NOT reach the blocking CI gates until it is published through the standalone `atta-labs/vinaya` repo and this repo runs `vinaya upgrade` — the canonical evaluator source for the shipped CLI lives there, and this workspace's copy serves this repo's own hooks and labeling.
 
 ## Architecture — the purity charter is the invariant, not a preference
 
@@ -19,7 +21,7 @@ Repo files (parsed by parse-*.ts here)  ──┼──> typed facts ──> pur
 PR body / diff (read by the bin/*.ts caller) ─┘
 ```
 
-The caller — a `packages/aeg-core/bin/*.ts` CLI, a `vinaya check` adapter in `apps/vinaya/cli/src/checks/bin/`, or a CI workflow step — does the I/O and hands the result in. If a feature needs a network call or a filesystem read, that code belongs in the caller (or in `packages/aeg-forge-state`, the one package this rule structurally exempts — see that skill), never inside `src/`.
+The caller — a `packages/aeg-core/bin/*.ts` CLI, a `vinaya check` adapter (in the standalone `atta-labs/vinaya` repo's `apps/cli/src/checks/bin/`; the vendored copy here was deleted), or a CI workflow step — does the I/O and hands the result in. If a feature needs a network call or a filesystem read, that code belongs in the caller (or in `packages/aeg-forge-state`, the one package this rule structurally exempts — see that skill), never inside `src/`.
 
 ### File shape — one evaluator, one concern, paired test
 
@@ -61,7 +63,7 @@ When the same rule must run at both ring 0 and ring 1, the shared logic is a sin
 
 ### Additive-only evolution on versioned surfaces
 
-`CheckSpec`/`CheckError`/`CheckOutcome` (consumed by `apps/vinaya/cli`'s check runner) and `DiagramModel`'s shape are public, versioned contracts — fields may be added, never removed, renamed, or retyped without a version bump. Third-party adopters (via the published `@attalabs/vinaya` package, which inlines this workspace) build against these shapes.
+`CheckSpec`/`CheckError`/`CheckOutcome` (consumed by the CLI's check runner in the standalone `atta-labs/vinaya` repo) and `DiagramModel`'s shape are public, versioned contracts — fields may be added, never removed, renamed, or retyped without a version bump. Third-party adopters (via the published `@attalabs/vinaya` package, which inlines this workspace) build against these shapes.
 
 ### Message style: name the exact failing fact
 
@@ -80,5 +82,5 @@ Every evaluator here that produces human-readable output (`coherence-checks.ts`'
 
 - **aeg-model** skill — the doctrine (`aeg-root/**`) these evaluators mechanize; read this first if the *rule* being enforced, not the code enforcing it, is unclear
 - **aeg-forge-state** skill — the one sanctioned adapter that fetches the facts these evaluators consume
-- **vinaya-architecture** skill — how `vinaya check`'s adapters in `apps/vinaya/cli/src/checks/bin/` wrap these same evaluators for the shipped CLI
+- **vinaya-architecture** skill — how `vinaya check`'s adapters (standalone `atta-labs/vinaya` repo, `apps/cli/src/checks/bin/`) wrap these same evaluators for the shipped CLI
 - `aeg-root/state-machine.md` §15/§15b/§15d — the doc-coverage, coherence, and dispatch-readiness seams this package implements

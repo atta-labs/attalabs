@@ -1,0 +1,97 @@
+# Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.
+#
+# The deterministic gate suite. Runs every registered vinaya check over the
+# pull request's diff. This is the guarantee: a PR cannot merge red.
+name: Vinaya Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+# One run per pull request COMMIT, always. Several `types:` above can fire in the
+# same instant — `vinaya pr create` opens the PR and applies its tranche
+# label immediately after, so `opened` and `labeled` arrive together and
+# GitHub starts TWO runs of this workflow. Both then report under the same
+# check name, and the merge box counts both: one can go green while its twin
+# holds a stale red, which no later verdict clears because each run only ever
+# re-evaluates itself. Measured live on atta-labs/vinaya#18 — two runs created
+# in the same second, one success, one failure, PR blocked with both reviews
+# already approved.
+#
+# The key carries the head SHA as well as the PR number, and that second half
+# is load-bearing. Keyed on the PR alone, every run for that PR shares one
+# group — including a rerun of an EARLIER commit's run, which the verdict
+# retrigger performs. Measured on PR #22: re-running the old commit's run
+# (attempt 4) cancelled the current commit's run after one second, so a push
+# appeared to produce a cancelled gate. Runs for different commits must not be
+# able to cancel each other; runs for the SAME commit still collapse, which is
+# the duplicate this group exists to remove.
+#
+# `cancel-in-progress` is safe here and not merely tolerable: the job is a
+# pure re-evaluation of forge state that takes seconds, so a cancelled run had
+# nothing to lose and the survivor reads strictly fresher state.
+concurrency:
+  group: vinaya-checks-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  vinaya-checks:
+    name: vinaya check --all --diff-only
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # The job builds and runs code from this checkout, and the default
+          # writes GITHUB_TOKEN into .git/config as an http extraheader —
+          # readable by anything the build executes. Nothing here pushes.
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Adopter-declared CI setup (vinaya.config.json `ci.setup`), emitted
+      # verbatim. It prepares this repository's OWN custom checks — scripts
+      # committed here that may import this repository's code — which the
+      # `npx` invocation below cannot do: npx prepares only vinaya itself.
+      # The command is repo-committed, reviewed config; under `pull_request`
+      # the workflow definition is already controlled by the pull request, so
+      # this step adds no trust surface that did not already exist.
+      - name: Adopter CI setup
+        run: |
+          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
+      - name: Run checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # PR_BODY is what makes test-plan/closes-n EVALUATE: neither check
+          # fetches the body itself (both read `process.env.PR_BODY` only) —
+          # without it they read "no body — nothing to check" and pass
+          # vacuously regardless of the PR's real content, on every run.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.head_ref }}
+        # pipefail is load-bearing: this job's default shell is `bash -e`
+        # WITHOUT pipefail, so an unguarded pipe through tee would mask the
+        # check runner's exit code and report a red suite green.
+        run: |
+          set -o pipefail
+          npx --yes @attalabs/vinaya check --all --diff-only | tee vinaya-check-output.txt
+      # The job's one check name ("vinaya check --all --diff-only: failing")
+      # names no check. This step puts the runner's per-check lines — which
+      # check failed, and its finding messages — on the run's Summary page,
+      # readable without opening the log. `!cancelled()` rather than
+      # `always()`: the concurrency group above cancels superseded runs as a
+      # matter of course, and a cancelled run's half-captured output is noise,
+      # not signal.
+      - name: Per-check summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '### vinaya check --all --diff-only'
+            echo '~~~'
+            cat vinaya-check-output.txt 2>/dev/null || echo 'no check output captured (runner did not start)'
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"

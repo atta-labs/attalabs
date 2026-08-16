@@ -1,7 +1,0 @@
-{
-  "briefSchema": {
-    "pr": {
-      "sections": [{ "heading": "Rollback Plan", "name": "Rollback Plan" }]
-    }
-  }
-}

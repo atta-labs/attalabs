@@ -11,7 +11,7 @@ Vinaya is a governance layer for AI coding agents — deterministic checks that 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
 | Web | `web/` | `@atta/vinaya-web` | Live — see below |
-| CLI | `cli/` | `@attalabs/vinaya` | Live — see below |
+| CLI | standalone `atta-labs/vinaya` repo (`apps/cli`) | `@attalabs/vinaya` | Live on npm — installed into this monorepo as a devDependency; the vendored `cli/` workspace was deleted (attalabs-adoption) |
 
 ### Web
 
@@ -19,7 +19,7 @@ Landing + Vinaya CLI command reference (`/docs/cli`) pages live. `/config` rende
 
 ### CLI
 
-Published to the public npm registry as `@attalabs/vinaya` — the bare name `vinaya` is refused by npm's typosquat filter against `vinyl`; the installed command is still `vinaya`. A Node-executable ESM bundle that inlines the `@atta/*` workspace graph and declares only `zod` + `gray-matter`; `npx`/`pnpm dlx`/`yarn dlx`/`bunx` all resolve it (spec's Distribution section).
+Developed in the standalone `atta-labs/vinaya` repository (`apps/cli`); this monorepo no longer vendors its source and consumes only the published package. Published to the public npm registry as `@attalabs/vinaya` — the bare name `vinaya` is refused by npm's typosquat filter against `vinyl`; the installed command is still `vinaya`. A Node-executable ESM bundle that inlines the `@atta/*` workspace graph and declares only `zod` + `gray-matter`; `npx`/`pnpm dlx`/`yarn dlx`/`bunx` all resolve it (spec's Distribution section).
 
 - `vinaya help`/`version` — router, hierarchical config loader, versioned `--json` envelope.
 - `vinaya studio` — launches local Vinaya Studio against the current repo.
