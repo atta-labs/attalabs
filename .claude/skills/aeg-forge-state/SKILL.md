@@ -54,11 +54,11 @@ All forge access shells out to the local `gh` CLI through `gh.ts` — never a se
 
 ### Read-only, always
 
-This package never writes to the forge. Every export is a `fetch*`/`list*`/`derive*`/`parse*` function. A write belongs in `packages/aeg-core/bin/*.ts` (this repo's own sanctioned writers: `open-pr.ts`, `open-issue.ts`, `archive-task.ts`) or `apps/vinaya/cli`'s `pr`/`issue` commands — never here.
+This package never writes to the forge. Every export is a `fetch*`/`list*`/`derive*`/`parse*` function. A write belongs in `packages/aeg-core/bin/*.ts` (this repo's own sanctioned writers: `open-pr.ts`, `open-issue.ts`, `archive-task.ts`) or the published CLI's `pr`/`issue` commands (standalone `atta-labs/vinaya` repo; the vendored copy here was deleted) — never here.
 
 ### Generic over `(owner, repo, slug)` — never this-repo-only
 
-Every public function takes the triple explicitly. A convenience that reads well for this monorepo but assumes its specific owner/repo/label scheme belongs in the caller, not this package — the README states this as the entire reason the package exists standalone rather than living inside `apps/vinaya/cli`.
+Every public function takes the triple explicitly. A convenience that reads well for this monorepo but assumes its specific owner/repo/label scheme belongs in the caller, not this package — the README states this as the entire reason the package exists standalone rather than living inside the CLI (now developed in the standalone `atta-labs/vinaya` repo).
 
 ### `backlog` and amendment-prose are known, accepted gaps — not bugs to silently patch
 

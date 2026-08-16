@@ -45,13 +45,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # This job executes PR-branch content (bun install + repo scripts)
+          # while holding write scopes for the labeling steps below; the
+          # default would leave GITHUB_TOKEN in .git/config as an http
+          # extraheader, readable by anything the install executes.
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
+      # --ignore-scripts: the steps below need the packages, not the
+      # lifecycle hooks — a branch-controlled postinstall must not run in a
+      # job that carries issues/pull-requests write scopes.
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       # ── Biome lint/format ───────────────────────────────────────────────
       # Mirrors the local .husky/pre-commit enforcement (bun run check) into
