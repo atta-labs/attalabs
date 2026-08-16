@@ -90,6 +90,15 @@ import { db } from '../../../packages/db'
 import { something } from '@atta/vada-ai-web/src/lib/something'
 ```
 
+### Workspace-local vs registry-sourced packages
+
+Not every `@atta*`-namespaced dependency comes from the workspace. Two distinct scopes now coexist:
+
+- **`@atta/*`** — workspace-local forever, resolved via `workspace:*`. `@atta/ui`, `@atta/cms`, `@atta/auth`, `@atta/typescript-config`, and the rest of `packages/*` never publish; they exist only as symlinked workspace members.
+- **`@attalabs/*`** — the vinaya engine packages (`@attalabs/aeg-core`, `@attalabs/aeg-forge-state`, `@attalabs/aeg-types`, `@attalabs/vinaya-sources`), published from the standalone `atta-labs/vinaya` repo and consumed here as ordinary registry dependencies at a real semver range (e.g. `^0.8.0`), not `workspace:*`. The `@atta` npm scope belongs to a different account, hence the renamed `@attalabs` scope for anything actually published — `@atta/*` names stay reserved for workspace-only code that never leaves this repo.
+
+This repo also still carries the old `packages/aeg-core` / `packages/aeg-forge-state` / `packages/vinaya-sources` workspace members under their original `@atta/*` names — kept until their own removal task, untouched by consumers that have moved to the `@attalabs/*` registry versions. Bun resolves by package *name*, so a consumer importing `@atta/aeg-core` still gets the local workspace copy; only an app whose `package.json` and source imports both say `@attalabs/aeg-core` actually pulls from the registry. Since the published `@attalabs/*` packages ship raw `.ts` source (no build step) via their `exports` field, any Next.js app consuming them needs `transpilePackages: ['@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources']` in `next.config.ts` — the same mechanism already used for the workspace-local `@atta/ui`.
+
 ### Adding a New Package
 1. Create `packages/{name}/package.json` with `"name": "@atta/{name}"`
 2. Create `packages/{name}/tsconfig.json` extending `@atta/typescript-config/base.json`
