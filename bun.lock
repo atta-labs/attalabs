@@ -246,6 +246,34 @@
         "vitest": "^2.1.0",
       },
     },
+    "apps/vinaya-studio/web": {
+      "name": "@atta/vinaya-studio-web",
+      "version": "0.1.0",
+      "dependencies": {
+        "@atta/aeg-core": "workspace:*",
+        "@atta/aeg-forge-state": "workspace:*",
+        "@atta/cms": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
+        "@atta/ui": "workspace:*",
+        "@octokit/graphql": "^8.1.1",
+        "@tailwindcss/postcss": "^4.0.0",
+        "lucide-react": "^1.7.0",
+        "next": "^16.2.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-markdown": "^10.1.0",
+        "remark-gfm": "^4.0.1",
+        "tailwindcss": "^4.0.0",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
+      },
+    },
     "apps/vinaya/sources": {
       "name": "@atta/vinaya-sources",
       "version": "0.0.1",
@@ -765,6 +793,8 @@
     "@atta/vinaya-portal-web": ["@atta/vinaya-portal-web@workspace:apps/vinaya-portal/web"],
 
     "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
+
+    "@atta/vinaya-studio-web": ["@atta/vinaya-studio-web@workspace:apps/vinaya-studio/web"],
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 
@@ -4267,6 +4297,8 @@
     "@atta/vada-ai-web/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "@atta/vinaya-portal-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
+
+    "@atta/vinaya-studio-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
     "@atta/vinaya-web/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
