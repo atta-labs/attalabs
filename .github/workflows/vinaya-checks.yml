@@ -53,6 +53,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # Adopter-declared CI setup (vinaya.config.json `ci.setup`), emitted
+      # verbatim. It prepares this repository's OWN custom checks — scripts
+      # committed here that may import this repository's code — which the
+      # `npx` invocation below cannot do: npx prepares only vinaya itself.
+      # The command is repo-committed, reviewed config; under `pull_request`
+      # the workflow definition is already controlled by the pull request, so
+      # this step adds no trust surface that did not already exist.
+      - name: Adopter CI setup
+        run: |
+          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
       - name: Run checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

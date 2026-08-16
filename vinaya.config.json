@@ -11,6 +11,9 @@
       "timeoutMs": 30000
     }
   },
+  "ci": {
+    "setup": "npm install -g bun && bun install --frozen-lockfile --ignore-scripts"
+  },
   "briefSchema": {
     "pr": {
       "sections": [
