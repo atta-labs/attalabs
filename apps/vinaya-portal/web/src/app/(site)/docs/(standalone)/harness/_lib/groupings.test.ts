@@ -1,4 +1,4 @@
-import type { DiagramModel, DiagramNode } from '@atta/aeg-core'
+import type { DiagramModel, DiagramNode } from '@attalabs/aeg-core'
 import { describe, expect, it } from 'vitest'
 import { deriveGroups } from './groupings'
 

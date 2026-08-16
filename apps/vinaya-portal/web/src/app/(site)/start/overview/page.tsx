@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 /** The conceptual introduction to Ship with Vinaya: the noun vocabulary and
  * the loop composition, moved unchanged from the old `/start` landing (which
  * now redirects to `/start/quick`). Same reasoning as `/roadmap`: no forge
- * dependency, no `@atta/aeg-core` import, so it stays live in prod. */
+ * dependency, no `@attalabs/aeg-core` import, so it stays live in prod. */
 export default function StartOverviewPage() {
   return (
     <article className='flex flex-col gap-10'>

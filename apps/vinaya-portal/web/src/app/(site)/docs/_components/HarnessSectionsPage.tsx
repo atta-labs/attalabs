@@ -2,13 +2,13 @@ import { Badge, Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react'
-import type { Doc } from '@atta/aeg-core/docs'
+import type { Doc } from '@attalabs/aeg-core/docs'
 import { StickyDocHeader } from './StickyDocHeader'
 
 /**
  * A model-derived `/docs` page: a list of `#`-anchored sections, one per
  * row-sized node (a ring's gates, or the actions). Every section's heading
- * `id` is the shared slug from `@atta/aeg-core`'s `nodeDocRoute`, so a deep
+ * `id` is the shared slug from `@attalabs/aeg-core`'s `nodeDocRoute`, so a deep
  * link (`/docs/rings/ring-0#git-commit`) lands on the exact section. Content
  * is model-sourced — heading, badges, the question (`summary`), the plain
  * sentence (`detail`), and the guarded action — nothing hand-written.
@@ -26,7 +26,7 @@ export type HarnessSection = {
   detail?: string
   viewSourceHref?: string
   /** Anchor slugs this section used to publish under, from
-   * `@atta/aeg-core`'s `legacyAnchorSlugs`. A deep link built against the
+   * `@attalabs/aeg-core`'s `legacyAnchorSlugs`. A deep link built against the
    * old slug (bookmarked, or still live on another surface) must keep
    * landing here — each renders as its own empty, non-visual anchor
    * carrying the same scroll offset as the canonical heading. */

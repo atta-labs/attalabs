@@ -1,6 +1,6 @@
 import { Separator } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
-import { nodeDocHref } from '@atta/aeg-core/docs'
+import { nodeDocHref } from '@attalabs/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../../(standalone)/harness/_lib/display-label'
 import { HarnessCard } from '../../_components/HarnessCard'
 import { deriveGroups, type GroupKey } from '../../(standalone)/harness/_lib/groupings'

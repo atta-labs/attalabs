@@ -1,6 +1,6 @@
 'use client'
 
-import type { DiagramFinding, DiagramNode } from '@atta/aeg-core'
+import type { DiagramFinding, DiagramNode } from '@attalabs/aeg-core'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -120,8 +120,8 @@ const BODY_TEXT = 'font-sans text-card-foreground leading-relaxed'
 
 /**
  * Client-side orchestrator — receives already-derived `groups` as a plain
- * prop. It must never import `deriveGroups` or any other `@atta/aeg-core`
- * value directly: that barrel transitively pulls in `@atta/aeg-forge-state`'s
+ * prop. It must never import `deriveGroups` or any other `@attalabs/aeg-core`
+ * value directly: that barrel transitively pulls in `@attalabs/aeg-forge-state`'s
  * `node:child_process` usage, which Turbopack cannot bundle for the
  * browser. Derivation happens once, server-side, in `page.tsx`.
  *

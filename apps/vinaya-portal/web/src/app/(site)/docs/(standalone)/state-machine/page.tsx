@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 }
 
 // A server component, and it stays one: `loadStateMachineModel` is
-// `server-only` because `@atta/aeg-core`'s barrel reaches `node:child_process`.
+// `server-only` because `@attalabs/aeg-core`'s barrel reaches `node:child_process`.
 // The model data is passed to `StateMachineTables` (also a server component),
 // so nothing here is serialized and nothing crosses into the browser bundle.
 export default function StateMachinePage() {

@@ -10,7 +10,7 @@ import {
   SidebarProvider
 } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
-import type { DocNav } from '@atta/aeg-core/docs'
+import type { DocNav } from '@attalabs/aeg-core/docs'
 import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'

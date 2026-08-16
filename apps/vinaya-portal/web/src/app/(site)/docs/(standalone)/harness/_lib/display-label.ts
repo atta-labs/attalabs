@@ -1,8 +1,8 @@
 /**
  * Zero imports, deliberately — this file must never pull in `groupings.ts`
- * or `@atta/aeg-core`. `DiagramCanvas.tsx` and `LeafPanel.tsx` are client
+ * or `@attalabs/aeg-core`. `DiagramCanvas.tsx` and `LeafPanel.tsx` are client
  * components; importing anything that transitively touches aeg-core's
- * value exports (`ACTIONS`, `deriveGroups`, ...) drags `@atta/aeg-forge-state`'s
+ * value exports (`ACTIONS`, `deriveGroups`, ...) drags `@attalabs/aeg-forge-state`'s
  * `node:child_process` usage into the browser bundle, which Turbopack
  * cannot build (this bit the page for real once already — see
  * `DiagramExplorer.tsx`'s own doc comment on the same hazard).

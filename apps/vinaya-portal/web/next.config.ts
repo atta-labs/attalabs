@@ -11,7 +11,10 @@ export default async function config(): Promise<NextConfig> {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       return config
     },
-    transpilePackages: ['@atta/ui'],
+    // @attalabs/* packages publish raw .ts source (no build step) via their
+    // `exports` field, same as the workspace-local @atta/ui above — Turbopack
+    // refuses to compile .ts under node_modules unless listed here.
+    transpilePackages: ['@atta/ui', '@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources'],
     // The landing, /the-harness and /docs derive their content live from the
     // AEG doctrine files at request time (root layout is `force-dynamic`, the
     // house pattern). On Vercel the serverless bundle only ships what tracing

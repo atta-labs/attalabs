@@ -1,4 +1,4 @@
-import { COMMANDS } from '@atta/vinaya-sources'
+import { COMMANDS } from '@attalabs/vinaya-sources'
 import { Flex } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
 import { CliSidebar } from './_components/CliSidebar'

@@ -13,7 +13,7 @@ import {
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
-import type { Doc, DocNav } from '@atta/aeg-core/docs'
+import type { Doc, DocNav } from '@attalabs/aeg-core/docs'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 

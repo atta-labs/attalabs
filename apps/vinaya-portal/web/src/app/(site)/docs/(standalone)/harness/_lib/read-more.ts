@@ -1,12 +1,12 @@
-import type { DiagramNode } from '@atta/aeg-core'
-import { nodeDocHref } from '@atta/aeg-core/docs'
+import type { DiagramNode } from '@attalabs/aeg-core'
+import { nodeDocHref } from '@attalabs/aeg-core/docs'
 
 /**
  * Resolves the "Read more" / "View source" targets for a leaf node. `path`/
  * `line` are the GitHub source location — always present, and the sole target
  * before the docs route existed. `docRoute` is the in-app rendered doc.
  *
- * `docRoute` comes straight from `@atta/aeg-core`'s `nodeDocHref` — the one
+ * `docRoute` comes straight from `@attalabs/aeg-core`'s `nodeDocHref` — the one
  * node→`/docs` derivation the nav, the map, and this resolver all share, so a
  * deep link and a heading anchor can never disagree. It now reaches the exact
  * node at the right granularity: a gate/check lands on

@@ -1,4 +1,4 @@
-import type { DiagramNode } from '@atta/aeg-core'
+import type { DiagramNode } from '@attalabs/aeg-core'
 import { Badge } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'

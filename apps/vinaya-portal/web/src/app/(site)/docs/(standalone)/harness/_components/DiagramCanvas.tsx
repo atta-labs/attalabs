@@ -1,6 +1,6 @@
 'use client'
 
-import type { DiagramNode } from '@atta/aeg-core'
+import type { DiagramNode } from '@attalabs/aeg-core'
 import { GitBranch } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { bandCentroid, bandRingPath, CENTER, drillArcs, HUB_RADIUS, overviewBands, VIEW_SIZE } from '../_lib/geometry'

@@ -217,12 +217,12 @@
       "name": "@atta/vinaya-portal-web",
       "version": "0.1.0",
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/aeg-forge-state": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
-        "@atta/vinaya-sources": "workspace:*",
+        "@attalabs/aeg-core": "^0.8.0",
+        "@attalabs/aeg-forge-state": "^0.8.0",
+        "@attalabs/vinaya-sources": "^0.8.0",
         "@tailwindcss/postcss": "^4.0.0",
         "@vercel/analytics": "^2.0.1",
         "d3-shape": "^3.2.0",
@@ -768,7 +768,15 @@
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 
+    "@attalabs/aeg-core": ["@attalabs/aeg-core@0.8.0", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.8.0", "@attalabs/aeg-types": "0.8.0", "gray-matter": "^4.0.3" } }, "sha512-mbHOOtxE536vRkCISYdeCEFSuEJY6yOffANZC7GtZZgWOUwPXEKVkwKSQYObcniP0l69zgm1h1GM7wOwEyueoA=="],
+
+    "@attalabs/aeg-forge-state": ["@attalabs/aeg-forge-state@0.8.0", "", { "dependencies": { "@attalabs/aeg-types": "0.8.0", "@octokit/graphql": "^8.1.1" } }, "sha512-LQ8mSKveBl7M44FKXZ1sg7KOwoQNjLFQbMiArZHsCsAVLvzVLSBm28YOSxR/ifbVCJU6ZDHKK/CWP2hS3FE9lA=="],
+
+    "@attalabs/aeg-types": ["@attalabs/aeg-types@0.8.0", "", {}, "sha512-92Z8Byso+lYsTpPqO+daIrCnnxLV8fJCzfVkgaP++RlJzSJHAPK2YOR4wrYHjStXEtHSw9pUOVT7jfR2HzaZDA=="],
+
     "@attalabs/vinaya": ["@attalabs/vinaya@0.7.0", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-3MwZNy+o5gaPcM4HHysYRAesIBYUTF4vw7PpxyuTp11UgTjdq0d5EAhldxnNPAg6mNKDTQXhNMa1WJOCzprCew=="],
+
+    "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.8.0", "", { "dependencies": { "@attalabs/aeg-core": "0.8.0", "@attalabs/aeg-forge-state": "0.8.0", "@attalabs/aeg-types": "0.8.0", "zod": "3.25.76" } }, "sha512-+8Z0wG3qYN2JKPDel7ZVizSfksNl4VY8jheFyuyQyU07aoj59NdgCAIgHlOX6ZUhdbqzWBCTakUx1OFlyr8l8A=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 

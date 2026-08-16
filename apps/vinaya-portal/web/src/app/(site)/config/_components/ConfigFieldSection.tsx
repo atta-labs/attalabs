@@ -1,4 +1,4 @@
-import type { ConfigField } from '@atta/vinaya-sources'
+import type { ConfigField } from '@attalabs/vinaya-sources'
 import { Badge, CodeBlock } from '@atta/ui/components'
 import { Heading } from '@atta/ui/shared'
 import { FieldProse } from './FieldProse'

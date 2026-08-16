@@ -1,4 +1,4 @@
-import type { Doc } from '@atta/aeg-core/docs'
+import type { Doc } from '@attalabs/aeg-core/docs'
 
 function flattenDoc(doc: Doc): Doc[] {
   return [doc, ...(doc.children ?? []).flatMap(flattenDoc)]

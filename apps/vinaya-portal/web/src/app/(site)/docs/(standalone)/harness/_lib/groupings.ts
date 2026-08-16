@@ -1,4 +1,4 @@
-import type { DiagramModel, DiagramNode, RenderState } from '@atta/aeg-core'
+import type { DiagramModel, DiagramNode, RenderState } from '@attalabs/aeg-core'
 
 /**
  * The six interactive rings, outermost to innermost — matches Issue #508's

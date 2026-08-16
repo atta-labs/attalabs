@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { nestDocChildren } from './nest-doc-children'
-import type { Doc } from '@atta/aeg-core/docs'
+import type { Doc } from '@attalabs/aeg-core/docs'
 
 function makeDoc(slug: string, parentSlug?: string): Doc {
   return {

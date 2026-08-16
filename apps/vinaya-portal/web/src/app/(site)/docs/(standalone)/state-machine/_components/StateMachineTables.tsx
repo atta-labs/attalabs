@@ -6,7 +6,7 @@ import type { StateMachineModel } from '../_lib/load-state-machine'
 /**
  * The four tables of the state machine, rendered from the model arrays — one
  * row per element, every column a real field. NOT a client component, and it
- * must never become one: it holds `@atta/aeg-core`-sourced data, and a
+ * must never become one: it holds `@attalabs/aeg-core`-sourced data, and a
  * `'use client'` here would drag that package (and `node:child_process` behind
  * it) into the browser bundle. Keeping the data server-side also means it
  * never has to be serialized.
