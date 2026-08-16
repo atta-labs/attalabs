@@ -123,7 +123,24 @@ jobs:
           # vacuously regardless of the PR's real content, on every run.
           PR_BODY: \${{ github.event.pull_request.body }}
           BRANCH: \${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya check --all --diff-only
+        # pipefail: without it the tee would mask the check runner's exit
+        # code and a red suite would report green (the default shell here is
+        # \`bash -e\` WITHOUT pipefail).
+        run: |
+          set -o pipefail
+          npx --yes @attalabs/vinaya check --all --diff-only | tee vinaya-check-output.txt
+      # Which check failed, readable on the run's Summary page without
+      # opening the log — the one line "vinaya check --all --diff-only:
+      # failing" names no check. Runs on failure too (when it matters most).
+      - name: Per-check summary
+        if: always()
+        run: |
+          {
+            echo '### vinaya check --all --diff-only'
+            echo '~~~'
+            cat vinaya-check-output.txt 2>/dev/null || echo 'no check output captured (runner did not start)'
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
 `
 }
 

@@ -379,6 +379,13 @@ describe('workflows', () => {
     // A body-only edit must re-trigger the checks workflow so test-plan/
     // closes-n re-evaluate against the corrected body (#870).
     expect(checks).toContain('edited')
+    // Per-check step summary: the job name alone ("vinaya check --all
+    // --diff-only: failing") names no check, so the run's Summary page must
+    // carry the per-check output. pipefail guards the tee that captures it —
+    // without it a red suite would report green.
+    expect(checks).toContain('GITHUB_STEP_SUMMARY')
+    expect(checks).toContain('set -o pipefail')
+    expect(checks).toContain('if: always()')
   })
 })
 
