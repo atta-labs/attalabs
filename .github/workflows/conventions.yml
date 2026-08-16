@@ -1,0 +1,146 @@
+name: "Vinaya: Conventions"
+
+# Successor to forge-lifecycle.yml's consolidated "AEG gate suite" job,
+# split when attalabs adopted the published Vinaya CLI as an ordinary
+# adopter. The AEG gate steps that job carried —
+# Closes #N, coherence oracle (blocking), single-plan-PR guard, test-plan,
+# waiver-actor resolution, doc gate C0–C5, no-disk-state, G-checks, brief
+# validation (blocking) — now run from the published CLI in the managed
+# vinaya-checks.yml (`vinaya check --all --diff-only`), which is the required
+# check. Two things deliberately stay here, because the managed workflow is
+# read-only by design and the published registry does not carry repo-local
+# conventions:
+#
+#   1. Conventions that bind every writer (GitHub API/MCP writes, direct
+#      pushes, hand-merges), mirrored from the local hooks: Biome
+#      lint/format, commit-message format, forbidden colors.
+#   2. The labeling side effects the read-only managed workflow cannot
+#      perform: `vinaya/incoherent` on A1 coherence failures and
+#      `vinaya/needs:brief-correction` on brief-validation failures. Both
+#      evaluations run here NON-BLOCKING — the same predicates gate the
+#      merge from vinaya-checks.yml; this job only converts their findings
+#      into labels. A step failure in either never reddens this job.
+#
+# The consolidation rationale is inherited from forge-lifecycle.yml (billing:
+# GitHub bills per-job rounded up to a minute; one checkout/setup/install
+# amortized across all steps). Original per-check history lives in git
+# history of .github/workflows/forge-lifecycle.yml.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  conventions:
+    name: Conventions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # issues: write — the vinaya/incoherent label lands on Issues.
+      issues: write
+      # pull-requests: write — the vinaya/needs:brief-correction label lands
+      # on the PR.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ── Biome lint/format ───────────────────────────────────────────────
+      # Mirrors the local .husky/pre-commit enforcement (bun run check) into
+      # CI so it binds every writer — same Biome config, identical gate.
+      - name: Biome lint/format
+        if: ${{ !cancelled() }}
+        run: bun run format-and-lint
+
+      # ── Commit-message format ───────────────────────────────────────────
+      # Reuses commitlint.config.js — the same rules Husky enforces locally,
+      # so local and CI cannot diverge on commit format.
+      - name: Commit-message format
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bunx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+      # ── Forbidden colors (UI) ───────────────────────────────────────────
+      # Diff-scoped: scans only the added lines in changed UI files. Encodes
+      # the patterns documented in .claude/skills/ui-theme-tokens/SKILL.md.
+      # Designed to under-match rather than over-match — pre-existing
+      # violations elsewhere are intentionally not flagged.
+      - name: Forbidden colors (UI)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bun scripts/check-forbidden-colors.ts --pr
+      # ── Labeling: coherence A1 → vinaya/incoherent ──────────────────────
+      # Non-blocking by construction: the oracle runs under `set +e` and only
+      # its JSON output is consumed. The BLOCKING coherence verdict lives in
+      # vinaya-checks.yml; this pair exists solely to label A1 issues, which
+      # the read-only managed workflow cannot do. Repo-state reads come from
+      # a freshly-fetched origin/main via PR_HEAD_SHA/PR_TOUCHED_FILES, not
+      # the checkout's merge-ref (see forge-lifecycle.yml history).
+      - name: Resolve this PR's touched files (coherence input)
+        id: pr_files
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          files=$(gh pr view "${{ github.event.pull_request.number }}" --json files -q '.files[].path')
+          {
+            echo "files<<PR_FILES_EOF"
+            echo "$files"
+            echo "PR_FILES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run coherence oracle (JSON mode, non-blocking)
+        id: oracle
+        if: ${{ !cancelled() && steps.pr_files.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.head_ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TOUCHED_FILES: ${{ steps.pr_files.outputs.files }}
+        run: |
+          set +e
+          bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Apply vinaya/incoherent label to A1 failures
+        if: ${{ !cancelled() && steps.oracle.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          jq -r '[.checks[] | select(.check == "A1") | .failures[]?.issue | select(. != null)] | unique[]' \
+            /tmp/coherence.json 2>/dev/null | while read -r num; do
+            gh issue edit "$num" --add-label "vinaya/incoherent" || true
+          done
+
+      # ── Labeling: brief validation → vinaya/needs:brief-correction ──────
+      # continue-on-error keeps this job green on a brief failure — the
+      # blocking brief-shape verdict lives in vinaya-checks.yml. This step
+      # exists solely to feed the label below.
+      - name: Brief Validation (non-blocking, feeds label)
+        id: verify_brief
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+        run: bun packages/aeg-core/bin/verify-brief.ts
+
+      - name: Apply vinaya/needs:brief-correction label on failure
+        if: ${{ !cancelled() && steps.verify_brief.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label "vinaya/needs:brief-correction"

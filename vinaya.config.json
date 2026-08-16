@@ -14,23 +14,76 @@
   "briefSchema": {
     "pr": {
       "sections": [
-        { "builtin": "tier" },
-        { "builtin": "testPlan" },
-        { "builtin": "testPlanExclusivity" },
-        { "builtin": "principalPlaceholder" },
-        { "builtin": "surfaceMap" },
-        { "builtin": "docUpdateList" },
-        { "builtin": "worktreeStep0" },
-        { "builtin": "stopConditions" },
-        { "builtin": "autonomyClause" },
-        { "builtin": "project" },
-        { "builtin": "for" },
-        { "builtin": "closesN" },
-        { "builtin": "premiseCoverage" }
+        {
+          "builtin": "tier"
+        },
+        {
+          "builtin": "testPlan"
+        },
+        {
+          "builtin": "testPlanExclusivity"
+        },
+        {
+          "builtin": "principalPlaceholder"
+        },
+        {
+          "builtin": "surfaceMap"
+        },
+        {
+          "builtin": "docUpdateList"
+        },
+        {
+          "builtin": "worktreeStep0"
+        },
+        {
+          "builtin": "stopConditions"
+        },
+        {
+          "builtin": "autonomyClause"
+        },
+        {
+          "builtin": "project"
+        },
+        {
+          "builtin": "for"
+        },
+        {
+          "builtin": "closesN"
+        },
+        {
+          "builtin": "premiseCoverage"
+        }
       ]
     },
     "issue": {
-      "sections": [{ "builtin": "issueRationale" }]
+      "sections": [
+        {
+          "builtin": "issueRationale"
+        }
+      ]
     }
+  },
+  "managed": {
+    "version": 2,
+    "files": [
+      ".github/workflows/vinaya-checks.yml",
+      ".github/workflows/vinaya-review.yml",
+      ".github/workflows/vinaya-review-verdict.yml",
+      ".github/workflows/vinaya-archivist.yml",
+      "VINAYA.md"
+    ],
+    "blocks": [
+      {
+        "path": ".husky/pre-commit",
+        "marker": "pre-commit",
+        "comment": "hash"
+      },
+      {
+        "path": ".husky/pre-push",
+        "marker": "pre-push",
+        "comment": "hash"
+      }
+    ],
+    "labels": []
   }
 }

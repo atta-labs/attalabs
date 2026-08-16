@@ -125,6 +125,8 @@ Each product carries its own `CLAUDE.md` (overview) and `README.md`. Start there
 
 ## 📄 License
 
-The **Vinaya CLI** (`apps/vinaya/cli`) and **`@atta/aeg-core`** are licensed under
-[Apache-2.0](apps/vinaya/cli/LICENSE). All other code in this repository is
+The **Vinaya CLI** (`@attalabs/vinaya`, developed in the standalone
+[atta-labs/vinaya](https://github.com/atta-labs/vinaya) repository and installed
+here from npm) and **`@atta/aeg-core`** are licensed under
+[Apache-2.0](packages/aeg-core/LICENSE). All other code in this repository is
 source-available for reading but all rights reserved — no license granted.

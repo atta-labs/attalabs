@@ -12,3 +12,9 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then
 fi
 
 bun run check
+
+# >>> vinaya:managed:pre-commit >>>
+# Vinaya commit-time gate. Runs the deterministic checks over your staged
+# diff before the commit lands.
+npx --yes @attalabs/vinaya@0.6.0 check --all --diff-only --local || exit 1
+# <<< vinaya:managed:pre-commit <<<

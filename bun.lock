@@ -7,6 +7,7 @@
         "zod": "3.25.76",
       },
       "devDependencies": {
+        "@attalabs/vinaya": "0.6.0",
         "@biomejs/biome": "^2.0.0",
         "@commitlint/cli": "^19.0.0",
         "husky": "^9.0.0",
@@ -243,24 +244,6 @@
         "@types/react-dom": "^19.0.0",
         "typescript": "^5.7.0",
         "vitest": "^2.1.0",
-      },
-    },
-    "apps/vinaya/cli": {
-      "name": "@attalabs/vinaya",
-      "version": "0.4.6",
-      "bin": {
-        "vinaya": "./dist/index.js",
-      },
-      "dependencies": {
-        "gray-matter": "^4.0.3",
-        "zod": "3.25.76",
-      },
-      "devDependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/typescript-config": "workspace:*",
-        "@atta/vinaya-sources": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5.5.0",
       },
     },
     "apps/vinaya/sources": {
@@ -785,7 +768,7 @@
 
     "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 
-    "@attalabs/vinaya": ["@attalabs/vinaya@workspace:apps/vinaya/cli"],
+    "@attalabs/vinaya": ["@attalabs/vinaya@0.6.0", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-RXGtviUoUBaz9rgPGjr2uNdssOlbIhPKK3BIWKP0UolStsJIluVKNz9WMgbTB5yg9pAiwS0SMtb6q9gkw2Hk+Q=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 

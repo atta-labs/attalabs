@@ -115,13 +115,13 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # 97-spec universe).
 
 # ── env-allowlist warn release, task 2 (#775, 2026-08-08) ─────────────────
-# Command surface behavior lives in the shared COMMANDS registry, not the CLI
-# package itself; config schema/grammar changes belong in the product spec;
-# the core check registry's env audit is an enforcement-doctrine fact.
-
-apps/vinaya/cli/src/commands/**                       apps/vinaya/sources/src/commands.ts
-apps/vinaya/cli/src/lib/config.ts                     apps/vinaya/specs/vinaya-spec.md
-apps/vinaya/cli/src/checks/registry.ts                aeg-root/enforcement.md
+# The vendored CLI workspace (apps/vinaya/cli) was deleted when attalabs
+# adopted the published @attalabs/vinaya from npm; its three narrow bindings
+# (commands/** → sources' COMMANDS registry, lib/config.ts → the product
+# spec, checks/registry.ts → enforcement doctrine) went with it — the CLI's
+# canonical source and its doc couplings live in the standalone
+# atta-labs/vinaya repository now. A binding whose glob names a deleted tree
+# can only ever fire on the deletion diff itself, then never again.
 
 # ── governance-skill-coverage residual, task 5 (#678, 2026-08-08) ─────────
 # apps/vinaya's residual (web/**, sources/**, and the rest of cli/** beyond
@@ -138,8 +138,3 @@ apps/vinaya/cli/src/checks/registry.ts                aeg-root/enforcement.md
 
 apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
 
-# ── resolver + vinaya check --plan, task 4 (#777, 2026-08-08) ─────────────
-# The resolver's namespace grammar and FAIL_CLOSED refusal are an
-# enforcement-doctrine fact, same discipline as the env-allowlist block above.
-
-apps/vinaya/cli/src/checks/resolver.ts                aeg-root/enforcement.md

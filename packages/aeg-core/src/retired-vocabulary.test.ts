@@ -186,7 +186,12 @@ const PATTERN_SCOPE: Record<string, string[]> = {
   [FORGE_NUMBER_PATTERN]: ['aeg-root'],
   [TRANCHE_SLUG_VN_PATTERN]: [
     'aeg-root',
-    'apps/vinaya/cli/src',
+    // `apps/vinaya/cli/src` and `apps/vinaya/cli/README.md` were in this
+    // scope until the vendored CLI workspace was deleted (attalabs now
+    // installs the published `@attalabs/vinaya` from npm; the canonical
+    // source lives in the standalone atta-labs/vinaya repo). A path that
+    // does not exist makes the whole grep exit 2 and fail every pattern,
+    // so they must not linger here after the deletion.
     '.claude/skills',
     '.github/workflows',
     '.vinaya',
@@ -196,7 +201,6 @@ const PATTERN_SCOPE: Record<string, string[]> = {
     // legitimate test data, the same false-positive class ['.'] produced).
     'apps/vinaya/CLAUDE.md',
     'apps/vinaya/README.md',
-    'apps/vinaya/cli/README.md',
     'apps/vinaya/sources/README.md',
     'apps/vinaya/specs',
     'apps/vinaya/web/CLAUDE.md',
