@@ -19,7 +19,7 @@ apps/vinaya/
 ├── sources/    @atta/vinaya-sources — the StateSource/DoctrineSource adapters + COMMANDS registry
 ├── web/        @atta/vinaya-web — the marketing site + local Vinaya Studio dashboard
 └── specs/      vinaya-spec.md — the web-surface spec (routes, Pages table); CLI/check-engine/config/
-              install-lifecycle content moved to atta-labs/vinaya with the code (task 5, #932)
+              install-lifecycle content moved to atta-labs/vinaya with the code
 ```
 
 The vendored-copy deletion is load-bearing, not housekeeping: `init` detects a workspace
@@ -156,7 +156,7 @@ Something existing on disk under `apps/vinaya/cli` does not mean it reaches an a
 
 ## When you need more context
 
-- `apps/vinaya/specs/vinaya-spec.md` — this repo's web-surface spec: route-by-route status, the Pages table, CMS/theming. The CLI/engine chapters (check engine, configuration architecture, install lifecycle, forge writes, `StateSource`, `DiagramModel` derivation) moved to `atta-labs/vinaya` with the code they describe (task 5, #932) — read the source there, since no prose mirror of those chapters exists yet
+- `apps/vinaya/specs/vinaya-spec.md` — this repo's web-surface spec: route-by-route status, the Pages table, CMS/theming. The CLI/engine chapters (check engine, configuration architecture, install lifecycle, forge writes, `StateSource`, `DiagramModel` derivation) moved to `atta-labs/vinaya` with the code they describe — read the source there, since no prose mirror of those chapters exists yet
 - `apps/vinaya/CLAUDE.md` — the short surface-status summary
 - **aeg-core** skill — the pure evaluators every `vinaya check` core adapter wraps
 - **aeg-forge-state** skill — what `createForgeSource` actually derives from
