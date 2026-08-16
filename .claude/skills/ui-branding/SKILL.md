@@ -34,14 +34,18 @@ Sanity CMS — branding document (one per product)
 
 ### Document IDs (fixed, predictable)
 
-| Product  | Document `_id`       | Sanity Project |
-|----------|----------------------|----------------|
-| Herald   | `branding-herald`    | `e9gbd2d1`     |
-| Attā     | `branding-atta`      | `892o2m9f`     |
-| Vādā     | `branding-vada`      | `ofnj2ojb`     |
-| Vinaya   | `branding-vinaya`    | `o56nzgrr`     |
+| Product        | Document `_id`           | Sanity Project |
+|----------------|--------------------------|----------------|
+| Herald         | `branding-herald`        | `e9gbd2d1`     |
+| Attā           | `branding-atta`          | `892o2m9f`     |
+| Vādā           | `branding-vada`          | `ofnj2ojb`     |
+| Vinaya         | `branding-vinaya`        | `o56nzgrr`     |
+| Vinaya Portal  | `branding-vinayaPortal`  | `o56nzgrr`     |
+| Vinaya Studio  | `branding-vinayaStudio`  | `o56nzgrr`     |
 
 The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs.
+
+Vinaya Portal and Vinaya Studio share Vinaya's project — they are additional product documents inside it, not new Sanity projects. No app calls `getProductBranding('vinayaPortal' | 'vinayaStudio')` yet; both apps still borrow `vinaya`'s branding. The two documents were seeded with values identical to `branding-vinaya`'s (same logos, same identity text) so that adopting either key later changes nothing about what renders — any visual divergence becomes a decision for whichever task repoints a call site at its own key.
 
 ### Asset Storage
 
@@ -77,14 +81,14 @@ const [atta, vada, vinaya] = await Promise.all([
 ])
 ```
 
-Reads hit the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'attalabs'`.
+Reads hit the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'`.
 
 Returned shape — all asset fields include a resolved `url` string:
 
 ```ts
 interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vinaya'
+  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'
   productName: string
   paliRoot?: string
   paliMeaning?: string

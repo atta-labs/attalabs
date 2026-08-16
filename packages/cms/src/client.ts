@@ -18,12 +18,20 @@ export const cmsConfig = {
  * Sanity project IDs for every Atta AI product. Public identifiers — safe to
  * commit, and identical in every environment. Use {@link createProductClient}
  * to target any of them.
+ *
+ * `vinayaPortal` and `vinayaStudio` deliberately share `vinaya`'s project id:
+ * they are two additional product documents inside the same Sanity project,
+ * not new projects. No app reads either key yet — both still pass `vinaya`
+ * to `getProductCms` — so registering them here changes nothing any app
+ * renders until a later change repoints a call site at its own key.
  */
 export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
   atta: '892o2m9f',
   vada: 'ofnj2ojb',
   vinaya: 'o56nzgrr',
+  vinayaPortal: 'o56nzgrr',
+  vinayaStudio: 'o56nzgrr',
   attalabs: 'l5n0n8nn'
 } as const
 

@@ -26,6 +26,8 @@ bun run dev:vinaya-portal    # port 3007, falls back to 3107
 
 The product key is `'vinaya'` — unchanged from the original app, in all three call sites (`next.config.ts`'s `generateUIIndex`, `scripts/generate-ui.ts`, and the root layout's two `getProductCms` calls). Portal is still the Vinaya product; changing the key silently re-themes the app.
 
+**Provisional.** `@atta/cms` now also registers a `vinayaPortal` product key — its own `vinayaPortalConfig`/`branding-vinayaPortal` documents, seeded identical to `vinaya`'s so nothing renders differently today (see `.claude/skills/ui-cms-theme/SKILL.md`). None of the three call sites above have been repointed at it; that repoint is a separate, later change. Until it happens, treat every line above as accurate.
+
 ## Repo-root resolution
 
 Two modules walk up from `process.cwd()` for a marker file: `src/lib/github-links.ts` (`vinaya.config.json`) and `src/lib/docs/load-aeg-docs.ts` (the `aeg-root` directory). Both markers are declared in `next.config.ts`'s `outputFileTracingIncludes`.

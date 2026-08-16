@@ -38,7 +38,39 @@ export default defineConfig({
                     .child(S.document().schemaType('vinayaConfig').documentId('vinayaConfig').title('Vinaya Config')),
                   S.listItem()
                     .title('Branding')
-                    .child(S.document().schemaType('branding').documentId('branding-vinaya').title('Vinaya Branding'))
+                    .child(S.document().schemaType('branding').documentId('branding-vinaya').title('Vinaya Branding')),
+                  S.listItem()
+                    .title('Vinaya Portal Config')
+                    .child(
+                      S.document()
+                        .schemaType('vinayaPortalConfig')
+                        .documentId('vinayaPortalConfig')
+                        .title('Vinaya Portal Config')
+                    ),
+                  S.listItem()
+                    .title('Vinaya Portal Branding')
+                    .child(
+                      S.document()
+                        .schemaType('branding')
+                        .documentId('branding-vinayaPortal')
+                        .title('Vinaya Portal Branding')
+                    ),
+                  S.listItem()
+                    .title('Vinaya Studio Config')
+                    .child(
+                      S.document()
+                        .schemaType('vinayaStudioConfig')
+                        .documentId('vinayaStudioConfig')
+                        .title('Vinaya Studio Config')
+                    ),
+                  S.listItem()
+                    .title('Vinaya Studio Branding')
+                    .child(
+                      S.document()
+                        .schemaType('branding')
+                        .documentId('branding-vinayaStudio')
+                        .title('Vinaya Studio Branding')
+                    )
                 ])
             : isAttalabs
               ? S.list()
