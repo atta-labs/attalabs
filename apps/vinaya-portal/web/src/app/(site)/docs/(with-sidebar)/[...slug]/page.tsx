@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { ACTIONS, type DiagramModel, type DiagramNode } from '@atta/aeg-core'
+import { ACTIONS, type DiagramModel, type DiagramNode } from '@attalabs/aeg-core'
 import {
   findDoc,
   getNextDoc,
@@ -8,7 +8,7 @@ import {
   legacyAnchorSlugs,
   nodeDocRoute,
   publishedDoctrineBody
-} from '@atta/aeg-core/docs'
+} from '@attalabs/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../../(standalone)/harness/_lib/display-label'
 import { loadDiagramModel } from '../../(standalone)/harness/_lib/load-diagram'
 import { githubBlobUrl } from '@/lib/github-links'

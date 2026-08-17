@@ -1,4 +1,4 @@
-import type { DiagramNode } from '@atta/aeg-core'
+import type { DiagramNode } from '@attalabs/aeg-core'
 import { describe, expect, it } from 'vitest'
 import { readMoreTarget } from './read-more'
 

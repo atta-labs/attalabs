@@ -1,4 +1,4 @@
-import { CONFIG_REFERENCE, PLAN_JSON_SCHEMA } from '@atta/vinaya-sources'
+import { CONFIG_REFERENCE, PLAN_JSON_SCHEMA } from '@attalabs/vinaya-sources'
 import { Badge, Code, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 /**
- * Renders `CONFIG_REFERENCE` (`@atta/vinaya-sources`), an AUTHORED registry —
+ * Renders `CONFIG_REFERENCE` (`@attalabs/vinaya-sources`), an AUTHORED registry —
  * NOT a Zod introspection of `VinayaConfigSchema` (that schema documents
  * shape only, zero `.describe()` calls). `apps/vinaya/cli/tests/checks/
  * config-reference-coverage.test.ts` is what proves this page can never

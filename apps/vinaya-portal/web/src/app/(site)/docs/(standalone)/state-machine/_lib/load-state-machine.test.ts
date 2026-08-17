@@ -1,5 +1,5 @@
-import { DERIVABLE_STATUSES, DERIVATION_RULES, DERIVED_STATUSES, FORGE_FACT_INPUTS } from '@atta/aeg-core'
-import { LABELS } from '@atta/aeg-forge-state/labels'
+import { DERIVABLE_STATUSES, DERIVATION_RULES, DERIVED_STATUSES, FORGE_FACT_INPUTS } from '@attalabs/aeg-core'
+import { LABELS } from '@attalabs/aeg-forge-state/labels'
 import { describe, expect, it, vi } from 'vitest'
 
 // `server-only` throws unconditionally on plain import — Next's bundler

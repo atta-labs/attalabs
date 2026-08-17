@@ -1,4 +1,4 @@
-import { COMMANDS } from '@atta/vinaya-sources'
+import { COMMANDS } from '@attalabs/vinaya-sources'
 import { Badge, Code } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { getPublishedVersion } from '@/lib/published-version'

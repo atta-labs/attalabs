@@ -1,4 +1,4 @@
-import type { DiagramFinding } from '@atta/aeg-core'
+import type { DiagramFinding } from '@attalabs/aeg-core'
 import { Text } from '@atta/ui/shared'
 import { AlertTriangle } from 'lucide-react'
 

@@ -22,8 +22,8 @@ import { Heading, Text } from '@atta/ui/shared'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react'
-import { stripLeadingH1 } from '@atta/aeg-core/docs'
-import type { Doc } from '@atta/aeg-core/docs'
+import { stripLeadingH1 } from '@attalabs/aeg-core/docs'
+import type { Doc } from '@attalabs/aeg-core/docs'
 import { StickyDocHeader } from './StickyDocHeader'
 
 export type DocPageProps = {

@@ -1,6 +1,6 @@
 import 'server-only'
-import { deriveDiagramModel, type DiagramModel } from '@atta/aeg-core'
-import { createFileDoctrineSource } from '@atta/vinaya-sources'
+import { deriveDiagramModel, type DiagramModel } from '@attalabs/aeg-core'
+import { createFileDoctrineSource } from '@attalabs/vinaya-sources'
 import { findAegRoot } from '@/lib/github-links'
 
 /**

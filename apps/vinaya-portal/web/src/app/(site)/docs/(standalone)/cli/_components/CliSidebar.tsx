@@ -1,6 +1,6 @@
 'use client'
 
-import type { Command } from '@atta/vinaya-sources'
+import type { Command } from '@attalabs/vinaya-sources'
 import {
   ChromeFrame,
   SidebarContent,

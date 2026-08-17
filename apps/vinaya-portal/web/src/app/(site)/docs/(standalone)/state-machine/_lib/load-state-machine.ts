@@ -7,20 +7,20 @@ import {
   type DerivedStatus,
   FORGE_FACT_INPUTS,
   type ForgeFactInput
-} from '@atta/aeg-core'
-import { type Label, LABELS } from '@atta/aeg-forge-state/labels'
+} from '@attalabs/aeg-core'
+import { type Label, LABELS } from '@attalabs/aeg-forge-state/labels'
 
 /**
  * Build-time data spine for `/docs/state-machine`: the four datasets the page
  * renders, read straight off the code-owned model. Unlike `/docs/harness`'s
  * loader there is no doctrine source and no derivation — these are static
  * exports, so this is a passthrough whose only real job is the SERVER
- * BOUNDARY: `@atta/aeg-core`'s barrel reaches `@atta/aeg-forge-state`'s
+ * BOUNDARY: `@attalabs/aeg-core`'s barrel reaches `@attalabs/aeg-forge-state`'s
  * `gh.ts` and therefore `node:child_process`, which Turbopack refuses to
  * bundle for the browser. `import 'server-only'` makes that a build error at
  * the first client import rather than a mystery chunk failure, which is why it
  * is here and not merely a convention. Anything client-side that needs the
- * label vocabulary imports `@atta/aeg-forge-state/labels` (the pure subpath)
+ * label vocabulary imports `@attalabs/aeg-forge-state/labels` (the pure subpath)
  * directly — never this module, and never the barrel.
  *
  * `DerivationRule.matches` is deliberately dropped on the way out: it is a

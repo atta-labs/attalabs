@@ -14,7 +14,7 @@ export const metadata = {
 export default async function HowItWorksPage() {
   const model = await loadDiagramModel()
   // Derived server-side and passed as plain props — DiagramExplorer is a
-  // client component that must never import @atta/aeg-core's value exports,
+  // client component that must never import @attalabs/aeg-core's value exports,
   // @/lib/github-links, or @/lib/docs/load-aeg-docs (all server-only, reading
   // node:fs), directly (see DiagramExplorer.tsx's and LeafPanel.tsx's own
   // doc comments for why).

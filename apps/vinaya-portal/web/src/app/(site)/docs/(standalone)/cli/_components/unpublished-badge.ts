@@ -1,4 +1,4 @@
-import type { Command } from '@atta/vinaya-sources'
+import type { Command } from '@attalabs/vinaya-sources'
 import type { PublishedVersion } from '@/lib/published-version'
 
 /**

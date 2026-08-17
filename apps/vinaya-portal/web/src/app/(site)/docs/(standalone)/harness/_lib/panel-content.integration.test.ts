@@ -1,6 +1,6 @@
 import path from 'node:path'
-import { deriveDiagramModel } from '@atta/aeg-core'
-import { createFileDoctrineSource } from '@atta/vinaya-sources'
+import { deriveDiagramModel } from '@attalabs/aeg-core'
+import { createFileDoctrineSource } from '@attalabs/vinaya-sources'
 import { describe, expect, it, vi } from 'vitest'
 
 // `server-only` throws unconditionally on plain import — Next's bundler
