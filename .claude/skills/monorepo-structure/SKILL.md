@@ -101,7 +101,7 @@ The old engine directories — `packages/aeg-core`, `packages/aeg-forge-state`, 
 
 ### Workspace membership is enumerated, not globbed
 
-Root `workspaces` lists `apps/*` and `packages/*` members **one by one** instead of using `apps/*/*` + `packages/*`. Two globs remain (`apps/*/*/*`, `packages/*/*`, `tools/*`) because they match nothing that must be excluded.
+Root `workspaces` lists `apps/*` and `packages/*` members **one by one** instead of using `apps/*/*` + `packages/*`. Three globs remain: `packages/*/*` (the four `packages/agents/*` members) and `tools/*` (one member) match only kept packages, and `apps/*/*/*` matches nothing in the repo today — it is retained as-is because narrowing it is not this change's job.
 
 The enumeration is load-bearing, for one mechanical reason: **Bun 1.2.14 silently ignores `!`-prefixed negation entries in `workspaces`.** Adding `"!packages/aeg-core"` alongside `"packages/*"` produces no error, no warning, and no change — `bun install --force` still writes `packages/aeg-core` into `bun.lock`'s `workspaces` map. A glob-plus-negation exclusion therefore *looks* correct in the diff while changing nothing. Enumeration is the only form that provably excludes a path, and it also makes the exclusion visible: a reader sees which directories are members without evaluating a glob.
 
