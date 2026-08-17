@@ -289,40 +289,6 @@
         "typescript": "^5.7.0",
       },
     },
-    "apps/vinaya/web": {
-      "name": "@atta/vinaya-web",
-      "version": "0.1.0",
-      "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/aeg-forge-state": "workspace:*",
-        "@atta/auth": "workspace:*",
-        "@atta/cms": "workspace:*",
-        "@atta/instrumentation": "workspace:*",
-        "@atta/ui": "workspace:*",
-        "@atta/vinaya-sources": "workspace:*",
-        "@octokit/graphql": "^8.1.1",
-        "@tailwindcss/postcss": "^4.0.0",
-        "@vercel/analytics": "^2.0.1",
-        "d3-shape": "^3.2.0",
-        "lucide-react": "^1.7.0",
-        "next": "^16.2.1",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
-        "react-markdown": "^10.1.0",
-        "remark-gfm": "^4.0.1",
-        "simple-icons": "^14.0.0",
-        "tailwindcss": "^4.0.0",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "@types/d3-shape": "^3.1.0",
-        "@types/node": "^22.0.0",
-        "@types/react": "^19.0.0",
-        "@types/react-dom": "^19.0.0",
-        "typescript": "^5.7.0",
-        "vitest": "^2.1.0",
-      },
-    },
     "packages/adapter-langgraph": {
       "name": "@atta/adapter-langgraph",
       "version": "0.0.1",
@@ -793,8 +759,6 @@
     "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
     "@atta/vinaya-studio-web": ["@atta/vinaya-studio-web@workspace:apps/vinaya-studio/web"],
-
-    "@atta/vinaya-web": ["@atta/vinaya-web@workspace:apps/vinaya/web"],
 
     "@attalabs/aeg-core": ["@attalabs/aeg-core@0.8.1", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.8.1", "@attalabs/aeg-types": "0.8.1", "gray-matter": "^4.0.3" } }, "sha512-BfzEPTBQy60tOraYud3THQzqTy7PLieu4dMcfWUPOrJTFk65FuF3zKkfhNKQeaXeqBlInjmsUO6l9WUhXxNL1A=="],
 
@@ -4143,8 +4107,6 @@
     "@atta/vinaya-portal-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
     "@atta/vinaya-studio-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
-
-    "@atta/vinaya-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 

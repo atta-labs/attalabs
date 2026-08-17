@@ -1,12 +1,12 @@
 import net from 'node:net'
 import { spawn } from 'node:child_process'
 
-// Portal owns 3007/3107, distinct from `apps/vinaya/web`'s 3006/3106. The
-// split put two apps in one repo that render the same product under the same
+// Portal owns 3007/3107, distinct from Studio's 3008/3108 (`apps/vinaya-studio/web`).
+// The split put two apps in one repo that render the same product under the same
 // CMS theme, so a shared port pair is not a mild inconvenience: whichever app
 // boots second silently lands on the other's fallback, and the two are close
 // enough visually that the wrong one reads as the right one. Keep these
-// distinct from every other app's pair until `apps/vinaya/web` is deleted.
+// distinct from every other app's pair.
 const PRIMARY_PORT = 3007
 const FALLBACK_PORT = 3107
 

@@ -18,9 +18,7 @@ Consequently there is no Portal↔Studio toggle. With two apps there is no secon
 bun run dev:vinaya-portal    # port 3007, falls back to 3107
 ```
 
-`apps/vinaya/web` still exists and is still what production serves; it runs on **3006/3106**. The two apps render the same product under the same CMS theme, so they are easy to confuse — check the port before concluding a change did or did not take effect.
-
-`apps/vinaya/web` is the rollback until the deployment is repointed here, and is deleted only once that has happened and Studio has moved to its own app.
+This is the deployed production app for `vinaya.attalabs.dev` — the deployment was repointed here (Vercel dashboard change) and `apps/vinaya/web`, the original single app, was deleted once this app and Vinaya Studio both proved out.
 
 ## CMS identity
 

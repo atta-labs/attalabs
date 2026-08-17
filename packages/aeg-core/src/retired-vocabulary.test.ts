@@ -202,10 +202,7 @@ const PATTERN_SCOPE: Record<string, string[]> = {
     'apps/vinaya/CLAUDE.md',
     'apps/vinaya/README.md',
     'apps/vinaya/sources/README.md',
-    'apps/vinaya/specs',
-    'apps/vinaya/web/CLAUDE.md',
-    'apps/vinaya/web/README.md',
-    'apps/vinaya/web/design'
+    'apps/vinaya/specs'
   ],
   // LEGACY_SLUG_PATTERN stays aeg-root-only, deliberately not widened with the
   // VN pattern above: every slug it can ever match is, by construction,

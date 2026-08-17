@@ -11,7 +11,7 @@
  * word. That directory is the substrate's, not Vinaya's, and renaming it is a
  * separate, monorepo-wide question.
  *
- * Vinaya's Studio runs from `apps/vinaya/web/src/app/studio`; `aeg-root/`
+ * Vinaya's Studio runs from `apps/vinaya-studio/web/src/app/studio`; `aeg-root/`
  * lives at the repo root. `findAegRoot` walks up from `process.cwd()` until
  * it finds a directory containing `.vinaya/projects.md` (the project
  * registry — configuration since the governance package was removed), then

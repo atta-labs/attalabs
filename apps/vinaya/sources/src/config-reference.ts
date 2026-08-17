@@ -13,7 +13,7 @@
  * has a row here, by key-presence only (it does not check prose accuracy —
  * that is a review concern, not a mechanizable one).
  *
- * `web` renders this registry (`apps/vinaya/web/src/app/(site)/config`);
+ * Portal renders this registry (`apps/vinaya-portal/web/src/app/(site)/config`);
  * `web` must never import `cli` internals, so this lives sources-side,
  * exactly like `commands.ts`'s `COMMANDS`.
  */

@@ -12,10 +12,10 @@ export default async function config(): Promise<NextConfig> {
       return config
     },
     transpilePackages: ['@atta/ui'],
-    // Studio is local-only and never deploys to Vercel (this task's Boundary:
-    // no ProductSwitch, no isVercelDeploy gating — the app simply is not
-    // deployed), so unlike `apps/vinaya/web`'s and `apps/vinaya-portal/web`'s
-    // `next.config.ts`, there is deliberately no `outputFileTracingIncludes`
+    // Studio is local-only and never deploys to Vercel (no ProductSwitch, no
+    // deploy-time gating — the app simply is not deployed), so unlike
+    // `apps/vinaya-portal/web`'s `next.config.ts`, there is deliberately no
+    // `outputFileTracingIncludes`
     // here: that setting exists solely to keep Vercel's serverless bundle from
     // silently dropping a computed-path read (`aeg-root/**`, `.vinaya/projects.md`)
     // that a `force-dynamic` route needs at request time. With no serverless

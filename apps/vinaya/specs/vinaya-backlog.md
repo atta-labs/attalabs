@@ -20,7 +20,7 @@ This file was first created per the brief's §2 correction (`vinaya-spec.md` alr
 - **Windows support** — documented as unsupported for v1.0; macOS/Linux only, tarball fallback documented not primary.
 - **Editor extension** — deferred.
 - **GitHub App / org-wide install** — deferred; Studio Phase 3 (deployed self-hosted stateless read-only Studio on a GitHub App token) depends on this.
-- **`/docs` CLI command reference page** (`apps/vinaya/web`) — blocked on real commands shipping; documenting a CLI that doesn't exist yet would be premature (see `vinaya-spec.md` § Pages table).
+- **`/docs` CLI command reference page** (`apps/vinaya-portal/web`) — blocked on real commands shipping; documenting a CLI that doesn't exist yet would be premature (see `vinaya-spec.md` § Pages table).
 - **Rings-drilldown visual design application** — design assets (brief + two HTML mockups) exist but are not yet committed to the repo or wired to `/aeg`; no task registered (see `vinaya-spec.md` § Pages table, `/aeg` row).
 
 ## Unscoped (needs a brief before dispatch)

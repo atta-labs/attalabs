@@ -26,7 +26,7 @@ function legacySlugs(): string[] {
 const REAL_GLOSSARY = readFileSync(join(REPO_ROOT, 'aeg-root/glossary.md'), 'utf8')
 
 /** This test's own consumer-supplied reader-facing shape — mirrors the real bin script's literal. */
-const READER_FACING_PREFIX = 'apps/vinaya/web/src/app/(site)/'
+const READER_FACING_PREFIX = 'apps/vinaya-portal/web/src/app/(site)/'
 const READER_FACING_SUFFIX = '/page.tsx'
 
 describe('classifyProseFile — the three-class map', () => {
@@ -44,7 +44,7 @@ describe('classifyProseFile — the three-class map', () => {
   it('classifies a (site) page as reader-facing', () => {
     expect(
       classifyProseFile(
-        'apps/vinaya/web/src/app/(site)/start/quick/page.tsx',
+        'apps/vinaya-portal/web/src/app/(site)/start/quick/page.tsx',
         READER_FACING_PREFIX,
         READER_FACING_SUFFIX
       )
@@ -54,7 +54,7 @@ describe('classifyProseFile — the three-class map', () => {
   it('does not classify a (site) non-page component as reader-facing', () => {
     expect(
       classifyProseFile(
-        'apps/vinaya/web/src/app/(site)/_components/canvas/TwoErasCanvas.tsx',
+        'apps/vinaya-portal/web/src/app/(site)/_components/canvas/TwoErasCanvas.tsx',
         READER_FACING_PREFIX,
         READER_FACING_SUFFIX
       )
@@ -90,7 +90,7 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
 
   it('fires on a bare forge number, drawn from the reader-facing class', () => {
     const findings = checkUnresolvableReferences(
-      [{ path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx', content: 'shipped in (#365)' }],
+      [{ path: 'apps/vinaya-portal/web/src/app/(site)/roadmap/page.tsx', content: 'shipped in (#365)' }],
       READER_FACING_PREFIX,
       READER_FACING_SUFFIX
     )
@@ -156,7 +156,7 @@ describe('class 1 — unresolvable references — the gate can see what it bans'
       '\n'
     )
     const findings = checkUnresolvableReferences(
-      [{ path: 'apps/vinaya/web/src/app/(site)/docs/page.tsx', content }],
+      [{ path: 'apps/vinaya-portal/web/src/app/(site)/docs/page.tsx', content }],
       READER_FACING_PREFIX,
       READER_FACING_SUFFIX
     )
@@ -218,7 +218,7 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
     const findings = checkUndefinedVocabulary(
       [
         {
-          path: 'apps/vinaya/web/src/app/(site)/start/quick/page.tsx',
+          path: 'apps/vinaya-portal/web/src/app/(site)/start/quick/page.tsx',
           content: "This step's changes land in the current tranche."
         }
       ],
@@ -244,7 +244,7 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
     const findings = checkUndefinedVocabulary(
       [
         {
-          path: 'apps/vinaya/web/src/app/(site)/start/quick/page.tsx',
+          path: 'apps/vinaya-portal/web/src/app/(site)/start/quick/page.tsx',
           content: 'A tranche — a named batch of related tasks — is what ships together.'
         }
       ],
@@ -259,7 +259,7 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
     const findings = checkUndefinedVocabulary(
       [
         {
-          path: 'apps/vinaya/web/src/app/(site)/start/quick/page.tsx',
+          path: 'apps/vinaya-portal/web/src/app/(site)/start/quick/page.tsx',
           content: 'This lands in the current tranche. See /docs/glossary for definitions.'
         }
       ],
@@ -309,7 +309,7 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
 
   it('red before green — a seeded violation fails, then the fix (an inline definition) passes', () => {
     const violating = checkUndefinedVocabulary(
-      [{ path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx', content: 'The forge tracks every task.' }],
+      [{ path: 'apps/vinaya-portal/web/src/app/(site)/roadmap/page.tsx', content: 'The forge tracks every task.' }],
       glossaryTerms,
       READER_FACING_PREFIX,
       READER_FACING_SUFFIX
@@ -319,7 +319,7 @@ describe('class 2 — undefined coined vocabulary — the gate can see what it b
     const fixed = checkUndefinedVocabulary(
       [
         {
-          path: 'apps/vinaya/web/src/app/(site)/roadmap/page.tsx',
+          path: 'apps/vinaya-portal/web/src/app/(site)/roadmap/page.tsx',
           content: 'The forge — the Git host treated as the source of truth — tracks every task.'
         }
       ],
@@ -341,7 +341,7 @@ describe('stripNonProse', () => {
 
   it('blanks line and block comments in .tsx while preserving line count', () => {
     const content = ['const a = 1 // #365', '/* tranche', 'still a comment */', 'const b = 2'].join('\n')
-    const stripped = stripNonProse('apps/vinaya/web/src/app/(site)/x/page.tsx', content)
+    const stripped = stripNonProse('apps/vinaya-portal/web/src/app/(site)/x/page.tsx', content)
     expect(stripped.split('\n')).toHaveLength(4)
     expect(stripped).not.toContain('#365')
     expect(stripped).not.toContain('tranche')
@@ -353,14 +353,14 @@ describe('stripNonProse', () => {
 
   it('does NOT treat a URL\'s "//" as a comment start — real prose after it survives (review finding: MAJOR)', () => {
     const content = '<p>See https://vinaya.dev — every tranche ships here</p>'
-    const stripped = stripNonProse('apps/vinaya/web/src/app/(site)/x/page.tsx', content)
+    const stripped = stripNonProse('apps/vinaya-portal/web/src/app/(site)/x/page.tsx', content)
     expect(stripped).toContain('https://vinaya.dev')
     expect(stripped).toContain('every tranche ships here')
   })
 
   it('still strips a genuine trailing comment that follows a URL on the same line', () => {
     const content = 'const href = "https://vinaya.dev" // tranche: internal note'
-    const stripped = stripNonProse('apps/vinaya/web/src/app/(site)/x/page.tsx', content)
+    const stripped = stripNonProse('apps/vinaya-portal/web/src/app/(site)/x/page.tsx', content)
     expect(stripped).toContain('https://vinaya.dev')
     expect(stripped).not.toContain('internal note')
   })
@@ -371,7 +371,7 @@ describe('regression: class 2 still fires on prose that follows a URL on the sam
     const findings = checkUndefinedVocabulary(
       [
         {
-          path: 'apps/vinaya/web/src/app/(site)/start/page.tsx',
+          path: 'apps/vinaya-portal/web/src/app/(site)/start/page.tsx',
           content: '<p>See https://vinaya.dev — every tranche ships here</p>'
         }
       ],

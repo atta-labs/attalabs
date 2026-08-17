@@ -1,6 +1,6 @@
 ---
 name: vinaya-architecture
-description: Vinaya product architecture — the CLI/portal/studio/sources workspace split, the check-engine contract (CheckSpec/CheckError, core registry, custom checks), the install lifecycle (init/eject/doctor/upgrade), the StateSource/DoctrineSource seams, and the renderer-never-derives rule. Load when working inside apps/vinaya/** (cli, sources, specs), apps/vinaya-portal/**, or apps/vinaya-studio/**. Do NOT load for the gate logic Vinaya's checks wrap (packages/aeg-core), the forge adapter it consumes (packages/aeg-forge-state), or the doctrine it ships (aeg-root) — see those skills for the underlying model.
+description: Vinaya product architecture — the portal/studio/sources workspace split (the extracted CLI's canonical home is now the standalone atta-labs/vinaya repo), the check-engine contract (CheckSpec/CheckError, core registry, custom checks), the install lifecycle (init/eject/doctor/upgrade), the StateSource/DoctrineSource seams, and the renderer-never-derives rule. Load when working inside apps/vinaya/** (sources, specs), apps/vinaya-portal/**, or apps/vinaya-studio/**. Do NOT load for the gate logic Vinaya's checks wrap (packages/aeg-core), the forge adapter it consumes (packages/aeg-forge-state), or the doctrine it ships (aeg-root) — see those skills for the underlying model.
 ---
 
 # Vinaya — Product Architecture (`apps/vinaya/`, `apps/vinaya-portal/`, `apps/vinaya-studio/`)
@@ -19,11 +19,9 @@ apps/vinaya/
 │               attalabs deleted its vendored copy and installs the published @attalabs/vinaya
 │               from npm instead; the `cli/…` paths cited below now resolve in that repo.
 ├── sources/    @atta/vinaya-sources — the StateSource/DoctrineSource adapters + COMMANDS registry
-├── web/        LEGACY — @atta/vinaya-web, the pre-split app. Still what production serves
-│               (task 2/#884 repoints the deployment; task 4/#886 deletes this once that has
-│               landed and both apps below have proven out). Do not add new routes here.
-└── specs/      vinaya-spec.md — the web-surface spec (routes, Pages table); CLI/check-engine/config/
-              install-lifecycle content moved to atta-labs/vinaya with the code
+└── specs/      vinaya-spec.md — the web-surface spec (routes, Pages table, now split per-app);
+              CLI/check-engine/config/install-lifecycle content moved to atta-labs/vinaya with
+              the code
 
 apps/vinaya-portal/
 └── web/        @atta/vinaya-portal-web — the public site: every `(site)` route (landing, /start,
@@ -49,13 +47,13 @@ also vendor it.
 
 ### The one-way import boundary (mechanically enforced)
 
-No web-shaped app may import `cli` internals; `cli` must never import a web app's internals. Each side carries its own vitest/bun-test file walking its own source tree and failing on any specifier reaching across — `apps/vinaya/web/src/lib/import-boundary.test.ts` (legacy), `apps/vinaya-portal/web/src/lib/import-boundary.test.ts`, `apps/vinaya-studio/web/src/lib/import-boundary.test.ts`, and `cli/tests/import-boundary.test.ts` — deliberately **not** sharing a helper between them, since importing one would itself cross the boundary they exist to defend. Crossing either direction would let one surface reach around the other's derivation and compute governance facts on its own — the renderer-never-derives rule, made structural.
+No web-shaped app may import `cli` internals; `cli` must never import a web app's internals. Each side carries its own vitest/bun-test file walking its own source tree and failing on any specifier reaching across — `apps/vinaya-portal/web/src/lib/import-boundary.test.ts`, `apps/vinaya-studio/web/src/lib/import-boundary.test.ts`, and `cli/tests/import-boundary.test.ts` — deliberately **not** sharing a helper between them, since importing one would itself cross the boundary they exist to defend. Crossing either direction would let one surface reach around the other's derivation and compute governance facts on its own — the renderer-never-derives rule, made structural.
 
 ### `@atta/vinaya-sources` — the shared registry + the two `StateSource` adapters
 
 This workspace is the seam both `cli` and `web` sit on top of without crossing each other:
 
-- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and `web`'s `/docs/cli` page are two renderers over this one registry — never a hand-transcribed second list.
+- **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. `cli`'s `printHelp()` and Portal's `/docs/cli` page are two renderers over this one registry — never a hand-transcribed second list.
 - **`forge-adapter.ts`'s `createForgeSource`** (primary) — wires `@atta/aeg-forge-state`'s `deriveTrancheFromForge` behind aeg-core's `StateSource` contract.
 - **`file-adapter.ts`'s `createFileSource`** (transitional, deliberately deleted once every consumer is forge-backed) — wraps `parseTranche` over a configurable governance root.
 - **`select-source.ts`** — config-driven choice between the two.
@@ -143,7 +141,7 @@ One of those 15, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 **Route inventory and status** live in `apps/vinaya/specs/vinaya-spec.md`'s "Pages" table — treat that table, not this skill, as the up-to-date map of what's live versus not-yet-applied; it is kept current per-route and would drift immediately if duplicated here.
 
-**No production/preview gate in Studio.** Before the split, `web/src/lib/env.ts`'s `isVercelDeploy()` (gated on `VERCEL_ENV` presence, not equality to `'production'`, so preview deploys were covered too) sent a deployed visitor from every `/studio/*` route to a Portal marketing page, and `ProductSwitch.tsx` gated a Portal↔Studio toggle on the same check plus forge-reachability. `apps/vinaya-studio/web` carries neither: it is never deployed, so there is nothing to gate against and no second product to switch to from inside it. `apps/vinaya/web` still carries both, unchanged, until it is deleted.
+**No production/preview gate in Studio.** Before the split, `web/src/lib/env.ts`'s `isVercelDeploy()` (gated on `VERCEL_ENV` presence, not equality to `'production'`, so preview deploys were covered too) sent a deployed visitor from every `/studio/*` route to a Portal marketing page, and `ProductSwitch.tsx` gated a Portal↔Studio toggle on the same check plus forge-reachability. `apps/vinaya-studio/web` carries neither: it is never deployed, so there is nothing to gate against and no second product to switch to from inside it. `apps/vinaya/web`, which carried both, was deleted once this split proved out (task 4, #886).
 
 **A missing `.vinaya/projects.md` is a normal state, not an error.** `src/lib/repo-state/read-root.ts`'s `findAegRoot()` (present in both `apps/vinaya-portal/web` — as `github-links.ts`'s sibling walk — and `apps/vinaya-studio/web`) walks up from `process.env.VINAYA_REPO_ROOT ?? process.cwd()` for the file and returns `null` (never throws) when it isn't found — a single-project repo legitimately has no registry at all. Every caller (`readRegistry`, the legacy `completed/*.md` archived-tranche supplement, Studio's `api/coherence/route.ts`) treats `null` the same way this file already treats `resolveRepo() === null` everywhere else: a safe empty default, not a crash. The already-existing board-less UX (`boardHref`'s `NO_BOARD_REASON`, described above) is what actually renders in that state — this fix doesn't add new UI, it makes the existing graceful path reachable instead of an uncaught throw pre-empting it.
 
@@ -163,7 +161,7 @@ A core check and a config-registered custom check are indistinguishable to the r
 
 ### Repo-root resolution is a deployment input, not just a lookup — for a deployed app
 
-Any route or check **in a deployed app** (`apps/vinaya/web`, `apps/vinaya-portal/web`) that locates the repo by walking up for a marker file (`vinaya.config.json`, `.vinaya/projects.md`) must have that marker declared in the serverless host's file-tracing config, or the walk fails silently at runtime with a green build. Introducing a new marker-walking reader is a two-place change (the walk itself + the tracing declaration) — see `specs/vinaya-spec.md`'s Architecture section for the exact incident this caused twice. `apps/vinaya-studio/web` is the deliberate exception: it is never deployed, so it declares no tracing config for its one marker-walking reader (`read-root.ts`'s `findAegRoot()`) at all — there is no serverless bundle for the walk to fail inside.
+Any route or check **in a deployed app** (`apps/vinaya-portal/web`) that locates the repo by walking up for a marker file (`vinaya.config.json`, `.vinaya/projects.md`) must have that marker declared in the serverless host's file-tracing config, or the walk fails silently at runtime with a green build. Introducing a new marker-walking reader is a two-place change (the walk itself + the tracing declaration) — see `specs/vinaya-spec.md`'s Architecture section for the exact incident this caused twice. `apps/vinaya-studio/web` is the deliberate exception: it is never deployed, so it declares no tracing config for its one marker-walking reader (`read-root.ts`'s `findAegRoot()`) at all — there is no serverless bundle for the walk to fail inside.
 
 ### The `files` allowlist is the real ship boundary — not what exists in this monorepo
 

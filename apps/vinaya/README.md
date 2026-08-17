@@ -42,7 +42,7 @@ is refused by contract, not caught in review.
 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
-| **Web** | [`web/`](web/) | `@atta/vinaya-web` | 🟢 Landing · `/docs` (hub → Harness, State Machine, `/docs/cli` command reference, Reference) · `/start` (adopter's path — quick start + Ship with Vinaya) · Studio Portal |
+| **Web** | [`../vinaya-portal/web/`](../vinaya-portal/web/), [`../vinaya-studio/web/`](../vinaya-studio/web/) | `@atta/vinaya-portal-web`, `@atta/vinaya-studio-web` | 🟢 Portal (deployed): Landing · `/docs` (Harness, State Machine, `/docs/cli` command reference, Reference) · `/start` (adopter's path). Studio (local-only): `/studio` governance dashboard |
 | **CLI** | [`cli/`](cli/) | `@attalabs/vinaya` | 🟢 Published to npm; core + installer commands live (below) |
 
 ---

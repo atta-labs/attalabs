@@ -20,7 +20,7 @@
  * `registry-checks.ts`) matches on that exact id; a slug that a reader
  * follows into a URL fragment has no such constraint, so it is cleaned at
  * this one edge instead. Both the heading (`humanLabel`/`shortLabel`, in
- * `apps/vinaya/web`) and this anchor apply the same two rules — strip a
+ * `apps/vinaya-portal/web`) and this anchor apply the same two rules — strip a
  * leading G-code, cut a pathologically long name at its first clause — so a
  * heading and its anchor still agree, just no longer byte-identical to the
  * doctrine id. A node whose display form needs no cleanup still gets the
@@ -60,7 +60,7 @@ function stripGCodeSlug(slug: string): string {
 
 /** Strips the same `G<n> — ` doctrine code off raw label text, for the
  * over-length fallback below. Same contract as `humanLabel` in
- * `apps/vinaya/web`'s `display-label.ts` (duplicated rather than shared:
+ * `apps/vinaya-portal/web`'s `display-label.ts` (duplicated rather than shared:
  * aeg-core cannot import from the web app, and this rule is small enough
  * that keeping two copies in sync by inspection is cheaper than a new
  * cross-package export). */

@@ -1,6 +1,6 @@
 'use client'
 
-// Vinaya's mark — the harness ring, canvas-drawn (ported from apps/vinaya/web's SVG
+// Vinaya's mark — the harness ring, canvas-drawn (ported from apps/vinaya-portal/web's SVG
 // HarnessStructure so "no SVG anywhere" holds across every mark), standalone — same
 // composition as the real site: a ring clamping onto a small `main` hub at its center, not
 // enclosing any other product's mark. Same staged reveal as the original: hexagonal screws
