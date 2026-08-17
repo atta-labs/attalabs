@@ -274,21 +274,6 @@
         "vitest": "^2.1.0",
       },
     },
-    "apps/vinaya/sources": {
-      "name": "@atta/vinaya-sources",
-      "version": "0.0.1",
-      "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/aeg-forge-state": "workspace:*",
-        "@atta/aeg-types": "workspace:*",
-        "zod": "3.25.76",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5.7.0",
-      },
-    },
     "packages/adapter-langgraph": {
       "name": "@atta/adapter-langgraph",
       "version": "0.0.1",
@@ -305,41 +290,6 @@
       "devDependencies": {
         "@atta/typescript-config": "workspace:*",
         "@types/node": "^20.0.0",
-        "typescript": "^5.7.0",
-      },
-    },
-    "packages/aeg-core": {
-      "name": "@atta/aeg-core",
-      "version": "0.0.1",
-      "dependencies": {
-        "@atta/aeg-forge-state": "workspace:*",
-        "@atta/aeg-types": "workspace:*",
-        "gray-matter": "^4.0.3",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "typescript": "^5.7.0",
-        "vitest": "^2.1.0",
-      },
-    },
-    "packages/aeg-forge-state": {
-      "name": "@atta/aeg-forge-state",
-      "version": "0.0.1",
-      "dependencies": {
-        "@atta/aeg-types": "workspace:*",
-        "@octokit/graphql": "^8.1.1",
-      },
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
-        "typescript": "^5.7.0",
-        "vitest": "^2.1.0",
-      },
-    },
-    "packages/aeg-types": {
-      "name": "@atta/aeg-types",
-      "version": "0.0.1",
-      "devDependencies": {
-        "@atta/typescript-config": "workspace:*",
         "typescript": "^5.7.0",
       },
     },
@@ -700,12 +650,6 @@
 
     "@atta/admin": ["@atta/admin@workspace:tools/admin"],
 
-    "@atta/aeg-core": ["@atta/aeg-core@workspace:packages/aeg-core"],
-
-    "@atta/aeg-forge-state": ["@atta/aeg-forge-state@workspace:packages/aeg-forge-state"],
-
-    "@atta/aeg-types": ["@atta/aeg-types@workspace:packages/aeg-types"],
-
     "@atta/agents": ["@atta/agents@workspace:packages/atta-agents"],
 
     "@atta/attalabs-mcp-server": ["@atta/attalabs-mcp-server@workspace:apps/attalabs/mcp-server"],
@@ -755,8 +699,6 @@
     "@atta/vada-fusion-native": ["@atta/vada-fusion-native@workspace:packages/agents/vada-fusion-native"],
 
     "@atta/vinaya-portal-web": ["@atta/vinaya-portal-web@workspace:apps/vinaya-portal/web"],
-
-    "@atta/vinaya-sources": ["@atta/vinaya-sources@workspace:apps/vinaya/sources"],
 
     "@atta/vinaya-studio-web": ["@atta/vinaya-studio-web@workspace:apps/vinaya-studio/web"],
 
@@ -1991,8 +1933,6 @@
     "@types/babel__template": ["@types/babel__template@7.4.4", "", { "dependencies": { "@babel/parser": "^7.1.0", "@babel/types": "^7.0.0" } }, "sha512-h/NUaSyG5EyxBIp8YRxo4RMe2/qQgvyowRwVMzhYhBCONbW8PUsg4lkFMrhgZhUe5z3L3MiLDuvyJ/CaPa2A8A=="],
 
     "@types/babel__traverse": ["@types/babel__traverse@7.28.0", "", { "dependencies": { "@babel/types": "^7.28.2" } }, "sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q=="],
-
-    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@types/conventional-commits-parser": ["@types/conventional-commits-parser@5.0.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g=="],
 
