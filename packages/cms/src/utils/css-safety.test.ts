@@ -141,15 +141,12 @@ describe('isSafeCssValue', () => {
 })
 
 describe('isSafeCssVarName', () => {
-  it.each([
-    'background',
-    'sidebar-primary-foreground',
-    'font-mono',
-    'shadow-2xl',
-    'tracking-normal'
-  ])('accepts the real token name %s', (name) => {
-    expect(isSafeCssVarName(name)).toBe(true)
-  })
+  it.each(['background', 'sidebar-primary-foreground', 'font-mono', 'shadow-2xl', 'tracking-normal'])(
+    'accepts the real token name %s',
+    (name) => {
+      expect(isSafeCssVarName(name)).toBe(true)
+    }
+  )
 
   it.each([
     ['declaration break', 'background: red; --x'],
