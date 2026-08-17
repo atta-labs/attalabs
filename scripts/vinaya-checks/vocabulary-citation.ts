@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * vocabulary-citation — this repo's own configured instance of the
- * pluggable citation check (`@atta/aeg-core`'s `evaluateVocabularyCitation`,
+ * pluggable citation check (`@attalabs/aeg-core`'s `evaluateVocabularyCitation`,
  * task 6 / Issue #736).
  *
  * `retired-vocabulary.test.ts` proved this sweep shape works but ships it as
@@ -11,7 +11,7 @@
  * while that suite passed green (PR #739 cleaned them by hand; nothing
  * stopped them regenerating). This file is the I/O shim + the repo-specific
  * configuration: real `grep`-backed `grepFn`/`matchFn`, and the pattern list
- * itself. The evaluator in `@atta/aeg-core` carries none of this — every
+ * itself. The evaluator in `@attalabs/aeg-core` carries none of this — every
  * pattern, scope, exemption and sample below is an input to it, not
  * knowledge it has.
  *
@@ -101,7 +101,7 @@
 import { execFileSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { evaluateVocabularyCitation, type VocabularyHit, type VocabularyPattern } from '@atta/aeg-core'
+import { evaluateVocabularyCitation, type VocabularyHit, type VocabularyPattern } from '@attalabs/aeg-core'
 
 const CHECK_NAME = 'attalabs/vocabulary-citation'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
