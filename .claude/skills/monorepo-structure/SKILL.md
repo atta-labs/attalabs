@@ -57,7 +57,7 @@ All subdomains share auth via a single Clerk app with cookie scoped to `.attalab
 ### Naming
 - Product apps: `apps/{product-ai}/{surface}/`
 - Package names: `@atta/{name}` (no `-ai` suffix for packages)
-- Workspaces: members are enumerated individually in the root `workspaces` array — see [Workspace membership is enumerated, not globbed](#workspace-membership-is-enumerated-not-globbed)
+- Workspaces: `"workspaces": ["apps/*/*", "packages/*"]`
 
 ### TypeScript Config Inheritance
 ```json
@@ -97,18 +97,7 @@ Not every `@atta*`-namespaced dependency comes from the workspace. Two distinct 
 - **`@atta/*`** — workspace-local forever, resolved via `workspace:*`. `@atta/ui`, `@atta/cms`, `@atta/auth`, `@atta/typescript-config`, and the rest of `packages/*` never publish; they exist only as symlinked workspace members.
 - **`@attalabs/*`** — the vinaya engine packages (`@attalabs/aeg-core`, `@attalabs/aeg-forge-state`, `@attalabs/aeg-types`, `@attalabs/vinaya-sources`), published from the standalone `atta-labs/vinaya` repo and consumed here as ordinary registry dependencies at a real semver range (e.g. `^0.8.0`), not `workspace:*`. The `@atta` npm scope belongs to a different account, hence the renamed `@attalabs` scope for anything actually published — `@atta/*` names stay reserved for workspace-only code that never leaves this repo.
 
-The old engine directories — `packages/aeg-core`, `packages/aeg-forge-state`, `packages/aeg-types`, `apps/vinaya/sources` — are **still on disk but are no longer workspace members**. Nothing installs them, nothing symlinks them into `node_modules`, and the package names `@atta/aeg-core` / `@atta/aeg-forge-state` / `@atta/aeg-types` / `@atta/vinaya-sources` no longer resolve. Their directories survive only so a spawned-by-path caller can still run them, and so their removal stays one atomic, reviewable change. Since the published `@attalabs/*` packages ship raw `.ts` source (no build step) via their `exports` field, any Next.js app consuming them needs `transpilePackages: ['@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources']` in `next.config.ts` — the same mechanism already used for the workspace-local `@atta/ui`.
-
-### Workspace membership is enumerated, not globbed
-
-Root `workspaces` lists `apps/*` and `packages/*` members **one by one** instead of using `apps/*/*` + `packages/*`. Three globs remain: `packages/*/*` (the four `packages/agents/*` members) and `tools/*` (one member) match only kept packages, and `apps/*/*/*` matches nothing in the repo today — it is retained as-is because narrowing it is not this change's job.
-
-The enumeration is load-bearing, for one mechanical reason: **Bun 1.2.14 silently ignores `!`-prefixed negation entries in `workspaces`.** Adding `"!packages/aeg-core"` alongside `"packages/*"` produces no error, no warning, and no change — `bun install --force` still writes `packages/aeg-core` into `bun.lock`'s `workspaces` map. A glob-plus-negation exclusion therefore *looks* correct in the diff while changing nothing. Enumeration is the only form that provably excludes a path, and it also makes the exclusion visible: a reader sees which directories are members without evaluating a glob.
-
-Two resolution traps follow from this, both of which will report a false green if not accounted for:
-
-- **Incremental `bun install` leaves stale symlinks.** Removing a member from `workspaces` and reinstalling reports success while `node_modules/@atta/<name>` still points at the removed directory. Only `rm -rf node_modules && bun install` actually drops it. Verify exclusion against a fresh install, never an incremental one.
-- **A worktree nested under the repo root inherits the parent checkout's `node_modules`.** Node/Bun resolution walks up the directory tree, so a worktree at `.worktrees/task/<tranche>/<n>` resolves `@atta/aeg-core` from the *main checkout's* `node_modules` even when its own install excluded it. Any claim that a package name no longer resolves must be proven in a copy outside the repo tree — a nested worktree structurally cannot prove it.
+This repo also still carries the old `packages/aeg-core` / `packages/aeg-forge-state` / `packages/vinaya-sources` workspace members under their original `@atta/*` names — kept until their own removal task, untouched by consumers that have moved to the `@attalabs/*` registry versions. Bun resolves by package *name*, so a consumer importing `@atta/aeg-core` still gets the local workspace copy; only an app whose `package.json` and source imports both say `@attalabs/aeg-core` actually pulls from the registry. Since the published `@attalabs/*` packages ship raw `.ts` source (no build step) via their `exports` field, any Next.js app consuming them needs `transpilePackages: ['@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources']` in `next.config.ts` — the same mechanism already used for the workspace-local `@atta/ui`.
 
 ### Adding a New Package
 1. Create `packages/{name}/package.json` with `"name": "@atta/{name}"`

@@ -70,10 +70,9 @@ One product may also span more than one `apps/` directory: Vinaya's web surface 
 | @atta/models | [packages/models/](packages/models/) | AI model catalog — dynamic fetch from models.dev + curated overlay |
 | @atta/storage | [packages/storage/](packages/storage/) | Cloudflare R2 storage client + image transforms |
 | @atta/typescript-config | [packages/typescript-config/](packages/typescript-config/) | Shared TypeScript configs |
+| @atta/aeg-forge-state | [packages/aeg-forge-state/](packages/aeg-forge-state/) | Derives a `Tranche` purely from forge objects (Milestone + labeled Issues) — repo/owner-parameterized, consumed by this repo's own migration and by Vinaya's CLI. A task's project comes from the union of its `project:*` labels **and** its Issue body's `**Project:**` field, so derivation survives the labels being dropped |
 
 The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLabs product can live under it without implying ownership by Atta-the-product.
-
-`@atta/aeg-forge-state` is **no longer shared infrastructure here** and has left this table. Its directory (`packages/aeg-forge-state/`, alongside `packages/aeg-core/` and `packages/aeg-types/`) is still on disk but is not a workspace member, and nothing in this repo consumes that name — the engine is consumed from the registry as `@attalabs/aeg-forge-state`, published from the standalone `atta-labs/vinaya` repo.
 
 ---
 
@@ -99,7 +98,10 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 
 ### Workspace
 
-Workspace members are **enumerated individually** in root `package.json`'s `workspaces` array, not globbed — Bun silently ignores `!` negation entries, so enumeration is the only form that provably excludes a directory. The retired engine copies (`packages/aeg-*`, `apps/vinaya/sources`) are on disk but are not members. See [.claude/skills/monorepo-structure/SKILL.md](.claude/skills/monorepo-structure/SKILL.md).
+Workspaces defined in root `package.json`:
+```json
+"workspaces": ["apps/*/*", "packages/*"]
+```
 
 ### Turbo Tasks & Biome
 
