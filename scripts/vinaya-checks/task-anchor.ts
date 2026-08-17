@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * task-anchor — this repo's own configured instance of the generic
- * `checkLocalAnchorCoverage` primitive (`@atta/aeg-core`, task 5 / Issue
+ * `checkLocalAnchorCoverage` primitive (`@attalabs/aeg-core`, task 5 / Issue
  * #730), generalizing `reader-resolvable-prose.ts`'s Class 1 one step
  * further: a bare ordinal task reference ("Task 2") is fine as long as a
  * `(task N, #issue)`-shaped citation resolves it nearby; it is only a
@@ -18,7 +18,7 @@
  * for that exact commit's pre-fix/post-fix content as a golden fixture pair.
  *
  * I/O shim only: this file reads matching `.md` files into memory and hands
- * them to `checkLocalAnchorCoverage` (`@atta/aeg-core`) — the evaluator
+ * them to `checkLocalAnchorCoverage` (`@attalabs/aeg-core`) — the evaluator
  * decides what counts as a finding and knows nothing about `Task N` or this
  * repo's citation convention. Mirrors `check-reader-resolvable-prose.ts`'s
  * in-memory-content shim shape, not `vocabulary-citation.ts`'s `grepFn`
@@ -35,7 +35,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { type AnchorSourceFile, checkLocalAnchorCoverage } from '@atta/aeg-core'
+import { type AnchorSourceFile, checkLocalAnchorCoverage } from '@attalabs/aeg-core'
 
 const CHECK_NAME = 'attalabs/task-anchor'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
