@@ -1,7 +1,7 @@
 /**
  * Open issues carrying no `vinaya/tranche:*` label — the backlog view's data
  * source (Studio task 2, #498). A different fact from `fetchOpenIssuesByLabel`
- * (`@atta/aeg-core` — "under tranche X" vs. "under no tranche"): GitHub's
+ * (`@attalabs/aeg-core` — "under tranche X" vs. "under no tranche"): GitHub's
  * GraphQL `labels:` filter argument has no pattern-exclusion capability, so
  * this is a repo-wide query filtered client-side, not a parameterization of
  * the existing per-slug function (one implementation per fact).
@@ -17,14 +17,14 @@
  * belong in a backlog-of-open-work view alongside real Issues like #497.
  */
 
-import { hasLabel, projectsFromBody } from '@atta/aeg-forge-state'
+import { hasLabel, projectsFromBody } from '@attalabs/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 
 /**
  * `projects` comes from the Issue body's `**Project:**` field, never from a
  * label — project is a field, not a label (#614 dropped `project:*` outright),
- * and `@atta/aeg-forge-state`'s `projectsFromBody` is the same parser the task
+ * and `@attalabs/aeg-forge-state`'s `projectsFromBody` is the same parser the task
  * surfaces use, so the backlog and the boards agree by construction.
  */
 export type BacklogIssue = { number: number; title: string; url: string; labels: string[]; projects: string[] }

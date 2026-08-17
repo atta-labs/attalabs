@@ -26,10 +26,10 @@
  *     silently rendered as "to do" either.
  *
  * Pure — no I/O, no `server-only`. `DerivedStatus` is a type-only import, so
- * this module pulls no `@atta/aeg-core` runtime into a client bundle.
+ * this module pulls no `@attalabs/aeg-core` runtime into a client bundle.
  */
 
-import type { DerivedStatus } from '@atta/aeg-core'
+import type { DerivedStatus } from '@attalabs/aeg-core'
 
 export type TaskBuckets = {
   total: number

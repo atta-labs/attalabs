@@ -22,7 +22,7 @@
  * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, ):
  * both derive purely from the forge — a GitHub Milestone
  * titled exactly the tranche slug (open = active, closed = archived).
- * Goal/lifecycle/task-list all derive via `@atta/aeg-forge-state`'s
+ * Goal/lifecycle/task-list all derive via `@attalabs/aeg-forge-state`'s
  * `deriveTrancheFromForge`, the same adapter the CLI gates use.
  * `dependsOn`/`conflictsWith` for an ACTIVE tranche derive from the forge
  * like everything else. A legacy `aeg-root/tranches/<slug>.md` topology
@@ -35,8 +35,8 @@
  * dependency edges resolve entirely from each closed Issue's own body.
  *
  * Reads are confined to this module. Parsing is delegated to
- * `@atta/aeg-core` (pure, no I/O) for the archived/completed topology files,
- * the only files this module still parses, and to `@atta/aeg-forge-state`
+ * `@attalabs/aeg-core` (pure, no I/O) for the archived/completed topology files,
+ * the only files this module still parses, and to `@attalabs/aeg-forge-state`
  * (pure I/O, no parsing logic re-implemented here) for everything else.
  * Consumers receive typed model objects.
  */
@@ -46,14 +46,21 @@ import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { cache } from 'react'
-import { parseTranche, parseRegistry, type Tranche, type Lifecycle, type Project, type Registry } from '@atta/aeg-core'
+import {
+  parseTranche,
+  parseRegistry,
+  type Tranche,
+  type Lifecycle,
+  type Project,
+  type Registry
+} from '@attalabs/aeg-core'
 import {
   deriveTrancheFromForge,
   findMilestoneForSlug,
   listActiveTrancheSlugsAsync,
   listArchivedTrancheSlugsAsync,
   resolveRepo
-} from '@atta/aeg-forge-state'
+} from '@attalabs/aeg-forge-state'
 import { loadTrancheProgress } from '@/lib/forge/load-snapshot'
 import { emptyTaskBuckets, type TaskBuckets } from '@/lib/forge/task-buckets'
 import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-status'
@@ -62,7 +69,7 @@ import { type ForgeSlugFailure, type ForgeStatus, reduceSettled } from './forge-
  * Request-scoped memoization (React 19 `cache()`) so one request never
  * re-fires an identical forge lookup — e.g. `listTranches()` plus a detail
  * read in the same render tree. Request-scoped ONLY: no module-level TTL, no
- * cross-request store (Studio stores nothing). `@atta/aeg-forge-state`'s
+ * cross-request store (Studio stores nothing). `@attalabs/aeg-forge-state`'s
  * own exports stay unwrapped; these wrappers are local to this module.
  *
  * The enumeration path uses the ASYNC `gh` twins: `execFileSync` blocks the

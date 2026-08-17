@@ -1,6 +1,6 @@
 import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import type { DerivedTask } from '@atta/aeg-core'
+import type { DerivedTask } from '@attalabs/aeg-core'
 import { CircleDot, ExternalLink, FileText, GitPullRequest, MessageSquareWarning } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'

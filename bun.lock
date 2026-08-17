@@ -220,9 +220,9 @@
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
-        "@attalabs/aeg-core": "^0.8.0",
-        "@attalabs/aeg-forge-state": "^0.8.0",
-        "@attalabs/vinaya-sources": "^0.8.0",
+        "@attalabs/aeg-core": "^0.9.0",
+        "@attalabs/aeg-forge-state": "^0.9.0",
+        "@attalabs/vinaya-sources": "^0.9.0",
         "@tailwindcss/postcss": "^4.0.0",
         "@vercel/analytics": "^2.0.1",
         "d3-shape": "^3.2.0",
@@ -250,11 +250,11 @@
       "name": "@atta/vinaya-studio-web",
       "version": "0.1.0",
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/aeg-forge-state": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
+        "@attalabs/aeg-core": "^0.9.0",
+        "@attalabs/aeg-forge-state": "^0.9.0",
         "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
@@ -760,15 +760,15 @@
 
     "@atta/vinaya-studio-web": ["@atta/vinaya-studio-web@workspace:apps/vinaya-studio/web"],
 
-    "@attalabs/aeg-core": ["@attalabs/aeg-core@0.8.1", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.8.1", "@attalabs/aeg-types": "0.8.1", "gray-matter": "^4.0.3" } }, "sha512-BfzEPTBQy60tOraYud3THQzqTy7PLieu4dMcfWUPOrJTFk65FuF3zKkfhNKQeaXeqBlInjmsUO6l9WUhXxNL1A=="],
+    "@attalabs/aeg-core": ["@attalabs/aeg-core@0.9.0", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.9.0", "@attalabs/aeg-types": "0.9.0", "gray-matter": "^4.0.3" } }, "sha512-Kiiz6SM+zY1j994ZL0LFc4uMYd15VGJlsCLFplw1J57yssBqZC2WCQ1lxs0aW/QqYt5pkceflBH6eCgSgScfJA=="],
 
-    "@attalabs/aeg-forge-state": ["@attalabs/aeg-forge-state@0.8.1", "", { "dependencies": { "@attalabs/aeg-types": "0.8.1", "@octokit/graphql": "^8.1.1" } }, "sha512-hv9pbYJ63mP7oCiln/XXeUyhbg92gD05iODh/PI604raT/lGc3gGUUykzRS9swVP+0ljduAHskEo+hpTsi2JbA=="],
+    "@attalabs/aeg-forge-state": ["@attalabs/aeg-forge-state@0.9.0", "", { "dependencies": { "@attalabs/aeg-types": "0.9.0", "@octokit/graphql": "^8.1.1" } }, "sha512-u0amnLPHq2MdABOe4dAFPL+lIOLEJvbf0MowUKAMvQFEZsPiEgYwexh0nlss/NB5E3cdo6cfji5j02F3WBTAPg=="],
 
-    "@attalabs/aeg-types": ["@attalabs/aeg-types@0.8.1", "", {}, "sha512-Tf89FRBhcd4WmS5PKLj8EZrW83F2f+mAp9pSasm1F+tX/bEvDqlPygZJQGBMBd8UZNZF56ZKbO/fbqS14oggyA=="],
+    "@attalabs/aeg-types": ["@attalabs/aeg-types@0.9.0", "", {}, "sha512-nglqIlDDaR4A96SfgeiFOAOdrLB4YiBCa/APFSQoyylzFKPV2Phk8DpU8ueF5qxrhWMfKV4naoJdy2HESnNSVA=="],
 
     "@attalabs/vinaya": ["@attalabs/vinaya@0.8.2", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-hahWcPVb91GWQKmYwat0b7DJQgs8sn11xMWuD9CNyOMz7n/ioJyIMNXljWMWyuTJ40YVVTPXAbWw+4hUSzVdVA=="],
 
-    "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.8.1", "", { "dependencies": { "@attalabs/aeg-core": "0.8.1", "@attalabs/aeg-forge-state": "0.8.1", "@attalabs/aeg-types": "0.8.1", "zod": "3.25.76" } }, "sha512-LazckbrXArD0iNAJQ8Zyz0nqhGh9fJu9lQ4wHVHQZ93z3I/3hZIyh7ZuJyuH9GdOSeH2uEDP3bYzU9qC4saEAg=="],
+    "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.9.0", "", { "dependencies": { "@attalabs/aeg-core": "0.9.0", "@attalabs/aeg-forge-state": "0.9.0", "@attalabs/aeg-types": "0.9.0", "zod": "3.25.76" } }, "sha512-GQUoTu8M5pcEJhPqpglajhP8QNwnKK7ZRpXRd2O4DCDLXpMERk2D7WxodcZlf9t4W3k+KjC7Fh0nyQWK/dNSBA=="],
 
     "@aws-lite/client": ["@aws-lite/client@0.23.7", "", { "dependencies": { "aws4": "^1.13.2" } }, "sha512-Qo/lq96DS8UOg1yFccolMuKG1hKnNStXVYhzVl4tZk/7m+OtANVk2JB8iuYJISc4DF7Dm3Qy+e91L6BGJ1dfkw=="],
 

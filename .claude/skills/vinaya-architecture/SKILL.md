@@ -45,6 +45,35 @@ artifact — workflows, hook blocks, `VINAYA.md` — invoking that member's `dis
 instead of the published package. A repo that means to *adopt* the published CLI must not
 also vendor it.
 
+### Both web apps consume the engine from the registry, not the workspace
+
+`apps/vinaya-portal/web` and `apps/vinaya-studio/web` both declare `@attalabs/aeg-core` and
+`@attalabs/aeg-forge-state` (Portal also `@attalabs/vinaya-sources`) as ordinary registry
+dependencies at a real semver range — never `workspace:*`. attalabs is an adopter of the
+engine here, not its host. Three consequences, each of which has to hold or the swap is
+cosmetic:
+
+- **`package.json` alone does not move resolution.** Bun resolves workspace members by
+  package *name*, so a source file still importing `@atta/aeg-core` keeps resolving to
+  `packages/aeg-core` whatever the manifest declares. Every import specifier — and every
+  doc comment naming the package — has to move with it.
+- **The published packages ship raw `.ts`** via their `exports` field with no build step,
+  so each app's `next.config.ts` must list them in `transpilePackages`; Next refuses to
+  compile `.ts` under `node_modules` otherwise. Studio lists the two engine packages only —
+  `@attalabs/vinaya-sources` stays out, for the zero-imports reason in the anti-patterns
+  below.
+- **The lockfile is the evidence, not a green build.** Confirm each package resolves to a
+  registry tarball with a `sha512` integrity hash rather than a workspace symlink. A build
+  proves nothing on its own: the local `packages/aeg-core`/`packages/aeg-forge-state`
+  members still exist under their `@atta/*` names for the consumers that have not moved, so
+  a wrong specifier fails silently by succeeding against the workspace copy.
+
+Both apps declare the **same** range, so one engine tree resolves for the whole product —
+two ranges would put two copies of the derivation logic behind two surfaces of one product.
+Note that caret pins the *minor* on a `0.x` version (`^0.9.0` means `>=0.9.0 <0.10.0`), so
+picking up a new minor is an explicit edit, and one that belongs to both apps together
+rather than to whichever app is being touched.
+
 ### The one-way import boundary (mechanically enforced)
 
 No web-shaped app may import `cli` internals; `cli` must never import a web app's internals. Each side carries its own vitest/bun-test file walking its own source tree and failing on any specifier reaching across — `apps/vinaya-portal/web/src/lib/import-boundary.test.ts`, `apps/vinaya-studio/web/src/lib/import-boundary.test.ts`, and `cli/tests/import-boundary.test.ts` — deliberately **not** sharing a helper between them, since importing one would itself cross the boundary they exist to defend. Crossing either direction would let one surface reach around the other's derivation and compute governance facts on its own — the renderer-never-derives rule, made structural.
@@ -131,7 +160,7 @@ One of those 15, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 ### `apps/vinaya-portal/web` and `apps/vinaya-studio/web` — the split web surface
 
-**The renderer contract, stated as a rule:** *"Studio renders, it never re-derives."* The rule predates the split and binds both apps equally. Governance state enters either app through exactly two permitted paths — `@atta/aeg-core`'s public API, or a `StateSource`/`DoctrineSource` adapter from `@atta/vinaya-sources` (Portal only — Studio has no dependency on that package at all, see below) — an OR, not a hierarchy; do not "fix" an aeg-core-direct call site into a `StateSource` one on this rule's strength alone. Fetching facts (an HTTP call, a `gh` shell-out inside a `StateSource` adapter, inside `lib/forge`/`lib/repo-state`) is fine; **computing** a derived status, a dispatch verdict, or a diagram layout inside either app is the violation — the derivation must happen inside `aeg-core`, even if the I/O that feeds it happens in the app.
+**The renderer contract, stated as a rule:** *"Studio renders, it never re-derives."* The rule predates the split and binds both apps equally. Governance state enters either app through exactly two permitted paths — `@attalabs/aeg-core`'s public API, or a `StateSource`/`DoctrineSource` adapter from `@attalabs/vinaya-sources` (Portal only — Studio has no dependency on that package at all, see below) — an OR, not a hierarchy; do not "fix" an aeg-core-direct call site into a `StateSource` one on this rule's strength alone. Fetching facts (an HTTP call, a `gh` shell-out inside a `StateSource` adapter, inside `lib/forge`/`lib/repo-state`) is fine; **computing** a derived status, a dispatch verdict, or a diagram layout inside either app is the violation — the derivation must happen inside `aeg-core`, even if the I/O that feeds it happens in the app.
 
 **`DiagramModel` is the one derivation, N consumers principle made concrete:** `deriveDiagramModel` (in `aeg-core`) turns doctrine + config + a live tranche into one renderer-agnostic model; Portal's `/docs/harness` and `/docs/reference`, and Studio's own dashboard, all draw from it, so none re-implements which gate guards which action. The same discipline extends to a gate/check node's `/docs` URL fragment: `nodeDocRoute`'s anchor is the node's display form (an internal doctrine code stripped, an over-length name cut at its first clause), computed once in `aeg-core`, never re-derived per renderer — and when that cleanup changes what a node's anchor used to be, `legacyAnchorSlugs` (also `aeg-core`) is the one place that knows its retired slugs, rendered by Portal as empty alias anchors so no `/docs` deep-link ever goes dead.
 
@@ -171,7 +200,8 @@ Something existing on disk under `apps/vinaya/cli` does not mean it reaches an a
 
 - ❌ Portal or Studio importing anything from `cli/src` (or vice versa) — mechanically caught by each app's own import-boundary test, but know the rule before writing the import.
 - ❌ Computing a derived status, a dispatch verdict, or graph layout logic inside Portal or Studio — that is `aeg-core`'s job; both apps only fetch and render.
-- ❌ Adding `@atta/vinaya-sources` to Studio's `package.json` "for symmetry with Portal" — Studio has zero imports of it; adding it back is an unnecessary dependency now and an unnecessary registry dependency later.
+- ❌ Adding `@attalabs/vinaya-sources` to Studio's `package.json` or its `transpilePackages` "for symmetry with Portal" — Studio has zero imports of it, so this buys nothing and couples Studio to the package's release cadence.
+- ❌ Editing the workspace member `apps/vinaya/sources` expecting an app to change. Both spellings exist in this tree and they are **not** the same code: `@attalabs/vinaya-sources` is the published package, canonically developed in the standalone `atta-labs/vinaya` repo, and it is authoritative for anything an app renders — Portal consumes it from the registry. The local `@atta/vinaya-sources` member is a **stale pre-extraction copy with no consumers at all** — no `package.json` in this repo declares it as a dependency (the only one naming it is its own, as `name`) and no code imports it; it survives only until a deletion task removes it. Do not reach for the "kept for unmigrated consumers" rationale that justifies its siblings: `packages/aeg-core` and `packages/aeg-forge-state` really are still consumed (24 files import them, and `apps/vinaya/sources` is itself one of the consumers — which is why those two cannot be deleted alongside it). Its `src/` diverges from the published tarball in 8 of its 11 files — all three adapters among them — and the published copy carries two source entries the local one does not have at all. Concretely: editing the local `commands.ts` will not change Portal's `/docs/cli`, because that page renders the registry copy's `COMMANDS`.
 - ❌ Adding a second command-list literal instead of extending `COMMANDS`.
 - ❌ A `CheckSpec` field or behavior only a core check can use — breaks the no-privileged-API invariant `tests/checks/no-privileged-api.test.ts` exists to prove.
 - ❌ A check reading `process.env` directly with no `env` declared on its `CheckSpec` — the allowlist is enforced, so such a read is invisible to the child process, and `vinaya doctor`'s permanent missing-declaration diagnostic flags the missing declaration.

@@ -1,13 +1,13 @@
 'use client'
 
 // The `/labels` SUBPATH, never the package barrel. `labels.ts` is pure data
-// with zero imports, but `@atta/aeg-forge-state`'s index re-exports `gh.ts`,
+// with zero imports, but `@attalabs/aeg-forge-state`'s index re-exports `gh.ts`,
 // which uses `node:child_process` — pulling that into a `'use client'` module
 // breaks the Turbopack browser build outright ("the chunking context does not
 // support external modules"). Same hazard `display-label.ts` and
 // `DiagramExplorer.tsx` already document; `bun run check` does not catch it
 // because it never runs `next build`.
-import { label, LABEL_NAMESPACE } from '@atta/aeg-forge-state/labels'
+import { label, LABEL_NAMESPACE } from '@attalabs/aeg-forge-state/labels'
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'

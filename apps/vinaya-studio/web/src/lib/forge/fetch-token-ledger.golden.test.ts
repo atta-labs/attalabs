@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveRepo } from '@atta/aeg-forge-state'
+import { resolveRepo } from '@attalabs/aeg-forge-state'
 import { fetchTrancheTokenLedger } from './fetch-token-ledger'
 
 /**

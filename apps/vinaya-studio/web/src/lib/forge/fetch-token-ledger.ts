@@ -1,6 +1,6 @@
 /**
  * Live token-ledger fetch (aeg-forge-state-v1 task 4b, #445) — the I/O half
- * of the live-read mechanism. `@atta/aeg-core`'s
+ * of the live-read mechanism. `@attalabs/aeg-core`'s
  * `aggregateTaskTokenRows`/`parseTokenReportEntries`/`parseTokensLines` are
  * pure; this file gathers the PR bodies + comments they parse.
  *
@@ -44,8 +44,8 @@
  */
 
 import { graphql } from '@octokit/graphql'
-import { aggregateTaskTokenRows, buildBranchName, type LedgerRow, type TokenSourcePr } from '@atta/aeg-core'
-import { resolveGithubToken } from '@atta/aeg-forge-state'
+import { aggregateTaskTokenRows, buildBranchName, type LedgerRow, type TokenSourcePr } from '@attalabs/aeg-core'
+import { resolveGithubToken } from '@attalabs/aeg-forge-state'
 
 export type FetchTokenLedgerInput = {
   owner: string

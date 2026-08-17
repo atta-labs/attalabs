@@ -19,8 +19,8 @@
  */
 
 import { graphql } from '@octokit/graphql'
-import { buildBranchName } from '@atta/aeg-core'
-import { resolveGithubToken } from '@atta/aeg-forge-state'
+import { buildBranchName } from '@attalabs/aeg-core'
+import { resolveGithubToken } from '@attalabs/aeg-forge-state'
 
 export type PullRequestBrief = {
   /** PR number on the forge. */

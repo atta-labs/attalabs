@@ -5,7 +5,7 @@
  * so a tranche whose projects don't resolve to a board has no route to point
  * at. That is a real state, not an error. `projects` is the union of TWO sources
  * on the tranche's `vinaya/tranche:<slug>`-labelled Issues: the `**Project:**`
- * labels AND each Issue body's `**Project:**` field (`@atta/aeg-forge-state`'s
+ * labels AND each Issue body's `**Project:**` field (`@attalabs/aeg-forge-state`'s
  * `list-tasks.ts`). A tranche resolves to `[]` only when BOTH are absent —
  * a missing `project:*` label alone is not enough, since the field still
  * resolves a board (`state-machine-v1` carries no such label and resolves via

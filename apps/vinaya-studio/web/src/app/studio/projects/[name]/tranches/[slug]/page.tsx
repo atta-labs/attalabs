@@ -1,5 +1,5 @@
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
-import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } from '@atta/aeg-core'
+import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } from '@attalabs/aeg-core'
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'

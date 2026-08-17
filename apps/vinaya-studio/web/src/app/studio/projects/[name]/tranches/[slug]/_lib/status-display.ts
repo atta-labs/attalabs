@@ -1,6 +1,6 @@
 /**
  * Visual mapping for derived statuses. The status set itself is owned by
- * `@atta/aeg-core`'s `DerivedStatus` — this module only assigns labels and
+ * `@attalabs/aeg-core`'s `DerivedStatus` — this module only assigns labels and
  * semantic-token classes. **No tokens are re-derived here**; everything reads
  * the status `deriveTranche` produced.
  *
@@ -16,7 +16,7 @@
  *
  * `todo` additionally has two display-only sub-states (#372 bundled finding):
  * **Ready** / **Blocked · needs #N**, rendered by `todoDispatchVisual` from
- * `checkDispatchReadiness`'s verdict (`@atta/aeg-core`, the same function
+ * `checkDispatchReadiness`'s verdict (`@attalabs/aeg-core`, the same function
  * `verify-dispatch.ts` calls) — never a re-derivation, and unrelated to the
  * `blocked` DerivedStatus above (the anomaly holding-pen). Blocking refs
  * are extracted verbatim from the gate's own `blockers` strings.
@@ -36,7 +36,7 @@
  * two lifecycle states separate by weight rather than by family.
  */
 
-import { type DerivedStatus, type DispatchResult, label } from '@atta/aeg-core'
+import { type DerivedStatus, type DispatchResult, label } from '@attalabs/aeg-core'
 
 export const STATUS_ORDER: DerivedStatus[] = [
   'todo',

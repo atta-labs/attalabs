@@ -1,4 +1,4 @@
-import { checkDispatchReadiness, type ForgeFacts, type Task } from '@atta/aeg-core'
+import { checkDispatchReadiness, type ForgeFacts, type Task } from '@attalabs/aeg-core'
 import { describe, expect, it } from 'vitest'
 import { buildDispatchGateInput, type DispatchInputSources } from './map-dispatch-input'
 

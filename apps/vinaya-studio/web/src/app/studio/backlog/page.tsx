@@ -22,8 +22,8 @@
  * tracked" empty state.
  */
 
-import type { Registry } from '@atta/aeg-core'
-import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
+import type { Registry } from '@attalabs/aeg-core'
+import { resolveGithubToken, resolveRepo } from '@attalabs/aeg-forge-state'
 import type { Metadata } from 'next'
 import { readRegistry } from '@/lib/repo-state'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
