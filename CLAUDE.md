@@ -29,8 +29,9 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
-| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Active — landing live; CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter; the vendored `cli/` workspace is deleted); CMS-backed via Vitakka's reused Sanity project |
-| Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` (not yet repointed) | The public site extracted out of `apps/vinaya/web` — same product, its own app. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. `apps/vinaya/web` still exists and is still what production serves; it is the rollback until the deployment is repointed here, and is deleted only once that has happened and Studio has moved to its own app. Until then both apps build — run this one with `dev:vinaya-portal` (port 3007), the original with `dev:vinaya` (port 3006) |
+| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Active — landing live; CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter; the vendored `cli/` workspace is deleted); CMS-backed via Vitakka's reused Sanity project. `apps/vinaya` itself now holds only `sources/` and `specs/` — the web surface split into the two rows below |
+| Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` | The public site extracted out of the original `apps/vinaya/web` app — same product, its own app. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. Deployed and live (Vercel repointed here); the original `apps/vinaya/web` was deleted once this app and Vinaya Studio (below) both proved out. Run with `dev:vinaya-portal` (port 3007) |
+| Vinaya Studio | [apps/vinaya-studio/](apps/vinaya-studio/) | — | [README.md](apps/vinaya-studio/web/README.md) | not deployed (local-only) | The local governance dashboard extracted out of the original `apps/vinaya/web` app — `/studio`, `/studio/projects`, `/studio/tranches`, `/studio/backlog`. Never deployed: no production/preview gate, no Portal↔Studio switch, because there is structurally nothing to gate against. Run with `dev:vinaya-studio` (port 3008) |
 
 ## App Structure Convention
 
@@ -41,15 +42,15 @@ apps/{product-ai}/
 ├── web/              # Next.js web app (Vāda, Atta, Herald)
 ├── mobile/           # React Native (Herald — iOS + Android)
 ├── mcp/              # MCP server (Vāda, Atta, Herald)
-├── cli/              # CLI binary (Vinaya)
+├── sources/          # StateSource/DoctrineSource adapters (Vinaya)
 ├── specs/            # Product-internal specs
 ├── CLAUDE.md         # Product overview
 └── README.md
 ```
 
-Not every product needs every surface. Vinaya is web + cli. Vāda is web + mcp.
+Not every product needs every surface. Vāda is web + mcp. Vinaya's CLI is a separate published package (`@attalabs/vinaya`, developed in the standalone `atta-labs/vinaya` repo), not a local `cli/` workspace.
 
-One product may also span more than one `apps/` directory: Vinaya's public site lives in `apps/vinaya-portal/web`, separate from `apps/vinaya/`, because the site and the local-only Studio deploy independently.
+One product may also span more than one `apps/` directory: Vinaya's web surface lives in two sibling apps, `apps/vinaya-portal/web` (deployed public site) and `apps/vinaya-studio/web` (local-only governance dashboard), separate from `apps/vinaya/` (sources + specs), because the site and Studio deploy independently.
 
 ---
 
@@ -174,7 +175,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | AEG Model | [.claude/skills/aeg-model/SKILL.md](.claude/skills/aeg-model/SKILL.md) | Governance doctrine (`aeg-root/**`) — four truth domains, three-ring enforcement, tranche lifecycle, role/contract seam |
 | AEG Core | [.claude/skills/aeg-core/SKILL.md](.claude/skills/aeg-core/SKILL.md) | `@atta/aeg-core`'s pure gate evaluators — dispatch readiness, doc-coverage C5, coherence oracle, diagram model |
 | AEG Forge State | [.claude/skills/aeg-forge-state/SKILL.md](.claude/skills/aeg-forge-state/SKILL.md) | `@atta/aeg-forge-state`'s forge-derivation adapter — Milestones + labeled Issues, zero topology file |
-| Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — CLI/web/sources split, check engine, install lifecycle, renderer contract |
+| Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — portal/studio/sources split, check engine, install lifecycle, renderer contract |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Brief Authoring | [aeg-root/skills/brief-authoring/SKILL.md](aeg-root/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |

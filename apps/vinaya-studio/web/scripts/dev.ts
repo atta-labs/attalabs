@@ -1,10 +1,9 @@
 import net from 'node:net'
 import { spawn } from 'node:child_process'
 
-// Studio owns 3008/3108, distinct from `apps/vinaya/web`'s 3006/3106 and
-// `apps/vinaya-portal/web`'s 3007/3107. Three apps under the same CMS theme
-// serving the same product are easy to confuse — keep the pairs distinct
-// until `apps/vinaya/web` is deleted (task 4/#886).
+// Studio owns 3008/3108, distinct from `apps/vinaya-portal/web`'s 3007/3107.
+// Two apps under the same CMS theme serving the same product are easy to
+// confuse — keep the pairs distinct.
 const PRIMARY_PORT = 3008
 const FALLBACK_PORT = 3108
 

@@ -11,9 +11,9 @@
  *       another surfaced doc.
  *
  * (a) and (b) mirror the real parent/child resolution
- * `apps/vinaya/web/src/lib/docs/nest-doc-children.ts` performs when building
- * Vinaya's live `/docs` nav (a Portal route since `vinaya-pages-v1` task 8;
- * that file is read-only reference here, never imported): a doc whose
+ * `apps/vinaya-portal/web/src/lib/docs/nest-doc-children.ts` performs when
+ * building Vinaya Portal's live `/docs` nav (that file is read-only
+ * reference here, never imported): a doc whose
  * `parent:` frontmatter points at
  * a nonexistent (or excluded) slug is silently dropped from that nav's flat
  * list — reachable neither at the top level nor as anyone's child. That

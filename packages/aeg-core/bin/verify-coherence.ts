@@ -21,8 +21,8 @@
  *   GITHUB_TOKEN='' bun packages/aeg-core/bin/verify-coherence.ts   # test no-token path
  *
  * CWD-independent by design: chdir's to the repo root immediately below, since
- * this script is also spawned as a subprocess (apps/vinaya/web's
- * /api/coherence route) without an explicit cwd — every relative path in this
+ * this script is also spawned as a subprocess (Vinaya Studio's
+ * /api/coherence route, apps/vinaya-studio/web) without an explicit cwd — every relative path in this
  * file (DOC_OWNERS_PATH, aeg-root/, etc.) must resolve correctly regardless of
  * the invoking process's own working directory.
  */

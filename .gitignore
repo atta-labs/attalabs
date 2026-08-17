@@ -13,24 +13,13 @@ build/
 # — scoped precisely, never the real doctrine source at repo-root aeg-root/.
 /apps/vinaya/cli/aeg-root/
 # Build-time standalone Studio bundle (bundle-studio.ts) — the built,
-# packageable copy of apps/vinaya/web, not the app's own source.
+# packageable copy of apps/vinaya-studio/web, not the app's own source.
 /apps/vinaya/cli/studio-standalone/
 docs/
 # Re-include AEG docs renderer (aeg-core).
 !packages/aeg-core/src/docs/
 !packages/aeg-core/src/docs/**
-# Re-include Vinaya Studio's docs redirect stubs (vinaya-studio-v1 task 1
-# addendum; the live route itself moved to (site)/docs below, vinaya-pages-v1
-# task 8, #568).
-!apps/vinaya/web/src/app/studio/docs/
-!apps/vinaya/web/src/app/studio/docs/**
-# Re-include Vinaya's live docs route, moved from studio/docs/ to the (site)
-# Portal route group (vinaya-pages-v1 task 8, #568).
-!apps/vinaya/web/src/app/(site)/docs/
-!apps/vinaya/web/src/app/(site)/docs/**
-!apps/vinaya/web/src/lib/docs/
-!apps/vinaya/web/src/lib/docs/**
-# Same re-include for the extracted Portal app (vinaya-portal-studio-split-v1
+# Re-include for the Portal app (vinaya-portal-studio-split-v1
 # task 1, #883). Without it the whole docs route group and its loaders are
 # silently untracked — the app builds locally off working-tree files and the
 # commit ships a Portal with no /docs at all.

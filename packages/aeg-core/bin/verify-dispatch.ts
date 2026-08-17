@@ -283,7 +283,7 @@ function resolvePriorTask(
  * Milestone-aware candidate discovery (aeg-review-gate-v1 task 1, #474,
  * amendment): "active" is a GitHub Milestone titled exactly the tranche
  * slug, open — the SAME `listActiveTrancheSlugs` Studio's
- * `readOtherActiveTranches` (`apps/vinaya/web/src/lib/forge/
+ * `readOtherActiveTranches` (`apps/vinaya-studio/web/src/lib/forge/
  * dispatch-readiness.ts`, task 5, #429) already calls, shared rather than
  * duplicated per this task's own "no parallel implementation" discipline.
  * Previously read the local `aeg-root/tranches/*.md` file listing —

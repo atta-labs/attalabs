@@ -10,12 +10,13 @@ Vinaya is a governance layer for AI coding agents — deterministic checks that 
 
 | Surface | Path | Package | Status |
 |---------|------|---------|--------|
-| Web | `web/` | `@atta/vinaya-web` | Live — see below |
+| Web (Portal) | `../vinaya-portal/web/` | `@atta/vinaya-portal-web` | Live — deployed public site |
+| Web (Studio) | `../vinaya-studio/web/` | `@atta/vinaya-studio-web` | Local-only — never deployed |
 | CLI | standalone `atta-labs/vinaya` repo (`apps/cli`) | `@attalabs/vinaya` | Live on npm — installed into this monorepo as a devDependency; the vendored `cli/` workspace was deleted (attalabs-adoption) |
 
 ### Web
 
-Landing + Vinaya CLI command reference (`/docs/cli`) pages live. `/config` renders every `vinaya.config.json` key plus the `vinaya check --plan --json` envelope, from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` registry, coupling-tested against `VinayaConfigSchema`. `/install`, `/the-harness`, `/state-machine`, and `/cli` all permanently redirect to their `/docs/*` equivalents. `/start` is the adopter's path, a `/docs`-shaped sidebar section: `/start/quick` (four steps to a governed repo) plus one page per loop stage under "Ship with Vinaya". Studio dashboard is live locally at `/studio` (redirects to the `/the-studio` Portal page in production). `/docs` is a 4-card hub (Harness, State Machine, CLI, Reference); the methodology-doc browser lives at `/docs/reference` (every old `/studio/docs`, bare `/docs` path permanently redirects). Site-wide TopBar on every route. Full detail: [web/CLAUDE.md](web/CLAUDE.md).
+The original single `web` app split into two sibling apps — `apps/vinaya-portal/web` (public) and `apps/vinaya-studio/web` (local-only) — once both proved out; `apps/vinaya/web` itself is deleted. Landing + Vinaya CLI command reference (`/docs/cli`) pages live on Portal. `/config` renders every `vinaya.config.json` key plus the `vinaya check --plan --json` envelope, from `@atta/vinaya-sources`' `CONFIG_REFERENCE`/`PLAN_JSON_SCHEMA` registry, coupling-tested against `VinayaConfigSchema`. `/install`, `/the-harness`, `/state-machine`, and `/cli` all permanently redirect to their `/docs/*` equivalents. `/start` is the adopter's path, a `/docs`-shaped sidebar section: `/start/quick` (four steps to a governed repo) plus one page per loop stage under "Ship with Vinaya". Studio dashboard is live locally at `/studio` on the Studio app — never deployed, no production/preview redirect. `/docs` is a bare redirect to `/docs/reference`, the methodology-doc browser (every old `/studio/docs`, bare `/docs` path permanently redirects). Site-wide TopBar on every route. Full detail: see the **vinaya-architecture** skill.
 
 ### CLI
 
@@ -29,7 +30,7 @@ Developed in the standalone `atta-labs/vinaya` repository (`apps/cli`); this mon
 - `vinaya archive` / `vinaya audit` — the ring-2 post-merge/scheduled mechanisms (per-task Archivist provenance + close-out, dead-branch-push drift, direct-main-push detection), callable directly instead of only via the generated `vinaya-archivist.yml` workflow.
 - `vinaya doctor` / `upgrade` — the rest of the install lifecycle: `doctor` diagnoses hooks, workflows, `vinaya.config.json`'s manifest coherence, the doctrine pointer, environment (`gh` auth, Node/Bun, package-vs-artifact skew), branch protection (report-only), and custom-check registration, never mutating anything; `upgrade` regenerates vinaya-owned artifacts to the installed package's current generators via the same diff-and-confirm engine `init` uses, leaving adopter-owned config content untouched (doctrine now bundles into the package; install-lifecycle detail now lives in `atta-labs/vinaya`, not this repo's spec).
 
-Every command's name/description/flags/status lives in `@atta/vinaya-sources`' `src/commands.ts`'s `COMMANDS` registry, which both the CLI's `printHelp()` and `apps/vinaya/web`'s `/docs/cli` page render. `scripts/verify-published-lifecycle.ts` (`bun run verify-published-lifecycle`) proves the full shipped-command lifecycle against the real published `@attalabs/vinaya` from the public registry, derived from the same `COMMANDS` registry.
+Every command's name/description/flags/status lives in `@atta/vinaya-sources`' `src/commands.ts`'s `COMMANDS` registry, which both the CLI's `printHelp()` and Portal's `/docs/cli` page render. `scripts/verify-published-lifecycle.ts` (`bun run verify-published-lifecycle`) proves the full shipped-command lifecycle against the real published `@attalabs/vinaya` from the public registry, derived from the same `COMMANDS` registry.
 
 ---
 

@@ -124,17 +124,20 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # can only ever fire on the deletion diff itself, then never again.
 
 # ── governance-skill-coverage residual, task 5 (#678, 2026-08-08) ─────────
-# apps/vinaya's residual (web/**, sources/**, and the rest of cli/** beyond
-# the three narrow bindings above) is real product code with a real
-# architecture doc behind it — apps/vinaya/specs/vinaya-spec.md documents
-# the routes, check engine, config, install lifecycle, forge writes, and
-# renderer contract in depth, and .claude/skills/vinaya-architecture/SKILL.md
-# (this task) distills that spec into the same architecture-first shape
-# .claude/skills/vada-architecture/SKILL.md already uses for its own
-# apps/vada-ai/** binding below — same pattern, same honesty bar. This
-# binding stacks with the three narrower ones above (a commands/** change
-# still owes sources/src/commands.ts too), matching how apps/vada-ai/**
-# already stacks under its own narrower mcp-server/home-sections bindings.
+# apps/vinaya's residual (sources/**, plus specs/CLAUDE.md/README.md) is
+# real product code with a real architecture doc behind it —
+# apps/vinaya/specs/vinaya-spec.md documents the routes, check engine,
+# config, install lifecycle, forge writes, and renderer contract in depth,
+# and .claude/skills/vinaya-architecture/SKILL.md (this task) distills that
+# spec into the same architecture-first shape .claude/skills/vada-architecture
+# /SKILL.md already uses for its own apps/vada-ai/** binding below — same
+# pattern, same honesty bar. This binding stacks with the three narrower
+# ones above (a commands/** change still owes sources/src/commands.ts too),
+# matching how apps/vada-ai/** already stacks under its own narrower
+# mcp-server/home-sections bindings. `apps/vinaya/web` was deleted (task 4,
+# #886) — the glob's live surface is now sources/**, specs/**, CLAUDE.md,
+# README.md only; the routes it used to cover live in apps/vinaya-portal/**
+# and apps/vinaya-studio/** below.
 
 apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
 
@@ -146,10 +149,16 @@ apps/vinaya/**                                        .claude/skills/vinaya-arch
 # `.claude/skills/vinaya-architecture/SKILL.md` is the same target as
 # `apps/vinaya/**` above — this task updates that skill's workspace tree to
 # describe the CLI/portal/studio/sources split, so the doc a Studio change
-# owes is the doc this task itself keeps coherent. `apps/vinaya-portal/**`
-# stays unbound here on purpose: task 4 (#886) owns that binding (plus the
-# `.vinaya/projects.md` registry decision it's coupled to) per the same
-# amendment, and adding a second, possibly conflicting line for it here
-# would be exactly the collision task 4's brief was written to avoid.
+# owes is the doc this task itself keeps coherent.
 apps/vinaya-studio/**                                 .claude/skills/vinaya-architecture/SKILL.md
+
+# ── Portal binding, task 4 (#886, 2026-08-17) ─────────────────────────────
+# `apps/vinaya-portal/**` was deliberately left unbound by task 3 (#885) —
+# reserved for this task, which also settles the .vinaya/projects.md
+# registry decision it's coupled to (own `vinaya-portal`/`vinaya-studio`
+# rows — see that file). Same target as the Studio binding above: this task
+# is what keeps `.claude/skills/vinaya-architecture/SKILL.md` coherent with
+# the whole apps/vinaya*/** tree, so a Portal change and a Studio change
+# both owe the one file this PR itself updates.
+apps/vinaya-portal/**                                 .claude/skills/vinaya-architecture/SKILL.md
 

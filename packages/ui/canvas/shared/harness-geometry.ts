@@ -1,6 +1,6 @@
 // Shared polar helpers for the harness ring (ring band + conduits + gripper columns).
 // Pure geometry — screen coords, y-down. Angles in degrees, 0° = east, clockwise.
-// Ported from apps/vinaya/web's SVG HarnessStructure (harness-geometry.ts) — same math,
+// Ported from apps/vinaya-portal/web's SVG HarnessStructure (harness-geometry.ts) — same math,
 // consumed here by the canvas-drawn HarnessRing so both stay geometrically identical.
 
 // Ring segments + columns sit on the DIAGONALS, so the top/bottom of the ring stays

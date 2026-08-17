@@ -308,7 +308,7 @@ const theme = await client.fetch(`*[_type == "uiTheme"][0]`)
 
 **`extraActions` on `withAuth={false}`:** unlike `signedInLinks`/`accountMenu`/`SignInButton`, `extraActions` is NOT gated on auth mode — it renders unconditionally on both `TopBarWithAuth` and `TopBarNoAuth`, since there is no signed-in state to gate it on in the no-auth variant. Use it for content that must appear regardless of auth (e.g. a product switch next to `ColorSchemeToggle`) even on a `withAuth={false}` consumer.
 
-**`TopBarLink.label` takes a `ReactNode`, not just a `string`.** A plain string renders exactly as before — every existing consumer's `links`/`signedInLinks` array is unaffected. Passing a decorated node instead (e.g. a label wrapped in a small self-contained client component) renders that node in the same slot, in both the desktop centered nav and the mobile sheet row, with no other change to `TopBar` itself. Vinaya's `ElectricLabel` (`apps/vinaya/web/src/app/(site)/_components/ElectricLabel.tsx`) is the first consumer: it self-detects whether its own `href` is the active route (via `usePathname()`, mirroring `TopBar`'s own `isActive`) and renders a `<canvas>` accent only then — `TopBar` stays agnostic to what a decorated label actually does.
+**`TopBarLink.label` takes a `ReactNode`, not just a `string`.** A plain string renders exactly as before — every existing consumer's `links`/`signedInLinks` array is unaffected. Passing a decorated node instead (e.g. a label wrapped in a small self-contained client component) renders that node in the same slot, in both the desktop centered nav and the mobile sheet row, with no other change to `TopBar` itself. Vinaya's `ElectricLabel` (`apps/vinaya-portal/web/src/app/(site)/_components/ElectricLabel.tsx`) is the first consumer: it self-detects whether its own `href` is the active route (via `usePathname()`, mirroring `TopBar`'s own `isActive`) and renders a `<canvas>` accent only then — `TopBar` stays agnostic to what a decorated label actually does.
 
 **`links`/`signedInLinks` accept `TopBarNavItem[]` — a `TopBarLink | TopBarLinkGroup` union.** A group is discriminated by carrying `items: TopBarGroupItem[]` (a flat `TopBarLink` never has that key). `TopBarLink[]` remains assignable wherever `TopBarNavItem[]` is expected, so every existing flat-array consumer compiles and renders unchanged — nothing about the union is opt-in per consumer, it's just a wider type that nobody has to touch until they actually want a group.
 
@@ -369,7 +369,7 @@ The reasoning test: *would every other consumer want this change?* If yes, it be
 `components/interactive/` wrapper (see RULE 1b). If it only holds inside your container, it
 belongs on your container. Either way it never goes in `installed/`.
 
-Live example: `apps/vinaya/web`'s `studio/backlog/_components/BacklogTable.tsx`.
+Live example: `apps/vinaya-studio/web`'s `studio/backlog/_components/BacklogTable.tsx`.
 Note that `table-fixed` `w-[..%]` widths are one 100% budget — widening one column means
 rebalancing the whole set, not just editing one value.
 
