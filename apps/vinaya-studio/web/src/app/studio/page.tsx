@@ -18,7 +18,7 @@
  */
 
 import { NextLink } from '@atta/ui/lib/next-link'
-import { resolveGithubToken, resolveRepo } from '@atta/aeg-forge-state'
+import { resolveGithubToken, resolveRepo } from '@attalabs/aeg-forge-state'
 import type { Metadata } from 'next'
 import { listTranches, readRegistry, type TrancheSummary } from '@/lib/repo-state'
 import { trancheHref, NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'

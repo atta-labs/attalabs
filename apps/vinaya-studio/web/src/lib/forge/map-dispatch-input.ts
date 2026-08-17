@@ -1,6 +1,6 @@
 /**
  * Pure mapper: Studio's already-fetched forge facts → `DispatchGateInput` for
- * `@atta/aeg-core`'s `checkDispatchReadiness` (#372 bundled finding). No I/O —
+ * `@attalabs/aeg-core`'s `checkDispatchReadiness` (#372 bundled finding). No I/O —
  * isolated from the loader (`dispatch-readiness.ts`) so the fact assembly is
  * testable with fixtures, same split as `map-forge-facts.ts`.
  *
@@ -44,7 +44,7 @@ import {
   type DispatchPriorTrancheFact,
   type ForgeFacts,
   type Task
-} from '@atta/aeg-core'
+} from '@attalabs/aeg-core'
 
 export type DispatchInputSources = {
   trancheSlug: string

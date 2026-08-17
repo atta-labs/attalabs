@@ -1,4 +1,4 @@
-import { LABEL_NAMESPACE, LABELS, matchesLabel } from '@atta/aeg-forge-state/labels'
+import { LABEL_NAMESPACE, LABELS, matchesLabel } from '@attalabs/aeg-forge-state/labels'
 import { Badge } from '@atta/ui/components'
 
 /**
@@ -8,7 +8,7 @@ import { Badge } from '@atta/ui/components'
  * flat semantic-token variant per family; the doctrine forbids a per-value
  * palette. `needs:*` reads `warning`; there is no `info`/blue token.
  *
- * The category comes from the code-owned vocabulary (`@atta/aeg-forge-state`'s
+ * The category comes from the code-owned vocabulary (`@attalabs/aeg-forge-state`'s
  * `labels.ts`), not from a prefix written here — that is what keeps this
  * component correct across a namespace rename (#614). `project` is NOT a label
  * kind: project is a body field, so the backlog renders project names from the
@@ -16,7 +16,7 @@ import { Badge } from '@atta/ui/components'
  *
  * Server-safe (no client hooks) so it renders in both server and client trees —
  * and it is reached from a `'use client'` module (`BacklogTable.tsx`), which is
- * why the vocabulary comes from the pure `@atta/aeg-forge-state/labels` SUBPATH
+ * why the vocabulary comes from the pure `@attalabs/aeg-forge-state/labels` SUBPATH
  * and never the package barrel: the barrel re-exports `gh.ts`'s
  * `node:child_process`, which Turbopack cannot bundle for the browser.
  */

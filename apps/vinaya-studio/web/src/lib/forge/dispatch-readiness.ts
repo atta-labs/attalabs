@@ -1,7 +1,7 @@
 /**
  * Dispatch-readiness loader for the tranche board (#372 bundled finding).
  *
- * For tasks in `todo` status only, computes `@atta/aeg-core`'s
+ * For tasks in `todo` status only, computes `@attalabs/aeg-core`'s
  * `checkDispatchReadiness` — the exact function `bin/verify-dispatch.ts`
  * calls to print `READY`/`NOT READY` — so the board's `Todo` badge can show
  * whether a task is genuinely dispatchable right now.
@@ -36,8 +36,8 @@ import {
   type DispatchResult,
   type Tranche,
   type Task
-} from '@atta/aeg-core'
-import { fetchProvenance, resolveGithubToken } from '@atta/aeg-forge-state'
+} from '@attalabs/aeg-core'
+import { fetchProvenance, resolveGithubToken } from '@attalabs/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
 import { loadActiveTranches } from '../repo-state'
 import type { TrancheSnapshot } from './load-snapshot'

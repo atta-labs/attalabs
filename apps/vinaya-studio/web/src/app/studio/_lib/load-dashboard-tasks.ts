@@ -83,7 +83,7 @@ export async function loadDashboardTasks(): Promise<DashboardTask[]> {
 
   // Fan the per-tranche forge reads out in parallel — each tranche's
   // snapshot + readiness are independent, and the underlying forge derivation
-  // is now genuinely async (`@atta/aeg-forge-state` async twins), so the old
+  // is now genuinely async (`@attalabs/aeg-forge-state` async twins), so the old
   // serial `for…of await` loop needlessly summed every tranche's latency.
   const perTranche = await Promise.all(
     active.map(async ({ fileSlug, tranche }) => {

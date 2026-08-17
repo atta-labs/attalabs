@@ -11,7 +11,12 @@ export default async function config(): Promise<NextConfig> {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       return config
     },
-    transpilePackages: ['@atta/ui'],
+    // @attalabs/* packages publish raw .ts source (no build step) via their
+    // `exports` field, same as the workspace-local @atta/ui above — Turbopack
+    // refuses to compile .ts under node_modules unless listed here.
+    // `@attalabs/vinaya-sources` is deliberately absent: Studio has zero
+    // imports of it (unlike `apps/vinaya-portal/web`).
+    transpilePackages: ['@atta/ui', '@attalabs/aeg-core', '@attalabs/aeg-forge-state'],
     // Studio is local-only and never deploys to Vercel (no ProductSwitch, no
     // deploy-time gating — the app simply is not deployed), so unlike
     // `apps/vinaya-portal/web`'s `next.config.ts`, there is deliberately no

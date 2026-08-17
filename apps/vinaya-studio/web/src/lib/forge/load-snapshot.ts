@@ -9,7 +9,7 @@
  *      pre-date the labeling convention).
  *   3. Calls `fetchForgeFacts` for every task in the tranche that has an
  *      Issue number.
- *   4. Hands the raw `tranche` + facts map to `@atta/aeg-core`'s
+ *   4. Hands the raw `tranche` + facts map to `@attalabs/aeg-core`'s
  *      `deriveTranche` — derived status is **read from aeg-core, never
  *      re-derived in components** (`tranche-model.md` §3 + task 5 brief).
  *
@@ -31,8 +31,8 @@ import {
   type ForgeFacts,
   type Tranche,
   type PrRef
-} from '@atta/aeg-core'
-import { resolveRepo, type RepoRef } from '@atta/aeg-forge-state'
+} from '@attalabs/aeg-core'
+import { resolveRepo, type RepoRef } from '@attalabs/aeg-forge-state'
 import { bucketTaskStatuses, emptyTaskBuckets, type TaskBuckets } from './task-buckets'
 
 export type TrancheSnapshot = {

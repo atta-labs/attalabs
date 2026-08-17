@@ -1,4 +1,4 @@
-import { DERIVED_STATUSES, type DerivedStatus } from '@atta/aeg-core'
+import { DERIVED_STATUSES, type DerivedStatus } from '@attalabs/aeg-core'
 import { describe, expect, it } from 'vitest'
 import { bucketTaskStatuses, type TaskBuckets } from './task-buckets'
 
@@ -9,7 +9,7 @@ import { bucketTaskStatuses, type TaskBuckets } from './task-buckets'
  * `dropped` fell through a `default` into `backlog`, which the card then
  * folded into `todo`.
  *
- * The status list is read from `@atta/aeg-core`'s own `DERIVED_STATUSES`
+ * The status list is read from `@attalabs/aeg-core`'s own `DERIVED_STATUSES`
  * rather than hand-copied here (the same import `(site)/docs/(standalone)/state-machine`'s
  * loader test uses), so a status added upstream reaches this suite instead of
  * quietly falling outside a local literal that still passes.

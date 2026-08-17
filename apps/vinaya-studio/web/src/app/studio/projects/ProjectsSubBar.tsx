@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { ChromeFrame } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Flex } from '@atta/ui/shared'
-import type { Project } from '@atta/aeg-core'
+import type { Project } from '@attalabs/aeg-core'
 
 export function ProjectsSubBar({ projects }: { projects: Project[] }) {
   const pathname = usePathname()
