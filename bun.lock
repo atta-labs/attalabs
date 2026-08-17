@@ -250,11 +250,11 @@
       "name": "@atta/vinaya-studio-web",
       "version": "0.1.0",
       "dependencies": {
-        "@atta/aeg-core": "workspace:*",
-        "@atta/aeg-forge-state": "workspace:*",
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
+        "@attalabs/aeg-core": "^0.8.0",
+        "@attalabs/aeg-forge-state": "^0.8.0",
         "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
