@@ -2,9 +2,9 @@
 
 **Status:** draft
 **Scope:** Herald web app (`apps/herald-ai/web`) — routes, topbar, library resolution, settings, public profile, audit pipeline, MCP surface.
-**Last updated:** 2026-06-25 (post `herald-agents-v2` task 8 — owner routes under `/[username]`, topbar icon buttons; reconciled with the central-CMS theme/library resolution).
+**Last updated:** 2026-08-18 — § 4 states the library-resolution invariant in prose, including what does and does not enforce it. Prior substantive revision 2026-06-25 (post `herald-agents-v2` task 8 — owner routes under `/[username]`, topbar icon buttons; reconciled with the central-CMS theme/library resolution).
 
-This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14), the `herald-agents-v2` MCP surface (task 3), and the `herald-agents-v2` owner-routes relocation (task 8). It is the canonical reference for how the Herald app is structured. Decisions behind it: standalone Clerk/DB, one Bulk Audit operation, library resolution (Lock: YES), flat routes + unified topbar, auditor on `@atta/engine` via solo YAML, endpoints unified into `/api/audit`, agent package extraction, MCP surface, central-CMS theme/library resolution under attalabs, and owner `/ui` + `/settings` relocated under `/[username]` (supersedes the earlier flat-routes-era route + nav approach).
+This spec records the architecture established by the `herald-profile-refactor` work (June 2026) plus the `herald-onto-engine` migration (tasks 1–2, June 13–14), the `herald-agents-v2` MCP surface (task 3), and the `herald-agents-v2` owner-routes relocation (task 8). It is the canonical reference for how the Herald app is structured. Decisions behind it: standalone Clerk/DB, one Bulk Audit operation, library resolution, flat routes + unified topbar, auditor on `@atta/engine` via solo YAML, endpoints unified into `/api/audit`, agent package extraction, MCP surface, central-CMS theme/library resolution under attalabs, and owner `/ui` + `/settings` relocated under `/[username]` (supersedes the earlier flat-routes-era route + nav approach).
 
 ---
 
@@ -76,6 +76,8 @@ The earlier bespoke desktop centered-identity column was deleted (it caused over
 ## 4. Library resolution — the critical invariant
 
 Herald has two library-resolution paths. Getting these crossed is the single most expensive bug this refactor produced, so the rule is explicit:
+
+**This section is the invariant's home, and the rule below is not renegotiable inside an ordinary task.** A change that would let app chrome render the visitor's library, or let the public profile render the build-time one, is a deliberate architectural reversal — it is decided first and edited second, never the other way round. Nothing enforces that mechanically: there is no build step, lint rule or test that fails when the two paths cross, and the annotation in `app/[username]/(owner)/layout.tsx` that used to imply otherwise claimed a protection that never existed in code. What actually holds the rule is the route-group split described below plus whoever reads the diff, which is why the constraint is written out here in full rather than compressed into a flag.
 
 - **App chrome** — main `HeraldTopBar`, Bulk Audit, onboarding, the owner appearance editor at `/[username]/ui`, and the owner Settings at `/[username]/settings` — MUST render the **build-time CMS library** (`@atta/ui/components`, aliased to `packages/ui/generated/herald/components.ts`, generated from `heraldConfig.userInterface.library.id`). This is the app's fixed design system. It is **not** user-configurable.
 - **The user's saved library preference (`user.library`)** applies **only** to their public `/[username]` profile (the `(profile)` route group), resolved dynamically via `useComponents()` / `LibraryProvider` (`EnvoyLibraryShell`).
