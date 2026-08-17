@@ -45,6 +45,35 @@ artifact — workflows, hook blocks, `VINAYA.md` — invoking that member's `dis
 instead of the published package. A repo that means to *adopt* the published CLI must not
 also vendor it.
 
+### Both web apps consume the engine from the registry, not the workspace
+
+`apps/vinaya-portal/web` and `apps/vinaya-studio/web` both declare `@attalabs/aeg-core` and
+`@attalabs/aeg-forge-state` (Portal also `@attalabs/vinaya-sources`) as ordinary registry
+dependencies at a real semver range — never `workspace:*`. attalabs is an adopter of the
+engine here, not its host. Three consequences, each of which has to hold or the swap is
+cosmetic:
+
+- **`package.json` alone does not move resolution.** Bun resolves workspace members by
+  package *name*, so a source file still importing `@atta/aeg-core` keeps resolving to
+  `packages/aeg-core` whatever the manifest declares. Every import specifier — and every
+  doc comment naming the package — has to move with it.
+- **The published packages ship raw `.ts`** via their `exports` field with no build step,
+  so each app's `next.config.ts` must list them in `transpilePackages`; Next refuses to
+  compile `.ts` under `node_modules` otherwise. Studio lists the two engine packages only —
+  `@attalabs/vinaya-sources` stays out, for the zero-imports reason in the anti-patterns
+  below.
+- **The lockfile is the evidence, not a green build.** Confirm each package resolves to a
+  registry tarball with a `sha512` integrity hash rather than a workspace symlink. A build
+  proves nothing on its own: the local `packages/aeg-core`/`packages/aeg-forge-state`
+  members still exist under their `@atta/*` names for the consumers that have not moved, so
+  a wrong specifier fails silently by succeeding against the workspace copy.
+
+Both apps declare the **same** range, so one engine tree resolves for the whole product —
+two ranges would put two copies of the derivation logic behind two surfaces of one product.
+Note that caret pins the *minor* on a `0.x` version (`^0.9.0` means `>=0.9.0 <0.10.0`), so
+picking up a new minor is an explicit edit, and one that belongs to both apps together
+rather than to whichever app is being touched.
+
 ### The one-way import boundary (mechanically enforced)
 
 No web-shaped app may import `cli` internals; `cli` must never import a web app's internals. Each side carries its own vitest/bun-test file walking its own source tree and failing on any specifier reaching across — `apps/vinaya-portal/web/src/lib/import-boundary.test.ts`, `apps/vinaya-studio/web/src/lib/import-boundary.test.ts`, and `cli/tests/import-boundary.test.ts` — deliberately **not** sharing a helper between them, since importing one would itself cross the boundary they exist to defend. Crossing either direction would let one surface reach around the other's derivation and compute governance facts on its own — the renderer-never-derives rule, made structural.
