@@ -18,7 +18,9 @@ apps/vinaya/
 ├── cli/        EXTRACTED — canonical home is the standalone atta-labs/vinaya repo (apps/cli).
 │               attalabs deleted its vendored copy and installs the published @attalabs/vinaya
 │               from npm instead; the `cli/…` paths cited below now resolve in that repo.
-├── sources/    @atta/vinaya-sources — the StateSource/DoctrineSource adapters + COMMANDS registry
+├── sources/    @atta/vinaya-sources — StateSource/DoctrineSource adapters + COMMANDS registry.
+│               STALE pre-extraction copy, zero consumers in this repo — the registry that
+│               actually renders is the published @attalabs/vinaya-sources (see Anti-patterns)
 └── specs/      vinaya-spec.md — the web-surface spec (routes, Pages table, now split per-app);
               CLI/check-engine/config/install-lifecycle content moved to atta-labs/vinaya with
               the code
