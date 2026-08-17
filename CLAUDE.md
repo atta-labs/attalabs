@@ -98,10 +98,7 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 
 ### Workspace
 
-Workspaces defined in root `package.json`:
-```json
-"workspaces": ["apps/*/*", "packages/*"]
-```
+Workspace members are **enumerated individually** in root `package.json`'s `workspaces` array, not globbed — Bun silently ignores `!` negation entries, so enumeration is the only form that provably excludes a directory. The retired engine copies (`packages/aeg-*`, `apps/vinaya/sources`) are on disk but are not members. See [.claude/skills/monorepo-structure/SKILL.md](.claude/skills/monorepo-structure/SKILL.md).
 
 ### Turbo Tasks & Biome
 
