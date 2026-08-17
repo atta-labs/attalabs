@@ -138,3 +138,18 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 
 apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
 
+# ── Portal/Studio split, task 3 (#885, 2026-08-16) ────────────────────────
+# The glob above is segment-wise, not a prefix match, so it does not cover
+# `apps/vinaya-studio/**` — measured on task 1's PR #917 (`bb43ff2b`), where
+# the identical gap for `apps/vinaya-portal/**` pushed `verify-docs --full`'s
+# unbound-surface count 3 → 4. This binding closes that gap for Studio.
+# `.claude/skills/vinaya-architecture/SKILL.md` is the same target as
+# `apps/vinaya/**` above — this task updates that skill's workspace tree to
+# describe the CLI/portal/studio/sources split, so the doc a Studio change
+# owes is the doc this task itself keeps coherent. `apps/vinaya-portal/**`
+# stays unbound here on purpose: task 4 (#886) owns that binding (plus the
+# `.vinaya/projects.md` registry decision it's coupled to) per the same
+# amendment, and adding a second, possibly conflicting line for it here
+# would be exactly the collision task 4's brief was written to avoid.
+apps/vinaya-studio/**                                 .claude/skills/vinaya-architecture/SKILL.md
+

@@ -570,31 +570,28 @@ describe('isBriefShaped', () => {
     expect(isBriefShaped(oneMarker)).toBe(false)
   })
 
-  it.each(
-    fenceShapes()
-  )('does not detect a brief QUOTED inside a fence ($name) — discussing a brief is not carrying one', ({
-    open,
-    close,
-    eol
-  }) => {
-    const quoted = [
-      '## Summary',
-      '',
-      "Documents the brief grammar. Here's a sample brief:",
-      '',
-      open,
-      '## Technical surface map',
-      '- `packages/aeg-core/src/brief-validation.ts`',
-      '',
-      '## Stop conditions',
-      '- Pre-flight failure.',
-      '',
-      '**Autonomy:** Do not stop to ask clarifying questions.',
-      close,
-      ''
-    ].join(eol)
-    expect(isBriefShaped(quoted)).toBe(false)
-  })
+  it.each(fenceShapes())(
+    'does not detect a brief QUOTED inside a fence ($name) — discussing a brief is not carrying one',
+    ({ open, close, eol }) => {
+      const quoted = [
+        '## Summary',
+        '',
+        "Documents the brief grammar. Here's a sample brief:",
+        '',
+        open,
+        '## Technical surface map',
+        '- `packages/aeg-core/src/brief-validation.ts`',
+        '',
+        '## Stop conditions',
+        '- Pre-flight failure.',
+        '',
+        '**Autonomy:** Do not stop to ask clarifying questions.',
+        close,
+        ''
+      ].join(eol)
+      expect(isBriefShaped(quoted)).toBe(false)
+    }
+  )
 })
 
 describe('inferBranchFromBody', () => {

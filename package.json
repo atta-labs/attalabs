@@ -17,6 +17,7 @@
     "dev:attalabs": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/attalabs-web",
     "dev:vinaya": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/vinaya-web",
     "dev:vinaya-portal": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/vinaya-portal-web",
+    "dev:vinaya-studio": "node scripts/validate-ui-contract.mjs && turbo dev --filter=@atta/vinaya-studio-web",
     "dev:admin": "turbo dev --filter=@atta/admin",
     "build": "node scripts/validate-ui-contract.mjs && turbo build",
     "build:herald": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/herald-ai-web",
@@ -24,6 +25,7 @@
     "build:attalabs": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/attalabs-web",
     "build:vinaya": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/vinaya-web",
     "build:vinaya-portal": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/vinaya-portal-web",
+    "build:vinaya-studio": "node scripts/validate-ui-contract.mjs && turbo build --filter=@atta/vinaya-studio-web",
     "typecheck": "turbo typecheck",
     "lint": "biome lint .",
     "lint:fix": "biome lint --fix .",
@@ -40,7 +42,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@attalabs/vinaya": "0.8.1",
+    "@attalabs/vinaya": "0.8.2",
     "@biomejs/biome": "^2.0.0",
     "@commitlint/cli": "^19.0.0",
     "husky": "^9.0.0",
