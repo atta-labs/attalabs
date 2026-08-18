@@ -1,5 +1,4 @@
 import 'server-only'
-import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { deriveDiagramModel } from '@attalabs/aeg-core'
@@ -7,22 +6,9 @@ import type { DiagramModel } from '@attalabs/aeg-core'
 import { deriveTitle, isSurfacedDoc, modelBackedDocPaths, parseDocFrontmatter } from '@attalabs/aeg-core/docs'
 import type { Doc, DocNav, DocSection } from '@attalabs/aeg-core/docs'
 import { createFileDoctrineSource } from '@attalabs/vinaya-sources'
+import { findAegRoot } from '@/lib/github-links'
 
 const DOCS_BASE_PATH = '/docs'
-
-function findAegRoot(): string {
-  // Same standalone-Studio chdir hazard as github-links.ts's findRepoRoot()
-  // and repo-state/read-root.ts's findAegRoot() — see either for the full
-  // explanation. VINAYA_REPO_ROOT is set by spawnStandalone() in
-  // cli/src/commands/studio.ts.
-  let dir = process.env.VINAYA_REPO_ROOT ?? process.cwd()
-  while (dir !== path.dirname(dir)) {
-    const candidate = path.join(dir, 'aeg-root')
-    if (existsSync(candidate)) return candidate
-    dir = path.dirname(dir)
-  }
-  throw new Error('aeg-root/ directory not found by walking up from cwd')
-}
 
 async function walkMarkdown(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true })

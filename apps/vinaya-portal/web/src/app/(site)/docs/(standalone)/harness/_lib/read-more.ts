@@ -24,22 +24,23 @@ const GITHUB_VINAYA_REPO = 'atta-labs/vinaya'
  *
  * The GitHub `path`/`line` targets are unchanged: gate/check → `enforcement.md`
  * at `sourceLine`; role/contract → their `aeg-root/**.md` file (no line, their
- * `label` is the frontmatter id); action → `actions.ts` (the canonical set,
- * no `aeg-root/**` doc backs it) — that file lives in the standalone
- * `atta-labs/vinaya` repo, not this one, so its target carries `repo` too.
+ * `label` is the frontmatter id); action → `actions.ts`. None of the four are
+ * backed by anything in this repo any more — attalabs carries no local copy
+ * of either `aeg-root/**` or `packages/aeg-core` — so every target here
+ * carries `repo: GITHUB_VINAYA_REPO`.
  */
 export function readMoreTarget(
   node: DiagramNode
 ): { path: string; line?: number; docRoute?: string; repo?: string } | null {
   const docRoute = nodeDocHref(node) ?? undefined
   if (node.kind === 'gate' || node.kind === 'check') {
-    return { path: 'aeg-root/enforcement.md', line: node.sourceLine, docRoute }
+    return { path: 'aeg-root/enforcement.md', line: node.sourceLine, docRoute, repo: GITHUB_VINAYA_REPO }
   }
   if (node.kind === 'role') {
-    return { path: `aeg-root/roles/${node.label}.md`, docRoute }
+    return { path: `aeg-root/roles/${node.label}.md`, docRoute, repo: GITHUB_VINAYA_REPO }
   }
   if (node.kind === 'contract') {
-    return { path: `aeg-root/contracts/${node.label}.md`, docRoute }
+    return { path: `aeg-root/contracts/${node.label}.md`, docRoute, repo: GITHUB_VINAYA_REPO }
   }
   if (node.kind === 'action') {
     return { path: 'packages/aeg-core/src/actions.ts', docRoute, repo: GITHUB_VINAYA_REPO }

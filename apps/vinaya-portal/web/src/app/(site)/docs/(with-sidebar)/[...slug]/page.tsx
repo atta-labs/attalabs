@@ -129,7 +129,7 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
         guards: guards.get(n.id),
         summary: n.summary,
         detail: n.detail,
-        viewSourceHref: githubBlobUrl('aeg-root/enforcement.md', n.sourceLine),
+        viewSourceHref: githubBlobUrl('aeg-root/enforcement.md', n.sourceLine, GITHUB_VINAYA_REPO),
         legacySlugs: legacyAnchorSlugs(n)
       }
     })
@@ -221,7 +221,7 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
       basePath={basePath}
       frame={frame}
       seam={seamForSlug(joined, model)}
-      sourceHref={githubBlobUrl(`aeg-root/${joined}.md`)}
+      sourceHref={githubBlobUrl(`aeg-root/${joined}.md`, undefined, GITHUB_VINAYA_REPO)}
     />
   )
 }

@@ -5,15 +5,14 @@ import { describe, expect, it } from 'vitest'
 /**
  * Marker ↔ file-tracing coupling guard.
  *
- * Neither doctrine reader is handed a repo root: each walks up from
- * `process.cwd()` until it finds a MARKER (`ROOT_MARKER` in
- * `github-links.ts`; the `aeg-root` directory in
- * `docs/load-aeg-docs.ts`). On Vercel, only files that Next's output tracing
- * detects exist in the lambda, and a computed path is never detected — so a
- * marker that is not declared in `outputFileTracingIncludes` is simply absent
- * at runtime, the walk throws, and the routes that call it 500. Locally every
- * marker resolves, so nothing reproduces there and the build stays green:
- * this failure is invisible until production serves it.
+ * `findRepoRoot()` (`github-links.ts`) walks up from `process.cwd()` until it
+ * finds `ROOT_MARKER` (`vinaya.config.json`). On Vercel, only files that
+ * Next's output tracing detects exist in the lambda, and a computed path is
+ * never detected — so a marker that is not declared in
+ * `outputFileTracingIncludes` is simply absent at runtime, the walk throws,
+ * and the routes that call it 500. Locally every marker resolves, so nothing
+ * reproduces there and the build stays green: this failure is invisible
+ * until production serves it.
  *
  * That has now happened twice. #649 was the first tracing declaration
  * existing at all; #664 then renamed `findRepoRoot()`'s marker to
@@ -22,6 +21,24 @@ import { describe, expect, it } from 'vitest'
  * never declared the first — a commit that looked complete, built green, and
  * left the two doctrine-reading routes (then `/the-harness` and `/docs`, today
  * `/docs/harness` and `/docs/reference`) returning 500 in production only (#707).
+ *
+ * `findAegRoot()` (same file) used to be a second `process.cwd()` walk —
+ * `docs/load-aeg-docs.ts` carried its own copy — until attalabs deleted its
+ * local `aeg-root/` and both call sites collapsed onto one `findAegRoot()`
+ * that resolves the installed `@attalabs/vinaya` package's bundled
+ * `aeg-root/` off `findRepoRoot()`'s own resolved root (`node_modules/
+ * @attalabs/vinaya/aeg-root`, relying on bun/npm hoisting a repo-level
+ * devDependency into the repo's own `node_modules` — `require.resolve`
+ * was tried first and rejected: Turbopack's dev server only resolves
+ * packages it sees statically imported somewhere in the graph, and
+ * `@attalabs/vinaya` is a CLI package this app never imports as code, so it
+ * served back a path under its own virtual `[project]` root that 404'd on
+ * real disk). `docs/load-aeg-docs.ts`'s `walkMarkdown()` still reads that
+ * resolved directory via computed fs calls, still invisible to tracing, just
+ * rooted under `node_modules` now instead of the repo root — covered by its
+ * own dedicated check rather than folded into `WALKS`, since its marker is a
+ * fixed `node_modules/…` suffix on `REPO_ROOT`, not a bare file/dir name
+ * directly at `REPO_ROOT` like the `WALKS` markers are.
  *
  * Constants are parsed out of source rather than imported because these
  * modules are `server-only` and reach `node:child_process` transitively —
@@ -68,15 +85,6 @@ function constant(source: string, name: string): string {
     )
   }
   return literal[2] as string
-}
-
-/** The literal directory name a `path.join(dir, '<name>')` walk looks for. */
-function joinedDirLiteral(source: string, label: string): string {
-  const match = source.match(/path\.join\(\s*dir\s*,\s*(['"])([^'"]+)\1\s*\)/)
-  if (!match) {
-    throw new Error(`tracing-markers: could not find the \`path.join(dir, '…')\` marker in ${label}.`)
-  }
-  return match[2] as string
 }
 
 /**
@@ -148,16 +156,19 @@ function walkingFiles(): string[] {
 }
 
 const githubLinks = read('src/lib/github-links.ts')
-const loadAegDocs = read('src/lib/docs/load-aeg-docs.ts')
 
 /**
- * Every upward walk, and the marker each one needs present at the repo root.
+ * Every upward `process.cwd()` walk, and the marker each one needs present at
+ * the repo root.
  *
  * `repo-state/read-root.ts`'s `.vinaya/projects.md` walk is deliberately
  * absent: the registry is read only by Studio's tranche board, which does not
  * live in this app. The `walkingFiles()` guard below is what keeps that an
  * observation rather than an assumption — the moment a third walk appears in
  * `src/`, it fails until it is listed here and declared in `next.config.ts`.
+ *
+ * `findAegRoot()`'s `node_modules/@attalabs/vinaya/aeg-root` marker is NOT a
+ * bare `process.cwd()` walk — see the package-marker check below instead.
  */
 const WALKS = [
   {
@@ -165,14 +176,20 @@ const WALKS = [
     label: 'ROOT_MARKER',
     marker: constant(githubLinks, 'ROOT_MARKER'),
     kind: 'file' as const
-  },
-  {
-    file: 'lib/docs/load-aeg-docs.ts',
-    label: "path.join(dir, '…')",
-    marker: joinedDirLiteral(loadAegDocs, 'load-aeg-docs.ts'),
-    kind: 'directory' as const
   }
 ]
+
+/**
+ * `findAegRoot()`'s marker: `node_modules/@attalabs/vinaya/aeg-root` off
+ * `findRepoRoot()` — checked separately from `WALKS` above because its
+ * literal path is a fixed `node_modules/…` suffix, not a bare name directly
+ * at `REPO_ROOT` the way every `WALKS` marker is.
+ */
+function findsAegRootViaPackage(source: string): boolean {
+  return /path\.join\(\s*findRepoRoot\(\),\s*['"]node_modules['"]\s*,\s*['"]@attalabs['"]\s*,\s*['"]vinaya['"]\s*,\s*['"]aeg-root['"]\s*\)/.test(
+    source
+  )
+}
 
 describe('repo-root markers are declared for output file tracing', () => {
   it('knows about every upward walk in src/', () => {
@@ -212,4 +229,31 @@ describe('repo-root markers are declared for output file tracing', () => {
       ).toBe(true)
     })
   }
+
+  it("findAegRoot() still resolves the installed package's aeg-root off findRepoRoot()", () => {
+    expect(
+      findsAegRootViaPackage(githubLinks),
+      "github-links.ts's findAegRoot() no longer joins findRepoRoot() with " +
+        "'node_modules'/'@attalabs'/'vinaya'/'aeg-root' — update this guard in the same commit if the " +
+        'resolution mechanism changed again.'
+    ).toBe(true)
+  })
+
+  it("declares the installed package's aeg-root/** for output file tracing", () => {
+    const entries = tracingConfig().get('/**') ?? []
+    const target = join(REPO_ROOT, 'node_modules', '@attalabs', 'vinaya', 'aeg-root')
+    expect(
+      declaresDirectory(entries, target),
+      "the installed @attalabs/vinaya package's aeg-root/ is read via computed fs calls at runtime " +
+        "but is not declared in next.config.ts's outputFileTracingIncludes. Add it in this same " +
+        'commit, or the doctrine-reading routes will 500 in production while the build stays green.'
+    ).toBe(true)
+  })
+
+  it("the installed package's aeg-root/ actually exists", () => {
+    expect(
+      existsSync(join(REPO_ROOT, 'node_modules', '@attalabs', 'vinaya', 'aeg-root')),
+      '@attalabs/vinaya is not installed (or ships no aeg-root/) — run `bun install` first.'
+    ).toBe(true)
+  })
 })

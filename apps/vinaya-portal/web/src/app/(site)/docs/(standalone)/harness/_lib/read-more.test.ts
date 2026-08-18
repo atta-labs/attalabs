@@ -15,7 +15,8 @@ describe('readMoreTarget', () => {
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/enforcement.md',
       line: 42,
-      docRoute: '/docs/rings/ring-0#pre-commit'
+      docRoute: '/docs/rings/ring-0#pre-commit',
+      repo: 'atta-labs/vinaya'
     })
   })
 
@@ -31,7 +32,8 @@ describe('readMoreTarget', () => {
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/enforcement.md',
       line: 100,
-      docRoute: '/docs/rings/ring-1#typecheck'
+      docRoute: '/docs/rings/ring-1#typecheck',
+      repo: 'atta-labs/vinaya'
     })
   })
 
@@ -39,7 +41,8 @@ describe('readMoreTarget', () => {
     const node: DiagramNode = { id: 'role:developer', kind: 'role', label: 'developer', renderState: 'active' }
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/roles/developer.md',
-      docRoute: '/docs/roles/developer'
+      docRoute: '/docs/roles/developer',
+      repo: 'atta-labs/vinaya'
     })
   })
 
@@ -52,7 +55,8 @@ describe('readMoreTarget', () => {
     }
     expect(readMoreTarget(node)).toEqual({
       path: 'aeg-root/contracts/brief-developer.md',
-      docRoute: '/docs/contracts/brief-developer'
+      docRoute: '/docs/contracts/brief-developer',
+      repo: 'atta-labs/vinaya'
     })
   })
 
