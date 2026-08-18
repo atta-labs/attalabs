@@ -1,13 +1,13 @@
 ---
 name: vinaya-architecture
-description: Vinaya product architecture — the portal/studio/sources workspace split (the extracted CLI's canonical home is now the standalone atta-labs/vinaya repo), the check-engine contract (CheckSpec/CheckError, core registry, custom checks), the install lifecycle (init/eject/doctor/upgrade), the StateSource/DoctrineSource seams, and the renderer-never-derives rule. Load when working inside apps/vinaya/** (sources, specs), apps/vinaya-portal/**, or apps/vinaya-studio/**. Do NOT load for the gate logic Vinaya's checks wrap (packages/aeg-core), the forge adapter it consumes (packages/aeg-forge-state), or the doctrine it ships (aeg-root) — see those skills for the underlying model.
+description: Vinaya product architecture — the portal/studio split (the extracted CLI/engine's canonical home is now the standalone atta-labs/vinaya repo; attalabs holds no local copy), the check-engine contract (CheckSpec/CheckError, core registry, custom checks), the install lifecycle (init/eject/doctor/upgrade), the StateSource/DoctrineSource seams, and the renderer-never-derives rule. Load when working inside apps/vinaya/** (specs), apps/vinaya-portal/**, or apps/vinaya-studio/**. Do NOT load for the doctrine the gates ship (aeg-root) — see the aeg-model skill for the underlying model.
 ---
 
 # Vinaya — Product Architecture (`apps/vinaya/`, `apps/vinaya-portal/`, `apps/vinaya-studio/`)
 
 ## Context
 
-Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` turns any GitHub repo into a governed one. Everything under `apps/vinaya*/` exists to ship that packaging — it does not reimplement governance logic. The single rule that disambiguates almost every design question in this tree: **Vinaya renders and spawns; `@atta/aeg-core` and `@atta/aeg-forge-state` decide.** If a change under any of these apps starts computing a governance verdict instead of consuming one, it is very likely in the wrong package.
+Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` turns any GitHub repo into a governed one. Everything under `apps/vinaya*/` exists to ship that packaging — it does not reimplement governance logic. The single rule that disambiguates almost every design question in this tree: **Vinaya renders and spawns; the published `@attalabs/aeg-core` and `@attalabs/aeg-forge-state` decide.** If a change under any of these apps starts computing a governance verdict instead of consuming one, it is very likely in the wrong package.
 
 ## Architecture — one web surface split into two apps, plus sources and (extracted) cli
 
@@ -18,9 +18,9 @@ apps/vinaya/
 ├── cli/        EXTRACTED — canonical home is the standalone atta-labs/vinaya repo (apps/cli).
 │               attalabs deleted its vendored copy and installs the published @attalabs/vinaya
 │               from npm instead; the `cli/…` paths cited below now resolve in that repo.
-├── sources/    @atta/vinaya-sources — StateSource/DoctrineSource adapters + COMMANDS registry.
-│               STALE pre-extraction copy, zero consumers in this repo — the registry that
-│               actually renders is the published @attalabs/vinaya-sources (see Anti-patterns)
+├── sources/    DELETED — was a stale pre-extraction copy of @atta/vinaya-sources with zero
+│               consumers in this repo. Everything an app renders comes from the published
+│               @attalabs/vinaya-sources (registry) instead; nothing here ever pointed at it.
 └── specs/      vinaya-spec.md — the web-surface spec (routes, Pages table, now split per-app);
               CLI/check-engine/config/install-lifecycle content moved to atta-labs/vinaya with
               the code
@@ -56,19 +56,19 @@ engine here, not its host. Three consequences, each of which has to hold or the 
 cosmetic:
 
 - **`package.json` alone does not move resolution.** Bun resolves workspace members by
-  package *name*, so a source file still importing `@atta/aeg-core` keeps resolving to
-  `packages/aeg-core` whatever the manifest declares. Every import specifier — and every
-  doc comment naming the package — has to move with it.
+  package *name*, so as long as a local `packages/aeg-core` workspace member existed, a
+  source file importing `@atta/aeg-core` kept resolving to it whatever the manifest
+  declared — every import specifier had to move with the package.json swap, or the swap
+  was cosmetic. The attalabs-adoption tranche closed this structurally by deleting
+  `packages/aeg-core`/`packages/aeg-forge-state`/`packages/aeg-types` and
+  `apps/vinaya/sources` outright: there is no local `@atta/*`-named workspace member left
+  for a stray `@atta/aeg-core` import to shadow against.
 - **The published packages ship raw `.ts`** via their `exports` field with no build step,
   so each app's `next.config.ts` must list them in `transpilePackages`; Next refuses to
   compile `.ts` under `node_modules` otherwise. Studio lists the two engine packages only —
-  `@attalabs/vinaya-sources` stays out, for the zero-imports reason in the anti-patterns
-  below.
+  `@attalabs/vinaya-sources` stays out, since it has no consumer in this tree.
 - **The lockfile is the evidence, not a green build.** Confirm each package resolves to a
-  registry tarball with a `sha512` integrity hash rather than a workspace symlink. A build
-  proves nothing on its own: the local `packages/aeg-core`/`packages/aeg-forge-state`
-  members still exist under their `@atta/*` names for the consumers that have not moved, so
-  a wrong specifier fails silently by succeeding against the workspace copy.
+  registry tarball with a `sha512` integrity hash rather than a workspace symlink.
 
 Both apps declare the **same** range, so one engine tree resolves for the whole product —
 two ranges would put two copies of the derivation logic behind two surfaces of one product.
@@ -82,10 +82,10 @@ No web-shaped app may import `cli` internals; `cli` must never import a web app'
 
 ### `@attalabs/vinaya-sources` — the shared registry + the two `StateSource` adapters
 
-The seam the CLI and the Portal both sit on top of without crossing each other. **Read this section as describing the published package**, canonically developed in `atta-labs/vinaya` and consumed here from the registry — not the identically-shaped `@atta/vinaya-sources` member under `apps/vinaya/sources`, which is the stale pre-extraction copy with zero consumers (Anti-patterns, below). Neither of the two workspaces this seam originally joined still exists in this tree: `cli` was extracted, and `apps/vinaya/web` was deleted in the Portal/Studio split.
+The seam the CLI and the Portal both sit on top of without crossing each other. **Read this section as describing the published package**, canonically developed in `atta-labs/vinaya` and consumed here from the registry. None of the three workspaces this seam originally joined still exist in this tree: `cli` was extracted, `apps/vinaya/web` was deleted in the Portal/Studio split, and the local `@atta/vinaya-sources` member under `apps/vinaya/sources` — a stale pre-extraction copy with zero consumers — was deleted in the attalabs-adoption tranche.
 
 - **`commands.ts`'s `COMMANDS` registry** — every command's name, description, flags, and `shipped`/`planned` status, in one place. The CLI's `printHelp()` and Portal's `/docs/cli` page are two renderers over this one registry — never a hand-transcribed second list. They do not read the same artifact, though: Portal declares the package and resolves it from `node_modules` when it builds, while the CLI inlines it at publish time (its shipped bundle carries a literal `COMMANDS` array and never names the package), so an edit reaches Portal on the next install and `printHelp()` only on the next CLI publish.
-- **`forge-adapter.ts`'s `createForgeSource`** (primary) — wires `@attalabs/aeg-forge-state`'s `deriveTrancheFromForge` behind aeg-core's `StateSource` contract. (The stale local copy imports the same symbol from `@atta/aeg-forge-state`; both packages exist in this tree and both export it, so the scope is what tells you which artifact you are reading.)
+- **`forge-adapter.ts`'s `createForgeSource`** (primary) — wires `@attalabs/aeg-forge-state`'s `deriveTrancheFromForge` behind aeg-core's `StateSource` contract.
 - **`file-adapter.ts`'s `createFileSource`** (transitional, deliberately deleted once every consumer is forge-backed) — wraps `parseTranche` over a configurable governance root.
 - **`select-source.ts`** — config-driven choice between the two.
 - **`doctrine-file-adapter.ts`'s `createFileDoctrineSource`** — implements aeg-core's `DoctrineSource` contract, reading `<root>/enforcement.md` + `roles/*.md` + `contracts/*.md` for `DiagramModel` derivation.
@@ -124,7 +124,7 @@ CheckError { schema: 1, check, severity: 'error'|'warning', message, agent_recov
 
 **A core check adapter that drops an optional argument silently disables the evaluator behind it.** `check-coherence.ts` called `checkR1(issues, grandfathered)` while aeg-core's `checkR1` had grown an optional third `registeredNames` — defaulting to `[]`, which is that evaluator's own dormant-when-absent state. The result was a control that `enforcement.md` and `state-machine.md` both described as enforced, silently inert in the shipped CLI: the adopter-facing surface. The adapter now reads `.vinaya/projects.md` from `git rev-parse --show-toplevel` and passes the names. Note precisely what that does and does not buy: `--show-toplevel` resolves **relative to cwd**, so it is not itself immune to the `chdir` class above — it is correct here only because this bin deliberately performs no `chdir` and the runner spawns it with the caller's cwd. What it adds over a bare `cwd` is subdirectory-tolerance, plus a safe failure: outside any repo git exits 128, the helper yields `''`, and the check goes dormant rather than resolving some unrelated repo's registry. The dormancy is announced — but through `emitCheckError` with `severity: 'warning'`, never a raw `process.stderr.write`. Two general rules fall out. When an aeg-core evaluator gains an optional parameter whose default is "dormant", every `checks/bin/*` adapter is a call site that must be re-examined — a defaulted argument is not a safe no-op here, it is a disabled gate. And **every** byte a check bin writes to stderr must be a `CheckError` JSON line: `runner.ts` parses stderr line-by-line and one unparseable line forces `status: 'error'` regardless of exit code, so a friendly plain-text warning is indistinguishable from a crashed check.
 
-One of those 16, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wraps `@atta/aeg-core`'s `checkReviewGate` and carries **verdict-author verification** (2026-08-09): only PR comments whose author is on the principal allowlist participate in `APPROVE`/`PASS` verdict extraction — forged, bot, and unresolvable-author comments are ignored, never fatal. The allowlist defaults to the hardcoded `PRINCIPAL_ALLOWLIST` (this monorepo's own principal) the waiver actor-check also trusts, but is now overridable via `vinaya.config.json`'s `principals` field (`config.ts`'s `resolvePrincipalAllowlist`) — a full replacement, not additive, repo-local only (a global `~/.vinaya/config.json`'s `principals` is stripped the same way its `checks` already is). Fixes what was previously a structural gap: with no override, this check — and the `vinaya/waiver:docs`/`vinaya/waiver:review` actor-verified waivers, same trust anchor, same three check bins — was unpassable in any adopter repo whose own principal wasn't this monorepo's maintainer; found live the same night, on a real adopter repo's first dispatched task, when two independently-dispatched reviewer verdicts sat on a PR counting for nothing. `checkReviewGate`'s own `principalAllowlist` field stays optional and defaults to `PRINCIPAL_ALLOWLIST` when omitted — every existing caller (this repo's own `packages/aeg-core/bin/verify-review-gate.ts` included) is unaffected.
+One of those 16, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wraps `@atta/aeg-core`'s `checkReviewGate` and carries **verdict-author verification** (2026-08-09): only PR comments whose author is on the principal allowlist participate in `APPROVE`/`PASS` verdict extraction — forged, bot, and unresolvable-author comments are ignored, never fatal. The allowlist defaults to the hardcoded `PRINCIPAL_ALLOWLIST` (this monorepo's own principal) the waiver actor-check also trusts, but is now overridable via `vinaya.config.json`'s `principals` field (`config.ts`'s `resolvePrincipalAllowlist`) — a full replacement, not additive, repo-local only (a global `~/.vinaya/config.json`'s `principals` is stripped the same way its `checks` already is). Fixes what was previously a structural gap: with no override, this check — and the `vinaya/waiver:docs`/`vinaya/waiver:review` actor-verified waivers, same trust anchor, same three check bins — was unpassable in any adopter repo whose own principal wasn't this monorepo's maintainer; found live the same night, on a real adopter repo's first dispatched task, when two independently-dispatched reviewer verdicts sat on a PR counting for nothing. `checkReviewGate`'s own `principalAllowlist` field stays optional and defaults to `PRINCIPAL_ALLOWLIST` when omitted — every existing caller (this repo's own use of `@attalabs/aeg-core`'s `verify-review-gate.ts` included) is unaffected.
 
 **A trust-anchor read may not take its CONTENT from the job's own filesystem — three rounds of the same bug proved it.** `principals` decides who may approve a merge, so where it is READ from is itself security-critical. All three bins call `loadTrustAnchorConfig()` (`config.ts`) with no argument: a `gh api repos/<owner>/<repo>/contents/vinaya.config.json` read of the repository's **default branch**, decoded from base64 — no local git, no working tree, and no ref parameter selecting a commit. State the scope precisely, since overclaiming is what undid the previous two rounds: the CONTENT is server-side, but the repo IDENTITY addressing that call still comes from `trustAnchorRepo()` (`GITHUB_REPOSITORY`, else the `origin` remote). That is deliberate, not an oversight — where a PR controls the workflow YAML it already holds a strictly stronger primitive (delete the step), and where the YAML is trusted the runner sets `GITHUB_REPOSITORY` correctly so the remote fallback never runs. The precedence order is load-bearing; do not reorder it. The three rounds it took to get there, all caught pre-merge by the two dispatched reviewers, are worth knowing because each fix looked correct: (1) `loadConfig()` read the PR's own working tree — a PR added its author to `principals` and self-approved; (2) `git show ${BASE_SHA}:…` — but a `pull_request`-triggered workflow runs the PR's OWN copy of the workflow YAML, so the PR set `BASE_SHA` to its own head; (3) `git show origin/main:…` hardcoded — but `origin/main` is a LOCAL remote-tracking ref, and the PR's workflow can `git update-ref refs/remotes/origin/main HEAD` before the gate runs (reproduced live). Every round's fix removed one lever while leaving the class open. `check-doc-coverage.ts`/`check-doc-coverage-push.ts` keep their own separate, still-overridable `BASE_SHA` for diff-scoping — not a trust decision, never reused for principals. Any future trust-anchor field belongs on this same API path.
 
@@ -186,7 +186,7 @@ One of those 16, `review-gate` (`cli/src/checks/bin/check-review-gate.ts`), wrap
 
 ### Every command's identity lives in ONE registry
 
-Never hand-write a second command list (in `printHelp()`, in a web page, in a doc) — read from or extend the published `@attalabs/vinaya-sources`' `COMMANDS`, in `atta-labs/vinaya`. Extending the local `@atta/vinaya-sources` copy instead is the anti-pattern below, not this rule.
+Never hand-write a second command list (in `printHelp()`, in a web page, in a doc) — read from or extend the published `@attalabs/vinaya-sources`' `COMMANDS`, in `atta-labs/vinaya`.
 
 ### `CheckSpec` carries no privileged field
 
@@ -205,7 +205,6 @@ Something existing on disk under `apps/vinaya/cli` does not mean it reaches an a
 - ❌ Portal or Studio importing anything from `cli/src` (or vice versa) — mechanically caught by each app's own import-boundary test, but know the rule before writing the import.
 - ❌ Computing a derived status, a dispatch verdict, or graph layout logic inside Portal or Studio — that is `aeg-core`'s job; both apps only fetch and render.
 - ❌ Adding `@attalabs/vinaya-sources` to Studio's `package.json` or its `transpilePackages` "for symmetry with Portal" — Studio has zero imports of it, so this buys nothing and couples Studio to the package's release cadence.
-- ❌ Editing the workspace member `apps/vinaya/sources` expecting an app to change. Both spellings exist in this tree and they are **not** the same code: `@attalabs/vinaya-sources` is the published package, canonically developed in the standalone `atta-labs/vinaya` repo, and it is authoritative for anything an app renders — Portal consumes it from the registry. The local `@atta/vinaya-sources` member is a **stale pre-extraction copy with no consumers at all** — no `package.json` in this repo declares it as a dependency (the only one naming it is its own, as `name`) and no code imports it; it survives only until a deletion task removes it. Do not reach for the "kept for unmigrated consumers" rationale that justifies its siblings: `packages/aeg-core` and `packages/aeg-forge-state` really are still consumed (24 files import them, and `apps/vinaya/sources` is itself one of the consumers — which is why those two cannot be deleted alongside it). Its `src/` diverges from the published tarball in 8 of its 11 files — all three adapters among them — and the published copy carries two source entries the local one does not have at all. Concretely: editing the local `commands.ts` will not change Portal's `/docs/cli`, because that page renders the registry copy's `COMMANDS`.
 - ❌ Adding a second command-list literal instead of extending `COMMANDS`.
 - ❌ A `CheckSpec` field or behavior only a core check can use — breaks the no-privileged-API invariant `tests/checks/no-privileged-api.test.ts` exists to prove.
 - ❌ A check reading `process.env` directly with no `env` declared on its `CheckSpec` — the allowlist is enforced, so such a read is invisible to the child process, and `vinaya doctor`'s permanent missing-declaration diagnostic flags the missing declaration.
@@ -218,7 +217,5 @@ Something existing on disk under `apps/vinaya/cli` does not mean it reaches an a
 - `apps/vinaya/CLAUDE.md` — the short surface-status summary
 - `apps/vinaya-portal/web/README.md` — what Portal is and deliberately is not, ports, repo-root resolution for the deployed case
 - `apps/vinaya-studio/web/README.md` — what Studio is and deliberately is not, ports, repo-root resolution for the never-deployed case
-- **aeg-core** skill — the pure evaluators every `vinaya check` core adapter wraps
-- **aeg-forge-state** skill — what `createForgeSource` actually derives from
 - **aeg-model** skill — the doctrine this whole product exists to enforce
 - `aeg-root/enforcement.md`'s "Portability" section — what ships vendor-neutral today versus what still needs this harness's own hooks

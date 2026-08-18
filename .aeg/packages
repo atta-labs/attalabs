@@ -10,7 +10,7 @@
 # domains are declared and static; there is no dynamic path-overlap scanner
 # (forbidden, §9/§10).
 #
-# WHO READS IT. `checkBlastRadiusScope` (packages/aeg-core/src/issue-validation.ts),
+# WHO READS IT. `checkBlastRadiusScope` (`@attalabs/aeg-core`'s `issue-validation.ts`),
 # wired into the `open-issue.ts` gate: a task Issue whose rationale names a path
 # under a domain that no declared `Project:` owns must either list a second
 # project or carry an explicit `blast-radius-ack:` line. The Planner also reads
@@ -23,15 +23,12 @@
 # output, monorepo config — which couple tasks *across* package boundaries.
 #
 # A domain being listed here does NOT by itself mean cross-product reach: a
-# domain that is also a registered project's own path (e.g. `packages/aeg-core`
-# is project `aeg-core`) is owned by that project, and a task declaring it is
+# domain that is also a registered project's own path (e.g. `packages/engine`
+# is project `engine`) is owned by that project, and a task declaring it is
 # not under-declaring anything. Ownership resolves against `projects.md`.
 
 # ---- shared packages (workspace `packages/*`) --------------------------------
 packages/adapter-langgraph
-packages/aeg-core
-packages/aeg-forge-state
-packages/aeg-types
 packages/agents
 packages/atta-agents
 packages/auth

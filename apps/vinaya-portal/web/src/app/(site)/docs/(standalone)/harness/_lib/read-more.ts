@@ -1,6 +1,13 @@
 import type { DiagramNode } from '@attalabs/aeg-core'
 import { nodeDocHref } from '@attalabs/aeg-core/docs'
 
+// Mirrors `@/lib/github-links`' `GITHUB_VINAYA_REPO` — inlined rather than
+// imported because that module is `server-only` (its `findRepoRoot`/
+// `findAegRoot` touch `node:fs`) and this one must stay isomorphic (its own
+// test, and any client component reading `readMoreTarget`, would break on
+// the server-only guard otherwise).
+const GITHUB_VINAYA_REPO = 'atta-labs/vinaya'
+
 /**
  * Resolves the "Read more" / "View source" targets for a leaf node. `path`/
  * `line` are the GitHub source location — always present, and the sole target
@@ -18,9 +25,12 @@ import { nodeDocHref } from '@attalabs/aeg-core/docs'
  * The GitHub `path`/`line` targets are unchanged: gate/check → `enforcement.md`
  * at `sourceLine`; role/contract → their `aeg-root/**.md` file (no line, their
  * `label` is the frontmatter id); action → `actions.ts` (the canonical set,
- * no `aeg-root/**` doc backs it).
+ * no `aeg-root/**` doc backs it) — that file lives in the standalone
+ * `atta-labs/vinaya` repo, not this one, so its target carries `repo` too.
  */
-export function readMoreTarget(node: DiagramNode): { path: string; line?: number; docRoute?: string } | null {
+export function readMoreTarget(
+  node: DiagramNode
+): { path: string; line?: number; docRoute?: string; repo?: string } | null {
   const docRoute = nodeDocHref(node) ?? undefined
   if (node.kind === 'gate' || node.kind === 'check') {
     return { path: 'aeg-root/enforcement.md', line: node.sourceLine, docRoute }
@@ -32,7 +42,7 @@ export function readMoreTarget(node: DiagramNode): { path: string; line?: number
     return { path: `aeg-root/contracts/${node.label}.md`, docRoute }
   }
   if (node.kind === 'action') {
-    return { path: 'packages/aeg-core/src/actions.ts', docRoute }
+    return { path: 'packages/aeg-core/src/actions.ts', docRoute, repo: GITHUB_VINAYA_REPO }
   }
   return null
 }

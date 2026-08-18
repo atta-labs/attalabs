@@ -29,7 +29,7 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
-| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Active — landing live; CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter; the vendored `cli/` workspace is deleted); CMS-backed via Vitakka's reused Sanity project. `apps/vinaya` itself now holds only `sources/` and `specs/` — the web surface split into the two rows below |
+| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Active — landing live; CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter; the vendored `cli/` workspace is deleted, and so is the local `sources/` workspace member — a stale pre-extraction copy with no consumers, superseded by the published `@attalabs/vinaya-sources`); CMS-backed via Vitakka's reused Sanity project. `apps/vinaya` itself now holds only `specs/` — the web surface split into the two rows below |
 | Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` | The public site extracted out of the original `apps/vinaya/web` app — same product, its own app. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. Deployed and live (Vercel repointed here); the original `apps/vinaya/web` was deleted once this app and Vinaya Studio (below) both proved out. Run with `dev:vinaya-portal` (port 3007) |
 | Vinaya Studio | [apps/vinaya-studio/](apps/vinaya-studio/) | — | [README.md](apps/vinaya-studio/web/README.md) | not deployed (local-only) | The local governance dashboard extracted out of the original `apps/vinaya/web` app — `/studio`, `/studio/projects`, `/studio/tranches`, `/studio/backlog`. Never deployed: no production/preview gate, no Portal↔Studio switch, because there is structurally nothing to gate against. Run with `dev:vinaya-studio` (port 3008) |
 
@@ -42,15 +42,14 @@ apps/{product-ai}/
 ├── web/              # Next.js web app (Vāda, Atta, Herald)
 ├── mobile/           # React Native (Herald — iOS + Android)
 ├── mcp/              # MCP server (Vāda, Atta, Herald)
-├── sources/          # StateSource/DoctrineSource adapters (Vinaya)
 ├── specs/            # Product-internal specs
 ├── CLAUDE.md         # Product overview
 └── README.md
 ```
 
-Not every product needs every surface. Vāda is web + mcp. Vinaya's CLI is a separate published package (`@attalabs/vinaya`, developed in the standalone `atta-labs/vinaya` repo), not a local `cli/` workspace.
+Not every product needs every surface. Vāda is web + mcp. Vinaya's CLI, including its StateSource/DoctrineSource adapters, is a separate published package (`@attalabs/vinaya`/`@attalabs/vinaya-sources`, developed in the standalone `atta-labs/vinaya` repo), not a local `cli/`/`sources/` workspace.
 
-One product may also span more than one `apps/` directory: Vinaya's web surface lives in two sibling apps, `apps/vinaya-portal/web` (deployed public site) and `apps/vinaya-studio/web` (local-only governance dashboard), separate from `apps/vinaya/` (sources + specs), because the site and Studio deploy independently.
+One product may also span more than one `apps/` directory: Vinaya's web surface lives in two sibling apps, `apps/vinaya-portal/web` (deployed public site) and `apps/vinaya-studio/web` (local-only governance dashboard), separate from `apps/vinaya/` (specs only), because the site and Studio deploy independently.
 
 ---
 
@@ -70,7 +69,6 @@ One product may also span more than one `apps/` directory: Vinaya's web surface 
 | @atta/models | [packages/models/](packages/models/) | AI model catalog — dynamic fetch from models.dev + curated overlay |
 | @atta/storage | [packages/storage/](packages/storage/) | Cloudflare R2 storage client + image transforms |
 | @atta/typescript-config | [packages/typescript-config/](packages/typescript-config/) | Shared TypeScript configs |
-| @atta/aeg-forge-state | [packages/aeg-forge-state/](packages/aeg-forge-state/) | Derives a `Tranche` purely from forge objects (Milestone + labeled Issues) — repo/owner-parameterized, consumed by this repo's own migration and by Vinaya's CLI. A task's project comes from the union of its `project:*` labels **and** its Issue body's `**Project:**` field, so derivation survives the labels being dropped |
 
 The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLabs product can live under it without implying ownership by Atta-the-product.
 
@@ -98,10 +96,7 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 
 ### Workspace
 
-Workspaces defined in root `package.json`:
-```json
-"workspaces": ["apps/*/*", "packages/*"]
-```
+Workspaces defined in root `package.json` as an explicit member enumeration — not a glob. `bun` silently ignores `!`-prefixed negation entries in `workspaces`, so an enumeration is the only form that provably excludes a deleted path; see root `package.json`'s `workspaces` array for the current member list.
 
 ### Turbo Tasks & Biome
 
@@ -173,8 +168,6 @@ In-depth guides for specific domains. Reference when working in that area.
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
 | AEG Model | [.claude/skills/aeg-model/SKILL.md](.claude/skills/aeg-model/SKILL.md) | Governance doctrine (`aeg-root/**`) — four truth domains, three-ring enforcement, tranche lifecycle, role/contract seam |
-| AEG Core | [.claude/skills/aeg-core/SKILL.md](.claude/skills/aeg-core/SKILL.md) | `@atta/aeg-core`'s pure gate evaluators — dispatch readiness, doc-coverage C5, coherence oracle, diagram model |
-| AEG Forge State | [.claude/skills/aeg-forge-state/SKILL.md](.claude/skills/aeg-forge-state/SKILL.md) | `@atta/aeg-forge-state`'s forge-derivation adapter — Milestones + labeled Issues, zero topology file |
 | Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — portal/studio/sources split, check engine, install lifecycle, renderer contract |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |

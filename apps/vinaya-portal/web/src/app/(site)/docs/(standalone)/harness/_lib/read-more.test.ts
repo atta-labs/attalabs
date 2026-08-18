@@ -65,7 +65,8 @@ describe('readMoreTarget', () => {
     }
     expect(readMoreTarget(node)).toEqual({
       path: 'packages/aeg-core/src/actions.ts',
-      docRoute: '/docs/actions#commit-the-work'
+      docRoute: '/docs/actions#commit-the-work',
+      repo: 'atta-labs/vinaya'
     })
   })
 })

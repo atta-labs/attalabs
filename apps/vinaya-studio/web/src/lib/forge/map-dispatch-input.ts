@@ -6,7 +6,7 @@
  *
  * This module assembles INPUTS only — every readiness verdict comes from
  * `checkDispatchReadiness` itself, never re-derived here. Each resolver
- * mirrors its CLI counterpart in `packages/aeg-core/bin/verify-dispatch.ts`
+ * mirrors its CLI counterpart in `@attalabs/aeg-core`'s `verify-dispatch.ts`
  * (`resolveDependsOn`, `resolveConflictsWith`, `resolvePriorTask`):
  *
  *   depends-on merged   ← same-tranche edge: the dep's `prState === 'merged'`;

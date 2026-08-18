@@ -11,7 +11,7 @@ import {
 } from '@attalabs/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../../(standalone)/harness/_lib/display-label'
 import { loadDiagramModel } from '../../(standalone)/harness/_lib/load-diagram'
-import { githubBlobUrl } from '@/lib/github-links'
+import { GITHUB_VINAYA_REPO, githubBlobUrl } from '@/lib/github-links'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 import { DocPage } from '../../_components/DocPage'
 import {
@@ -155,7 +155,7 @@ function actionGroups(model: DiagramModel): HarnessSectionGroup[] {
     performedBy: a.performedBy.map((id) => roleName.get(id) ?? id),
     summary: a.summary,
     detail: a.description,
-    viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts')
+    viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts', undefined, GITHUB_VINAYA_REPO)
   })
   return [
     {
