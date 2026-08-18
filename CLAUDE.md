@@ -171,7 +171,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — portal/studio/sources split, check engine, install lifecycle, renderer contract |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
-| Brief Authoring | [aeg-root/skills/brief-authoring/SKILL.md](aeg-root/skills/brief-authoring/SKILL.md) | Task briefs for Developer agents — v3 model integration |
+| Brief Authoring | `aeg-root/skills/brief-authoring/SKILL.md` — no local copy; resolve the root with `npx --yes @attalabs/vinaya doctrine` | Task briefs for Developer agents — v3 model integration |
 | Executor Protocol | [.claude/skills/executor-protocol/SKILL.md](.claude/skills/executor-protocol/SKILL.md) | Patterns for executing dispatched tasks |
 | Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |
 | Doc Authoring | [.claude/skills/doc-authoring/SKILL.md](.claude/skills/doc-authoring/SKILL.md) | Authoring standard for CLAUDE.md/SKILL.md/spec prose — three classes, different rules, shared reference rule |
