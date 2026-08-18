@@ -19,7 +19,7 @@ AEG "init" is not software — it is a **state the repo is in**. A repo is runni
 2. **The living-state layer** — forge-native. State only, never the model: active/blocked/next is derived from Issue/branch/PR state, and completed-work history, lessons, per-project operational state, and ratification items live in `git log`/PR history, pinned Issues, and the `needs:principal-input` label respectively.
 3. **The enforcement layer (referenced by the model, so it must travel with it):**
    - `.aeg/packages` — the static collision-domain list (conflicts are package-level, `tranche-model.md` §5).
-   - the `verify-docs` script (`packages/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate. The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
+   - the `verify-docs` script (`node_modules/@attalabs/aeg-core/bin/verify-docs.ts`), run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the doc-tier CI gate. The standalone `verify-docs.yml` workflow it once had was consolidated into that job and deleted.
    - the Issue template restricting Issues to deps / conflicts / project label / ticket link, and the CI check rejecting forbidden planning fields (`tranche-model.md` §9.3).
    - the generated agent-surface skill view (e.g. `.claude/skills/`) — derived from `aeg-root/skills/`.
 4. At least one tranche file exists, and the role docs are reachable.
@@ -60,7 +60,7 @@ A **task is a forge Issue.** Its status is never written anywhere — it is **de
 | `dropped` | Issue closed `NOT_PLANNED` — decided against, not done |
 | `incoherent` | Issue closed `COMPLETED` with no merged PR — done-but-unprovable, surfaced for a human |
 
-This table is a **reader's summary, not the source.** The authoritative list is `DERIVED_STATUSES` + the ordered `DERIVATION_RULES` in `packages/aeg-core/src/state-machine-model.ts`, rendered live at `/docs/state-machine`; order is load-bearing there in ways a flat table cannot show.
+This table is a **reader's summary, not the source.** The authoritative list is `DERIVED_STATUSES` + the ordered `DERIVATION_RULES` in `node_modules/@attalabs/aeg-core/src/state-machine-model.ts`, rendered live at `/docs/state-machine`; order is load-bearing there in ways a flat table cannot show.
 
 So **no role ever writes status.** Opening the PR *is* the in-review signal; merging *is* the done signal. To see the board you query the forge (`gh pr list`, the Issues view, a project board) — you never read status from a file. The thin tranche file holds only topology (task→issue, dependency/conflict edges); see `tranche-model.md`.
 

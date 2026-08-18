@@ -57,7 +57,7 @@ All subdomains share auth via a single Clerk app with cookie scoped to `.attalab
 ### Naming
 - Product apps: `apps/{product-ai}/{surface}/`
 - Package names: `@atta/{name}` (no `-ai` suffix for packages)
-- Workspaces: `"workspaces": ["apps/*/*", "packages/*"]`
+- Workspaces: an explicit member enumeration in root `package.json` — not a glob (see "Explicit enumeration, not a glob" below for why)
 
 ### TypeScript Config Inheritance
 ```json
@@ -97,7 +97,17 @@ Not every `@atta*`-namespaced dependency comes from the workspace. Two distinct 
 - **`@atta/*`** — workspace-local forever, resolved via `workspace:*`. `@atta/ui`, `@atta/cms`, `@atta/auth`, `@atta/typescript-config`, and the rest of `packages/*` never publish; they exist only as symlinked workspace members.
 - **`@attalabs/*`** — the vinaya engine packages (`@attalabs/aeg-core`, `@attalabs/aeg-forge-state`, `@attalabs/aeg-types`, `@attalabs/vinaya-sources`), published from the standalone `atta-labs/vinaya` repo and consumed here as ordinary registry dependencies at a real semver range (e.g. `^0.8.0`), not `workspace:*`. The `@atta` npm scope belongs to a different account, hence the renamed `@attalabs` scope for anything actually published — `@atta/*` names stay reserved for workspace-only code that never leaves this repo.
 
-This repo also still carries the old `packages/aeg-core` / `packages/aeg-forge-state` / `packages/vinaya-sources` workspace members under their original `@atta/*` names — kept until their own removal task, untouched by consumers that have moved to the `@attalabs/*` registry versions. Bun resolves by package *name*, so a consumer importing `@atta/aeg-core` still gets the local workspace copy; only an app whose `package.json` and source imports both say `@attalabs/aeg-core` actually pulls from the registry. Since the published `@attalabs/*` packages ship raw `.ts` source (no build step) via their `exports` field, any Next.js app consuming them needs `transpilePackages: ['@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources']` in `next.config.ts` — the same mechanism already used for the workspace-local `@atta/ui`.
+The old `packages/aeg-core` / `packages/aeg-forge-state` / `packages/aeg-types` / `apps/vinaya/sources` workspace members under their original `@atta/*` names are **deleted** (attalabs-adoption tranche, task 6) — every consumer had already moved to the `@attalabs/*` registry versions by the time they were removed. Since the published `@attalabs/*` packages ship raw `.ts` source (no build step) via their `exports` field, any Next.js app consuming them needs `transpilePackages: ['@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources']` in `next.config.ts` — the same mechanism already used for the workspace-local `@atta/ui`.
+
+#### Explicit enumeration, not a glob — why the workspaces array changed shape
+
+Root `package.json`'s `workspaces` array used to be two globs (`["apps/*/*", "packages/*"]`). It is now an explicit list of every member path, with no negation entry, because of a trap proven live while deleting the four paths above:
+
+- **Bun silently ignores `!`-prefixed negation entries in `workspaces`.** Adding `"!packages/aeg-core"` alongside `"packages/*"` produces no error, no warning, and no change — `bun install --force` still writes the path into `bun.lock`'s workspace map. **Explicit enumeration is the only form that provably excludes a path** — there is no negation escape hatch to reach for.
+- **Incremental `bun install` (even `--force`) leaves stale `node_modules/@atta/*` symlinks.** Only `rm -rf node_modules && bun install` — a from-scratch install — proves an exclusion actually took; the incremental path can report a clean run while a deleted package's symlink still resolves.
+- **A worktree nested under the repo root inherits the MAIN checkout's `node_modules`.** Any "this name no longer resolves" claim has to be proven either outside this repo's tree, or after `rm -rf node_modules && bun install` has run *inside* that specific worktree — inheriting the parent checkout's `node_modules` masks a real regression as a false pass.
+
+If you add a new workspace member (or delete one), edit the explicit array directly — do not reintroduce a glob or a negation entry.
 
 ### Adding a New Package
 1. Create `packages/{name}/package.json` with `"name": "@atta/{name}"`

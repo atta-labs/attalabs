@@ -23,7 +23,6 @@
 
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
-@source "../../../packages/aeg-core/src/**/*.{ts,tsx}";
 
 @theme inline {
   /* The standard shadcn multi-series chart palette (`chart1`..`chart5` in

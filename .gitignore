@@ -16,9 +16,6 @@ build/
 # packageable copy of apps/vinaya-studio/web, not the app's own source.
 /apps/vinaya/cli/studio-standalone/
 docs/
-# Re-include AEG docs renderer (aeg-core).
-!packages/aeg-core/src/docs/
-!packages/aeg-core/src/docs/**
 # Re-include for the Portal app (vinaya-portal-studio-split-v1
 # task 1, #883). Without it the whole docs route group and its loaders are
 # silently untracked — the app builds locally off working-tree files and the
