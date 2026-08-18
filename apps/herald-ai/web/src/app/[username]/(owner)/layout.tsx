@@ -30,9 +30,13 @@ export default async function OwnerLayout({
   // routes do not leak the existence of someone else's editor.
   if (user.username !== segment) notFound()
 
-  // (Lock: YES): owner /ui + /settings render the BUILD-TIME library —
-  // never the visitor's profile library. Mirrors app/(app)/layout.tsx so
-  // crossing the two paths stays impossible-by-construction.
+  // Owner /ui + /settings render the BUILD-TIME library — never the visitor's
+  // profile library. Mirrors app/(app)/layout.tsx, and the route-group split
+  // means no parent provider can cross the two paths; nothing stops this
+  // layout being edited to cross them deliberately. The invariant, why that
+  // crossing is the most expensive bug this area has produced, and what does
+  // and does not hold it are in
+  // apps/herald-ai/specs/herald-app-architecture.md § 4.
   const config = await getProductConfig('herald').catch(() => null)
   const chromeLibrary = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
 
