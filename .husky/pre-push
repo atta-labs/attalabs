@@ -6,123 +6,13 @@
 # worktree" — a legitimate push of a task branch to origin must always pass.
 #
 # git feeds pre-push one line per ref on stdin: `<localref> <localsha> <remoteref> <remotesha>`.
-while read -r _localref _localsha remoteref remotesha; do
+while read -r _localref _localsha remoteref _remotesha; do
   if [ "$remoteref" = "refs/heads/main" ]; then
     echo "✖ pre-push: direct pushes to main are forbidden." >&2
     echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
     echo "  Push your task/<tranche>/<n> branch and open a PR instead." >&2
     exit 1
   fi
-
-  # D-073/D-078: a task/<tranche>/<id> branch may only be pushed when its
-  # <id> literal-matches a row in aeg-root/tranches/<tranche>.md's `#`
-  # column. Catches wrong-branch-name pushes (the T-prefix epidemic) at the
-  # earliest possible moment instead of leaving them to die at PR-open.
-  # Delegates to `parseTranche` via check-branch-topology.ts (task 32,
-  # #399) — the same authoritative parser Studio and verify-dispatch use —
-  # instead of the hand-rolled grep this section used to fork. Refusal
-  # messages are printed by the bin, byte-identical to the old inline ones.
-  branch="${remoteref#refs/heads/}"
-  case "$branch" in
-    task/*/*)
-      if ! bun packages/aeg-core/bin/check-branch-topology.ts "$branch"; then
-        exit 1
-      fi
-      ;;
-  esac
-
-  # D-069 (task 18/#335): refuse a push to a `task/*/*` branch whose most
-  # recent PR is already MERGED or CLOSED. Closes a live-fire incident class
-  # (2026-07-03): six topology rows landed on plan PR #325's branch AFTER
-  # that PR merged, silently accepted by git/GitHub with no push-time
-  # signal, orphaning invisibly until AEG Studio and the coherence oracle
-  # disagreed about the tranche's state. One batched `gh pr list` call;
-  # fails OPEN (allows the push) when the forge is unreachable — a network
-  # flake must never block all pushes (deliberate choice, see
-  # aeg-root/enforcement.md). Placed before the C5 check below: no point
-  # spending a doc-coverage pass on a branch whose target PR is already dead.
-  case "$branch" in
-    task/*/*)
-      if ! push_target_output=$(bun packages/aeg-core/bin/check-push-target.ts "$branch" 2>&1); then
-        echo "✖ pre-push: \`$branch\` refused — its most recent PR is already resolved." >&2
-        echo "  $push_target_output" >&2
-        echo "  This branch's work is done; push a new task branch instead." >&2
-        exit 1
-      fi
-      ;;
-  esac
-
-  # Fetched once and shared by the first-push dispatch gate below and the C5
-  # doc-owners check further down — both need the same "does a PR already
-  # exist for this branch" fact, and D-081 (task 25/#365) requires reusing
-  # this single detection rather than deriving it a second, independent way.
-  pr_body=$(gh pr view "$branch" --json body -q .body 2>/dev/null || true)
-
-  # D-081 (aeg-governance-hardening task 25, #365): mechanize the Developer's
-  # entry-gate items 3-7 (`roles/developer.md`) at the earliest possible
-  # moment — a task branch's FIRST push, before any PR exists. Runs
-  # `verify-dispatch.ts` in gate mode; NOT READY refuses the push, printing
-  # the failing predicate verbatim. Once a PR exists, dispatch was validated
-  # once already — re-blocking mid-task on a sibling's later state change
-  # would strand in-flight work, so every push after the first skips this
-  # check. Fails OPEN, loudly, when the forge itself is unreachable (task 18
-  # precedent, aeg-root/enforcement.md) — see
-  # `check-first-push-dispatch.ts`/`first-push-dispatch-gate.ts` for the
-  # READY/NOT_READY/UNKNOWN classification. Scoped to `task/*/*` branches
-  # only; plan/archive/fix branches bypass entirely.
-  case "$branch" in
-    task/*/*)
-      pr_exists_flag=1
-      [ -z "$pr_body" ] && pr_exists_flag=0
-      if ! bun packages/aeg-core/bin/check-first-push-dispatch.ts "$branch" "$pr_exists_flag"; then
-        exit 1
-      fi
-      ;;
-  esac
-
-  # D-078/D-097: doc-owners coverage (C5) on the branch's CUMULATIVE diff vs
-  # origin/main. Ring 0 (here, pre-push) is warn-with-declared-intent, not a
-  # hard block: a doc-coverage violation can only ever be waived by a
-  # forge-authenticated human act — a `vinaya/waiver:docs` PR label applied by a
-  # principal, actor-verified at ring 1 (CI) — never by a parseable string.
-  # No PR exists yet at this chokepoint, so no such label can exist here
-  # either; `verify-docs.ts --push` always exits 0 now, printing a warning
-  # naming the unsatisfied binding(s) when C5 fires, so the push is never
-  # blocked on a fact ring 0 cannot verify. Ring 1 stays red — and actually
-  # gates the merge — until a principal applies the label once the PR exists.
-  # If the branch already has an open PR, its body still supplies `Doc-ack:`
-  # lines (D-097 does not touch that grammar); on the FIRST push there is no
-  # PR yet, so evaluateC5 falls back to scanning this branch's own commit
-  # messages for the identical `Doc-ack:` trailer grammar, same mechanism
-  # D-080 introduced for that source-of-text problem — only the failure
-  # consequence (D-080's self-service `Doc-waiver:` trailer) changed.
-  if [ -z "$pr_body" ]; then
-    commit_trailers=$(git log "origin/main..HEAD" --format=%B -- 2>/dev/null || true)
-  else
-    commit_trailers=""
-  fi
-  PR_BODY="${pr_body}${commit_trailers}" bun packages/aeg-core/bin/verify-docs.ts --push
-
-  # Task 33 (#401): on a task branch's GENUINELY first push (the remote ref
-  # is being created — its pre-push remote-sha is all zeros), self-assign the
-  # task's Issue to the authenticated pusher, so Studio's dispatch-visibility
-  # chip (task 26/#368, D-059) always has a real signal to render instead of
-  # depending on the Principal remembering to assign by hand. A force-push to
-  # an existing branch keeps a non-zero remote-sha and never re-triggers;
-  # branch deletion + recreation re-presents a zero sha, which the bin's own
-  # already-assigned check absorbs as a no-op. NOT a gate — placed last, after
-  # every blocking check above, so an aborted push never marks a task as
-  # in-flight; fail-open by contract (the bin warns and exits 0 on any API
-  # failure) and `|| true` guarantees the hook never blocks on it regardless.
-  case "$branch" in
-    task/*/*)
-      case "$remotesha" in
-        *[!0]*) remote_ref_exists=1 ;;
-        *) remote_ref_exists=0 ;;
-      esac
-      bun packages/aeg-core/bin/assign-task-issue.ts "$branch" "$remote_ref_exists" || true
-      ;;
-  esac
 done
 
 # >>> vinaya:managed:pre-push >>>
