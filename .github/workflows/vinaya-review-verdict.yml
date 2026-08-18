@@ -73,7 +73,7 @@ jobs:
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           BRANCH: ${{ steps.pr.outputs.branch }}
-        run: npx --yes @attalabs/vinaya check review-gate
+        run: npx --yes @attalabs/vinaya@0.12.0 check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs.
   #

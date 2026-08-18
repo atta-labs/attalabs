@@ -16,5 +16,5 @@ bun run check
 # >>> vinaya:managed:pre-commit >>>
 # Vinaya commit-time gate. Runs the deterministic checks over your staged
 # diff before the commit lands.
-npx --yes @attalabs/vinaya@0.8.2 check --all --diff-only --local || exit 1
+npx --yes @attalabs/vinaya@0.12.0 check --all --diff-only --local || exit 1
 # <<< vinaya:managed:pre-commit <<<
