@@ -1,9 +1,9 @@
 /**
  * GET /api/coherence
  *
- * Calls the plan↔forge oracle (`packages/aeg-core/bin/verify-coherence.ts`) via a Bun
- * subprocess and returns its JSON report. The Studio renders the output;
- * no check logic is re-implemented here.
+ * Calls the plan↔forge oracle (`node_modules/@attalabs/aeg-core/bin/verify-coherence.ts`,
+ * the registry copy) via a Bun subprocess and returns its JSON report. The
+ * Studio renders the output; no check logic is re-implemented here.
  *
  * Token resolution: inherits GITHUB_TOKEN / GH_TOKEN / `gh auth token` from
  * the server process — same env pattern as `fetchForgeFacts` / `github-token.ts`.
@@ -74,7 +74,7 @@ export async function GET(): Promise<NextResponse<CoherenceResponse>> {
   }
 
   const repoRoot = path.dirname(aegRoot)
-  const scriptPath = path.join(repoRoot, 'packages', 'aeg-core', 'bin', 'verify-coherence.ts')
+  const scriptPath = path.join(repoRoot, 'node_modules', '@attalabs', 'aeg-core', 'bin', 'verify-coherence.ts')
   const env = buildEnv()
 
   let stdout: string
