@@ -36,7 +36,7 @@ apps/vinaya-studio/
                  `/studio/projects`, `/studio/tranches`, `/studio/backlog`, and the
                  `api/coherence` route they read from. Never deployed — no ProductSwitch, no
                  `isVercelDeploy()` gate, because there is structurally nothing to gate against
-                 (task 3/#885). Does not depend on `@attalabs/vinaya-sources` — zero imports across
+                 (task 3/#885). Depends on neither spelling of the sources package — zero imports across
                  its moved surface, verified before the move; do not add it back for symmetry
                  with the other two apps.
 ```
