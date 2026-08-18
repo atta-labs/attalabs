@@ -15,9 +15,12 @@
 #
 # Triggers on `workflow_dispatch` (manual re-publish / first bootstrap) and on
 # every push to `main` that touches Studio's build inputs — the standalone
-# output embeds `@atta/ui`, `@atta/cms`, `@atta/aeg-core`, `@atta/aeg-forge-state`,
-# `@atta/instrumentation` (all `workspace:*`), so any of those changing is a
-# reason to re-publish, not just a change under the app's own `src/`.
+# output embeds `@atta/ui`, `@atta/cms`, `@atta/instrumentation` (all
+# `workspace:*`), so any of those changing is a reason to re-publish, not
+# just a change under the app's own `src/`. `@attalabs/aeg-core` and
+# `@attalabs/aeg-forge-state` are registry dependencies, not workspace
+# members, so a change to either publishes as a version bump the app's own
+# `package.json` picks up — no path trigger needed for them here.
 #
 # The artifact is the raw `next build` output — `standalone/`, `static/`, and
 # `public/` (only if the app actually has one; `apps/vinaya-studio/web` does
