@@ -30,7 +30,7 @@
  *     rule this check encodes is narrower: a harness path may appear in a
  *     registry/implementation column (a table row); it must not appear
  *     as normative prose stating what the model requires. See
- *     `packages/aeg-core/src/vocabulary-citation.test.ts` for the two
+ *     `@attalabs/aeg-core`'s `vocabulary-citation.test.ts` for the two
  *     pinned cases (table row vs. prose) this distinction rests on.
  *
  * A third scope, per the 2026-08-06 amendment: shared multi-product
@@ -181,11 +181,6 @@ const GLOBAL_EXEMPT = [
   '/node_modules/',
   '/.next/',
   '/.turbo/',
-  // Self-exemption, same reason `retired-vocabulary.test.ts` exempts
-  // itself: this file's own unit tests cite product names and harness
-  // paths as fixture data to prove the evaluator's decision logic, not as
-  // real citations.
-  'packages/aeg-core/src/vocabulary-citation.test.ts',
   // Task 8 — same frozen-archive class as `aeg-root/tranches/completed/`
   // and the `docs/` entries above, extended to a tree that happens to live
   // under `specs/` instead: `specs/legacy/README.md` states its own purpose
@@ -200,16 +195,16 @@ const PATTERNS: VocabularyPattern[] = [
   {
     id: 'consumer-product-name',
     pattern: String.raw`\b(vada|herald|attalabs|vitakka|sati)\b`,
-    scope: ['packages/aeg-core', 'packages/aeg-forge-state', 'aeg-root', 'apps/vinaya'],
+    scope: ['aeg-root', 'apps/vinaya'],
     sample: 'built directly on vada internals',
-    // `.test.ts` files across `aeg-core`/`aeg-forge-state` legitimately use
-    // real product paths as fixture data (proving e.g. that `premise-check`
-    // correctly detects an absent `apps/herald-ai/...` path) — the identical
-    // false-positive class `retired-vocabulary.test.ts`'s own
-    // TRANCHE_SLUG_VN_PATTERN comment documents as the reason that pattern's
-    // scope excludes these two packages. Confirmed empirically: every one of
-    // ~170 hits this pattern produced before this exemption, across both
-    // packages, was inside a `.test.ts` file.
+    // `.test.ts` files under this scope can legitimately use real product
+    // paths as fixture data — the identical false-positive class
+    // `retired-vocabulary.test.ts`'s own TRANCHE_SLUG_VN_PATTERN comment
+    // documents. `packages/aeg-core`/`packages/aeg-forge-state` used to be
+    // in `scope` for the same reason (their `.test.ts` files produced
+    // ~170 such hits) until the attalabs-adoption tranche deleted both
+    // local copies; this exempt stays as a general rule for whatever else
+    // lands under the current scope.
     exempt: ['.test.ts'],
     // Vinaya's own published identifiers. `attalabs` inside the npm scope
     // `@attalabs/vinaya` or the domain `vinaya.attalabs.dev` is the product

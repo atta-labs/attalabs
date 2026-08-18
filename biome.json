@@ -86,7 +86,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/scripts/**", "packages/aeg-core/bin/**"],
+      "includes": ["**/scripts/**"],
       "linter": {
         "rules": {
           "suspicious": {

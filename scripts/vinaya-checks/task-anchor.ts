@@ -14,7 +14,7 @@
  * cited a bare forge number `(#722)` — not the `(task N, #issue)` shape this
  * check requires — leaving the body's "Task 2" reference dangling once the
  * tranche-slug strip elsewhere in that doc removed the anchor that used to
- * make it resolvable. See `packages/aeg-core/src/local-anchor-coverage.test.ts`
+ * make it resolvable. See `@attalabs/aeg-core`'s `local-anchor-coverage.test.ts`
  * for that exact commit's pre-fix/post-fix content as a golden fixture pair.
  *
  * I/O shim only: this file reads matching `.md` files into memory and hands

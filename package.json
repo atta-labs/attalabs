@@ -34,7 +34,7 @@
     "check": "turbo typecheck && biome check . && turbo test --affected && bun scripts/check-forbidden-colors.ts",
     "test": "turbo test",
     "docs:index": "node scripts/generate-docs-index.mjs",
-    "verify-docs": "bun run packages/aeg-core/bin/verify-docs.ts",
+    "verify-docs": "bash scripts/verify-docs.sh",
     "db": "bash scripts/db-studio.sh",
     "clean": "turbo clean",
     "prepare": "husky"
