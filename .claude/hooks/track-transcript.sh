@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stop hook — records the current session's transcript_path so a finishing
-# role can hand it to `packages/aeg-core/bin/report-tokens.ts` without a
+# role can hand it to `@attalabs/aeg-core`'s `report-tokens.ts` without a
 # newest-file scan across `~/.claude/projects/<slug>/` (that scan silently
 # grabs another concurrent session's transcript when two worktrees are
 # active at once — misc-hardening-v1 task 1, #675).

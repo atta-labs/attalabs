@@ -46,7 +46,7 @@ describe('leaf panel content, against real doctrine', () => {
       summary: gate.summary,
       detail: gate.detail,
       readMoreHref: target?.docRoute,
-      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line, target.repo) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('GATE PANEL:', JSON.stringify(panel, null, 2))
@@ -77,7 +77,7 @@ describe('leaf panel content, against real doctrine', () => {
       renderState: action.renderState,
       summary: action.summary,
       readMoreHref: target?.docRoute,
-      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line, target.repo) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('ACTION PANEL:', JSON.stringify(panel, null, 2))
@@ -105,7 +105,7 @@ describe('leaf panel content, against real doctrine', () => {
       renderState: role.renderState,
       summary: role.summary,
       readMoreHref: target?.docRoute,
-      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line, target.repo) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('ROLE PANEL:', JSON.stringify(panel, null, 2))
@@ -129,7 +129,7 @@ describe('leaf panel content, against real doctrine', () => {
       renderState: contract.renderState,
       summary: contract.summary,
       readMoreHref: target?.docRoute,
-      viewSourceHref: target ? githubBlobUrl(target.path, target.line) : undefined
+      viewSourceHref: target ? githubBlobUrl(target.path, target.line, target.repo) : undefined
     }
     // biome-ignore lint/suspicious/noConsole: intentional evidence dump for the PR body
     console.log('CONTRACT PANEL:', JSON.stringify(panel, null, 2))

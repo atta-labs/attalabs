@@ -3,7 +3,7 @@ sidebar_title: "Template: Issue rationale"
 ---
 # Template — Issue rationale (the Planner's eight fields)
 
-**Copy the block below the divider into the task Issue's body and replace every `[…]` placeholder with real content.** This is the rationale grammar that the ring-0 creation gate (`packages/aeg-core/bin/open-issue.ts`) and `verify-coherence`'s R1 check parse: all eight producer fields of the `aeg-root/contracts/planner-brief.md` contract, in bold-inline form (`**<Field>** — …`; the `### <Field>` heading form is equally valid). The contract and `aeg-root/roles/planner.md` § "The Planner's rationale" remain the source of truth for what each field must *contain* — this file packages the shape; it does not lower the reasoning bar. A field filled with boilerplate is still a malformed rationale, even though it parses.
+**Copy the block below the divider into the task Issue's body and replace every `[…]` placeholder with real content.** This is the rationale grammar that the ring-0 creation gate (`node_modules/@attalabs/aeg-core/bin/open-issue.ts`) and `verify-coherence`'s R1 check parse: all eight producer fields of the `aeg-root/contracts/planner-brief.md` contract, in bold-inline form (`**<Field>** — …`; the `### <Field>` heading form is equally valid). The contract and `aeg-root/roles/planner.md` § "The Planner's rationale" remain the source of truth for what each field must *contain* — this file packages the shape; it does not lower the reasoning bar. A field filled with boilerplate is still a malformed rationale, even though it parses.
 
 ---
 

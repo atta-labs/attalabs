@@ -19,14 +19,19 @@
 #     and completes near-instantly. This is sound, not a gap: repo-file gates
 #     (verify-docs, coherence, etc.) run in their own separate CI jobs
 #     regardless of what this job decides to test.
-#   - One exception to `--affected`: packages/aeg-core/src/retired-vocabulary
-#     .test.ts scans the whole repo tree by path, not just its own package —
-#     `--affected` scopes to packages whose OWN files differ from origin/main,
-#     so a PR that never touches packages/aeg-core skips this test entirely
-#     regardless of what it plants elsewhere. Confirmed live: merging a
-#     widened version of this test into an unrelated open PR that carried
-#     real citation violations still went green, because turbo saw aeg-core
-#     as unaffected. The step below runs it unconditionally.
+#   - One exception to `--affected`: the vocabulary gate (the published
+#     @attalabs/aeg-core's retired-vocabulary.test.ts, ported via
+#     scripts/verify-vocabulary-gate.sh — see that script for why a naive
+#     working-directory swap onto the registry copy silently resolves the
+#     wrong repo root) scans the whole repo tree by path, not just one
+#     package — `--affected` scopes to packages whose OWN files differ from
+#     origin/main, which would let a PR that touches nothing under
+#     packages/* skip this test entirely regardless of what it plants
+#     elsewhere. Confirmed live (pre-port, on the local packages/aeg-core
+#     copy): merging a widened version of this test into an unrelated open
+#     PR that carried real citation violations still went green, because
+#     turbo saw aeg-core as unaffected. The step below runs it
+#     unconditionally.
 #   - Typecheck additionally scopes to ./packages/* only. App typecheck
 #     requires the CMS `generate` step (Sanity tokens live in uncommitted
 #     .env files, absent in CI); apps are type-checked by their Vercel
@@ -110,5 +115,4 @@ jobs:
         run: bunx turbo test --affected
 
       - name: Vocabulary gate (repo-wide scan — not affected-scoped)
-        working-directory: packages/aeg-core
-        run: bunx vitest run src/retired-vocabulary.test.ts
+        run: bash scripts/verify-vocabulary-gate.sh

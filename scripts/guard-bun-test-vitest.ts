@@ -18,7 +18,7 @@ import { resolve, dirname, sep } from 'node:path'
 
 const REPO_ROOT = dirname(import.meta.dir)
 
-const GUARDED_PACKAGES = ['packages/aeg-core', 'packages/aeg-forge-state', 'packages/cms']
+const GUARDED_PACKAGES = ['packages/cms']
 
 function guardedPackageFor(absPath: string): string | null {
   for (const pkg of GUARDED_PACKAGES) {

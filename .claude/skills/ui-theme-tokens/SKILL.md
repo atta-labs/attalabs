@@ -367,7 +367,7 @@ If you see hardcoded colors, absolute colors, or wrong-pair surface/text combina
 
 ## Related
 
-- `packages/ui/styles/globals.css` — source of truth for all tokens
+- `packages/ui/styles/globals.css` — source of truth for all tokens. Its Tailwind `@source` directives scan `apps/**` and `packages/ui/**` for utility classes; the attalabs-adoption tranche removed a third entry scanning the now-deleted local `packages/aeg-core` — that package never defined tokens, the entry only ever affected which files got scanned for class usage.
 - `.claude/skills/ui-components/SKILL.md` — broader UI rules
 - `.claude/skills/ui-cms-theme/SKILL.md` — how CMS theme values become CSS variables
 - `packages/ui/CLAUDE.md` — UI package guide

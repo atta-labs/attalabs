@@ -1,13 +1,13 @@
 ---
 name: aeg-model
-description: The AEG governance model — the four truth domains, the three-ring enforcement architecture, tranche lifecycle, and the role/contract seam. Load when working inside aeg-root/** (enforcement.md, state-machine.md, tranche-model.md, roles/*.md, contracts/*.md, templates/*.md, process docs, glossary.md). Do NOT load for the gate implementations themselves (packages/aeg-core, packages/aeg-forge-state) or for how the gates ship as a product (apps/vinaya) — see the aeg-core / aeg-forge-state / vinaya-architecture skills for those.
+description: The AEG governance model — the four truth domains, the three-ring enforcement architecture, tranche lifecycle, and the role/contract seam. Load when working inside aeg-root/** (enforcement.md, state-machine.md, tranche-model.md, roles/*.md, contracts/*.md, templates/*.md, process docs, glossary.md). Do NOT load for how the gates ship as a product (apps/vinaya) — see the vinaya-architecture skill for that. The gate implementations themselves (`@attalabs/aeg-core`, `@attalabs/aeg-forge-state`) are published, registry-only dependencies with no local skill of their own.
 ---
 
 # AEG Model — Governance Doctrine (`aeg-root/`)
 
 ## Context
 
-`aeg-root/` is not documentation *about* a system that lives elsewhere — it **is** the system, expressed as prose. Agentic Execution Governance (AEG) is the discipline layer that governs how a human's intent becomes reviewed, merged, coherent code produced by agents; `aeg-root/` is its normative spec. Every hook, every CI check, every CLI in `packages/aeg-core`/`packages/aeg-forge-state` is a *mechanization* of a rule stated here first — never the other way around. Editing a file in this tree is editing the rulebook every agent (including the one editing it) is bound by. Get the model wrong here and every downstream enforcement point silently inherits the mistake — this is the tree `enforcement.md`'s own closing line calls out: *"a change that adds, removes, or weakens a gate must update this page in the same change set."*
+`aeg-root/` is not documentation *about* a system that lives elsewhere — it **is** the system, expressed as prose. Agentic Execution Governance (AEG) is the discipline layer that governs how a human's intent becomes reviewed, merged, coherent code produced by agents; `aeg-root/` is its normative spec. Every hook, every CI check, every CLI in the published `@attalabs/aeg-core`/`@attalabs/aeg-forge-state` is a *mechanization* of a rule stated here first — never the other way around. Editing a file in this tree is editing the rulebook every agent (including the one editing it) is bound by. Get the model wrong here and every downstream enforcement point silently inherits the mistake — this is the tree `enforcement.md`'s own closing line calls out: *"a change that adds, removes, or weakens a gate must update this page in the same change set."*
 
 The founding observation the whole tree is built from (`enforcement.md`): **agents obey checkers, not documents.** A rule that exists only as prose will eventually be violated by an honest agent under context pressure — proven live when a pull request satisfied exactly the sections a checker verified and dropped the two it didn't. So every contract rule here must resolve to a deterministic check, and every check must sit at the earliest chokepoint that can host it.
 
@@ -34,7 +34,7 @@ The cardinal rule, enforced everywhere below: **the forge holds what is happenin
 | **Ring 1 — Branch Rules** | The forge (CI on every PR) | The identical checks re-run; CI goes red; the merge gate makes red unmergeable — covers writers ring 0 can't reach (web UI, humans, other tools). |
 | **Ring 2 — Audits** | After merge, continuously | Drift surfaces as findings regardless of who wrote it, including history that predates the gates. |
 
-The load-bearing property: **the same check implementation runs at ring 0 and ring 1** — one codebase, two enforcement points, so local gates and CI can never disagree. `packages/aeg-core`'s pure evaluators are that shared implementation (see the **aeg-core** skill); `.husky/*` and `.claude/hooks/*.sh` are ring 0's local wiring; `.github/workflows/*.yml` is ring 1's forge wiring; both call the same functions.
+The load-bearing property: **the same check implementation runs at ring 0 and ring 1** — one codebase, two enforcement points, so local gates and CI can never disagree. `@attalabs/aeg-core`'s pure evaluators are that shared implementation; `.husky/*` and `.claude/hooks/*.sh` are ring 0's local wiring; `.github/workflows/*.yml` is ring 1's forge wiring; both call the same functions.
 
 ### Tranche lifecycle (`tranche-model.md` §11)
 
@@ -56,7 +56,7 @@ Eight roles (`roles/*.md`), each self-locating: Planner, Brief Author, Developer
 | `templates/*.md` | `brief-template.md`, `issue-rationale-template.md`, `pr-report-template.md` — the literal skeletons `roles/developer.md`'s canonical PR body and `roles/planner.md`'s rationale grammar are filled from |
 | `process.md` / `coordination.md` / `aeg-manual-flow.md` | The manual (no-dispatch-tool) run mechanics |
 | `documentation-coherence.md` | Who reads/writes documentation at each role seam |
-| `glossary.md` | Coined-vocabulary definitions — the `reader-resolvable-prose` check (`state-machine.md`-adjacent, ships in `packages/aeg-core`) derives its "is this term defined" list live from this file's own entry headings, never a hard-coded list |
+| `glossary.md` | Coined-vocabulary definitions — the `reader-resolvable-prose` check (`state-machine.md`-adjacent, ships in `@attalabs/aeg-core`) derives its "is this term defined" list live from this file's own entry headings, never a hard-coded list |
 
 ## Anti-regression rules — never violate these while editing here (`tranche-model.md` §9)
 
@@ -67,16 +67,16 @@ Eight roles (`roles/*.md`), each self-locating: Planner, Brief Author, Developer
 
 ## The change-discipline rule for this tree specifically
 
-`enforcement.md`'s own closing line: a change that adds, removes, or weakens a gate must update that page's registry **in the same change set** — the gate code is bound to the page by the document-ownership rule (`.vinaya/doc-owners`), and the tool-layer gates are a locked decision; weakening one is a reviewed change with its reasoning in the PR, never a quiet edit. `state-machine.md` §15's `.vinaya/doc-owners` seam is itself governed the same way, one layer up — see the **aeg-core** skill for the mechanics of `evaluateC5`.
+`enforcement.md`'s own closing line: a change that adds, removes, or weakens a gate must update that page's registry **in the same change set** — the gate code is bound to the page by the document-ownership rule (`.vinaya/doc-owners`), and the tool-layer gates are a locked decision; weakening one is a reviewed change with its reasoning in the PR, never a quiet edit. `state-machine.md` §15's `.vinaya/doc-owners` seam is itself governed the same way, one layer up — see `@attalabs/aeg-core`'s `doc-owners.ts` for the mechanics of `evaluateC5`.
 
 ## Anti-patterns
 
 - ❌ Treating `aeg-root/**` as prose to keep "roughly in sync" — G1–G5 (`verify-registry.ts`) and the coherence oracle read it as **data**: every `implementation` cell must resolve to a real path, every cited `#NNN` must resolve to a real Issue/PR, every role/contract cross-reference must resolve.
 - ❌ Citing a bare forge number or a legacy `-vN` tranche slug in reader-facing prose — the `reader-resolvable-prose` check exists to catch exactly this, but know the rule rather than leaning on the checker.
 - ❌ Coining a new piece of vocabulary (`tranche`, `brief`, `provenance`, …) without a `glossary.md` entry or an inline definition.
-- ❌ Adding a hook or CLI under `.husky/`, `.claude/hooks/`, or `packages/aeg-core/bin/` without a matching row in `enforcement.md`'s ring tables — breaks G1 (implementation-exists) / G2 (no-orphan-hook).
+- ❌ Adding a hook or CLI under `.husky/` or `.claude/hooks/` without a matching row in `enforcement.md`'s ring tables — breaks G1 (implementation-exists) / G2 (no-orphan-hook).
 - ❌ Writing a status field, "current spend" total, or any stored aggregate anywhere in this tree — everything here is either a Planner-time plan or a derived-at-read-time view.
-- ❌ Editing `state-machine.md`'s label vocabulary or derivation rules by hand instead of in the code they're rendered from — §14 states the vocabulary is **code-owned** (`packages/aeg-forge-state/src/labels.ts`, `packages/aeg-core/src/state-machine-model.ts`); the page is a rendering, not a second source.
+- ❌ Editing `state-machine.md`'s label vocabulary or derivation rules by hand instead of in the code they're rendered from — §14 states the vocabulary is **code-owned** (`@attalabs/aeg-forge-state`'s `labels.ts`, `@attalabs/aeg-core`'s `state-machine-model.ts`); the page is a rendering, not a second source.
 
 ## When you need more context
 
@@ -84,6 +84,4 @@ Eight roles (`roles/*.md`), each self-locating: Planner, Brief Author, Developer
 - `state-machine.md` — derivation rules, label vocabulary, the four coherence seams (§15–§15d)
 - `tranche-model.md` — the four truth domains and the full reasoning behind them
 - `roles/*.md`, `contracts/*.md` — per-role and per-seam detail
-- **aeg-core** skill — the pure evaluators that mechanize the rules stated here
-- **aeg-forge-state** skill — the one sanctioned adapter that reads live forge state
 - **vinaya-architecture** skill — how this model ships as the Vinaya product

@@ -70,10 +70,11 @@ const count: number = 0
 ### Console
 - `console.error`, `console.warn`, `console.info`, `console.debug` — allowed
 - `console.log` — warning (Biome will flag it)
-- **Exempt surfaces:** `scripts/**` and `packages/aeg-core/bin/**` — terminal-facing
-  executables where stdout *is* the output. `noConsole` is off there via a `biome.json`
-  override, not via per-line `biome-ignore` comments. Library code
-  (`packages/aeg-core/src/**`) and all app code keep the rule — do not widen the glob.
+- **Exempt surface:** `scripts/**` — terminal-facing executables where stdout *is* the
+  output. `noConsole` is off there via a `biome.json` override, not via per-line
+  `biome-ignore` comments. `scripts/verify-*.sh` (thin wrappers around the published
+  `@attalabs/aeg-core`, which holds no local copy in this repo) fall under this same
+  exemption. All app code keeps the rule — do not widen the glob.
 
 ---
 

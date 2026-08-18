@@ -72,7 +72,7 @@ Principal → Planner → Brief Author → Developer → Reviewer (code + securi
 - **Tiers**: Tier 0 trivial · Tier 1 implementation · Tier 3 project/roadmap. No Tier 2. When in doubt, Tier 3.
 - **Decisions** are recorded in the change that makes them — the pull-request body is the durable record. Historical entries sit in a frozen archive outside the harness; nothing reads it and no new entries are added.
 - **Ratification windows**: 1–2 daily; the Principal resolves Type 1s, Tier 3 merges, `severity:product` escalations.
-- **verify-docs** (`packages/aeg-core/bin/verify-docs.ts`, run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the standalone `verify-docs.yml` workflow was consolidated away) is a real blocking CI gate: changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 states its reasoning in the pull request.
+- **verify-docs** (`node_modules/@attalabs/aeg-core/bin/verify-docs.ts`, run as a step of the `aeg-gate-suite` job in `.github/workflows/forge-lifecycle.yml` — the standalone `verify-docs.yml` workflow was consolidated away) is a real blocking CI gate: changed specs need a `Status:` block, Tier 1+ code needs a doc change, Tier 3 states its reasoning in the pull request.
 
 ## 10. The anti-regression rules — never violate
 

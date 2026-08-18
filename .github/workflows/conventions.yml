@@ -119,7 +119,7 @@ jobs:
           PR_TOUCHED_FILES: ${{ steps.pr_files.outputs.files }}
         run: |
           set +e
-          bun packages/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
+          bun node_modules/@attalabs/aeg-core/bin/verify-coherence.ts --json > /tmp/coherence.json 2>&1
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
       - name: Apply vinaya/incoherent label to A1 failures
@@ -145,7 +145,7 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           BRANCH: ${{ github.head_ref }}
-        run: bun packages/aeg-core/bin/verify-brief.ts
+        run: bun node_modules/@attalabs/aeg-core/bin/verify-brief.ts
 
       - name: Apply vinaya/needs:brief-correction label on failure
         if: ${{ !cancelled() && steps.verify_brief.outcome == 'failure' }}

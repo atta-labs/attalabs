@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
+    "@types/bun": "latest",
     "typescript": "^5.7.0"
   },
   "dependencies": {

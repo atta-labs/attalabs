@@ -15,7 +15,7 @@
 #   in-repo path with anchor e.g. `aeg-root/state-machine.md#section-9`
 #   URL                      e.g. `https://example.com/docs/x`
 #
-# Coverage rule (enforced by C5 in `packages/aeg-core/bin/verify-docs.ts`; a
+# Coverage rule (enforced by C5 in `@attalabs/aeg-core`'s `verify-docs.ts`; a
 # missing/unsatisfied binding below surfaces as a `C5 doc-coverage: …` error):
 #   When a code file in the PR matches a glob:
 #     - in-repo pointer  → that path must appear in the PR diff, else FAIL
@@ -60,19 +60,9 @@
 packages/ui/topbar/**                            .claude/skills/ui-components/SKILL.md
 packages/ui/libraries/**                         .claude/skills/ui-library-system/SKILL.md
 apps/herald-ai/web/src/app/[username]/**         apps/herald-ai/specs/herald-app-architecture.md
-packages/aeg-core/bin/verify-docs.ts             aeg-root/state-machine.md
-packages/aeg-core/bin/verify-coherence.ts        aeg-root/state-machine.md
-packages/aeg-core/bin/open-pr.ts                 aeg-root/enforcement.md
-packages/aeg-core/bin/open-issue.ts              aeg-root/enforcement.md
-packages/aeg-core/bin/verify-brief.ts            aeg-root/enforcement.md
-packages/aeg-core/bin/archive-task.ts            aeg-root/enforcement.md
-packages/aeg-core/bin/verify-registry.ts         aeg-root/enforcement.md
 .claude/hooks/check-forge-gates.sh               aeg-root/enforcement.md
 .claude/hooks/check-pr-green.sh                  aeg-root/enforcement.md
 .husky/pre-push                                  aeg-root/enforcement.md
-packages/aeg-core/src/waiver-label.ts            aeg-root/state-machine.md
-packages/aeg-core/src/state-machine-model.ts     aeg-root/state-machine.md
-packages/aeg-forge-state/src/labels.ts           aeg-root/state-machine.md
 packages/agents/vada-deliberation/yamls/**       .claude/skills/atta-teams/SKILL.md
 packages/agents/**                               .claude/skills/vada-architecture/SKILL.md
 

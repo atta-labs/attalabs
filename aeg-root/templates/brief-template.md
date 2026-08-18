@@ -53,7 +53,7 @@ git worktree add .worktrees/task/[tranche-slug]/[n] -b task/[tranche-slug]/[n] o
 ```
 
 1. Clean status; parent `origin/main`; branch suffix literal-matches topology `#` column (`[n]`).
-2. `bun packages/aeg-core/bin/verify-dispatch.ts [tranche-slug] [n]` → `READY TO DISPATCH` required; else STOP.
+2. `bun node_modules/@attalabs/aeg-core/bin/verify-dispatch.ts [tranche-slug] [n]` → `READY TO DISPATCH` required; else STOP.
 3. [any task-specific pre-flight checks — required tools present, reference files readable, re-digs to confirm the §2 citations]
 
 On any failure: STOP and report.
@@ -71,7 +71,7 @@ On any failure: STOP and report.
 
 - [the repo's static gates, by command — this repo: `bun run typecheck`, `bun run test`, lint, build]
 - [every blast-radius consumer named in §4 re-verified, by name]
-- `PR_BODY="$(cat <body-file>)" bun packages/aeg-core/bin/verify-docs.ts --pr` green.
+- `PR_BODY="$(cat <body-file>)" bun node_modules/@attalabs/aeg-core/bin/verify-docs.ts --pr` green.
 
 ## 9. Test Plan
 
@@ -95,9 +95,9 @@ STOP and report if: pre-flight fails; [the Planner's stop-and-escalate condition
 ## 12. Deliverable
 
 - PR title (exact): `[[tranche-slug]] [n] — [task title]`
-- Open the PR only via `bun packages/aeg-core/bin/open-pr.ts --body-file <path> --title "<title above>"`.
+- Open the PR only via `bun node_modules/@attalabs/aeg-core/bin/open-pr.ts --body-file <path> --title "<title above>"`.
 - PR body = the Developer's PR report (start from `aeg-root/templates/pr-report-template.md`), with this entire brief pasted as the reference copy inside a collapsed `<details>` block, and `Closes #[N]` at the top of the header block.
 - [what to state in the PR body: decisions made, confirmations required by §8]
-- Pre-open gate: `PR_BODY="$(cat <body-file>)" bun packages/aeg-core/bin/verify-docs.ts --pr` green.
+- Pre-open gate: `PR_BODY="$(cat <body-file>)" bun node_modules/@attalabs/aeg-core/bin/verify-docs.ts --pr` green.
 - Include `git diff main --stat` and a token report (if unavailable, state so).
 - Then STOP. Review and Verification are separate invocations.

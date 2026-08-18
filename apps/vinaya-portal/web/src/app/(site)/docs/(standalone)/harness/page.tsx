@@ -33,7 +33,7 @@ export default async function HowItWorksPage() {
   for (const node of model.nodes) {
     const target = readMoreTarget(node)
     if (!target) continue
-    viewSourceHrefs[node.id] = githubBlobUrl(target.path, target.line)
+    viewSourceHrefs[node.id] = githubBlobUrl(target.path, target.line, target.repo)
     if (!target.docRoute) continue
     if (node.kind === 'role' || node.kind === 'contract') {
       const slug = target.docRoute.replace(/^\/docs\//, '')

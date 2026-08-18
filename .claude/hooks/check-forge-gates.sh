@@ -3,8 +3,8 @@
 #
 # DENIES any raw command that would create or body-edit a PR or Issue,
 # directing the agent to the validated wrappers instead:
-#   gh pr create / gh pr edit --body*        → packages/aeg-core/bin/open-pr.ts
-#   gh issue create / gh issue edit --body*  → packages/aeg-core/bin/open-issue.ts
+#   gh pr create / gh pr edit --body*        → vinaya pr create / pr edit
+#   gh issue create / gh issue edit --body*  → vinaya issue create / issue edit
 #   gh api POST to /pulls or /issues         → same wrappers
 #
 # The wrappers run the identical deterministic contract gates that CI runs
@@ -40,11 +40,11 @@ deny() {
 
 # --- PR creation ------------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+create\b'; then
-  deny "Forge gate (D-078): raw \`gh pr create\` is not allowed — the PR body must pass the deterministic contract gates BEFORE anything reaches the forge. Use the validated wrapper instead (same args, plus a --body-file):
+  deny "Forge gate (D-078): raw \`gh pr create\` is not allowed — the PR body must pass the deterministic contract gates BEFORE anything reaches the forge. Use the validated wrapper instead:
 
-  bun packages/aeg-core/bin/open-pr.ts --title \"...\" --body-file /path/to/body.md [other gh args]
+  npx vinaya pr create --title \"...\" --body-file /path/to/body.md [--label ...]
 
-It runs verify-brief + verify-docs --pr + the Closes #N gate locally and only calls gh on green. On failure it prints the exact missing sections — fix the body file and rerun."
+It runs the config-defined brief-schema gate locally and only calls gh on green. On failure it prints the exact missing sections — fix the body file and rerun."
 fi
 
 # --- PR body edits ----------------------------------------------------------
@@ -52,14 +52,14 @@ if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
   deny "Forge gate (D-078): raw \`gh pr edit\` with a body or title change is not allowed — edited bodies re-pass the contract gates and titles the title grammar. Use:
 
-  bun packages/aeg-core/bin/open-pr.ts edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
+  npx vinaya pr edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
 # --- Issue creation ---------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+create\b'; then
-  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (tranche:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the validated wrapper instead (same args):
+  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (tranche:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the validated wrapper instead:
 
-  bun packages/aeg-core/bin/open-issue.ts --title \"...\" --body-file /path/to/body.md --label tranche:<slug> [other gh args]
+  npx vinaya issue create --title \"...\" --body-file /path/to/body.md --label tranche:<slug>
 
 Non-task Issues (no tranche label) pass straight through the wrapper unvalidated."
 fi
@@ -69,7 +69,7 @@ if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
   deny "Forge gate (D-078): raw \`gh issue edit\` with a body or title change is not allowed — edits re-pass the rationale/title gates. Use:
 
-  bun packages/aeg-core/bin/open-issue.ts edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
+  npx vinaya issue edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
 # NOTE (#614): the label names below are re-stated as literals because a bash
@@ -128,7 +128,7 @@ fi
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*POST|--method[[:space:]]*POST|[[:space:]]-f[[:space:]]|[[:space:]]-F[[:space:]])' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)(["'"'"'[:space:]]|$)'; then
-  deny "Forge gate (D-078): creating PRs/Issues via raw \`gh api\` bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts / open-issue.ts."
+  deny "Forge gate (D-078): creating PRs/Issues via raw \`gh api\` bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr create\` / \`npx vinaya issue create\`."
 fi
 
 # PATCH to .../pulls/N or .../issues/N (edit endpoints) — a body/title edit via
@@ -137,7 +137,7 @@ fi
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*PATCH|--method[[:space:]]*PATCH)' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)/[0-9]+(["'"'"'[:space:]]|$)'; then
-  deny "Forge gate (D-078): editing PRs/Issues via raw \`gh api -X PATCH\` bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts edit <n> / open-issue.ts edit <n>."
+  deny "Forge gate (D-078): editing PRs/Issues via raw \`gh api -X PATCH\` bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr edit <n>\` / \`npx vinaya issue edit <n>\`."
 fi
 
 # --- curl/wget bypass attempts ------------------------------------------------
@@ -147,7 +147,7 @@ if printf '%s' "$command" | grep -qE '\b(curl|wget)\b' \
   && printf '%s' "$command" | grep -qE 'api\.github\.com' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*(POST|PATCH|PUT)|--method[[:space:]]*(POST|PATCH|PUT)|--data\b|[[:space:]]-d[[:space:]]|--json\b|--post-data)'; then
-  deny "Forge gate (D-078): writing to PRs/Issues via raw curl/wget bypasses the contract gates. Use the validated wrappers: packages/aeg-core/bin/open-pr.ts / open-issue.ts."
+  deny "Forge gate (D-078): writing to PRs/Issues via raw curl/wget bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr create\` / \`npx vinaya issue create\`."
 fi
 
 exit 0

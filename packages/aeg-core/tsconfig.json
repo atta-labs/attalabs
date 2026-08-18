@@ -1,8 +1,0 @@
-{
-  "extends": "@atta/typescript-config/base.json",
-  "compilerOptions": {
-    "outDir": "./dist"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "bin/**/*.ts", "vitest.config.ts"],
-  "exclude": ["node_modules", "dist"]
-}

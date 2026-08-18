@@ -48,12 +48,22 @@ export const GITHUB_REPO = 'daniboomerang/attalabs'
 export const GITHUB_DEFAULT_BRANCH = 'main'
 
 /**
+ * The standalone repo that canonically develops the engine packages
+ * (`@attalabs/aeg-core`/`aeg-forge-state`/`aeg-types`/`vinaya-sources`) and
+ * the CLI — attalabs holds no local copy of any of them, so a "view source"
+ * link for one of their files must point here, not at this repo.
+ */
+export const GITHUB_VINAYA_REPO = 'atta-labs/vinaya'
+
+/**
  * Builds a GitHub blob URL for a repo-relative path, optionally anchored to a
  * specific line — shared by any Vinaya web page that needs to link a claim
- * straight to the real source line a skeptical reader can check.
+ * straight to the real source line a skeptical reader can check. Defaults to
+ * this monorepo; pass `GITHUB_VINAYA_REPO` for a path that lives in the
+ * standalone engine/CLI repo instead.
  */
-export function githubBlobUrl(relPath: string, line?: number): string {
-  const base = `https://github.com/${GITHUB_REPO}/blob/${GITHUB_DEFAULT_BRANCH}/${relPath}`
+export function githubBlobUrl(relPath: string, line?: number, repo: string = GITHUB_REPO): string {
+  const base = `https://github.com/${repo}/blob/${GITHUB_DEFAULT_BRANCH}/${relPath}`
   return line ? `${base}#L${line}` : base
 }
 
