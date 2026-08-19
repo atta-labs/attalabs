@@ -31,7 +31,7 @@ Length is explicitly not the defect in this class and must not be treated as one
 
 **The structural bar:** scannable headings, architecture stated before the checklist, no wall of undifferentiated prose. A reader should be able to tell from the headings alone what the file covers before reading a sentence of body text. State the system's structure and invariants first — the "why this is built this way" that disambiguates the decisions that follow — then the specifics (file shapes, registries, per-concern detail).
 
-**Concrete example of the shape:** `.claude/skills/vinaya-architecture/SKILL.md` and `.claude/skills/aeg-model/SKILL.md` both open with a `## Context` section stating the one rule that disambiguates most questions in that tree, then an `## Architecture` section with the structural map, before descending into per-concern detail. This file follows the same shape — it is a worked example of its own doctrine, not just a description of one.
+**Concrete example of the shape:** `.claude/skills/vinaya-architecture/SKILL.md` and `.claude/skills/atta-engine/SKILL.md` both open with a `## Context` section stating the one rule that disambiguates most questions in that tree, then an `## Architecture` section with the structural map, before descending into per-concern detail. This file follows the same shape — it is a worked example of its own doctrine, not just a description of one.
 
 ## Spec files (`apps/*/specs/**.md`) — what belongs, what doesn't
 

@@ -68,9 +68,9 @@ packages/agents/**                               .claude/skills/vada-architectur
 
 # ── Bind-all pass (aeg-governance-hardening task 3, 2026-07-02) ────────────
 # Populates doc-owners to scoreboard completeness (backlog T4, named in
-# state-machine.md Section 15). See
-# aeg-root/tranches/aeg-governance-hardening.audit.md for the full audit
-# table and rationale per binding.
+# state-machine.md Section 15). See the closed `aeg-governance-hardening`
+# GitHub Milestone (#52) for the full audit table and rationale per binding —
+# attalabs carries no local copy of this tranche's files any more.
 
 packages/crypto/**                                   apps/vada-ai/specs/vada-byok-principles.md
 packages/identity/**                                 apps/vada-ai/specs/vada-byok-principles.md

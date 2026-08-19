@@ -83,7 +83,6 @@ function collect(dir: string, match: (name: string) => boolean, out: string[] = 
 
 const GLOBAL_EXEMPT = [
   '/fixtures/',
-  'aeg-root/tranches/completed/',
   // Same frozen-archive class `vocabulary-citation.ts` already exempts for
   // the identical reason: `apps/vada-ai/specs/legacy/README.md` states its
   // own purpose as "Historical specs — superseded." Citation hygiene is not

@@ -174,20 +174,18 @@ function matchFn(pattern: string, sample: string): boolean {
 
 const GLOBAL_EXEMPT = [
   '/fixtures/',
-  'aeg-root/tranches/completed/',
   'apps/vada-ai/docs/',
   'apps/herald-ai/docs/',
   'apps/vinaya/docs/',
   '/node_modules/',
   '/.next/',
   '/.turbo/',
-  // Task 8 — same frozen-archive class as `aeg-root/tranches/completed/`
-  // and the `docs/` entries above, extended to a tree that happens to live
-  // under `specs/` instead: `specs/legacy/README.md` states its own purpose
-  // as "Historical specs — superseded," the identical characterization the
-  // other frozen-archive entries in this list share. Citation hygiene is
-  // not a meaningful obligation for content the product itself has already
-  // marked retired.
+  // Task 8 — same frozen-archive class as the `docs/` entries above, extended
+  // to a tree that happens to live under `specs/` instead:
+  // `specs/legacy/README.md` states its own purpose as "Historical specs —
+  // superseded," the identical characterization the other frozen-archive
+  // entries in this list share. Citation hygiene is not a meaningful
+  // obligation for content the product itself has already marked retired.
   'apps/vada-ai/specs/legacy/'
 ]
 

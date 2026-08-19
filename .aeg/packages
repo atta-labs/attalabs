@@ -2,7 +2,7 @@
 #
 # Named as canonical by three governance docs that never had a file to point
 # at: `.vinaya/projects.md` ("Routing vs. conflicts"), `tranche-model.md` §5
-# (portable doctrine — resolves via `npx --yes @attalabs/vinaya doctrine`,
+# (portable doctrine — resolves via `npx --yes @attalabs/vinaya@0.12.0 doctrine`,
 # no local copy in this repo), and `aeg-manual-flow.md` §init (this-repo
 # operational prose, not bundled by the package — no local copy or live
 # resolution; see the standalone `atta-labs/vinaya` repo's own `aeg-root/`).

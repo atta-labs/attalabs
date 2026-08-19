@@ -34,11 +34,11 @@
  * at all. Archived tranches never had a file merge and never will — their
  * dependency edges resolve entirely from each closed Issue's own body.
  *
- * Reads are confined to this module. Parsing is delegated to
- * `@attalabs/aeg-core` (pure, no I/O) for the archived/completed topology files,
- * the only files this module still parses, and to `@attalabs/aeg-forge-state`
- * (pure I/O, no parsing logic re-implemented here) for everything else.
- * Consumers receive typed model objects.
+ * Reads are confined to this module. Parsing is delegated to `@attalabs/aeg-core`
+ * (pure, no I/O) for the `.vinaya/projects.md` registry — the only file this
+ * module still parses, now that every tranche derives from the forge — and to
+ * `@attalabs/aeg-forge-state` (pure I/O, no parsing logic re-implemented here)
+ * for everything else. Consumers receive typed model objects.
  */
 
 import 'server-only'
@@ -46,14 +46,7 @@ import { existsSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { cache } from 'react'
-import {
-  parseTranche,
-  parseRegistry,
-  type Tranche,
-  type Lifecycle,
-  type Project,
-  type Registry
-} from '@attalabs/aeg-core'
+import { parseRegistry, type Tranche, type Lifecycle, type Project, type Registry } from '@attalabs/aeg-core'
 import {
   deriveTrancheFromForge,
   findMilestoneForSlug,
@@ -102,7 +95,6 @@ const cachedDeriveTrancheFromForgeKnown = cache(
     deriveTrancheFromForge(owner, repo, slug, { goal, lifecycle })
 )
 
-const TRANCHES_DIR = 'tranches'
 const REGISTRY_FILE = 'projects.md'
 const CONFIG_DIR = '.vinaya'
 
@@ -263,7 +255,7 @@ async function toSummary(fileSlug: string, tranche: Tranche, archived: boolean):
  * surviving tranche). The caller degrades *visibly and granularly* (an
  * explicit banner naming the failed subset) instead of rendering a failure as
  * truth-shaped emptiness (Studio stores nothing, so it must not lie by
- * omission). The legacy `completed/*.md` supplement never affects status.
+ * omission).
  */
 type LoadedTranches = {
   items: Array<{ fileSlug: string; tranche: Tranche }>
@@ -331,36 +323,18 @@ async function readActiveTranche(fileSlug: string): Promise<{ fileSlug: string; 
   }
 }
 
-// ---------- archived tranches: forge-first, legacy-file-fallback ----------
-
-async function listCompletedFileSlugs(): Promise<string[]> {
-  const root = findAegRoot()
-  if (root === null) return []
-  const dir = path.join(root, TRANCHES_DIR, 'completed')
-  if (!existsSync(dir)) return []
-  const names = await fs.readdir(dir)
-  return names.filter((n) => n.endsWith('.md') && !n.endsWith('.tokens.md')).map((n) => n.replace(/\.md$/, ''))
-}
-
-async function readCompletedFile(fileSlug: string): Promise<Tranche | null> {
-  const root = findAegRoot()
-  if (root === null) return null
-  const completedPath = path.join(root, TRANCHES_DIR, 'completed', `${fileSlug}.md`)
-  if (!existsSync(completedPath)) return null
-  const raw = await fs.readFile(completedPath, 'utf8')
-  return parseTranche(raw)
-}
+// ---------- archived tranches: forge-derived ----------
 
 /**
  * Enumerates every archived tranche from the forge (closed Milestones),
- * deriving each one's full `Tranche` via `deriveTrancheFromForge` — then
- * supplements with any `aeg-root/tranches/completed/*.md` file whose slug
- * wasn't already resolved via a Milestone. That supplement is the permanent
- * home of the small, closed, non-growing set of pre-Milestone-era legacy
- * tranches (`aeg-forge-state-v1` task 5, #515) — no Milestone exists for
- * them at all, so the closed-Milestone enumeration can never surface them.
- * Mirrors the same "enumerate, then fill the gap" shape as
- * `verify-coherence.ts`'s general sweep (#515).
+ * deriving each one's full `Tranche` via `deriveTrancheFromForge`. Every
+ * pre-Milestone-era tranche now has a real closed Milestone (backfilled with
+ * its original topology preserved in the Milestone's description field), so
+ * there is no gap left to fill — this used to also supplement with any
+ * `aeg-root/tranches/completed/*.md` file whose slug wasn't already resolved
+ * via a Milestone (`aeg-forge-state-v1` task 5, #515); that local-file
+ * fallback and its backing directory are gone (attalabs carries no local
+ * `aeg-root/` at all any more).
  */
 async function loadArchivedTranchesWithStatus(): Promise<LoadedTranches> {
   const results: Array<{ fileSlug: string; tranche: Tranche }> = []
@@ -397,15 +371,6 @@ async function loadArchivedTranchesWithStatus(): Promise<LoadedTranches> {
     }
   }
 
-  // Legacy `completed/*.md` supplement — the permanent home of pre-Milestone
-  // tranches (#515). NOT a failure: it never affects `status`.
-  const seen = new Set(results.map((r) => r.fileSlug))
-  for (const slug of await listCompletedFileSlugs()) {
-    if (seen.has(slug)) continue
-    const tranche = await readCompletedFile(slug)
-    if (tranche) results.push({ fileSlug: slug, tranche })
-  }
-
   return { items: results, status }
 }
 
@@ -416,26 +381,17 @@ export async function loadArchivedTranches(): Promise<Array<{ fileSlug: string; 
 
 async function readArchivedTranche(fileSlug: string): Promise<{ fileSlug: string; tranche: Tranche } | null> {
   const repo = await resolveRepo()
+  if (!repo) return null
 
-  if (repo) {
-    try {
-      const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
-      if (milestone) {
-        if (milestone.lifecycle !== 'complete') return null
-        const tranche = await cachedDeriveTrancheFromForge(repo.owner, repo.repo, fileSlug)
-        return { fileSlug, tranche }
-      }
-    } catch (err) {
-      console.warn(`[repo-state] forge derivation failed for archived tranche "${fileSlug}": ${(err as Error).message}`)
-      return null
-    }
+  try {
+    const milestone = findMilestoneForSlug(repo.owner, repo.repo, fileSlug)
+    if (milestone?.lifecycle !== 'complete') return null
+    const tranche = await cachedDeriveTrancheFromForge(repo.owner, repo.repo, fileSlug)
+    return { fileSlug, tranche }
+  } catch (err) {
+    console.warn(`[repo-state] forge derivation failed for archived tranche "${fileSlug}": ${(err as Error).message}`)
+    return null
   }
-
-  // No Milestone resolves for this slug (repo unreachable, or a
-  // pre-Milestone-era legacy tranche, #515) — fall back to the
-  // completed/*.md file directly.
-  const tranche = await readCompletedFile(fileSlug)
-  return tranche ? { fileSlug, tranche } : null
 }
 
 // ---------- public API ----------

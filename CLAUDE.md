@@ -167,11 +167,10 @@ In-depth guides for specific domains. Reference when working in that area.
 | Atta Adapter | [.claude/skills/atta-adapter-langgraph/SKILL.md](.claude/skills/atta-adapter-langgraph/SKILL.md) | LangGraph execution + cognitive router |
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
-| AEG Model | [.claude/skills/aeg-model/SKILL.md](.claude/skills/aeg-model/SKILL.md) | Governance doctrine (`aeg-root/**`) — four truth domains, three-ring enforcement, tranche lifecycle, role/contract seam |
 | Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — portal/studio/sources split, check engine, install lifecycle, renderer contract |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
-| Brief Authoring | `aeg-root/skills/brief-authoring/SKILL.md` — no local copy; resolve the root with `npx --yes @attalabs/vinaya doctrine` | Task briefs for Developer agents — v3 model integration |
+| Brief Authoring | `aeg-root/skills/brief-authoring/SKILL.md` — no local copy; resolve the root with `npx --yes @attalabs/vinaya@0.12.0 doctrine` | Task briefs for Developer agents — v3 model integration |
 | Executor Protocol | [.claude/skills/executor-protocol/SKILL.md](.claude/skills/executor-protocol/SKILL.md) | Patterns for executing dispatched tasks |
 | Code Style | [.claude/skills/code-style/SKILL.md](.claude/skills/code-style/SKILL.md) | TypeScript, exports, Biome rules |
 | Doc Authoring | [.claude/skills/doc-authoring/SKILL.md](.claude/skills/doc-authoring/SKILL.md) | Authoring standard for CLAUDE.md/SKILL.md/spec prose — three classes, different rules, shared reference rule |
