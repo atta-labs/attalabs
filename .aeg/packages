@@ -1,8 +1,11 @@
 # .aeg/packages — the static collision-domain list.
 #
 # Named as canonical by three governance docs that never had a file to point
-# at: `.vinaya/projects.md` ("Routing vs. conflicts"),
-# `aeg-root/tranche-model.md` §5, and `aeg-root/aeg-manual-flow.md` §init.
+# at: `.vinaya/projects.md` ("Routing vs. conflicts"), `tranche-model.md` §5
+# (portable doctrine — resolves via `npx --yes @attalabs/vinaya doctrine`,
+# no local copy in this repo), and `aeg-manual-flow.md` §init (this-repo
+# operational prose, not bundled by the package — no local copy or live
+# resolution; see the standalone `atta-labs/vinaya` repo's own `aeg-root/`).
 # This file is that missing artifact.
 #
 # WHAT A LINE MEANS. One collision domain per line: a repo-relative path

@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { deriveDiagramModel } from '@attalabs/aeg-core'
 import { createFileDoctrineSource } from '@attalabs/vinaya-sources'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,12 +7,11 @@ import { describe, expect, it, vi } from 'vitest'
 // it must be stubbed to exercise this Server-Component-only code path.
 vi.mock('server-only', () => ({}))
 
-const { githubBlobUrl } = await import('../../../../../../lib/github-links')
+const { githubBlobUrl, findAegRoot } = await import('../../../../../../lib/github-links')
 const { deriveGroups } = await import('./groupings')
 const { readMoreTarget } = await import('./read-more')
 
-const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../../../../../../..')
-const AEG_ROOT = path.join(REPO_ROOT, 'aeg-root')
+const AEG_ROOT = findAegRoot()
 
 /**
  * End-to-end proof against the real doctrine (no fixtures) — exactly what

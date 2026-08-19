@@ -96,6 +96,16 @@
  * already reachable via the existing `apps/vinaya` scope entry on
  * `consumer-product-name`, and the harness patterns' pre-existing exclusion
  * of `apps/vinaya` was task 6's own deliberate choice, not reopened here.
+ *
+ * `aeg-root` dropped from every PATTERNS scope entry (attalabs-remove-local-
+ * aeg-root task): attalabs carries no local `aeg-root/` of any kind any
+ * more, so there is nothing left there for any pattern to scan. This is
+ * not a coverage loss to backfill — every scope array above already names
+ * real surfaces beyond `aeg-root`, none of them go empty by removing it.
+ * Leaving the literal string in `grepFn`'s scope array would crash the
+ * whole check: `grep`'s missing-path exit (2) is not the "no matches" exit
+ * (1) `grepFn` swallows, so it re-throws, uncaught, before a single
+ * pattern's findings are collected — the CI failure this fix resolves.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -174,20 +184,18 @@ function matchFn(pattern: string, sample: string): boolean {
 
 const GLOBAL_EXEMPT = [
   '/fixtures/',
-  'aeg-root/tranches/completed/',
   'apps/vada-ai/docs/',
   'apps/herald-ai/docs/',
   'apps/vinaya/docs/',
   '/node_modules/',
   '/.next/',
   '/.turbo/',
-  // Task 8 — same frozen-archive class as `aeg-root/tranches/completed/`
-  // and the `docs/` entries above, extended to a tree that happens to live
-  // under `specs/` instead: `specs/legacy/README.md` states its own purpose
-  // as "Historical specs — superseded," the identical characterization the
-  // other frozen-archive entries in this list share. Citation hygiene is
-  // not a meaningful obligation for content the product itself has already
-  // marked retired.
+  // Task 8 — same frozen-archive class as the `docs/` entries above, extended
+  // to a tree that happens to live under `specs/` instead:
+  // `specs/legacy/README.md` states its own purpose as "Historical specs —
+  // superseded," the identical characterization the other frozen-archive
+  // entries in this list share. Citation hygiene is not a meaningful
+  // obligation for content the product itself has already marked retired.
   'apps/vada-ai/specs/legacy/'
 ]
 
@@ -195,7 +203,7 @@ const PATTERNS: VocabularyPattern[] = [
   {
     id: 'consumer-product-name',
     pattern: String.raw`\b(vada|herald|attalabs|vitakka|sati)\b`,
-    scope: ['aeg-root', 'apps/vinaya'],
+    scope: ['apps/vinaya'],
     sample: 'built directly on vada internals',
     // `.test.ts` files under this scope can legitimately use real product
     // paths as fixture data — the identical false-positive class
@@ -226,7 +234,6 @@ const PATTERNS: VocabularyPattern[] = [
     id: 'harness-claude-path',
     pattern: String.raw`\.claude/`,
     scope: [
-      'aeg-root',
       'apps/vada-ai/specs',
       'apps/vada-ai/CLAUDE.md',
       'apps/herald-ai/specs',
@@ -242,7 +249,6 @@ const PATTERNS: VocabularyPattern[] = [
     id: 'harness-husky-path',
     pattern: String.raw`\.husky/`,
     scope: [
-      'aeg-root',
       'apps/vada-ai/specs',
       'apps/vada-ai/CLAUDE.md',
       'apps/herald-ai/specs',
@@ -258,7 +264,6 @@ const PATTERNS: VocabularyPattern[] = [
     id: 'harness-scripts-file',
     pattern: String.raw`scripts/[a-zA-Z0-9_/-]+\.(ts|js|sh|mjs)`,
     scope: [
-      'aeg-root',
       'apps/vada-ai/specs',
       'apps/vada-ai/CLAUDE.md',
       'apps/herald-ai/specs',
@@ -276,7 +281,6 @@ const PATTERNS: VocabularyPattern[] = [
     // packages/models/src: the 2026-08-06 amendment's shared-package scope
     // (the exact string PR #742 removed from this package's source).
     scope: [
-      'aeg-root',
       'packages/models/src',
       'apps/vada-ai/specs',
       'apps/vada-ai/CLAUDE.md',
@@ -312,7 +316,7 @@ const PATTERNS: VocabularyPattern[] = [
     // degrade a correct document to fix a mis-scoped surface, the same
     // anti-pattern `roles/developer.md` names for implementation bugs
     // ("the doc is correct, fix the implementation") applied here to scope.
-    scope: ['aeg-root', 'packages/models/src'],
+    scope: ['packages/models/src'],
     sample: 'documented in #294'
   }
 ]

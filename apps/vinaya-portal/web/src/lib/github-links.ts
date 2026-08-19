@@ -39,8 +39,26 @@ export function findRepoRoot(): string {
   throw new Error('Could not locate repo root (vinaya.config.json) above process.cwd()')
 }
 
+/**
+ * The portable-core doctrine subset (`state-machine.md`, `enforcement.md`,
+ * `roles/`, `contracts/`, etc.) ships inside the installed `@attalabs/vinaya`
+ * npm package now — attalabs carries no local `aeg-root/` copy of it (see
+ * `.claude/skills/vinaya-architecture/SKILL.md`).
+ *
+ * Tried `require.resolve('@attalabs/vinaya/package.json')` first — correct
+ * under plain Node, but Turbopack's dev server only resolves packages it can
+ * see referenced by a static `import`/`require` somewhere in the graph;
+ * `@attalabs/vinaya` is a CLI package this app never imports as code, only
+ * resolves by string, so Turbopack served back a path under its own virtual
+ * `[project]` root that didn't exist on real disk (`ENOENT` on every `/docs`
+ * route, confirmed live against the dev server before this fix). Composing
+ * on `findRepoRoot()` instead — plain `path.join` + the bun/npm hoisting
+ * guarantee that a repo-level devDependency lands in the repo's own
+ * `node_modules` — is pure runtime `fs`, invisible to any bundler's static
+ * module graph, the same way `findRepoRoot()`'s own walk already is.
+ */
 export function findAegRoot(): string {
-  return path.join(findRepoRoot(), 'aeg-root')
+  return path.join(findRepoRoot(), 'node_modules', '@attalabs', 'vinaya', 'aeg-root')
 }
 
 /** The forge this monorepo is hosted on — used to build clickable, verifiable source links. */

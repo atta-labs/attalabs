@@ -22,17 +22,21 @@ export default async function config(): Promise<NextConfig> {
     // the same mechanism vada (`../yamls/**`) and herald use.
     //
     // The MARKER FILES BELONG HERE TOO, and they are the half that has broken
-    // twice. Neither loader is handed a root: `findRepoRoot()`
-    // (`src/lib/github-links.ts`) walks up from `process.cwd()` for
-    // `vinaya.config.json`, and `docs/load-aeg-docs.ts` walks up for the
-    // `aeg-root` directory itself. Ship the doctrine without the marker and
-    // the walk throws before a single doctrine file is read — a 500 that only
-    // ever appears in production, on exactly the routes that call it. So:
-    // changing either marker constant means changing this list in the same
+    // twice. `findRepoRoot()` (`src/lib/github-links.ts`) walks up from
+    // `process.cwd()` for `vinaya.config.json`. The doctrine itself no longer
+    // lives in this repo — attalabs carries no local `aeg-root/`; `findAegRoot()`
+    // (same file) resolves the installed `@attalabs/vinaya` package's own
+    // bundled `aeg-root/` via `require.resolve`, and `docs/load-aeg-docs.ts`
+    // reads every `.md` under whatever directory that resolves to via computed
+    // fs calls — still undetectable by tracing, just rooted in `node_modules`
+    // now instead of the repo root. Ship the doctrine without the marker and
+    // the read throws/comes up empty before a single doctrine file is read — a
+    // 500 that only ever appears in production, on exactly the routes that
+    // call it. So: changing either marker means changing this list in the same
     // commit. `src/lib/tracing-markers.test.ts` is the mechanical half of that
     // rule — it discovers the walks rather than trusting this comment.
     outputFileTracingIncludes: {
-      '/**': ['../../../aeg-root/**', '../../../vinaya.config.json']
+      '/**': ['../../../node_modules/@attalabs/vinaya/aeg-root/**', '../../../vinaya.config.json']
     },
     turbopack: {
       root: resolve(__dirname, '../../..'),
