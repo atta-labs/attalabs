@@ -1,1 +1,1 @@
-aeg-root/**
+aeg-root/tranches/**
