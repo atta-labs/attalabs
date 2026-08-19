@@ -76,4 +76,4 @@ jobs:
           # the gate is green regardless of review state.
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya@0.12.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.16.0 check review-gate

@@ -36,7 +36,7 @@ jobs:
       - name: Run vinaya archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.12.0 archive --merge-sha=${{ github.sha }}
+        run: npx --yes @attalabs/vinaya@0.16.0 archive --merge-sha=${{ github.sha }}
 
   daily-drift:
     name: Daily Drift Check (dead-branch pushes)
@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true # never-red — this job is a notification channel, not a gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.12.0 audit --only=dead-branches
+        run: npx --yes @attalabs/vinaya@0.16.0 audit --only=dead-branches
 
   direct-main-push-detection:
     name: Direct-Main-Push Detection
@@ -85,4 +85,4 @@ jobs:
       - name: Run vinaya audit --only=direct-push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.12.0 audit --only=direct-push --sha=${{ github.sha }}
+        run: npx --yes @attalabs/vinaya@0.16.0 audit --only=direct-push --sha=${{ github.sha }}
