@@ -1,2 +1,2 @@
 import { generateUIIndex } from '@atta/ui/scripts/generate-ui'
-await generateUIIndex('vinaya')
+await generateUIIndex('vinayaStudio')
