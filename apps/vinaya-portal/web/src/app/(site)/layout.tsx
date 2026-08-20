@@ -108,7 +108,7 @@ const links: TopBarNavItem[] = [
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
-  const { branding } = await getProductCms('vinaya')
+  const { branding } = await getProductCms('vinayaPortal')
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
   // App-shell height: the shell is a full-viewport flex column — TopBar keeps

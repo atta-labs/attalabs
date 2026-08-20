@@ -41,6 +41,14 @@ apps/vinaya-studio/
                  with the other two apps.
 ```
 
+The split apps also have independent CMS identities inside Vinaya's shared Sanity
+project. Portal uses `vinayaPortal` for every runtime config and branding read and
+generates its build-time UI aliases under `packages/ui/generated/vinayaPortal/`.
+Studio symmetrically uses `vinayaStudio` and
+`packages/ui/generated/vinayaStudio/`. Neither app reads the legacy `vinaya`
+document or aliases the legacy `generated/vinaya/` directory; display copy that says
+"Vinaya" remains a product label and is not a CMS key.
+
 The vendored-copy deletion is load-bearing, not housekeeping: `init` detects a workspace
 member declaring the published package's name and, when one exists, generates every
 artifact — workflows, hook blocks, `VINAYA.md` — invoking that member's `dist` build

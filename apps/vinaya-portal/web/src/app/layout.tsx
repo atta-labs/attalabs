@@ -9,7 +9,7 @@ import '@atta/ui/globals.css'
 import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { branding } = await getProductCms('vinaya')
+  const { branding } = await getProductCms('vinayaPortal')
   return {
     title: 'Vinaya — Branch protection for the AI era',
     description:
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const { config, branding } = await getProductCms('vinaya')
+  const { config, branding } = await getProductCms('vinayaPortal')
 
   return (
     <NextWebShell

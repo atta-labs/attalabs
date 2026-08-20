@@ -1,5 +1,5 @@
 // `@atta/ui/components`, not bare `@atta/ui`: this app's tsconfig aliases only
-// the exact string `@atta/ui/components` (→ `generated/vinaya/components`, the
+// the exact string `@atta/ui/components` (→ `generated/vinayaPortal/components`, the
 // active-library passthrough). Bare `@atta/ui` has no alias here, so it falls
 // back to `packages/ui/package.json`'s `"."` export — hardcoded
 // `libraries/basic/components` — which would pin this page to `basic` no matter
