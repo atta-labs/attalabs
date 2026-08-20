@@ -118,6 +118,13 @@ Adapters exist where an app actually passes `asChild` AND the resolved primitive
 same adapter if that changes. animate/brutal fall back to basic's Sheet, so they re-export the
 basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
 
+The same wrapper rule applies to equivalent behavior props with different upstream names.
+`TabsContent.forceMount` is the cross-library persistence contract used by Radix-backed
+libraries; Base UI calls it `keepMounted`. The editable basic and animate Tabs wrappers
+accept both names and forward `forceMount ?? keepMounted` as `keepMounted`, so inactive
+panels remain in the DOM without leaking an unknown prop. Do not rename consumer props per
+active library or edit an `installed/tabs.tsx` file.
+
 ### CLI workflow when adding or restoring a component
 
 1. **Install:** run the matching CLI from the table above. If the upstream registry is down
@@ -168,7 +175,10 @@ basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet
 
 Both are valid. Choose based on whether the library selection is static (per-app) or dynamic (per-user). The two can also be **composed** on disjoint route subtrees — a fixed CMS-driven chrome plus a per-user public surface. That composition is an app-level architecture decision and is documented by the app that makes it, not here.
 
-> **This skill names no consumer.** `@atta/ui` imports no app, so the library system does not know which apps exist or which pattern each one picked. That mapping goes stale on every app added, renamed, or retired — it is a coupling, not a convenience. An app's own resolution choice is documented in that app's `CLAUDE.md`.
+> **This skill does not maintain an exhaustive consumer matrix.** `@atta/ui` imports no app,
+> so each app's resolution choice remains owned by that app's documentation. Consumer
+> identities are named here only when they define a shared-generator invariant, such as
+> preventing two split apps from writing the same generated directory.
 
 ---
 
@@ -199,6 +209,13 @@ export * from '../../canvas'
 ```
 
 The file is gitignored — it is created on every build from the CMS config.
+
+The split Vinaya apps deliberately pass different generator identities even though both
+documents live in the same Sanity project. Portal generates and aliases
+`packages/ui/generated/vinayaPortal/{components,canvas}.ts`; Studio generates and aliases
+`packages/ui/generated/vinayaStudio/{components,canvas}.ts`. Neither may use the legacy
+`generated/vinaya/` path: independent directories keep one app's build from overwriting
+the other's selected library.
 
 ### next.config.ts Integration
 
