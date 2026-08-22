@@ -16,6 +16,20 @@
 # checks non-zero), the merge is DENIED. Read-only `gh` (pr view/checks/list) is
 # never a merge path → always allowed.
 #
+# SUBSHELL AMBIGUITY: repo-root resolution (below) only sees `cd` segments at
+# the top level of the command string (preceded by start-of-string, `&&`, or
+# `;`). The merge-shape detector, in contrast, substring-matches the whole raw
+# command — including text inside a `$(...)` subshell. A command shaped like
+# `cd /a && echo $(cd /b && gh pr merge N)` would resolve repo_root to /a
+# (correct, since a subshell's own `cd` never changes the outer shell's cwd)
+# while the subshell's `gh pr merge` genuinely executes against /b's real
+# remote — so the gate could end up checking a different repo's CI than the
+# one the merge actually targets. Rather than attempt full shell-aware
+# parsing (disproportionate for a regex-based hook), any merge-shaped command
+# containing `$(` or a backtick is denied outright below — ambiguous, not
+# silently under-checked. The forge-side `required_status_checks` ruleset
+# remains the backstop against a genuinely red merge either way (see above).
+#
 # Deny mechanism mirrors check-skill.sh: emit a PreToolUse hookSpecificOutput JSON
 # with permissionDecision "deny" + a reason, then `exit 0`.
 set -euo pipefail
@@ -23,10 +37,49 @@ set -euo pipefail
 input=$(cat)
 
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
+raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 
-# Resolve repo root the same way check-skill.sh does, so `gh` runs against the
-# active worktree's checkout (and thus the correct repo/remote).
-repo_root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+# Resolve repo root. Prefer an explicit `cd <path>` in the command itself —
+# a session's PROJECT_DIR is fixed to wherever it started, but a merge
+# command can legitimately target ANY repo the agent `cd`'d into first (a
+# different local clone, a worktree elsewhere). Blindly using
+# CLAUDE_PROJECT_DIR made this gate check the wrong repo's PR list for any
+# such command and fail closed with a bogus "PR not found" — found live:
+# `cd .../vinaya && gh pr merge 167` denied because this hook ran
+# `gh pr checks 167` against attalabs, which has no PR #167. Falls back to
+# CLAUDE_PROJECT_DIR (then this script's own repo) exactly as before when no
+# `cd` is present, or when it names a path that doesn't exist.
+#
+# Use the LAST `cd <path>` in the command, not the first: a `&&`/`;`-chained
+# command's real final working directory is whichever `cd` ran last, and
+# matching only the first `cd` let `cd /decoy && cd /target && gh pr merge N`
+# resolve repo_root to /decoy — checking a different repo's CI status than
+# the one the merge actually targets. Delimiters excluded from a captured
+# path are `&`/`;` (the two chain operators this parses) — a path itself is
+# never expected to contain either.
+repo_root=""
+if [[ -n "$raw_command" ]]; then
+  cd_path=""
+  while IFS= read -r match; do
+    cd_path="$match"
+  done < <(printf '%s' "$raw_command" | grep -oE '(^|&&|;)[[:space:]]*cd[[:space:]]+[^&;]+' | sed -E 's/^(&&|;)?[[:space:]]*cd[[:space:]]+//')
+  if [[ -n "$cd_path" ]]; then
+    # Trim trailing whitespace BEFORE stripping quotes: for `cd "/path" && ...`
+    # the captured segment includes the space between the closing quote and
+    # `&&`, so a trailing-quote strip run before this trim never matches —
+    # every quoted `cd` (the idiomatic form) silently fell back to the old,
+    # unpatched repo-root resolution.
+    cd_path="$(printf '%s' "$cd_path" | sed -e 's/[[:space:]]*$//')"
+    cd_path="${cd_path%\"}"
+    cd_path="${cd_path#\"}"
+    cd_path="${cd_path%\'}"
+    cd_path="${cd_path#\'}"
+    if [[ -n "$cd_path" && -d "$cd_path" ]]; then
+      repo_root="$cd_path"
+    fi
+  fi
+fi
+repo_root="${repo_root:-${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}}"
 
 # ---- deny helper -----------------------------------------------------------
 deny() {
@@ -89,7 +142,7 @@ fi
 
 # ---- Bash merge commands ---------------------------------------------------
 if [[ "$tool_name" == "Bash" ]]; then
-  command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+  command="$raw_command"
   [[ -z "$command" ]] && exit 0
 
   # Lowercase copy for case-insensitive matching.
@@ -109,6 +162,40 @@ if [[ "$tool_name" == "Bash" ]]; then
 
   if [[ $is_merge -eq 0 ]]; then
     exit 0
+  fi
+
+  # A merge-shaped command containing a subshell ($( ), backticks, or process
+  # substitution <( )/>( ) — all four fork a real subshell) is ambiguous: the
+  # repo-root `cd` parser above only sees top-level `cd` segments (correctly,
+  # since a subshell's own `cd` never changes the outer shell's cwd), but
+  # this merge-shape match is a whole-string substring search that fires on
+  # text inside a subshell too — so the two can resolve against different
+  # repos (documented above). Rather than proceed with a possibly-wrong
+  # repo_root, fail closed: the existing implicit-PR-number fallback below
+  # already covers the one legitimate reason to compute something via
+  # `$( )` (a dynamically-resolved PR number), so this costs no real
+  # workflow.
+  if printf '%s' "$command" | grep -Eq '\$\(|`|<\(|>\('; then
+    deny "Merge blocked: this command contains a subshell (\`\$( )\`, backticks, or process substitution \`<( )\`/\`>( )\`), which makes repo-root resolution ambiguous — this hook cannot reliably prove which repo's CI is green. Run the merge command without a subshell (e.g. resolve any PR number first, then pass it as a plain argument to \`gh pr merge <n>\`)."
+  fi
+
+  # `eval "cd /b && gh pr merge N"` is a different failure shape from a
+  # subshell: eval runs in THIS shell, so an embedded `cd` genuinely changes
+  # repo_root's real target — deterministic, not ambiguous — but it's
+  # invisible to the `cd`-path parser above (which only looks at top-level
+  # `cd` segments in the raw command text, not inside a quoted string an
+  # eval would later re-parse). Deny outright rather than resolve a
+  # possibly-stale repo_root: `eval` as a bare word essentially never
+  # appears in a real `gh pr merge` invocation, so this costs no real
+  # workflow. (Known residual gaps of the same general class — bare `(...)`
+  # subshell grouping, and `source`/`.` of a file whose *contents* run a
+  # merge command — are deliberately NOT covered here: the former is too
+  # common in ordinary command text, e.g. `--body "fixes (#41)"`, to add
+  # without real false-positive cost; the latter needs the hook to read and
+  # scan the sourced file itself, a materially bigger change than a pattern
+  # widen.)
+  if printf '%s' "$lc" | grep -Eq '\beval\b'; then
+    deny "Merge blocked: this command contains \`eval\`, which can run an embedded \`cd\`/merge invocation this hook cannot see in the raw command text — repo-root resolution cannot be trusted. Run the merge command directly, without \`eval\`."
   fi
 
   # Resolve the PR number.
