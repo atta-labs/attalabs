@@ -164,18 +164,19 @@ if [[ "$tool_name" == "Bash" ]]; then
     exit 0
   fi
 
-  # A merge-shaped command containing a subshell ($( ) or backticks) is
-  # ambiguous: the repo-root `cd` parser above only sees top-level `cd`
-  # segments (correctly, since a subshell's own `cd` never changes the
-  # outer shell's cwd), but this merge-shape match is a whole-string
-  # substring search that fires on text inside a subshell too — so the two
-  # can resolve against different repos (documented above). Rather than
-  # proceed with a possibly-wrong repo_root, fail closed: the existing
-  # implicit-PR-number fallback below already covers the one legitimate
-  # reason to compute something via `$( )` (a dynamically-resolved PR
-  # number), so this costs no real workflow.
-  if printf '%s' "$command" | grep -Eq '\$\(|`'; then
-    deny "Merge blocked: this command contains a subshell (\`\$( )\` or backticks), which makes repo-root resolution ambiguous — this hook cannot reliably prove which repo's CI is green. Run the merge command without a subshell (e.g. resolve any PR number first, then pass it as a plain argument to \`gh pr merge <n>\`)."
+  # A merge-shaped command containing a subshell ($( ), backticks, or process
+  # substitution <( )/>( ) — all four fork a real subshell) is ambiguous: the
+  # repo-root `cd` parser above only sees top-level `cd` segments (correctly,
+  # since a subshell's own `cd` never changes the outer shell's cwd), but
+  # this merge-shape match is a whole-string substring search that fires on
+  # text inside a subshell too — so the two can resolve against different
+  # repos (documented above). Rather than proceed with a possibly-wrong
+  # repo_root, fail closed: the existing implicit-PR-number fallback below
+  # already covers the one legitimate reason to compute something via
+  # `$( )` (a dynamically-resolved PR number), so this costs no real
+  # workflow.
+  if printf '%s' "$command" | grep -Eq '\$\(|`|<\(|>\('; then
+    deny "Merge blocked: this command contains a subshell (\`\$( )\`, backticks, or process substitution \`<( )\`/\`>( )\`), which makes repo-root resolution ambiguous — this hook cannot reliably prove which repo's CI is green. Run the merge command without a subshell (e.g. resolve any PR number first, then pass it as a plain argument to \`gh pr merge <n>\`)."
   fi
 
   # Resolve the PR number.
