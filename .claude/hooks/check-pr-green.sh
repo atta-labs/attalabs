@@ -179,6 +179,25 @@ if [[ "$tool_name" == "Bash" ]]; then
     deny "Merge blocked: this command contains a subshell (\`\$( )\`, backticks, or process substitution \`<( )\`/\`>( )\`), which makes repo-root resolution ambiguous — this hook cannot reliably prove which repo's CI is green. Run the merge command without a subshell (e.g. resolve any PR number first, then pass it as a plain argument to \`gh pr merge <n>\`)."
   fi
 
+  # `eval "cd /b && gh pr merge N"` is a different failure shape from a
+  # subshell: eval runs in THIS shell, so an embedded `cd` genuinely changes
+  # repo_root's real target — deterministic, not ambiguous — but it's
+  # invisible to the `cd`-path parser above (which only looks at top-level
+  # `cd` segments in the raw command text, not inside a quoted string an
+  # eval would later re-parse). Deny outright rather than resolve a
+  # possibly-stale repo_root: `eval` as a bare word essentially never
+  # appears in a real `gh pr merge` invocation, so this costs no real
+  # workflow. (Known residual gaps of the same general class — bare `(...)`
+  # subshell grouping, and `source`/`.` of a file whose *contents* run a
+  # merge command — are deliberately NOT covered here: the former is too
+  # common in ordinary command text, e.g. `--body "fixes (#41)"`, to add
+  # without real false-positive cost; the latter needs the hook to read and
+  # scan the sourced file itself, a materially bigger change than a pattern
+  # widen.)
+  if printf '%s' "$lc" | grep -Eq '\beval\b'; then
+    deny "Merge blocked: this command contains \`eval\`, which can run an embedded \`cd\`/merge invocation this hook cannot see in the raw command text — repo-root resolution cannot be trusted. Run the merge command directly, without \`eval\`."
+  fi
+
   # Resolve the PR number.
   pr=""
   # Form 2/3: explicit PR number in a `/pulls/<n>/merge` path.
