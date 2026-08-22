@@ -1,17 +1,23 @@
 # Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.
 #
-# The required review gate — pull_request events only. The verdict-comment
+# The required review gate. `pull_request_target` is the trust boundary:
+# GitHub loads this workflow and its default checkout from the repository's
+# default branch, never from the pull request being judged. The job does not
+# fetch, check out, install, build, or execute pull-request content.
+#
+# The verdict-comment
 # half lives in its own workflow (vinaya-review-verdict.yml): a new PR
-# comment fires a different GitHub event that this pull_request-only
+# comment fires a different GitHub event that this
 # workflow structurally cannot receive — and keeping the comment path in a
 # separate FILE means this workflow's runs never list permanently-skipped
 # comment jobs on the PR's checks panel. When a clean final verdict lands,
 # the verdict workflow re-runs this one, so the required check below goes
 # green natively with no manual rerun.
 name: Vinaya Review Gate
+run-name: "Vinaya Review Gate PR #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }}"
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 # One run per pull request COMMIT, always. Several `types:` above can fire in the
@@ -51,23 +57,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # This job executes repo content; don't leave the token in
-          # .git/config for scripts to read.
+          # Explicit trusted ref: never use the PR head/merge ref in this job.
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # Adopter-declared CI setup (vinaya.config.json `ci.setup`), emitted
-      # verbatim. It prepares this repository's OWN custom checks — scripts
-      # committed here that may import this repository's code — which the
-      # `npx` invocation below cannot do: npx prepares only vinaya itself.
-      # The command is repo-committed, reviewed config; under `pull_request`
-      # the workflow definition is already controlled by the pull request, so
-      # this step adds no trust surface that did not already exist.
-      - name: Adopter CI setup
-        run: |
-          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
       - name: Review gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,5 +71,4 @@ jobs:
           # it the adapter reads "no PR yet — local dev" and exits 0, and
           # the gate is green regardless of review state.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BRANCH: ${{ github.head_ref }}
-        run: npx --yes @attalabs/vinaya@0.16.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.17.1 check review-gate

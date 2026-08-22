@@ -1,0 +1,7 @@
+# Vinaya's own workflow files run with elevated trust — vinaya-review.yml and
+# vinaya-review-verdict.yml use pull_request_target against the default branch,
+# so an unreviewed edit here can widen what a PR is allowed to merge itself.
+# Recommended by `vinaya init`/`doctor` (0.17.1+); vinaya never writes or
+# enforces this file itself — see `.claude/hooks/check-pr-green.sh` and
+# aeg-root/enforcement.md for the layers that do.
+/.github/workflows/** @daniboomerang
