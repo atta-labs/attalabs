@@ -16,6 +16,20 @@
 # checks non-zero), the merge is DENIED. Read-only `gh` (pr view/checks/list) is
 # never a merge path → always allowed.
 #
+# KNOWN LIMITATION: repo-root resolution (below) only sees `cd` segments at the
+# top level of the command string (preceded by start-of-string, `&&`, or `;`).
+# The merge-shape detector, in contrast, substring-matches the whole raw
+# command — including text inside a `$(...)` subshell. A command shaped like
+# `cd /a && echo $(cd /b && gh pr merge N)` resolves repo_root to /a (correct,
+# since a subshell's own `cd` never changes the outer shell's cwd) while the
+# subshell's `gh pr merge` genuinely executes against /b's real remote — so
+# the gate can end up checking a different repo's CI than the one the merge
+# actually targets. Full shell-aware parsing to close this is disproportionate
+# for a regex-based hook; the forge-side `required_status_checks` ruleset is
+# the real backstop against a genuinely red merge either way (see above) —
+# this hook staying imperfect is a defense-in-depth degradation, not a total
+# bypass of merge protection.
+#
 # Deny mechanism mirrors check-skill.sh: emit a PreToolUse hookSpecificOutput JSON
 # with permissionDecision "deny" + a reason, then `exit 0`.
 set -euo pipefail
