@@ -120,10 +120,12 @@ call site says so out loud.
 `vinayaPortal` (`vinayaPortalConfig` / `branding-vinayaPortal`) and `vinayaStudio`
 (`vinayaStudioConfig` / `branding-vinayaStudio`) are two additional product documents
 inside `vinaya`'s own Sanity project — not new projects, so `PROJECT_IDS` maps all three
-keys to the same project id. No call site passes either key yet; every app still passes
-`vinaya`. This is the same pattern "Adding a New Product Theme" below describes, minus
-step 1 (no new project id to add) — a product can register its own config/branding
-documents ahead of any app reading them, inside a project it shares with another product.
+keys to the same project id. Portal passes `vinayaPortal` for every runtime config and
+branding read; Studio passes `vinayaStudio` for the same reads. Their independently
+addressed documents are seeded with the legacy `vinaya` appearance, and the ordinary
+`getProductCms` null/fallback behavior remains unchanged if either document is
+temporarily unavailable. This is the same pattern "Adding a New Product Theme" below
+describes, minus step 1 (no new project id to add).
 
 `getProductCms` is the root-layout entry point. It fetches both documents in parallel and
 owns the graceful-degradation policy — on failure it returns `null` for that document, and

@@ -20,4 +20,7 @@ export type TabsTriggerProps = BaseTabs.Tab.Props
 /**
  * Tabs content panel props contract. Requires a `value` matching its TabsTrigger.
  */
-export type TabsContentProps = BaseTabs.Panel.Props
+export type TabsContentProps = BaseTabs.Panel.Props & {
+  /** Cross-library alias for keeping inactive panels mounted. */
+  forceMount?: boolean
+}

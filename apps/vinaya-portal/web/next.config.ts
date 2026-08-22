@@ -3,8 +3,8 @@ import type { NextConfig } from 'next'
 import { resolve } from 'node:path'
 
 export default async function config(): Promise<NextConfig> {
-  await generateUIIndex('vinaya')
-  const componentsRelPath = '../../../packages/ui/generated/vinaya/components.ts'
+  await generateUIIndex('vinayaPortal')
+  const componentsRelPath = '../../../packages/ui/generated/vinayaPortal/components.ts'
   return {
     output: 'standalone',
     webpack: (config) => {

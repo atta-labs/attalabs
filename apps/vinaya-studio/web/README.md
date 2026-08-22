@@ -20,6 +20,12 @@ bun run dev:vinaya-studio    # port 3008, falls back to 3108
 
 `apps/vinaya-portal/web` runs on 3007/3107. Two apps rendering the same product under the same CMS theme are easy to confuse — check the port before concluding a change did or did not take effect.
 
+## CMS identity
+
+Studio's CMS key is `'vinayaStudio'`. The root layout uses it for metadata, runtime config, and branding; the Studio layout uses it for topbar branding. Both build-time generator entry points use the same key and write `packages/ui/generated/vinayaStudio/`, which the app's component and canvas aliases target.
+
+The `vinayaStudioConfig` and `branding-vinayaStudio` documents live in the same Sanity project as the legacy `vinaya` documents and were seeded with an identical appearance. “Vinaya” in visible copy remains the product's display label; it is not the CMS lookup key.
+
 ## Repo-root resolution
 
 `src/lib/repo-state/read-root.ts`'s `findAegRoot()` walks up from `process.env.VINAYA_REPO_ROOT ?? process.cwd()` looking for `.vinaya/projects.md`, then returns that directory's `aeg-root/`. `src/app/api/coherence/route.ts` calls the same function directly. This app sits at `apps/vinaya-studio/web` — the identical depth from the repo root as `apps/vinaya/web` (`web/<product>/apps/<root>`, three hops up either way) — so the walk resolves `aeg-root/` for the ordinary `next dev` case with no `VINAYA_REPO_ROOT` override needed; that override exists for the standalone-bundled Studio case in the separate `atta-labs/vinaya` CLI repo, where Next's generated `server.js` calls `process.chdir(__dirname)` before any request runs.

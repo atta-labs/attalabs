@@ -42,15 +42,18 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
 function TabsContent({
   className,
   children,
+  forceMount,
+  keepMounted,
   motionProps,
   value,
   ...props
-}: TabsPrimitive.Panel.Props & { motionProps?: HTMLMotionProps<'div'> }) {
+}: TabsPrimitive.Panel.Props & { forceMount?: boolean; motionProps?: HTMLMotionProps<'div'> }) {
   return (
     <TabsPrimitive.Panel
       data-slot='tabs-content'
       value={value}
       className={cn('mt-6 outline-none', className)}
+      keepMounted={forceMount ?? keepMounted}
       {...props}
     >
       <motion.div

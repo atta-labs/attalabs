@@ -22,9 +22,9 @@ This is the deployed production app for `vinaya.attalabs.dev` — the deployment
 
 ## CMS identity
 
-The product key is `'vinaya'` — unchanged from the original app, in all three call sites (`next.config.ts`'s `generateUIIndex`, `scripts/generate-ui.ts`, and the root layout's two `getProductCms` calls). Portal is still the Vinaya product; changing the key silently re-themes the app.
+Portal's CMS key is `'vinayaPortal'`. The root layout uses it for metadata, runtime config, and branding; the site layout uses it for topbar branding. Both build-time generator entry points use the same key and write `packages/ui/generated/vinayaPortal/`, which the app's component and canvas aliases target.
 
-**Provisional.** `@atta/cms` now also registers a `vinayaPortal` product key — its own `vinayaPortalConfig`/`branding-vinayaPortal` documents, seeded identical to `vinaya`'s so nothing renders differently today (see `.claude/skills/ui-cms-theme/SKILL.md`). None of the three call sites above have been repointed at it; that repoint is a separate, later change. Until it happens, treat every line above as accurate.
+The `vinayaPortalConfig` and `branding-vinayaPortal` documents live in the same Sanity project as the legacy `vinaya` documents and were seeded with an identical appearance. “Vinaya” in titles, navigation, and footer copy remains the product's display label; it is not the CMS lookup key.
 
 ## Repo-root resolution
 

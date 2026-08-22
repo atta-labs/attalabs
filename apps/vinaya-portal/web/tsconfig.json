@@ -3,8 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@atta/ui/components": ["../../../packages/ui/generated/vinaya/components"],
-      "@atta/ui/canvas": ["../../../packages/ui/generated/vinaya/canvas"]
+      "@atta/ui/components": ["../../../packages/ui/generated/vinayaPortal/components"],
+      "@atta/ui/canvas": ["../../../packages/ui/generated/vinayaPortal/canvas"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

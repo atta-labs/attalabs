@@ -31,7 +31,7 @@ const links = [
 ]
 
 export default async function StudioLayout({ children }: { children: ReactNode }) {
-  const { branding } = await getProductCms('vinaya')
+  const { branding } = await getProductCms('vinayaStudio')
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
   return (
