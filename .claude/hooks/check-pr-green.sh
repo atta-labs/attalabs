@@ -25,31 +25,44 @@ input=$(cat)
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
 raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 
-# Resolve repo root. Prefer an explicit leading `cd <path>` in the command
-# itself — a session's PROJECT_DIR is fixed to wherever it started, but a
-# merge command can legitimately target ANY repo the agent `cd`'d into first
-# (a different local clone, a worktree elsewhere). Blindly using
+# Resolve repo root. Prefer an explicit `cd <path>` in the command itself —
+# a session's PROJECT_DIR is fixed to wherever it started, but a merge
+# command can legitimately target ANY repo the agent `cd`'d into first (a
+# different local clone, a worktree elsewhere). Blindly using
 # CLAUDE_PROJECT_DIR made this gate check the wrong repo's PR list for any
 # such command and fail closed with a bogus "PR not found" — found live:
 # `cd .../vinaya && gh pr merge 167` denied because this hook ran
 # `gh pr checks 167` against attalabs, which has no PR #167. Falls back to
 # CLAUDE_PROJECT_DIR (then this script's own repo) exactly as before when no
-# leading `cd` is present, or when it names a path that doesn't exist.
+# `cd` is present, or when it names a path that doesn't exist.
+#
+# Use the LAST `cd <path>` in the command, not the first: a `&&`/`;`-chained
+# command's real final working directory is whichever `cd` ran last, and
+# matching only the first `cd` let `cd /decoy && cd /target && gh pr merge N`
+# resolve repo_root to /decoy — checking a different repo's CI status than
+# the one the merge actually targets. Delimiters excluded from a captured
+# path are `&`/`;` (the two chain operators this parses) — a path itself is
+# never expected to contain either.
 repo_root=""
-if [[ -n "$raw_command" ]] && [[ "$raw_command" =~ ^[[:space:]]*cd[[:space:]]+([^\&\;$'\n']+) ]]; then
-  cd_path="${BASH_REMATCH[1]}"
-  # Trim trailing whitespace BEFORE stripping quotes: for `cd "/path" && ...`
-  # the regex capture includes the space between the closing quote and `&&`,
-  # so a trailing-quote strip run before this trim never matches — every
-  # quoted `cd` (the idiomatic form) silently fell back to the old,
-  # unpatched repo-root resolution.
-  cd_path="$(printf '%s' "$cd_path" | sed -e 's/[[:space:]]*$//')"
-  cd_path="${cd_path%\"}"
-  cd_path="${cd_path#\"}"
-  cd_path="${cd_path%\'}"
-  cd_path="${cd_path#\'}"
-  if [[ -n "$cd_path" && -d "$cd_path" ]]; then
-    repo_root="$cd_path"
+if [[ -n "$raw_command" ]]; then
+  cd_path=""
+  while IFS= read -r match; do
+    cd_path="$match"
+  done < <(printf '%s' "$raw_command" | grep -oE '(^|&&|;)[[:space:]]*cd[[:space:]]+[^&;]+' | sed -E 's/^(&&|;)?[[:space:]]*cd[[:space:]]+//')
+  if [[ -n "$cd_path" ]]; then
+    # Trim trailing whitespace BEFORE stripping quotes: for `cd "/path" && ...`
+    # the captured segment includes the space between the closing quote and
+    # `&&`, so a trailing-quote strip run before this trim never matches —
+    # every quoted `cd` (the idiomatic form) silently fell back to the old,
+    # unpatched repo-root resolution.
+    cd_path="$(printf '%s' "$cd_path" | sed -e 's/[[:space:]]*$//')"
+    cd_path="${cd_path%\"}"
+    cd_path="${cd_path#\"}"
+    cd_path="${cd_path%\'}"
+    cd_path="${cd_path#\'}"
+    if [[ -n "$cd_path" && -d "$cd_path" ]]; then
+      repo_root="$cd_path"
+    fi
   fi
 fi
 repo_root="${repo_root:-${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}}"
