@@ -23,10 +23,36 @@ set -euo pipefail
 input=$(cat)
 
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
+raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 
-# Resolve repo root the same way check-skill.sh does, so `gh` runs against the
-# active worktree's checkout (and thus the correct repo/remote).
-repo_root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+# Resolve repo root. Prefer an explicit leading `cd <path>` in the command
+# itself — a session's PROJECT_DIR is fixed to wherever it started, but a
+# merge command can legitimately target ANY repo the agent `cd`'d into first
+# (a different local clone, a worktree elsewhere). Blindly using
+# CLAUDE_PROJECT_DIR made this gate check the wrong repo's PR list for any
+# such command and fail closed with a bogus "PR not found" — found live:
+# `cd .../vinaya && gh pr merge 167` denied because this hook ran
+# `gh pr checks 167` against attalabs, which has no PR #167. Falls back to
+# CLAUDE_PROJECT_DIR (then this script's own repo) exactly as before when no
+# leading `cd` is present, or when it names a path that doesn't exist.
+repo_root=""
+if [[ -n "$raw_command" ]] && [[ "$raw_command" =~ ^[[:space:]]*cd[[:space:]]+([^\&\;$'\n']+) ]]; then
+  cd_path="${BASH_REMATCH[1]}"
+  # Trim trailing whitespace BEFORE stripping quotes: for `cd "/path" && ...`
+  # the regex capture includes the space between the closing quote and `&&`,
+  # so a trailing-quote strip run before this trim never matches — every
+  # quoted `cd` (the idiomatic form) silently fell back to the old,
+  # unpatched repo-root resolution.
+  cd_path="$(printf '%s' "$cd_path" | sed -e 's/[[:space:]]*$//')"
+  cd_path="${cd_path%\"}"
+  cd_path="${cd_path#\"}"
+  cd_path="${cd_path%\'}"
+  cd_path="${cd_path#\'}"
+  if [[ -n "$cd_path" && -d "$cd_path" ]]; then
+    repo_root="$cd_path"
+  fi
+fi
+repo_root="${repo_root:-${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}}"
 
 # ---- deny helper -----------------------------------------------------------
 deny() {
@@ -89,7 +115,7 @@ fi
 
 # ---- Bash merge commands ---------------------------------------------------
 if [[ "$tool_name" == "Bash" ]]; then
-  command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+  command="$raw_command"
   [[ -z "$command" ]] && exit 0
 
   # Lowercase copy for case-insensitive matching.
