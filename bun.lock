@@ -8,7 +8,7 @@
       },
       "devDependencies": {
         "@attalabs/aeg-core": "^0.9.0",
-        "@attalabs/vinaya": "0.16.0",
+        "@attalabs/vinaya": "0.17.1",
         "@biomejs/biome": "^2.0.0",
         "@commitlint/cli": "^19.0.0",
         "husky": "^9.0.0",
@@ -710,7 +710,7 @@
 
     "@attalabs/aeg-types": ["@attalabs/aeg-types@0.9.0", "", {}, "sha512-nglqIlDDaR4A96SfgeiFOAOdrLB4YiBCa/APFSQoyylzFKPV2Phk8DpU8ueF5qxrhWMfKV4naoJdy2HESnNSVA=="],
 
-    "@attalabs/vinaya": ["@attalabs/vinaya@0.16.0", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-qs1FdjvbCqzIfOo5kWBehY+TxYpuIBu/WIIJmo1s1qblxJ3/0TuIFpybdYlo+hTTf6FkctecBgE/j9MHJ34Iyg=="],
+    "@attalabs/vinaya": ["@attalabs/vinaya@0.17.1", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-IB5vmNem+SilbUBzpz+bc/IUsle27OwZX9y45Dus3+TKj1d/ptB39OpYgRVatHHzIr35vxkfKmhzEIQ8MNAu/w=="],
 
     "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.9.0", "", { "dependencies": { "@attalabs/aeg-core": "0.9.0", "@attalabs/aeg-forge-state": "0.9.0", "@attalabs/aeg-types": "0.9.0", "zod": "3.25.76" } }, "sha512-GQUoTu8M5pcEJhPqpglajhP8QNwnKK7ZRpXRd2O4DCDLXpMERk2D7WxodcZlf9t4W3k+KjC7Fh0nyQWK/dNSBA=="],
 

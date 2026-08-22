@@ -2,7 +2,7 @@
 #
 # The verdict-comment half of the review gate. A reviewer's verdict arrives
 # as a PR comment (`VERDICT: APPROVE` / `VERDICT: PASS`), which fires
-# GitHub's `issue_comment` event — an event the required pull_request
+# GitHub's `issue_comment` event — an event the required PR-event
 # workflow cannot receive. This workflow evaluates the gate on that comment
 # and, when the evaluation is clean, RE-RUNS the required workflow so its
 # check goes green natively with no manual rerun. (Writing check-run
@@ -10,11 +10,10 @@
 # restricts check-run updates to the owning workflow — re-running is the
 # supported channel.)
 #
-# Privilege split, deliberate: `evaluate` checks out and executes repo
-# content and therefore holds NO write permission; `retrigger` holds
-# `actions: write` but checks out and executes nothing — its only inputs
-# are the evaluator's outputs, resolved via `gh pr view` before any repo
-# content ran. A malicious branch can at worst fail its own evaluation.
+# Privilege split, deliberate: `evaluate` executes only the default branch's
+# trusted gate code and holds NO write permission; `retrigger` holds
+# `actions: write` but checks out and executes nothing. Neither job checks
+# out or executes pull-request content.
 name: Vinaya Review Gate (on verdict)
 
 on:
@@ -31,49 +30,37 @@ jobs:
       pull-requests: read
       issues: read
     outputs:
-      branch: ${{ steps.pr.outputs.branch }}
+      number: ${{ steps.pr.outputs.number }}
       sha: ${{ steps.pr.outputs.sha }}
     steps:
-      # issue_comment payloads carry no PR head SHA/branch — resolve them
-      # before checkout, and check out that exact commit (the event's default
-      # ref is the repo's default branch, not the PR head).
+      # issue_comment payloads carry no PR head SHA — resolve it for immutable
+      # run identity only. It never selects executable code.
       - name: Resolve PR head
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NUMBER="${{ github.event.issue.number }}"
-          BRANCH=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefName -q .headRefName)
           SHA=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefOid -q .headRefOid)
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr.outputs.sha }}
+          # issue_comment already sources workflows from the default branch;
+          # make the trusted code checkout explicit too.
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # Adopter-declared CI setup (vinaya.config.json `ci.setup`), emitted
-      # verbatim. It prepares this repository's OWN custom checks — scripts
-      # committed here that may import this repository's code — which the
-      # `npx` invocation below cannot do: npx prepares only vinaya itself.
-      # The command is repo-committed, reviewed config; under `pull_request`
-      # the workflow definition is already controlled by the pull request, so
-      # this step adds no trust surface that did not already exist.
-      - name: Adopter CI setup
-        run: |
-          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
       - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-          BRANCH: ${{ steps.pr.outputs.branch }}
-        run: npx --yes @attalabs/vinaya@0.16.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.17.1 check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs.
   #
@@ -93,16 +80,11 @@ jobs:
       - name: Re-run the required review gate for this branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ needs.evaluate.outputs.branch }}
+          PR_NUMBER: ${{ needs.evaluate.outputs.number }}
           HEAD_SHA: ${{ needs.evaluate.outputs.sha }}
         run: |
-          # `--branch ""` is NOT a no-op: gh drops the filter and lists runs
-          # across every branch, so the rerun would land on an unrelated PR's
-          # gate. Reachable now that this job runs on a failed evaluation —
-          # `Resolve PR head` is the only producer of this output, and its
-          # failure used to be unreachable from here.
-          if [ -z "$BRANCH" ]; then
-            echo "No branch resolved (the evaluate job failed before resolving it) - nothing to re-run."
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR number resolved (the evaluate job failed before resolving it) - nothing to re-run."
             exit 0
           fi
           # Same guard, same producer: an empty SHA would make the selection
@@ -112,43 +94,28 @@ jobs:
             echo "No head SHA resolved (the evaluate job failed before resolving it) - nothing to re-run."
             exit 0
           fi
-          # Select by HEAD SHA, never by recency. "Newest completed" looks
-          # right and is not: `--status completed` excludes a run that is
-          # currently re-running but INCLUDES cancelled ones, so a verdict
-          # arriving while the current head's run is still in flight can
-          # select a stale cancelled sibling, rerun it, and — because the
-          # review workflow's concurrency group is keyed per pull request —
-          # cancel the live evaluation it was supposed to refresh.
-          #
-          # The run for this head SHA is the only one whose conclusion gates
-          # the merge; runs for earlier commits are scoped to those commits
-          # and never gate the current head. Cancelled runs are excluded for
-          # the same reason, not a mechanical one — a rerun with nothing else
-          # in its group completes normally. A cancellation here means the
-          # `opened`+`labeled` collapse discarded that run in favour of a
-          # sibling on the same commit, and it is the survivor whose
-          # conclusion the merge box reads.
-          # `--commit` filters server-side, deliberately. gh's `--jq` is a
-          # single-expression flag of its own, NOT a passthrough to jq, so jq's
-          # variable-binding flag cannot be used with it: pflag swallows that
-          # flag as the expression and gh exits 1 on the stray token — which
-          # under `bash -e` kills the step before the empty-RUN_ID no-op can
-          # run, so every verdict reddens and nothing reruns. Filter on the
-          # server and keep the jq expression free of variables.
-          RUN_ID=$(gh run list --repo "${{ github.repository }}" \
-            --workflow vinaya-review.yml --branch "$BRANCH" \
-            --commit "$HEAD_SHA" \
-            --json databaseId,event,status,conclusion \
-            --jq '[.[]
-                 | select(.event=="pull_request")
-                 | select(.status=="completed")
-                 | select(.conclusion!="cancelled")]
-               | .[0].databaseId // empty')
+          # pull_request_target runs execute at the DEFAULT branch SHA, so a
+          # run's head_sha cannot identify the PR commit. GitHub's nested
+          # pull_requests snapshot is also not immutable: an old rerun can
+          # expose the PR's current head. The required workflow therefore
+          # records PR number + head SHA in run-name at creation, and this
+          # query matches that immutable display_title exactly.
+          set -o pipefail
+          RUN_TITLE="Vinaya Review Gate PR #$PR_NUMBER @ $HEAD_SHA"
+          RUN_ID=$(gh api --paginate \
+            "repos/${{ github.repository }}/actions/workflows/vinaya-review.yml/runs?event=pull_request_target&per_page=100" \
+            | jq -sr --arg title "$RUN_TITLE" '
+                [.[].workflow_runs[]
+                 | select(.display_title == $title)
+                 | select(.event == "pull_request_target")
+                 | select(.status == "completed")
+                 | select(.conclusion != "cancelled")
+                 | .id][0] // empty')
           if [ -z "$RUN_ID" ]; then
-            echo "No completed, non-cancelled pull_request run of vinaya-review.yml for $HEAD_SHA - nothing to re-run."
+            echo "No completed, non-cancelled pull_request_target run of vinaya-review.yml for PR #$PR_NUMBER at $HEAD_SHA - nothing to re-run."
             exit 0
           fi
-          echo "Re-running vinaya-review.yml run $RUN_ID for $HEAD_SHA"
+          echo "Re-running vinaya-review.yml run $RUN_ID for PR #$PR_NUMBER at $HEAD_SHA"
           # Two verdict comments landing together run two retriggers in
           # parallel (this workflow has no concurrency group, deliberately —
           # a queued retrigger is a delayed one). Both can select the same
