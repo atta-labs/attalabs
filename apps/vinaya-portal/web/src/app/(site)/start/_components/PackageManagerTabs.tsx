@@ -9,11 +9,14 @@ export type PackageManagerTabsProps = {
   commands: Record<PackageManager, string>
 }
 
-// `forceMount` + a `data-[state=inactive]:hidden` panel class (rather than
-// Radix's default unmount-on-inactive) so every manager's command is present
+// `keepMounted` + a `data-[hidden]:hidden` panel class (rather than Base
+// UI's default unmount-when-inactive) so every manager's command is present
 // in the server-rendered HTML, not only the one a client mounts after
 // hydration — a reader who never runs JS (or a search crawler) still sees
-// all four forms, and only CSS, not React, decides which one shows.
+// all four forms, and only CSS, not React, decides which one shows. This
+// library's Tabs wraps @base-ui/react, not Radix: Base UI names the prop
+// `keepMounted` (not Radix's `forceMount`) and marks a hidden panel with a
+// `data-hidden` presence attribute (not Radix's `data-state="inactive"`).
 export function PackageManagerTabs({ commands }: PackageManagerTabsProps) {
   return (
     <Tabs defaultValue='npm'>
@@ -25,7 +28,7 @@ export function PackageManagerTabs({ commands }: PackageManagerTabsProps) {
         ))}
       </TabsList>
       {PACKAGE_MANAGERS.map((manager) => (
-        <TabsContent key={manager} value={manager} forceMount className='data-[state=inactive]:hidden'>
+        <TabsContent key={manager} value={manager} keepMounted className='data-[hidden]:hidden'>
           <CodeBlock className='my-0'>
             <span className='text-muted-foreground'>$ </span>
             {commands[manager]}
