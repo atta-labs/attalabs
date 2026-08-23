@@ -211,7 +211,7 @@ export default function TheStudioPage() {
 
       <Footer
         product='vinaya'
-        tagline='Execution governance for software teams'
+        tagline='A harness for your software engineering process'
         links={[
           { label: 'The Harness', href: '/docs/harness' },
           { label: 'Studio', href: '/the-studio' },

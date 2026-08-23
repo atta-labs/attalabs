@@ -3,7 +3,7 @@
 import { Button } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowDown, GitBranch } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { EnergyFieldBg } from '../EnergyFieldBg'
 import { HarnessStructure } from './HarnessStructure'
@@ -54,7 +54,7 @@ function MainBranchNode({ size }: { size: number }) {
     >
       <title>Protected main branch</title>
       <circle cx={50} cy={50} r={48} className='fill-secondary stroke-primary' strokeWidth={2} />
-      <text x={50} y={42} textAnchor='middle' className='fill-primary font-mono text-[16px] font-bold'>
+      <text x={50} y={42} textAnchor='middle' className='fill-primary font-mono text-base font-bold'>
         main
       </text>
       <GitBranch x={37} y={50} width={26} height={26} strokeWidth={2.75} className='fill-none stroke-primary' />
@@ -62,7 +62,8 @@ function MainBranchNode({ size }: { size: number }) {
   )
 }
 
-function EmblemInner() {
+function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
+  const isLanding = landingActions !== undefined
   const ringSize = useResponsiveRing()
   const c = ringSize / 2
   const rIn = Math.round(c * 0.82)
@@ -155,21 +156,40 @@ function EmblemInner() {
           grid-less so it layers on HeroFabric's own mesh instead of doubling it. */}
       <EnergyFieldBg showGrid={false} />
 
-      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center'>
+      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 pb-10 text-center sm:pb-16'>
         <div className='flex flex-col items-center justify-center gap-3'>
-          <Heading
-            level={1}
-            className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
-          >
-            Sustainable software development
-            <br />
-            for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
-          </Heading>
-          <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
-            Execution governance for software teams.
-          </Text>
+          {isLanding ? (
+            <>
+              <Heading
+                level={1}
+                weight='normal'
+                className='text-balance font-serif text-3xl leading-none tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl'
+              >
+                Agents write code.
+                <br />
+                With Vinaya, <strong className='font-semibold'>you</strong> ship software
+              </Heading>
+              <Text className='max-w-3xl text-balance text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg'>
+                A harness for your software engineering process — with GitHub as the only source of truth.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Heading
+                level={1}
+                className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
+              >
+                Sustainable software development
+                <br />
+                for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
+              </Heading>
+              <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
+                A harness for your software engineering process
+              </Text>
+            </>
+          )}
         </div>
-        <div ref={ringBoxRef} className='relative' style={{ width: ringSize, height: ringSize }}>
+        <div ref={ringBoxRef} className='relative shrink-0' style={{ width: ringSize, height: ringSize }}>
           {/* main — scales in at the center; the columns clamp onto it. */}
           <div className='absolute inset-0 flex items-center justify-center opacity-90'>
             <div
@@ -188,12 +208,18 @@ function EmblemInner() {
             className='pointer-events-none absolute inset-0 flex flex-col items-center justify-between text-center'
             style={{ opacity: content, paddingTop: labelPad - 14, paddingBottom: labelPad - 12 }}
           >
-            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
+            <Text
+              as='p'
+              className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'
+            >
               Vinaya
-            </p>
-            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
+            </Text>
+            <Text
+              as='p'
+              className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'
+            >
               Harness
-            </p>
+            </Text>
           </div>
 
           {/* The wireframe harness — accent, builds from nothing (draw-on). */}
@@ -206,15 +232,22 @@ function EmblemInner() {
           />
         </div>
 
-        <div style={{ opacity: content }}>
-          <Button
-            type='button'
-            size='lg'
-            onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            See how it works
-            <ArrowDown className='size-4' />
-          </Button>
+        <div
+          className={isLanding ? 'flex flex-wrap items-center justify-center gap-4' : undefined}
+          style={{ opacity: content }}
+        >
+          {isLanding ? (
+            landingActions
+          ) : (
+            <Button
+              type='button'
+              size='lg'
+              onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              See how it works
+              <ArrowDown className='size-4' />
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -223,10 +256,13 @@ function EmblemInner() {
 
 // Outer — a normal in-flow section (NOT a fixed overlay), so it scrolls away like every
 // other section: the page is a flat stack.
-export function VinayaHeroEmblem() {
+export function VinayaHeroEmblem({ landingActions }: { landingActions?: ReactNode }) {
   return (
-    <section id='hero' className='relative h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background'>
-      <EmblemInner />
+    <section
+      id='hero'
+      className='relative h-[calc(100dvh-4rem)] min-h-[42rem] w-full overflow-hidden border-b-2 border-border bg-background'
+    >
+      <EmblemInner landingActions={landingActions} />
     </section>
   )
 }
