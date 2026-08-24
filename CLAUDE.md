@@ -168,6 +168,7 @@ In-depth guides for specific domains. Reference when working in that area.
 | Atta Teams | [.claude/skills/atta-teams/SKILL.md](.claude/skills/atta-teams/SKILL.md) | Agent and team configs |
 | Herald Engine | [.claude/skills/herald-engine/SKILL.md](.claude/skills/herald-engine/SKILL.md) | Forensic audit, Skeptical Auditor, signal detection |
 | Vinaya Architecture | [.claude/skills/vinaya-architecture/SKILL.md](.claude/skills/vinaya-architecture/SKILL.md) | Vinaya product structure — portal/studio/sources split, check engine, install lifecycle, renderer contract |
+| Vinaya Upgrade | [.claude/skills/vinaya-upgrade/SKILL.md](.claude/skills/vinaya-upgrade/SKILL.md) | Bumping the installed `@attalabs/vinaya` version — `scripts/upgrade-vinaya.ts`, and what's left to do after it runs |
 | Auth | [.claude/skills/auth/SKILL.md](.claude/skills/auth/SKILL.md) | Clerk patterns, middleware, AttaLabs-wide SSO |
 | Model Picker | [.claude/skills/model-picker/SKILL.md](.claude/skills/model-picker/SKILL.md) | ModelPicker component, dynamic model catalog, overlay curation |
 | Brief Authoring | `aeg-root/skills/brief-authoring/SKILL.md` — no local copy; resolve the root with `npx --yes @attalabs/vinaya doctrine` | Task briefs for Developer agents — v3 model integration |
