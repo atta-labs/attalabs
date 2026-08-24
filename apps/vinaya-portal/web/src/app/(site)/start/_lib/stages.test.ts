@@ -42,7 +42,17 @@ function readFrontmatter(path: string): Record<string, string> {
 // real product/content decision (a second arrow into Archive, a badge, a
 // note) — out of scope for this repoint; flagged for the Principal rather
 // than decided here.
-const CONTRACTS_MODELED_ELSEWHERE = new Set(['security-archivist.md'])
+//
+// `architect-planner.md` (added in `@attalabs/vinaya` 0.19.0, the milestone
+// layer) is excluded for the same class of reason, one altitude higher: it
+// is a manually-invoked, above-the-tranche edge — Architect turns a goal
+// into ordered tranche intents that Planner then consumes, but Planner still
+// starts the per-tranche STAGES chain itself. Architect never cuts task
+// Issues and isn't part of a single tranche's task lifecycle, which is what
+// this linear chain depicts. Whether/how to show a milestone-planning stage
+// above `/start`'s existing pipeline is a real product/content decision,
+// not decided here.
+const CONTRACTS_MODELED_ELSEWHERE = new Set(['security-archivist.md', 'architect-planner.md'])
 
 describe('STAGES — matches the contract files on disk', () => {
   it('declares exactly the contract files that exist in aeg-root/contracts/, modulo CONTRACTS_MODELED_ELSEWHERE', () => {

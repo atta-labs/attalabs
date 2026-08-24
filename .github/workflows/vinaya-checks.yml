@@ -78,7 +78,7 @@ jobs:
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.18.0 check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes @attalabs/vinaya@0.19.0 check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,

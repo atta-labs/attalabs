@@ -23,7 +23,8 @@
       "!packages/ui/libraries/*/installed",
       "!.worktrees",
       "!.claude/worktrees",
-      "!**/.clerk"
+      "!**/.clerk",
+      "!**/.vercel"
     ]
   },
   "linter": {
