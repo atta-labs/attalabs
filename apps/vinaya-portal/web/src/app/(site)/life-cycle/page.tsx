@@ -4,12 +4,15 @@ import type { Metadata } from 'next'
 import { LetterReveal } from '../_components/LetterReveal'
 import { SectionOverline, SectionTitle } from '../_components/landing/SectionHeading'
 import { STAGES } from '../start/_lib/stages'
+import { ClosingBeat } from './_components/ClosingBeat'
 import { FramingBlock } from './_components/FramingBlock'
 import { HeroStepperPreview } from './_components/HeroStepperPreview'
 import { LoopComposition } from './_components/LoopComposition'
+import { RefusalTranscript } from './_components/RefusalTranscript'
 import { MarkDefs } from './_components/StageGlyph'
 import { StageSection } from './_components/StageSection'
 import { SwimlaneTimeline } from './_components/SwimlaneTimeline'
+import { TestPlanInterstitial } from './_components/TestPlanInterstitial'
 
 export const metadata: Metadata = {
   title: 'Life cycle · Vinaya',
@@ -66,9 +69,29 @@ export default function LifeCyclePage() {
       <FramingBlock />
 
       {/* The seven stages, alternating, diagram-led. */}
-      {STAGES.map((stage, index) => (
-        <StageSection key={stage.id} number={index + 1} stage={stage} allStages={STAGES} />
-      ))}
+      {STAGES.map((stage, index) => {
+        const number = index + 1
+        return (
+          <div key={stage.id}>
+            <StageSection
+              number={number}
+              stage={stage}
+              allStages={STAGES}
+              extra={stage.id === 'develop' ? <RefusalTranscript /> : undefined}
+            />
+            {stage.id === 'develop' && (
+              <div className='border-border border-t bg-background py-4 text-center'>
+                <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
+                  Review and security run on the same pull request, at the same time
+                </Text>
+              </div>
+            )}
+            {stage.id === 'security' && <TestPlanInterstitial />}
+          </div>
+        )
+      })}
+
+      <ClosingBeat />
 
       <Footer
         product='vinaya'
