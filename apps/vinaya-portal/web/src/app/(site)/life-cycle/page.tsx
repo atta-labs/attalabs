@@ -1,5 +1,5 @@
 import { Footer } from '@atta/ui/footer'
-import { Text } from '@atta/ui/shared'
+import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { LetterReveal } from '../_components/LetterReveal'
 import { SectionOverline, SectionTitle } from '../_components/landing/SectionHeading'
@@ -9,6 +9,7 @@ import { HeroStepperPreview } from './_components/HeroStepperPreview'
 import { LoopComposition } from './_components/LoopComposition'
 import { MarkDefs } from './_components/StageGlyph'
 import { StageSection } from './_components/StageSection'
+import { SwimlaneTimeline } from './_components/SwimlaneTimeline'
 
 export const metadata: Metadata = {
   title: 'Life cycle · Vinaya',
@@ -42,6 +43,23 @@ export default function LifeCyclePage() {
           <HeroStepperPreview />
 
           <LoopComposition />
+        </div>
+      </section>
+
+      {/* Swimlane timeline — the whole tranche, once, at speed. */}
+      <section className='border-border border-t bg-card py-14 sm:py-20 lg:py-24'>
+        <div className='mx-auto flex max-w-[73.75rem] flex-col gap-8 px-6 sm:px-10'>
+          <div className='flex flex-col gap-4'>
+            <SectionOverline className='text-muted-foreground'>The whole thing · 25 seconds</SectionOverline>
+            <Heading level={2} className='font-serif text-3xl font-normal leading-tight text-foreground sm:text-4xl'>
+              <LetterReveal text='One tranche, start to finish.' />
+            </Heading>
+            <Text as='p' size='lg' muted className='max-w-2xl leading-relaxed'>
+              The same seven stages below, played once at speed — so the shape is clear before the detail arrives.
+            </Text>
+          </div>
+
+          <SwimlaneTimeline />
         </div>
       </section>
 
