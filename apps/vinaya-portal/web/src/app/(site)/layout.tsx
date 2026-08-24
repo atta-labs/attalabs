@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ElectricLabel } from './_components/ElectricLabel'
+import { FooterGate } from './_components/FooterGate'
+import { GatesMark } from './roadmap/_components/RoadmapMarks'
 
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
@@ -140,23 +142,25 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       </div>
       <div className='min-h-0 flex-1 overflow-y-auto'>
         {children}
-        <Footer
-          product='vinaya'
-          logo={
-            <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
-            </NextLink>
-          }
-          links={[
-            { label: 'Start', href: '/start' },
-            { label: 'Docs', href: '/docs' },
-            { label: 'CLI', href: '/docs/cli' },
-            { label: 'Config', href: '/config' },
-            { label: 'Studio', href: '/the-studio' },
-            { label: 'Roadmap', href: '/roadmap' },
-            { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
-          ]}
-        />
+        <FooterGate>
+          <Footer
+            product='vinaya'
+            logo={
+              <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+                <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+              </NextLink>
+            }
+            links={[
+              { label: 'Start', href: '/start' },
+              { label: 'Docs', href: '/docs' },
+              { label: 'CLI', href: '/docs/cli' },
+              { label: 'Config', href: '/config' },
+              { label: 'Studio', href: '/the-studio' },
+              { label: 'Roadmap', href: '/roadmap' },
+              { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
+            ]}
+          />
+        </FooterGate>
       </div>
     </div>
   )
