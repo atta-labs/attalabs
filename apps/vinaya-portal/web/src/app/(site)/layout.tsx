@@ -1,4 +1,5 @@
 import { getProductCms } from '@atta/cms'
+import { Footer } from '@atta/ui/footer'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
@@ -125,19 +126,33 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <TopBar
           logo={
             <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-              <Logo
-                dark={logoUrl ?? undefined}
-                alt='Vinaya'
-                size='h-10'
-                text={['Software Engineering', 'Process Harness']}
-              />
+              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
             </NextLink>
           }
           links={links}
           withAuth={false}
         />
       </div>
-      <div className='min-h-0 flex-1 overflow-y-auto'>{children}</div>
+      <div className='min-h-0 flex-1 overflow-y-auto'>
+        {children}
+        <Footer
+          product='vinaya'
+          logo={
+            <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+            </NextLink>
+          }
+          links={[
+            { label: 'Start', href: '/start' },
+            { label: 'Docs', href: '/docs' },
+            { label: 'CLI', href: '/docs/cli' },
+            { label: 'Config', href: '/config' },
+            { label: 'Studio', href: '/the-studio' },
+            { label: 'Roadmap', href: '/roadmap' },
+            { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
+          ]}
+        />
+      </div>
     </div>
   )
 }

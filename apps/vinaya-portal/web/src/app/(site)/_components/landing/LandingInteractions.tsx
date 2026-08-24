@@ -1,7 +1,8 @@
 'use client'
 
 import { Button, Card } from '@atta/ui/components'
-import { ArrowDown, Check, Copy } from 'lucide-react'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { ArrowDown, ArrowUpRight, Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 function scrollParent(element: HTMLElement): HTMLElement | Window {
@@ -82,19 +83,36 @@ export function CommandCopy({ command }: { command: string }) {
   }
 
   return (
-    <Card className='inline-flex h-10 flex-row items-center gap-4 pl-5 pr-2 font-mono text-sm sm:text-base'>
+    <Button
+      type='button'
+      variant='outline'
+      onClick={copy}
+      className='h-auto gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
+    >
       <span className='whitespace-nowrap'>{command}</span>
-      <Button
-        type='button'
-        variant='ghost'
-        size='sm'
-        onClick={copy}
-        className='h-9 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground'
-      >
+      <span className='flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground'>
         {copied ? <Check className='size-4' /> : <Copy className='size-4' />}
         {copied ? 'copied' : 'copy'}
-      </Button>
-    </Card>
+      </span>
+    </Button>
+  )
+}
+
+export function CommandLinkChip({ href, label, command }: { href: string; label: string; command: string }) {
+  return (
+    <NextLink
+      href={href}
+      variant='unstyled'
+      className='group flex w-full flex-col items-center gap-2.5 text-center sm:w-auto sm:items-start sm:text-left'
+    >
+      <span className='font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground'>{label}</span>
+      <Card className='px-7 py-5 transition-colors group-hover:border-foreground'>
+        <span className='flex items-center gap-3 font-mono text-xl whitespace-nowrap sm:text-2xl'>
+          {command}
+          <ArrowUpRight className='size-7 shrink-0 text-muted-foreground' />
+        </span>
+      </Card>
+    </NextLink>
   )
 }
 

@@ -4,9 +4,25 @@ import { Badge, Card, CardContent } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, RotateCcw, User } from 'lucide-react'
-import { useEffect, useRef, useState, type ComponentType, type RefObject } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+  type ForwardRefExoticComponent,
+  type RefAttributes,
+  type RefObject
+} from 'react'
 import { siGithub } from 'simple-icons'
+import { LetterReveal } from '../LetterReveal'
 import { SectionOverline, SectionTitle } from './SectionHeading'
+
+// Card's exported type has no `ref` (motion.div forwards it fine at runtime
+// under React 19, but the component itself isn't typed with RefAttributes) —
+// this local cast lets StageShell keep the scroll-tracking ref the mobile
+// visibility heuristic depends on.
+const RefCard = Card as unknown as ForwardRefExoticComponent<ComponentProps<typeof Card> & RefAttributes<HTMLElement>>
 
 type StageIndex = 0 | 1 | 2
 
@@ -72,17 +88,19 @@ function ObjectCard({
   children,
   primary = false,
   compact = false,
+  dense = false,
   className = ''
 }: {
   icon: ComponentType<{ className?: string }>
   children: React.ReactNode
   primary?: boolean
   compact?: boolean
+  dense?: boolean
   className?: string
 }) {
   return (
     <Card
-      className={`gap-0 shadow-none ${compact ? 'py-2' : 'py-2.5'} ${primary ? 'border-primary bg-primary text-primary-foreground' : 'bg-background'} ${className}`}
+      className={`gap-0 shadow-none ${compact ? (dense ? 'py-1' : 'py-2') : 'py-2.5'} ${primary ? 'border-primary bg-primary text-primary-foreground' : 'bg-background'} ${className}`}
     >
       <CardContent
         className={`flex items-center font-mono tracking-wide ${compact ? 'gap-1.5 px-2.5 text-[0.6875rem]' : 'gap-2.5 px-3.5 text-[0.78125rem]'}`}
@@ -110,13 +128,14 @@ function StageShell({
   bullets: readonly string[]
   badge: string
   active: boolean
-  stageRef: RefObject<HTMLDivElement | null>
+  stageRef: RefObject<HTMLElement | null>
   children: React.ReactNode
 }) {
   return (
-    <article
+    <RefCard
+      ref={stageRef}
       data-active={active}
-      className='group/stage flex min-h-[42rem] flex-col rounded border-2 border-border bg-card px-7 py-8 min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6'
+      className='group/stage flex min-h-[42rem] flex-col px-7 py-8 shadow-none min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6'
     >
       <div className='flex flex-col'>
         <div className='flex items-baseline gap-3 font-mono uppercase'>
@@ -129,17 +148,14 @@ function StageShell({
         <BulletList items={bullets} />
         <GitHubBadge>{badge}</GitHubBadge>
       </div>
-      <div
-        ref={stageRef}
-        className='mt-7 flex min-h-52 flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'
-      >
+      <div className='mt-7 flex min-h-52 flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
         {children}
       </div>
-    </article>
+    </RefCard>
   )
 }
 
-function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
+function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
   return (
     <StageShell
       index='01'
@@ -182,7 +198,7 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
   )
 }
 
-function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
+function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
   const lanes = [471, 472, 473] as const
   return (
     <StageShell
@@ -200,7 +216,7 @@ function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject
       active={active}
       stageRef={stageRef}
     >
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col gap-1.5'>
         {lanes.map((issue, lane) => (
           <div
             key={issue}
@@ -209,21 +225,21 @@ function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject
             <div
               className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[0] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
             >
-              <ObjectCard icon={CircleDot} compact>
+              <ObjectCard icon={CircleDot} compact dense>
                 #{issue}
               </ObjectCard>
             </div>
             <div
               className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[1] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
             >
-              <ObjectCard icon={GitBranch} compact>
+              <ObjectCard icon={GitBranch} compact dense>
                 branch
               </ObjectCard>
             </div>
             <div
               className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[2] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
             >
-              <ObjectCard icon={GitMerge} primary compact>
+              <ObjectCard icon={GitMerge} primary compact dense>
                 merged
                 {lane === 0 && (
                   <span className='ml-auto flex items-center gap-1 text-[0.55rem] font-bold uppercase tracking-widest'>
@@ -246,7 +262,7 @@ function ArchiveStage({
 }: {
   active: boolean
   closed: boolean
-  stageRef: RefObject<HTMLDivElement | null>
+  stageRef: RefObject<HTMLElement | null>
 }) {
   return (
     <StageShell
@@ -314,9 +330,9 @@ export function LifecycleSection() {
   const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const railFillRef = useRef<HTMLSpanElement>(null)
-  const stageOneRef = useRef<HTMLDivElement>(null)
-  const stageTwoRef = useRef<HTMLDivElement>(null)
-  const stageThreeRef = useRef<HTMLDivElement>(null)
+  const stageOneRef = useRef<HTMLElement>(null)
+  const stageTwoRef = useRef<HTMLElement>(null)
+  const stageThreeRef = useRef<HTMLElement>(null)
   const [armed, setArmed] = useState(false)
   const [phase, setPhase] = useState<StageIndex>(0)
   const [run, setRun] = useState<[boolean, boolean, boolean]>([false, false, false])
@@ -430,7 +446,11 @@ export function LifecycleSection() {
   const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
 
   return (
-    <section ref={sectionRef} id='what-it-is' className='border-b-2 border-border min-[700px]:h-[300dvh]'>
+    <section
+      ref={sectionRef}
+      id='what-it-is'
+      className='bg-secondary/70 text-secondary-foreground min-[700px]:h-[300dvh]'
+    >
       <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
         <div className='flex flex-wrap items-baseline justify-between gap-5'>
           <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
@@ -447,8 +467,10 @@ export function LifecycleSection() {
             <GitHubMark className='size-9 md:size-12' />
           </Card>
           <div>
-            <SectionTitle className='max-w-5xl'>Plan, solve, archive</SectionTitle>
-            <Text className='mt-2 max-w-xl text-base leading-snug text-muted-foreground md:text-lg'>
+            <SectionTitle className='max-w-5xl'>
+              <LetterReveal text='Plan, solve, archive' />
+            </SectionTitle>
+            <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
               The same three stages, every time you ship.
             </Text>
           </div>

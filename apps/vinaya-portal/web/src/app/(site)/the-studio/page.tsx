@@ -1,6 +1,5 @@
 import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { Badge, Button, Code } from '@atta/ui/components'
-import { Footer } from '@atta/ui/footer'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -208,18 +207,6 @@ export default function TheStudioPage() {
           ))}
         </div>
       </main>
-
-      <Footer
-        product='vinaya'
-        tagline='A harness for your software engineering process'
-        links={[
-          { label: 'The Harness', href: '/docs/harness' },
-          { label: 'Studio', href: '/the-studio' },
-          { label: 'Start', href: '/start' },
-          { label: 'CLI', href: '/docs/cli' },
-          { label: 'Docs', href: '/docs' }
-        ]}
-      />
     </>
   )
 }
