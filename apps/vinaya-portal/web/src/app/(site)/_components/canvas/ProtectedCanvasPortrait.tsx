@@ -173,7 +173,7 @@ export function ProtectedCanvasPortrait() {
         {/* [&>svg]:w/h-full forces the harness SVG to scale to THIS box via its viewBox —
             without it the SVG renders at its intrinsic 333px anchored top-left, shifting the
             whole ring down-right off main. */}
-        <HarnessStructure size={333} coreRadius={92} ringProgress={1} clamp={1} spark={1} />
+        <HarnessStructure size={333} coreRadius={92} screwProgress={1} deployProgress={1} clamp={1} spark={1} />
       </div>
     </div>
   )
