@@ -65,7 +65,10 @@ function findPackageJsonFiles(dir: string, out: string[] = []): string[] {
       entry.name === '.git' ||
       entry.name === '.worktrees' ||
       entry.name === '.next' ||
-      entry.name === '.turbo'
+      entry.name === '.turbo' ||
+      entry.name === 'dist' ||
+      entry.name === 'build' ||
+      entry.name === '.vercel'
     )
       continue
     const full = join(dir, entry.name)
@@ -78,9 +81,20 @@ function findPackageJsonFiles(dir: string, out: string[] = []): string[] {
   return out
 }
 
-/** Preserves whatever range prefix (`^`, or none for an exact pin) the existing value already used — this repo mixes both conventions across files and neither is this script's call to change. */
+/**
+ * Preserves whatever range prefix (`^`, or none for an exact pin) the existing
+ * value already used — this repo mixes both conventions across files and
+ * neither is this script's call to change. Throws on anything else (`~x.y.z`,
+ * `>=x.y.z`, etc.) rather than silently flattening it to an exact pin, which
+ * would quietly change the range's semantics for whoever declared it that way
+ * on purpose.
+ */
 function bumpedRange(existing: string, targetVersion: string): string {
-  return existing.startsWith('^') ? `^${targetVersion}` : targetVersion
+  if (existing.startsWith('^')) return `^${targetVersion}`
+  if (/^\d/.test(existing)) return targetVersion
+  throw new Error(
+    `Unrecognized version range "${existing}" — this script only knows how to preserve "^x.y.z" and a bare exact pin. Bump it by hand and extend bumpedRange() if this range style is now real.`
+  )
 }
 
 function resolveTargetVersion(argVersion: string | undefined): string {
@@ -88,16 +102,18 @@ function resolveTargetVersion(argVersion: string | undefined): string {
   return sh('npm', ['view', '@attalabs/vinaya', 'version']).trim()
 }
 
-function bumpPackageJson(path: string, targetVersion: string): string[] {
+function bumpPackageJson(path: string, targetVersion: string): { changed: string[]; declaresVinaya: boolean } {
   const raw = readFileSync(path, 'utf8')
   const pkg = JSON.parse(raw) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }
   const changed: string[] = []
+  let declaresVinaya = false
   for (const section of ['dependencies', 'devDependencies'] as const) {
     const deps = pkg[section]
     if (!deps) continue
     for (const name of VINAYA_PACKAGES) {
       const existing = deps[name]
       if (existing === undefined) continue
+      declaresVinaya = true
       const next = bumpedRange(existing, targetVersion)
       if (next !== existing) {
         deps[name] = next
@@ -112,7 +128,7 @@ function bumpPackageJson(path: string, targetVersion: string): string[] {
     // formatter output for these files at the time this script was written).
     writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`)
   }
-  return changed
+  return { changed, declaresVinaya }
 }
 
 async function main() {
@@ -121,9 +137,15 @@ async function main() {
 
   const packageJsonFiles = findPackageJsonFiles(REPO_ROOT)
   const bumped: Array<{ path: string; changes: string[] }> = []
+  const vinayaConsumerDirs: string[] = []
   for (const path of packageJsonFiles) {
-    const changes = bumpPackageJson(path, targetVersion)
-    if (changes.length > 0) bumped.push({ path: path.replace(`${REPO_ROOT}/`, ''), changes })
+    const { changed, declaresVinaya } = bumpPackageJson(path, targetVersion)
+    if (changed.length > 0) bumped.push({ path: path.replace(`${REPO_ROOT}/`, ''), changes: changed })
+    // Every package.json's OWN node_modules, not just ones with a change THIS
+    // run — an idempotent re-run (already at target) still needs the clean
+    // reinstall's stale-duplicate defense from a PRIOR run, so this has to be
+    // "declares a vinaya-family package at all," not "changed this time."
+    if (declaresVinaya) vinayaConsumerDirs.push(join(path, '..', 'node_modules'))
   }
 
   if (bumped.length === 0) {
@@ -147,15 +169,11 @@ async function main() {
   shInherit('npx', ['--yes', `@attalabs/vinaya@${targetVersion}`, 'upgrade', '--yes'])
 
   console.log('\n[upgrade-vinaya] clean reinstall (flush any stale nested duplicate)...')
-  const nodeModulesDirs = [
-    join(REPO_ROOT, 'node_modules'),
-    ...readdirSync(join(REPO_ROOT, 'apps'), { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .flatMap((e) => {
-        const webDir = join(REPO_ROOT, 'apps', e.name, 'web', 'node_modules')
-        return existsSync(webDir) ? [webDir] : []
-      })
-  ]
+  // Scoped to package.json files that actually declare a vinaya-family
+  // package (computed above) rather than every app in the monorepo — the
+  // stale-nested-duplicate failure mode this defends against can only occur
+  // where that package is actually installed.
+  const nodeModulesDirs = [...new Set(vinayaConsumerDirs)].filter((d) => existsSync(d))
   shInherit('rm', ['-rf', ...nodeModulesDirs])
   shInherit('bun', ['install'])
 

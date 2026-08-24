@@ -68,4 +68,3 @@ next-env.d.ts
 .claude/scheduled_tasks.lock
 
 .claude/launch.json
-.env*
