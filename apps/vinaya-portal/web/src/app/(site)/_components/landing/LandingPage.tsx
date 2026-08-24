@@ -11,6 +11,7 @@ import {
   CommandLinkChip,
   EnforcementRatio,
   RevealGrid,
+  RingProgress,
   ScrollToSectionButton
 } from './LandingInteractions'
 import { KeepYourStackSection } from './KeepYourStackSection'
@@ -110,6 +111,52 @@ function VerificationSection({ releaseMetrics }: { releaseMetrics: ReleaseMetric
             against {formattedDoctrineLines} lines of doctrine · counted at every release
           </Text>
         </div>
+      </div>
+    </LandingSection>
+  )
+}
+
+function RingsSection() {
+  const rings = [
+    ['ring 0', 'your machine', "Clean, or it doesn't push", false],
+    ['ring 1', 'the forge', 'Clean, or it doesn’t merge', false],
+    ['ring 2', 'audits', 'Drift gets caught later', true]
+  ] as const
+
+  return (
+    <LandingSection background='bg-secondary text-secondary-foreground'>
+      <SectionTitle className='mx-auto max-w-5xl text-center'>
+        Three rings. The first two run identical code
+      </SectionTitle>
+      <div className='mt-14 grid gap-4 md:grid-cols-3'>
+        {rings.map(([ring, place, title, delayed]) => (
+          <Card key={ring}>
+            <CardHeader className='px-8'>
+              <Text
+                className={`font-mono text-4xl font-semibold leading-none tracking-tight sm:text-5xl ${delayed ? 'text-secondary-foreground/65' : ''}`}
+              >
+                {ring}
+              </Text>
+              <Text className='mt-3 font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-secondary-foreground/65'>
+                {place}
+              </Text>
+              <CardTitle className='mt-5 font-serif text-2xl font-normal leading-tight tracking-tight'>
+                {title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='px-8'>
+              <RingProgress delayed={delayed} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Text className='mx-auto mt-12 max-w-4xl text-center font-serif text-2xl leading-snug tracking-tight sm:text-3xl'>
+        The hook on your laptop and the required check in CI
+        <br />
+        are the same code.
+      </Text>
+      <div className='mt-7 text-center'>
+        <UnderlineLink href='/docs/rings'>See more</UnderlineLink>
       </div>
     </LandingSection>
   )
@@ -228,6 +275,7 @@ export function LandingPage({ releaseMetrics }: { releaseMetrics: ReleaseMetrics
       <LifecycleHarnessSection />
       <OwnershipSection />
       <VerificationSection releaseMetrics={releaseMetrics} />
+      <RingsSection />
       <AudienceSection />
       <ConfigBoardSection />
       <KeepYourStackSection />
