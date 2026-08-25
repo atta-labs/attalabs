@@ -1,8 +1,13 @@
 /**
- * Seed Sanity CMS with the five `roadmapMilestone` documents for vinaya-portal's
- * /roadmap page. `image` is intentionally left unset — there is nothing to
- * migrate an image from (the current five items are code-drawn SVGs, not
- * uploadable assets); a human uploads real images in Studio afterward.
+ * Seed Sanity CMS with the seven `roadmapMilestone` documents for
+ * vinaya-portal's /roadmap page — Vinaya's own version ladder toward
+ * `1.0.0`. `image` is intentionally left unset on every item; a human
+ * uploads real images in Studio afterward.
+ *
+ * `status` is derived, not hand-picked: an item's `version` <= the
+ * `@attalabs/vinaya` version this repo's root `package.json` pins is
+ * `'shipping'`; greater is `'planned'`. Re-check that pin before seeding —
+ * if it has moved past `0.19.2`, recompute which items are shipping.
  *
  * Usage (run from packages/cms/):
  *   SANITY_PROJECT_ID=o56nzgrr SANITY_API_TOKEN=<token> bun run scripts/seed-roadmap-milestones.ts
@@ -10,68 +15,95 @@
 
 import { createClient } from '@sanity/client'
 
-const client = createClient({
-  projectId: process.env.SANITY_PROJECT_ID!,
-  dataset: process.env.SANITY_DATASET ?? 'production',
-  apiVersion: '2024-01-01',
-  token: process.env.SANITY_API_TOKEN!,
-  useCdn: false
-})
-
-const MILESTONES = [
+export const MILESTONES = [
   {
-    _id: 'roadmap-milestone-loop-engineering',
+    _id: 'roadmap-milestone-milestone-layer',
     _type: 'roadmapMilestone',
-    title: 'Loop Engineering',
+    title: 'Milestone layer',
+    version: '0.19.0',
     description:
-      'An optional external driver that runs the dispatch → verify → merge cycle for you. It sits on top of the harness, reads Vinaya’s task state, and advances work on its own — while you keep the go/no-go calls. Ships in rings: self-correction is live today, the full task loop comes next.',
-    truth: 'Self-correction ships today; the full dispatch-to-merge loop is still being built.',
+      'A milestone now holds a full release, not just one batch of work. It carries a target version and the list of what ships toward it, so you can see the whole release taking shape — not just the task in front of you.',
+    truth: 'Shipped in 0.19.0; this repo runs @attalabs/vinaya 0.19.2, at or past it.',
     status: 'shipping',
     order: 1
   },
   {
-    _id: 'roadmap-milestone-studio-on-the-web',
+    _id: 'roadmap-milestone-determinism-hardening',
     _type: 'roadmapMilestone',
-    title: 'Studio on the web',
+    title: 'Determinism hardening',
+    version: '0.20.0',
     description:
-      'Vinaya Studio runs deployed, not just on your machine. Anyone can connect over the web — product folks, reviewers, non-coders — and watch the harness state live. The whole team sees what’s building, without cloning a repo or touching a terminal.',
-    truth: 'Studio runs locally today; a deployed, web-reachable version has not shipped yet.',
+      'Five things that used to rely on an agent following instructions become guarantees instead: task setup, evidence binding, write access to your repo, skill verification, and the readiness check before work starts. Less "the agent remembered to," more "the harness makes sure."',
+    truth: 'Not released yet — targets 0.20.0.',
     status: 'planned',
     order: 2
   },
   {
-    _id: 'roadmap-milestone-linear-jira-support',
+    _id: 'roadmap-milestone-agentic-interface',
     _type: 'roadmapMilestone',
-    title: 'Linear & Jira support',
+    title: 'Agentic interface',
+    version: '0.21.0',
     description:
-      'A service layer that holds the issue state machine in Linear or Jira, not just GitHub. Same labels, same flow — Vinaya reads and edits issues wherever your team already tracks them. Bring the harness to your board instead of moving your board to the harness.',
-    truth: 'GitHub is the only supported issue tracker today; Linear and Jira are not yet wired up.',
+      'One consistent way to run Vinaya, whichever AI coding agent you use. Claude, Gemini, Codex, Antigravity, Grok — same commands, same roles, kept current automatically as the harness updates.',
+    truth: 'Not released yet — targets 0.21.0.',
     status: 'planned',
     order: 3
   },
   {
-    _id: 'roadmap-milestone-configurable-forge',
+    _id: 'roadmap-milestone-review-that-answers-itself',
     _type: 'roadmapMilestone',
-    title: 'Configurable forge',
+    title: 'Review that answers itself',
+    version: '0.22.0',
     description:
-      'Today Vinaya’s security gates — rationale checks, doc-coupling, scope guards — are always on. This adds a vinaya.settings.json where you switch each check on or off, at any level: whole repo, a project, or a single task. Loosen the gates on a throwaway repo, keep them strict on production.',
-    truth: 'Every gate is always on today, repo-wide; there is no per-repo, per-project, or per-task override yet.',
+      'Code and security review run every cycle without someone standing between rounds. Fresh reviewers each pass, judged against the latest commit, with a hard ceiling so the loop always reaches an end.',
+    truth: 'Not released yet — targets 0.22.0.',
     status: 'planned',
     order: 4
   },
   {
-    _id: 'roadmap-milestone-configurable-roles',
+    _id: 'roadmap-milestone-a-task-finishes-itself',
     _type: 'roadmapMilestone',
-    title: 'Configurable roles',
+    title: 'A task finishes itself',
+    version: '0.23.0',
     description:
-      'Vinaya ships fixed agent roles — Developer, Reviewer, and the rest — each with baked-in skills. This lets you pass your own: swap in a custom role, add domain skills, or override how an existing role behaves. The harness stays the same; the agents inside it become yours to shape.',
-    truth: 'Roles are fixed and baked-in today; there is no mechanism yet to pass a custom role or skill.',
+      "One task, start to merged pull request, with no one in the loop: brief, code, review, fix, merge. You decide up front what's pre-approved and what still needs a click — everything else queues instead of stalling the run.",
+    truth: 'Not released yet — targets 0.23.0.',
     status: 'planned',
     order: 5
+  },
+  {
+    _id: 'roadmap-milestone-a-tranche-finishes-itself',
+    _type: 'roadmapMilestone',
+    title: 'A tranche finishes itself',
+    version: '0.24.0',
+    description:
+      "A whole batch of tasks runs its own schedule: what's ready starts, what's blocked waits, the batch closes itself out once the last task lands. Planning happens against the code as it actually is when the batch begins.",
+    truth: 'Not released yet — targets 0.24.0.',
+    status: 'planned',
+    order: 6
+  },
+  {
+    _id: 'roadmap-milestone-a-milestone-finishes-itself',
+    _type: 'roadmapMilestone',
+    title: 'A milestone finishes itself',
+    version: '1.0.0',
+    description:
+      'Approve the goal once, come back to a shipped release. The full ladder — task, tranche, milestone — runs unattended, with anything undecidable queued rather than stopping the run. Not feature-complete. Walk-away complete.',
+    truth: 'Not released yet — targets 1.0.0.',
+    status: 'planned',
+    order: 7
   }
 ] as const
 
 async function main() {
+  const client = createClient({
+    projectId: process.env.SANITY_PROJECT_ID!,
+    dataset: process.env.SANITY_DATASET ?? 'production',
+    apiVersion: '2024-01-01',
+    token: process.env.SANITY_API_TOKEN!,
+    useCdn: false
+  })
+
   console.log(`\nSeeding ${MILESTONES.length} roadmap milestones`)
   console.log(`Project: ${process.env.SANITY_PROJECT_ID}\n`)
 
@@ -81,7 +113,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
