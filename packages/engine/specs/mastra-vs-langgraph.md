@@ -2,7 +2,7 @@
 
 **Date captured:** April 26, 2026
 **Status:** Architectural rationale document. Persistent.
-**Companion documents:** `engine-layer-rationale.md` (why an engine layer exists), `engine-future-capabilities.md` (capability roadmap)
+**Companion documents:** `engine-future-capabilities.md` (capability roadmap)
 
 ---
 
