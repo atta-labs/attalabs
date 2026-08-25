@@ -106,7 +106,7 @@ export function CommandLinkChip({ href, label, command }: { href: string; label:
       className='group flex w-full flex-col items-center gap-2.5 text-center sm:w-auto sm:items-start sm:text-left'
     >
       <span className='font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground'>{label}</span>
-      <Card className='px-7 py-5 transition-colors group-hover:border-foreground'>
+      <Card className='px-7 transition-colors group-hover:border-foreground'>
         <span className='flex items-center gap-3 font-mono text-xl whitespace-nowrap sm:text-2xl'>
           {command}
           <ArrowUpRight className='size-7 shrink-0 text-muted-foreground' />
