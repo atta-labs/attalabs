@@ -12,6 +12,13 @@ export const roadmapMilestone = defineType({
       validation: (Rule) => Rule.required()
     }),
     defineField({
+      name: 'version',
+      title: 'Version',
+      type: 'string',
+      validation: (Rule) => Rule.required(),
+      description: 'The release version this item targets, e.g. "0.20.0" — free-text, not semver-validated.'
+    }),
+    defineField({
       name: 'description',
       title: 'Description',
       type: 'text',
@@ -57,6 +64,7 @@ export const roadmapMilestone = defineType({
   preview: {
     select: {
       title: 'title',
+      subtitle: 'version',
       media: 'image'
     }
   }

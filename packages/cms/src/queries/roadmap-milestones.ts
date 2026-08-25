@@ -3,6 +3,7 @@ import { createProductClient, type ProductKey } from '../client'
 export interface RoadmapMilestone {
   _id: string
   title: string
+  version: string
   description: string
   truth: string
   status: 'shipping' | 'planned' | 'dropped'
@@ -13,6 +14,7 @@ export interface RoadmapMilestone {
 const ROADMAP_MILESTONES_QUERY = `*[_type == "roadmapMilestone"] | order(order asc) {
   _id,
   title,
+  version,
   description,
   truth,
   status,

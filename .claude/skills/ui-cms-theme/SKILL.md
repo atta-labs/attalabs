@@ -491,9 +491,9 @@ theme/colors/fonts — they follow the same "one schema file + one typed query f
 exported from `@atta/cms`, RULE #1 applies" pattern this file otherwise describes for
 theme/config/branding. `roadmapMilestone` (`schemas/roadmap-milestone.ts` +
 `getRoadmapMilestones()` in `src/queries/roadmap-milestones.ts`) is one — the content
-backing vinaya-portal's `/roadmap` page (title, description, `truth` line, three-state
-`status`, optional `image`, manual `order`). Its documents live in each product's own
-Sanity project, same as branding, resolved via `createProductClient(product)`.
+backing vinaya-portal's `/roadmap` page (title, `version`, description, `truth` line,
+three-state `status`, optional `image`, manual `order`). Its documents live in each
+product's own Sanity project, same as branding, resolved via `createProductClient(product)`.
 
 ---
 
