@@ -11,12 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@attalabs/aeg-core": "^0.19.1",
-    "@attalabs/aeg-forge-state": "^0.19.1",
+    "@attalabs/aeg-core": "^0.19.2",
+    "@attalabs/aeg-forge-state": "^0.19.2",
     "@atta/cms": "workspace:*",
     "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",
-    "@attalabs/vinaya-sources": "^0.19.1",
+    "@attalabs/vinaya-sources": "^0.19.2",
     "@tailwindcss/postcss": "^4.0.0",
     "@vercel/analytics": "^2.0.1",
     "d3-shape": "^3.2.0",
