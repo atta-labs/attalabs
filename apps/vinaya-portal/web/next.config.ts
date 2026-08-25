@@ -7,6 +7,12 @@ export default async function config(): Promise<NextConfig> {
   const componentsRelPath = '../../../packages/ui/generated/vinayaPortal/components.ts'
   return {
     output: 'standalone',
+    // /roadmap renders `roadmapMilestone.image` (a Sanity CDN asset) via
+    // next/image — without this, Next refuses to optimize any remote host it
+    // wasn't told about, and the image 500s the moment a milestone gets one.
+    images: {
+      remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
+    },
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       return config
