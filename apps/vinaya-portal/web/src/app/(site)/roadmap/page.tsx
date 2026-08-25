@@ -107,13 +107,18 @@ export default async function RoadmapPage() {
                 <Flex align='start' justify='between' gap={4}>
                   <Flex align='center' gap={4}>
                     <MilestoneVisual image={milestone.image} title={milestone.title} />
-                    <CardTitle
-                      className={`font-serif text-xl font-normal text-foreground ${
-                        milestone.status === 'dropped' ? 'line-through' : ''
-                      }`}
-                    >
-                      {milestone.title}
-                    </CardTitle>
+                    <Flex direction='column' gap={1}>
+                      <CardTitle
+                        className={`font-serif text-xl font-normal text-foreground ${
+                          milestone.status === 'dropped' ? 'line-through' : ''
+                        }`}
+                      >
+                        {milestone.title}
+                      </CardTitle>
+                      <Text as='span' className='font-mono text-xs text-muted-foreground'>
+                        v{milestone.version}
+                      </Text>
+                    </Flex>
                   </Flex>
                   <StatusBadge status={milestone.status} />
                 </Flex>
