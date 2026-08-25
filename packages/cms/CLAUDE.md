@@ -190,7 +190,7 @@ them — see `.claude/skills/ui-cms-theme/SKILL.md`.
 | `branding` | Per-product branding singleton — logos (SVG), favicons, identity text, usage rules |
 | `uiTheme` | Theme documents — color tokens (light/dark), typography, spacing, shadows |
 | `library` | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
-| `roadmapMilestone` | Roadmap items for `/roadmap` on vinaya-portal — title, description, `truth` line, status, image, order |
+| `roadmapMilestone` | Roadmap release milestones for `/roadmap` on vinaya-portal — title, version, description, `truth` line, status, image, order |
 
 ---
 

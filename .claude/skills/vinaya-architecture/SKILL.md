@@ -18,7 +18,7 @@ apps/vinaya-portal/
 └── web/        @atta/vinaya-portal-web — the public site: every `(site)` route (landing, /start,
                  /docs, /the-harness, /state-machine, /cli, /config, /roadmap). Deployed. Contains
                  no Studio route, no api/coherence, and no forge-connection code — that absence is
-                 the design, not an oversight (task 1/#917). `/roadmap` is CMS-backed: its five
+                 the design, not an oversight (task 1/#917). `/roadmap` is CMS-backed: its
                  items are `roadmapMilestone` Sanity documents (`getRoadmapMilestones()` in
                  `@atta/cms`), not a hardcoded array — content-editable from Studio without a
                  code change, and still no forge dependency (CMS is not forge).
