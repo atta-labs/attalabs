@@ -1,0 +1,5 @@
+# Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.
+#
+# Empty on purpose — `vinaya new noop-check` scaffolds into this folder. Git does not
+# track empty directories; this placeholder keeps vinaya/checks/ present (and
+# `eject`-reversible) until you've scaffolded something into it.

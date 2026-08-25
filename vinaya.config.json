@@ -73,7 +73,20 @@
       ".github/workflows/vinaya-review.yml",
       ".github/workflows/vinaya-review-verdict.yml",
       ".github/workflows/vinaya-archivist.yml",
-      "VINAYA.md"
+      ".github/workflows/vinaya-body-checks.yml",
+      "VINAYA.md",
+      "vinaya/checks/.gitkeep",
+      "vinaya/roles/.gitkeep",
+      ".agents/skills/vinaya-architect/SKILL.md",
+      ".agents/skills/vinaya-archivist/SKILL.md",
+      ".agents/skills/vinaya-brief-author/SKILL.md",
+      ".agents/skills/vinaya-developer/SKILL.md",
+      ".agents/skills/vinaya-planner/SKILL.md",
+      ".agents/skills/vinaya-reviewer/SKILL.md",
+      ".agents/skills/vinaya-security/SKILL.md",
+      ".agents/skills/vinaya-tranche-archivist/SKILL.md",
+      ".claude/commands/vinaya.md",
+      ".gemini/commands/vinaya.toml"
     ],
     "blocks": [
       {
@@ -87,6 +100,7 @@
         "comment": "hash"
       }
     ],
-    "labels": []
+    "labels": ["vinaya/blocked", "vinaya/override:docs", "vinaya/direct-main-push", "vinaya/dead-branch-push"],
+    "agents": ["claude", "gemini", "skills"]
   }
 }
