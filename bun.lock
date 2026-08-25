@@ -7,8 +7,8 @@
         "zod": "3.25.76",
       },
       "devDependencies": {
-        "@attalabs/aeg-core": "^0.19.0",
-        "@attalabs/vinaya": "0.19.0",
+        "@attalabs/aeg-core": "^0.19.1",
+        "@attalabs/vinaya": "0.19.1",
         "@biomejs/biome": "^2.0.0",
         "@commitlint/cli": "^19.0.0",
         "husky": "^9.0.0",
@@ -222,9 +222,9 @@
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
-        "@attalabs/aeg-core": "^0.19.0",
-        "@attalabs/aeg-forge-state": "^0.19.0",
-        "@attalabs/vinaya-sources": "^0.19.0",
+        "@attalabs/aeg-core": "^0.19.1",
+        "@attalabs/aeg-forge-state": "^0.19.1",
+        "@attalabs/vinaya-sources": "^0.19.1",
         "@tailwindcss/postcss": "^4.0.0",
         "@vercel/analytics": "^2.0.1",
         "d3-shape": "^3.2.0",
@@ -255,8 +255,8 @@
         "@atta/cms": "workspace:*",
         "@atta/instrumentation": "workspace:*",
         "@atta/ui": "workspace:*",
-        "@attalabs/aeg-core": "^0.19.0",
-        "@attalabs/aeg-forge-state": "^0.19.0",
+        "@attalabs/aeg-core": "^0.19.1",
+        "@attalabs/aeg-forge-state": "^0.19.1",
         "@octokit/graphql": "^8.1.1",
         "@tailwindcss/postcss": "^4.0.0",
         "lucide-react": "^1.7.0",
@@ -704,15 +704,15 @@
 
     "@atta/vinaya-studio-web": ["@atta/vinaya-studio-web@workspace:apps/vinaya-studio/web"],
 
-    "@attalabs/aeg-core": ["@attalabs/aeg-core@0.19.0", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.19.0", "@attalabs/aeg-types": "0.19.0", "gray-matter": "^4.0.3" } }, "sha512-hes/3zRJhlp8MuWXGPDpUYjk9Lrb1Y56mOP7e0lz4WgHDs6DJa4Kmf0X80m+z7oVhfPyICCWIzDtrUFoMobPfQ=="],
+    "@attalabs/aeg-core": ["@attalabs/aeg-core@0.19.1", "", { "dependencies": { "@attalabs/aeg-forge-state": "0.19.1", "@attalabs/aeg-types": "0.19.1", "gray-matter": "^4.0.3" } }, "sha512-niLRvbNNqUPsueXYSuCkw/1rYS0bKc36pjBGDg4wCDQnovCjZ+phOt1XuRul26NYGz5CDk0uT+phszOJPmKciw=="],
 
-    "@attalabs/aeg-forge-state": ["@attalabs/aeg-forge-state@0.19.0", "", { "dependencies": { "@attalabs/aeg-types": "0.19.0", "@octokit/graphql": "^8.1.1" } }, "sha512-sxxijzyLM8FCKQGL4VMVmrYqjzCcD9YMPPL5zQvVyu3voUt8MX1cQJEgsViLUmsckuBauBW2YhWX4pULaaOmIQ=="],
+    "@attalabs/aeg-forge-state": ["@attalabs/aeg-forge-state@0.19.1", "", { "dependencies": { "@attalabs/aeg-types": "0.19.1", "@octokit/graphql": "^8.1.1" } }, "sha512-xw+YPZVnWL8Qh8HD9tIC0d7oKIIm7vptEY4TrhDyHGEqhQ7tTUxX6UZpbzALBQOI6KFEx4ZEcNBd81zOpX6SNA=="],
 
-    "@attalabs/aeg-types": ["@attalabs/aeg-types@0.19.0", "", {}, "sha512-1q1cT1+G6nRj06GNeSDUpykzd6xDz/v4GSHOkajHCRsZjRK/eZI9bGnnySMUGj159gqUtByg3EXIB10vDAviyA=="],
+    "@attalabs/aeg-types": ["@attalabs/aeg-types@0.19.1", "", {}, "sha512-mOu/zRg1pnQEfeXJ+8ysyjMwGSsC40baTEZL8JFE/yNWEcPPcKrrJHMR8ePZ+edBzrtZgUR4BPaKUr7+GKYchA=="],
 
-    "@attalabs/vinaya": ["@attalabs/vinaya@0.19.0", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-42Nxe2og/8+0XqA16wET6QwuYS/9uKWsVJxDaN0oP1NfRpA0X2MUJKb2Zue7XezAdlgoluQyVeCG0s3/qa/sHg=="],
+    "@attalabs/vinaya": ["@attalabs/vinaya@0.19.1", "", { "dependencies": { "gray-matter": "^4.0.3", "zod": "3.25.76" }, "bin": { "vinaya": "dist/index.js" } }, "sha512-zx8hrW0zPL9Zv2l4G0xnyQlfHTaNLcZkhC5YT8X9Xwiizv1qTt84AVmLgDOGNoYu8w73sPulhGW7y/iq1pHnRg=="],
 
-    "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.19.0", "", { "dependencies": { "@attalabs/aeg-core": "0.19.0", "@attalabs/aeg-forge-state": "0.19.0", "@attalabs/aeg-types": "0.19.0", "zod": "3.25.76" } }, "sha512-zp7NULN6CX1fRCERmAH6WyHVY0FUipfwnaZ+omchdpl/VIEr7aa1K4zb1J9vgvHmz0tl6qGvCwe3z4BWKzbfOg=="],
+    "@attalabs/vinaya-sources": ["@attalabs/vinaya-sources@0.19.1", "", { "dependencies": { "@attalabs/aeg-core": "0.19.1", "@attalabs/aeg-forge-state": "0.19.1", "@attalabs/aeg-types": "0.19.1", "zod": "3.25.76" } }, "sha512-qZjiwnPfuuhJzelqm/6UzatQF0fLotRDntx3OP4Bv6B46Y0x3P8C7Q4n68SsJ+4aRmeiQG4EGKt5YqnTbEH8pA=="],
 
     "@aws-lite/client": ["@aws-lite/client@0.23.7", "", { "dependencies": { "aws4": "^1.13.2" } }, "sha512-Qo/lq96DS8UOg1yFccolMuKG1hKnNStXVYhzVl4tZk/7m+OtANVk2JB8iuYJISc4DF7Dm3Qy+e91L6BGJ1dfkw=="],
 
