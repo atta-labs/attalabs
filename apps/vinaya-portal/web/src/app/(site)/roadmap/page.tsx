@@ -53,9 +53,10 @@ function StatusBadge({ status }: { status: RoadmapMilestone['status'] }) {
   )
 }
 
-// Decorative — the CardTitle carries the meaning, same convention the
-// hand-authored marks this replaces used (`aria-hidden` on the glyph).
-function MilestoneVisual({ image, title }: { image: RoadmapMilestone['image']; title: string }) {
+// Decorative — the adjacent CardTitle already carries the accessible name for
+// this card, same convention the hand-authored marks this replaces used
+// (`aria-hidden` on the glyph). No separate accessible-name span belongs here.
+function MilestoneVisual({ image }: { image: RoadmapMilestone['image'] }) {
   return (
     <div className='relative size-16 shrink-0 overflow-hidden rounded-md border border-border bg-accent'>
       {image ? (
@@ -65,7 +66,6 @@ function MilestoneVisual({ image, title }: { image: RoadmapMilestone['image']; t
           <ImageIcon className='size-6' aria-hidden />
         </Flex>
       )}
-      <span className='sr-only'>{title}</span>
     </div>
   )
 }
@@ -106,7 +106,7 @@ export default async function RoadmapPage() {
               <CardHeader>
                 <Flex align='start' justify='between' gap={4}>
                   <Flex align='center' gap={4}>
-                    <MilestoneVisual image={milestone.image} title={milestone.title} />
+                    <MilestoneVisual image={milestone.image} />
                     <Flex direction='column' gap={1}>
                       <CardTitle
                         className={`font-serif text-xl font-normal text-foreground ${
