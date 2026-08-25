@@ -344,7 +344,17 @@ export function LifecycleSection() {
     const railFill = railFillRef.current
     if (!section || !track || !railFill) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduced) return
+    if (reduced) {
+      // Same resting state the fully-scrubbed animation ends on — every
+      // object visible, rail/track at their final position — so a
+      // reduced-motion reader sees the design's readable static state
+      // instead of everything permanently stuck at its initial opacity-0.
+      setArmed(true)
+      setRun([true, true, true])
+      setClosed(true)
+      setPhase(2)
+      return
+    }
 
     setArmed(true)
     const target = scrollParent(section)

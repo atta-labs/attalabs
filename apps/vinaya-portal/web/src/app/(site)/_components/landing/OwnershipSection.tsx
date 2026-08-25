@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge, Card, CardContent, CardHeader } from '@atta/ui/components'
+import { Badge, Card, CardContent, CardHeader, CodeBlock } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { Check, Circle, GitPullRequest, List, Milestone } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -122,13 +122,13 @@ function CiDoc() {
       <DocCardHeader icon={List} title='.github/workflows/' badge='4 files · vinaya-owned' />
       <CardContent className='px-4 py-4'>
         <Text className='font-mono text-xs text-muted-foreground'>vinaya-checks.yml</Text>
-        <pre className='mt-2.5 font-mono text-[0.6875rem] leading-loose text-muted-foreground'>
+        <CodeBlock className='mt-2.5 bg-transparent p-0 text-[0.6875rem] leading-loose text-muted-foreground'>
           <span className='text-foreground'>checks:</span>
           {'\n  - brief-shape\n  - review-gate\n  - '}
           <span className='text-success'>acme/licence-header</span>
           {'   '}
           <span className='opacity-60'># yours</span>
-        </pre>
+        </CodeBlock>
         <Text className='mt-3 font-mono text-[0.625rem] leading-relaxed text-muted-foreground'>
           runs alongside <span className='text-foreground'>review.yml · review-verdict.yml · archivist.yml</span> —
           generated once, yours to edit after
