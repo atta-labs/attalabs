@@ -30,7 +30,7 @@ export const MILESTONES = [
     version: '0.19.0',
     description:
       'A milestone now holds a full release, not just one batch of work. It carries a target version and the list of what ships toward it, so you can see the whole release taking shape — not just the task in front of you.',
-    truth: 'Shipped in 0.19.0; this repo runs @attalabs/vinaya 0.19.2, at or past it.',
+    truth: 'Shipped — targeted 0.19.0.',
     status: 'shipping',
     order: 1
   },
