@@ -113,33 +113,24 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # atta-labs/vinaya repository now. A binding whose glob names a deleted tree
 # can only ever fire on the deletion diff itself, then never again.
 
-# ── governance-skill-coverage residual, task 5 (#678, 2026-08-08) ─────────
-# apps/vinaya's residual (sources/**, plus specs/CLAUDE.md/README.md) is
-# real product code with a real architecture doc behind it —
-# apps/vinaya/specs/vinaya-spec.md documents the routes, check engine,
-# config, install lifecycle, forge writes, and renderer contract in depth,
-# and .claude/skills/vinaya-architecture/SKILL.md (this task) distills that
-# spec into the same architecture-first shape .claude/skills/vada-architecture
-# /SKILL.md already uses for its own apps/vada-ai/** binding below — same
-# pattern, same honesty bar. This binding stacks with the three narrower
-# ones above (a commands/** change still owes sources/src/commands.ts too),
-# matching how apps/vada-ai/** already stacks under its own narrower
-# mcp-server/home-sections bindings. `apps/vinaya/web` was deleted (task 4,
-# #886) — the glob's live surface is now sources/**, specs/**, CLAUDE.md,
-# README.md only; the routes it used to cover live in apps/vinaya-portal/**
-# and apps/vinaya-studio/** below.
-
-apps/vinaya/**                                        .claude/skills/vinaya-architecture/SKILL.md
+# ── apps/vinaya/** binding removed (#990, 2026-08-26) ─────────────────────
+# The governance-skill-coverage residual binding that used to sit here
+# (task 5, #678) bound apps/vinaya/** — sources/**, specs/**, CLAUDE.md,
+# README.md — to .claude/skills/vinaya-architecture/SKILL.md. `doctor`
+# reported it matched none of this repo's tracked code files (apps/vinaya
+# is deleted by sibling task #989), so the binding was removed rather than
+# left dangling. Studio and Portal keep their own bindings below, unchanged.
 
 # ── Portal/Studio split, task 3 (#885, 2026-08-16) ────────────────────────
-# The glob above is segment-wise, not a prefix match, so it does not cover
-# `apps/vinaya-studio/**` — measured on task 1's PR #917 (`bb43ff2b`), where
+# The (now-removed) apps/vinaya/** binding above was segment-wise, not a
+# prefix match, so it never covered `apps/vinaya-studio/**` — measured on
+# task 1's PR #917 (`bb43ff2b`), where
 # the identical gap for `apps/vinaya-portal/**` pushed `verify-docs --full`'s
 # unbound-surface count 3 → 4. This binding closes that gap for Studio.
-# `.claude/skills/vinaya-architecture/SKILL.md` is the same target as
-# `apps/vinaya/**` above — this task updates that skill's workspace tree to
-# describe the CLI/portal/studio/sources split, so the doc a Studio change
-# owes is the doc this task itself keeps coherent.
+# `.claude/skills/vinaya-architecture/SKILL.md` is the same target the now-
+# removed `apps/vinaya/**` binding used to point at — this task updates that
+# skill's workspace tree to describe the CLI/portal/studio/sources split, so
+# the doc a Studio change owes is the doc this task itself keeps coherent.
 apps/vinaya-studio/**                                 .claude/skills/vinaya-architecture/SKILL.md
 
 # ── Portal binding, task 4 (#886, 2026-08-17) ─────────────────────────────
