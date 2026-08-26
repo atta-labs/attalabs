@@ -8,12 +8,12 @@ import {
   ChevronDown,
   GitBranch,
   Home,
-  LayoutDashboard,
   Library,
-  Map as MapIcon,
+  Play,
   Rocket,
   Settings,
   Terminal,
+  Tv,
   Waypoints,
   Workflow
 } from 'lucide-react'
@@ -80,7 +80,7 @@ const DOCS_ITEMS = [
 const links: TopBarNavItem[] = [
   flatLink('Home', '/', <Home className='size-4' aria-hidden />, true),
   flatLink('Lifecycle', '/life-cycle', <Waypoints className='size-4' aria-hidden />),
-  flatLink('Start', '/start', <Rocket className='size-4' aria-hidden />),
+  flatLink('Start', '/start', <Play className='size-4' aria-hidden />),
   // No `href` on the group — the trigger opens the panel, only items
   // navigate. `exact` defaults false: a plain `/docs` prefix match, since
   // every group child lives under `/docs/*` (task 3) — a single prefix
@@ -108,8 +108,8 @@ const links: TopBarNavItem[] = [
     ),
     items: DOCS_ITEMS
   },
-  flatLink('Studio', '/the-studio', <LayoutDashboard className='size-4' aria-hidden />),
-  flatLink('Roadmap', '/roadmap', <MapIcon className='size-4' aria-hidden />)
+  flatLink('Studio', '/the-studio', <Tv className='size-4' aria-hidden />),
+  flatLink('Roadmap', '/roadmap', <Rocket className='size-4' aria-hidden />)
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
