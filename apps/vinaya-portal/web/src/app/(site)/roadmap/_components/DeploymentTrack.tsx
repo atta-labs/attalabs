@@ -74,33 +74,21 @@ const CRACKLE_STRANDS = [
 ]
 const CRACKLE_STEP = 5 // px of beam travel between crackle sample points
 
-// The tip nose cone — a fixed, crisp vector shape, drawn the SAME way every other piece
-// of the harness is (`JunctionGlyph`'s `fill=background`/`stroke=foreground` line-art),
-// not a soft glowing blob. It never moves or turns — always dead-centered on `beamX` —
-// and `boom` (0..1, smoothed from how fast the tip is moving) only changes its length,
-// never its position or angle. The silhouette matches the classic rocket-icon shape a
-// user pasted for reference: a straight-sided collar (with a double-ring porthole) flush
-// with the beam, tapering into a rounded nose — a shallow outward bow on each side
-// (`quadraticCurveTo`), not a straight-sided triangle, which read as a sharp pencil tip
-// rather than a rocket's rounded cap. It fades out entirely once the tip reaches
-// the bottom of the track — once fully installed there's no more leading edge pushing
-// forward, so nothing should still be drawn there (a sealed end cap crossfades in
-// instead, see `capFade` below).
-const FLARE_IDLE = 0.32
-const FLARE_UNIT = 5 // px of tip movement per canvas frame that reads as "full boom"
-const FLARE_SMOOTHING = 0.18
-const NOSE_BASE_HALF = 11 // fixed half-width where the nose meets the beam — fatter, not a thin pencil
-const NOSE_COLLAR_LEN = 12 // fixed length of the straight-sided body/porthole section before the taper
-const NOSE_HIDE_MARGIN = 50 // px of remaining track over which the nose fades out at the bottom
+// The head — a designer-supplied reference implementation (`The Head -
+// isolated.html`), ported verbatim rather than re-derived: a `<div>`/`<svg>`
+// DOM structure (see the JSX below), not canvas — the head is a STATIC shape
+// (no wobble, no re-tuning risk) layered with CSS `opacity`/`scale` driven by
+// one custom property, `--v` (0 at rest, 1 moving fast), which the effect
+// below writes every animation frame. Canvas keeps only what genuinely needs
+// per-frame redrawing: the shimmering current strands and the sealed end cap.
+const HEAD_HIDE_MARGIN = 50 // px of remaining track over which the head fades out at the bottom
 
 function drawCrackle(
   ctx: CanvasRenderingContext2D,
   colors: ReturnType<typeof readThemeColors>,
   beamX: number,
   deployed: number,
-  installDoneAt: number,
-  time: number,
-  boom: number
+  time: number
 ) {
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
@@ -127,82 +115,6 @@ function drawCrackle(
     ctx.stroke()
   }
   ctx.shadowBlur = 0
-
-  const bottomFade = Math.min(1, Math.max(0, (installDoneAt - deployed) / NOSE_HIDE_MARGIN))
-
-  // A sealed end cap crossfades IN as the nose fades out, so the rail is never simply
-  // left open once there's nothing left to install — it closes into a small welded
-  // terminator instead of just vanishing. Fades back out the instant the nose has room
-  // to travel again (scrolling back up past `installDoneAt`).
-  const capFade = 1 - bottomFade
-  if (capFade > 0.02) {
-    ctx.beginPath()
-    ctx.moveTo(beamX - 10, deployed)
-    ctx.lineTo(beamX + 10, deployed)
-    ctx.strokeStyle = colors.foreground
-    ctx.lineWidth = 2
-    ctx.globalAlpha = capFade
-    ctx.stroke()
-
-    ctx.beginPath()
-    ctx.arc(beamX, deployed, 2, 0, Math.PI * 2)
-    ctx.fillStyle = colors.primary
-    ctx.globalAlpha = capFade
-    ctx.fill()
-    ctx.globalAlpha = 1
-  }
-  if (bottomFade <= 0) return
-
-  const intensity = Math.min(1, FLARE_IDLE + boom) * bottomFade
-  // Only the nose LENGTH reacts to speed — the collar (where it's flush with the beam)
-  // and porthole stay fixed size, same discipline as the rest of the shape: nothing
-  // about this silhouette moves or resizes except how far the point reaches.
-  const noseLen = 16 + Math.min(1, FLARE_IDLE + boom) * 16
-  const collarBottom = deployed + NOSE_COLLAR_LEN
-  const tipY = collarBottom + noseLen
-
-  // One continuous outline: straight collar sides flush with the beam, then a ROUNDED
-  // taper (a shallow outward bow, not a straight line) closing to a point — the
-  // reference had a curved, semicircle-ish cap, not a sharp straight-sided triangle;
-  // straight sides here read as a thin pencil instead of a rocket nose.
-  const bowCtrlX = NOSE_BASE_HALF * 1.2
-  const bowCtrlY = collarBottom + noseLen * 0.5
-  ctx.beginPath()
-  ctx.moveTo(beamX - NOSE_BASE_HALF, deployed)
-  ctx.lineTo(beamX - NOSE_BASE_HALF, collarBottom)
-  ctx.quadraticCurveTo(beamX - bowCtrlX, bowCtrlY, beamX, tipY)
-  ctx.quadraticCurveTo(beamX + bowCtrlX, bowCtrlY, beamX + NOSE_BASE_HALF, collarBottom)
-  ctx.lineTo(beamX + NOSE_BASE_HALF, deployed)
-  ctx.closePath()
-  ctx.fillStyle = colors.background
-  ctx.globalAlpha = bottomFade
-  ctx.fill()
-  ctx.strokeStyle = colors.foreground
-  ctx.lineWidth = 2
-  ctx.stroke()
-
-  // The porthole — a double-ring circle centered in the collar, the one detail that
-  // makes this read as "rocket" rather than a bare triangle.
-  const portholeY = deployed + NOSE_COLLAR_LEN * 0.55
-  const portholeR = NOSE_BASE_HALF * 0.5
-  ctx.beginPath()
-  ctx.arc(beamX, portholeY, portholeR, 0, Math.PI * 2)
-  ctx.strokeStyle = colors.foreground
-  ctx.lineWidth = 1.5
-  ctx.globalAlpha = bottomFade
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(beamX, portholeY, portholeR * 0.5, 0, Math.PI * 2)
-  ctx.stroke()
-
-  // The tip point — a small bright bead, the "live" contact where the current arcs out.
-  ctx.beginPath()
-  ctx.arc(beamX, tipY, 2, 0, Math.PI * 2)
-  ctx.fillStyle = colors.primary
-  ctx.globalAlpha = intensity
-  ctx.fill()
-
-  ctx.globalAlpha = 1
 }
 
 const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -313,6 +225,18 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   // it). "Touching bottom" for the nose cone means the harness has nothing left to
   // install, which is this threshold, not the track's total height.
   const installDoneAtRef = useRef(Number.POSITIVE_INFINITY)
+  const headRef = useRef<HTMLDivElement>(null)
+  // Wraps glow/plume/atmosphere only — NOT the nose — so the two can fade independently:
+  // the rocket stays fully drawn once deployment starts, the atmosphere around it fades
+  // out once installation completes.
+  const atmoRef = useRef<HTMLDivElement>(null)
+  // Raised by the scroll effect below whenever the tip moves, decayed toward 0 every
+  // animation frame by the canvas effect further down — the same "raise on input, decay
+  // continuously" split `deployedRef` already uses, just for velocity instead of
+  // position. `Math.max` (not `=`) so a burst of scroll ticks within one animation frame
+  // doesn't get overwritten by a smaller one that lands after it.
+  const velTargetRef = useRef(0)
+  const lastTForVelRef = useRef<number | null>(null)
 
   useEffect(() => {
     const track = trackRef.current
@@ -338,6 +262,13 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       beamInner.style.height = `${H}px`
       beamOuter.style.height = `${t}px`
       deployedRef.current = t
+      // 22px of tip movement between scroll ticks reads as full speed — the designer
+      // handoff's own sensitivity constant for the head's velocity input.
+      if (lastTForVelRef.current !== null) {
+        const delta = Math.abs(t - lastTForVelRef.current)
+        velTargetRef.current = Math.max(velTargetRef.current, Math.min(1, delta / 22))
+      }
+      lastTForVelRef.current = t
       const last = cards[cards.length - 1]
       if (last) {
         installDoneAtRef.current = last.offsetTop + last.offsetHeight / 2 + CONFIG.spurReach
@@ -401,8 +332,12 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let raf = 0
     let time = 0
-    let lastDeployed = deployedRef.current
-    let boom = 0
+    // Chases `velTargetRef` (raised by the scroll effect) 20% of the way per frame,
+    // which is what turns discrete scroll ticks into a smooth `--v` — the designer
+    // handoff's own settle formula, just folded into this file's already-continuous
+    // RAF loop instead of the handoff's own self-starting/stopping one, since this
+    // loop already runs every frame regardless (for the strand shimmer).
+    let vel = 0
 
     const render = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -415,6 +350,9 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
 
+      vel += (velTargetRef.current - vel) * 0.2
+      velTargetRef.current *= 0.85
+
       const deployed = deployedRef.current
       if (deployed > 0) {
         // `offsetLeft` reports the box's pre-transform layout position — it does not
@@ -425,10 +363,21 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
         const trackRect = track.getBoundingClientRect()
         const beamRect = beamOuter.getBoundingClientRect()
         const beamX = beamRect.left + beamRect.width / 2 - trackRect.left
-        const rawBoom = Math.min(1, Math.abs(deployed - lastDeployed) / FLARE_UNIT)
-        boom += (rawBoom - boom) * FLARE_SMOOTHING
-        lastDeployed = deployed
-        drawCrackle(ctx, colors, beamX, deployed, installDoneAtRef.current, time, boom)
+        drawCrackle(ctx, colors, beamX, deployed, time)
+
+        if (headRef.current) {
+          headRef.current.style.setProperty('--v', vel.toFixed(4))
+          headRef.current.style.top = `${deployed}px`
+          // The rocket itself never fades — it's the harness's permanent terminator, not
+          // a traveling effect, so it stays fully drawn once deployment starts and simply
+          // rides in place once installation completes. Only the atmosphere around it
+          // (glow/plume/shock-arcs — the "light thing") fades out at that point.
+          headRef.current.style.opacity = deployed > 8 ? '1' : '0'
+          if (atmoRef.current) {
+            const bottomFade = Math.min(1, Math.max(0, (installDoneAtRef.current - deployed) / HEAD_HIDE_MARGIN))
+            atmoRef.current.style.opacity = bottomFade.toFixed(3)
+          }
+        }
       }
 
       if (!reduce) {
@@ -462,6 +411,73 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
         />
       </div>
       <canvas ref={canvasRef} aria-hidden className='pointer-events-none absolute inset-0 size-full' />
+
+      {/* The head — ported from the designer's own isolated reference file rather than
+          re-derived. A zero-size anchor point riding the beam tip (`top`/`--v` written
+          imperatively by the canvas effect above, same "no Tailwind equivalent" carve-out
+          RULE 3 already covers); everything visible hangs off it via fixed rem offsets, in
+          PAINT order — glow, then plume, then the atmosphere arcs, then the nose LAST so
+          it sits on top of its own glow. Only the nose is static; the other three read
+          `--v` for opacity/scale, so the "atmosphere" is earned by scroll speed instead of
+          looping. Positioned like `beamOuter`: `left-1/2` desktop, the beam's own mobile
+          centerline (`1.125rem`, see the junction's comment) below the breakpoint — a
+          zero-width box needs no `-translate-x-1/2` correction the way a wide one would. */}
+      <div
+        ref={headRef}
+        aria-hidden
+        className='pointer-events-none absolute top-0 left-1/2 size-0 opacity-0 max-[52.5rem]:left-[1.125rem]'
+      >
+        <div ref={atmoRef}>
+          <div className='absolute top-[-2.75rem] left-[-6.5rem] h-[13rem] w-[13rem] rounded-full opacity-[calc(0.16+0.84*var(--v,0))] scale-[calc(0.72+0.44*var(--v,0))] motion-reduce:hidden bg-[radial-gradient(circle,color-mix(in_oklab,var(--primary)_40%,transparent)_0%,color-mix(in_oklab,var(--primary)_11%,transparent)_38%,transparent_66%)]' />
+          <div className='absolute top-[-7rem] left-[-0.5625rem] h-[7rem] w-[1.125rem] opacity-[var(--v,0)] motion-reduce:hidden bg-[linear-gradient(to_top,color-mix(in_oklab,var(--primary)_58%,transparent),transparent)]' />
+          <svg
+            viewBox='0 0 140 100'
+            className='absolute top-[0.125rem] left-[-4.375rem] h-[6.25rem] w-[8.75rem] opacity-[calc(0.2+0.8*var(--v,0))]'
+            fill='none'
+          >
+            <path
+              d='M8 32 H30 M132 32 H110 M15 45 H33 M125 45 H107'
+              stroke='var(--primary)'
+              strokeWidth='2.4'
+              strokeLinecap='round'
+              opacity='0.55'
+            />
+            <path
+              d='M22 86 Q70 63 118 86'
+              stroke='var(--primary)'
+              strokeWidth='2.6'
+              strokeLinecap='round'
+              opacity='0.5'
+            />
+            <path d='M41 95 Q70 81 99 95' stroke='var(--primary)' strokeWidth='2' strokeLinecap='round' opacity='0.3' />
+          </svg>
+        </div>
+        <svg viewBox='0 0 48 64' className='absolute top-[-0.25rem] left-[-1.5rem] h-[4rem] w-[3rem]' fill='none'>
+          <path
+            d='M12 10 L3 22 V34 L12 26 Z'
+            fill='var(--card)'
+            stroke='var(--foreground)'
+            strokeWidth='2'
+            strokeLinejoin='miter'
+          />
+          <path
+            d='M36 10 L45 22 V34 L36 26 Z'
+            fill='var(--card)'
+            stroke='var(--foreground)'
+            strokeWidth='2'
+            strokeLinejoin='miter'
+          />
+          <path
+            d='M12 0 H36 V30 L24 60 L12 30 Z'
+            fill='var(--background)'
+            stroke='var(--foreground)'
+            strokeWidth='2.4'
+            strokeLinejoin='miter'
+          />
+          <path d='M12 9 H36' stroke='var(--foreground)' strokeWidth='1.6' opacity='0.4' />
+          <path d='M17 19 H31' stroke='var(--primary)' strokeWidth='3.4' strokeLinecap='round' />
+        </svg>
+      </div>
 
       {items.map((item, i) => {
         const side = i % 2 === 0 ? 'right' : 'left'
@@ -527,14 +543,15 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
 
             <div
               className={cn(
+                // Fade only, no slide — the panel's own position is fixed by its margin
+                // below; `--c` drives just opacity, never a translate.
                 'opacity-[var(--c,0)] motion-reduce:opacity-100',
-                'translate-y-[calc(0.875rem*(1-var(--c,0)))] motion-reduce:translate-y-0',
                 // Panel margin = spur's own start offset (0.974375rem desktop /
                 // 2.099375rem mobile) + its length (2.9375rem desktop / 5.3125rem
                 // mobile) — derived from the SAME geometry the spur itself uses, not an
                 // approximated constant, so the panel always lands exactly where the
                 // spur ends instead of leaving a gap.
-                'ml-[calc(50%+3.911875rem)] translate-x-[calc(-0.75rem*(1-var(--c,0)))] max-[52.5rem]:ml-[7.411875rem] motion-reduce:translate-x-0',
+                'ml-[calc(50%+3.911875rem)] max-[52.5rem]:ml-[7.411875rem]',
                 // Un-mirror just the panel's own rendering — its LAYOUT POSITION (the
                 // margin above) still comes from the flipped ancestor, which is what
                 // lands it on the correct side; only its painted content (the Card and

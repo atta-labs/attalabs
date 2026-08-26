@@ -52,15 +52,14 @@ export default async function RoadmapPage() {
   return (
     <main className='mx-auto flex max-w-5xl flex-col gap-10 overflow-x-hidden px-8 py-8'>
       <section className='flex flex-col gap-4'>
-        <Text as='span' className='font-mono text-xs tracking-widest text-primary uppercase'>
-          Roadmap
-        </Text>
-        <Heading level={1} className='font-serif text-3xl text-foreground sm:text-4xl'>
+        <Heading
+          level={1}
+          className='mx-auto mt-5 max-w-4xl font-serif font-normal text-4xl text-foreground tracking-tight sm:text-5xl lg:text-6xl'
+        >
           Toward walk-away complete
         </Heading>
-        <Text className='font-sans text-muted-foreground'>
-          Every release below climbs the same ladder: a task that finishes itself, then a batch, then a whole milestone.
-          The top rung isn’t feature-complete — it’s walk-away complete.
+        <Text className='font-sans text-lg text-muted-foreground sm:text-xl'>
+          The harness climbs one rung at a time
         </Text>
       </section>
 
