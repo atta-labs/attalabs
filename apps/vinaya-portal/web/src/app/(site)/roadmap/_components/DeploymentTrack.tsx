@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react'
 import type { ComponentType, SVGProps } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
 import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
+import { clamp01, computeCardStageProgress, computeDeployedPx } from '../_lib/deployment-progress'
 import '../marks-motion.css'
 import MilestoneLayerMark from '../_marks/0.19.0-milestone-layer.svg'
 import DeterminismHardeningMark from '../_marks/0.20.0-determinism-hardening.svg'
@@ -324,7 +325,6 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     if (!track || !beamOuter || !beamInner || cards.length === 0) return
 
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
     function update() {
       if (!track || !beamOuter || !beamInner) return
@@ -334,7 +334,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       const line = (window.innerHeight * CONFIG.beamLine) / 100
       const [first] = cards
       if (!first) return
-      const t = still ? H : Math.max(0, Math.min(H, line - r.top))
+      const t = still ? H : computeDeployedPx(H, line, r.top)
 
       beamInner.style.height = `${H}px`
       beamOuter.style.height = `${t}px`
@@ -353,10 +353,11 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
 
       for (const card of cards) {
         const mid = card.offsetTop + card.offsetHeight / 2
-        const q = still ? 1 : clamp((t - mid) / CONFIG.spurReach)
-        card.style.setProperty('--b', clamp(q / 0.26).toFixed(4))
-        card.style.setProperty('--a', clamp((q - 0.26) / 0.34).toFixed(4))
-        card.style.setProperty('--c', clamp((q - 0.58) / 0.42).toFixed(4))
+        const q = still ? 1 : clamp01((t - mid) / CONFIG.spurReach)
+        const stage = computeCardStageProgress(q)
+        card.style.setProperty('--b', stage.b.toFixed(4))
+        card.style.setProperty('--a', stage.a.toFixed(4))
+        card.style.setProperty('--c', stage.c.toFixed(4))
       }
     }
 
