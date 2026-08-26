@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { START_NAV } from '../_components/start-nav'
 import { STAGES } from './stages'
 
 // `server-only` throws unconditionally on plain import — Next's bundler
@@ -85,11 +84,5 @@ describe('STAGES — matches the contract files on disk', () => {
   it('Security carries no contract — it runs alongside Review, not in the chain', () => {
     const security = STAGES.find((stage) => stage.id === 'security')
     expect(security?.contractFile).toBeNull()
-  })
-
-  it('matches the "Ship with Vinaya" nav order exactly — no stage added or dropped on either side', () => {
-    const navSlugs = START_NAV.find((section) => section.label === 'Ship with Vinaya')?.items.map((item) => item.slug)
-    const stageIds = STAGES.map((stage) => stage.id)
-    expect(stageIds).toEqual(navSlugs)
   })
 })

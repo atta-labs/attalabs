@@ -1,17 +1,11 @@
-import { Flex } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
-import { StartSidebarHost } from './_components/StartSidebarHost'
 
-/** `/docs`' `layout.tsx` shape exactly (rail at `lg`+, drawer below), over
- * this section's own fixed two-part nav — no forge/model dependency, so
- * unlike `/docs` this shell needs no async data fetch of its own. */
+/** Stripped to a plain pass-through — the old two-part `StartSidebarHost`
+ * nav it used to render is deleted along with the seven per-stage routes it
+ * pointed at (Issue #918: their content now lives at `/life-cycle`). Kept
+ * as a file, not deleted: `/start` and `/start/quick` still route through
+ * it, and Issue #920 (not yet dispatched) rebuilds this shell properly for
+ * just the quickstart wizard once it lands. */
 export default function StartLayout({ children }: { children: ReactNode }) {
-  return (
-    <Flex className='h-full min-h-0 w-full flex-col overflow-hidden lg:flex-row'>
-      <StartSidebarHost />
-      <main className='flex-1 min-h-0 overflow-y-auto px-6 pb-10 bg-background lg:px-12'>
-        <div className='mx-auto max-w-4xl pt-10'>{children}</div>
-      </main>
-    </Flex>
-  )
+  return <>{children}</>
 }

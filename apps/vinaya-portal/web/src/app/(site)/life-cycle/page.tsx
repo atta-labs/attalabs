@@ -1,0 +1,58 @@
+import { Footer } from '@atta/ui/footer'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { Text } from '@atta/ui/shared'
+import { ArrowRight } from 'lucide-react'
+import type { Metadata } from 'next'
+import { LetterReveal } from '../_components/LetterReveal'
+import { ButtonLink } from '../_components/landing/ButtonLink'
+import { LandingSection } from '../_components/landing/LandingSection'
+import { SectionOverline, SectionTitle } from '../_components/landing/SectionHeading'
+import { LifeCycleExperience } from './_components/LifeCycleExperience'
+import { CLOSING_CONTENT } from './_lib/lifecycle-content'
+
+export const metadata: Metadata = {
+  title: 'Life cycle · Vinaya',
+  description: 'Three altitudes, one shape — milestone, tranche, and task, each enforced the same way.'
+}
+
+export default function LifeCyclePage() {
+  return (
+    <>
+      <LifeCycleExperience />
+
+      <LandingSection background='bg-background text-foreground' py='spacious' center>
+        <SectionOverline className='text-muted-foreground'>{CLOSING_CONTENT.overline}</SectionOverline>
+        <SectionTitle className='mx-auto mt-5 max-w-2xl' leading='tight'>
+          <LetterReveal text={CLOSING_CONTENT.title} />
+        </SectionTitle>
+        <Text as='p' size='lg' muted className='mx-auto mt-7 max-w-xl leading-relaxed'>
+          {CLOSING_CONTENT.body}
+        </Text>
+        <div className='mt-9 flex flex-wrap justify-center gap-4'>
+          <ButtonLink href={CLOSING_CONTENT.primary.href} className='font-mono text-xs uppercase tracking-[0.16em]'>
+            {CLOSING_CONTENT.primary.label}
+          </ButtonLink>
+          <NextLink
+            href={CLOSING_CONTENT.secondary.href}
+            variant='unstyled'
+            className='inline-flex items-center gap-1.5 self-center text-primary text-sm underline-offset-4 hover:underline'
+          >
+            {CLOSING_CONTENT.secondary.label} <ArrowRight className='size-3.5' />
+          </NextLink>
+        </div>
+      </LandingSection>
+
+      <Footer
+        product='vinaya'
+        tagline='Execution governance for software teams'
+        links={[
+          { label: 'The Harness', href: '/docs/harness' },
+          { label: 'Studio', href: '/the-studio' },
+          { label: 'Start', href: '/start' },
+          { label: 'CLI', href: '/docs/cli' },
+          { label: 'Docs', href: '/docs' }
+        ]}
+      />
+    </>
+  )
+}
