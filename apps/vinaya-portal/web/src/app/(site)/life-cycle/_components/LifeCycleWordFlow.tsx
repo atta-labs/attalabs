@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { LifeCycleId } from '../_lib/life-cycles'
+import { LIFE_CYCLES } from '../_lib/life-cycles'
 
-const WORDS = ['Milestone', 'Tranche', 'Task'] as const
-const HOLD_MS = 1300
 const MORPH_MS = 900
 const PEAK_PX = 16
 const TRAVEL_CYCLES = 2
@@ -12,27 +12,36 @@ function easeInOut(t: number) {
   return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
 }
 
-// Real letters, our own type scale — no canvas, no filter noise. A sine wave
-// visibly travels left to right across the current word while its overall
-// amplitude rises then falls; the word swaps at the peak (mid-sweep, already
-// unreadable), and the same wave carries the new word's letters down flat —
-// the wave doesn't fade the word away, it becomes it.
-export function LifeCycleWordFlow() {
-  const [wordIndex, setWordIndex] = useState(0)
+function labelFor(id: LifeCycleId) {
+  return LIFE_CYCLES.find((cycle) => cycle.id === id)?.label ?? id
+}
+
+// Real letters, our own type scale — no canvas, no filter noise. Driven by
+// the switcher's actual `active` altitude below, not an independent timer —
+// this word IS the current tab, never a different one. A sine wave visibly
+// travels left to right across the current word when `active` changes; the
+// word swaps at the peak (mid-sweep, already unreadable), and the same wave
+// carries the new word's letters down flat — the wave doesn't fade the word
+// away, it becomes it.
+export function LifeCycleWordFlow({ active }: { active: LifeCycleId }) {
+  const [displayed, setDisplayed] = useState(active)
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const prevActive = useRef(active)
 
   useEffect(() => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let frame = 0
-    let index = 0
-    let phase: 'hold' | 'morph' = 'hold'
-    let phaseStart = performance.now()
-    let swapped = false
+    if (active === prevActive.current) return
+    prevActive.current = active
 
-    const applyWave = (t: number, active: boolean) => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) {
+      setDisplayed(active)
+      return
+    }
+
+    const applyWave = (t: number) => {
       const letters = letterRefs.current
       const count = letters.length
-      const amplitude = active ? Math.sin(Math.PI * t) * PEAK_PX : 0
+      const amplitude = Math.sin(Math.PI * t) * PEAK_PX
       for (let i = 0; i < count; i++) {
         const el = letters[i]
         if (!el) continue
@@ -42,43 +51,25 @@ export function LifeCycleWordFlow() {
       }
     }
 
+    let frame = 0
+    let swapped = false
+    const start = performance.now()
+
     const draw = (now: number) => {
-      const elapsed = now - phaseStart
-
-      if (phase === 'hold' || reduced) {
-        applyWave(0, false)
-        if (elapsed >= HOLD_MS) {
-          if (reduced) {
-            index = (index + 1) % WORDS.length
-            setWordIndex(index)
-          } else {
-            phase = 'morph'
-            swapped = false
-          }
-          phaseStart = now
-        }
-      } else {
-        const t = Math.min(1, elapsed / MORPH_MS)
-        applyWave(easeInOut(t), true)
-        if (!swapped && t >= 0.5) {
-          swapped = true
-          index = (index + 1) % WORDS.length
-          setWordIndex(index)
-        }
-        if (t >= 1) {
-          phase = 'hold'
-          phaseStart = now
-        }
+      const t = Math.min(1, (now - start) / MORPH_MS)
+      applyWave(easeInOut(t))
+      if (!swapped && t >= 0.5) {
+        swapped = true
+        setDisplayed(active)
       }
-
-      frame = requestAnimationFrame(draw)
+      if (t < 1) frame = requestAnimationFrame(draw)
     }
 
     frame = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(frame)
-  }, [])
+  }, [active])
 
-  const word = WORDS[wordIndex] ?? WORDS[0]
+  const word = labelFor(displayed)
   letterRefs.current = []
 
   return (

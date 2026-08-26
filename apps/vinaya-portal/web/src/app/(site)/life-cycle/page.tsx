@@ -7,9 +7,8 @@ import { LetterReveal } from '../_components/LetterReveal'
 import { ButtonLink } from '../_components/landing/ButtonLink'
 import { LandingSection } from '../_components/landing/LandingSection'
 import { SectionOverline, SectionTitle } from '../_components/landing/SectionHeading'
-import { LifeCyclePanels } from './_components/LifeCyclePanels'
-import { LifeCycleWordFlow } from './_components/LifeCycleWordFlow'
-import { CLOSING_CONTENT, HERO_CONTENT } from './_lib/lifecycle-content'
+import { LifeCycleExperience } from './_components/LifeCycleExperience'
+import { CLOSING_CONTENT } from './_lib/lifecycle-content'
 
 export const metadata: Metadata = {
   title: 'Life cycle · Vinaya',
@@ -19,39 +18,7 @@ export const metadata: Metadata = {
 export default function LifeCyclePage() {
   return (
     <>
-      {/* min-h-svh: the hero fills the viewport, so the panels section (and
-          its switcher) genuinely requires a scroll to reach — it must never
-          just sit pre-visible below a short hero with no interaction. */}
-      <LandingSection
-        background='bg-background text-foreground'
-        py='spacious'
-        center
-        className='flex min-h-svh flex-col justify-center'
-      >
-        <SectionOverline className='text-muted-foreground'>{HERO_CONTENT.overline}</SectionOverline>
-        <SectionTitle className='mx-auto mt-5 max-w-4xl text-5xl sm:text-6xl lg:text-7xl'>
-          <LetterReveal text={HERO_CONTENT.title} />
-        </SectionTitle>
-        <div className='mx-auto mt-7 flex max-w-xl justify-center gap-3.5'>
-          {HERO_CONTENT.words.map((word, index) => (
-            <span key={word} className='flex items-center gap-3.5'>
-              {index > 0 && (
-                <Text as='span' size='lg' muted className='font-mono uppercase tracking-[0.28em]'>
-                  ·
-                </Text>
-              )}
-              <Text as='span' size='lg' className='font-mono uppercase tracking-[0.28em]'>
-                {word}
-              </Text>
-            </span>
-          ))}
-        </div>
-        <div className='mt-12'>
-          <LifeCycleWordFlow />
-        </div>
-      </LandingSection>
-
-      <LifeCyclePanels />
+      <LifeCycleExperience />
 
       <LandingSection background='bg-background text-foreground' py='spacious' center>
         <SectionOverline className='text-muted-foreground'>{CLOSING_CONTENT.overline}</SectionOverline>

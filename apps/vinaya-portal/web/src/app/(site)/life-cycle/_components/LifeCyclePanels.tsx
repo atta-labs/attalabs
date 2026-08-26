@@ -2,8 +2,7 @@
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowDown, ArrowUp } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { LetterReveal } from '../../_components/LetterReveal'
 import { RevealGrid } from '../../_components/landing/LandingInteractions'
 import { LandingSection } from '../../_components/landing/LandingSection'
@@ -100,7 +99,10 @@ function LifeCyclePanel({
   content: LifeCycleContent
   onChange: (id: LifeCycleId) => void
 }) {
-  const HandoffIcon = content.handoff.direction === 'down' ? ArrowDown : ArrowUp
+  // The switcher is a horizontal tab row, not a vertical hierarchy — 'down'
+  // (one altitude in: milestone → tranche → task) moves right along it,
+  // 'up' (back out) moves left.
+  const HandoffIcon = content.handoff.direction === 'down' ? ArrowRight : ArrowLeft
 
   return (
     <>
@@ -157,14 +159,12 @@ function LifeCyclePanel({
   )
 }
 
-export function LifeCyclePanels() {
-  const [active, setActive] = useState<LifeCycleId>('milestone')
-
+export function LifeCyclePanels({ active, onChange }: { active: LifeCycleId; onChange: (id: LifeCycleId) => void }) {
   return (
     <div className='bg-card text-card-foreground'>
-      <LifeCycleSwitcher active={active} onChange={setActive} />
+      <LifeCycleSwitcher active={active} onChange={onChange} />
       <div key={active} className='animate-in fade-in slide-in-from-bottom-2 duration-300'>
-        <LifeCyclePanel altitude={active} content={LIFECYCLE_CONTENT[active]} onChange={setActive} />
+        <LifeCyclePanel altitude={active} content={LIFECYCLE_CONTENT[active]} onChange={onChange} />
       </div>
     </div>
   )
