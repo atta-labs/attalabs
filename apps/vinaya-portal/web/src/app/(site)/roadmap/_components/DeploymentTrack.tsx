@@ -786,7 +786,14 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                       </Flex>
                     </Flex>
                   </CardHeader>
-                  <CardContent className='flex flex-col gap-3'>
+                  {/* `pt-0` in-surface, not a shared `@atta/ui` edit — the animate library's
+                      `CardContent` wrapper adds its own `pt-6` regardless of a preceding
+                      `CardHeader` (which already carries a bottom `p-6`), producing a real
+                      double-padding gap on this specific card layout. Caller className wins
+                      over the wrapper's `pt-6` via tailwind-merge, per that wrapper's own
+                      doc comment, so this fixes it locally without touching the shared
+                      component every other `@atta/ui` consumer renders through. */}
+                  <CardContent className='flex flex-col gap-3 pt-0'>
                     <Text as='p' className='font-sans text-sm text-muted-foreground'>
                       {item.description}
                     </Text>

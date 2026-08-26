@@ -1,4 +1,4 @@
-import { getRoadmapMilestones, orNull } from '@atta/cms'
+import { getRoadmapMilestones, type RoadmapMilestone } from '@atta/cms'
 import { Badge } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
@@ -23,15 +23,23 @@ export const metadata: Metadata = {
 // That is a data-source property, not a rendering mode: like every route in
 // this app it still builds as `ƒ (Dynamic)`, because the root layout fetches
 // CMS config. "No forge dependency" — never "statically prerendered".
+//
+// A local `orNull` rather than importing `@atta/cms`'s own (private) one of the same
+// name — this task's surface is one new schema + one new query, not a change to the
+// existing `product-cms.ts` module other packages' consumers already depend on.
+async function loadMilestones(): Promise<RoadmapMilestone[] | null> {
+  try {
+    return await getRoadmapMilestones()
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[roadmap] getRoadmapMilestones failed:', err)
+    }
+    return null
+  }
+}
 
 export default async function RoadmapPage() {
-  // `orNull` is `@atta/cms`'s own graceful-degradation contract (`getProductCms` uses
-  // the same one for config/branding) — reused here instead of a second hand-rolled
-  // try/catch/log with its own message format to keep in sync.
-  const [milestones, publishedVersion] = await Promise.all([
-    orNull('roadmap milestones', getRoadmapMilestones()),
-    getPublishedVersion()
-  ])
+  const [milestones, publishedVersion] = await Promise.all([loadMilestones(), getPublishedVersion()])
 
   const items: DeploymentTrackItem[] | null =
     milestones === null

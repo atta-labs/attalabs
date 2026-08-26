@@ -4,7 +4,7 @@
 export { cmsConfig, createProductClient, PROJECT_IDS, type ProductKey } from './client'
 export { getProductBranding } from './queries/branding'
 export { getLibraries, getLibraryById } from './queries/library'
-export { getProductCms, orNull, type ProductCms } from './queries/product-cms'
+export { getProductCms, type ProductCms } from './queries/product-cms'
 // Queries
 export { getProductConfig, getProductUiConfig } from './queries/product-ui-config'
 export { getRoadmapMilestones, type RoadmapMilestone } from './queries/roadmap-milestones'
