@@ -1,97 +1,69 @@
 import { Footer } from '@atta/ui/footer'
-import { Heading, Text } from '@atta/ui/shared'
+import { NextLink } from '@atta/ui/lib/next-link'
+import { Text } from '@atta/ui/shared'
+import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
 import { LetterReveal } from '../_components/LetterReveal'
+import { ButtonLink } from '../_components/landing/ButtonLink'
+import { LandingSection } from '../_components/landing/LandingSection'
 import { SectionOverline, SectionTitle } from '../_components/landing/SectionHeading'
-import { STAGES } from '../start/_lib/stages'
-import { ClosingBeat } from './_components/ClosingBeat'
-import { FramingBlock } from './_components/FramingBlock'
-import { HeroStepperPreview } from './_components/HeroStepperPreview'
-import { LoopComposition } from './_components/LoopComposition'
-import { RefusalTranscript } from './_components/RefusalTranscript'
-import { MarkDefs } from './_components/StageGlyph'
-import { StageSection } from './_components/StageSection'
-import { SwimlaneTimeline } from './_components/SwimlaneTimeline'
-import { TestPlanInterstitial } from './_components/TestPlanInterstitial'
+import { LifeCyclePanels } from './_components/LifeCyclePanels'
+import { LifeCycleWordFlow } from './_components/LifeCycleWordFlow'
+import { CLOSING_CONTENT, HERO_CONTENT } from './_lib/lifecycle-content'
 
 export const metadata: Metadata = {
   title: 'Life cycle · Vinaya',
-  description: 'The cycle your dev team already runs — seven stages, enforced, in one scrolling page.'
+  description: 'Three altitudes, one shape — milestone, tranche, and task, each enforced the same way.'
 }
 
-/** The default lifecycle walkthrough, as one scrolling page — replaces the
- * seven thin `/start/*` stage routes (Issue #918). `MarkDefs` mounts
- * exactly once here, at page level; every `StageDiagram` and the hero's
- * `LoopComposition` `<use>` into it — the Issue's own trap ("do NOT mount
- * MarkDefs per section") is why this isn't spread across the sections that
- * need it. */
 export default function LifeCyclePage() {
   return (
     <>
-      <MarkDefs />
-
-      {/* Hero — the whole-harness loop. */}
-      <section className='bg-background py-16 sm:py-24 lg:py-28'>
-        <div className='mx-auto flex max-w-[73.75rem] flex-col gap-10 px-6 sm:px-10'>
-          <div className='flex flex-col gap-5'>
-            <SectionOverline className='text-muted-foreground'>What you already run</SectionOverline>
-            <SectionTitle>
-              <LetterReveal text='The cycle your dev team already runs.' />
-            </SectionTitle>
-            <Text as='p' size='lg' muted className='max-w-2xl leading-relaxed'>
-              Nothing new to learn. Vinaya adds one thing: nothing reaches the next stage until the last one passed.
-            </Text>
-          </div>
-
-          <HeroStepperPreview />
-
-          <LoopComposition />
-        </div>
-      </section>
-
-      {/* Swimlane timeline — the whole tranche, once, at speed. */}
-      <section className='border-border border-t bg-card py-14 sm:py-20 lg:py-24'>
-        <div className='mx-auto flex max-w-[73.75rem] flex-col gap-8 px-6 sm:px-10'>
-          <div className='flex flex-col gap-4'>
-            <SectionOverline className='text-muted-foreground'>The whole thing · 25 seconds</SectionOverline>
-            <Heading level={2} className='font-serif text-3xl font-normal leading-tight text-foreground sm:text-4xl'>
-              <LetterReveal text='One tranche, start to finish.' />
-            </Heading>
-            <Text as='p' size='lg' muted className='max-w-2xl leading-relaxed'>
-              The same seven stages below, played once at speed — so the shape is clear before the detail arrives.
-            </Text>
-          </div>
-
-          <SwimlaneTimeline />
-        </div>
-      </section>
-
-      <FramingBlock />
-
-      {/* The seven stages, alternating, diagram-led. */}
-      {STAGES.map((stage, index) => {
-        const number = index + 1
-        return (
-          <div key={stage.id}>
-            <StageSection
-              number={number}
-              stage={stage}
-              allStages={STAGES}
-              extra={stage.id === 'develop' ? <RefusalTranscript /> : undefined}
-            />
-            {stage.id === 'develop' && (
-              <div className='border-border border-t bg-background py-4 text-center'>
-                <Text as='span' size='xs' muted className='font-mono uppercase tracking-widest'>
-                  Review and security run on the same pull request, at the same time
+      <LandingSection background='bg-background text-foreground' py='spacious' center>
+        <SectionOverline className='text-muted-foreground'>{HERO_CONTENT.overline}</SectionOverline>
+        <SectionTitle className='mx-auto mt-5 max-w-4xl'>
+          <LetterReveal text={HERO_CONTENT.title} />
+        </SectionTitle>
+        <div className='mx-auto mt-7 flex max-w-xl justify-center gap-3.5 text-xl'>
+          {HERO_CONTENT.words.map((word, index) => (
+            <span key={word} className='flex items-center gap-3.5'>
+              {index > 0 && (
+                <Text as='span' muted>
+                  ·
                 </Text>
-              </div>
-            )}
-            {stage.id === 'security' && <TestPlanInterstitial />}
-          </div>
-        )
-      })}
+              )}
+              <Text as='span'>{word}</Text>
+            </span>
+          ))}
+        </div>
+        <div className='mt-12'>
+          <LifeCycleWordFlow />
+        </div>
+      </LandingSection>
 
-      <ClosingBeat />
+      <LifeCyclePanels />
+
+      <LandingSection background='bg-background text-foreground' py='spacious' center>
+        <SectionOverline className='text-muted-foreground'>{CLOSING_CONTENT.overline}</SectionOverline>
+        <SectionTitle className='mx-auto mt-5 max-w-2xl' leading='tight'>
+          <LetterReveal text={CLOSING_CONTENT.title} />
+        </SectionTitle>
+        <Text as='p' size='lg' muted className='mx-auto mt-7 max-w-xl leading-relaxed'>
+          {CLOSING_CONTENT.body}
+        </Text>
+        <div className='mt-9 flex flex-wrap justify-center gap-4'>
+          <ButtonLink href={CLOSING_CONTENT.primary.href} className='font-mono text-xs uppercase tracking-[0.16em]'>
+            {CLOSING_CONTENT.primary.label}
+          </ButtonLink>
+          <NextLink
+            href={CLOSING_CONTENT.secondary.href}
+            variant='unstyled'
+            className='inline-flex items-center gap-1.5 self-center text-primary text-sm underline-offset-4 hover:underline'
+          >
+            {CLOSING_CONTENT.secondary.label} <ArrowRight className='size-3.5' />
+          </NextLink>
+        </div>
+      </LandingSection>
 
       <Footer
         product='vinaya'
