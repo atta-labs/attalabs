@@ -8,10 +8,13 @@
  * `image` was set afterward (via Studio, or a script) will have it wiped by
  * a second run, since this seed data carries no `image` field at all.
  *
- * `status` is derived, not hand-picked: an item's `version` <= the
- * `@attalabs/vinaya` version this repo's root `package.json` pins is
- * `'shipping'`; greater is `'planned'`. Re-check that pin before seeding —
- * if it has moved past `0.19.2`, recompute which items are shipping.
+ * `status` seeded here is a FALLBACK only — `/roadmap` derives `shipping`/
+ * `planned` live from the published `@attalabs/vinaya` npm version
+ * (`apps/vinaya-portal/web/src/app/(site)/roadmap/_lib/derive-status.ts`),
+ * so nothing needs recomputing here as new versions ship. This field is only
+ * read when that registry lookup is unreachable, or for `'dropped'` (an
+ * editorial call no version comparison can derive) — seeded with what's true
+ * as of writing, not something that must be kept in sync going forward.
  *
  * Usage (run from packages/cms/):
  *   SANITY_PROJECT_ID=o56nzgrr SANITY_API_TOKEN=<token> bun run scripts/seed-roadmap-milestones.ts

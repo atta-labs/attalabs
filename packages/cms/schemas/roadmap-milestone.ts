@@ -45,7 +45,11 @@ export const roadmapMilestone = defineType({
           { title: 'Planned', value: 'planned' },
           { title: 'Dropped', value: 'dropped' }
         ]
-      }
+      },
+      description:
+        '"Dropped" is an editorial call — set it and it always wins. "Shipping" / "Planned" only matter as a ' +
+        'fallback: /roadmap derives that pair live from the published @attalabs/vinaya npm version (comparing it ' +
+        'against Version, above), so this value is never re-checked once a real release makes it stale.'
     }),
     defineField({
       name: 'image',
