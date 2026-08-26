@@ -80,39 +80,35 @@ const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = 
   '1.0.0': MilestoneFinishesItselfMark
 }
 
-// Decorative — the CardTitle right below already carries this card's
-// accessible name, so the whole visual (including each mark's own baked-in
-// `role="img"`/`aria-label`) is hidden from assistive tech at this wrapper
-// rather than announced twice. Prefers the inlined, themed mark for a known
-// version; falls back to a CMS-uploaded `image` (works, but cannot theme —
-// an editor adding a future item without a matching mark file); falls back
-// to a placeholder glyph when neither exists.
+// Icon-sized, beside the title — `48px`+ is the mark's own sizing floor
+// ("line-art detail collapses below that"), and `64px` clears it with room
+// to spare. Decorative: the CardTitle right next to it already carries this
+// card's accessible name, so the whole visual (including each mark's own
+// baked-in `role="img"`/`aria-label`) is hidden from assistive tech at this
+// wrapper rather than announced twice. Prefers the inlined, themed mark for
+// a known version; falls back to a CMS-uploaded `image` (works, but cannot
+// theme — an editor adding a future item without a matching mark file);
+// falls back to a placeholder glyph when neither exists.
 function MilestoneVisual({ version, image }: { version: string; image: RoadmapMilestone['image'] }) {
   const Mark = MARK_BY_VERSION[version]
 
   return (
-    <div aria-hidden className='mx-auto w-full max-w-56'>
-      <div className='relative aspect-square w-full overflow-hidden rounded-md'>
-        {Mark ? (
-          // `mm` is re-passed alongside our own sizing class, not just
-          // `size-full` alone: the source file's root carries `class="mm"`
-          // (scopes each mark's own animation/reduced-motion rules to
-          // itself, per the designer's integration brief), and SVGR spreads
-          // our `className` prop onto that same root — replacing rather
-          // than merging with the literal `class` attribute.
-          <Mark className='mm size-full' />
-        ) : image ? (
-          <Image src={image.url} alt='' fill sizes='224px' className='rounded-md border border-border object-cover' />
-        ) : (
-          <Flex
-            align='center'
-            justify='center'
-            className='size-full rounded-md border border-border bg-accent text-accent-foreground'
-          >
-            <ImageIcon className='size-10' />
-          </Flex>
-        )}
-      </div>
+    <div aria-hidden className='relative size-16 shrink-0 overflow-hidden rounded-md border border-border bg-accent'>
+      {Mark ? (
+        // `mm` is re-passed alongside our own sizing class, not just
+        // `size-full` alone: the source file's root carries `class="mm"`
+        // (scopes each mark's own animation/reduced-motion rules to itself,
+        // per the designer's integration brief), and SVGR spreads our
+        // `className` prop onto that same root — replacing rather than
+        // merging with the literal `class` attribute.
+        <Mark className='mm size-full' />
+      ) : image ? (
+        <Image src={image.url} alt='' fill sizes='64px' className='object-cover' />
+      ) : (
+        <Flex align='center' justify='center' className='size-full text-accent-foreground'>
+          <ImageIcon className='size-6' />
+        </Flex>
+      )}
     </div>
   )
 }
@@ -150,20 +146,22 @@ export default async function RoadmapPage() {
         <section className='grid gap-6 sm:grid-cols-2'>
           {milestones.map((milestone) => (
             <Card key={milestone._id}>
-              <CardHeader className='flex flex-col gap-4'>
-                <MilestoneVisual version={milestone.version} image={milestone.image} />
+              <CardHeader>
                 <Flex align='start' justify='between' gap={4}>
-                  <Flex direction='column' gap={1}>
-                    <CardTitle
-                      className={`font-serif text-xl font-normal text-foreground ${
-                        milestone.status === 'dropped' ? 'line-through' : ''
-                      }`}
-                    >
-                      {milestone.title}
-                    </CardTitle>
-                    <Text as='span' className='font-mono text-xs text-muted-foreground'>
-                      v{milestone.version}
-                    </Text>
+                  <Flex align='center' gap={4}>
+                    <MilestoneVisual version={milestone.version} image={milestone.image} />
+                    <Flex direction='column' gap={1}>
+                      <CardTitle
+                        className={`font-serif text-xl font-normal text-foreground ${
+                          milestone.status === 'dropped' ? 'line-through' : ''
+                        }`}
+                      >
+                        {milestone.title}
+                      </CardTitle>
+                      <Text as='span' className='font-mono text-xs text-muted-foreground'>
+                        v{milestone.version}
+                      </Text>
+                    </Flex>
                   </Flex>
                   <StatusBadge status={milestone.status} />
                 </Flex>
