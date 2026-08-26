@@ -92,12 +92,6 @@
 - [Vāda V2 Specification](./apps/vada-ai/specs/legacy/vada-v2-specification.md)
 - [Vāda Workflow Design — Implementation Notes](./apps/vada-ai/specs/legacy/workflow-design.md)
 
-### vinaya
-
-- [Loop Engineering — proposal (NOT ratified)](./apps/vinaya/specs/loop-engineering.md)
-- [Vinaya — product backlog](./apps/vinaya/specs/vinaya-backlog.md)
-- [Vinaya — Product Spec (seed)](./apps/vinaya/specs/vinaya-spec.md)
-
 ## Root-Level Documentation
 
 - [⚠️ ABSOLUTE RULE — NEVER COMMIT WITHOUT EXPLICIT INSTRUCTION](./CLAUDE.md)

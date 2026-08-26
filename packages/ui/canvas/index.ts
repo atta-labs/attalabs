@@ -8,14 +8,15 @@ export type { BgVariant, BgRenderer, BgState, BgEvent, FabricConfig } from './bg
 export { renderFabricBg, renderSplitFabricBg, createFabricRenderer, createSplitFabricRenderer } from './bg'
 // A local, contained fabric-mesh canvas (not full-viewport like AIACanvas) — for a
 // hero section that scrolls with the page, or a compact node mark. Moved here from
-// the original apps/vinaya/web (its first consumer, since split into apps/vinaya-portal/web),
-// which needed no import rewriting: it already depended only on @atta/ui/canvas. ONE
+// the original combined Vinaya web app (its first consumer, since split into
+// apps/vinaya-portal/web), which needed no import rewriting: it already depended
+// only on @atta/ui/canvas. ONE
 // addition on the way over — an optional `config?: Partial<FabricConfig>` prop, merged
 // over the defaults at mount, so a second consumer can vary the fabric without forking
 // the component. Vinaya passes no `config` at any of its call sites, so its rendering is
 // unchanged.
 export { HeroFabric } from './hero-fabric'
-// Vinaya's mark — canvas-drawn harness ring (ported from apps/vinaya-portal/web's SVG
+// Vinaya's mark — canvas-drawn harness ring (ported from `apps/vinaya-portal/web`'s SVG
 // HarnessStructure), standalone — clamps onto its own canvas-drawn "main" hub.
 export { HarnessRing } from './harness-ring'
 // Herald's real brand logo (Sanity branding-herald), reused verbatim as `currentColor`

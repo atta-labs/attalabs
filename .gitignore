@@ -9,12 +9,6 @@ out/
 dist/
 build/
 **/.turbo/
-# Build-time copy of the doctrine subset into the CLI package (bundle-doctrine.ts)
-# — scoped precisely, never the real doctrine source at repo-root aeg-root/.
-/apps/vinaya/cli/aeg-root/
-# Build-time standalone Studio bundle (bundle-studio.ts) — the built,
-# packageable copy of apps/vinaya-studio/web, not the app's own source.
-/apps/vinaya/cli/studio-standalone/
 docs/
 # Re-include for the Portal app (vinaya-portal-studio-split-v1
 # task 1, #883). Without it the whole docs route group and its loaders are

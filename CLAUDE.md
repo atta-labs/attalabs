@@ -29,9 +29,8 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 |---------|------|-----------|--------|--------|--------|
 | Vāda | [apps/vada-ai/](apps/vada-ai/) | [CLAUDE.md](apps/vada-ai/CLAUDE.md) | [README.md](apps/vada-ai/README.md) | `vada.attalabs.dev` | Live |
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
-| Vinaya | [apps/vinaya/](apps/vinaya/) | [CLAUDE.md](apps/vinaya/CLAUDE.md) | [README.md](apps/vinaya/README.md) | `vinaya.attalabs.dev` | Active — landing live; CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter; the vendored `cli/` workspace is deleted, and so is the local `sources/` workspace member — a stale pre-extraction copy with no consumers, superseded by the published `@attalabs/vinaya-sources`); CMS-backed via Vitakka's reused Sanity project. `apps/vinaya` itself now holds only `specs/` — the web surface split into the two rows below |
-| Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` | The public site extracted out of the original `apps/vinaya/web` app — same product, its own app. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. Deployed and live (Vercel repointed here); the original `apps/vinaya/web` was deleted once this app and Vinaya Studio (below) both proved out. Run with `dev:vinaya-portal` (port 3007) |
-| Vinaya Studio | [apps/vinaya-studio/](apps/vinaya-studio/) | — | [README.md](apps/vinaya-studio/web/README.md) | not deployed (local-only) | The local governance dashboard extracted out of the original `apps/vinaya/web` app — `/studio`, `/studio/projects`, `/studio/tranches`, `/studio/backlog`. Never deployed: no production/preview gate, no Portal↔Studio switch, because there is structurally nothing to gate against. Run with `dev:vinaya-studio` (port 3008) |
+| Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` | The public site — same product as Vinaya Studio below, its own app. CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter); CMS-backed via Vitakka's reused Sanity project. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. Deployed and live (Vercel repointed here). Run with `dev:vinaya-portal` (port 3007) |
+| Vinaya Studio | [apps/vinaya-studio/](apps/vinaya-studio/) | — | [README.md](apps/vinaya-studio/web/README.md) | not deployed (local-only) | The local governance dashboard — `/studio`, `/studio/projects`, `/studio/tranches`, `/studio/backlog`. Never deployed: no production/preview gate, no Portal↔Studio switch, because there is structurally nothing to gate against. Run with `dev:vinaya-studio` (port 3008) |
 
 ## App Structure Convention
 
@@ -49,7 +48,7 @@ apps/{product-ai}/
 
 Not every product needs every surface. Vāda is web + mcp. Vinaya's CLI, including its StateSource/DoctrineSource adapters, is a separate published package (`@attalabs/vinaya`/`@attalabs/vinaya-sources`, developed in the standalone `atta-labs/vinaya` repo), not a local `cli/`/`sources/` workspace.
 
-One product may also span more than one `apps/` directory: Vinaya's web surface lives in two sibling apps, `apps/vinaya-portal/web` (deployed public site) and `apps/vinaya-studio/web` (local-only governance dashboard), separate from `apps/vinaya/` (specs only), because the site and Studio deploy independently.
+One product may also span more than one `apps/` directory: Vinaya's web surface lives in two sibling apps, `apps/vinaya-portal/web` (deployed public site) and `apps/vinaya-studio/web` (local-only governance dashboard), because the site and Studio deploy independently.
 
 ---
 

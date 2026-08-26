@@ -18,7 +18,7 @@ Consequently there is no Portal↔Studio toggle. With two apps there is no secon
 bun run dev:vinaya-portal    # port 3007, falls back to 3107
 ```
 
-This is the deployed production app for `vinaya.attalabs.dev` — the deployment was repointed here (Vercel dashboard change) and `apps/vinaya/web`, the original single app, was deleted once this app and Vinaya Studio both proved out.
+This is the deployed production app for `vinaya.attalabs.dev` — the deployment was repointed here (Vercel dashboard change) and the original single app that combined both surfaces was deleted once this app and Vinaya Studio both proved out.
 
 ## CMS identity
 
@@ -31,7 +31,3 @@ The `vinayaPortalConfig` and `branding-vinayaPortal` documents live in the same 
 Two modules walk up from `process.cwd()` for a marker file: `src/lib/github-links.ts` (`vinaya.config.json`) and `src/lib/docs/load-aeg-docs.ts` (the `aeg-root` directory). Both markers are declared in `next.config.ts`'s `outputFileTracingIncludes`.
 
 That pairing is load-bearing and has caused production-only 500s twice: the doctrine routes are `force-dynamic` and read these files at **request** time, so an undeclared marker builds green and fails only on the deployed lambda. Adding a third walker is a two-place change — the walk and the tracing declaration, in the same commit. `src/lib/tracing-markers.test.ts` enforces this by discovering the walkers in `src/` rather than trusting a hand-written list, so a new one fails the test until it is declared.
-
-## Spec
-
-Route-by-route status lives in [vinaya-spec.md](../../vinaya/specs/vinaya-spec.md)'s Pages table.

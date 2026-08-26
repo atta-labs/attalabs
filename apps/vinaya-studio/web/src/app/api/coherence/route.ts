@@ -62,18 +62,17 @@ export type CoherenceResponse = {
 }
 
 export async function GET(): Promise<NextResponse<CoherenceResponse>> {
-  const aegRoot = findAegRoot()
-  if (aegRoot === null) {
+  const repoRoot = findAegRoot()
+  if (repoRoot === null) {
     return NextResponse.json({
       summary: { passed: 0, failed: 0, info: 0 },
       forgeUnavailable: true,
       checks: [],
       repo: null,
-      oracleError: 'Could not locate aeg-root — Studio not running inside the repo.'
+      oracleError: 'Could not locate the repo root — Studio not running inside the repo.'
     })
   }
 
-  const repoRoot = path.dirname(aegRoot)
   const scriptPath = path.join(repoRoot, 'node_modules', '@attalabs', 'aeg-core', 'bin', 'verify-coherence.ts')
   const env = buildEnv()
 

@@ -1,1 +1,2 @@
-apps/vinaya/**
+apps/vinaya-portal/**
+apps/vinaya-studio/**

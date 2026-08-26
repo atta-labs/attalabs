@@ -13,7 +13,6 @@
       "!**/build",
       "!**/.next",
       "!**/.turbo",
-      "!apps/vinaya/cli/studio-standalone",
       "!**/.sanity",
       "!**/public",
       "!**/tsconfig*.json",

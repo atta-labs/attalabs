@@ -22,9 +22,9 @@ export default async function config(): Promise<NextConfig> {
     // `apps/vinaya-portal/web`'s `next.config.ts`, there is deliberately no
     // `outputFileTracingIncludes`
     // here: that setting exists solely to keep Vercel's serverless bundle from
-    // silently dropping a computed-path read (`aeg-root/**`, `.vinaya/projects.md`)
-    // that a `force-dynamic` route needs at request time. With no serverless
-    // deploy target, `findAegRoot()`'s upward walk (`src/lib/repo-state/read-root.ts`)
+    // silently dropping a computed-path read (`.vinaya/projects.md`) that a
+    // `force-dynamic` route needs at request time. With no serverless deploy
+    // target, `findAegRoot()`'s upward walk (`src/lib/repo-state/read-root.ts`)
     // just runs against the real filesystem, in every environment this app
     // actually runs in (`next dev`, a local `next build && next start`).
     turbopack: {
