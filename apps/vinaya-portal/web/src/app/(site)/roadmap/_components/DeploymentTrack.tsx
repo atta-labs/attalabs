@@ -120,16 +120,20 @@ function drawCrackle(
 
 // The launchpad's three cross-ties, energized — same traveling-sine shimmer as
 // `CRACKLE_STRANDS`/`drawCrackle` above (the beam's own current), just rotated 90°: a
-// horizontal jag along each tie instead of a vertical one along the beam. `yFrac`/`xFrac`
-// are fractions of the pad SVG's own `0 0 200 124` viewBox (the tie y-positions 26/54/82
-// and their shared x-span 42–158), so the strand tracks the static tie line exactly at
-// any rendered size. Drawn only while `deployed > 0` (the same gate `drawCrackle` runs
-// under) — flat and inert at rest, current only once the harness has actually started
-// moving, which is the literal "as we scroll they become electricity" ask.
-const PAD_CRACKLE_ROWS = [
-  { yFrac: 26 / 124, seed: 5, amplitude: 2.2, speed: 0.05, width: 1, alpha: 0.6, color: 'primary' as const },
-  { yFrac: 54 / 124, seed: 63, amplitude: 2.6, speed: 0.06, width: 0.85, alpha: 0.5, color: 'primary' as const },
-  { yFrac: 82 / 124, seed: 19, amplitude: 2, speed: 0.045, width: 0.75, alpha: 0.4, color: 'secondary' as const }
+// horizontal jag along each tie instead of a vertical one along the beam, and — same as
+// the beam — a BUNDLE of 3 strands per tie, not one: `band` offsets each strand
+// vertically off the tie's own y (mirroring the beam's `band` x-offset), so a single tie
+// reads as one current-carrying rail, not a lone wire. `yFrac`/`xFrac` are fractions of
+// the pad SVG's own `0 0 200 124` viewBox (the tie y-positions 26/54/82 and their shared
+// x-span 42–158), so the bundle tracks the static tie line exactly at any rendered size.
+// Drawn only while `deployed > 0` (the same gate `drawCrackle` runs under) — flat and
+// inert at rest, current only once the harness has actually started moving, which is the
+// literal "as we scroll they become electricity" ask.
+const PAD_TIE_Y_FRACS = [26 / 124, 54 / 124, 82 / 124]
+const PAD_STRAND_TEMPLATE = [
+  { seed: 5, band: -1.4, amplitude: 2.2, speed: 0.05, width: 1, alpha: 0.6, color: 'primary' as const },
+  { seed: 63, band: 1.2, amplitude: 1.8, speed: 0.065, width: 0.75, alpha: 0.45, color: 'primary' as const },
+  { seed: 19, band: 0, amplitude: 2.6, speed: 0.045, width: 0.75, alpha: 0.35, color: 'secondary' as const }
 ]
 const PAD_CRACKLE_X0_FRAC = 42 / 200
 const PAD_CRACKLE_X1_FRAC = 158 / 200
@@ -149,27 +153,31 @@ function drawPadCrackle(
   const x1 = PAD_CRACKLE_X1_FRAC * w
   const span = x1 - x0
 
-  for (const row of PAD_CRACKLE_ROWS) {
-    const y = row.yFrac * h
-    ctx.beginPath()
-    for (let i = 0; i <= PAD_CRACKLE_STEP; i++) {
-      const x = x0 + (i / PAD_CRACKLE_STEP) * span
-      const h1 = hash01(i + row.seed)
-      const h2 = hash01(i + row.seed + 97)
-      const off =
-        Math.sin(i * 0.5 - time * row.speed + h1 * 6.283) * 0.6 +
-        Math.sin(i * 1.6 - time * row.speed * 1.8 + h2 * 6.283) * 0.4
-      const yy = y + off * row.amplitude
-      if (i === 0) ctx.moveTo(x, yy)
-      else ctx.lineTo(x, yy)
+  PAD_TIE_Y_FRACS.forEach((yFrac, tieIndex) => {
+    const y = yFrac * h
+    for (const strand of PAD_STRAND_TEMPLATE) {
+      // Offset the seed per tie so the three ties don't crackle in lockstep unison.
+      const seed = strand.seed + tieIndex * 17
+      ctx.beginPath()
+      for (let i = 0; i <= PAD_CRACKLE_STEP; i++) {
+        const x = x0 + (i / PAD_CRACKLE_STEP) * span
+        const h1 = hash01(i + seed)
+        const h2 = hash01(i + seed + 97)
+        const off =
+          Math.sin(i * 0.5 - time * strand.speed + h1 * 6.283) * 0.6 +
+          Math.sin(i * 1.6 - time * strand.speed * 1.8 + h2 * 6.283) * 0.4
+        const yy = y + strand.band + off * strand.amplitude
+        if (i === 0) ctx.moveTo(x, yy)
+        else ctx.lineTo(x, yy)
+      }
+      ctx.strokeStyle = colors[strand.color]
+      ctx.shadowColor = colors[strand.color]
+      ctx.shadowBlur = 2.5
+      ctx.globalAlpha = strand.alpha
+      ctx.lineWidth = strand.width
+      ctx.stroke()
     }
-    ctx.strokeStyle = colors[row.color]
-    ctx.shadowColor = colors[row.color]
-    ctx.shadowBlur = 2.5
-    ctx.globalAlpha = row.alpha
-    ctx.lineWidth = row.width
-    ctx.stroke()
-  }
+  })
   ctx.shadowBlur = 0
   ctx.globalAlpha = 1
 }
