@@ -1,18 +1,12 @@
-<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.24.0 — tranche finishes itself">
-            <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="currentColor" fill-opacity="0.14" style="fill:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></circle></pattern></defs>
-  <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="fill:var(--card, transparent);stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></rect>
-            <rect width="200" height="200" fill="url(#dots)"></rect>
-  <g data-motif="data-motif" transform="translate(0 -0.8)">
-            <path d="M56 136 H124 C140 136 140 100 147 100" stroke="currentColor" stroke-opacity=".26" stroke-width="1.6" stroke-dasharray="3 5" style="animation:vin-flow 3.2s linear infinite;stroke:var(--foreground, currentColor)"></path>
-            <path d="M34 129 V143" stroke="currentColor" stroke-opacity=".34" stroke-width="2.6" style="stroke:var(--foreground, currentColor)"></path>
-            <path d="M43 129 V143" stroke="currentColor" stroke-opacity=".34" stroke-width="2.6" style="stroke:var(--foreground, currentColor)"></path>
-            <path d="M30 100 H64" stroke="currentColor" stroke-opacity=".26" stroke-width="1.6" stroke-dasharray="3 5" style="stroke:var(--foreground, currentColor)"></path>
-            <path d="M64 100 H124 C140 100 140 100 147 100" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
-            <path d="M30 64 H124 C140 64 140 100 147 100" stroke="currentColor" stroke-width="2" opacity="0.32" style="animation:vin-lane 2.8s linear infinite;stroke:var(--primary, currentColor)" stroke-dasharray="16 128"></path>
-            <path d="M30 64 H124 C140 64 140 100 147 100" stroke="currentColor" stroke-width="2.4" stroke-dasharray="16 128" style="stroke:var(--primary, currentColor)"></path>
-            <circle cx="36" cy="64" r="5.5" fill="currentColor" style="fill:var(--primary, currentColor)"></circle>
-            <circle cx="64" cy="100" r="5.5" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></circle>
-            <circle cx="160" cy="100" r="13" fill="currentColor" style="fill:var(--primary, currentColor)"></circle>
-            <path d="M153 100 L158 105 L167 95" stroke="#ffffff" stroke-width="2.4" style="stroke:var(--primary-foreground, var(--background, #fff))"></path>
-  </g>
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" fill="none" color="inherit" role="img" aria-label="Vinaya 0.24.0 — a tranche finishes itself">
+  <rect x="0" y="0" width="400" height="300" fill="var(--primary, currentColor)" opacity="0.07"></rect>
+  <rect x="0" y="18" width="400" height="72" fill="var(--primary, currentColor)" opacity="0.16"></rect>
+  <rect x="0" y="114" width="400" height="72" fill="var(--primary, currentColor)" opacity="0.16"></rect>
+  <rect x="0" y="210" width="400" height="72" fill="var(--primary, currentColor)" opacity="0.16"></rect>
+  <rect x="340" y="18" width="60" height="72" fill="var(--primary, currentColor)"></rect>
+  <rect x="340" y="114" width="60" height="72" fill="var(--primary, currentColor)"></rect>
+  <rect x="340" y="210" width="60" height="72" fill="var(--primary, currentColor)"></rect>
+  <rect x="0" y="36" width="76" height="36" fill="var(--foreground, currentColor)" style="--mm-d:306px;animation:mm-flow 3.8s linear 0s infinite"></rect>
+  <rect x="0" y="132" width="76" height="36" fill="var(--foreground, currentColor)" style="--mm-d:306px;animation:mm-flow 3.8s linear 0.5s infinite"></rect>
+  <rect x="0" y="228" width="76" height="36" fill="var(--foreground, currentColor)" style="--mm-d:306px;animation:mm-flow 3.8s linear 1s infinite"></rect>
 </svg>

@@ -7,6 +7,14 @@ import Image from 'next/image'
 import type { ComponentType, SVGProps } from 'react'
 import { getPublishedVersion } from '@/lib/published-version'
 import { deriveStatus } from './_lib/derive-status'
+// Defines the `mm-*` `@keyframes` the marks below reference via inline
+// `animation:` declarations on individual elements — the marks carry no
+// `<style>`/`@keyframes` of their own (stripped by most sanitizers, per the
+// designer's own handoff), so without this import every mark still renders,
+// just static. App Router scopes a CSS import to the segment that imports
+// it — no need to touch the shared site layout for a rule only this route
+// uses.
+import './marks-motion.css'
 import MilestoneLayerMark from './_marks/0.19.0-milestone-layer.svg'
 import DeterminismHardeningMark from './_marks/0.20.0-determinism-hardening.svg'
 import AgenticInterfaceMark from './_marks/0.21.0-agentic-interface.svg'
@@ -66,12 +74,14 @@ function StatusBadge({ status }: { status: RoadmapMilestone['status'] }) {
 // The designer's marks are keyed by exact release `version`, matching each
 // item's own field — SVGR-compiled (`next.config.ts`'s webpack/turbopack
 // rules) so the markup lands inline in this page's own DOM, never behind an
-// `<img src>`. That inlining is load-bearing, not a style choice: each mark
-// themes itself entirely off `--primary`/`--card`/`--border`/`--foreground`
-// custom properties, and those do not cross the separate-document boundary
-// an `<img>`/`background-image` load creates — inlined, theme changes repaint
-// the marks in the same paint as the rest of the UI; loaded as an image
-// asset, they'd render in fixed fallback colors regardless of theme.
+// `<img src>`. That inlining is load-bearing for two independent reasons:
+// each mark themes itself off `--primary`/`--primary-foreground`/
+// `--foreground` custom properties, AND each carries inline `animation:
+// mm-*` declarations naming the `@keyframes` `./marks-motion.css` defines
+// (imported above) — neither custom properties nor `@keyframes` cross the
+// separate-document boundary an `<img>`/`background-image` load creates, so
+// a mark loaded that way would render static, in fixed fallback colors,
+// regardless of theme.
 const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   '0.19.0': MilestoneLayerMark,
   '0.20.0': DeterminismHardeningMark,
@@ -82,20 +92,25 @@ const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = 
   '1.0.0': MilestoneFinishesItselfMark
 }
 
-// Icon-sized, beside the title — `48px`+ is the mark's own sizing floor
-// ("line-art detail collapses below that"), and `64px` clears it with room
-// to spare. Decorative: the CardTitle right next to it already carries this
-// card's accessible name, so the whole visual (including each mark's own
-// baked-in `role="img"`/`aria-label`) is hidden from assistive tech at this
-// wrapper rather than announced twice. Prefers the inlined, themed mark for
-// a known version; falls back to a CMS-uploaded `image` (works, but cannot
-// theme — an editor adding a future item without a matching mark file);
-// falls back to a placeholder glyph when neither exists.
+// Icon-sized, beside the title — the marks' own native canvas is a `4:3`
+// viewBox (`400x300`), a wide composition, not a square glyph; the wrapper
+// follows that shape (`h-16` tall, width falls out of `aspect-[4/3]`)
+// rather than forcing a square crop that would cut the art off. Decorative:
+// the CardTitle right next to it already carries this card's accessible
+// name, so the whole visual (including each mark's own baked-in
+// `role="img"`/`aria-label`) is hidden from assistive tech at this wrapper
+// rather than announced twice. Prefers the inlined, themed mark for a known
+// version; falls back to a CMS-uploaded `image` (works, but cannot theme —
+// an editor adding a future item without a matching mark file); falls back
+// to a placeholder glyph when neither exists.
 function MilestoneVisual({ version, image }: { version: string; image: RoadmapMilestone['image'] }) {
   const Mark = MARK_BY_VERSION[version]
 
   return (
-    <div aria-hidden className='relative size-16 shrink-0 overflow-hidden rounded-md border border-border bg-accent'>
+    <div
+      aria-hidden
+      className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent'
+    >
       {Mark ? (
         // `mm` is re-passed alongside our own sizing class, not just
         // `size-full` alone: the source file's root carries `class="mm"`
@@ -105,7 +120,7 @@ function MilestoneVisual({ version, image }: { version: string; image: RoadmapMi
         // merging with the literal `class` attribute.
         <Mark className='mm size-full' />
       ) : image ? (
-        <Image src={image.url} alt='' fill sizes='64px' className='object-cover' />
+        <Image src={image.url} alt='' fill sizes='85px' className='object-cover' />
       ) : (
         <Flex align='center' justify='center' className='size-full text-accent-foreground'>
           <ImageIcon className='size-6' />

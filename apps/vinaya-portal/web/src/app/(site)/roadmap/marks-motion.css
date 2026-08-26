@@ -1,0 +1,21 @@
+/* Milestone marks — motion (designer handoff, apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg).
+   Keyframes CANNOT live inside the SVG files (SVG <style> and <animate> get
+   stripped by most sanitizers) — each mark carries inline `animation: mm-*`
+   declarations per element; this file defines the names those reference.
+   Imported once, directly in `page.tsx` (Next.js App Router scopes a CSS
+   import to the segment it's imported into — no need to touch the shared
+   site layout). Animation runs on INLINED marks only, which is what SVGR
+   compiles them to; an <img>-loaded mark would be a separate document and
+   render static regardless of this file.
+
+   THE RULE: never animate the geometry of a shape that carries the meaning.
+   Travel (mm-flow) and opacity (mm-lock) are always safe; mm-run only ever runs
+   over a static underlay, so the loop is never broken. mm-flow's distance is
+   per-element via --mm-d. */
+
+@keyframes mm-lock   { 0%, 18% { opacity: .5; } 38%, 80% { opacity: 1; } 100% { opacity: .5; } }
+@keyframes mm-unfurl { 0%, 84% { transform: scaleX(1); } 91% { transform: scaleX(.55); } 100% { transform: scaleX(1); } }
+@keyframes mm-flow   { 0% { transform: translateX(0); opacity: 0; } 12%, 84% { opacity: 1; } 100% { transform: translateX(var(--mm-d, 260px)); opacity: 0; } }
+@keyframes mm-run    { to { stroke-dashoffset: -100; } }
+
+@media (prefers-reduced-motion: reduce) { svg.mm * { animation: none !important; } }

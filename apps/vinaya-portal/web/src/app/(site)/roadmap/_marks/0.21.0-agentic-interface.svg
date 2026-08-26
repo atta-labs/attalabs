@@ -1,25 +1,28 @@
-<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.21.0 — agentic interface">
-            <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="currentColor" fill-opacity="0.14" style="fill:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></circle></pattern></defs>
-  <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="fill:var(--card, transparent);stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></rect>
-            <rect width="200" height="200" fill="url(#dots)"></rect>
-  <g data-motif="data-motif" transform="translate(0 25.5)">
-            <path d="M52.1 82.6 L74.6 90.8" stroke="currentColor" stroke-width="1.6" opacity="0.55" stroke-dasharray="3 5" style="animation:vin-flow 2s linear infinite;stroke:var(--primary, currentColor)"></path>
-            <path d="M70.7 58.2 L84.5 77.9" stroke="currentColor" stroke-width="1.6" opacity="0.55" stroke-dasharray="3 5" style="animation:vin-flow 2s linear infinite 0.2s;stroke:var(--primary, currentColor)"></path>
-            <path d="M100 49 V73" stroke="currentColor" stroke-width="1.6" opacity="0.55" stroke-dasharray="3 5" style="animation:vin-flow 2s linear infinite 0.4s;stroke:var(--primary, currentColor)"></path>
-            <path d="M129.3 58.2 L115.5 77.9" stroke="currentColor" stroke-width="1.6" opacity="0.55" stroke-dasharray="3 5" style="animation:vin-flow 2s linear infinite 0.6s;stroke:var(--primary, currentColor)"></path>
-            <path d="M147.9 82.6 L125.4 90.8" stroke="currentColor" stroke-width="1.6" opacity="0.55" stroke-dasharray="3 5" style="animation:vin-flow 2s linear infinite 0.8s;stroke:var(--primary, currentColor)"></path>
-            <circle cx="41.7" cy="78.8" r="9" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
-            <circle cx="64.4" cy="49.2" r="9" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
-            <circle cx="100" cy="38" r="9" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
-            <circle cx="135.6" cy="49.2" r="9" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
-            <circle cx="158.3" cy="78.8" r="9" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
-            <circle cx="41.7" cy="78.8" r="2.4" fill="currentColor" fill-opacity=".42" style="fill:var(--foreground, currentColor)"></circle>
-            <circle cx="64.4" cy="49.2" r="2.4" fill="currentColor" fill-opacity=".42" style="fill:var(--foreground, currentColor)"></circle>
-            <circle cx="100" cy="38" r="2.4" fill="currentColor" fill-opacity=".42" style="fill:var(--foreground, currentColor)"></circle>
-            <circle cx="135.6" cy="49.2" r="2.4" fill="currentColor" fill-opacity=".42" style="fill:var(--foreground, currentColor)"></circle>
-            <circle cx="158.3" cy="78.8" r="2.4" fill="currentColor" fill-opacity=".42" style="fill:var(--foreground, currentColor)"></circle>
-            <rect x="80" y="80" width="40" height="40" rx="12" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></rect>
-            <path d="M94 94 L99 100 L94 106" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
-            <path d="M103 106 H108" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
-  </g>
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" fill="none" color="inherit" role="img" aria-label="Vinaya 0.21.0 — agentic interface">
+  <rect x="0" y="0" width="400" height="300" fill="var(--primary, currentColor)" opacity="0.07"></rect>
+  <rect x="0" y="0" width="94" height="184" fill="var(--foreground, currentColor)" opacity="0.13"></rect>
+  <rect x="27" y="30" width="40" height="40" fill="var(--foreground, currentColor)" opacity="0.85" style="animation:mm-lock 3.2s ease-in-out 0s infinite"></rect>
+  <rect x="16" y="96" width="62" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.1s infinite"></rect>
+  <rect x="16" y="117" width="44" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.2s infinite"></rect>
+  <rect x="16" y="138" width="54" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.3s infinite"></rect>
+  <rect x="40" y="184" width="14" height="66" fill="var(--primary, currentColor)" opacity="0.55" style="animation:mm-lock 3.2s ease-in-out 0.4s infinite"></rect>
+  <rect x="102" y="0" width="94" height="184" fill="var(--foreground, currentColor)" opacity="0.13"></rect>
+  <rect x="129" y="30" width="40" height="40" fill="var(--foreground, currentColor)" opacity="0.85" style="animation:mm-lock 3.2s ease-in-out 0.28s infinite"></rect>
+  <rect x="118" y="96" width="62" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.38s infinite"></rect>
+  <rect x="118" y="117" width="44" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.48000000000000004s infinite"></rect>
+  <rect x="118" y="138" width="54" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.5800000000000001s infinite"></rect>
+  <rect x="142" y="184" width="14" height="66" fill="var(--primary, currentColor)" opacity="0.55" style="animation:mm-lock 3.2s ease-in-out 0.68s infinite"></rect>
+  <rect x="204" y="0" width="94" height="184" fill="var(--foreground, currentColor)" opacity="0.13"></rect>
+  <rect x="231" y="30" width="40" height="40" fill="var(--foreground, currentColor)" opacity="0.85" style="animation:mm-lock 3.2s ease-in-out 0.56s infinite"></rect>
+  <rect x="220" y="96" width="62" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.66s infinite"></rect>
+  <rect x="220" y="117" width="44" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.76s infinite"></rect>
+  <rect x="220" y="138" width="54" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.8600000000000001s infinite"></rect>
+  <rect x="244" y="184" width="14" height="66" fill="var(--primary, currentColor)" opacity="0.55" style="animation:mm-lock 3.2s ease-in-out 0.9600000000000001s infinite"></rect>
+  <rect x="306" y="0" width="94" height="184" fill="var(--foreground, currentColor)" opacity="0.13"></rect>
+  <rect x="333" y="30" width="40" height="40" fill="var(--foreground, currentColor)" opacity="0.85" style="animation:mm-lock 3.2s ease-in-out 0.8400000000000001s infinite"></rect>
+  <rect x="322" y="96" width="62" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 0.9400000000000001s infinite"></rect>
+  <rect x="322" y="117" width="44" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 1.04s infinite"></rect>
+  <rect x="322" y="138" width="54" height="11" fill="var(--primary, currentColor)" style="animation:mm-lock 3.2s ease-in-out 1.1400000000000001s infinite"></rect>
+  <rect x="346" y="184" width="14" height="66" fill="var(--primary, currentColor)" opacity="0.55" style="animation:mm-lock 3.2s ease-in-out 1.2400000000000002s infinite"></rect>
+  <rect x="0" y="250" width="400" height="50" fill="var(--primary, currentColor)"></rect>
 </svg>
