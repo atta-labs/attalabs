@@ -13,8 +13,18 @@ export default async function config(): Promise<NextConfig> {
     images: {
       remotePatterns: [{ protocol: 'https', hostname: 'cdn.sanity.io' }]
     },
+    // /roadmap's seven release marks (`roadmap/_marks/*.svg`) must be inlined
+    // into the DOM to theme — they read `--primary`/`--card`/`--border`/
+    // `--foreground` via CSS custom properties, which do not cross the
+    // separate-document boundary an `<img src>`/`background-image` load
+    // creates. SVGR compiles each into a React component at build time
+    // instead, so the markup lands inline in the page's own DOM.
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
+      config.module.rules.push({
+        test: /\.svg$/,
+        use: ['@svgr/webpack']
+      })
       return config
     },
     // @attalabs/* packages publish raw .ts source (no build step) via their
@@ -48,6 +58,12 @@ export default async function config(): Promise<NextConfig> {
       root: resolve(__dirname, '../../..'),
       resolveAlias: {
         '@atta/ui/components': componentsRelPath
+      },
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js'
+        }
       }
     }
   }

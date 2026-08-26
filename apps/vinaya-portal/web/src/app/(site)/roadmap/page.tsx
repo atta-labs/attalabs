@@ -4,6 +4,14 @@ import { Flex, Heading, Text } from '@atta/ui/shared'
 import { ImageIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import type { ComponentType, SVGProps } from 'react'
+import MilestoneLayerMark from './_marks/0.19.0-milestone-layer.svg'
+import DeterminismHardeningMark from './_marks/0.20.0-determinism-hardening.svg'
+import AgenticInterfaceMark from './_marks/0.21.0-agentic-interface.svg'
+import ReviewThatAnswersItselfMark from './_marks/0.22.0-review-that-answers-itself.svg'
+import TaskFinishesItselfMark from './_marks/0.23.0-task-finishes-itself.svg'
+import TrancheFinishesItselfMark from './_marks/0.24.0-tranche-finishes-itself.svg'
+import MilestoneFinishesItselfMark from './_marks/1.0.0-milestone-finishes-itself.svg'
 
 export const metadata: Metadata = {
   title: 'Roadmap · Vinaya'
@@ -53,19 +61,52 @@ function StatusBadge({ status }: { status: RoadmapMilestone['status'] }) {
   )
 }
 
-// Decorative — the adjacent CardTitle already carries the accessible name for
-// this card, same convention the hand-authored marks this replaces used
-// (`aria-hidden` on the glyph). No separate accessible-name span belongs here.
-function MilestoneVisual({ image }: { image: RoadmapMilestone['image'] }) {
+// The designer's marks are keyed by exact release `version`, matching each
+// item's own field — SVGR-compiled (`next.config.ts`'s webpack/turbopack
+// rules) so the markup lands inline in this page's own DOM, never behind an
+// `<img src>`. That inlining is load-bearing, not a style choice: each mark
+// themes itself entirely off `--primary`/`--card`/`--border`/`--foreground`
+// custom properties, and those do not cross the separate-document boundary
+// an `<img>`/`background-image` load creates — inlined, theme changes repaint
+// the marks in the same paint as the rest of the UI; loaded as an image
+// asset, they'd render in fixed fallback colors regardless of theme.
+const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+  '0.19.0': MilestoneLayerMark,
+  '0.20.0': DeterminismHardeningMark,
+  '0.21.0': AgenticInterfaceMark,
+  '0.22.0': ReviewThatAnswersItselfMark,
+  '0.23.0': TaskFinishesItselfMark,
+  '0.24.0': TrancheFinishesItselfMark,
+  '1.0.0': MilestoneFinishesItselfMark
+}
+
+// Decorative — the CardTitle right below already carries this card's
+// accessible name, so the whole visual (including each mark's own baked-in
+// `role="img"`/`aria-label`) is hidden from assistive tech at this wrapper
+// rather than announced twice. Prefers the inlined, themed mark for a known
+// version; falls back to a CMS-uploaded `image` (works, but cannot theme —
+// an editor adding a future item without a matching mark file); falls back
+// to a placeholder glyph when neither exists.
+function MilestoneVisual({ version, image }: { version: string; image: RoadmapMilestone['image'] }) {
+  const Mark = MARK_BY_VERSION[version]
+
   return (
-    <div className='relative size-16 shrink-0 overflow-hidden rounded-md border border-border bg-accent'>
-      {image ? (
-        <Image src={image.url} alt='' aria-hidden fill sizes='64px' className='object-cover' />
-      ) : (
-        <Flex align='center' justify='center' className='size-full text-accent-foreground'>
-          <ImageIcon className='size-6' aria-hidden />
-        </Flex>
-      )}
+    <div aria-hidden className='mx-auto w-full max-w-56'>
+      <div className='relative aspect-square w-full overflow-hidden rounded-md'>
+        {Mark ? (
+          <Mark className='size-full' />
+        ) : image ? (
+          <Image src={image.url} alt='' fill sizes='224px' className='rounded-md border border-border object-cover' />
+        ) : (
+          <Flex
+            align='center'
+            justify='center'
+            className='size-full rounded-md border border-border bg-accent text-accent-foreground'
+          >
+            <ImageIcon className='size-10' />
+          </Flex>
+        )}
+      </div>
     </div>
   )
 }
@@ -103,22 +144,20 @@ export default async function RoadmapPage() {
         <section className='grid gap-6 sm:grid-cols-2'>
           {milestones.map((milestone) => (
             <Card key={milestone._id}>
-              <CardHeader>
+              <CardHeader className='flex flex-col gap-4'>
+                <MilestoneVisual version={milestone.version} image={milestone.image} />
                 <Flex align='start' justify='between' gap={4}>
-                  <Flex align='center' gap={4}>
-                    <MilestoneVisual image={milestone.image} />
-                    <Flex direction='column' gap={1}>
-                      <CardTitle
-                        className={`font-serif text-xl font-normal text-foreground ${
-                          milestone.status === 'dropped' ? 'line-through' : ''
-                        }`}
-                      >
-                        {milestone.title}
-                      </CardTitle>
-                      <Text as='span' className='font-mono text-xs text-muted-foreground'>
-                        v{milestone.version}
-                      </Text>
-                    </Flex>
+                  <Flex direction='column' gap={1}>
+                    <CardTitle
+                      className={`font-serif text-xl font-normal text-foreground ${
+                        milestone.status === 'dropped' ? 'line-through' : ''
+                      }`}
+                    >
+                      {milestone.title}
+                    </CardTitle>
+                    <Text as='span' className='font-mono text-xs text-muted-foreground'>
+                      v{milestone.version}
+                    </Text>
                   </Flex>
                   <StatusBadge status={milestone.status} />
                 </Flex>

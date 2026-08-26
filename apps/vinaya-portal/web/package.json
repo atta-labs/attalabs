@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@atta/typescript-config": "workspace:*",
+    "@svgr/webpack": "^8.1.0",
     "@types/d3-shape": "^3.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
