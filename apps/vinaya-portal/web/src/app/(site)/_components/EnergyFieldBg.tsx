@@ -20,7 +20,19 @@ function hash01(n: number): number {
 
 // `showGrid=false` skips the faint base mesh (only the cursor-reactive energy + particles
 // render) — used over the hero, which already draws its own fabric mesh.
-export function EnergyFieldBg({ particles = true, showGrid = true }: { particles?: boolean; showGrid?: boolean }) {
+// `interactive=false` skips the mousemove listener entirely, so `mouse.current.active` stays
+// permanently false and every ignite/halo/filament branch below (all gated on `m.active`)
+// never fires — used where the cursor reach reads as too subtle to register, e.g. the
+// roadmap's tall scroll track.
+export function EnergyFieldBg({
+  particles = true,
+  showGrid = true,
+  interactive = true
+}: {
+  particles?: boolean
+  showGrid?: boolean
+  interactive?: boolean
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouse = useRef({ x: -9999, y: -9999, active: false })
 
@@ -40,7 +52,7 @@ export function EnergyFieldBg({ particles = true, showGrid = true }: { particles
       const y = e.clientY - r.top
       mouse.current = { x, y, active: x >= 0 && y >= 0 && x <= r.width && y <= r.height }
     }
-    window.addEventListener('mousemove', onMove)
+    if (interactive) window.addEventListener('mousemove', onMove)
 
     const render = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -164,10 +176,10 @@ export function EnergyFieldBg({ particles = true, showGrid = true }: { particles
 
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('mousemove', onMove)
+      if (interactive) window.removeEventListener('mousemove', onMove)
       themeObserver.disconnect()
     }
-  }, [particles, showGrid])
+  }, [particles, showGrid, interactive])
 
   return <canvas ref={canvasRef} className='pointer-events-none absolute inset-0 h-full w-full' />
 }

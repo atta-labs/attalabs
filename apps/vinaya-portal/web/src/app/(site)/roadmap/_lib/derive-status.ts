@@ -4,10 +4,27 @@ import type { PublishedVersion } from '@/lib/published-version'
 // `x.y.z`-only — every version this compares (a milestone's own `version`
 // field, npm's `dist-tags.latest`) is a plain release number, never a
 // pre-release/build tag, so a numeric per-segment compare is enough and
-// doesn't need a semver dependency.
+// doesn't need a semver dependency. `Number.parseInt`, not `Number` — the
+// milestone side is a free-text CMS field, so a stray suffix (an editor
+// typing "0.20.0-rc1") must still parse its LEADING digits instead of
+// producing `NaN`: `Number("0-rc1")` is `NaN`, and `NaN !== 0` is always
+// true while `NaN > 0` is always false, so a single bad segment silently
+// pinned that comparison (and everything after it) to "not shipped" forever,
+// with no error anywhere.
+function toNumericSegment(seg: string, raw: string): number {
+  const n = Number.parseInt(seg, 10)
+  if (Number.isNaN(n)) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[roadmap] isVersionAtLeast: non-numeric version segment "${seg}" in "${raw}" — treating as 0`)
+    }
+    return 0
+  }
+  return n
+}
+
 export function isVersionAtLeast(candidate: string, threshold: string): boolean {
-  const c = candidate.split('.').map(Number)
-  const t = threshold.split('.').map(Number)
+  const c = candidate.split('.').map((seg) => toNumericSegment(seg, candidate))
+  const t = threshold.split('.').map((seg) => toNumericSegment(seg, threshold))
   for (let i = 0; i < Math.max(c.length, t.length); i++) {
     const diff = (c[i] ?? 0) - (t[i] ?? 0)
     if (diff !== 0) return diff > 0

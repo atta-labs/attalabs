@@ -19,10 +19,16 @@ export default async function config(): Promise<NextConfig> {
     // separate-document boundary an `<img src>`/`background-image` load
     // creates. SVGR compiles each into a React component at build time
     // instead, so the markup lands inline in the page's own DOM.
+    //
+    // Scoped to `_marks/` (the `test` regex requires that path segment), not every
+    // `.svg` in the app — an unscoped rule silently turns EVERY `.svg` import
+    // anywhere into a React component instead of a static asset, with no compile
+    // error to catch it; any other route importing an svg the normal way would
+    // just silently break.
     webpack: (config) => {
       config.resolve.alias['@atta/ui/components'] = resolve(__dirname, componentsRelPath)
       config.module.rules.push({
-        test: /\.svg$/,
+        test: /_marks\/.*\.svg$/,
         use: ['@svgr/webpack']
       })
       return config
@@ -60,7 +66,9 @@ export default async function config(): Promise<NextConfig> {
         '@atta/ui/components': componentsRelPath
       },
       rules: {
-        '*.svg': {
+        // Same `_marks/`-only scoping as the webpack rule above — not a bare
+        // `'*.svg'`, which would apply to every svg import in the app.
+        '**/_marks/*.svg': {
           loaders: ['@svgr/webpack'],
           as: '*.js'
         }

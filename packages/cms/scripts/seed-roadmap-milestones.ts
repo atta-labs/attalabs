@@ -1,12 +1,13 @@
 /**
  * Seed Sanity CMS with the seven `roadmapMilestone` documents for
  * vinaya-portal's /roadmap page — Vinaya's own version ladder toward
- * `1.0.0`. `image` is intentionally left unset on every item here.
+ * `1.0.0`. `image` is intentionally left unset by this script.
  *
- * ONE-TIME ONLY — do not re-run once images are attached. This uses
- * `createOrReplace`, which overwrites the whole document; a document whose
- * `image` was set afterward (via Studio, or a script) will have it wiped by
- * a second run, since this seed data carries no `image` field at all.
+ * Safe to re-run at any time, including after images are attached via Studio:
+ * each doc is created if missing (`createIfNotExists`, full payload, `image`
+ * absent) and then updated via `patch().set()` rather than `createOrReplace`.
+ * `set()` only touches the fields it's given — an `image` a document picked up
+ * afterward is never in this script's payload, so it's never overwritten.
  *
  * `status` seeded here is a FALLBACK only — `/roadmap` derives `shipping`/
  * `planned` live from the published `@attalabs/vinaya` npm version
@@ -22,10 +23,18 @@
 
 import { createClient } from '@sanity/client'
 
-export const MILESTONES = [
+// Derived from `title`, not hand-typed alongside it — two independent fields for the
+// same identity can only drift if one is edited without the other.
+function milestoneId(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `roadmap-milestone-${slug}`
+}
+
+const MILESTONES_INPUT = [
   {
-    _id: 'roadmap-milestone-milestone-layer',
-    _type: 'roadmapMilestone',
     title: 'Milestone layer',
     version: '0.19.0',
     description:
@@ -35,8 +44,6 @@ export const MILESTONES = [
     order: 1
   },
   {
-    _id: 'roadmap-milestone-determinism-hardening',
-    _type: 'roadmapMilestone',
     title: 'Determinism hardening',
     version: '0.20.0',
     description:
@@ -46,8 +53,6 @@ export const MILESTONES = [
     order: 2
   },
   {
-    _id: 'roadmap-milestone-agentic-interface',
-    _type: 'roadmapMilestone',
     title: 'Agentic interface',
     version: '0.21.0',
     description:
@@ -57,8 +62,6 @@ export const MILESTONES = [
     order: 3
   },
   {
-    _id: 'roadmap-milestone-review-that-answers-itself',
-    _type: 'roadmapMilestone',
     title: 'Review that answers itself',
     version: '0.22.0',
     description:
@@ -68,8 +71,6 @@ export const MILESTONES = [
     order: 4
   },
   {
-    _id: 'roadmap-milestone-a-task-finishes-itself',
-    _type: 'roadmapMilestone',
     title: 'A task finishes itself',
     version: '0.23.0',
     description:
@@ -79,8 +80,6 @@ export const MILESTONES = [
     order: 5
   },
   {
-    _id: 'roadmap-milestone-a-tranche-finishes-itself',
-    _type: 'roadmapMilestone',
     title: 'A tranche finishes itself',
     version: '0.24.0',
     description:
@@ -90,8 +89,6 @@ export const MILESTONES = [
     order: 6
   },
   {
-    _id: 'roadmap-milestone-a-milestone-finishes-itself',
-    _type: 'roadmapMilestone',
     title: 'A milestone finishes itself',
     version: '1.0.0',
     description:
@@ -101,6 +98,12 @@ export const MILESTONES = [
     order: 7
   }
 ] as const
+
+export const MILESTONES = MILESTONES_INPUT.map((m) => ({
+  _id: milestoneId(m.title),
+  _type: 'roadmapMilestone' as const,
+  ...m
+}))
 
 async function main() {
   const client = createClient({
@@ -115,7 +118,8 @@ async function main() {
   console.log(`Project: ${process.env.SANITY_PROJECT_ID}\n`)
 
   for (const doc of MILESTONES) {
-    const result = await client.createOrReplace(doc as Parameters<typeof client.createOrReplace>[0])
+    await client.createIfNotExists(doc)
+    const result = await client.patch(doc._id).set(doc).commit()
     console.log(`✓ Saved: ${result._id}`)
   }
 }

@@ -1,4 +1,5 @@
-import { getRoadmapMilestones, type RoadmapMilestone } from '@atta/cms'
+import { getRoadmapMilestones, orNull } from '@atta/cms'
+import { Badge } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { getPublishedVersion } from '@/lib/published-version'
@@ -22,19 +23,15 @@ export const metadata: Metadata = {
 // That is a data-source property, not a rendering mode: like every route in
 // this app it still builds as `ƒ (Dynamic)`, because the root layout fetches
 // CMS config. "No forge dependency" — never "statically prerendered".
-async function loadMilestones(): Promise<RoadmapMilestone[] | null> {
-  try {
-    return await getRoadmapMilestones()
-  } catch (err) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[roadmap] getRoadmapMilestones failed:', err)
-    }
-    return null
-  }
-}
 
 export default async function RoadmapPage() {
-  const [milestones, publishedVersion] = await Promise.all([loadMilestones(), getPublishedVersion()])
+  // `orNull` is `@atta/cms`'s own graceful-degradation contract (`getProductCms` uses
+  // the same one for config/branding) — reused here instead of a second hand-rolled
+  // try/catch/log with its own message format to keep in sync.
+  const [milestones, publishedVersion] = await Promise.all([
+    orNull('roadmap milestones', getRoadmapMilestones()),
+    getPublishedVersion()
+  ])
 
   const items: DeploymentTrackItem[] | null =
     milestones === null
@@ -50,43 +47,44 @@ export default async function RoadmapPage() {
         }))
 
   return (
-    <main className='mx-auto flex max-w-5xl flex-col gap-10 overflow-x-hidden px-8 py-8'>
-      <section className='flex flex-col gap-4'>
+    // `w-full`, no `max-w`/`mx-auto` here — this page's fabric backdrop lives on
+    // `DeploymentTrack`'s own full-bleed outer box (see its comment), same split as
+    // home's full-width sections (`page.tsx`'s `#next-steps`). Constraining THIS element
+    // instead would cap the fabric at the reading column's width on any screen wider than
+    // it, reproducing the gutter this structure exists to avoid.
+    <main className='flex w-full flex-col gap-10 overflow-x-hidden py-8'>
+      <section className='mx-auto flex w-full max-w-5xl flex-col gap-4 px-8'>
         <Heading
           level={1}
-          className='mx-auto mt-5 max-w-4xl font-serif font-normal text-4xl text-foreground tracking-tight sm:text-5xl lg:text-6xl'
+          className='mx-auto mt-5 max-w-4xl text-center font-serif font-normal text-4xl text-foreground tracking-tight sm:text-5xl lg:text-6xl'
         >
           Toward walk-away complete
         </Heading>
-        <Text className='font-sans text-lg text-muted-foreground sm:text-xl'>
+        <Text className='text-center font-mono text-2xl text-muted-foreground'>
           The harness climbs one rung at a time
         </Text>
+        {!('fallback' in publishedVersion) && (
+          <div className='flex justify-center'>
+            <Badge variant='outline' className='font-mono text-xs font-normal text-muted-foreground'>
+              @attalabs/vinaya@{publishedVersion.version}
+            </Badge>
+          </div>
+        )}
       </section>
 
       {items === null && (
-        <Text as='p' className='font-sans text-sm text-muted-foreground'>
+        <Text as='p' className='mx-auto w-full max-w-5xl px-8 font-sans text-sm text-muted-foreground'>
           Unable to load the roadmap right now.
         </Text>
       )}
 
       {items !== null && items.length === 0 && (
-        <Text as='p' className='font-sans text-sm text-muted-foreground'>
+        <Text as='p' className='mx-auto w-full max-w-5xl px-8 font-sans text-sm text-muted-foreground'>
           No roadmap items yet.
         </Text>
       )}
 
       {items !== null && items.length > 0 && <DeploymentTrack items={items} />}
-
-      <section className='flex flex-col gap-2 border-t border-border pt-8'>
-        <Heading level={2} className='font-serif text-xl text-foreground'>
-          Why this page exists
-        </Heading>
-        <Text as='p' className='font-sans text-sm text-muted-foreground'>
-          A roadmap that only ever lists what shipped isn’t a roadmap — it’s a changelog wearing a roadmap’s name. This
-          one holds the misses too, dashed and struck through rather than deleted, because a plan you can trust is one
-          that shows its own dead ends.
-        </Text>
-      </section>
     </main>
   )
 }

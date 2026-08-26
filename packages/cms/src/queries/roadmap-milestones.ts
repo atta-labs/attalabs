@@ -8,7 +8,10 @@ export interface RoadmapMilestone {
   truth: string
   status: 'shipping' | 'planned' | 'dropped'
   order: number
-  image: { url: string } | null
+  // `url` can be `null` even when the `image` object itself is present — the GROQ
+  // projection below dereferences `asset->url`, which resolves to `null` if the
+  // underlying Sanity asset was deleted while the field still references it.
+  image: { url: string | null } | null
 }
 
 const ROADMAP_MILESTONES_QUERY = `*[_type == "roadmapMilestone"] | order(order asc) {

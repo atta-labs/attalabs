@@ -18,6 +18,20 @@ describe('isVersionAtLeast', () => {
     expect(isVersionAtLeast('1.0.0', '0.24.0')).toBe(true)
     expect(isVersionAtLeast('0.24.0', '1.0.0')).toBe(false)
   })
+
+  it('parses a segment with a non-numeric suffix from its leading digits, not NaN', () => {
+    // A free-text CMS `version` field can carry a pre-release-shaped typo like
+    // "0.20.0-rc1" — `Number("20-rc1")` is `NaN`, which used to make this comparison
+    // (and everything after it) resolve to `false` forever, with no error anywhere.
+    expect(isVersionAtLeast('0.20.0-rc1', '0.20.0')).toBe(true)
+    expect(isVersionAtLeast('0.20.0', '0.20.0-rc1')).toBe(true)
+    expect(isVersionAtLeast('0.19.0-rc1', '0.20.0')).toBe(false)
+  })
+
+  it('treats a fully non-numeric segment as 0 rather than throwing or NaN-ing', () => {
+    expect(isVersionAtLeast('0.abc.0', '0.0.0')).toBe(true)
+    expect(isVersionAtLeast('0.0.0', '0.abc.0')).toBe(true)
+  })
 })
 
 describe('deriveStatus', () => {

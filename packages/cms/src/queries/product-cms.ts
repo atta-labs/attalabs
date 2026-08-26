@@ -14,7 +14,7 @@ export type ProductCms = {
  * failure can survive review. Production stays quiet (the fallback is the
  * intended behaviour there); development says what broke.
  */
-async function orNull<T>(label: string, promise: Promise<T>): Promise<T | null> {
+export async function orNull<T>(label: string, promise: Promise<T>): Promise<T | null> {
   try {
     return await promise
   } catch (error) {
