@@ -42,7 +42,7 @@ describe('read-root — missing .vinaya/projects.md (single-project repos, #830)
       join(dir, '.vinaya', 'projects.md'),
       '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n| mobile | `apps/mobile` | `apps/mobile/specs` | (state tracked globally) |\n'
     )
-    expect(findAegRoot(dir)).toBe(join(dir, 'aeg-root'))
+    expect(findAegRoot(dir)).toBe(dir)
     const registry = await readRegistry(dir)
     expect(registry).toEqual([{ name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }])
   })
@@ -55,7 +55,7 @@ describe('read-root — missing .vinaya/projects.md (single-project repos, #830)
     )
     const nested = join(dir, 'apps', 'web')
     mkdirSync(nested, { recursive: true })
-    expect(findAegRoot(nested)).toBe(join(dir, 'aeg-root'))
+    expect(findAegRoot(nested)).toBe(dir)
   })
 
   it('does not throw when the walk reaches the filesystem root without finding a marker', () => {
@@ -71,6 +71,6 @@ describe('read-root — missing .vinaya/projects.md (single-project repos, #830)
       join(dir, '.vinaya', 'projects.md'),
       '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n'
     )
-    expect(findAegRoot(dir)).toBe(join(dir, 'aeg-root'))
+    expect(findAegRoot(dir)).toBe(dir)
   })
 })

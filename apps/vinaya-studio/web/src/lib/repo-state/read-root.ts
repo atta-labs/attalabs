@@ -6,18 +6,19 @@
  * nothing after AEG: a Vinaya reader has no reason to know that word, and
  * this module is Vinaya's own state reader, not a shared one (it is
  * app-private — no package export, no tsconfig path). `findAegRoot` keeps its
- * name because it returns the literal `aeg-root/` directory; renaming a
- * function away from the thing it actually finds would be worse than the
- * word. That directory is the substrate's, not Vinaya's, and renaming it is a
- * separate, monorepo-wide question.
+ * name for now — renaming it is a separate, monorepo-wide question — but it
+ * no longer returns an `aeg-root/` path: attalabs carries no repo-local
+ * `aeg-root/` (`vinaya init` never creates one; the doctrine ships inside the
+ * installed `@attalabs/vinaya` package instead), and neither caller in this
+ * module ever read a file from inside one — both only ever wanted the repo
+ * root itself, recovered via `path.dirname()` on the old `aeg-root` join.
  *
- * Vinaya's Studio runs from `apps/vinaya-studio/web/src/app/studio`; `aeg-root/`
- * lives at the repo root. `findAegRoot` walks up from `process.cwd()` until
- * it finds a directory containing `.vinaya/projects.md` (the project
- * registry — configuration since the governance package was removed), then
- * returns that directory's `aeg-root/`.
- * Worktrees work the same way — each worktree carries its own checkout of
- * `aeg-root/` and `.vinaya/`.
+ * Vinaya's Studio runs from `apps/vinaya-studio/web/src/app/studio`.
+ * `findAegRoot` walks up from `process.cwd()` until it finds a directory
+ * containing `.vinaya/projects.md` (the project registry — configuration
+ * since the governance package was removed), then returns that directory —
+ * the repo root — directly.
+ * Worktrees work the same way — each worktree carries its own `.vinaya/`.
  *
  * Active vs. archived (`aeg-forge-state-v1` task 5, #429; #515, ):
  * both derive purely from the forge — a GitHub Milestone
@@ -169,7 +170,7 @@ export function findAegRoot(startDir: string = process.env.VINAYA_REPO_ROOT ?? p
   for (let i = 0; i < 8; i++) {
     const candidate = path.join(dir, CONFIG_DIR, REGISTRY_FILE)
     if (existsSync(candidate)) {
-      cachedRoot = path.join(dir, 'aeg-root')
+      cachedRoot = dir
       return cachedRoot
     }
     const parent = path.dirname(dir)
@@ -180,9 +181,8 @@ export function findAegRoot(startDir: string = process.env.VINAYA_REPO_ROOT ?? p
 }
 
 export async function readRegistry(startDir?: string): Promise<Registry> {
-  const root = findAegRoot(startDir)
-  if (root === null) return []
-  const repoRoot = path.dirname(root)
+  const repoRoot = findAegRoot(startDir)
+  if (repoRoot === null) return []
   const raw = await fs.readFile(path.join(repoRoot, CONFIG_DIR, REGISTRY_FILE), 'utf8')
   return parseRegistry(raw)
 }
