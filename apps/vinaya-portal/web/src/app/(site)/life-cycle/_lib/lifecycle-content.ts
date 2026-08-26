@@ -67,7 +67,7 @@ export const LIFECYCLE_CONTENT: Record<LifeCycleId, LifeCycleContent> = {
       {
         overline: 'if you want it',
         title: 'A release',
-        body: 'The version it aims at. One named field — never guessed out of a title.'
+        body: "The version it aims at. One named field — never guessed out of a title. Completing the milestone doesn't cut the release — that's still a hand act today."
       },
       {
         overline: 'if you want it',
@@ -123,7 +123,7 @@ export const LIFECYCLE_CONTENT: Record<LifeCycleId, LifeCycleContent> = {
   tranche: {
     heading: 'A tranche’s life cycle.',
     description:
-      'A batch of tasks with declared dependencies. Cut by the planner, archived once every task in it has merged.',
+      'A batch of tasks with declared dependencies. Cut by the planner, archived once every task in it has landed or been dropped.',
     nouns: [
       {
         overline: 'what goes in',
@@ -177,7 +177,7 @@ export const LIFECYCLE_CONTENT: Record<LifeCycleId, LifeCycleContent> = {
         title: 'Wrap up',
         body: 'The batch closes out once, and the plan gets filed rather than deleted.',
         who: 'The Tranche Archivist',
-        endsWhen: 'The last task merging',
+        endsWhen: 'The last task landing or being dropped',
         startsWith: 'A finished batch',
         endsWith: 'A retro, archived'
       }

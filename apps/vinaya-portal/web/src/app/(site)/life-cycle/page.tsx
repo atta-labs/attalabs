@@ -19,20 +19,30 @@ export const metadata: Metadata = {
 export default function LifeCyclePage() {
   return (
     <>
-      <LandingSection background='bg-background text-foreground' py='spacious' center>
+      {/* min-h-svh: the hero fills the viewport, so the panels section (and
+          its switcher) genuinely requires a scroll to reach — it must never
+          just sit pre-visible below a short hero with no interaction. */}
+      <LandingSection
+        background='bg-background text-foreground'
+        py='spacious'
+        center
+        className='flex min-h-svh flex-col justify-center'
+      >
         <SectionOverline className='text-muted-foreground'>{HERO_CONTENT.overline}</SectionOverline>
-        <SectionTitle className='mx-auto mt-5 max-w-4xl'>
+        <SectionTitle className='mx-auto mt-5 max-w-4xl text-5xl sm:text-6xl lg:text-7xl'>
           <LetterReveal text={HERO_CONTENT.title} />
         </SectionTitle>
-        <div className='mx-auto mt-7 flex max-w-xl justify-center gap-3.5 text-xl'>
+        <div className='mx-auto mt-7 flex max-w-xl justify-center gap-3.5'>
           {HERO_CONTENT.words.map((word, index) => (
             <span key={word} className='flex items-center gap-3.5'>
               {index > 0 && (
-                <Text as='span' muted>
+                <Text as='span' size='lg' muted className='font-mono uppercase tracking-[0.28em]'>
                   ·
                 </Text>
               )}
-              <Text as='span'>{word}</Text>
+              <Text as='span' size='lg' className='font-mono uppercase tracking-[0.28em]'>
+                {word}
+              </Text>
             </span>
           ))}
         </div>

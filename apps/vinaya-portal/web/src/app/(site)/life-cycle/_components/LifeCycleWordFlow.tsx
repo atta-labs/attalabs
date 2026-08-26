@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 const WORDS = ['Milestone', 'Tranche', 'Task'] as const
 const HOLD_MS = 1300
 const MORPH_MS = 900
-const PEAK_PX = 22
+const PEAK_PX = 16
 const TRAVEL_CYCLES = 2
 
 function easeInOut(t: number) {
@@ -82,8 +82,8 @@ export function LifeCycleWordFlow() {
   letterRefs.current = []
 
   return (
-    <div className='flex h-24 items-center justify-center sm:h-28'>
-      <p className='flex font-serif text-5xl font-normal tracking-tight text-foreground sm:text-6xl'>
+    <div className='flex h-16 items-center justify-center sm:h-20'>
+      <p className='flex font-mono text-3xl font-normal tracking-tight text-foreground sm:text-4xl'>
         {word.split('').map((letter, i) => (
           <span
             key={i}

@@ -161,7 +161,7 @@ export function LifeCyclePanels() {
   const [active, setActive] = useState<LifeCycleId>('milestone')
 
   return (
-    <div>
+    <div className='bg-card text-card-foreground'>
       <LifeCycleSwitcher active={active} onChange={setActive} />
       <div key={active} className='animate-in fade-in slide-in-from-bottom-2 duration-300'>
         <LifeCyclePanel altitude={active} content={LIFECYCLE_CONTENT[active]} onChange={setActive} />

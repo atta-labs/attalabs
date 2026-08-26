@@ -87,7 +87,7 @@ export function LifeCycleSwitcher({ active, onChange }: { active: LifeCycleId; o
             </Tabs>
           </div>
           <div
-            className={`col-start-1 row-start-1 flex items-center justify-center px-8 py-1.5 transition-all duration-300 ${
+            className={`pointer-events-none col-start-1 row-start-1 flex items-center justify-center px-8 py-1.5 transition-all duration-300 ${
               collapsed ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
             }`}
             aria-hidden={!collapsed}
