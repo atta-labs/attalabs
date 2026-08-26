@@ -1,8 +1,12 @@
 /**
  * Seed Sanity CMS with the seven `roadmapMilestone` documents for
  * vinaya-portal's /roadmap page — Vinaya's own version ladder toward
- * `1.0.0`. `image` is intentionally left unset on every item; a human
- * uploads real images in Studio afterward.
+ * `1.0.0`. `image` is intentionally left unset on every item here.
+ *
+ * ONE-TIME ONLY — do not re-run once images are attached. This uses
+ * `createOrReplace`, which overwrites the whole document; a document whose
+ * `image` was set afterward (via Studio, or a script) will have it wiped by
+ * a second run, since this seed data carries no `image` field at all.
  *
  * `status` is derived, not hand-picked: an item's `version` <= the
  * `@attalabs/vinaya` version this repo's root `package.json` pins is
