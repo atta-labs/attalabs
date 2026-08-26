@@ -8,5 +8,5 @@
   <rect x="234" y="132" width="74" height="48" fill="var(--foreground, currentColor)" opacity="0.32" style="animation:mm-lock 3.4s ease-in-out 1.4s infinite"></rect>
   <rect x="326" y="132" width="74" height="48" fill="var(--foreground, currentColor)" opacity="0.32" style="animation:mm-lock 3.4s ease-in-out 1.7s infinite"></rect>
   <rect x="174" y="114" width="48" height="84" fill="var(--primary, currentColor)"></rect>
-  <path d="M186 156 L195 165 L211 143" fill="none" stroke="var(--primary-foreground, var(--background, #fff))" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="animation:mm-lock 3.4s ease-in-out 1.1s infinite"></path>
+  <path d="M186 156 L195 165 L211 143" fill="none" stroke="var(--primary-foreground, var(--background))" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="animation:mm-lock 3.4s ease-in-out 1.1s infinite"></path>
 </svg>

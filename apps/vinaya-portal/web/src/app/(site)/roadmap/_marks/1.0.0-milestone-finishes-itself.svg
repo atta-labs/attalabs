@@ -1,15 +1,15 @@
 <svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" color="inherit" role="img" aria-label="Vinaya 1.0.0 — a milestone finishes itself">
   <rect x="0" y="0" fill="var(--primary, currentColor)"></rect>
-  <rect x="0" y="0" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
-  <rect x="0" y="60" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
-  <rect x="0" y="120" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
-  <rect x="0" y="180" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
-  <rect x="0" y="240" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
-  <rect x="264" y="10" width="64" height="36" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0s infinite"></rect>
-  <rect x="264" y="70" width="64" height="36" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.24s infinite"></rect>
-  <rect x="264" y="130" width="64" height="36" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.48s infinite"></rect>
-  <rect x="264" y="190" width="64" height="36" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.72s infinite"></rect>
-  <rect x="264" y="250" width="64" height="36" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.96s infinite"></rect>
-  <rect x="348" y="0" width="52" height="300" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.95"></rect>
-  <rect x="0" y="0" width="76" height="300" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.2" style="--mm-d:324px;animation:mm-flow 4s linear 0s infinite"></rect>
+  <rect x="0" y="0" width="340" height="56" fill="var(--primary-foreground, var(--background))" opacity="0.16"></rect>
+  <rect x="0" y="60" width="340" height="56" fill="var(--primary-foreground, var(--background))" opacity="0.16"></rect>
+  <rect x="0" y="120" width="340" height="56" fill="var(--primary-foreground, var(--background))" opacity="0.16"></rect>
+  <rect x="0" y="180" width="340" height="56" fill="var(--primary-foreground, var(--background))" opacity="0.16"></rect>
+  <rect x="0" y="240" width="340" height="56" fill="var(--primary-foreground, var(--background))" opacity="0.16"></rect>
+  <rect x="264" y="10" width="64" height="36" fill="var(--primary-foreground, var(--background))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0s infinite"></rect>
+  <rect x="264" y="70" width="64" height="36" fill="var(--primary-foreground, var(--background))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.24s infinite"></rect>
+  <rect x="264" y="130" width="64" height="36" fill="var(--primary-foreground, var(--background))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.48s infinite"></rect>
+  <rect x="264" y="190" width="64" height="36" fill="var(--primary-foreground, var(--background))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.72s infinite"></rect>
+  <rect x="264" y="250" width="64" height="36" fill="var(--primary-foreground, var(--background))" opacity="0.95" style="animation:mm-lock 4s ease-in-out 0.96s infinite"></rect>
+  <rect x="348" y="0" width="52" height="300" fill="var(--primary-foreground, var(--background))" opacity="0.95"></rect>
+  <rect x="0" y="0" width="76" height="300" fill="var(--primary-foreground, var(--background))" opacity="0.2" style="--mm-d:324px;animation:mm-flow 4s linear 0s infinite"></rect>
 </svg>
