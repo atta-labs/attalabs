@@ -495,6 +495,19 @@ backing vinaya-portal's `/roadmap` page (title, `version`, description, `truth` 
 three-state `status`, optional `image`, manual `order`). Its documents live in each
 product's own Sanity project, same as branding, resolved via `createProductClient(product)`.
 
+**`image` is a fallback, not the primary visual, for the seven known release
+marks.** Those seven ship as CSS-var-themed SVGs inlined at build time via SVGR
+(`apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg`, one per `version`) —
+inlining is load-bearing: the marks theme entirely off `--primary`/`--card`/
+`--border`/`--foreground`, and those custom properties do not cross the
+separate-document boundary an `<img src>`/CMS-asset load creates, so a mark
+loaded that way renders in fixed fallback colors regardless of theme. The page
+prefers the inlined mark for a matching `version`; `image` only renders (via
+`next/image`, unthemed) for a future item whose `version` has no matching file
+in `_marks/`. The CMS asset itself is still kept in sync as an editorial
+preview — the baked `light`-mode SVG variant, since Sanity Studio's own thumbnail
+has no access to the site's runtime theme vars either.
+
 ---
 
 ## Anti-patterns
