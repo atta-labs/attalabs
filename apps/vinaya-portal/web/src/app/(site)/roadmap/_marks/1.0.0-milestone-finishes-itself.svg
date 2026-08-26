@@ -1,5 +1,5 @@
-<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" fill="none" color="inherit" role="img" aria-label="Vinaya 1.0.0 — a milestone finishes itself">
-  <rect x="0" y="0" width="400" height="300" fill="var(--primary, currentColor)"></rect>
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" color="inherit" role="img" aria-label="Vinaya 1.0.0 — a milestone finishes itself">
+  <rect x="0" y="0" fill="var(--primary, currentColor)"></rect>
   <rect x="0" y="0" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
   <rect x="0" y="60" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
   <rect x="0" y="120" width="340" height="56" fill="var(--primary-foreground, var(--background, #fff))" opacity="0.16"></rect>
