@@ -70,6 +70,13 @@ export default defineConfig({
                         .schemaType('branding')
                         .documentId('branding-vinayaStudio')
                         .title('Vinaya Studio Branding')
+                    ),
+                  S.listItem()
+                    .title('Roadmap Milestones')
+                    .child(
+                      S.documentTypeList('roadmapMilestone')
+                        .title('Roadmap Milestones')
+                        .defaultOrdering([{ field: 'order', direction: 'asc' }])
                     )
                 ])
             : isAttalabs
