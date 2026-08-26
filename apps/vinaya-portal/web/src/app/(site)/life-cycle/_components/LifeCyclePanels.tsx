@@ -57,7 +57,7 @@ function StageBlock({ stage }: { stage: LifeCycleContent['stages'][number] }) {
           <Text as='span' size='xs' muted className='w-24 shrink-0 font-mono uppercase tracking-widest'>
             who does it
           </Text>
-          <Text as='span' className={`font-serif text-2xl ${stage.whoMuted ? 'text-muted-foreground' : ''}`}>
+          <Text as='span' className='font-serif text-2xl'>
             {stage.who}
           </Text>
         </div>

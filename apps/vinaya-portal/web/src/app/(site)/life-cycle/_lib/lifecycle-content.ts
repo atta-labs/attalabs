@@ -7,7 +7,6 @@ export type StageBlock = {
   title: string
   body: string
   who: string
-  whoMuted?: boolean
   endsWhen: string
   startsWith: string
   endsWith: string
@@ -41,7 +40,7 @@ export type LifeCycleContent = {
 
 export const HERO_CONTENT = {
   overline: 'three altitudes — three processes',
-  title: 'The Vinaya lifecycle',
+  title: "Vinaya's life cycle",
   words: ['Plan', 'Execute', 'Archive']
 }
 
@@ -106,7 +105,6 @@ export const LIFECYCLE_CONTENT: Record<LifeCycleId, LifeCycleContent> = {
         title: 'Close',
         body: 'Not started, in flight, finished — all read off the tranches. No field to forget.',
         who: 'No one — it just reads true',
-        whoMuted: true,
         endsWhen: 'The last tranche archiving',
         startsWith: 'Every tranche done',
         endsWith: 'A complete milestone'
@@ -274,7 +272,6 @@ export const LIFECYCLE_CONTENT: Record<LifeCycleId, LifeCycleContent> = {
         title: 'Merge',
         body: 'Nobody weighs this one up. Once review and verify clear, merging is what’s left.',
         who: "No one — it's just what's next",
-        whoMuted: true,
         endsWhen: 'Review and verify both cleared',
         startsWith: 'A cleared PR',
         endsWith: 'Merged code'

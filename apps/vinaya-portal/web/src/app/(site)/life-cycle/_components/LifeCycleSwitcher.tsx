@@ -4,7 +4,7 @@ import { Card, Tabs, TabsList, TabsTrigger } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { useEffect, useRef, useState } from 'react'
 import type { LifeCycleId } from '../_lib/life-cycles'
-import { LIFE_CYCLES } from '../_lib/life-cycles'
+import { LIFE_CYCLE_SWITCHER_ANCHOR_ID, LIFE_CYCLES } from '../_lib/life-cycles'
 
 // Same "find the nearest scrolling ancestor" pattern `LandingInteractions.tsx`'s
 // `RevealGrid` uses — this app's scroll container is a `.overflow-y-auto` div in
@@ -66,7 +66,7 @@ export function LifeCycleSwitcher({ active, onChange }: { active: LifeCycleId; o
   const activeLabel = LIFE_CYCLES.find((cycle) => cycle.id === active)?.label ?? ''
 
   return (
-    <div ref={wrapRef} className='sticky top-4 z-20 flex justify-center px-6 py-4'>
+    <div id={LIFE_CYCLE_SWITCHER_ANCHOR_ID} ref={wrapRef} className='sticky top-4 z-20 flex justify-center px-6 py-4'>
       <Card className='overflow-hidden p-1.5 transition-[padding] duration-300'>
         <div className='grid'>
           <div
@@ -79,8 +79,10 @@ export function LifeCycleSwitcher({ active, onChange }: { active: LifeCycleId; o
             <Tabs value={active} onValueChange={(value) => onChange(value as LifeCycleId)}>
               <TabsList>
                 {LIFE_CYCLES.map((cycle) => (
-                  <TabsTrigger key={cycle.id} value={cycle.id}>
-                    <Text as='span'>{cycle.label}</Text>
+                  <TabsTrigger key={cycle.id} value={cycle.id} className='w-32 justify-center'>
+                    <Text as='span' className='font-mono text-xs uppercase tracking-widest'>
+                      {cycle.label}
+                    </Text>
                   </TabsTrigger>
                 ))}
               </TabsList>

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { LetterReveal } from '../../_components/LetterReveal'
 import { LandingSection } from '../../_components/landing/LandingSection'
 import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
+import { LIFE_CYCLE_SWITCHER_ANCHOR_ID } from '../_lib/life-cycles'
 import type { LifeCycleId } from '../_lib/life-cycles'
 import { HERO_CONTENT } from '../_lib/lifecycle-content'
 import { LifeCyclePanels } from './LifeCyclePanels'
@@ -15,6 +16,16 @@ import { LifeCycleWordFlow } from './LifeCycleWordFlow'
 // switcher disagrees with.
 export function LifeCycleExperience() {
   const [active, setActive] = useState<LifeCycleId>('milestone')
+  const [interacted, setInteracted] = useState(false)
+
+  // Every control that changes altitude (the switcher's tabs, a panel's
+  // handoff button) goes through here, so the reader always lands at the
+  // top of the new panel instead of wherever they'd scrolled to.
+  const handleChange = (id: LifeCycleId) => {
+    setInteracted(true)
+    document.getElementById(LIFE_CYCLE_SWITCHER_ANCHOR_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setActive(id)
+  }
 
   return (
     <>
@@ -46,11 +57,11 @@ export function LifeCycleExperience() {
           ))}
         </div>
         <div className='mt-12'>
-          <LifeCycleWordFlow active={active} />
+          <LifeCycleWordFlow active={active} interacted={interacted} />
         </div>
       </LandingSection>
 
-      <LifeCyclePanels active={active} onChange={setActive} />
+      <LifeCyclePanels active={active} onChange={handleChange} />
     </>
   )
 }
