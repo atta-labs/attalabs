@@ -78,6 +78,12 @@ export default async function RoadmapPage() {
             </Badge>
           </div>
         )}
+        <Text
+          as='p'
+          className='mx-auto max-w-2xl text-center font-mono text-xs text-muted-foreground uppercase tracking-wide'
+        >
+          No dates, only versions · Three states — Shipped, Planned, Dropped · Nothing drops silently
+        </Text>
       </section>
 
       {items === null && (
@@ -93,6 +99,14 @@ export default async function RoadmapPage() {
       )}
 
       {items !== null && items.length > 0 && <DeploymentTrack items={items} />}
+
+      <section className='mx-auto flex w-full max-w-3xl flex-col gap-3 px-8 pt-6 text-center'>
+        <Text as='p' className='font-sans text-sm text-muted-foreground'>
+          This is where unshipped capability is allowed to live. Every claim made on the rest of this site is already
+          true; what is still coming is tracked here instead — against a real released version, never a date, and never
+          removed without being marked Dropped.
+        </Text>
+      </section>
     </main>
   )
 }
