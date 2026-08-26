@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.20.0 — determinism hardening">
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.20.0 — determinism hardening">
             <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="currentColor" fill-opacity="0.14" style="fill:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></circle></pattern></defs>
   <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="fill:var(--card, transparent);stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></rect>
             <rect width="200" height="200" fill="url(#dots)"></rect>
-            <path d="M30 58 H170" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="3 5" style="stroke:var(--foreground, currentColor)"></path>
+  <g data-motif="data-motif" transform="translate(0 7)">
+            <path d="M30 58 H170" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="3 5" style="animation:vin-flow 2.4s linear infinite;stroke:var(--foreground, currentColor)"></path>
             <path d="M100 68 V90" stroke="currentColor" stroke-opacity=".28" stroke-width="1.5" style="stroke:var(--foreground, currentColor)"></path>
             <path d="M94 88 L106 88 L100 98 Z" fill="currentColor" fill-opacity=".28" style="fill:var(--foreground, currentColor)"></path>
             <path d="M30 118 H170" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
@@ -16,8 +17,5 @@
             <path d="M124 118 L127 121.5 L132.5 114" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
             <rect x="146" y="108" width="20" height="20" rx="6" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></rect>
             <path d="M152 118 L155 121.5 L160.5 114" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
-            <path d="M24 160 H176" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></path>
-            <text x="24" y="179" fill="currentColor" style="fill:var(--primary, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;font-weight:500;letter-spacing:0.06em">0.20.0</text>
-            <text x="176" y="179" text-anchor="end" fill="currentColor" opacity="0.32" style="fill:var(--foreground, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;letter-spacing:0.12em">02</text>
-          
+  </g>
 </svg>

@@ -94,7 +94,13 @@ function MilestoneVisual({ version, image }: { version: string; image: RoadmapMi
     <div aria-hidden className='mx-auto w-full max-w-56'>
       <div className='relative aspect-square w-full overflow-hidden rounded-md'>
         {Mark ? (
-          <Mark className='size-full' />
+          // `mm` is re-passed alongside our own sizing class, not just
+          // `size-full` alone: the source file's root carries `class="mm"`
+          // (scopes each mark's own animation/reduced-motion rules to
+          // itself, per the designer's integration brief), and SVGR spreads
+          // our `className` prop onto that same root — replacing rather
+          // than merging with the literal `class` attribute.
+          <Mark className='mm size-full' />
         ) : image ? (
           <Image src={image.url} alt='' fill sizes='224px' className='rounded-md border border-border object-cover' />
         ) : (

@@ -1,13 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.23.0 — task finishes itself">
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.23.0 — task finishes itself">
             <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="currentColor" fill-opacity="0.14" style="fill:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></circle></pattern></defs>
   <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="fill:var(--card, transparent);stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></rect>
             <rect width="200" height="200" fill="url(#dots)"></rect>
-            <path d="M96 96 V76 H116" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="3 5" style="stroke:var(--foreground, currentColor)"></path>
+  <g data-motif="data-motif" transform="translate(0 -2.5)">
+            <path d="M96 96 V76 H116" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="3 5" style="animation:vin-flow 2.6s linear infinite;stroke:var(--foreground, currentColor)"></path>
             <rect x="118" y="68" width="16" height="16" rx="5" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="3 4" style="stroke:var(--foreground, currentColor)"></rect>
             <circle cx="126" cy="76" r="2.2" fill="currentColor" fill-opacity=".34" style="fill:var(--foreground, currentColor)"></circle>
             <path d="M96 132 C124 132 130 116 146 106" stroke="currentColor" stroke-width="1.6" opacity="0.55" style="stroke:var(--primary, currentColor)"></path>
             <circle cx="96" cy="132" r="5" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.7" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></circle>
-            <path d="M30 104 H146" stroke="currentColor" stroke-width="2" opacity="0.3" style="stroke:var(--primary, currentColor)"></path>
+            <path d="M30 104 H146" stroke="currentColor" stroke-width="2" opacity="0.3" style="animation:vin-line 2.4s linear infinite;stroke:var(--primary, currentColor)" stroke-dasharray="16 100"></path>
             <path d="M30 104 H146" stroke="currentColor" stroke-width="2.4" stroke-dasharray="16 100" style="stroke:var(--primary, currentColor)"></path>
             <circle cx="36" cy="104" r="6.5" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></circle>
             <circle cx="66" cy="104" r="6.5" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></circle>
@@ -15,8 +16,5 @@
             <circle cx="126" cy="104" r="6.5" fill="none" stroke="currentColor" stroke-width="2" style="fill:var(--card, transparent);stroke:var(--primary, currentColor)"></circle>
             <circle cx="158" cy="104" r="12" fill="currentColor" style="fill:var(--primary, currentColor)"></circle>
             <path d="M152 104 L156.5 108.5 L165 99.5" stroke="#ffffff" stroke-width="2.2" style="stroke:var(--primary-foreground, var(--background, #fff))"></path>
-            <path d="M24 160 H176" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></path>
-            <text x="24" y="179" fill="currentColor" style="fill:var(--primary, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;font-weight:500;letter-spacing:0.06em">0.23.0</text>
-            <text x="176" y="179" text-anchor="end" fill="currentColor" opacity="0.32" style="fill:var(--foreground, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;letter-spacing:0.12em">05</text>
-          
+  </g>
 </svg>

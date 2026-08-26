@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.19.0 — milestone layer">
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 0.19.0 — milestone layer">
             <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="currentColor" fill-opacity="0.14" style="fill:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></circle></pattern></defs>
   <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="fill:var(--card, transparent);stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></rect>
             <rect width="200" height="200" fill="url(#dots)"></rect>
+  <g data-motif="data-motif" transform="translate(0 17.5)">
             <path d="M100 26 V44" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></path>
             <path d="M100 25 L126 31 L100 37 Z" fill="currentColor" style="fill:var(--primary, currentColor)"></path>
             <rect x="30" y="44" width="140" height="96" rx="12" stroke="currentColor" stroke-width="2" style="stroke:var(--primary, currentColor)"></rect>
@@ -13,8 +14,5 @@
             <rect x="54" y="99.5" width="104" height="9" rx="4.5" fill="currentColor" fill-opacity=".1" style="fill:var(--foreground, currentColor)"></rect>
             <circle cx="44" cy="126" r="3.4" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5" style="fill:var(--card, transparent);stroke:var(--foreground, currentColor)"></circle>
             <rect x="54" y="121.5" width="56" height="9" rx="4.5" fill="currentColor" fill-opacity=".1" style="fill:var(--foreground, currentColor)"></rect>
-            <path d="M24 160 H176" stroke="currentColor" stroke-opacity="0.14" stroke-width="1" style="stroke:var(--border, color-mix(in oklab, currentColor 14%, transparent))"></path>
-            <text x="24" y="179" fill="currentColor" style="fill:var(--primary, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;font-weight:500;letter-spacing:0.06em">0.19.0</text>
-            <text x="176" y="179" text-anchor="end" fill="currentColor" opacity="0.32" style="fill:var(--foreground, currentColor);font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;letter-spacing:0.12em">01</text>
-          
+  </g>
 </svg>

@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 1.0.0 — milestone finishes itself">
+<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400" fill="none" color="inherit" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Vinaya 1.0.0 — milestone finishes itself">
             <defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="#ffffff" fill-opacity="0.22" style="fill:var(--primary-foreground, var(--background, #fff))"></circle></pattern></defs>
   <rect x="0.5" y="0.5" width="199" height="199" rx="10" fill="currentColor" stroke="currentColor" stroke-width="1" style="fill:var(--primary, currentColor);stroke:var(--primary, currentColor)"></rect>
             <rect width="200" height="200" fill="url(#dots)"></rect>
-            <circle cx="100" cy="88" r="30" stroke="#ffffff" stroke-width="1.5" opacity="0" style="stroke:var(--primary-foreground, var(--background, #fff));transform-origin:100px 88px;animation:vin-ripple 3.6s ease-out infinite"></circle>
+  <g data-motif="data-motif" transform="translate(0 14.5)">
+            <circle cx="100" cy="88" r="30" stroke="#ffffff" stroke-width="1.5" opacity="0" style="transform-origin:100px 88px;animation:vin-ripple 3.6s ease-out infinite 1.8s;transform-origin:100px 88px;animation:vin-ripple 3.6s ease-out infinite;stroke:var(--primary-foreground, var(--background, #fff));transform-origin:100px 88px;animation:vin-ripple 3.6s ease-out infinite"></circle>
             <circle cx="100" cy="88" r="30" stroke="#ffffff" stroke-width="1.5" opacity="0" style="stroke:var(--primary-foreground, var(--background, #fff));transform-origin:100px 88px;animation:vin-ripple 3.6s ease-out infinite 1.8s"></circle>
             <rect x="36" y="24" width="128" height="128" rx="22" stroke="#ffffff" stroke-width="2" style="stroke:var(--primary-foreground, var(--background, #fff))"></rect>
             <rect x="56" y="44" width="88" height="88" rx="16" stroke="#ffffff" stroke-width="1.8" opacity="0.62" style="stroke:var(--primary-foreground, var(--background, #fff))"></rect>
@@ -11,8 +12,5 @@
             <path d="M100 39 L108 44 L100 49 Z" fill="#ffffff" opacity="0.62" style="fill:var(--primary-foreground, var(--background, #fff))"></path>
             <path d="M100 57 L108 62 L100 67 Z" fill="#ffffff" opacity="0.38" style="fill:var(--primary-foreground, var(--background, #fff))"></path>
             <path d="M88 88 L96 96 L113 79" stroke="#ffffff" stroke-width="3" style="stroke:var(--primary-foreground, var(--background, #fff))"></path>
-            <path d="M24 160 H176" stroke="#ffffff" stroke-width="1" opacity="0.3" style="stroke:var(--primary-foreground, var(--background, #fff))"></path>
-            <text x="24" y="179" fill="#ffffff" style="fill:var(--primary-foreground, var(--background, #fff));font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;font-weight:500;letter-spacing:0.06em">1.0.0</text>
-            <text x="176" y="179" text-anchor="end" fill="#ffffff" opacity="0.5" style="fill:var(--primary-foreground, var(--background, #fff));font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;letter-spacing:0.12em">07</text>
-          
+  </g>
 </svg>
