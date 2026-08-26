@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, Tabs, TabsList, TabsTrigger } from '@atta/ui/components'
+import { Card, CardContent, Tabs, TabsList, TabsTrigger } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { useEffect, useRef, useState } from 'react'
 import type { LifeCycleId } from '../_lib/life-cycles'
@@ -67,8 +67,8 @@ export function LifeCycleSwitcher({ active, onChange }: { active: LifeCycleId; o
 
   return (
     <div id={LIFE_CYCLE_SWITCHER_ANCHOR_ID} ref={wrapRef} className='sticky top-4 z-20 flex justify-center px-6 py-4'>
-      <Card className='overflow-hidden p-1.5 transition-[padding] duration-300'>
-        <div className='grid'>
+      <Card className='overflow-hidden'>
+        <CardContent className='grid p-1.5 transition-[padding] duration-300'>
           <div
             className={`col-start-1 row-start-1 transition-all duration-300 ${
               collapsed ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
@@ -98,7 +98,7 @@ export function LifeCycleSwitcher({ active, onChange }: { active: LifeCycleId; o
               {activeLabel}
             </Text>
           </div>
-        </div>
+        </CardContent>
       </Card>
     </div>
   )
