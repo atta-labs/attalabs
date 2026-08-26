@@ -5,6 +5,8 @@ import { ImageIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import type { ComponentType, SVGProps } from 'react'
+import { getPublishedVersion } from '@/lib/published-version'
+import { deriveStatus } from './_lib/derive-status'
 import MilestoneLayerMark from './_marks/0.19.0-milestone-layer.svg'
 import DeterminismHardeningMark from './_marks/0.20.0-determinism-hardening.svg'
 import AgenticInterfaceMark from './_marks/0.21.0-agentic-interface.svg'
@@ -114,7 +116,7 @@ function MilestoneVisual({ version, image }: { version: string; image: RoadmapMi
 }
 
 export default async function RoadmapPage() {
-  const milestones = await loadMilestones()
+  const [milestones, publishedVersion] = await Promise.all([loadMilestones(), getPublishedVersion()])
 
   return (
     <main className='mx-auto flex max-w-5xl flex-col gap-10 px-8 py-8'>
@@ -144,38 +146,41 @@ export default async function RoadmapPage() {
 
       {milestones !== null && milestones.length > 0 && (
         <section className='grid gap-6 sm:grid-cols-2'>
-          {milestones.map((milestone) => (
-            <Card key={milestone._id}>
-              <CardHeader>
-                <Flex align='start' justify='between' gap={4}>
-                  <Flex align='center' gap={4}>
-                    <MilestoneVisual version={milestone.version} image={milestone.image} />
-                    <Flex direction='column' gap={1}>
-                      <CardTitle
-                        className={`font-serif text-xl font-normal text-foreground ${
-                          milestone.status === 'dropped' ? 'line-through' : ''
-                        }`}
-                      >
-                        {milestone.title}
-                      </CardTitle>
-                      <Text as='span' className='font-mono text-xs text-muted-foreground'>
-                        v{milestone.version}
-                      </Text>
+          {milestones.map((milestone) => {
+            const status = deriveStatus(milestone, publishedVersion)
+            return (
+              <Card key={milestone._id}>
+                <CardHeader>
+                  <Flex align='start' justify='between' gap={4}>
+                    <Flex align='center' gap={4}>
+                      <MilestoneVisual version={milestone.version} image={milestone.image} />
+                      <Flex direction='column' gap={1}>
+                        <CardTitle
+                          className={`font-serif text-xl font-normal text-foreground ${
+                            status === 'dropped' ? 'line-through' : ''
+                          }`}
+                        >
+                          {milestone.title}
+                        </CardTitle>
+                        <Text as='span' className='font-mono text-xs text-muted-foreground'>
+                          v{milestone.version}
+                        </Text>
+                      </Flex>
                     </Flex>
+                    <StatusBadge status={status} />
                   </Flex>
-                  <StatusBadge status={milestone.status} />
-                </Flex>
-              </CardHeader>
-              <CardContent className='flex flex-col gap-3'>
-                <Text as='p' className='font-sans text-sm text-muted-foreground'>
-                  {milestone.description}
-                </Text>
-                <Text as='p' className='border-l-2 border-border pl-3 font-sans text-sm text-foreground'>
-                  {milestone.truth}
-                </Text>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className='flex flex-col gap-3'>
+                  <Text as='p' className='font-sans text-sm text-muted-foreground'>
+                    {milestone.description}
+                  </Text>
+                  <Text as='p' className='border-l-2 border-border pl-3 font-sans text-sm text-foreground'>
+                    {milestone.truth}
+                  </Text>
+                </CardContent>
+              </Card>
+            )
+          })}
         </section>
       )}
 
