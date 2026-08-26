@@ -14,7 +14,7 @@
 
 **A lab building thinking tools — deep-reasoning AI, one Turborepo, many products.**
 
-[![Vinaya](https://img.shields.io/badge/Vinaya-972E2A?style=for-the-badge)](apps/vinaya/)
+[![Vinaya](https://img.shields.io/badge/Vinaya-972E2A?style=for-the-badge)](apps/vinaya-portal/)
 [![Vāda](https://img.shields.io/badge/V%C4%81da-6366F1?style=for-the-badge)](apps/vada-ai/)
 [![Herald](https://img.shields.io/badge/Herald-E11D48?style=for-the-badge)](apps/herald-ai/)
 
@@ -36,7 +36,7 @@ through common packages. Each product has its own surfaces (web, mobile, MCP, CL
 
 | Product | Domain | What it is | Status |
 |---------|--------|------------|--------|
-| **[Vinaya](apps/vinaya/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. Install with `npx @attalabs/vinaya init`. | 🟢 Live |
+| **[Vinaya](apps/vinaya-portal/)** | `vinaya.attalabs.dev` | **Governance layer for AI coding agents** — deterministic checks every agent passes before merge. Install with `npx @attalabs/vinaya init`. | 🟢 Live |
 | **[Vāda](apps/vada-ai/)** | `vada.attalabs.dev` | Multi-agent **deliberation engine** — structured debate between AI agents. Standalone product *and* the deliberation layer inside Atta. | 🟢 Live |
 | **[Herald](apps/herald-ai/)** | `herald.attalabs.dev` | **Forensic CV ↔ job-description match** — evidence-based audit reports, not vibes. | 🟢 Active |
 

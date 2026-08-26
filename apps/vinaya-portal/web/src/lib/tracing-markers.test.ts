@@ -51,8 +51,8 @@ import { describe, expect, it } from 'vitest'
  * rather than skip when it cannot parse what it is checking, it discovers
  * upward walks instead of trusting a hand-written list, and it resolves
  * declared paths instead of pattern-matching them (`'../vinaya.config.json'`
- * points at `apps/vinaya/vinaya.config.json`, traces nothing, and must not
- * be mistaken for the repo-root declaration).
+ * points at `apps/vinaya-portal/web/src/vinaya.config.json`, traces nothing,
+ * and must not be mistaken for the repo-root declaration).
  */
 
 const WEB_ROOT = join(__dirname, '..', '..')

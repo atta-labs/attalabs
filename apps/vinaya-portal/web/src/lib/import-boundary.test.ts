@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 /**
  * One-way import boundary: web must never import cli internals.
  * Matches import/export module specifiers only — never raw file text —
- * so prose like the known-limits page's "apps/vinaya/cli" string cannot
- * fire this guard.
+ * so prose that merely names a package path (e.g. inside a doc comment)
+ * cannot fire this guard.
  */
 
 const SRC_ROOT = join(__dirname, '..', '..', 'src')
@@ -98,8 +98,8 @@ describe('import boundary: web must not import cli', () => {
     )
   })
 
-  it('does not fire on prose that merely mentions apps/vinaya/cli', () => {
-    const prose = "'apps/vinaya/cli exists (vinaya-cli-v1 task 1, #381, merged) but is a help/version router only.'"
+  it('does not fire on prose that merely mentions a package path', () => {
+    const prose = "'The router lives at packages/example-router/src/index.ts, not a real import.'"
     const specifiers = extractSpecifiers(prose)
     expect(specifiers.some(reachesIntoCli)).toBe(false)
   })

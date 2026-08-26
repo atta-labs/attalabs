@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 /**
  * Renders `CONFIG_REFERENCE` (`@attalabs/vinaya-sources`), an AUTHORED registry —
  * NOT a Zod introspection of `VinayaConfigSchema` (that schema documents
- * shape only, zero `.describe()` calls). `apps/vinaya/cli/tests/checks/
- * config-reference-coverage.test.ts` is what proves this page can never
- * silently drift behind the schema: it walks `VinayaConfigSchema`'s own keys
- * and fails if one has no row here.
+ * shape only, zero `.describe()` calls). A coverage test in the standalone
+ * `atta-labs/vinaya` CLI repo is what proves this page can never silently
+ * drift behind the schema: it walks `VinayaConfigSchema`'s own keys and
+ * fails if one has no row here.
  *
  * A flat stacked column, like `/docs/state-machine` — not `/docs/cli`'s two-pane
  * sidebar shape. `CONFIG_REFERENCE` is small enough (four top-level keys)

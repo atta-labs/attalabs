@@ -18,7 +18,8 @@
  * Two pattern classes, per Issue #736's 2026-08-05 amendment:
  *   - Class 1 (consumer product names) — scoped to the four surfaces named
  *     in the amendment: `packages/aeg-core`, `packages/aeg-forge-state`,
- *     `aeg-root`, `apps/vinaya`.
+ *     `aeg-root`, and Vinaya's own specs-only shell (all four have since been
+ *     removed from this repo — see below for what that leaves in scope).
  *   - Class 2 (harness/host artifacts in portable doctrine) — `.claude/`,
  *     `.husky/`, and a citation of a specific `scripts/*.ts|js|sh|mjs` file,
  *     scoped to `aeg-root` only. `exemptTableRow: true` on every Class-2
@@ -68,7 +69,7 @@
  * that ships or claims portability." `apps/vada-ai`, `apps/herald-ai`,
  * `apps/attalabs`, and root `CLAUDE.md` are internal-only monorepo
  * engineering doctrine: none of them ship to an adopter or claim
- * portability the way `apps/vinaya` (its CLI ships), `aeg-root` (copied out
+ * portability the way Vinaya's own CLI ships, `aeg-root` (copied out
  * by `vinaya init`), or `aeg-core`/`aeg-forge-state` (code the ship depends
  * on) do. Sampling the widened run before settling this (616 findings, 423
  * from `consumer-product-name` alone) confirmed the theory: the overwhelming
@@ -89,13 +90,21 @@
  * citation or forge number is unexplained-citation debt regardless of
  * whether the surface ships, the same standard already enforced against
  * `aeg-root` (itself not directly shipped either, only copied out by
- * `vinaya init`) since task 6. `apps/vinaya` is unchanged in these five
- * patterns' scope: task 6 deliberately scoped Class 2 to `aeg-root` only,
- * and this task does not reopen that choice. `apps/vinaya` is likewise
- * unchanged in `consumer-product-name`'s scope — its own doctrine is
- * already reachable via the existing `apps/vinaya` scope entry on
- * `consumer-product-name`, and the harness patterns' pre-existing exclusion
- * of `apps/vinaya` was task 6's own deliberate choice, not reopened here.
+ * `vinaya init`) since task 6. Vinaya's specs-only shell was never in these
+ * five patterns' scope: task 6 deliberately scoped Class 2 to `aeg-root`
+ * only, and neither this file's history nor the attalabs-vinaya-cleanup
+ * task that deletes that shell reopens that choice.
+ *
+ * `consumer-product-name`'s scope, by contrast, DID name Vinaya's specs-only
+ * shell — its only entry. The attalabs-vinaya-cleanup task deletes that
+ * shell outright (Portal and Studio, its replacements, carry no specs of
+ * their own yet — a separate, later decision), so the pattern is dropped
+ * from `PATTERNS` entirely rather than left with an empty `scope: []`: an
+ * empty array reaches `grepFn` with no path argument at all, and `grep -r`
+ * with no path defaults to the current directory — silently widening the
+ * sweep to the whole repo instead of narrowing it to nothing. This mirrors
+ * the `aeg-root` removal below: the surface the pattern existed to guard is
+ * gone, not a coverage loss to backfill.
  *
  * `aeg-root` dropped from every PATTERNS scope entry (attalabs-remove-local-
  * aeg-root task): attalabs carries no local `aeg-root/` of any kind any
@@ -186,7 +195,6 @@ const GLOBAL_EXEMPT = [
   '/fixtures/',
   'apps/vada-ai/docs/',
   'apps/herald-ai/docs/',
-  'apps/vinaya/docs/',
   '/node_modules/',
   '/.next/',
   '/.turbo/',
@@ -199,37 +207,13 @@ const GLOBAL_EXEMPT = [
   'apps/vada-ai/specs/legacy/'
 ]
 
+// `consumer-product-name` (id, pattern `\b(vada|herald|attalabs|vitakka|sati)\b`)
+// used to live here, scoped to Vinaya's specs-only shell — its only entry.
+// The attalabs-vinaya-cleanup task deletes that shell outright, so the
+// pattern is removed rather than left with an empty `scope: []` (see the
+// header comment above for why that would silently widen the sweep to the
+// whole repo instead of narrowing it to nothing).
 const PATTERNS: VocabularyPattern[] = [
-  {
-    id: 'consumer-product-name',
-    pattern: String.raw`\b(vada|herald|attalabs|vitakka|sati)\b`,
-    scope: ['apps/vinaya'],
-    sample: 'built directly on vada internals',
-    // `.test.ts` files under this scope can legitimately use real product
-    // paths as fixture data — the identical false-positive class
-    // `retired-vocabulary.test.ts`'s own TRANCHE_SLUG_VN_PATTERN comment
-    // documents. `packages/aeg-core`/`packages/aeg-forge-state` used to be
-    // in `scope` for the same reason (their `.test.ts` files produced
-    // ~170 such hits) until the attalabs-adoption tranche deleted both
-    // local copies; this exempt stays as a general rule for whatever else
-    // lands under the current scope.
-    exempt: ['.test.ts'],
-    // Vinaya's own published identifiers. `attalabs` inside the npm scope
-    // `@attalabs/vinaya` or the domain `vinaya.attalabs.dev` is the product
-    // naming itself — an adopter reads those as a package name and a URL, not
-    // as an unexplained reference to someone else's product. Content-scoped
-    // rather than path-scoped on purpose: `apps/vinaya/specs/vinaya-spec.md`
-    // carries 18 of these AND is a surface where real leakage could appear, so
-    // exempting the file would blind the pattern to the thing it exists for.
-    //
-    // Task 8 — `attalabs' own` added as the same false-positive class,
-    // found recurring during the doctrine sweep: `vinaya-spec.md`'s "Vinaya's
-    // own vs. attalabs' own" section uses this idiom six times to describe
-    // the parent monorepo's own unshipped tooling/CI, as distinct from what
-    // Vinaya ships — the section's entire purpose is explaining that
-    // boundary, not leaking an unexplained reference to it.
-    exemptContent: ['@attalabs/', 'attalabs.dev', "attalabs' own"]
-  },
   {
     id: 'harness-claude-path',
     pattern: String.raw`\.claude/`,

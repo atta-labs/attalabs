@@ -10,8 +10,9 @@
  *
  * This is the historical bug the check primes against: commit `0b53d460`
  * ("Docs(vinaya): Fix dangling Task 2 reference in vinaya-spec.md") fixed a
- * bullet in `apps/vinaya/specs/vinaya-spec.md` whose header parenthetical
- * cited a bare forge number `(#722)` — not the `(task N, #issue)` shape this
+ * bullet in Vinaya's own web-surface spec (since deleted along with its
+ * old specs-only shell) whose header parenthetical cited a bare forge number
+ * `(#722)` — not the `(task N, #issue)` shape this
  * check requires — leaving the body's "Task 2" reference dangling once the
  * tranche-slug strip elsewhere in that doc removed the anchor that used to
  * make it resolvable. See `@attalabs/aeg-core`'s `local-anchor-coverage.test.ts`
@@ -110,7 +111,6 @@ function collectScopeFiles(): string[] {
     ...collect('apps/vada-ai/specs', isMd),
     ...collect('apps/herald-ai/specs', isMd),
     ...collect('apps/attalabs/specs', isMd),
-    ...collect('apps/vinaya/specs', isMd),
     ...collect('apps', (name) => name === 'CLAUDE.md')
   ]
   if (statSyncSafe('CLAUDE.md')) paths.push('CLAUDE.md')
@@ -141,7 +141,8 @@ const MUST_CO_OCCUR_WITH = /\(task [0-9]+, #[0-9]+\)/
  * (`vocabulary-citation.ts`, `reader-resolvable-prose`'s own check —
  * `aeg-root/enforcement.md` records the same for G1/G2). A live sweep at
  * authoring time found real pre-existing dangling references across
- * `.claude/skills/**`, `apps/herald-ai/specs/**`, and `apps/vinaya/specs/**`
+ * `.claude/skills/**`, `apps/herald-ai/specs/**`, and Vinaya's own
+ * web-surface spec (since deleted along with its old specs-only shell)
  * — genuine debt this task's introduction of the check surfaces, not
  * something it should silently suppress or block CI over on day one.
  * Flip to `false` once that backlog is triaged and cleaned up.
