@@ -89,6 +89,8 @@ The `@atta/*` namespace is the monorepo's name, not a brand. Code for any AttaLa
 | Linting | Biome (formatter + linter) |
 | Git Hooks | Husky + commitlint |
 
+`next` is pinned to an exact version by root `package.json`'s `overrides` block — the app-level `^16.2.1` ranges do not control what installs. On 16.3.x the build compiles green and then Vercel's `onBuildComplete` dies with `ENOENT ... .next/next-server.js.nft.json`, so every deploy fails after a passing build while local builds stay green. Raise the pin only after a Vercel deploy on the new version is proven green.
+
 ---
 
 ## Monorepo Tooling
