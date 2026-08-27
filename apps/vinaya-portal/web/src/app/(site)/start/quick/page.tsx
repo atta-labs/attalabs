@@ -25,11 +25,11 @@ function versionStampText(publishedVersion: PublishedVersion): string {
     : 'documented from source — the published package version could not be verified'
 }
 
-// Four fixed steps: install / `init` / `init product` / start working. Each of
-// the first three names the real files it touches and links onward to `/docs/cli`
-// for the full command reference — the CLI page owns command detail, this
-// page owns the path. No forge dependency, same reasoning as `/roadmap` and
-// `/start`.
+// Four fixed steps covering the whole ownership arc: `quickstart` (in),
+// `upgrade` (staying current), `doctrine` (handing your agent the operating
+// model), `eject` (out). Each links onward to `/docs/cli` for the full command
+// reference — the CLI page owns command detail, this page owns the path. No
+// forge dependency, same reasoning as `/roadmap` and `/start`.
 const STEPS: {
   number: number
   title: string
@@ -39,38 +39,16 @@ const STEPS: {
 }[] = [
   {
     number: 1,
-    title: 'Install',
+    title: 'Run quickstart',
     body: [
       {
         kind: 'prose',
-        text: 'Pick your package manager. Each command installs Vinaya and runs `init` in the same breath — nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff in the next step.'
-      }
-    ],
-    render: (publishedVersion) => (
-      <>
-        <PackageManagerTabs
-          commands={{
-            npm: 'npx @attalabs/vinaya init',
-            pnpm: 'pnpm dlx @attalabs/vinaya init',
-            yarn: 'yarn dlx @attalabs/vinaya init',
-            bun: 'bunx @attalabs/vinaya init'
-          }}
-        />
-        <Text size='sm' muted className='font-sans'>
-          {versionStampText(publishedVersion)}
-        </Text>
-      </>
-    )
-  },
-  {
-    number: 2,
-    title: 'init',
-    body: [
-      {
-        kind: 'prose',
-        text: '`vinaya init` reads your repo, prints the complete diff of every file it intends to add or change, and waits — nothing is written until you say yes. `--dry-run` prints that same diff and installs nothing at all.'
+        text: 'Pick your package manager. Each command installs Vinaya and launches `quickstart` in the same breath — the guided wizard that walks the whole install with a Y/n prompt between every step. Nothing lands on your machine ahead of time, and nothing touches your repo until you confirm the diff it prints.'
       },
-      { kind: 'prose', text: 'It writes exactly five things:' },
+      {
+        kind: 'prose',
+        text: 'The wizard runs `init`, offers to bind doc-owners pairs and register tracked projects (`init product`), commits the install, proves the gates actually work with `demo break`, runs `doctor`, and pushes. Declining a prompt skips only that step. `init` itself writes exactly five things:'
+      },
       {
         kind: 'list',
         items: [
@@ -86,32 +64,82 @@ const STEPS: {
         text: 'A file `init` did not create is never overwritten; a pre-existing hook keeps its own lines and gets an appended block instead.'
       }
     ],
-    render: () => <CommandLine command='vinaya init' />,
-    cliHref: '/docs/cli#command-init'
+    render: (publishedVersion) => (
+      <>
+        <PackageManagerTabs
+          commands={{
+            npm: 'npx @attalabs/vinaya quickstart',
+            pnpm: 'pnpm dlx @attalabs/vinaya quickstart',
+            yarn: 'yarn dlx @attalabs/vinaya quickstart',
+            bun: 'bunx @attalabs/vinaya quickstart'
+          }}
+        />
+        <Text size='sm' muted className='font-sans'>
+          {versionStampText(publishedVersion)}
+        </Text>
+      </>
+    ),
+    cliHref: '/docs/cli#command-quickstart'
+  },
+  {
+    number: 2,
+    title: 'Upgrade when a release lands',
+    body: [
+      {
+        kind: 'prose',
+        text: 'New Vinaya versions arrive out of the blue — you never have to watch for them. Whenever one does, `vinaya upgrade` regenerates every vinaya-owned artifact (hooks, workflows, the managed block in your config) to the current contract version, under the same diff-and-confirm flow as `init`: it prints the full diff and waits for your yes.'
+      },
+      {
+        kind: 'prose',
+        text: 'Everything you own — your `checks`, your doc-owners bindings, your project registry — is left untouched. `--dry-run` prints the diff and changes nothing; `vinaya doctor` tells you at any time whether your installed artifacts have drifted from the contract.'
+      }
+    ],
+    render: () => <CommandLine command='npx @attalabs/vinaya@latest upgrade' />,
+    cliHref: '/docs/cli#command-upgrade'
   },
   {
     number: 3,
-    title: 'init product',
+    title: 'Hand your agent the doctrine',
     body: [
       {
         kind: 'prose',
-        text: "Working in a monorepo with more than one governed area? `vinaya init product <name> [--path <path>]` extends an already-initialized repo with one more — it writes a row to `.vinaya/projects.md` (the registry Studio's tranche board resolves a project's board link against) plus a `project:<name>` label, create-if-absent, under the same diff-and-confirm contract as `init` itself. It refuses if `init` has not run yet."
+        text: 'Vinaya ships the operating model as skills your agent reads, bundled inside the installed package. `vinaya doctrine` prints the absolute path of the front door on this machine — so `cat "$(vinaya doctrine)"` opens it anywhere, at any version, and the committed `VINAYA.md` pointer tells every cold agent that command exists.'
+      },
+      {
+        kind: 'prose',
+        text: 'Three skills live behind that front door:'
+      },
+      {
+        kind: 'list',
+        items: [
+          '`aeg` — the operating model itself: truth domains, dispatch gates, the tranche topology',
+          '`aeg-roles` — the accountable roles and which role doc an agent loads next',
+          '`brief-authoring` — how task briefs for Developer agents are written'
+        ]
+      },
+      {
+        kind: 'prose',
+        text: "Point whatever agentic coding tool you use — Claude Code, Codex, Antigravity, or another — at the front door and it works inside the model. Vinaya doesn't care which tool; it cares that `vinaya check --all` passes before anything merges."
       }
     ],
-    render: () => <CommandLine command='vinaya init product <name>' />,
-    cliHref: '/docs/cli#command-init-product'
+    render: () => <CommandLine command='cat "$(vinaya doctrine)"' />,
+    cliHref: '/docs/cli#command-doctrine'
   },
   {
     number: 4,
-    title: 'Start working',
+    title: 'Eject any time',
     body: [
       {
         kind: 'prose',
-        text: "Connect whatever agentic coding tool you already use — Claude Code, Codex, Antigravity, or another — to this repo, and build your first feature. Vinaya doesn't care which tool; it cares that `vinaya check --all` passes before anything merges."
+        text: 'Vinaya is easy to unplug. `vinaya eject` removes every artifact the install wrote — reversing the `managed` ownership block exactly — and restores the repo to stock, under the same diff-and-confirm flow: full removal diff first, nothing removed until you say yes. `--dry-run` shows the diff without touching anything.'
       },
-      { kind: 'prose', text: 'What that actually looks like, stage by stage, is the rest of this section.' }
+      {
+        kind: 'prose',
+        text: 'Your own content survives: custom check scripts, doc-owners bindings, and the project registry are your declared data, not scaffolding, and `eject` leaves them alone.'
+      }
     ],
-    render: () => null
+    render: () => <CommandLine command='vinaya eject' />,
+    cliHref: '/docs/cli#command-eject'
   }
 ]
 
@@ -125,7 +153,7 @@ export default async function StartQuickPage() {
           Quick Start
         </Heading>
         <Text size='lg' muted className='leading-relaxed'>
-          Four steps from nothing to a governed repo with an agent working inside it.
+          One command in, one command out — install, stay current, hand your agent the doctrine, unplug any time.
         </Text>
       </header>
 
@@ -182,11 +210,11 @@ export default async function StartQuickPage() {
       </section>
 
       <NextLink
-        href='/start/plan'
+        href='/life-cycle'
         variant='unstyled'
         className='inline-flex w-fit items-center gap-1.5 text-primary text-sm underline-offset-4 hover:underline'
       >
-        <span>Continue to Ship with Vinaya</span>
+        <span>Continue to the Lifecycle</span>
         <ArrowRight className='size-3.5' />
       </NextLink>
     </article>
