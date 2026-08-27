@@ -64,6 +64,9 @@
     "clean": "turbo clean",
     "prepare": "husky"
   },
+  "overrides": {
+    "next": "16.2.12"
+  },
   "devDependencies": {
     "@attalabs/aeg-core": "^0.19.2",
     "@attalabs/vinaya": "0.19.2",
