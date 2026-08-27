@@ -7,6 +7,7 @@ export { getLibraries, getLibraryById } from './queries/library'
 export { getProductCms, type ProductCms } from './queries/product-cms'
 // Queries
 export { getProductConfig, getProductUiConfig } from './queries/product-ui-config'
+export { getRoadmapMilestones, type RoadmapMilestone } from './queries/roadmap-milestones'
 export { getThemeById, getThemeByName, getThemeList, getThemes } from './queries/theme'
 // Types
 export type {

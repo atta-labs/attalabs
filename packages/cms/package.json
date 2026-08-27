@@ -24,6 +24,7 @@
     "seed:branding:vinaya": "SANITY_PROJECT_ID=o56nzgrr SANITY_SEED_PRODUCT=vinaya bun run ./scripts/seed-branding.ts",
     "seed:branding:herald": "SANITY_PROJECT_ID=e9gbd2d1 SANITY_SEED_PRODUCT=herald bun run ./scripts/seed-branding.ts",
     "seed:branding:attalabs": "SANITY_PROJECT_ID=l5n0n8nn SANITY_SEED_PRODUCT=attalabs bun run ./scripts/seed-branding.ts",
+    "seed:roadmap-milestones": "SANITY_PROJECT_ID=o56nzgrr bun run ./scripts/seed-roadmap-milestones.ts",
     "migrate:herald-to-product": "bun run ./scripts/migrate-herald-to-product.ts",
     "seed:neobrutalist-themes": "bun run ./scripts/seed-neobrutalist-themes.ts",
     "typecheck": "tsc --noEmit",

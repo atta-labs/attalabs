@@ -1,89 +1,111 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
-import { Flex, Heading, Text } from '@atta/ui/shared'
+import { getRoadmapMilestones, type RoadmapMilestone } from '@atta/cms'
+import { Badge } from '@atta/ui/components'
+import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { BoardMark, GatesMark, LoopMark, RolesMark, StudioWebMark } from './_components/RoadmapMarks'
+import { getPublishedVersion } from '@/lib/published-version'
+import { DeploymentTrack, type DeploymentTrackItem } from './_components/DeploymentTrack'
+import { deriveStatus } from './_lib/derive-status'
 
 export const metadata: Metadata = {
   title: 'Roadmap · Vinaya'
 }
 
-// Hand-authored product page — five roadmap items. Deliberately NOT derived
-// from forge state (`listTranches()` / Milestones): that spawns `gh`
-// subprocesses which 500 in prod on Vercel, the same reason `studio/*` pages
-// `notFound()` there. The content lives here as data, not as a forge query, so
-// this route has NO forge dependency and cannot fail that way.
+// CMS-backed product page — five roadmap items live as `roadmapMilestone`
+// documents in Sanity, not as a hardcoded array. A content editor adds,
+// edits, or reorders them from Studio without a code change; this route
+// just reads and renders `getRoadmapMilestones()`'s manual `order`.
+//
+// Deliberately NOT derived from forge state (`listTranches()` / Milestones):
+// that spawns `gh` subprocesses which 500 in prod on Vercel, the same reason
+// `studio/*` pages `notFound()` there. Content comes from Sanity, not from
+// GitHub — CMS is not forge, so this route still has NO forge dependency.
 //
 // That is a data-source property, not a rendering mode: like every route in
 // this app it still builds as `ƒ (Dynamic)`, because the root layout fetches
 // CMS config. "No forge dependency" — never "statically prerendered".
-// Each item carries its own concept mark (`_components/RoadmapMarks.tsx` — a
-// diagram of the feature, not a stock glyph): the cards are long-form prose, and
-// a mark per card gives the eye an anchor to scan by instead of five
-// identical text blocks. Decorative only (`aria-hidden` lives on the svg) — the
-// CardTitle carries the meaning.
-const ROADMAP: { title: string; body: string; Mark: (p: { className?: string }) => ReactNode }[] = [
-  {
-    title: 'Loop Engineering',
-    Mark: LoopMark,
-    body: 'An optional external driver that runs the dispatch → verify → merge cycle for you. It sits on top of the harness, reads Vinaya’s task state, and advances work on its own — while you keep the go/no-go calls. Ships in rings: self-correction is live today, the full task loop comes next.'
-  },
-  {
-    title: 'Studio on the web',
-    Mark: StudioWebMark,
-    body: 'Vinaya Studio runs deployed, not just on your machine. Anyone can connect over the web — product folks, reviewers, non-coders — and watch the harness state live. The whole team sees what’s building, without cloning a repo or touching a terminal.'
-  },
-  {
-    title: 'Linear & Jira support',
-    Mark: BoardMark,
-    body: 'A service layer that holds the issue state machine in Linear or Jira, not just GitHub. Same labels, same flow — Vinaya reads and edits issues wherever your team already tracks them. Bring the harness to your board instead of moving your board to the harness.'
-  },
-  {
-    title: 'Configurable forge',
-    Mark: GatesMark,
-    body: 'Today Vinaya’s security gates — rationale checks, doc-coupling, scope guards — are always on. This adds a vinaya.settings.json where you switch each check on or off, at any level: whole repo, a project, or a single task. Loosen the gates on a throwaway repo, keep them strict on production.'
-  },
-  {
-    title: 'Configurable roles',
-    Mark: RolesMark,
-    body: 'Vinaya ships fixed agent roles — Developer, Reviewer, and the rest — each with baked-in skills. This lets you pass your own: swap in a custom role, add domain skills, or override how an existing role behaves. The harness stays the same; the agents inside it become yours to shape.'
+//
+// A local `orNull` rather than importing `@atta/cms`'s own (private) one of the same
+// name — this task's surface is one new schema + one new query, not a change to the
+// existing `product-cms.ts` module other packages' consumers already depend on.
+async function loadMilestones(): Promise<RoadmapMilestone[] | null> {
+  try {
+    return await getRoadmapMilestones()
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[roadmap] getRoadmapMilestones failed:', err)
+    }
+    return null
   }
-]
+}
 
-export default function RoadmapPage() {
+export default async function RoadmapPage() {
+  const [milestones, publishedVersion] = await Promise.all([loadMilestones(), getPublishedVersion()])
+
+  const items: DeploymentTrackItem[] | null =
+    milestones === null
+      ? null
+      : milestones.map((milestone) => ({
+          id: milestone._id,
+          title: milestone.title,
+          version: milestone.version,
+          description: milestone.description,
+          truth: milestone.truth,
+          status: deriveStatus(milestone, publishedVersion),
+          image: milestone.image
+        }))
+
   return (
-    <main className='mx-auto flex max-w-5xl flex-col gap-10 px-8 py-8'>
-      <section className='flex flex-col gap-4'>
-        <Heading level={1} className='font-serif text-3xl text-foreground sm:text-4xl'>
-          Roadmap
+    // `w-full`, no `max-w`/`mx-auto` here — this page's fabric backdrop lives on
+    // `DeploymentTrack`'s own full-bleed outer box (see its comment), same split as
+    // home's full-width sections (`page.tsx`'s `#next-steps`). Constraining THIS element
+    // instead would cap the fabric at the reading column's width on any screen wider than
+    // it, reproducing the gutter this structure exists to avoid.
+    <main className='flex w-full flex-col gap-10 overflow-x-hidden py-8'>
+      <section className='mx-auto flex w-full max-w-5xl flex-col gap-4 px-8'>
+        <Heading
+          level={1}
+          className='mx-auto mt-5 max-w-4xl text-center font-serif font-normal text-4xl text-foreground tracking-tight sm:text-5xl lg:text-6xl'
+        >
+          Toward walk-away complete
         </Heading>
-        <Text className='font-sans text-muted-foreground'>
-          Where the harness is heading. Each item ships when it earns its place — no dates, just direction.
+        <Text className='text-center font-mono text-2xl text-muted-foreground'>
+          The harness climbs one rung at a time
+        </Text>
+        {!('fallback' in publishedVersion) && (
+          <div className='flex justify-center'>
+            <Badge variant='outline' className='font-mono text-xs font-normal text-muted-foreground'>
+              @attalabs/vinaya@{publishedVersion.version}
+            </Badge>
+          </div>
+        )}
+        <Text
+          as='p'
+          className='mx-auto max-w-2xl text-center font-mono text-xs text-muted-foreground uppercase tracking-wide'
+        >
+          No dates, only versions · Three states — Shipped, Planned, Dropped · Nothing drops silently
         </Text>
       </section>
 
-      <section className='grid gap-6 sm:grid-cols-2'>
-        {ROADMAP.map((item) => (
-          <Card key={item.title}>
-            <CardHeader>
-              <Flex align='center' gap={4}>
-                <Flex
-                  align='center'
-                  justify='center'
-                  className='size-16 shrink-0 rounded-md border border-border bg-accent text-accent-foreground'
-                >
-                  <item.Mark className='size-12' />
-                </Flex>
-                <CardTitle className='font-serif text-xl font-normal text-foreground'>{item.title}</CardTitle>
-              </Flex>
-            </CardHeader>
-            <CardContent>
-              <Text as='p' className='font-sans text-sm text-muted-foreground'>
-                {item.body}
-              </Text>
-            </CardContent>
-          </Card>
-        ))}
+      {items === null && (
+        <Text as='p' className='mx-auto w-full max-w-5xl px-8 font-sans text-sm text-muted-foreground'>
+          Unable to load the roadmap right now.
+        </Text>
+      )}
+
+      {items !== null && items.length === 0 && (
+        <Text as='p' className='mx-auto w-full max-w-5xl px-8 font-sans text-sm text-muted-foreground'>
+          No roadmap items yet.
+        </Text>
+      )}
+
+      {items !== null && items.length > 0 && <DeploymentTrack items={items} />}
+
+      <section className='mx-auto flex w-full max-w-3xl flex-col gap-3 px-8 pt-6 text-center'>
+        <Text as='p' className='font-sans text-sm text-muted-foreground'>
+          This is where unshipped capability is allowed to live. Every claim made on the rest of this site is already
+          true; what is still coming is tracked here instead — against a real released version, never a date, and never
+          removed without being marked Dropped.
+        </Text>
       </section>
     </main>
   )
