@@ -15,6 +15,9 @@ import { CONDUIT_ANGLES_DEG, offsetPoint, polar, RING_AXIS_DEG, round } from './
 const STROKE_BY_LAYER = ['stroke-primary', 'stroke-primary']
 
 const ARC_HALF = 33 // each ring segment spans 66°, leaving 24° gaps on the diagonals
+const CONDUIT_HALF_DEG = 13 // each conduit's visible arc spans gap-center ± this
+const CONDUIT_HALF_RAD = (CONDUIT_HALF_DEG * Math.PI) / 180
+const SOCKET_INSET_DEG = 3 // connector pins sit this far off the ring segment's own corner
 const EASE = (t: number) => 1 - (1 - t) ** 3
 const cl = (x: number) => Math.max(0, Math.min(1, x))
 
@@ -76,6 +79,20 @@ function smoothPath(pts: { x: number; y: number }[]): string {
   return d.join(' ')
 }
 
+// Smoothly asymptotes `value` toward [min, max] via tanh — unlike a hard clamp, every
+// input passes through the same continuous curve: a value already well inside the
+// range comes out practically unchanged (tanh(x)≈x near 0), while one approaching or
+// past an edge compresses smoothly toward it instead of snapping. Mathematically it
+// can get arbitrarily close to min/max but never reach or cross them. Non-finite
+// bounds (the unbounded default) pass the value through untouched.
+function softBound(value: number, min: number, max: number): number {
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return value
+  const mid = (min + max) / 2
+  const half = (max - min) / 2
+  if (half <= 0) return mid
+  return mid + Math.tanh((value - mid) / half) * half
+}
+
 function waveArc(
   center: number,
   radius: number,
@@ -86,7 +103,9 @@ function waveArc(
   time: number,
   seed: number,
   pullX = 0,
-  pullY = 0
+  pullY = 0,
+  minR = 0,
+  maxR = Number.POSITIVE_INFINITY
 ): string {
   const points: { x: number; y: number }[] = []
   const span = endAngle - startAngle
@@ -110,7 +129,26 @@ function waveArc(
     // bump peaks mid-arc → the bolt leans toward the cursor without detaching from the ring.
     const x = center + Math.cos(angle) * r + pullX * env
     const y = center + Math.sin(angle) * r + pullY * env
-    points.push({ x, y })
+    // Contained radially (never past rOut/rIn — electricity leaking outside the
+    // harness) and angularly (never past this gap's own span — electricity
+    // overlapping the solid ring segment next to it), on EVERY point, always — not
+    // just while the cursor is pulling. A hard min/max here would do that too, but
+    // only for whichever sample happens to graze the boundary that frame; clipping
+    // just that one point mid-curve reads as a kink once `smoothPath` curves through
+    // it. `softBound` approaches the same limit smoothly (asymptotic, via tanh) so
+    // every point moves through the same continuous function — points nowhere near
+    // the edge are practically unchanged, points that would overflow compress
+    // smoothly toward the boundary instead of snapping to it.
+    const pr = Math.hypot(x - center, y - center)
+    const pa = Math.atan2(y - center, x - center)
+    const arcMid = startAngle + span / 2
+    const arcHalf = span / 2
+    const rawDelta = pa - arcMid
+    const wrappedDelta = Math.atan2(Math.sin(rawDelta), Math.cos(rawDelta))
+    const boundedDelta = softBound(wrappedDelta, -arcHalf, arcHalf)
+    const boundedAngle = arcMid + boundedDelta
+    const boundedR = softBound(pr, minR, maxR)
+    points.push({ x: center + Math.cos(boundedAngle) * boundedR, y: center + Math.sin(boundedAngle) * boundedR })
   }
   return smoothPath(points)
 }
@@ -143,13 +181,15 @@ function boltPath(sx: number, sy: number, ex: number, ey: number, segs: number, 
 export function HarnessStructure({
   size,
   coreRadius,
-  ringProgress,
+  screwProgress,
+  deployProgress,
   clamp,
   spark
 }: {
   size: number
   coreRadius: number
-  ringProgress: number // 0→1 draws the four ring segments in sequence
+  screwProgress: number // 0→1 — stage 1: all 4 corner screws rise together
+  deployProgress: number // 0→1 — stage 2: all 4 ring bands deploy from their screws
   clamp: number // 0→1 extends the columns from the ring to clamp main
   spark: number // 0→1 draws the electricity across the gaps in sequence
 }) {
@@ -190,7 +230,7 @@ export function HarnessStructure({
 
   useEffect(() => {
     if (!live) return
-    const half = (13 * Math.PI) / 180
+    const half = CONDUIT_HALF_RAD
     const animate = () => {
       for (let w = 0; w < WAVE_VARIANTS.length; w++) {
         const v = WAVE_VARIANTS[w]
@@ -243,7 +283,13 @@ export function HarnessStructure({
               (timesRef.current[w] ?? 0) + g,
               v.seed + g * 13,
               px,
-              py
+              py,
+              // Give the cursor-pull room to actually reach outward (up to its own
+              // MAX_PULL) instead of capping right at the ring's own edge — that
+              // killed the whole "lean toward the pointer" interaction, not just the
+              // runaway overflow it was meant to stop.
+              Math.max(0, rIn - MAX_PULL),
+              rOut + MAX_PULL
             )
           )
         }
@@ -319,24 +365,37 @@ export function HarnessStructure({
             <feMergeNode in='SourceGraphic' />
           </feMerge>
         </filter>
+        {/* Connector-pin chase pulse — muted while idle, primary at its peak. `fill` (not
+            opacity) is what needs to move between two theme tokens, and CSS custom
+            properties are valid `<animate>`/keyframe endpoints, so this stays token-driven
+            rather than a hardcoded color pair. */}
+        <style>{`
+          @keyframes conduit-pin-pulse {
+            0%, 100% { fill: var(--muted-foreground); opacity: 0.45; }
+            50% { fill: var(--primary); opacity: 1; }
+          }
+          .conduit-pin { animation: conduit-pin-pulse 1000ms ease-in-out infinite; }
+        `}</style>
       </defs>
 
       {/* --- Ring segments: first the 4 hexagonal metal SCREWS rise from the fabric in
           unison (no per-segment stagger), then each ring band DEPLOYS out of its screw —
           the band extends both arms, rungs building as it passes them. --- */}
       {RING_AXIS_DEG.map((a, i) => {
-        // all 4 screws arise together, slowly, over the first 60% of the ring ramp —
-        // a long, visible grow-with-sparks emergence before anything deploys.
-        const screwIn = cl(ringProgress / 0.6)
+        // Stage 1: all 4 screws rise together — a distinct beat of its own,
+        // fully separate (in time) from the band deploy below.
+        const screwIn = cl(screwProgress)
         if (screwIn <= 0) return null
-        // only once the screws are up does the band deploy, staggered per segment.
-        // the screws STAY — they anchor each ring segment's corner.
-        const deployProg = cl((ringProgress - 0.6) / 0.4)
+        // Stage 2: bands deploy, staggered per segment for an "unfurling" feel —
+        // the screws STAY, anchoring each ring segment's corner.
+        const deployProg = cl(deployProgress)
         const local = cl((deployProg - i * 0.14) / 0.5)
         const span = ARC_HALF * local // band grows outward from the screw
-        const screwScale = EASE(screwIn) // ease the rise so it settles rather than snaps
-        const riseY = (1 - screwScale) * 24 // starts 24px below, rises up out of the fabric
-        const burst = Math.sin(screwIn * Math.PI) // energy 0→1→0, peaks mid-emergence
+        // One step, not a sequence: the screw grows from 0→1 scale AT ITS FINAL
+        // POSITION — no translate, no opacity fade, nothing appearing somewhere else
+        // first. Anchored and mechanical, like a bolt being screwed down into place,
+        // not a magic materialization.
+        const screwScale = EASE(screwIn)
         const m = polar(c, c, rMid, a)
         return (
           <g key={a}>
@@ -376,43 +435,11 @@ export function HarnessStructure({
                 })}
               </g>
             )}
-            {/* energy burst — the fabric sparks at each screw's spot as it emerges:
-                an expanding ring + flickering radial sparks, peaking mid-rise, gone once
-                settled. Drawn behind the screw so the metal rises out of its own energy. */}
-            {burst > 0.01 && (
-              <g transform={`translate(${m.x} ${m.y})`} filter='url(#harness-spark-glow)'>
-                <circle
-                  r={round(6 + screwIn * 22)}
-                  className='fill-none stroke-primary'
-                  strokeWidth={1.5}
-                  opacity={round(burst * 0.5)}
-                />
-                {[0, 1, 2, 3, 4, 5].map((k) => {
-                  const ang = ((a + k * 60) * Math.PI) / 180
-                  const inner = 5
-                  const outer = 9 + burst * 22
-                  const flick = 0.35 + 0.65 * Math.abs(Math.sin(screwIn * 17 + k * 1.7))
-                  return (
-                    <line
-                      key={k}
-                      x1={round(Math.cos(ang) * inner)}
-                      y1={round(Math.sin(ang) * inner)}
-                      x2={round(Math.cos(ang) * outer)}
-                      y2={round(Math.sin(ang) * outer)}
-                      className='stroke-primary'
-                      strokeWidth={1.5}
-                      strokeLinecap='round'
-                      opacity={round(burst * flick)}
-                    />
-                  )
-                })}
-              </g>
-            )}
-            {/* the hexagonal metal screw — rises from below the fabric and stays. Drawn
-                LAST so the deployed band never covers it: the screw is always visible,
-                anchoring the segment's corner. Screen-vertical rise sits OUTSIDE the
-                rotate() so it reads as coming up through the mesh. */}
-            <g transform={`translate(${m.x} ${m.y + riseY})`} style={{ opacity: screwIn }}>
+            {/* the hexagonal metal screw. Drawn LAST so the deployed band never covers
+                it: the screw is always visible, anchoring the segment's corner. Fixed
+                translate — only the inner scale animates, so it grows in place instead
+                of moving or fading in. */}
+            <g transform={`translate(${m.x} ${m.y})`}>
               <g transform={`rotate(${a}) scale(${screwScale})`}>
                 <polygon
                   points={hex(20)}
@@ -483,7 +510,11 @@ export function HarnessStructure({
                   {/* two claw hooks biting inward from the gripper ends toward main */}
                   {[GRIP - 7, -(GRIP - 7)].map((off, k) => {
                     const a = polar(c, c, gripR + 3, d + off)
-                    const b = polar(c, c, gripR - 9, d + off * 0.55)
+                    // Clamped so the hook's tip never crosses inside main's own edge —
+                    // at full clamp, gripR sits only 8px outside coreRadius, and the
+                    // un-clamped `gripR - 9` landed past that boundary, reading as a
+                    // stray line overflowing into main instead of gripping its rim.
+                    const b = polar(c, c, Math.max(coreRadius + 2, gripR - 9), d + off * 0.55)
                     return (
                       <line
                         key={k}
@@ -514,30 +545,71 @@ export function HarnessStructure({
           )
         })}
 
-      {/* --- Electricity: wide current draws across each gap in sequence, then waves --- */}
+      {/* --- Electricity: stage 3 — all 4 currents strike across their gaps at once. Real
+          electricity doesn't crawl like a filling pipe: the stroke snaps to full length in
+          the first sixth of `spark`'s ramp (a strike, not a flow). --- */}
       {CONDUIT_ANGLES_DEG.map((deg, g) => {
-        const local = cl((spark - g * 0.16) / 0.4)
-        return WAVE_VARIANTS.map((v, w) => (
-          <path
-            key={`spark-${deg}-${w}`}
-            ref={(el) => {
-              arcRefs.current[g * WAVE_VARIANTS.length + w] = el
-            }}
-            d=''
-            fill='none'
-            pathLength={1}
-            strokeLinecap='round'
-            className={STROKE_BY_LAYER[w % STROKE_BY_LAYER.length]}
-            style={{
-              strokeWidth: v.width,
-              filter: 'url(#harness-spark-glow)',
-              opacity: v.opacity,
-              strokeDasharray: 1,
-              strokeDashoffset: 1 - local
-            }}
-          />
-        ))
+        const draw = cl(spark * 6) // 0→1 within the first ⅙ of the ramp — an instant strike
+        return (
+          <g key={`conduit-${deg}`}>
+            {WAVE_VARIANTS.map((v, w) => (
+              <path
+                key={`spark-${deg}-${w}`}
+                ref={(el) => {
+                  arcRefs.current[g * WAVE_VARIANTS.length + w] = el
+                }}
+                d=''
+                fill='none'
+                pathLength={1}
+                strokeLinecap='round'
+                className={STROKE_BY_LAYER[w % STROKE_BY_LAYER.length]}
+                style={{
+                  strokeWidth: v.width,
+                  filter: 'url(#harness-spark-glow)',
+                  opacity: v.opacity,
+                  strokeDasharray: 1,
+                  strokeDashoffset: 1 - draw
+                }}
+              />
+            ))}
+          </g>
+        )
       })}
+
+      {/* --- Connector sockets: at each of the 8 points where a current welds onto the ring, 3
+          pins spread RADIALLY across the band's thickness — like rivets set into the seam. No
+          crossbar (just the pins). Pulled a few degrees off the ring segment's own corner
+          (toward the gap) and inset a bit short of rIn/rOut, so nothing ever touches the metal's
+          own edge on any side — real padding, not a mark sitting flush on the boundary. Each pin
+          is an outlined ring; only the FILL (not the stroke) chase-pulses muted→primary while
+          the current runs — a hollow socket lighting up, not a solid dot. --- */}
+      {live &&
+        CONDUIT_ANGLES_DEG.map((deg) =>
+          [deg - CONDUIT_HALF_DEG, deg + CONDUIT_HALF_DEG].map((theta, i) => {
+            const socketTheta = theta + (i === 0 ? SOCKET_INSET_DEG : -SOCKET_INSET_DEG) // off the corner, toward the gap
+            const p = polar(c, c, rMid, socketTheta)
+            const rad = (socketTheta * Math.PI) / 180
+            const rx = Math.cos(rad)
+            const ry = Math.sin(rad)
+            const pinSpan = (rOut - rIn) * 0.28 // short of rIn/rOut — radial padding on both sides
+            return (
+              <g key={`socket-${theta}`}>
+                {[-1, 0, 1].map((k) => (
+                  <circle
+                    key={k}
+                    cx={p.x + rx * pinSpan * k}
+                    cy={p.y + ry * pinSpan * k}
+                    r={1.8}
+                    strokeWidth={0.6}
+                    className='conduit-pin fill-muted-foreground stroke-muted-foreground'
+                    filter='url(#harness-spark-glow)'
+                    style={{ animationDelay: `${(k + 1) * 140}ms` }}
+                  />
+                ))}
+              </g>
+            )
+          })
+        )}
 
       {/* --- Branching lightning to the cursor: `d`/opacity set per frame in the loop --- */}
       {CONDUIT_ANGLES_DEG.map((deg, g) =>

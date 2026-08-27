@@ -3,9 +3,10 @@
 import { Button } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowDown, GitBranch } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
 import { EnergyFieldBg } from '../EnergyFieldBg'
+import { LetterReveal } from '../LetterReveal'
 import { HarnessStructure } from './HarnessStructure'
 import { CONDUIT_ANGLES_DEG } from './harness-geometry'
 
@@ -42,8 +43,9 @@ function pulseScale(x: number): number {
   return 1.11 - 0.11 * ((x - 0.5) / 0.5) // settle 1.11 → 1.0
 }
 
-// The harness center — the protected `main` branch.
-function MainBranchNode({ size }: { size: number }) {
+// The harness center — the protected `main` branch. Exported so other
+// sections can reuse the same mark instead of inventing a second circle.
+export function MainBranchNode({ size }: { size: number }) {
   return (
     <svg
       viewBox='0 0 100 100'
@@ -54,7 +56,7 @@ function MainBranchNode({ size }: { size: number }) {
     >
       <title>Protected main branch</title>
       <circle cx={50} cy={50} r={48} className='fill-secondary stroke-primary' strokeWidth={2} />
-      <text x={50} y={42} textAnchor='middle' className='fill-primary font-mono text-[16px] font-bold'>
+      <text x={50} y={42} textAnchor='middle' className='fill-primary font-mono text-base font-bold'>
         main
       </text>
       <GitBranch x={37} y={50} width={26} height={26} strokeWidth={2.75} className='fill-none stroke-primary' />
@@ -62,16 +64,15 @@ function MainBranchNode({ size }: { size: number }) {
   )
 }
 
-function EmblemInner() {
+function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
+  const isLanding = landingActions !== undefined
   const ringSize = useResponsiveRing()
-  const c = ringSize / 2
-  const rIn = Math.round(c * 0.82)
   const mainSize = Math.round(ringSize * 0.3)
   const mainRadius = mainSize / 2
-  const labelPad = Math.round(c - (rIn + mainRadius) / 2)
 
   const [coreRevealed, setCoreRevealed] = useState(false)
-  const [ringProgress, setRingProgress] = useState(0)
+  const [screwProgress, setScrewProgress] = useState(0)
+  const [deployProgress, setDeployProgress] = useState(0)
   const [clamp, setClamp] = useState(0)
   const [spark, setSpark] = useState(0)
   const [content, setContent] = useState(0)
@@ -95,7 +96,8 @@ function EmblemInner() {
 
     // if (seen) {
     //   setCoreRevealed(true)
-    //   setRingProgress(1)
+    //   setScrewProgress(1)
+    //   setDeployProgress(1)
     //   setClamp(1)
     //   setSpark(1)
     //   setContent(1)
@@ -116,22 +118,25 @@ function EmblemInner() {
       timers.current.push(setTimeout(fn, ms))
     }
 
+    // Four clearly separated beats, each internally simultaneous, with a
+    // deliberate pause between beats so the build reads as a sequence rather
+    // than one continuous blur: screws → frame → electricity → grab.
     at(500, () => setCoreRevealed(true)) // 1. main scales in
-    // 2. ring ramp — first ~60% is the slow screw emergence (grow + sparks), then bands deploy
-    at(800, () => ramp(3000, setRingProgress))
-    at(3900, () => ramp(900, setSpark)) // 3. electricity draws across the gaps
-    at(4500, () => ramp(800, setClamp)) // 4. columns extend + hook/screw latch onto main
-    // 5. As the hooks bite, main SQUEEZES under the pressure (compress → rebound).
-    at(5250, () => ramp(620, setMainPulse))
-    // 6. The rebound punches out the shock wave + curvature — the consequence of the grab.
+    at(700, () => ramp(500, setScrewProgress)) // 2. all 4 corner screws rise together (700-1200ms)
+    at(1500, () => ramp(700, setDeployProgress)) // 3. all 4 ring bands deploy from their screws (1500-2200ms)
+    at(2550, () => ramp(450, setSpark)) // 4. all 4 currents strike + connect-flash (2550-3000ms)
+    at(3350, () => ramp(800, setClamp)) // 5. columns extend + hook/screw latch onto main (3350-4150ms)
+    // 6. As the hooks bite, main SQUEEZES under the pressure (compress → rebound).
+    at(4100, () => ramp(620, setMainPulse))
+    // 7. The rebound punches out the shock wave + curvature — the consequence of the grab.
     //    Curvature radiates from main outward (radialFold) at the wave's pace, synced to the
     //    ClosingPulse and to main's rebound.
-    at(5380, () => {
+    at(4230, () => {
       ramp(1300, setGravity)
       setPulseKey((k) => k + 1)
     })
-    at(5600, () => ramp(600, setContent)) // 7. text + CTA fade in
-    at(6300, () => {
+    at(4450, () => ramp(600, setContent)) // 8. text + CTA fade in
+    at(5150, () => {
       // Remember it played — every later visit skips straight to the final state.
       try {
         window.localStorage.setItem(SEEN_KEY, '1')
@@ -153,23 +158,42 @@ function EmblemInner() {
 
       {/* Cursor-reactive energy over the fabric — same effect as the Workflow section, but
           grid-less so it layers on HeroFabric's own mesh instead of doubling it. */}
-      <EnergyFieldBg showGrid={false} />
+      <EnergyFieldBg showGrid={false} particles={false} />
 
-      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center'>
+      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 pb-10 text-center sm:pb-16'>
         <div className='flex flex-col items-center justify-center gap-3'>
-          <Heading
-            level={1}
-            className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
-          >
-            Sustainable software development
-            <br />
-            for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
-          </Heading>
-          <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
-            Execution governance for software teams.
-          </Text>
+          {isLanding ? (
+            <>
+              <Heading
+                level={1}
+                weight='normal'
+                className='text-balance font-serif text-3xl leading-none tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl'
+              >
+                <LetterReveal text='Agents write code' />
+                <br />
+                <LetterReveal text='Vinaya ships software' startIndex={17} />
+              </Heading>
+              <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground sm:text-xl md:text-2xl'>
+                <LetterReveal text='Your agent moves fast. Vinaya holds the wheel.' startIndex={39} delayStepMs={10} />
+              </Text>
+            </>
+          ) : (
+            <>
+              <Heading
+                level={1}
+                className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
+              >
+                Sustainable software development
+                <br />
+                for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
+              </Heading>
+              <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
+                A harness for your software engineering process
+              </Text>
+            </>
+          )}
         </div>
-        <div ref={ringBoxRef} className='relative' style={{ width: ringSize, height: ringSize }}>
+        <div ref={ringBoxRef} className='relative shrink-0' style={{ width: ringSize, height: ringSize }}>
           {/* main — scales in at the center; the columns clamp onto it. */}
           <div className='absolute inset-0 flex items-center justify-center opacity-90'>
             <div
@@ -183,38 +207,33 @@ function EmblemInner() {
             </div>
           </div>
 
-          {/* VINAYA north, HARNESS south, main between them. */}
-          <div
-            className='pointer-events-none absolute inset-0 flex flex-col items-center justify-between text-center'
-            style={{ opacity: content, paddingTop: labelPad - 14, paddingBottom: labelPad - 12 }}
-          >
-            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
-              Vinaya
-            </p>
-            <p className='font-sans text-xl font-extrabold uppercase leading-none tracking-[0.14em] text-foreground'>
-              Harness
-            </p>
-          </div>
-
           {/* The wireframe harness — accent, builds from nothing (draw-on). */}
           <HarnessStructure
             size={ringSize}
             coreRadius={mainRadius - 3}
-            ringProgress={ringProgress}
+            screwProgress={screwProgress}
+            deployProgress={deployProgress}
             clamp={clamp}
             spark={spark}
           />
         </div>
 
-        <div style={{ opacity: content }}>
-          <Button
-            type='button'
-            size='lg'
-            onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            See how it works
-            <ArrowDown className='size-4' />
-          </Button>
+        <div
+          className={isLanding ? 'flex flex-wrap items-center justify-center gap-4' : undefined}
+          style={{ opacity: content }}
+        >
+          {isLanding ? (
+            landingActions
+          ) : (
+            <Button
+              type='button'
+              size='lg'
+              onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              See how it works
+              <ArrowDown className='size-4' />
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -223,10 +242,10 @@ function EmblemInner() {
 
 // Outer — a normal in-flow section (NOT a fixed overlay), so it scrolls away like every
 // other section: the page is a flat stack.
-export function VinayaHeroEmblem() {
+export function VinayaHeroEmblem({ landingActions }: { landingActions?: ReactNode }) {
   return (
-    <section id='hero' className='relative h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background'>
-      <EmblemInner />
+    <section id='hero' className='relative h-[calc(100dvh-4rem)] min-h-[42rem] w-full overflow-hidden bg-background'>
+      <EmblemInner landingActions={landingActions} />
     </section>
   )
 }

@@ -11,7 +11,7 @@ import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
 export async function generateMetadata(): Promise<Metadata> {
   const { branding } = await getProductCms('vinayaPortal')
   return {
-    title: 'Vinaya — Branch protection for the AI era',
+    title: 'Vinaya — A harness for your software engineering process',
     description:
       'Agents obey checkers, not documents. Install Vinaya and every coding agent must satisfy the same deterministic rules before merge.',
     icons: buildFaviconIcons(branding)

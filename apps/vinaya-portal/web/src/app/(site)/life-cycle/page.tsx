@@ -1,4 +1,3 @@
-import { Footer } from '@atta/ui/footer'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import { ArrowRight } from 'lucide-react'
@@ -41,18 +40,6 @@ export default function LifeCyclePage() {
           </NextLink>
         </div>
       </LandingSection>
-
-      <Footer
-        product='vinaya'
-        tagline='Execution governance for software teams'
-        links={[
-          { label: 'The Harness', href: '/docs/harness' },
-          { label: 'Studio', href: '/the-studio' },
-          { label: 'Start', href: '/start' },
-          { label: 'CLI', href: '/docs/cli' },
-          { label: 'Docs', href: '/docs' }
-        ]}
-      />
     </>
   )
 }

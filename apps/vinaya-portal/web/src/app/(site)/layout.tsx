@@ -1,4 +1,5 @@
 import { getProductCms } from '@atta/cms'
+import { Footer } from '@atta/ui/footer'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
 import { TopBar } from '@atta/ui/topbar'
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ElectricLabel } from './_components/ElectricLabel'
+import { FooterGate } from './_components/FooterGate'
 
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
@@ -137,7 +139,28 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           withAuth={false}
         />
       </div>
-      <div className='min-h-0 flex-1 overflow-y-auto'>{children}</div>
+      <div className='min-h-0 flex-1 overflow-y-auto'>
+        {children}
+        <FooterGate>
+          <Footer
+            product='vinaya'
+            logo={
+              <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+                <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+              </NextLink>
+            }
+            links={[
+              { label: 'Start', href: '/start' },
+              { label: 'Docs', href: '/docs' },
+              { label: 'CLI', href: '/docs/cli' },
+              { label: 'Config', href: '/config' },
+              { label: 'Studio', href: '/the-studio' },
+              { label: 'Roadmap', href: '/roadmap' },
+              { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
+            ]}
+          />
+        </FooterGate>
+      </div>
     </div>
   )
 }
