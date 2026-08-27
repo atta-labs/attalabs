@@ -21,7 +21,6 @@ import {
 import type { ReactNode } from 'react'
 import { ElectricLabel } from './_components/ElectricLabel'
 import { FooterGate } from './_components/FooterGate'
-import { GatesMark } from './roadmap/_components/RoadmapMarks'
 
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
