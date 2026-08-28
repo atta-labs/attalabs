@@ -27,7 +27,12 @@ const ROLE_SPECIFIC_VARIABLES: Record<PlanNodeRole, Set<string>> = {
   round: new Set(['roundIndex', 'totalRounds', 'outputsByRound', 'currentRoundOutputs']),
   terminal: new Set(['roundIndex', 'totalRounds', 'outputsByRound']),
   audit: new Set(['conclusion', 'previousRevisions']),
-  'custom-step': new Set()
+  'custom-step': new Set(),
+  // No caller in this tranche validates an agent-spawn/mechanical node's template
+  // through this function — compileFlow never routes their promptTemplate/action here.
+  // Empty set (BASE_VARIABLES only) until a real caller defines what these roles need.
+  'agent-spawn': new Set(),
+  mechanical: new Set()
 }
 
 /**

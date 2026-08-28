@@ -102,6 +102,10 @@ export class LangGraphAdapter implements Adapter {
       const node = plan.graph.nodes[nodeId]!
       // Skip sentinel nodes
       if (nodeId === '__END__') continue
+      // Compile-safety skip: agent-spawn/mechanical nodes have no
+      // Plan.agents entry by design — this package never executes these
+      // kinds this tranche (the new agent-spawn executor does, #996/#997).
+      if (node.role === 'agent-spawn' || node.role === 'mechanical') continue
       if (!plan.agents[node.agentName]) {
         throw new Error(`Node '${nodeId}' references agent '${node.agentName}' not in plan.agents.`)
       }

@@ -65,6 +65,9 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor, apiKey?: str
   for (const nodeId of Object.keys(plan.graph.nodes)) {
     if (nodeId === '__END__') continue
     const node = plan.graph.nodes[nodeId]!
+    // Compile-safety skip: agent-spawn/mechanical nodes have no Plan.agents
+    // entry — this package never executes these kinds this tranche.
+    if (node.role === 'agent-spawn' || node.role === 'mechanical') continue
     const agent = plan.agents[node.agentName]
     if (agent?.tools && agent.tools.length > 0) {
       toolEnabledNodes.add(nodeId)
@@ -86,6 +89,9 @@ export function buildStateGraph(plan: Plan, executor: NodeExecutor, apiKey?: str
   if (apiKey) {
     for (const nodeId of toolEnabledNodes) {
       const node = plan.graph.nodes[nodeId]!
+      // Compile-safety skip, unreachable at runtime: toolEnabledNodes never
+      // contains an agent-spawn/mechanical id (excluded above).
+      if (node.role === 'agent-spawn' || node.role === 'mechanical') continue
       const agent = plan.agents[node.agentName]!
       const classifierNodeId = `classifier-${nodeId}`
       const agentClassifierMode = plan.classifierModes?.[agent.name]

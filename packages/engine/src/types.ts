@@ -186,9 +186,27 @@ export interface PlanGraph {
 }
 
 /**
- * A single node in the execution graph. Each node corresponds to one agent invocation.
+ * A single node in the execution graph.
+ *
+ * A discriminated union, not one flat interface with optional fields. An
+ * agent-bearing node (compiled from a rounds-shaped Flow) has a real
+ * Plan.agents entry to resolve — agentName and inputTemplate document that
+ * contract and stay mandatory. A step node (compiled from a steps-shaped
+ * Flow, engine-agent-spawn-v1 task 2) has no Plan.agents entry at all — the
+ * agent-spawn executor (a later task) resolves its role to a binary from its
+ * own caller-supplied configuration, never from the Plan — so it carries
+ * only the fields its source Step actually declared. Widening the existing
+ * fields to optional would let a step node silently claim an agent to
+ * resolve it doesn't have; a union makes that state unrepresentable instead.
  */
-export interface PlanNode {
+export type PlanNode = PlanAgentNode | PlanAgentSpawnNode | PlanMechanicalNode
+
+/**
+ * A node compiled from a rounds-shaped Flow: one agent invocation per node,
+ * resolved against Plan.agents. This is the pre-existing node shape —
+ * unchanged in structure — now one member of the PlanNode union.
+ */
+export interface PlanAgentNode {
   /** Unique node identifier within the plan, e.g. "round-0-philosopher", "audit-0". */
   id: string
   /** Name of the agent to invoke. Must exist in Plan.agents. */
@@ -199,10 +217,58 @@ export interface PlanNode {
    */
   inputTemplate: string
   /** Structural role of this node in the workflow. */
-  role: PlanNodeRole
+  role: Exclude<PlanNodeRole, 'agent-spawn' | 'mechanical'>
   /** Categorical classification for visualization and Plan consumers. */
-  kind: PlanNodeKind
+  kind: Exclude<PlanNodeKind, 'agent-spawn' | 'mechanical'>
   /** Runtime metadata for TemplateState derivation and execution bookkeeping. */
+  metadata: PlanNodeMetadata
+}
+
+/**
+ * A node compiled from an AgentStep (steps-shaped Flow): spawns an external
+ * agent process. Carries only what AgentStep declared — no Plan.agents entry
+ * backs this node. `agentRole` is deliberately not named `role` — `role` on
+ * every PlanNode variant is the structural PlanNodeRole discriminant
+ * ('agent-spawn', fixed); `agentRole` is the AgentStep's own role string,
+ * which the agent-spawn executor (a later task) resolves to a binary.
+ */
+export interface PlanAgentSpawnNode {
+  /** Unique node identifier — the source AgentStep's own id, used verbatim. */
+  id: string
+  /** Structural role — fixed at 'agent-spawn' for this variant. */
+  role: 'agent-spawn'
+  /** Categorical classification — fixed at 'agent-spawn' for this variant. */
+  kind: 'agent-spawn'
+  /** Handlebars template for the prompt passed to the spawned agent. */
+  promptTemplate: string
+  /** The declared role this step launches as. Must exist in the source Flow's agents (AgentRole[]). */
+  agentRole: string
+  /** Permission scope the spawned agent runs under. */
+  permission: string
+  /** Working directory the spawned agent runs in. */
+  workingDirectory: string
+  /** Maximum turns the spawned agent may take before the executor stops it. */
+  maxTurns: number
+  /** ID of a prior AgentSpawn/Mechanical node whose session this step resumes, if any. */
+  resume?: string
+  /** Runtime metadata for execution bookkeeping. */
+  metadata: PlanNodeMetadata
+}
+
+/**
+ * A node compiled from a MechanicalStep (steps-shaped Flow): an external
+ * action with no model turn. Carries only what MechanicalStep declared.
+ */
+export interface PlanMechanicalNode {
+  /** Unique node identifier — the source MechanicalStep's own id, used verbatim. */
+  id: string
+  /** Structural role — fixed at 'mechanical' for this variant. */
+  role: 'mechanical'
+  /** Categorical classification — fixed at 'mechanical' for this variant. */
+  kind: 'mechanical'
+  /** The mechanical action this node performs. */
+  action: string
+  /** Runtime metadata for execution bookkeeping. */
   metadata: PlanNodeMetadata
 }
 
@@ -213,8 +279,10 @@ export interface PlanNode {
  * - terminal: the concluding agent whose output becomes the Conclusion content
  * - audit: the audit agent that evaluates round output and decides whether to revise
  * - custom-step: one step in a custom sequential workflow
+ * - agent-spawn: a step that spawns an external agent process (steps-shaped Flow; engine-agent-spawn-v1)
+ * - mechanical: a step describing an external action with no model turn (steps-shaped Flow; engine-agent-spawn-v1)
  */
-export type PlanNodeRole = 'solo' | 'round' | 'terminal' | 'audit' | 'custom-step'
+export type PlanNodeRole = 'solo' | 'round' | 'terminal' | 'audit' | 'custom-step' | 'agent-spawn' | 'mechanical'
 
 /**
  * Categorical classification of a node for visualization and Plan consumers.
@@ -227,6 +295,8 @@ export type PlanNodeRole = 'solo' | 'round' | 'terminal' | 'audit' | 'custom-ste
  * - custom-step: explicit step in a custom sequential workflow
  * - revision-terminal: pre-allocated conditional revision slot (may never execute)
  * - system-sentinel: LangGraph routing sentinel (__END__); filter before rendering
+ * - agent-spawn: a step that spawns an external agent process (steps-shaped Flow; engine-agent-spawn-v1)
+ * - mechanical: a step describing an external action with no model turn (steps-shaped Flow; engine-agent-spawn-v1)
  */
 export type PlanNodeKind =
   | 'solo-agent'
@@ -236,6 +306,8 @@ export type PlanNodeKind =
   | 'custom-step'
   | 'revision-terminal'
   | 'system-sentinel'
+  | 'agent-spawn'
+  | 'mechanical'
 
 /**
  * Categorical classification of an edge for visualization.

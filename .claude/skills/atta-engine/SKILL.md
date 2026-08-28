@@ -191,18 +191,20 @@ type PlanGraph = { nodes: PlanNode[]; edges: PlanEdge[]; entry: string; exit: st
 
 **PlanNodeKind** + **PlanEdgeKind** (vocabulary refactor, May 3, 2026, OQ-cross-9 Choice A — preserved through the generic flow refactor)
 
-PlanNodeKind values (7): `solo-agent`, `parallel-peer`, `synthesizer`, `auditor`, `custom-step`, `revision-terminal`, `system-sentinel`.
+PlanNodeKind values (9): `solo-agent`, `parallel-peer`, `synthesizer`, `auditor`, `custom-step`, `revision-terminal`, `system-sentinel`, `agent-spawn`, `mechanical` — the last two belong to nodes compiled from a `steps`-shaped Flow (see the `agent-lifecycle` shape below), not the four rounds-shaped compilers.
 PlanEdgeKind values (2): `flow`, `ordering`. A conditional edge is not a `PlanEdgeKind` value — it's a separate `PlanConditionalEdge` list on `PlanGraph.conditionalEdges`.
 
-Every emitted node carries both `kind` (engine-vocab) and `role` (`PlanNodeRole` — `solo | round | terminal | audit | custom-step` — used by the adapter for execution routing and by the UI). `compileFlow` emits these consistently across all 4 shapes.
+Every emitted node carries both `kind` (engine-vocab) and `role` (`PlanNodeRole` — `solo | round | terminal | audit | custom-step | agent-spawn | mechanical` — used by the adapter for execution routing and by the UI). `compileFlow` emits these consistently across the four rounds-shaped compilers.
+
+**`PlanNode` is a discriminated union, not one flat interface**: `PlanAgentNode` (the four rounds-shaped compilers — `agentName`/`inputTemplate` mandatory, resolved against `Plan.agents`) | `PlanAgentSpawnNode` (`agent-spawn` nodes — `promptTemplate`/`agentRole`/`permission`/`workingDirectory`/`maxTurns`/`resume?`, no `Plan.agents` entry backs it) | `PlanMechanicalNode` (`mechanical` nodes — only an `action` string). A step node has no agent to resolve, so it carries no `agentName`/`inputTemplate` at all rather than emitting a lying empty string — the same reasoning the rounds/steps `Flow` split already applies at the schema level. Any code reading `node.agentName` unconditionally must narrow on `role`/`kind` first or it fails to compile; `packages/adapter-langgraph`'s `adapter.ts`/`node-executor.ts`/`graph-builder.ts` and `packages/ui/engine-flow/planToVisualNodes.ts` each carry a one-line compile-safety skip for the two new kinds — they do not execute or render agent-spawn/mechanical nodes yet, a different package does that.
 
 **Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used.
 
 ---
 
-## `steps[]` — the agent-spawn schema (schema only; not yet compilable)
+## `steps[]` — the agent-spawn schema
 
-`engine-agent-spawn-v1` task 1 (#981) added `steps[]` as an XOR alternative to `rounds[]`: a Flow declares exactly one of the two, never both. Enforced by a `superRefine` in `flow-schema.ts` at parse time, and by `steps?: never` / `rounds?: never` sentinels on `Flow` and `StepsFlow` in `flow-types.ts` at the type level. `Flow` (rounds-shaped) keeps its existing name and shape unchanged — every current consumer keeps compiling with zero edits.
+`steps[]` is an XOR alternative to `rounds[]`: a Flow declares exactly one of the two, never both. Enforced by a `superRefine` in `flow-schema.ts` at parse time, and by `steps?: never` / `rounds?: never` sentinels on `Flow` and `StepsFlow` in `flow-types.ts` at the type level. `Flow` (rounds-shaped) keeps its existing name and shape unchanged — every current consumer keeps compiling with zero edits.
 
 ```ts
 interface StepsFlow {
@@ -242,7 +244,7 @@ A `steps` entry describes how to *launch* an agent — role, permission scope, w
 
 `loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Neither is re-exported through `index.ts` yet — no task in this tranche consumes them from outside the engine package.
 
-`compileFlow` does not compile a `StepsFlow` — it still only understands `rounds`. Calling it with a steps-shaped Flow throws a named `NotImplementedError` from `validateFlow`'s Rule 0 (*"this Flow declares steps, not rounds — compileFlow cannot compile a steps-shaped Flow yet"*), not a stack trace out of shape detection. Task 2 (#982) owns teaching `compileFlow` to emit a Plan from `steps[]`.
+`compileFlow` compiles a `StepsFlow` into the `agent-lifecycle` shape (see Shape Detection and Node ID Scheme below) — one `PlanAgentSpawnNode`/`PlanMechanicalNode` per step, validated by `validateStepsFlow` rather than `validateFlow`'s rounds-only rules. `Plan.agents` is left empty for this shape: `AgentRole` (`{role: string}`) carries no `systemPrompt`, so there is no real `Agent` record to build, and the agent-spawn executor resolves a step's declared role to a binary from its own caller-supplied configuration, never from `Plan.agents`.
 
 ---
 
@@ -256,8 +258,9 @@ A `steps` entry describes how to *launch* an agent — role, permission scope, w
 | `brokered-no-synth` | Last round has >1 agent AND no round has `onFailure.action === 'revise'` | `reviewer-{AgentName}` for each |
 | `brokered-synth` | `rounds.length >= 2 && rounds[rounds.length-1].agents.length === 1` AND no `onFailure.action === 'revise'` | `reviewer-{AgentName}` for each reviewer + `brokered-synthesis` |
 | `rounds-audit` | Any round has `onFailure.action === 'revise'` | `round-{r}-{AgentName}`, `terminal-{k}`, `audit-{Name}-{k}`, `__END__` |
+| `agent-lifecycle` | The Flow is `steps`-shaped (has `steps[]`, not `rounds[]`) | The step's own declared `id`, verbatim, for every step |
 
-A future refactor (OQ-I in `vada-state.md`) could rewrite `compileFlow` as a generic walker emitting round-id-namespaced ids, but the adapter and route handler would need updating in lockstep. Captured as a known compromise, not a regression.
+A future refactor (OQ-I in `vada-state.md`) could rewrite `compileFlow` as a generic walker emitting round-id-namespaced ids, but the adapter and route handler would need updating in lockstep. Captured as a known compromise, not a regression. The `agent-lifecycle` shape sits outside this compromise entirely — it has no v1 node-id convention to preserve, so its ids are simply the step's own id.
 
 ---
 
@@ -287,8 +290,9 @@ Downstream code (adapter, mcp-server, dashboard, UI's `flow-helpers.ts`) depends
 | Round synthesizer | `terminal-{slotIndex}` | `terminal-0` |
 | Audit | `audit-{agentName}-{slotIndex}` | `audit-BlindCritic-0` |
 | Terminal end | `__END__` | `__END__` |
+| Agent-spawn / mechanical step (`agent-lifecycle` shape) | the step's own declared `id`, verbatim | `review`, `apply-patch` |
 
-`slotIndex` increments with each revision cycle. The conditional edge from the last auditor of a slot wires to either the next `terminal-{slotIndex+1}` (revise path) or `__END__` (accept path) based on `anyOf` evaluation of audit outputs against the `RevisionCondition`.
+`slotIndex` increments with each revision cycle. The conditional edge from the last auditor of a slot wires to either the next `terminal-{slotIndex+1}` (revise path) or `__END__` (accept path) based on `anyOf` evaluation of audit outputs against the `RevisionCondition`. Steps carry no such convention — each step already declares its own unique `id` (uniqueness enforced by `validateStepsFlow`), so the compiler reuses it rather than inventing a synthetic numbering scheme, and edges between steps are a plain sequential `flow` chain in declaration order.
 
 ---
 
