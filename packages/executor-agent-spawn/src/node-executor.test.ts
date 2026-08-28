@@ -1,7 +1,13 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { PlanAgentSpawnNode } from '@atta/engine'
 import { executeAgentSpawnNode, type SpawnedProcessLike, type SpawnFn } from './node-executor'
 import type { AgentSpawnExecutorConfig } from './types'
+
+const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-root-'))
+const outsideRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-outside-'))
 
 const testNode: PlanAgentSpawnNode = {
   id: 'review',
@@ -10,7 +16,7 @@ const testNode: PlanAgentSpawnNode = {
   promptTemplate: 'Review the diff.',
   agentRole: 'reviewer',
   permission: 'default',
-  workingDirectory: '/tmp/agent-spawn-test',
+  workingDirectory: workingDirectoryRoot,
   maxTurns: 5,
   metadata: {}
 }
@@ -53,9 +59,11 @@ function fakeSpawn(options: { stdoutLines?: string[]; stderr?: string; exitCode?
 }
 
 const baseConfig: AgentSpawnExecutorConfig = {
+  workingDirectoryRoot,
   roleBinaries: {
     reviewer: {
       command: 'fake-cli',
+      allowedPermissions: ['default'],
       buildArgs: ({ resumeSessionId }) => (resumeSessionId ? ['-p', '--resume', resumeSessionId] : ['-p'])
     }
   }
@@ -115,7 +123,18 @@ describe('executeAgentSpawnNode', () => {
     ).rejects.toThrow(/No binary configured for role 'unknown-role'/)
   })
 
-  it('refuses to spawn with an unbounded working directory', async () => {
+  it("refuses a permission not in the role's allowlist", async () => {
+    await expect(
+      executeAgentSpawnNode({
+        node: { ...testNode, permission: 'bypassPermissions' },
+        prompt: 'x',
+        config: baseConfig,
+        spawnFn: fakeSpawn({ stdoutLines: [] })
+      })
+    ).rejects.toThrow(/permission 'bypassPermissions', which role 'reviewer' does not allow/)
+  })
+
+  it('refuses an empty workingDirectory', async () => {
     await expect(
       executeAgentSpawnNode({
         node: { ...testNode, workingDirectory: '' },
@@ -124,5 +143,83 @@ describe('executeAgentSpawnNode', () => {
         spawnFn: fakeSpawn({ stdoutLines: [] })
       })
     ).rejects.toThrow(/unbounded cwd/)
+  })
+
+  it('refuses a relative workingDirectory', async () => {
+    await expect(
+      executeAgentSpawnNode({
+        node: { ...testNode, workingDirectory: 'relative/path' },
+        prompt: 'x',
+        config: baseConfig,
+        spawnFn: fakeSpawn({ stdoutLines: [] })
+      })
+    ).rejects.toThrow(/unbounded cwd/)
+  })
+
+  it('refuses a workingDirectory that resolves outside the configured root', async () => {
+    await expect(
+      executeAgentSpawnNode({
+        node: { ...testNode, workingDirectory: outsideRoot },
+        prompt: 'x',
+        config: baseConfig,
+        spawnFn: fakeSpawn({ stdoutLines: [] })
+      })
+    ).rejects.toThrow(/escapes the configured root/)
+  })
+
+  it('refuses a workingDirectory that does not exist', async () => {
+    await expect(
+      executeAgentSpawnNode({
+        node: { ...testNode, workingDirectory: join(workingDirectoryRoot, 'does-not-exist') },
+        prompt: 'x',
+        config: baseConfig,
+        spawnFn: fakeSpawn({ stdoutLines: [] })
+      })
+    ).rejects.toThrow(/could not be resolved/)
+  })
+
+  it("only forwards the default env allowlist plus the role's own env, never the full parent environment", async () => {
+    let capturedEnv: NodeJS.ProcessEnv | undefined
+    const spawnFn: SpawnFn = (command, args, options) => {
+      capturedEnv = options.env
+      return fakeSpawn({ stdoutLines: ['{"type":"result"}'] })(command, args, options)
+    }
+    const configWithSecret: AgentSpawnExecutorConfig = {
+      ...baseConfig,
+      roleBinaries: {
+        reviewer: { ...baseConfig.roleBinaries.reviewer!, env: { ROLE_FLAG: 'on' } }
+      }
+    }
+    const previousSecret = process.env.AGENT_SPAWN_TEST_SECRET
+    process.env.AGENT_SPAWN_TEST_SECRET = 'super-secret'
+    try {
+      await executeAgentSpawnNode({ node: testNode, prompt: 'x', config: configWithSecret, spawnFn })
+    } finally {
+      if (previousSecret === undefined) delete process.env.AGENT_SPAWN_TEST_SECRET
+      else process.env.AGENT_SPAWN_TEST_SECRET = previousSecret
+    }
+
+    expect(capturedEnv?.AGENT_SPAWN_TEST_SECRET).toBeUndefined()
+    expect(capturedEnv?.ROLE_FLAG).toBe('on')
+  })
+
+  it('kills and rejects a process that never closes, using the default timeout', async () => {
+    const neverClosingSpawn: SpawnFn = () => ({
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: () => {} },
+      stderr: { on: () => {} },
+      on: () => {},
+      kill: () => {}
+    })
+    const configWithShortTimeout: AgentSpawnExecutorConfig = {
+      ...baseConfig,
+      roleBinaries: {
+        reviewer: { ...baseConfig.roleBinaries.reviewer!, timeoutMs: 20 }
+      }
+    }
+
+    await expect(
+      executeAgentSpawnNode({ node: testNode, prompt: 'x', config: configWithShortTimeout, spawnFn: neverClosingSpawn })
+    ).rejects.toThrow(/exceeded its 20ms timeout/)
   })
 })

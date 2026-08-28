@@ -33,12 +33,22 @@ export interface RoleBinaryConfig {
   command: string
   /** Builds the full argv (excluding the command itself) for one invocation. */
   buildArgs: (params: RoleBinaryArgsParams) => string[]
-  /** Extra environment variables merged into the spawned process's environment. */
+  /**
+   * Non-empty allowlist of permission values this role accepts, checked
+   * against the step's declared `permission` before `buildArgs` ever sees
+   * it. Required, not optional: this package is vendor-agnostic and cannot
+   * hardcode which permission strings a given CLI actually supports, but
+   * shipping with no enforcement at all let an unconstrained free string
+   * reach the spawned process unexamined — the caller, who does know its
+   * CLI's valid values, is the only one who can supply this list.
+   */
+  allowedPermissions: string[]
+  /** Extra environment variables merged into the spawned process's environment, after the executor's own env allowlist (see `AgentSpawnExecutorConfig.envAllowlist`). */
   env?: Record<string, string>
   /**
    * Kills the process and rejects if it hasn't closed within this many
-   * milliseconds. Omit to wait indefinitely — the CLI's own `maxTurns`
-   * enforcement is the only bound in that case.
+   * milliseconds. Defaults to `10` minutes when omitted — a hung process
+   * is always eventually killed, never waited on indefinitely.
    */
   timeoutMs?: number
 }
@@ -46,6 +56,22 @@ export interface RoleBinaryConfig {
 /** Role → binary configuration, keyed by the Plan's `agentRole` strings. */
 export interface AgentSpawnExecutorConfig {
   roleBinaries: Record<string, RoleBinaryConfig>
+  /**
+   * Absolute path every agent-spawn node's `workingDirectory` must resolve
+   * inside (after symlinks are followed) — the confinement root for every
+   * spawned process's cwd. Required: without it, a node's declared
+   * `workingDirectory` would be trusted with no bound at all.
+   */
+  workingDirectoryRoot: string
+  /**
+   * Env var names copied from this process's own environment into every
+   * spawned process, in addition to each role's own `env`. Defaults to
+   * `PATH` + `HOME` — enough for a CLI to resolve binaries and find its own
+   * login/config state, never the full parent environment (which may carry
+   * vendor API keys, database URLs, or other secrets this package has no
+   * business handing to an externally-authenticated process).
+   */
+  envAllowlist?: string[]
 }
 
 /**

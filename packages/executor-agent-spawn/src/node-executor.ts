@@ -8,8 +8,16 @@
  */
 
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
+import { isAbsolute, sep } from 'node:path'
 import type { PlanAgentSpawnNode } from '@atta/engine'
-import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
+import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult, RoleBinaryConfig } from './types'
+
+/** No `timeoutMs` means the role never bounds its own runtime; the executor still must — a process that never exits must not hang the run forever. */
+const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000
+
+/** The minimum a spawned CLI needs to resolve its own binaries and find its already-logged-in session state — not the parent process's full (possibly secret-bearing) environment. */
+const DEFAULT_ENV_ALLOWLIST = ['PATH', 'HOME']
 
 /**
  * The subset of Node's `ChildProcess` this module depends on. Narrowed to
@@ -57,6 +65,60 @@ function parseNdjson(raw: string, nodeId: string): unknown[] {
   })
 }
 
+/**
+ * Resolves and confines a node's declared `workingDirectory`: it must be an
+ * absolute path, must exist, and — after resolving symlinks — must sit
+ * inside `allowedRoot`. Returns the resolved real path, which is what's
+ * actually passed to `spawn` as `cwd`, so a `workingDirectory` that is
+ * itself a symlink pointing outside the root is caught rather than
+ * silently followed at spawn time.
+ */
+function resolveConfinedWorkingDirectory(node: PlanAgentSpawnNode, allowedRoot: string): string {
+  if (!node.workingDirectory || !isAbsolute(node.workingDirectory)) {
+    throw new Error(
+      `Agent-spawn node '${node.id}' has a non-absolute or empty workingDirectory ('${node.workingDirectory}') — refusing to spawn with an unbounded cwd. Declare an absolute path.`
+    )
+  }
+
+  let real: string
+  try {
+    real = realpathSync(node.workingDirectory)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(
+      `Agent-spawn node '${node.id}' declares workingDirectory '${node.workingDirectory}', which could not be resolved: ${message}`
+    )
+  }
+
+  const realRoot = realpathSync(allowedRoot)
+  if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+    throw new Error(
+      `Agent-spawn node '${node.id}''s workingDirectory ('${node.workingDirectory}', resolved to '${real}') escapes the configured root '${allowedRoot}' — refusing to spawn outside it.`
+    )
+  }
+
+  return real
+}
+
+/**
+ * Builds the spawned process's environment: the role's own `env` overlaid
+ * on top of an explicit allowlist pulled from this process's own
+ * environment (default `PATH` + `HOME`) — never the full parent
+ * environment, which may carry secrets (vendor API keys, DB URLs) this
+ * package has no business handing to an externally-authenticated process.
+ */
+function buildChildEnv(
+  binaryConfig: RoleBinaryConfig,
+  envAllowlist: string[] = DEFAULT_ENV_ALLOWLIST
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {}
+  for (const key of envAllowlist) {
+    const value = process.env[key]
+    if (value !== undefined) env[key] = value
+  }
+  return { ...env, ...binaryConfig.env }
+}
+
 /** Scans events in reverse for the last one carrying a string session id. */
 function extractSessionId(events: unknown[]): string | undefined {
   for (let i = events.length - 1; i >= 0; i--) {
@@ -88,8 +150,9 @@ export interface ExecuteAgentSpawnNodeParams {
  *
  * Waits on the `close` event, not `exit` — `exit` can fire before stdio
  * streams finish flushing, which would silently truncate the captured
- * stream. When the role's config declares `timeoutMs`, a process that
- * never exits is killed and the promise rejects instead of hanging forever.
+ * stream. A process that never exits is killed and the promise rejects
+ * instead of hanging forever — `timeoutMs` always applies (default `10`
+ * minutes when the role's config doesn't override it).
  */
 export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams): Promise<AgentSpawnNodeResult> {
   const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn } = params
@@ -100,11 +163,15 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
       `No binary configured for role '${node.agentRole}' (node '${node.id}'). Provide one in AgentSpawnExecutorConfig.roleBinaries.`
     )
   }
-  if (!node.workingDirectory) {
+  if (!binaryConfig.allowedPermissions.includes(node.permission)) {
     throw new Error(
-      `Agent-spawn node '${node.id}' has no workingDirectory declared — refusing to spawn with an unbounded cwd.`
+      `Agent-spawn node '${node.id}' declares permission '${node.permission}', which role '${node.agentRole}' does not allow. Allowed: ${
+        binaryConfig.allowedPermissions.join(', ') || '(none configured)'
+      }.`
     )
   }
+
+  const cwd = resolveConfinedWorkingDirectory(node, config.workingDirectoryRoot)
 
   const args = binaryConfig.buildArgs({
     permission: node.permission,
@@ -112,10 +179,11 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
     resumeSessionId
   })
 
+  const timeoutMs = binaryConfig.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const startedAt = Date.now()
   const child = spawnFn(binaryConfig.command, args, {
-    cwd: node.workingDirectory,
-    env: { ...process.env, ...binaryConfig.env }
+    cwd,
+    env: buildChildEnv(binaryConfig, config.envAllowlist)
   })
 
   const stdoutChunks: string[] = []
@@ -126,19 +194,16 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
   child.stdin?.end()
 
   const exitCode = await new Promise<number>((resolve, reject) => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    if (binaryConfig.timeoutMs !== undefined) {
-      timer = setTimeout(() => {
-        child.kill('SIGTERM')
-        reject(
-          new Error(
-            `Agent-spawn node '${node.id}' (role '${node.agentRole}') exceeded its ${binaryConfig.timeoutMs}ms timeout and was killed.`
-          )
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM')
+      reject(
+        new Error(
+          `Agent-spawn node '${node.id}' (role '${node.agentRole}') exceeded its ${timeoutMs}ms timeout and was killed.`
         )
-      }, binaryConfig.timeoutMs)
-    }
+      )
+    }, timeoutMs)
     child.on('error', (err) => {
-      if (timer) clearTimeout(timer)
+      clearTimeout(timer)
       reject(
         new Error(
           `Failed to spawn '${binaryConfig.command}' for role '${node.agentRole}' (node '${node.id}'): ${err.message}`
@@ -146,7 +211,7 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
       )
     })
     child.on('close', (code) => {
-      if (timer) clearTimeout(timer)
+      clearTimeout(timer)
       resolve(code ?? 0)
     })
   })

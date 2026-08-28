@@ -1,9 +1,14 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { Plan, PlanMechanicalNode } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import type { AgentSpawnExecutorConfig } from './types'
+
+const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-graph-root-'))
 
 function fakeSpawn(stdoutLines: string[]): SpawnFn {
   return () => {
@@ -42,7 +47,7 @@ const twoStepPlan: Plan = {
         promptTemplate: 'Implement: {{question}}',
         agentRole: 'coder',
         permission: 'default',
-        workingDirectory: '/tmp/agent-spawn-graph-test',
+        workingDirectory: workingDirectoryRoot,
         maxTurns: 10,
         metadata: {}
       },
@@ -53,7 +58,7 @@ const twoStepPlan: Plan = {
         promptTemplate: 'Review it.',
         agentRole: 'reviewer',
         permission: 'default',
-        workingDirectory: '/tmp/agent-spawn-graph-test',
+        workingDirectory: workingDirectoryRoot,
         maxTurns: 5,
         resume: 'implement',
         metadata: {}
@@ -66,10 +71,12 @@ const twoStepPlan: Plan = {
 }
 
 const config: AgentSpawnExecutorConfig = {
+  workingDirectoryRoot,
   roleBinaries: {
-    coder: { command: 'fake-coder', buildArgs: () => ['-p'] },
+    coder: { command: 'fake-coder', allowedPermissions: ['default'], buildArgs: () => ['-p'] },
     reviewer: {
       command: 'fake-reviewer',
+      allowedPermissions: ['default'],
       buildArgs: ({ resumeSessionId }) => (resumeSessionId ? ['-p', '--resume', resumeSessionId] : ['-p'])
     }
   }
@@ -79,10 +86,12 @@ describe('buildAgentSpawnStateGraph', () => {
   it('runs a two-step Plan end to end, threading the resumed session id', async () => {
     let capturedResumeArgs: string[] | undefined
     const configWithCapture: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
       roleBinaries: {
-        coder: { command: 'fake-coder', buildArgs: () => ['-p'] },
+        coder: { command: 'fake-coder', allowedPermissions: ['default'], buildArgs: () => ['-p'] },
         reviewer: {
           command: 'fake-reviewer',
+          allowedPermissions: ['default'],
           buildArgs: (params) => {
             capturedResumeArgs = params.resumeSessionId ? ['--resume', params.resumeSessionId] : []
             return ['-p']
