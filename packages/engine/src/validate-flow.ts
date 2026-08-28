@@ -1,5 +1,5 @@
-import { VadaEngineError } from './errors'
-import type { AgentFailurePolicy, Flow, Round } from './flow-types'
+import { NotImplementedError, VadaEngineError } from './errors'
+import type { AgentFailurePolicy, Flow, Round, StepsFlow } from './flow-types'
 
 export class InvalidFlowConfigError extends VadaEngineError {
   readonly name = 'InvalidFlowConfigError'
@@ -31,6 +31,16 @@ export function resolveAgentFailure(round: Pick<Round, 'layout' | 'agentFailure'
  * Rule 10 (agent_failure defaults) is a derivation rule — use resolveAgentFailure instead.
  */
 export function validateFlow(flow: Flow): void {
+  // Rule 0: compileFlow only compiles rounds-shaped Flows. A steps-shaped
+  // Flow reaching here (task 2's compiler doesn't exist yet) must fail
+  // loudly and by name, not crash inside detectShape's shape-detection scan.
+  if (!Array.isArray(flow.rounds)) {
+    throw new NotImplementedError(
+      'this Flow declares steps, not rounds — compileFlow cannot compile a steps-shaped Flow yet; that is task 2 (#982)',
+      { feature: 'steps-flow-compilation' }
+    )
+  }
+
   // Rule 1: rounds.length >= 1
   if (flow.rounds.length === 0) {
     throw new InvalidFlowConfigError('flow must have at least one round', {
@@ -140,6 +150,75 @@ export function validateFlow(flow: Flow): void {
             reason: `target '${target}' at index ${targetIdx} is not prior to '${round.id}' at index ${roundIdx}`
           })
         }
+      }
+    }
+  }
+}
+
+/**
+ * Validates a StepsFlow's structural rules. Distinct from validateFlow
+ * (which validates the rounds shape and refuses to compile a steps Flow):
+ * this is the steps-shape counterpart, covering step-id uniqueness, agent
+ * step role references, and resume references.
+ */
+export function validateStepsFlow(flow: StepsFlow): void {
+  // XOR restated: a StepsFlow constructed by hand (bypassing Zod) must not
+  // also carry rounds — defense in depth alongside the FlowSchema superRefine.
+  if ((flow as { rounds?: unknown }).rounds !== undefined) {
+    throw new InvalidFlowConfigError('Flow must declare exactly one of rounds or steps (XOR) — found both', {
+      rule: 'rule-s0-xor-rounds-steps',
+      reason: 'flow.rounds is present on a steps-shaped Flow'
+    })
+  }
+
+  if (flow.steps.length === 0) {
+    throw new InvalidFlowConfigError('flow must have at least one step', {
+      rule: 'rule-s1-steps-non-empty',
+      reason: 'steps array is empty'
+    })
+  }
+
+  // Step ids unique within flow
+  const stepIndexMap = new Map<string, number>()
+  for (let i = 0; i < flow.steps.length; i++) {
+    const step = flow.steps[i]!
+    if (stepIndexMap.has(step.id)) {
+      throw new InvalidFlowConfigError(`duplicate step id '${step.id}'`, {
+        rule: 'rule-s2-unique-step-ids',
+        reason: `step id '${step.id}' appears more than once`
+      })
+    }
+    stepIndexMap.set(step.id, i)
+  }
+
+  const roleNames = new Set(flow.agents.map((a) => a.role))
+
+  for (const step of flow.steps) {
+    if (step.type !== 'agent') continue
+
+    // Every agent step's role must be declared in the flow's agents
+    if (!roleNames.has(step.role)) {
+      throw new InvalidFlowConfigError(`step '${step.id}' references unknown role '${step.role}'`, {
+        rule: 'rule-s3-role-refs-exist',
+        reason: `role '${step.role}' not found in flow.agents`
+      })
+    }
+
+    // resume references only a prior step
+    if (step.resume !== undefined) {
+      const stepIdx = stepIndexMap.get(step.id)!
+      const resumeIdx = stepIndexMap.get(step.resume)
+      if (resumeIdx === undefined) {
+        throw new InvalidFlowConfigError(`step '${step.id}' resume '${step.resume}' does not exist`, {
+          rule: 'rule-s4-no-forward-resume-refs',
+          reason: `resume target '${step.resume}' not found in flow.steps`
+        })
+      }
+      if (resumeIdx >= stepIdx) {
+        throw new InvalidFlowConfigError(`step '${step.id}' resume '${step.resume}' is not a prior step`, {
+          rule: 'rule-s4-no-forward-resume-refs',
+          reason: `resume '${step.resume}' at index ${resumeIdx} is not prior to '${step.id}' at index ${stepIdx}`
+        })
       }
     }
   }

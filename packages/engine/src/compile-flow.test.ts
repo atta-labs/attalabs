@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { compileFlow } from './compile-flow'
-import { loadFlow } from './flow-loader'
+import { loadFlow, loadStepsFlow } from './flow-loader'
 import type { Flow } from './flow-types'
 import type { Plan, PlanEdge, PlanNode } from './types'
 
@@ -435,5 +435,37 @@ describe('compileFlow — baseline graph equivalence', () => {
     expect(plan.graph.edges.map(sortEdge).sort()).toEqual(baseline.graph.edges.map(sortEdge).sort())
     expect(plan.responseMode).toBe(baseline.responseMode)
     expect(plan.responseNode).toBe(baseline.responseNode)
+  })
+})
+
+const MINIMAL_STEPS_YAML = `
+schema_version: "2.0"
+id: test-steps
+display_name: Test Steps
+description: A test steps flow
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: reviewer
+
+steps:
+  - id: review
+    type: agent
+    role: reviewer
+    prompt_template: "Review {{target}}."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+`
+
+describe('compileFlow — steps-shaped Flow (task 2 territory)', () => {
+  it('throws a named, explicit error rather than crashing in shape detection', () => {
+    const stepsFlow = loadStepsFlow(MINIMAL_STEPS_YAML)
+    // Intentional unsafe cast: exercises the runtime guard a caller who
+    // bypasses the type system (or hand-narrows AnyFlow wrong) would hit.
+    expect(() => compileFlow(stepsFlow as unknown as Flow, QUESTION, MODEL)).toThrow(/task 2 \(#982\)/)
   })
 })
