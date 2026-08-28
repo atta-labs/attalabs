@@ -39,10 +39,12 @@ packages/engine/src/
 ├── types.ts                  # Plan, PlanNode, PlanEdge, PlanGraph, PlanNodeRole,
 │                              # PlanNodeKind, PlanEdgeKind, RevisionCondition, Conclusion,
 │                              # AgentOutput; re-exports Agent from @atta/agents
-├── flow-types.ts             # Flow, Round, AgentInRound, OnFailureSpec, SignalType (public)
-├── flow-schema.ts            # Zod schema for schema_version "2.0" YAMLs
-├── flow-loader.ts            # loadFlow(yaml: string) → Flow (snake_case → camelCase)
-├── validate-flow.ts          # validateFlow enforcing the 10 v2 schema rules
+├── flow-types.ts             # Flow, Round, AgentInRound, OnFailureSpec, SignalType (public);
+│                              # StepsFlow, Step, AgentStep, MechanicalStep, AgentRole (steps[])
+├── flow-schema.ts            # Zod schema for schema_version "2.0" YAMLs; rounds XOR steps
+├── flow-loader.ts            # loadFlow(yaml) → Flow; loadStepsFlow(yaml) → StepsFlow (snake_case → camelCase)
+├── validate-flow.ts          # validateFlow (10 v2 rules + steps-shape rejection);
+│                              # validateStepsFlow (step ids, role refs, resume refs)
 ├── compile-flow.ts           # compileFlow(flow, question, model?, customVars?) → Plan
 │                              # — shape detection, node-id emission, conditional edges,
 │                              # buildRevisionCondition (throws on equals/matches)
@@ -189,12 +191,58 @@ type PlanGraph = { nodes: PlanNode[]; edges: PlanEdge[]; entry: string; exit: st
 
 **PlanNodeKind** + **PlanEdgeKind** (vocabulary refactor, May 3, 2026, OQ-cross-9 Choice A — preserved through the generic flow refactor)
 
-PlanNodeKind values (7): `agent`, `synthesizer`, `audit`, `terminal`, `start`, `end`, `meta`.
-PlanEdgeKind values (3): `flow`, `ordering`, `conditional`.
+PlanNodeKind values (7): `solo-agent`, `parallel-peer`, `synthesizer`, `auditor`, `custom-step`, `revision-terminal`, `system-sentinel`.
+PlanEdgeKind values (2): `flow`, `ordering`. A conditional edge is not a `PlanEdgeKind` value — it's a separate `PlanConditionalEdge` list on `PlanGraph.conditionalEdges`.
 
-Every emitted node carries both `kind` (engine-vocab) and `role` (Plan vocabulary, used by the UI). `compileFlow` emits these consistently across all 4 shapes.
+Every emitted node carries both `kind` (engine-vocab) and `role` (`PlanNodeRole` — `solo | round | terminal | audit | custom-step` — used by the adapter for execution routing and by the UI). `compileFlow` emits these consistently across all 4 shapes.
 
 **Conclusion** — final output from adapter (engine defines the shape, adapter produces it). Carries an optional `estimatedCostUsd?: number` — total estimated USD cost across all LLM calls in the session, when pricing is known for every model used.
+
+---
+
+## `steps[]` — the agent-spawn schema (schema only; not yet compilable)
+
+`engine-agent-spawn-v1` task 1 (#981) added `steps[]` as an XOR alternative to `rounds[]`: a Flow declares exactly one of the two, never both. Enforced by a `superRefine` in `flow-schema.ts` at parse time, and by `steps?: never` / `rounds?: never` sentinels on `Flow` and `StepsFlow` in `flow-types.ts` at the type level. `Flow` (rounds-shaped) keeps its existing name and shape unchanged — every current consumer keeps compiling with zero edits.
+
+```ts
+interface StepsFlow {
+  schemaVersion: '2.0'
+  id: string
+  displayName: string
+  description: string
+  experimental: boolean
+  benchmarked: boolean
+  defaults: FlowDefaults
+  agents: AgentRole[]          // { role: string } — declared roles, not LLM config
+  steps: Step[]
+  rounds?: never
+}
+
+type Step = AgentStep | MechanicalStep
+
+interface AgentStep {
+  id: string
+  type: 'agent'
+  role: string                 // must be declared in flow.agents
+  promptTemplate: string
+  permission: string
+  workingDirectory: string
+  maxTurns: number
+  resume?: string               // must reference a prior step's id
+}
+
+interface MechanicalStep {
+  id: string
+  type: 'mechanical'
+  action: string
+}
+```
+
+A `steps` entry describes how to *launch* an agent — role, permission scope, working directory, turn ceiling, prior session to resume — and nothing about what it does once running: no tool bindings, no binary name. The executor (a later task, a new package) binds `role` to an actual binary, since the binary present on one machine may be absent on another.
+
+`loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Neither is re-exported through `index.ts` yet — no task in this tranche consumes them from outside the engine package.
+
+`compileFlow` does not compile a `StepsFlow` — it still only understands `rounds`. Calling it with a steps-shaped Flow throws a named `NotImplementedError` from `validateFlow`'s Rule 0 (*"this Flow declares steps, not rounds — compileFlow cannot compile a steps-shaped Flow yet"*), not a stack trace out of shape detection. Task 2 (#982) owns teaching `compileFlow` to emit a Plan from `steps[]`.
 
 ---
 
@@ -297,10 +345,10 @@ The engine never injects prompts, examples, or content into Plans. User-provided
 
 ```ts
 // ✅ Agent's systemPrompt comes from the flow
-const node = { id, kind: 'agent', agent: agent.name }
+const node = { id, kind: 'solo-agent', agent: agent.name }
 
 // ❌ Engine should never add content
-const node = { id, kind: 'agent', agent: agent.name,
+const node = { id, kind: 'solo-agent', agent: agent.name,
                systemPromptOverride: 'You must also...' }
 ```
 
