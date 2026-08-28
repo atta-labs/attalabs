@@ -1,11 +1,18 @@
 import type { Agent } from '@atta/agents'
-import type { Flow, Round } from './flow-types'
+import type { AnyFlow, Flow, Round, StepsFlow } from './flow-types'
 import type { Plan, PlanNode, PlanEdge, PlanConditionalEdge, RevisionCondition } from './types'
-import { validateFlow } from './validate-flow'
+import { validateFlow, validateStepsFlow } from './validate-flow'
 
-type Shape = 'solo' | 'brokered-no-synth' | 'brokered-synth' | 'rounds-audit'
+type Shape = 'solo' | 'brokered-no-synth' | 'brokered-synth' | 'rounds-audit' | 'agent-lifecycle'
 
-function detectShape(flow: Flow): Shape {
+// The XOR from task 1 (Flow.steps?: never / StepsFlow.rounds?: never) guarantees
+// exactly one of the two is present — this is the one-line steps/rounds split.
+function isStepsFlow(flow: AnyFlow): flow is StepsFlow {
+  return Array.isArray((flow as StepsFlow).steps)
+}
+
+function detectShape(flow: AnyFlow): Shape {
+  if (isStepsFlow(flow)) return 'agent-lifecycle'
   const hasRevision = flow.rounds.some((r) => r.onFailure?.action === 'revise')
   if (hasRevision) return 'rounds-audit'
   if (flow.rounds.length === 1 && flow.rounds[0]!.agents.length === 1) return 'solo'
@@ -342,6 +349,76 @@ function compileRoundsAudit(
   }
 }
 
+// ─── Agent-lifecycle (steps) ─────────────────────────────────────────────────
+
+/**
+ * Compiles a steps-shaped Flow into a Plan: one PlanAgentSpawnNode per
+ * AgentStep, one PlanMechanicalNode per MechanicalStep, node id = the
+ * step's own declared id (verbatim, no synthetic numbering — task 1's
+ * validateStepsFlow already guarantees uniqueness), and a sequential 'flow'
+ * edge between each consecutive pair of steps in declaration order.
+ *
+ * No executor exists yet to run these nodes (engine-agent-spawn-v1 tasks
+ * 3/4) — this only makes the Plan describe what will run.
+ */
+function compileSteps(
+  flow: StepsFlow,
+  base: Omit<Plan, 'graph' | 'maxRevisions' | 'responseMode' | 'responseNode'>
+): Plan {
+  const nodes: Record<string, PlanNode> = {}
+
+  for (const step of flow.steps) {
+    if (step.type === 'agent') {
+      nodes[step.id] = {
+        id: step.id,
+        role: 'agent-spawn',
+        kind: 'agent-spawn',
+        promptTemplate: step.promptTemplate,
+        agentRole: step.role,
+        permission: step.permission,
+        workingDirectory: step.workingDirectory,
+        maxTurns: step.maxTurns,
+        ...(step.resume !== undefined ? { resume: step.resume } : {}),
+        metadata: {}
+      }
+    } else {
+      nodes[step.id] = {
+        id: step.id,
+        role: 'mechanical',
+        kind: 'mechanical',
+        action: step.action,
+        metadata: {}
+      }
+    }
+  }
+
+  const edges: PlanEdge[] = []
+  for (let i = 0; i < flow.steps.length - 1; i++) {
+    edges.push({
+      from: flow.steps[i]!.id,
+      to: flow.steps[i + 1]!.id,
+      kind: 'flow'
+    })
+  }
+
+  const entryNode = flow.steps[0]!.id
+
+  return {
+    ...base,
+    // A steps-shaped Flow has no rounds/onFailure at all (the XOR forbids
+    // it) — 0 is a true structural fact for this shape, not a placeholder.
+    maxRevisions: 0,
+    // responseMode/responseNode are left unset: no task in this tranche
+    // defines what "the conclusion" of a steps flow is (see PR body).
+    graph: {
+      nodes,
+      edges,
+      conditionalEdges: [],
+      entryNode
+    }
+  }
+}
+
 function buildRevisionCondition(signal: {
   type: 'contains' | 'equals' | 'matches'
   value: string
@@ -359,10 +436,36 @@ function buildRevisionCondition(signal: {
 // ─── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Compile a Flow (v2) into a Plan ready for adapter execution.
- * Shape is detected automatically from the flow structure.
+ * Compile a Flow (v2, rounds-shaped or steps-shaped) into a Plan ready for
+ * adapter execution. Shape is detected automatically from the flow structure.
  */
-export function compileFlow(flow: Flow, question: string, model?: string, customVars?: Record<string, string>): Plan {
+export function compileFlow(
+  flow: AnyFlow,
+  question: string,
+  model?: string,
+  customVars?: Record<string, string>
+): Plan {
+  if (isStepsFlow(flow)) {
+    validateStepsFlow(flow)
+
+    const effectiveModel = model ?? flow.defaults.model
+    const base = {
+      schemaVersion: '1.0' as const,
+      question,
+      model: effectiveModel,
+      specId: flow.id,
+      teamName: flow.id,
+      // No Plan.agents entry for this shape: AgentRole ({role: string}) carries
+      // no systemPrompt, so there is no real Agent record to build (see PR body —
+      // #996's own rationale confirms the executor resolves role→binary from its
+      // own caller-supplied config, never from Plan.agents).
+      agents: {} as Record<string, Agent>,
+      classifierModes: undefined
+    }
+
+    return compileSteps(flow, base)
+  }
+
   validateFlow(flow)
 
   const effectiveModel = model ?? flow.defaults.model
@@ -388,5 +491,9 @@ export function compileFlow(flow: Flow, question: string, model?: string, custom
       return compileBrokeredSynth(flow, base)
     case 'rounds-audit':
       return compileRoundsAudit(flow, base)
+    case 'agent-lifecycle':
+      // Unreachable: isStepsFlow(flow) above already returned for the only
+      // flow shape detectShape can classify as 'agent-lifecycle'.
+      throw new Error('unreachable: agent-lifecycle shape handled by the isStepsFlow branch above')
   }
 }

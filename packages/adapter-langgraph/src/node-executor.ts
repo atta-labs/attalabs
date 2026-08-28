@@ -29,6 +29,13 @@ export function createNodeExecutor(llmCall: LlmCallFn, hooks?: ExecutionHooks): 
     // Defensive: sentinel shouldn't be called by graph builder
     if (node.id === '__END__') return {}
 
+    // Compile-safety skip: agent-spawn/mechanical nodes (steps-shaped Flow,
+    // engine-agent-spawn-v1) have no Plan.agents entry or inputTemplate to
+    // render. This package never executes these kinds this tranche — that's
+    // the new agent-spawn executor package (#996/#997) — so this is a type
+    // guard, not a real runtime path.
+    if (node.role === 'agent-spawn' || node.role === 'mechanical') return {}
+
     const agent = plan.agents[node.agentName]
     if (!agent) {
       throw new Error(`Node '${node.id}' references agent '${node.agentName}' not in plan.agents.`)

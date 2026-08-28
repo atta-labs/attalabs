@@ -11,6 +11,8 @@ The adapter takes compiled Plans from `@atta/engine` and executes them via LangG
 
 This is where Plans become real. Engine is pure; adapter is the runtime.
 
+**This package only ever executes rounds-shaped Plans.** `PlanNode` is a discriminated union — an agent-bearing variant this package resolves against `Plan.agents`, and two step-node variants (`agent-spawn`, `mechanical`) that carry no `Plan.agents` entry at all, compiled from a `steps`-shaped Flow by a separate `agent-lifecycle` shape in `@atta/engine`. `adapter.ts`, `node-executor.ts`, and `graph-builder.ts` each carry a one-line compile-safety skip for those two kinds (matching each file's existing `__END__`-sentinel skip) purely so the type union checks — this package does not, and this tranche will not, execute either kind. A separate executor package spawns external agent processes for `agent-spawn` nodes instead.
+
 ---
 
 ## Architecture

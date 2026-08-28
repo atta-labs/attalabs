@@ -1,6 +1,6 @@
 import Dagre from '@dagrejs/dagre'
 import type { Edge, Node } from '@xyflow/react'
-import type { Plan, PlanNode } from '@atta/engine'
+import type { Plan, PlanAgentNode, PlanNode } from '@atta/engine'
 import type {
   AgentNodeData,
   SynthesisNodeData,
@@ -41,7 +41,7 @@ function inferWorkflowType(planNodes: PlanNode[]): WorkflowType {
 }
 
 // Assign a stable color index per unique agent name (for canvas renderers)
-function buildColorIndexMap(planNodes: PlanNode[]): Map<string, number> {
+function buildColorIndexMap(planNodes: PlanAgentNode[]): Map<string, number> {
   const map = new Map<string, number>()
   let counter = 0
   for (const n of planNodes) {
@@ -56,9 +56,17 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
   // Filter sentinel and revision-terminal nodes — they are graph infrastructure, not render targets
   const allPlanNodes = Object.values(plan.graph.nodes)
   const renderableNodes = allPlanNodes.filter(
-    (n) =>
+    (n): n is PlanAgentNode =>
       n.kind !== 'system-sentinel' &&
       n.kind !== 'revision-terminal' &&
+      // Compile-safety skip: agent-spawn/mechanical nodes (steps-shaped Flow,
+      // engine-agent-spawn-v1) have no agentName to render. Real rendering
+      // for these kinds is task 5 (#985) — untouched here. The `n is
+      // PlanAgentNode` predicate (not just a boolean) is required, not
+      // stylistic — every field access below this filter (agentName, etc.)
+      // needs renderableNodes narrowed to the agent-bearing variant.
+      n.kind !== 'agent-spawn' &&
+      n.kind !== 'mechanical' &&
       !(n.kind === 'auditor' && (n.metadata.revisionIndex ?? 0) > 0)
   )
 

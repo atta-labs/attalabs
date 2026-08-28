@@ -1,4 +1,4 @@
-import type { AgentOutput, ExecutionState, PlanNode, TemplateState } from './types'
+import type { AgentOutput, ExecutionState, PlanAgentNode, PlanNode, TemplateState } from './types'
 
 /**
  * Derives the TemplateState from the current ExecutionState and the
@@ -13,6 +13,15 @@ import type { AgentOutput, ExecutionState, PlanNode, TemplateState } from './typ
  * See types.ts (TemplateState, ExecutionState) for field semantics.
  */
 export function deriveTemplateState(state: ExecutionState, node: PlanNode): TemplateState {
+  if (node.role === 'agent-spawn' || node.role === 'mechanical') {
+    // Step nodes have no Plan.agents entry and never reach the rounds/audit
+    // TemplateState pipeline — the agent-spawn executor (a later task) runs
+    // them directly from their own PlanAgentSpawnNode/PlanMechanicalNode fields.
+    throw new Error(
+      `Internal error: deriveTemplateState does not support step nodes (node '${node.id}', role '${node.role}')`
+    )
+  }
+
   const agent = state.plan.agents[node.agentName]
   if (!agent) {
     // Should be impossible — compile guarantees node.agentName exists in plan.agents
@@ -111,7 +120,7 @@ export function deriveTemplateState(state: ExecutionState, node: PlanNode): Temp
 
   // participants: round-agent names in turn order (round-0 nodes, JS insertion order)
   const participants = Object.values(state.plan.graph.nodes)
-    .filter((n) => n.role === 'round' && n.metadata.roundIndex === 0)
+    .filter((n): n is PlanAgentNode => n.role === 'round' && n.metadata.roundIndex === 0)
     .map((n) => n.agentName)
     .join(', ')
 
