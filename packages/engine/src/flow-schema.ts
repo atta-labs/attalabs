@@ -66,9 +66,11 @@ export const FlowAgentSchema = z.object({
 // resume) and nothing about what it does once running: no tool bindings,
 // no binary names. A mechanical step carries no model fields at all.
 
-export const AgentRoleSchema = z.object({
-  role: z.string().min(1)
-})
+export const AgentRoleSchema = z
+  .object({
+    role: z.string().min(1)
+  })
+  .strict()
 
 export const AgentStepSchema = z.object({
   id: z
@@ -110,7 +112,14 @@ export const FlowSchema = z
       model: z.string().min(1),
       max_tokens: z.number().int().min(1).optional()
     }),
-    agents: z.array(z.union([FlowAgentSchema, AgentRoleSchema])).min(1),
+    // Loosely typed here on purpose: which shape is actually required (FlowAgentSchema
+    // for a rounds-shaped Flow, AgentRoleSchema for a steps-shaped one) depends on
+    // `rounds` vs `steps`, decided below in superRefine — never both accepted for the
+    // same Flow. Do not swap this for z.union([FlowAgentSchema, AgentRoleSchema]): a
+    // union lets a rounds-shaped Flow parse with role-only agents (or vice versa) by
+    // silently matching the wrong branch, which is exactly the XOR guarantee this
+    // schema exists to hold.
+    agents: z.array(z.record(z.string(), z.unknown())).min(1),
     rounds: z.array(RoundSchema).min(1).optional(),
     steps: z.array(StepSchema).min(1).optional()
   })
@@ -125,5 +134,20 @@ export const FlowSchema = z
           : 'Flow must declare exactly one of `rounds` or `steps` (XOR) — found neither',
         path: hasRounds ? ['steps'] : ['rounds']
       })
+      return
     }
+
+    const agentSchema = hasRounds ? FlowAgentSchema : AgentRoleSchema
+    data.agents.forEach((agent, i) => {
+      const result = agentSchema.safeParse(agent)
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `agents[${i}]${issue.path.length ? `.${issue.path.join('.')}` : ''}: ${issue.message}`,
+            path: ['agents', i, ...issue.path]
+          })
+        }
+      }
+    })
   })

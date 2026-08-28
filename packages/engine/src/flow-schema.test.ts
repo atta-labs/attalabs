@@ -104,3 +104,28 @@ describe('FlowSchema — steps discriminated union', () => {
     expect(FlowSchema.safeParse(bad).success).toBe(false)
   })
 })
+
+describe('FlowSchema — agents[] shape is tied to the declared Flow kind', () => {
+  it('refuses a rounds-shaped Flow whose agents are role-only (steps-shaped)', () => {
+    const bad = { ...ROUNDS_ONLY, agents: [{ role: 'reviewer' }] }
+    const result = FlowSchema.safeParse(bad)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.some((i) => /agents\[0\]\.name/.test(i.message))).toBe(true)
+    }
+  })
+
+  it('refuses a steps-shaped Flow whose agents carry rounds-shaped LLM config', () => {
+    const bad = {
+      ...STEPS_ONLY,
+      agents: [{ name: 'reviewer', system_prompt: 'You review things.', role: 'reviewer' }]
+    }
+    const result = FlowSchema.safeParse(bad)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => /agents\[0\]/.test(i.message) && /Unrecognized keys/.test(i.message))
+      ).toBe(true)
+    }
+  })
+})

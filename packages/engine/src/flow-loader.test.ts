@@ -269,3 +269,18 @@ describe('rounds XOR steps — refused at load', () => {
     expect(() => loadStepsFlow(neither)).toThrow(/found neither/)
   })
 })
+
+describe('agents[] shape is tied to the declared kind, not accepted either way', () => {
+  it('refuses a rounds-shaped YAML whose agents are role-only', () => {
+    const yaml = MINIMAL_SOLO_YAML.replace(
+      '  - name: Agent\n    system_prompt: Answer directly.\n',
+      '  - role: Agent\n'
+    )
+    expect(() => loadFlow(yaml)).toThrow(/agents\[0\]\.name/)
+  })
+
+  it('refuses a steps-shaped YAML whose agents carry rounds-shaped LLM config', () => {
+    const yaml = MINIMAL_STEPS_YAML.replace('  - role: reviewer\n', '  - name: reviewer\n    system_prompt: Review.\n')
+    expect(() => loadStepsFlow(yaml)).toThrow(/Unrecognized keys/)
+  })
+})
