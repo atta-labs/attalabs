@@ -83,6 +83,10 @@ packages/cms/schemas/branding.ts                      .claude/skills/ui-branding
 packages/cms/scripts/seed-branding.ts                 .claude/skills/ui-branding/SKILL.md
 packages/db/**                                        .claude/skills/database/SKILL.md
 packages/engine/**                                    .claude/skills/atta-engine/SKILL.md
+packages/engine/src/flow-schema.ts                    packages/engine/specs/engine-future-capabilities.md
+packages/engine/src/flow-types.ts                     packages/engine/specs/engine-future-capabilities.md
+packages/engine/src/compile-flow.ts                   packages/engine/specs/engine-future-capabilities.md
+packages/engine/src/types.ts                          packages/engine/specs/engine-future-capabilities.md
 packages/adapter-langgraph/**                         .claude/skills/atta-adapter-langgraph/SKILL.md
 packages/ui/canvas/**                                 .claude/skills/ui-canvas-animation/SKILL.md
 packages/ui/styles/**                                 .claude/skills/ui-theme-tokens/SKILL.md
