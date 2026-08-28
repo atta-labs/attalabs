@@ -1,0 +1,107 @@
+/**
+ * @file graph-builder.ts
+ * @description This package's own Plan → StateGraph translation. Not
+ * `buildStateGraph` from `packages/adapter-langgraph` — that function binds
+ * to `VadaGraphState`, takes a meaningless-here `apiKey` parameter, and
+ * structurally injects a classifier node before every tool-enabled node.
+ * An agent-lifecycle Plan has no rounds, no tools, no classifier.
+ *
+ * Node ids and the sequential edge chain come straight from `@atta/engine`'s
+ * `compileSteps` — a linear walk of `plan.graph.edges`, terminal nodes wired
+ * to `END`. No conditional edges exist in this shape (`plan.graph.entryNode`
+ * and `plan.graph.conditionalEdges` are the only other fields it sets, and
+ * the latter is always empty here).
+ */
+
+import { END, StateGraph } from '@langchain/langgraph'
+import type { Plan, PlanNode } from '@atta/engine'
+import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
+import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
+import { renderStepPrompt } from './template'
+import type { AgentSpawnExecutorConfig } from './types'
+
+/** Context passed to a per-node executor: the node itself and its owning Plan. */
+export interface NodeExecutionContext {
+  node: PlanNode
+  plan: Plan
+}
+
+export type AgentLifecycleNodeExecutor = (
+  state: AgentSpawnGraphStateValue,
+  context: NodeExecutionContext
+) => Promise<Partial<AgentSpawnGraphStateValue>>
+
+/**
+ * Builds the node executor wired into every node of the translated graph.
+ * Implements this package's first (and only, this task) node kind:
+ * `agent-spawn`. A `mechanical` node is structurally translated (it gets a
+ * graph node and edges like any other step) but has no executor yet —
+ * running one throws, naming the task that implements it, rather than
+ * silently no-op'ing.
+ */
+export function createAgentLifecycleNodeExecutor(
+  config: AgentSpawnExecutorConfig,
+  spawnFn?: SpawnFn
+): AgentLifecycleNodeExecutor {
+  return async (state, { node, plan }) => {
+    if (node.kind === 'mechanical') {
+      throw new Error(
+        `Mechanical step '${node.id}' has no executor yet — mechanical-node execution ships in engine-agent-spawn-v1 task 4.`
+      )
+    }
+    if (node.kind !== 'agent-spawn') {
+      throw new Error(
+        `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' steps (and, not yet, 'mechanical' ones).`
+      )
+    }
+
+    const resumeSessionId = node.resume ? state.sessions[node.resume] : undefined
+    if (node.resume && !resumeSessionId) {
+      throw new Error(
+        `Agent-spawn node '${node.id}' declares resume: '${node.resume}', but no session id has been recorded for it yet.`
+      )
+    }
+
+    const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
+    const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn })
+
+    return {
+      results: { [node.id]: result },
+      sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
+      revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+    }
+  }
+}
+
+/**
+ * Translates a compiled agent-lifecycle Plan into a compiled LangGraph
+ * StateGraph. One graph node per Plan node (id preserved verbatim), the
+ * Plan's sequential `flow` edges reproduced as-is, terminal nodes (no
+ * outgoing edge) wired to `END`, and `plan.graph.entryNode` wired as the
+ * graph's start.
+ */
+export function buildAgentSpawnStateGraph(plan: Plan, executor: AgentLifecycleNodeExecutor) {
+  const graph = new StateGraph(AgentSpawnGraphState)
+
+  for (const [nodeId, node] of Object.entries(plan.graph.nodes)) {
+    graph.addNode(nodeId, async (state: AgentSpawnGraphStateValue) => executor(state, { node, plan }))
+  }
+
+  for (const edge of plan.graph.edges) {
+    // LangGraph's addNode/addEdge typings require string-literal node names
+    // known at compile time; this package wires an arbitrary Plan's runtime
+    // node ids, so the cast is required at every edge call site.
+    ;(graph as unknown as { addEdge: (from: string, to: string) => void }).addEdge(edge.from, edge.to)
+  }
+
+  const nodesWithOutgoingEdge = new Set(plan.graph.edges.map((edge) => edge.from))
+  for (const nodeId of Object.keys(plan.graph.nodes)) {
+    if (!nodesWithOutgoingEdge.has(nodeId)) {
+      ;(graph as unknown as { addEdge: (from: string, to: typeof END) => void }).addEdge(nodeId, END)
+    }
+  }
+
+  ;(graph as unknown as { addEdge: (from: string, to: string) => void }).addEdge('__start__', plan.graph.entryNode)
+
+  return graph.compile()
+}

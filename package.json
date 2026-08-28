@@ -26,6 +26,7 @@
     "packages/crypto",
     "packages/db",
     "packages/engine",
+    "packages/executor-agent-spawn",
     "packages/identity",
     "packages/instrumentation",
     "packages/models",
