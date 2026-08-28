@@ -11,7 +11,6 @@ import {
 } from '@attalabs/aeg-core/docs'
 import { badgeLabels, humanLabel, shortLabel } from '../../(standalone)/harness/_lib/display-label'
 import { loadDiagramModel } from '../../(standalone)/harness/_lib/load-diagram'
-import { GITHUB_VINAYA_REPO, githubBlobUrl } from '@/lib/github-links'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 import { DocPage } from '../../_components/DocPage'
 import {
@@ -129,7 +128,6 @@ function gateSections(model: DiagramModel, ringIndex: 0 | 1 | 2): HarnessSection
         guards: guards.get(n.id),
         summary: n.summary,
         detail: n.detail,
-        viewSourceHref: githubBlobUrl('aeg-root/enforcement.md', n.sourceLine, GITHUB_VINAYA_REPO),
         legacySlugs: legacyAnchorSlugs(n)
       }
     })
@@ -154,8 +152,7 @@ function actionGroups(model: DiagramModel): HarnessSectionGroup[] {
     badges: [],
     performedBy: a.performedBy.map((id) => roleName.get(id) ?? id),
     summary: a.summary,
-    detail: a.description,
-    viewSourceHref: githubBlobUrl('packages/aeg-core/src/actions.ts', undefined, GITHUB_VINAYA_REPO)
+    detail: a.description
   })
   return [
     {
@@ -208,7 +205,7 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
   // frame. The published page is the binding short version, never the
   // reference beneath it — `publishedDoctrineBody` is the same extraction the
   // C7 gate checks, so the page and the gate can never disagree about what
-  // publishes. The full file is linked, not inlined.
+  // publishes. The private backing file is neither linked nor inlined.
   const body = bodyBySlug.get(joined)
   if (body === undefined) notFound()
   const frame = frameForSlug(joined, model)
@@ -221,7 +218,6 @@ export default async function AegDocPage({ params }: { params: Promise<Params> }
       basePath={basePath}
       frame={frame}
       seam={seamForSlug(joined, model)}
-      sourceHref={githubBlobUrl(`aeg-root/${joined}.md`, undefined, GITHUB_VINAYA_REPO)}
     />
   )
 }

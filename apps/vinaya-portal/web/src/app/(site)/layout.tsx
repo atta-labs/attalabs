@@ -140,25 +140,28 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         />
       </div>
       <div className='min-h-0 flex-1 overflow-y-auto'>
-        {children}
-        <FooterGate>
-          <Footer
-            product='vinaya'
-            logo={
-              <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-                <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
-              </NextLink>
-            }
-            links={[
-              { label: 'Start', href: '/start' },
-              { label: 'Docs', href: '/docs' },
-              { label: 'CLI', href: '/docs/cli' },
-              { label: 'Config', href: '/config' },
-              { label: 'Studio', href: '/the-studio' },
-              { label: 'Roadmap', href: '/roadmap' },
-              { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
-            ]}
-          />
+        <FooterGate
+          footer={
+            <Footer
+              product='vinaya'
+              logo={
+                <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+                  <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+                </NextLink>
+              }
+              links={[
+                { label: 'Start', href: '/start' },
+                { label: 'Docs', href: '/docs' },
+                { label: 'CLI', href: '/docs/cli' },
+                { label: 'Config', href: '/config' },
+                { label: 'Studio', href: '/the-studio' },
+                { label: 'Roadmap', href: '/roadmap' },
+                { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
+              ]}
+            />
+          }
+        >
+          {children}
         </FooterGate>
       </div>
     </div>

@@ -1,19 +1,38 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { createContext, type ReactNode, useContext } from 'react'
 
-// `/docs/harness` is deliberately footer-less at `lg`+ — its own page.tsx says why:
-// `DiagramExplorer` fills exactly the viewport below the TopBar with `overflow-hidden`,
-// "must be fully visible with zero scrolling." A footer rendered after it in the shared
-// `(site)/layout.tsx` scroll region would force that region to scroll, breaking the
-// invariant. Every other `(site)` route keeps the site-wide footer; this is the one
-// deliberate exception, not a general opt-out mechanism — extend the set only for a route
-// with the same "fills the viewport, zero scroll" contract, not for ordinary long pages.
-const NO_FOOTER_ROUTES = new Set(['/docs/harness'])
+export type FooterPlacement = 'content' | 'hidden' | 'site'
 
-export function FooterGate({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  if (NO_FOOTER_ROUTES.has(pathname)) return null
-  return <>{children}</>
+/**
+ * Sidebar docs own their scroll pane, so their footer must render inside that
+ * pane rather than after the whole two-column shell. State Machine remains a
+ * standalone page using the site-level footer. Harness is the one deliberate
+ * footer-less route because its diagram fills the available viewport.
+ */
+export function footerPlacement(pathname: string): FooterPlacement {
+  if (pathname === '/docs/harness') return 'hidden'
+  if (pathname === '/docs/cli') return 'content'
+  if (pathname.startsWith('/docs/') && pathname !== '/docs/state-machine') return 'content'
+  return 'site'
+}
+
+const FooterContext = createContext<ReactNode>(null)
+
+export function FooterGate({ children, footer }: { children: ReactNode; footer: ReactNode }) {
+  const placement = footerPlacement(usePathname() ?? '')
+
+  return (
+    <FooterContext.Provider value={footer}>
+      {children}
+      {placement === 'site' ? footer : null}
+    </FooterContext.Provider>
+  )
+}
+
+/** Renders the site footer in a nested layout's own content scroll pane. */
+export function FooterContentSlot() {
+  const footer = useContext(FooterContext)
+  return <>{footer}</>
 }

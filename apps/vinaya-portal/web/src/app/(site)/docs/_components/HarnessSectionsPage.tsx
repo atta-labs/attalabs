@@ -1,7 +1,7 @@
 import { Badge, Separator } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Doc } from '@attalabs/aeg-core/docs'
 import { StickyDocHeader } from './StickyDocHeader'
 
@@ -24,7 +24,6 @@ export type HarnessSection = {
   performedBy?: string[]
   summary?: string
   detail?: string
-  viewSourceHref?: string
   /** Anchor slugs this section used to publish under, from
    * `@attalabs/aeg-core`'s `legacyAnchorSlugs`. A deep link built against the
    * old slug (bookmarked, or still live on another surface) must keep
@@ -96,19 +95,6 @@ function SectionBlock({ section }: { section: HarnessSection }) {
           <Text size='sm' muted className='font-sans leading-relaxed'>
             Performed by: {section.performedBy.join(', ')}
           </Text>
-        )}
-
-        {section.viewSourceHref && (
-          <NextLink
-            href={section.viewSourceHref}
-            target='_blank'
-            rel='noreferrer'
-            variant='link'
-            className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-primary'
-          >
-            View source
-            <ArrowUpRight className='h-3.5 w-3.5' />
-          </NextLink>
         )}
       </section>
     </>
