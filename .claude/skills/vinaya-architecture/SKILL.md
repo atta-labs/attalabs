@@ -21,7 +21,11 @@ apps/vinaya-portal/
                  the design, not an oversight (task 1/#917). `/roadmap` is CMS-backed: its
                  items are `roadmapMilestone` Sanity documents (`getRoadmapMilestones()` in
                  `@atta/cms`), not a hardcoded array — content-editable from Studio without a
-                 code change, and still no forge dependency (CMS is not forge).
+                 code change, and still no forge dependency (CMS is not forge). A milestone's
+                 `version` is optional and holds only a record of what already shipped, never
+                 a predicted/target number — see `.claude/skills/ui-cms-theme/SKILL.md`'s
+                 "Non-theme content document types" section for the full rule and how status
+                 derivation behaves while it's empty.
 
 apps/vinaya-studio/
 └── web/        @atta/vinaya-studio-web — the local governance dashboard: `/studio`,
