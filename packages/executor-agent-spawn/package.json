@@ -1,0 +1,30 @@
+{
+  "name": "@atta/executor-agent-spawn",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@atta/engine": "workspace:*",
+    "@langchain/langgraph": "^0.2.0",
+    "handlebars": "^4.7.8"
+  },
+  "devDependencies": {
+    "@atta/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -433,6 +433,20 @@
         "vitest": "^2.1.0",
       },
     },
+    "packages/executor-agent-spawn": {
+      "name": "@atta/executor-agent-spawn",
+      "version": "0.0.1",
+      "dependencies": {
+        "@atta/engine": "workspace:*",
+        "@langchain/langgraph": "^0.2.0",
+        "handlebars": "^4.7.8",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/identity": {
       "name": "@atta/identity",
       "version": "0.1.0",
@@ -673,6 +687,8 @@
     "@atta/db": ["@atta/db@workspace:packages/db"],
 
     "@atta/engine": ["@atta/engine@workspace:packages/engine"],
+
+    "@atta/executor-agent-spawn": ["@atta/executor-agent-spawn@workspace:packages/executor-agent-spawn"],
 
     "@atta/forensic-hiring-auditor": ["@atta/forensic-hiring-auditor@workspace:packages/agents/forensic-hiring-auditor"],
 
