@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { loadFlow, compileFlow } from '@atta/engine'
+import { loadFlow, compileFlow, type Plan } from '@atta/engine'
 import { planToVisualNodes } from './planToVisualNodes'
 
 // Catalog YAMLs live at packages/agents/vada-deliberation/yamls/
@@ -182,5 +182,87 @@ describe('planToVisualNodes — rounds workflows', () => {
       const edge = edges.find((e) => e.source === lastAgent && e.target === firstOfNext)
       expect(edge, `missing cross-round edge ${lastAgent}→${firstOfNext}`).toBeDefined()
     }
+  })
+})
+
+// loadStepsFlow is not part of @atta/engine's public surface (see flow-loader.ts) — this
+// literal Plan mirrors compileFlow's compileSteps() output for the same fixture
+// packages/engine/src/compile-flow.test.ts uses (MINIMAL_STEPS_YAML), so the fixture and
+// the compiler's real output shape stay in lockstep.
+const STEPS_PLAN: Plan = {
+  schemaVersion: '1.0',
+  question: 'Test question',
+  model: 'claude-sonnet-4-6',
+  agents: {},
+  teamName: 'test-steps',
+  graph: {
+    nodes: {
+      review: {
+        id: 'review',
+        role: 'agent-spawn',
+        kind: 'agent-spawn',
+        promptTemplate: 'Review {{target}}.',
+        agentRole: 'reviewer',
+        permission: 'read-only',
+        workingDirectory: '{{worktree}}',
+        maxTurns: 20,
+        metadata: {}
+      },
+      'apply-patch': {
+        id: 'apply-patch',
+        role: 'mechanical',
+        kind: 'mechanical',
+        action: 'git-apply',
+        metadata: {}
+      }
+    },
+    edges: [{ from: 'review', to: 'apply-patch', kind: 'flow' }],
+    conditionalEdges: [],
+    entryNode: 'review'
+  },
+  maxRevisions: 0
+}
+
+describe('planToVisualNodes — steps-shaped Flow (agent-spawn / mechanical)', () => {
+  it('workflowType is custom — never falls through to solo', () => {
+    const { workflowType } = planToVisualNodes(STEPS_PLAN)
+    expect(workflowType).toBe('custom')
+  })
+
+  it('renders brief + one node per step, no filtering', () => {
+    const { nodes } = planToVisualNodes(STEPS_PLAN)
+    expect(nodes).toHaveLength(3) // brief + review + apply-patch
+  })
+
+  it('AgentStep node renders as agentSpawnNode carrying its own fields', () => {
+    const { nodes } = planToVisualNodes(STEPS_PLAN)
+    const n = nodes.find((node) => node.id === 'review')
+    expect(n?.type).toBe('agentSpawnNode')
+    expect(n?.data).toMatchObject({
+      label: 'review',
+      agentRole: 'reviewer',
+      permission: 'read-only',
+      workingDirectory: '{{worktree}}',
+      maxTurns: 20,
+      visualState: 'idle'
+    })
+  })
+
+  it('MechanicalStep node renders as mechanicalNode carrying its action', () => {
+    const { nodes } = planToVisualNodes(STEPS_PLAN)
+    const n = nodes.find((node) => node.id === 'apply-patch')
+    expect(n?.type).toBe('mechanicalNode')
+    expect(n?.data).toMatchObject({ label: 'apply-patch', action: 'git-apply', visualState: 'idle' })
+  })
+
+  it('brief connects to the entry step, and the sequential step edge is rendered', () => {
+    const { edges } = planToVisualNodes(STEPS_PLAN)
+    expect(edges.find((e) => e.source === '__brief__' && e.target === 'review')).toBeDefined()
+    expect(edges.find((e) => e.source === 'review' && e.target === 'apply-patch')).toBeDefined()
+  })
+
+  it('hasSynthesis is false — steps-shaped Flows have no synthesizer node', () => {
+    const { hasSynthesis } = planToVisualNodes(STEPS_PLAN)
+    expect(hasSynthesis).toBe(false)
   })
 })

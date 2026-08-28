@@ -15,13 +15,17 @@ import { SynthesisNode } from './nodeRenderers/SynthesisNode'
 import { RoundLabel } from './nodeRenderers/RoundLabel'
 import { BriefNode } from './nodeRenderers/BriefNode'
 import { AuditBadge } from './nodeRenderers/AuditBadge'
+import { AgentSpawnNode } from './nodeRenderers/AgentSpawnNode'
+import { MechanicalNode } from './nodeRenderers/MechanicalNode'
 
 const BASE_NODE_TYPES: NodeTypes = {
   agentNode: AgentNode as ComponentType<NodeProps>,
   synthesisNode: SynthesisNode as ComponentType<NodeProps>,
   briefNode: BriefNode as ComponentType<NodeProps>,
   auditNode: AuditBadge as ComponentType<NodeProps>,
-  roundLabel: RoundLabel as ComponentType<NodeProps>
+  roundLabel: RoundLabel as ComponentType<NodeProps>,
+  agentSpawnNode: AgentSpawnNode as ComponentType<NodeProps>,
+  mechanicalNode: MechanicalNode as ComponentType<NodeProps>
 }
 
 const AUTO_HEIGHT_PADDING = 40
@@ -73,7 +77,9 @@ export function FlowGraph({ plan, events, rendererSet, className, autoHeight = f
       ...(rendererSet?.agent ? { agentNode: rendererSet.agent.component } : {}),
       ...(rendererSet?.synthesis ? { synthesisNode: rendererSet.synthesis.component } : {}),
       ...(rendererSet?.brief ? { briefNode: rendererSet.brief.component } : {}),
-      ...(rendererSet?.audit ? { auditNode: rendererSet.audit.component } : {})
+      ...(rendererSet?.audit ? { auditNode: rendererSet.audit.component } : {}),
+      ...(rendererSet?.agentSpawn ? { agentSpawnNode: rendererSet.agentSpawn.component } : {}),
+      ...(rendererSet?.mechanical ? { mechanicalNode: rendererSet.mechanical.component } : {})
     }),
     [rendererSet]
   )

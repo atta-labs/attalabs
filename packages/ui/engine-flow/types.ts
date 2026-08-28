@@ -42,6 +42,24 @@ export interface BriefNodeData {
   [key: string]: unknown
 }
 
+export interface AgentSpawnNodeData {
+  label: string
+  agentRole: string
+  permission: string
+  workingDirectory: string
+  maxTurns: number
+  resume?: string
+  visualState: NodeVisualState
+  [key: string]: unknown
+}
+
+export interface MechanicalNodeData {
+  label: string
+  action: string
+  visualState: NodeVisualState
+  [key: string]: unknown
+}
+
 export interface RoundLabelData {
   round: number
   label: string
@@ -59,6 +77,8 @@ export interface FlowRendererSet {
   synthesis?: FlowNodeRenderer
   audit?: FlowNodeRenderer
   brief?: FlowNodeRenderer
+  agentSpawn?: FlowNodeRenderer
+  mechanical?: FlowNodeRenderer
 }
 
 export interface RoundMeta {

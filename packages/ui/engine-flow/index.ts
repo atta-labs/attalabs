@@ -20,6 +20,8 @@ export type {
   SynthesisNodeData,
   AuditNodeData,
   BriefNodeData,
+  AgentSpawnNodeData,
+  MechanicalNodeData,
   RoundLabelData,
   FlowNodeRenderer,
   FlowRendererSet,
