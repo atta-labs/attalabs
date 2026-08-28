@@ -23,7 +23,6 @@ type Props = {
   groups: DiagramGroup[]
   findings: DiagramFinding[]
   readMoreHrefs: Record<string, string>
-  viewSourceHrefs: Record<string, string>
 }
 
 /** Overview framing, shown in the sidebar before any ring is drilled — copy,
@@ -129,7 +128,7 @@ const BODY_TEXT = 'font-sans text-card-foreground leading-relaxed'
  * fully visible without scrolling. Title/description/legend live in a
  * fixed-width sidebar on the left; the diagram takes the rest of the row.
  */
-export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHrefs }: Props) {
+export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   const [drilledKey, setDrilledKey] = useState<GroupKey | null>(null)
   const [selectedLeaf, setSelectedLeaf] = useState<DiagramNode | null>(null)
 
@@ -224,7 +223,6 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs, viewSourceHre
                 node={selectedLeaf}
                 groupKey={drilledGroup.key}
                 readMoreHref={readMoreHrefs[selectedLeaf.id]}
-                viewSourceHref={viewSourceHrefs[selectedLeaf.id]}
               />
             ) : (
               <div className='flex flex-col gap-3'>

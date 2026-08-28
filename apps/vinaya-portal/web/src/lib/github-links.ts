@@ -60,37 +60,3 @@ export function findRepoRoot(): string {
 export function findAegRoot(): string {
   return path.join(findRepoRoot(), 'node_modules', '@attalabs', 'vinaya', 'aeg-root')
 }
-
-/** The forge this monorepo is hosted on — used to build clickable, verifiable source links. */
-export const GITHUB_REPO = 'daniboomerang/attalabs'
-export const GITHUB_DEFAULT_BRANCH = 'main'
-
-/**
- * The standalone repo that canonically develops the engine packages
- * (`@attalabs/aeg-core`/`aeg-forge-state`/`aeg-types`/`vinaya-sources`) and
- * the CLI — attalabs holds no local copy of any of them, so a "view source"
- * link for one of their files must point here, not at this repo.
- */
-export const GITHUB_VINAYA_REPO = 'atta-labs/vinaya'
-
-/**
- * Builds a GitHub blob URL for a repo-relative path, optionally anchored to a
- * specific line — shared by any Vinaya web page that needs to link a claim
- * straight to the real source line a skeptical reader can check. Defaults to
- * this monorepo; pass `GITHUB_VINAYA_REPO` for a path that lives in the
- * standalone engine/CLI repo instead.
- */
-export function githubBlobUrl(relPath: string, line?: number, repo: string = GITHUB_REPO): string {
-  const base = `https://github.com/${repo}/blob/${GITHUB_DEFAULT_BRANCH}/${relPath}`
-  return line ? `${base}#L${line}` : base
-}
-
-/** Same as `githubBlobUrl`, but for a directory (GitHub's `tree/` path, not `blob/`). */
-export function githubTreeUrl(relPath: string): string {
-  return `https://github.com/${GITHUB_REPO}/tree/${GITHUB_DEFAULT_BRANCH}/${relPath}`
-}
-
-/** Repo-relative path from an absolute path under the repo root. */
-export function toRepoRelative(absPath: string): string {
-  return path.relative(findRepoRoot(), absPath).replace(/\\/g, '/')
-}

@@ -7,9 +7,24 @@ import { useEffect, useState } from 'react'
 export type StickyDocHeaderProps = {
   title: string
   section: string
+  /** The headings that represent navigable page sections. */
+  headingSelector?: string
+  /**
+   * How far below the scroll pane's top edge a heading still counts as
+   * "reached". It must be at least the anchor scroll-margin of the sections
+   * it tracks, or a deep-linked heading lands visible under this bar while
+   * the bar still names the section above it. The default matches the
+   * `scroll-mt-6` the markdown doc pages use.
+   */
+  activeOffset?: number
 }
 
-export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
+export function StickyDocHeader({
+  title,
+  section,
+  headingSelector = '.doc-page-content h2, .doc-page-content h3',
+  activeOffset = 64
+}: StickyDocHeaderProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [activeHeading, setActiveHeading] = useState<string | null>(null)
 
@@ -24,13 +39,13 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
       setIsSticky(scrollContainer.scrollTop > 80)
 
       // Track active h2 or h3 heading
-      const headings = document.querySelectorAll('.doc-page-content h2, .doc-page-content h3')
+      const headings = document.querySelectorAll(headingSelector)
       let currentActive: string | null = null
 
       for (const heading of headings) {
         const rect = heading.getBoundingClientRect()
         // If heading has scrolled near or past the sticky header position
-        if (rect.top - containerRect.top <= 64) {
+        if (rect.top - containerRect.top <= activeOffset) {
           currentActive = heading.textContent
         } else {
           break
@@ -46,7 +61,7 @@ export function StickyDocHeader({ title, section }: StickyDocHeaderProps) {
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll)
     }
-  }, [])
+  }, [headingSelector, activeOffset])
 
   // Library-resolved sticky breadcrumb bar via `ChromeFrame variant='bar'`: under
   // the flush libraries it's a `border-b bg-card` strip, under retro it's a

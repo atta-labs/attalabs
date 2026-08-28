@@ -54,29 +54,20 @@ const GROUP_TAG_LABEL: Record<GroupKey, string> = {
  * No live-status pill — `DiagramModel.tranche` never backs this panel (see
  * `load-diagram.ts`).
  *
- * `readMoreHref`/`viewSourceHref` both arrive pre-computed from the server
- * (`page.tsx`) — this component must never import `@/lib/github-links` or
- * `@/lib/docs/load-aeg-docs` itself: both are `server-only` (read `node:fs`),
- * and this panel renders from a client component in response to a click.
- *
- * Two link shapes, not one: `readMoreHref` is the in-app doc route (present
- * for gate/check/role/contract, absent for action — no doctrine markdown
- * backs an action node) and renders as a `next/link`, no new tab. `View
- * source` is the GitHub blob (present whenever `readMoreHref` is, plus
- * action) and always opens in a new tab — it is the same-page navigation vs.
- * leave-the-app distinction, and the two must not be conflated into one
- * link or one label.
+ * `readMoreHref` arrives pre-computed from the server (`page.tsx`) — this
+ * component must never import `@/lib/docs/load-aeg-docs` itself because that
+ * module is `server-only` (it reads `node:fs`) and this panel renders from a
+ * client component in response to a click. Every leaf links to its public,
+ * in-app document; the private backing repository is not a reader surface.
  */
 export function LeafPanel({
   node,
   groupKey,
-  readMoreHref,
-  viewSourceHref
+  readMoreHref
 }: {
   node: DiagramNode
   groupKey: GroupKey
   readMoreHref: string | undefined
-  viewSourceHref: string | undefined
 }) {
   return (
     <div className='flex flex-col gap-4'>
@@ -131,31 +122,15 @@ export function LeafPanel({
         </Text>
       )}
 
-      {(readMoreHref || viewSourceHref) && (
-        <div className='flex flex-col gap-2'>
-          {readMoreHref && (
-            <NextLink
-              href={readMoreHref}
-              variant='link'
-              className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm hover:text-primary'
-            >
-              Read more
-              <ArrowUpRight className='h-3.5 w-3.5' />
-            </NextLink>
-          )}
-          {viewSourceHref && (
-            <NextLink
-              href={viewSourceHref}
-              target='_blank'
-              rel='noreferrer'
-              variant='link'
-              className='inline-flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-primary'
-            >
-              View source
-              <ArrowUpRight className='h-3.5 w-3.5' />
-            </NextLink>
-          )}
-        </div>
+      {readMoreHref && (
+        <NextLink
+          href={readMoreHref}
+          variant='link'
+          className='inline-flex w-fit items-center gap-1 text-card-foreground text-sm hover:text-primary'
+        >
+          Read more
+          <ArrowUpRight className='h-3.5 w-3.5' />
+        </NextLink>
       )}
     </div>
   )
