@@ -1,5 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { loadFlow } from './flow-loader'
+import { validateStepsFlow } from './validate-flow'
+import { loadFlow, loadStepsFlow } from './flow-loader'
+
+const MINIMAL_STEPS_YAML = `
+schema_version: "2.0"
+id: test-steps
+display_name: Test Steps
+description: A test steps flow
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: reviewer
+
+steps:
+  - id: review
+    type: agent
+    role: reviewer
+    prompt_template: "Review {{target}}."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+  - id: merge
+    type: mechanical
+    action: merge-pr
+`
 
 const MINIMAL_SOLO_YAML = `
 schema_version: "2.0"
@@ -165,5 +192,80 @@ describe('loadFlow', () => {
     // the byte-identical single-shot path.
     const flow = loadFlow(MINIMAL_SOLO_YAML)
     expect(flow.agents[0]!.customTools).toBeUndefined()
+  })
+
+  it('throws when given a steps-shaped YAML', () => {
+    expect(() => loadFlow(MINIMAL_STEPS_YAML)).toThrow('use loadStepsFlow')
+  })
+})
+
+describe('loadStepsFlow', () => {
+  it('parses a minimal steps flow (one agent step, one mechanical step)', () => {
+    const flow = loadStepsFlow(MINIMAL_STEPS_YAML)
+    expect(flow.schemaVersion).toBe('2.0')
+    expect(flow.id).toBe('test-steps')
+    expect(flow.agents).toEqual([{ role: 'reviewer' }])
+    expect(flow.steps).toHaveLength(2)
+
+    const review = flow.steps[0]!
+    expect(review.type).toBe('agent')
+    if (review.type === 'agent') {
+      expect(review.role).toBe('reviewer')
+      expect(review.promptTemplate).toBe('Review {{target}}.')
+      expect(review.permission).toBe('read-only')
+      expect(review.workingDirectory).toBe('{{worktree}}')
+      expect(review.maxTurns).toBe(20)
+      expect(review.resume).toBeUndefined()
+    }
+
+    const merge = flow.steps[1]!
+    expect(merge.type).toBe('mechanical')
+    if (merge.type === 'mechanical') {
+      expect(merge.action).toBe('merge-pr')
+    }
+  })
+
+  it('round-trips a resume reference to a prior step', () => {
+    const yaml = MINIMAL_STEPS_YAML.replace(
+      '    max_turns: 20\n',
+      '    max_turns: 20\n' +
+        '  - id: fixup\n' +
+        '    type: agent\n' +
+        '    role: reviewer\n' +
+        '    prompt_template: "Address the review."\n' +
+        '    permission: read-write\n' +
+        '    working_directory: "{{worktree}}"\n' +
+        '    max_turns: 10\n' +
+        '    resume: review\n'
+    )
+    const flow = loadStepsFlow(yaml)
+    const fixup = flow.steps.find((s) => s.id === 'fixup')!
+    expect(fixup.type).toBe('agent')
+    if (fixup.type === 'agent') {
+      expect(fixup.resume).toBe('review')
+    }
+  })
+
+  it('throws when given a rounds-shaped YAML', () => {
+    expect(() => loadStepsFlow(MINIMAL_SOLO_YAML)).toThrow('use loadFlow')
+  })
+
+  it('loads and validates a minimal steps YAML end to end', () => {
+    const flow = loadStepsFlow(MINIMAL_STEPS_YAML)
+    expect(() => validateStepsFlow(flow)).not.toThrow()
+  })
+})
+
+describe('rounds XOR steps — refused at load', () => {
+  it('refuses a YAML declaring both rounds and steps', () => {
+    const both = MINIMAL_SOLO_YAML + MINIMAL_STEPS_YAML.slice(MINIMAL_STEPS_YAML.indexOf('steps:'))
+    expect(() => loadFlow(both)).toThrow(/found both/)
+    expect(() => loadStepsFlow(both)).toThrow(/found both/)
+  })
+
+  it('refuses a YAML declaring neither rounds nor steps', () => {
+    const neither = MINIMAL_SOLO_YAML.slice(0, MINIMAL_SOLO_YAML.indexOf('rounds:'))
+    expect(() => loadFlow(neither)).toThrow(/found neither/)
+    expect(() => loadStepsFlow(neither)).toThrow(/found neither/)
   })
 })
