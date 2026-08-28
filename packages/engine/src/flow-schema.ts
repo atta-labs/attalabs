@@ -58,20 +58,96 @@ export const FlowAgentSchema = z.object({
   role: z.string().optional()
 })
 
-export const FlowSchema = z.object({
-  schema_version: z.literal('2.0'),
+// ── steps[] — the agent-spawn alternative to rounds[] ───────────────────────
+//
+// A Flow carries `rounds` XOR `steps`, never both — see the FlowSchema
+// superRefine below. `steps` describes how to *launch* an agent (role,
+// permission scope, working directory, turn ceiling, prior session to
+// resume) and nothing about what it does once running: no tool bindings,
+// no binary names. A mechanical step carries no model fields at all.
+
+export const AgentRoleSchema = z
+  .object({
+    role: z.string().min(1)
+  })
+  .strict()
+
+export const AgentStepSchema = z.object({
   id: z
     .string()
     .min(1)
-    .regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
-  display_name: z.string().min(1),
-  description: z.string().min(1),
-  experimental: z.boolean().default(false),
-  benchmarked: z.boolean().default(false),
-  defaults: z.object({
-    model: z.string().min(1),
-    max_tokens: z.number().int().min(1).optional()
-  }),
-  agents: z.array(FlowAgentSchema).min(1),
-  rounds: z.array(RoundSchema).min(1)
+    .regex(/^[a-z0-9-]+$/, 'step id must be kebab-case'),
+  type: z.literal('agent'),
+  role: z.string().min(1),
+  prompt_template: z.string().min(1),
+  permission: z.string().min(1),
+  working_directory: z.string().min(1),
+  max_turns: z.number().int().min(1),
+  resume: z.string().optional()
 })
+
+export const MechanicalStepSchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, 'step id must be kebab-case'),
+  type: z.literal('mechanical'),
+  action: z.string().min(1)
+})
+
+export const StepSchema = z.discriminatedUnion('type', [AgentStepSchema, MechanicalStepSchema])
+
+export const FlowSchema = z
+  .object({
+    schema_version: z.literal('2.0'),
+    id: z
+      .string()
+      .min(1)
+      .regex(/^[a-z0-9-]+$/, 'id must be kebab-case'),
+    display_name: z.string().min(1),
+    description: z.string().min(1),
+    experimental: z.boolean().default(false),
+    benchmarked: z.boolean().default(false),
+    defaults: z.object({
+      model: z.string().min(1),
+      max_tokens: z.number().int().min(1).optional()
+    }),
+    // Loosely typed here on purpose: which shape is actually required (FlowAgentSchema
+    // for a rounds-shaped Flow, AgentRoleSchema for a steps-shaped one) depends on
+    // `rounds` vs `steps`, decided below in superRefine — never both accepted for the
+    // same Flow. Do not swap this for z.union([FlowAgentSchema, AgentRoleSchema]): a
+    // union lets a rounds-shaped Flow parse with role-only agents (or vice versa) by
+    // silently matching the wrong branch, which is exactly the XOR guarantee this
+    // schema exists to hold.
+    agents: z.array(z.record(z.string(), z.unknown())).min(1),
+    rounds: z.array(RoundSchema).min(1).optional(),
+    steps: z.array(StepSchema).min(1).optional()
+  })
+  .superRefine((data, ctx) => {
+    const hasRounds = data.rounds !== undefined
+    const hasSteps = data.steps !== undefined
+    if (hasRounds === hasSteps) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: hasRounds
+          ? 'Flow must declare exactly one of `rounds` or `steps` (XOR) — found both'
+          : 'Flow must declare exactly one of `rounds` or `steps` (XOR) — found neither',
+        path: hasRounds ? ['steps'] : ['rounds']
+      })
+      return
+    }
+
+    const agentSchema = hasRounds ? FlowAgentSchema : AgentRoleSchema
+    data.agents.forEach((agent, i) => {
+      const result = agentSchema.safeParse(agent)
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `agents[${i}]${issue.path.length ? `.${issue.path.join('.')}` : ''}: ${issue.message}`,
+            path: ['agents', i, ...issue.path]
+          })
+        }
+      }
+    })
+  })

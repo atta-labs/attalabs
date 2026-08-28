@@ -89,4 +89,66 @@ export interface Flow {
   defaults: FlowDefaults
   agents: FlowAgent[]
   rounds: Round[]
+  /** A rounds-shaped Flow never carries steps — see StepsFlow and the rounds/steps XOR. */
+  steps?: never
 }
+
+/**
+ * Declares a role an agent-spawn step may launch as. Carries only the
+ * identifier the step references — no model, prompt, or tool fields; those
+ * belong to the step itself or to the executor that binds the role to a
+ * binary (a later task).
+ */
+export interface AgentRole {
+  role: string
+}
+
+/**
+ * A step that spawns an external coding agent. Fields describe how to
+ * launch it (role, permission scope, working directory, turn ceiling,
+ * prior session to resume) — never what it may do once running. No
+ * binary name, no tool bindings: the executor (a later task) binds
+ * `role` to a binary, since the binary present on one machine may be
+ * absent on another.
+ */
+export interface AgentStep {
+  id: string
+  type: 'agent'
+  role: string
+  promptTemplate: string
+  permission: string
+  workingDirectory: string
+  maxTurns: number
+  resume?: string
+}
+
+/** A step describing an external action with no model turn. */
+export interface MechanicalStep {
+  id: string
+  type: 'mechanical'
+  action: string
+}
+
+export type Step = AgentStep | MechanicalStep
+
+export interface StepsFlow {
+  schemaVersion: '2.0'
+  id: string
+  displayName: string
+  description: string
+  experimental: boolean
+  benchmarked: boolean
+  defaults: FlowDefaults
+  agents: AgentRole[]
+  steps: Step[]
+  /** A steps-shaped Flow never carries rounds — see Flow and the rounds/steps XOR. */
+  rounds?: never
+}
+
+/**
+ * A Flow carries `rounds` XOR `steps`, never both. `Flow` (rounds-shaped)
+ * keeps its existing name and shape unchanged for every current consumer;
+ * `AnyFlow` is the union new code (the loader, validation, tests) uses to
+ * express "either shape."
+ */
+export type AnyFlow = Flow | StepsFlow

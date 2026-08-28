@@ -27,8 +27,8 @@ defaults:
 agents:                          # required; non-empty list of agent definitions (see below)
   - name: …
 
-rounds:                          # required; non-empty list of round definitions (see below)
-  - id: …
+rounds:                          # required unless `steps` is present instead (XOR — see
+  - id: …                        # "steps[] — Agent-Spawn Flows" below); non-empty list of rounds
 ```
 
 The `id` field must match `^[a-z0-9-]+$` (kebab-case) and equal the YAML filename without the `.yaml` extension. No version suffixes.
@@ -109,6 +109,68 @@ rounds:
 - **`message_template`** — round-level default. If absent, every agent in the round must supply its own (Rule 8). The template is Handlebars, rendered against the runtime `TemplateState` at execution time (see "Template Variables" below).
 - **`agent_failure`** — per-agent error handling within the round. `continue` lets sibling agents finish even if one fails; `abort` stops the round on first failure. Default derived from layout via Rule 10.
 - **`on_failure`** — round-level failure semantics; primarily used to express declarative revision (see "On-Failure / Revision" below).
+
+---
+
+## `steps[]` — Agent-Spawn Flows (alternative to rounds)
+
+**Status:** schema only, added by `engine-agent-spawn-v1` task 1 (#981). `compileFlow` does not compile a `steps`-carrying flow yet — that's task 2 (#982). This section documents what parses and validates today.
+
+A flow declares `rounds` **XOR** `steps` — never both, never neither. Every existing rounds-shaped YAML is untouched; `steps` is a wholly separate top-level shape for describing an agent-launch sequence rather than an in-process LLM deliberation.
+
+```yaml
+schema_version: "2.0"
+id: vinaya-task
+display_name: Vinaya Task
+description: Run one AEG task through the engine
+experimental: false
+benchmarked: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:                          # required; roles this flow may launch — NOT model config
+  - role: reviewer                # { role: string } only — no system_prompt, no model, no tools
+
+steps:                            # required unless `rounds` is present instead
+  - id: review                    # required; kebab-case, unique within flow
+    type: agent                   # "agent" | "mechanical"
+    role: reviewer                 # required; must be declared in the top-level agents[] above
+    prompt_template: "Review {{target}}."   # required; Handlebars, rendered like round templates
+    permission: read-only          # required; a free-form scope string — the executor interprets it
+    working_directory: "{{worktree}}"       # required; a path or template, not a real value here
+    max_turns: 20                   # required; integer >= 1 — the agent's turn ceiling
+    resume: some-prior-step         # optional; must be an earlier step's `id` (no forward refs)
+  - id: merge
+    type: mechanical                # no model fields at all — a mechanical step is not an LLM turn
+    action: merge-pr                # a declarative name; nothing executes it yet
+```
+
+### Why the fields stop where they do
+
+A `steps[]` entry describes how to **launch** an agent — role, permission scope, working directory, turn ceiling, prior session to resume — and nothing about what it does once running. Concretely, that means:
+
+- **No `tools:` binding table.** A spawned agent carries its own tools and its own loop; there is nothing for the engine to bind.
+- **No binary name anywhere.** A step names a `role`; the executor (a later task, a new package) binds that role to whatever binary is present on the machine running it. The same flow must run on machines with different binaries installed.
+- **No credential-shaped field.** Authentication is by subscription — the executor spawns a CLI that carries its own login, never an API key the schema would need to hold.
+
+### Agents under `steps[]` are role declarations, not LLM config
+
+When a flow declares `steps`, its top-level `agents[]` array is a different shape than the rounds case: each entry is `{ role: string }` — just the identifier an `AgentStep.role` references — not the `system_prompt` / `model` / `tools` configuration a rounds-shaped flow's agents carry. The two shapes share the field name `agents` because both are "the agents this flow uses," but the element schema differs by which top-level shape the flow declares.
+
+### `steps[]` validation rules
+
+Distinct from — and additional to — the 10 rounds rules in "Validation Rules" below, which do not apply to a steps-shaped flow:
+
+| Rule | Description |
+|------|-------------|
+| Step ids unique | No two entries in `steps[]` share an `id` |
+| Step ids kebab-case | Enforced by the Zod schema, same regex as round ids |
+| Agent step role must resolve | Every `AgentStep.role` must equal some `agents[].role` declared on the flow |
+| `resume` references a prior step | `AgentStep.resume`, when present, must be an earlier step's `id` — no forward or self references |
+| XOR restated | `validateStepsFlow` also refuses a hand-constructed flow that carries both `rounds` and `steps`, as defense in depth alongside the Zod-level check |
+
+Calling `compileFlow` with a steps-shaped flow throws a named `NotImplementedError` — *"this Flow declares steps, not rounds — compileFlow cannot compile a steps-shaped Flow yet"* — rather than a stack trace out of shape detection.
 
 ---
 

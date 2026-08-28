@@ -1,23 +1,44 @@
+import type { z } from 'zod'
 import jsYaml from 'js-yaml'
-import { FlowSchema } from './flow-schema'
-import type { Flow, FlowAgent, Round, AgentInRound, OnFailureSpec, FailureSignal } from './flow-types'
+import { FlowSchema, type FlowAgentSchema } from './flow-schema'
+import type {
+  Flow,
+  FlowAgent,
+  Round,
+  AgentInRound,
+  OnFailureSpec,
+  FailureSignal,
+  StepsFlow,
+  AgentRole,
+  Step
+} from './flow-types'
 
-/**
- * Parse a YAML string into a validated Flow (v2 schema).
- * Throws if the YAML is malformed or fails schema validation.
- */
-export function loadFlow(yamlContent: string): Flow {
+type RawFlowAgent = z.infer<typeof FlowAgentSchema>
+
+function parseFlowYaml(yamlContent: string) {
   const raw = jsYaml.load(yamlContent)
   const result = FlowSchema.safeParse(raw)
   if (!result.success) {
     const issues = result.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n')
     throw new Error(`Flow validation failed:\n${issues}`)
   }
+  return result.data
+}
 
-  const d = result.data
+/**
+ * Parse a YAML string into a validated, rounds-shaped Flow (v2 schema).
+ * Throws if the YAML is malformed, fails schema validation, or declares
+ * `steps` instead of `rounds` — use loadStepsFlow for that shape.
+ */
+export function loadFlow(yamlContent: string): Flow {
+  const d = parseFlowYaml(yamlContent)
+  if (d.rounds === undefined) {
+    throw new Error('Flow validation failed:\n  rounds: this Flow declares steps, not rounds — use loadStepsFlow')
+  }
 
-  const agents: FlowAgent[] = d.agents.map(
-    (a): FlowAgent => ({
+  const agents: FlowAgent[] = d.agents.map((raw): FlowAgent => {
+    const a = raw as RawFlowAgent
+    return {
       name: a.name,
       description: a.description,
       systemPrompt: a.system_prompt,
@@ -30,8 +51,8 @@ export function loadFlow(yamlContent: string): Flow {
       classifier: a.classifier ? { mode: a.classifier.mode, budget: a.classifier.budget } : undefined,
       editable: a.editable,
       role: a.role
-    })
-  )
+    }
+  })
 
   const rounds: Round[] = d.rounds.map(
     (r): Round => ({
@@ -61,6 +82,52 @@ export function loadFlow(yamlContent: string): Flow {
     defaults: { model: d.defaults.model, maxTokens: d.defaults.max_tokens },
     agents,
     rounds
+  }
+}
+
+/**
+ * Parse a YAML string into a validated, steps-shaped Flow (v2 schema).
+ * Throws if the YAML is malformed, fails schema validation, or declares
+ * `rounds` instead of `steps` — use loadFlow for that shape.
+ */
+export function loadStepsFlow(yamlContent: string): StepsFlow {
+  const d = parseFlowYaml(yamlContent)
+  if (d.steps === undefined) {
+    throw new Error('Flow validation failed:\n  steps: this Flow declares rounds, not steps — use loadFlow')
+  }
+
+  const agents: AgentRole[] = d.agents.map((a) => ({ role: (a as { role: string }).role }))
+
+  const steps: Step[] = d.steps.map((s): Step => {
+    if (s.type === 'agent') {
+      return {
+        id: s.id,
+        type: 'agent',
+        role: s.role,
+        promptTemplate: s.prompt_template,
+        permission: s.permission,
+        workingDirectory: s.working_directory,
+        maxTurns: s.max_turns,
+        resume: s.resume
+      }
+    }
+    return {
+      id: s.id,
+      type: 'mechanical',
+      action: s.action
+    }
+  })
+
+  return {
+    schemaVersion: '2.0',
+    id: d.id,
+    displayName: d.display_name,
+    description: d.description,
+    experimental: d.experimental,
+    benchmarked: d.benchmarked,
+    defaults: { model: d.defaults.model, maxTokens: d.defaults.max_tokens },
+    agents,
+    steps
   }
 }
 

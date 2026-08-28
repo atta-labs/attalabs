@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Flow, FlowAgent, Round } from '../flow-types'
-import { InvalidFlowConfigError, resolveAgentFailure, validateFlow } from '../validate-flow'
+import { NotImplementedError } from '../errors'
+import type { Flow, FlowAgent, Round, Step, StepsFlow } from '../flow-types'
+import { InvalidFlowConfigError, resolveAgentFailure, validateFlow, validateStepsFlow } from '../validate-flow'
 
 // ── Shared fixtures ──────────────────────────────────────────────────────────
 
@@ -634,5 +635,208 @@ describe('validateFlow — happy path: catalog shapes', () => {
       ]
     }
     expect(() => validateFlow(flow)).not.toThrow()
+  })
+})
+
+// ── Rule 0: validateFlow refuses a steps-shaped Flow by name ───────────────
+
+describe('validateFlow — Rule 0: refuses a steps-shaped Flow', () => {
+  it('throws NotImplementedError naming task 2, not a rounds-detection crash', () => {
+    const stepsFlow: StepsFlow = {
+      schemaVersion: '2.0',
+      id: 'test-steps',
+      displayName: 'Test Steps',
+      description: 'Test',
+      experimental: false,
+      benchmarked: false,
+      defaults: { model: 'claude-sonnet-4-6' },
+      agents: [{ role: 'reviewer' }],
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20
+        }
+      ]
+    }
+    expect(() => validateFlow(stepsFlow as unknown as Flow)).toThrow(NotImplementedError)
+    expect(() => validateFlow(stepsFlow as unknown as Flow)).toThrow('#982')
+  })
+})
+
+// ── validateStepsFlow — the steps-shape counterpart ─────────────────────────
+
+function makeStepsFlow(overrides: Partial<StepsFlow> = {}): StepsFlow {
+  return {
+    schemaVersion: '2.0',
+    id: 'test-steps',
+    displayName: 'Test Steps',
+    description: 'Test',
+    experimental: false,
+    benchmarked: false,
+    defaults: { model: 'claude-sonnet-4-6' },
+    agents: [{ role: 'reviewer' }],
+    steps: [
+      {
+        id: 'review',
+        type: 'agent',
+        role: 'reviewer',
+        promptTemplate: 'Review.',
+        permission: 'read-only',
+        workingDirectory: '/tmp',
+        maxTurns: 20
+      }
+    ],
+    ...overrides
+  }
+}
+
+describe('validateStepsFlow — step ids unique', () => {
+  it('passes with distinct step ids', () => {
+    expect(() => validateStepsFlow(makeStepsFlow())).not.toThrow()
+  })
+
+  it('throws when two steps share an id', () => {
+    const steps: Step[] = [
+      { id: 'dup', type: 'mechanical', action: 'merge-pr' },
+      { id: 'dup', type: 'mechanical', action: 'tag-release' }
+    ]
+    expect(() => validateStepsFlow(makeStepsFlow({ steps }))).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(makeStepsFlow({ steps }))).toThrow("duplicate step id 'dup'")
+  })
+})
+
+describe('validateStepsFlow — agent step role must be declared in flow.agents', () => {
+  it('passes when the role is declared', () => {
+    expect(() => validateStepsFlow(makeStepsFlow())).not.toThrow()
+  })
+
+  it('throws when the role is not declared', () => {
+    const flow = makeStepsFlow({
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'ghost',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20
+        }
+      ]
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow("unknown role 'ghost'")
+  })
+})
+
+describe('validateStepsFlow — resume references only a prior step', () => {
+  it('passes when resume references a prior step', () => {
+    const flow = makeStepsFlow({
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20
+        },
+        {
+          id: 'fixup',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Fix.',
+          permission: 'read-write',
+          workingDirectory: '/tmp',
+          maxTurns: 10,
+          resume: 'review'
+        }
+      ]
+    })
+    expect(() => validateStepsFlow(flow)).not.toThrow()
+  })
+
+  it('throws when resume references a nonexistent step', () => {
+    const flow = makeStepsFlow({
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20,
+          resume: 'ghost'
+        }
+      ]
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('does not exist')
+  })
+
+  it('throws when resume references a future step (forward reference)', () => {
+    const flow = makeStepsFlow({
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20,
+          resume: 'fixup'
+        },
+        {
+          id: 'fixup',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Fix.',
+          permission: 'read-write',
+          workingDirectory: '/tmp',
+          maxTurns: 10
+        }
+      ]
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('not a prior step')
+  })
+
+  it('throws when resume references itself (self-reference)', () => {
+    const flow = makeStepsFlow({
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          role: 'reviewer',
+          promptTemplate: 'Review.',
+          permission: 'read-only',
+          workingDirectory: '/tmp',
+          maxTurns: 20,
+          resume: 'review'
+        }
+      ]
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('not a prior step')
+  })
+})
+
+describe('validateStepsFlow — XOR restated', () => {
+  it('throws when a hand-constructed StepsFlow also carries rounds', () => {
+    const flow: Record<string, unknown> = { ...makeStepsFlow(), rounds: [] satisfies Round[] }
+    expect(() => validateStepsFlow(flow as unknown as StepsFlow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow as unknown as StepsFlow)).toThrow('found both')
+  })
+
+  it('throws when steps array is empty', () => {
+    expect(() => validateStepsFlow(makeStepsFlow({ steps: [] }))).toThrow('at least one step')
   })
 })
