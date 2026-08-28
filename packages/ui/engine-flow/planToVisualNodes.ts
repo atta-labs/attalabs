@@ -6,13 +6,23 @@ import type {
   SynthesisNodeData,
   AuditNodeData,
   BriefNodeData,
+  AgentSpawnNodeData,
+  MechanicalNodeData,
   RoundLabelData,
   RoundMeta,
   VisualizationOutput,
   WorkflowType
 } from './types'
 
-export type { AgentNodeData, SynthesisNodeData, AuditNodeData, BriefNodeData, RoundLabelData }
+export type {
+  AgentNodeData,
+  SynthesisNodeData,
+  AuditNodeData,
+  BriefNodeData,
+  AgentSpawnNodeData,
+  MechanicalNodeData,
+  RoundLabelData
+}
 
 // Layout dimension constants — used by layout strategies and exported for renderer alignment
 export const AGENT_NODE_WIDTH = 220
@@ -25,22 +35,37 @@ export const BRIEF_NODE_WIDTH = 140
 export const BRIEF_NODE_HEIGHT = 52
 export const ROUND_LABEL_WIDTH = 140
 export const ROUND_LABEL_HEIGHT = 32
+export const AGENT_SPAWN_NODE_WIDTH = 220
+export const AGENT_SPAWN_NODE_HEIGHT = 100
+export const MECHANICAL_NODE_WIDTH = 200
+export const MECHANICAL_NODE_HEIGHT = 52
 
 function nodeDimensionsForType(type: string): { width: number; height: number } {
   if (type === 'synthesisNode') return { width: SYNTHESIS_NODE_WIDTH, height: SYNTHESIS_NODE_HEIGHT }
   if (type === 'auditNode') return { width: AUDIT_NODE_WIDTH, height: AUDIT_NODE_HEIGHT }
   if (type === 'briefNode') return { width: BRIEF_NODE_WIDTH, height: BRIEF_NODE_HEIGHT }
+  if (type === 'agentSpawnNode') return { width: AGENT_SPAWN_NODE_WIDTH, height: AGENT_SPAWN_NODE_HEIGHT }
+  if (type === 'mechanicalNode') return { width: MECHANICAL_NODE_WIDTH, height: MECHANICAL_NODE_HEIGHT }
   return { width: AGENT_NODE_WIDTH, height: AGENT_NODE_HEIGHT }
 }
 
+// Steps-shaped Flows (engine-agent-spawn-v1) carry no round/reviewer structure of their
+// own — checked first so an agent-spawn/mechanical node never falls through to 'solo'
+// and hits applySoloLayout's single-agent-only positioning.
 function inferWorkflowType(planNodes: PlanNode[]): WorkflowType {
+  if (planNodes.some((n) => n.kind === 'agent-spawn' || n.kind === 'mechanical')) return 'custom'
   if (planNodes.some((n) => n.kind === 'parallel-peer' && n.metadata.roundIndex !== undefined)) return 'rounds'
   if (planNodes.some((n) => n.kind === 'custom-step')) return 'custom'
   if (planNodes.some((n) => n.id.startsWith('reviewer-'))) return 'brokered'
   return 'solo'
 }
 
-// Assign a stable color index per unique agent name (for canvas renderers)
+function isPlanAgentNode(n: PlanNode): n is PlanAgentNode {
+  return n.kind !== 'agent-spawn' && n.kind !== 'mechanical'
+}
+
+// Assign a stable color index per unique agent name (for canvas renderers).
+// agent-spawn/mechanical nodes carry no agentName — excluded from the map.
 function buildColorIndexMap(planNodes: PlanAgentNode[]): Map<string, number> {
   const map = new Map<string, number>()
   let counter = 0
@@ -55,23 +80,15 @@ function buildColorIndexMap(planNodes: PlanAgentNode[]): Map<string, number> {
 export function planToVisualNodes(plan: Plan): VisualizationOutput {
   // Filter sentinel and revision-terminal nodes — they are graph infrastructure, not render targets
   const allPlanNodes = Object.values(plan.graph.nodes)
-  const renderableNodes = allPlanNodes.filter(
-    (n): n is PlanAgentNode =>
+  const renderableNodes: PlanNode[] = allPlanNodes.filter(
+    (n) =>
       n.kind !== 'system-sentinel' &&
       n.kind !== 'revision-terminal' &&
-      // Compile-safety skip: agent-spawn/mechanical nodes (steps-shaped Flow,
-      // engine-agent-spawn-v1) have no agentName to render. Real rendering
-      // for these kinds is task 5 (#985) — untouched here. The `n is
-      // PlanAgentNode` predicate (not just a boolean) is required, not
-      // stylistic — every field access below this filter (agentName, etc.)
-      // needs renderableNodes narrowed to the agent-bearing variant.
-      n.kind !== 'agent-spawn' &&
-      n.kind !== 'mechanical' &&
       !(n.kind === 'auditor' && (n.metadata.revisionIndex ?? 0) > 0)
   )
 
   const workflowType = inferWorkflowType(renderableNodes)
-  const colorIndexMap = buildColorIndexMap(renderableNodes)
+  const colorIndexMap = buildColorIndexMap(renderableNodes.filter(isPlanAgentNode))
 
   // Build round metadata from kind + metadata.roundIndex — NOT from edge topology
   const rounds: RoundMeta[] = []
@@ -87,7 +104,7 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
 
     // The synthesizer (terminal-0) and auditors are post-rounds, not per-round
     const synthNode = renderableNodes.find((n) => n.kind === 'synthesizer')
-    const auditNodes = renderableNodes.filter((n) => n.kind === 'auditor')
+    const auditNodes = renderableNodes.filter((n): n is PlanAgentNode => n.kind === 'auditor')
 
     // Collapse audit slots: show one auditor node per unique agent name (slot 0 only)
     const seenAuditAgents = new Set<string>()
@@ -131,6 +148,41 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
   for (const pNode of renderableNodes) {
     const rfType = nodeKindToRfType(pNode)
     const dim = nodeDimensionsForType(rfType)
+
+    if (pNode.kind === 'agent-spawn') {
+      rfNodes.push({
+        id: pNode.id,
+        type: rfType,
+        position: { x: 0, y: 0 },
+        data: {
+          label: pNode.id,
+          agentRole: pNode.agentRole,
+          permission: pNode.permission,
+          workingDirectory: pNode.workingDirectory,
+          maxTurns: pNode.maxTurns,
+          resume: pNode.resume,
+          visualState: 'idle'
+        } satisfies AgentSpawnNodeData,
+        ...dim
+      })
+      continue
+    }
+
+    if (pNode.kind === 'mechanical') {
+      rfNodes.push({
+        id: pNode.id,
+        type: rfType,
+        position: { x: 0, y: 0 },
+        data: {
+          label: pNode.id,
+          action: pNode.action,
+          visualState: 'idle'
+        } satisfies MechanicalNodeData,
+        ...dim
+      })
+      continue
+    }
+
     const agentDef = plan.agents[pNode.agentName]
     const modelLabel = agentDef?.model ?? plan.model
     const colorIndex = colorIndexMap.get(pNode.agentName) ?? 0
@@ -332,10 +384,29 @@ export function planToVisualNodes(plan: Plan): VisualizationOutput {
   return { workflowType, nodes: rfNodes, edges: rfEdges, rounds, hasSynthesis }
 }
 
+// Exhaustive over PlanNodeKind — an unhandled kind is a type error at the `never`
+// assignment below, not a silent fallthrough to agentNode's default render.
 function nodeKindToRfType(node: PlanNode): string {
-  if (node.kind === 'synthesizer') return 'synthesisNode'
-  if (node.kind === 'auditor') return 'auditNode'
-  return 'agentNode'
+  switch (node.kind) {
+    case 'synthesizer':
+      return 'synthesisNode'
+    case 'auditor':
+      return 'auditNode'
+    case 'agent-spawn':
+      return 'agentSpawnNode'
+    case 'mechanical':
+      return 'mechanicalNode'
+    case 'solo-agent':
+    case 'parallel-peer':
+    case 'custom-step':
+    case 'revision-terminal':
+    case 'system-sentinel':
+      return 'agentNode'
+    default: {
+      const exhaustive: never = node
+      return exhaustive
+    }
+  }
 }
 
 // ─── Dagre layout (used by custom, solo fallback) ─────────────────────────────
