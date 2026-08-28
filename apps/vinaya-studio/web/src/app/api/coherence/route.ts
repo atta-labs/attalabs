@@ -18,6 +18,7 @@
 
 import { NextResponse } from 'next/server'
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { findAegRoot } from '@/lib/repo-state'
@@ -75,6 +76,22 @@ export async function GET(): Promise<NextResponse<CoherenceResponse>> {
 
   const scriptPath = path.join(repoRoot, 'node_modules', '@attalabs', 'aeg-core', 'bin', 'verify-coherence.ts')
   const env = buildEnv()
+
+  // `@attalabs/aeg-core` is a real `dependencies` entry, but this path is
+  // reached by a raw subprocess spawn, not a static `import` — Next's
+  // standalone file tracer (see next.config.ts's `outputFileTracingIncludes`)
+  // can silently drop it from a shipped bundle. Check first so a genuinely
+  // missing file reads as a clear, actionable message instead of bun's raw
+  // "Module not found" stack text.
+  if (!existsSync(scriptPath)) {
+    return NextResponse.json({
+      summary: { passed: 0, failed: 0, info: 0 },
+      forgeUnavailable: true,
+      checks: [],
+      repo: null,
+      oracleError: `Coherence oracle unavailable: ${scriptPath} does not exist. @attalabs/aeg-core may not be installed — run \`npm install @attalabs/aeg-core\` (or reinstall this package) to enable the coherence panel.`
+    })
+  }
 
   let stdout: string
   try {
