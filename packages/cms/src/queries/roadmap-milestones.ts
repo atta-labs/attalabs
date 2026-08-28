@@ -3,7 +3,11 @@ import { createProductClient, type ProductKey } from '../client'
 export interface RoadmapMilestone {
   _id: string
   title: string
-  version: string
+  // `null` until the milestone actually ships — a target/predicted version is never
+  // stored here; a version is a record of what shipped, added once, at completion
+  // (`roadmap-milestone.ts`'s schema description; `derive-status.ts` skips the
+  // registry comparison entirely when this is absent).
+  version: string | null
   description: string
   truth: string
   status: 'shipping' | 'planned' | 'dropped'

@@ -208,13 +208,15 @@ function StatusBadge({ status }: { status: RoadmapMilestone['status'] }) {
   )
 }
 
-function MilestoneVisual({ version, image }: { version: string; image: RoadmapMilestone['image'] }) {
-  const Mark = MARK_BY_VERSION[version]
-  // `MARK_BY_VERSION` is hand-typed against the 7 versions this ladder currently
-  // ships, with no link back to the CMS's free-text `version` field — an editor
-  // typo (or a genuinely new milestone) silently falls through to the generic
-  // placeholder below with no signal anywhere that a mark is missing.
-  if (!Mark && process.env.NODE_ENV !== 'production') {
+function MilestoneVisual({ version, image }: { version: string | null; image: RoadmapMilestone['image'] }) {
+  const Mark = version ? MARK_BY_VERSION[version] : undefined
+  // `MARK_BY_VERSION` is hand-typed against the versions this ladder currently ships
+  // marks for, with no link back to the CMS's free-text `version` field. `version` is
+  // null for every milestone that hasn't shipped yet (never a predicted/target number —
+  // see the schema) — that is the expected, common case this falls through to `image`
+  // for, not a defect, so it warns only when a REAL version string names no mark: an
+  // editor typo, or a newly-shipped milestone whose mark hasn't been added yet.
+  if (version && !Mark && process.env.NODE_ENV !== 'production') {
     console.warn(`[roadmap] no mark registered for version "${version}" in MARK_BY_VERSION`)
   }
 
@@ -268,7 +270,7 @@ function JunctionGlyph() {
 export type DeploymentTrackItem = {
   id: string
   title: string
-  version: string
+  version: string | null
   description: string
   truth: string
   status: RoadmapMilestone['status']
@@ -779,9 +781,14 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                           {item.title}
                         </CardTitle>
                         <Flex align='center' gap={2}>
-                          <Text as='span' className='font-mono text-xs text-muted-foreground'>
-                            v{item.version}
-                          </Text>
+                          {/* No version yet = not rendered — a version is a record of what
+                            shipped, never a target/prediction (see the schema's own
+                            description); an unshipped milestone has none to show. */}
+                          {item.version && (
+                            <Text as='span' className='font-mono text-xs text-muted-foreground'>
+                              v{item.version}
+                            </Text>
+                          )}
                           <StatusBadge status={item.status} />
                         </Flex>
                       </Flex>

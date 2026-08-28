@@ -56,4 +56,15 @@ describe('deriveStatus', () => {
     expect(deriveStatus({ status: 'planned', version: '0.19.0' }, unreachable)).toBe('planned')
     expect(deriveStatus({ status: 'shipping', version: '0.19.0' }, unreachable)).toBe('shipping')
   })
+
+  it('falls back to the CMS-stored status when version is null — no target to compare against', () => {
+    expect(deriveStatus({ status: 'planned', version: null }, published)).toBe('planned')
+    // Even a status of 'shipping' with no version isn't auto-corrected — status is the
+    // only source of truth while version is empty; the registry comparison never runs.
+    expect(deriveStatus({ status: 'shipping', version: null }, published)).toBe('shipping')
+  })
+
+  it('dropped still wins over a null version', () => {
+    expect(deriveStatus({ status: 'dropped', version: null }, published)).toBe('dropped')
+  })
 })

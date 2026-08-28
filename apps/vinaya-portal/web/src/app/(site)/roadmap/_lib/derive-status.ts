@@ -39,14 +39,18 @@ export function isVersionAtLeast(candidate: string, threshold: string): boolean 
 // it's shipping, automatically, the moment that publish goes out — no CMS
 // edit, no re-seed. `dropped` is the one state that can't be derived this
 // way (it's an editorial call, not a fact about a release), so it always
-// wins outright. The CMS-stored `status` is used only as the fallback when
-// the registry is unreachable (`getPublishedVersion` never throws; it
-// degrades to `{ fallback: true }`).
+// wins outright. The CMS-stored `status` is used as the fallback when the
+// registry is unreachable (`getPublishedVersion` never throws; it degrades
+// to `{ fallback: true }`) AND while `version` is still empty — an
+// unshipped milestone carries no version to compare against (a target
+// version is never stored; see the schema's own description), so there is
+// nothing to derive from until an editor adds the real one at completion.
 export function deriveStatus(
   milestone: Pick<RoadmapMilestone, 'status' | 'version'>,
   publishedVersion: PublishedVersion
 ): RoadmapMilestone['status'] {
   if (milestone.status === 'dropped') return 'dropped'
+  if (!milestone.version) return milestone.status
   if (!('version' in publishedVersion)) return milestone.status
   return isVersionAtLeast(publishedVersion.version, milestone.version) ? 'shipping' : 'planned'
 }

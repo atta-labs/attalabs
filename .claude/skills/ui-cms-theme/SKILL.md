@@ -495,6 +495,17 @@ backing vinaya-portal's `/roadmap` page (title, `version`, description, `truth` 
 three-state `status`, optional `image`, manual `order`). Its documents live in each
 product's own Sanity project, same as branding, resolved via `createProductClient(product)`.
 
+**`version` is a record, never a target.** It's optional (`string | null`) and stays
+empty for the life of an unshipped milestone — a predicted/target version number is
+never stored, because the eventual number isn't knowable in advance (a feature release
+can consume any minor first; this happened live to a milestone whose editorial copy
+had already committed to a specific number). An editor sets it exactly once, at
+completion, to the real version `@attalabs/vinaya` published. `derive-status.ts`'s
+`deriveStatus` (`apps/vinaya-portal/web/src/app/(site)/roadmap/_lib/derive-status.ts`)
+only runs its published-vs-`version` comparison when `version` is non-null; while empty,
+the CMS `status` field is trusted directly (never auto-derived, never auto-flips to
+"shipping"). `DeploymentTrack.tsx` renders no version stamp at all for a null `version`.
+
 **`image` is a fallback, not the primary visual, for the seven known release
 marks.** Those seven ship as CSS-var-themed SVGs inlined at build time via SVGR
 (`apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg`, one per `version`) —
