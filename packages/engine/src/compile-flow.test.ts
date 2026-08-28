@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { compileFlow } from './compile-flow'
 import { loadFlow, loadStepsFlow } from './flow-loader'
 import type { Flow } from './flow-types'
-import type { Plan, PlanEdge, PlanNode } from './types'
+import type { Plan, PlanAgentNode, PlanEdge, PlanNode } from './types'
 
 const QUESTION = 'Test question for baseline snapshot'
 const MODEL = 'claude-sonnet-4-6'
@@ -141,7 +141,18 @@ function edgesOf(plan: Plan): PlanEdge[] {
   return plan.graph.edges
 }
 
-function nodeBy(plan: Plan, id: string): PlanNode {
+// Used by the four legacy (rounds-shaped) describe blocks below, which never
+// produce agent-spawn/mechanical nodes. Use nodeByAny for steps-shape tests.
+function nodeBy(plan: Plan, id: string): PlanAgentNode {
+  const n = plan.graph.nodes[id]
+  if (!n) throw new Error(`Node ${id} not found in [${nodeIds(plan).join(', ')}]`)
+  if (n.role === 'agent-spawn' || n.role === 'mechanical') {
+    throw new Error(`Node ${id} is a step node (role '${n.role}') — use nodeByAny instead`)
+  }
+  return n
+}
+
+function nodeByAny(plan: Plan, id: string): PlanNode {
   const n = plan.graph.nodes[id]
   if (!n) throw new Error(`Node ${id} not found in [${nodeIds(plan).join(', ')}]`)
   return n
@@ -370,7 +381,7 @@ describe('compileFlow — baseline graph equivalence', () => {
 
     expect(plan.graph.entryNode).toBe(baseline.graph.entryNode)
     expect(nodeIds(plan)).toEqual(Object.keys(baseline.graph.nodes))
-    for (const [id, bn] of Object.entries(baseline.graph.nodes)) {
+    for (const [id, bn] of Object.entries(baseline.graph.nodes) as [string, PlanAgentNode][]) {
       const n = nodeBy(plan, id)
       expect(n.role).toBe(bn.role)
       expect(n.kind).toBe(bn.kind)
@@ -389,7 +400,7 @@ describe('compileFlow — baseline graph equivalence', () => {
     expect(plan.graph.entryNode).toBe(baseline.graph.entryNode)
     expect(nodeIds(plan).sort()).toEqual(Object.keys(baseline.graph.nodes).sort())
 
-    for (const [id, bn] of Object.entries(baseline.graph.nodes)) {
+    for (const [id, bn] of Object.entries(baseline.graph.nodes) as [string, PlanAgentNode][]) {
       const n = nodeBy(plan, id)
       expect(n.role).toBe(bn.role)
       expect(n.kind).toBe(bn.kind)
@@ -459,13 +470,72 @@ steps:
     permission: read-only
     working_directory: "{{worktree}}"
     max_turns: 20
+  - id: apply-patch
+    type: mechanical
+    action: git-apply
 `
 
-describe('compileFlow — steps-shaped Flow (task 2 territory)', () => {
-  it('throws a named, explicit error rather than crashing in shape detection', () => {
+describe('compileFlow — steps-shaped Flow (task 2, the fifth shape)', () => {
+  it('compiles without throwing — task 1 (#981) left this as a NotImplementedError; task 2 (#982) implements it', () => {
     const stepsFlow = loadStepsFlow(MINIMAL_STEPS_YAML)
-    // Intentional unsafe cast: exercises the runtime guard a caller who
-    // bypasses the type system (or hand-narrows AnyFlow wrong) would hit.
-    expect(() => compileFlow(stepsFlow as unknown as Flow, QUESTION, MODEL)).toThrow(/task 2 \(#982\)/)
+    expect(() => compileFlow(stepsFlow, QUESTION, MODEL)).not.toThrow()
+  })
+
+  it("emits one node per step, id = the step's own declared id verbatim", () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(nodeIds(plan)).toEqual(['review', 'apply-patch'])
+  })
+
+  it('AgentStep compiles to a node with role/kind "agent-spawn" carrying the step\'s own fields', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    const n = nodeByAny(plan, 'review')
+    expect(n.role).toBe('agent-spawn')
+    expect(n.kind).toBe('agent-spawn')
+    if (n.role !== 'agent-spawn') throw new Error('unreachable')
+    expect(n.promptTemplate).toBe('Review {{target}}.')
+    expect(n.agentRole).toBe('reviewer')
+    expect(n.permission).toBe('read-only')
+    expect(n.workingDirectory).toBe('{{worktree}}')
+    expect(n.maxTurns).toBe(20)
+    expect(n.resume).toBeUndefined()
+    expect('agentName' in n).toBe(false)
+    expect('inputTemplate' in n).toBe(false)
+  })
+
+  it('MechanicalStep compiles to a node with role/kind "mechanical" carrying only its action', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    const n = nodeByAny(plan, 'apply-patch')
+    expect(n.role).toBe('mechanical')
+    expect(n.kind).toBe('mechanical')
+    if (n.role !== 'mechanical') throw new Error('unreachable')
+    expect(n.action).toBe('git-apply')
+    expect('agentName' in n).toBe(false)
+    expect('promptTemplate' in n).toBe(false)
+  })
+
+  it('sequential flow edge between consecutive steps, in declaration order', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(edgesOf(plan)).toEqual([{ from: 'review', to: 'apply-patch', kind: 'flow' }])
+  })
+
+  it('entryNode is the first declared step', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(plan.graph.entryNode).toBe('review')
+  })
+
+  it('plan.agents is empty — no Plan.agents entry for AgentRole-shaped steps (see PR body)', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(plan.agents).toEqual({})
+  })
+
+  it('maxRevisions is 0 — a steps-shaped Flow structurally has no rounds/onFailure', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(plan.maxRevisions).toBe(0)
+  })
+
+  it('responseMode/responseNode are left unset — no task in this tranche defines them for this shape', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(plan.responseMode).toBeUndefined()
+    expect(plan.responseNode).toBeUndefined()
   })
 })
