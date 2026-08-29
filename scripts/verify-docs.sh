@@ -3,7 +3,9 @@
 # the registry copy instead of the now-deleted local
 # packages/aeg-core/bin/verify-docs.ts.
 #
-# Same bug class as scripts/verify-vocabulary-gate.sh: verify-docs.ts
+# Same bug class the old scripts/verify-vocabulary-gate.sh hack also hit
+# (since replaced by scripts/verify-vocabulary-gate.ts, which imports the
+# evaluator directly and never chdir's): verify-docs.ts
 # computes its own repo root as `join(import.meta.dir, '../../..')` — three
 # directory levels up from wherever the file physically sits, then
 # `process.chdir()`s there before reading aeg-root/enforcement.md. From the
