@@ -9,24 +9,29 @@
  */
 
 import { Annotation } from '@langchain/langgraph'
-import type { AgentSpawnNodeResult } from './types'
+import type { StepNodeResult } from './types'
 
 /**
  * LangGraph state for executing a steps-shaped Plan.
  *
  * - `runId`: set once at graph start; correlates every event this run
  *   produces (engine-agent-spawn-v1 task 6 reads this).
- * - `results`: merged, keyed by node id — each agent-spawn node writes its
- *   own key, so parallel steps (a future shape) never clobber each other.
+ * - `results`: merged, keyed by node id — each node writes its own key, so
+ *   parallel steps (a future shape) never clobber each other. The value is a
+ *   union discriminated on `kind`: agent-spawn nodes record their event
+ *   stream and session, mechanical nodes their exit code and output. Adding
+ *   the second node kind widened this field's value type and left its reducer
+ *   untouched — keyed merge is already the right one for per-node writes.
  * - `sessions`: merged, keyed by node id — the resumable session id a later
- *   step's `resume` field looks up.
+ *   step's `resume` field looks up. Only agent-spawn nodes ever write here;
+ *   a mechanical node has no session to resume.
  * - `revisionCounts`: merged, keyed by node id — how many times that node's
  *   position has executed (1 on first run; a later retry/resume increments
  *   it). Not a rounds-style audit-revision counter — this shape has none.
  */
 export const AgentSpawnGraphState = Annotation.Root({
   runId: Annotation<string>(),
-  results: Annotation<Record<string, AgentSpawnNodeResult>>({
+  results: Annotation<Record<string, StepNodeResult>>({
     reducer: (current, update) => ({ ...current, ...update }),
     default: () => ({})
   }),

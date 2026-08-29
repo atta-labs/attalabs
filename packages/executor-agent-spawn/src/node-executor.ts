@@ -11,13 +11,13 @@ import { spawn } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { isAbsolute, sep } from 'node:path'
 import type { PlanAgentSpawnNode } from '@atta/engine'
-import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult, RoleBinaryConfig } from './types'
+import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
 
-/** No `timeoutMs` means the role never bounds its own runtime; the executor still must — a process that never exits must not hang the run forever. */
-const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000
+/** No `timeoutMs` means the caller never bounds a step's own runtime; the executor still must — a process that never exits must not hang the run forever. Shared with the mechanical executor so both node kinds are bounded identically. */
+export const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000
 
-/** The minimum a spawned CLI needs to resolve its own binaries and find its already-logged-in session state — not the parent process's full (possibly secret-bearing) environment. */
-const DEFAULT_ENV_ALLOWLIST = ['PATH', 'HOME']
+/** The minimum a spawned process needs to resolve its own binaries and find its already-logged-in session state — not the parent process's full (possibly secret-bearing) environment. Shared with the mechanical executor. */
+export const DEFAULT_ENV_ALLOWLIST = ['PATH', 'HOME']
 
 /**
  * The subset of Node's `ChildProcess` this module depends on. Narrowed to
@@ -40,7 +40,8 @@ export type SpawnFn = (
   options: { cwd: string; env: NodeJS.ProcessEnv }
 ) => SpawnedProcessLike
 
-const defaultSpawn: SpawnFn = (command, args, options) => spawn(command, args, options) as unknown as SpawnedProcessLike
+export const defaultSpawn: SpawnFn = (command, args, options) =>
+  spawn(command, args, options) as unknown as SpawnedProcessLike
 
 /**
  * Parses the process's stdout as newline-delimited JSON. Throws naming the
@@ -101,14 +102,14 @@ function resolveConfinedWorkingDirectory(node: PlanAgentSpawnNode, allowedRoot: 
 }
 
 /**
- * Builds the spawned process's environment: the role's own `env` overlaid
- * on top of an explicit allowlist pulled from this process's own
+ * Builds a spawned process's environment: the caller's own `env` for this
+ * role/action overlaid on top of an explicit allowlist pulled from this process's own
  * environment (default `PATH` + `HOME`) — never the full parent
  * environment, which may carry secrets (vendor API keys, DB URLs) this
  * package has no business handing to an externally-authenticated process.
  */
-function buildChildEnv(
-  binaryConfig: RoleBinaryConfig,
+export function buildChildEnv(
+  spawnConfig: { env?: Record<string, string> },
   envAllowlist: string[] = DEFAULT_ENV_ALLOWLIST
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {}
@@ -116,7 +117,7 @@ function buildChildEnv(
     const value = process.env[key]
     if (value !== undefined) env[key] = value
   }
-  return { ...env, ...binaryConfig.env }
+  return { ...env, ...spawnConfig.env }
 }
 
 /** Scans events in reverse for the last one carrying a string session id. */
@@ -226,6 +227,7 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
 
   return {
     nodeId: node.id,
+    kind: 'agent-spawn',
     events,
     sessionId: extractSessionId(events),
     exitCode,

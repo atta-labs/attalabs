@@ -18,7 +18,7 @@ describe('renderStepPrompt', () => {
   it('renders the question and a prior node result into the prompt', () => {
     const rendered = renderStepPrompt(node, {
       question: 'Ship the feature',
-      results: { implement: { nodeId: 'implement', events: [], exitCode: 0, durationMs: 10 } }
+      results: { implement: { nodeId: 'implement', kind: 'agent-spawn', events: [], exitCode: 0, durationMs: 10 } }
     })
 
     expect(rendered).toBe('Question: Ship the feature\nPrior exit code: 0')
