@@ -16,6 +16,7 @@
 import { END, StateGraph } from '@langchain/langgraph'
 import type { Plan, PlanNode } from '@atta/engine'
 import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
+import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { renderStepPrompt } from './template'
 import type { AgentSpawnExecutorConfig } from './types'
@@ -33,11 +34,15 @@ export type AgentLifecycleNodeExecutor = (
 
 /**
  * Builds the node executor wired into every node of the translated graph.
- * Implements this package's first (and only, this task) node kind:
- * `agent-spawn`. A `mechanical` node is structurally translated (it gets a
- * graph node and edges like any other step) but has no executor yet —
- * running one throws, naming the task that implements it, rather than
- * silently no-op'ing.
+ * Dispatches on `node.kind` to this package's two node kinds: `agent-spawn`
+ * (spawns an agent process and captures its event stream) and `mechanical`
+ * (runs a configured command, no model turn at all). Every other kind is
+ * refused — this package executes steps-shaped Plans only.
+ *
+ * Both branches record their result the same way: through the returned
+ * partial state, which LangGraph passes to the annotation's keyed-merge
+ * reducer. Neither writes into `state` directly, or concurrent nodes would
+ * race and lose each other's writes.
  */
 export function createAgentLifecycleNodeExecutor(
   config: AgentSpawnExecutorConfig,
@@ -45,13 +50,17 @@ export function createAgentLifecycleNodeExecutor(
 ): AgentLifecycleNodeExecutor {
   return async (state, { node, plan }) => {
     if (node.kind === 'mechanical') {
-      throw new Error(
-        `Mechanical step '${node.id}' has no executor yet — mechanical-node execution ships in engine-agent-spawn-v1 task 4.`
-      )
+      const result = await executeMechanicalNode({ node, config, spawnFn })
+      // No `sessions` write: a mechanical node has no model turn and so no
+      // session for a later step's `resume` to look up.
+      return {
+        results: { [node.id]: result },
+        revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+      }
     }
     if (node.kind !== 'agent-spawn') {
       throw new Error(
-        `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' steps (and, not yet, 'mechanical' ones).`
+        `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' and 'mechanical' steps.`
       )
     }
 
