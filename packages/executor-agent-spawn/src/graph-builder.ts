@@ -19,7 +19,24 @@ import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-st
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { renderStepPrompt } from './template'
-import type { AgentSpawnExecutorConfig } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
+
+/**
+ * Calls `onEvent`, if supplied, and swallows anything it throws. An
+ * observer's own bug must never corrupt the run it is merely watching — an
+ * unguarded call site would let a throwing callback masquerade the node's
+ * real success as a failure (caught by the wrapper's own `try`/`catch`,
+ * discarding the real result) or replace the real error a `catch` block is
+ * already reporting.
+ */
+function safeEmit(onEvent: ((event: AgentLifecycleEvent) => void) | undefined, event: AgentLifecycleEvent): void {
+  if (!onEvent) return
+  try {
+    onEvent(event)
+  } catch {
+    // Deliberately swallowed — see the function doc above.
+  }
+}
 
 /** Context passed to a per-node executor: the node itself and its owning Plan. */
 export interface NodeExecutionContext {
@@ -43,41 +60,68 @@ export type AgentLifecycleNodeExecutor = (
  * partial state, which LangGraph passes to the annotation's keyed-merge
  * reducer. Neither writes into `state` directly, or concurrent nodes would
  * race and lose each other's writes.
+ *
+ * This function is also the executor's single emission path: it calls
+ * `config.onEvent` (see `types.ts`) around whichever branch it dispatches
+ * to, so `node:start` / `node:complete` / `node:failed` are ordered by this
+ * function's own control flow rather than by two node-kind implementations
+ * each deciding independently when to report themselves. An agent-spawn
+ * node's captured event stream is additionally surfaced as `node:streaming`
+ * — what the spawned process reported — between `node:start` and
+ * `node:complete`; a mechanical node has no such stream, so it only ever
+ * produces the two lifecycle events.
  */
 export function createAgentLifecycleNodeExecutor(
   config: AgentSpawnExecutorConfig,
   spawnFn?: SpawnFn
 ): AgentLifecycleNodeExecutor {
   return async (state, { node, plan }) => {
-    if (node.kind === 'mechanical') {
-      const result = await executeMechanicalNode({ node, config, spawnFn })
-      // No `sessions` write: a mechanical node has no model turn and so no
-      // session for a later step's `resume` to look up.
+    const { onEvent } = config
+    const { runId } = state
+    safeEmit(onEvent, { type: 'node:start', nodeId: node.id, runId })
+
+    try {
+      if (node.kind === 'mechanical') {
+        const result = await executeMechanicalNode({ node, config, spawnFn })
+        safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
+        // No `sessions` write: a mechanical node has no model turn and so no
+        // session for a later step's `resume` to look up.
+        return {
+          results: { [node.id]: result },
+          revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+        }
+      }
+      if (node.kind !== 'agent-spawn') {
+        throw new Error(
+          `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' and 'mechanical' steps.`
+        )
+      }
+
+      const resumeSessionId = node.resume ? state.sessions[node.resume] : undefined
+      if (node.resume && !resumeSessionId) {
+        throw new Error(
+          `Agent-spawn node '${node.id}' declares resume: '${node.resume}', but no session id has been recorded for it yet.`
+        )
+      }
+
+      const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
+      const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn })
+
+      for (const reported of result.events) {
+        const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
+        safeEmit(onEvent, { type: 'node:streaming', nodeId: node.id, runId, content })
+      }
+      safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
+
       return {
         results: { [node.id]: result },
+        sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
         revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
       }
-    }
-    if (node.kind !== 'agent-spawn') {
-      throw new Error(
-        `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' and 'mechanical' steps.`
-      )
-    }
-
-    const resumeSessionId = node.resume ? state.sessions[node.resume] : undefined
-    if (node.resume && !resumeSessionId) {
-      throw new Error(
-        `Agent-spawn node '${node.id}' declares resume: '${node.resume}', but no session id has been recorded for it yet.`
-      )
-    }
-
-    const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
-    const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn })
-
-    return {
-      results: { [node.id]: result },
-      sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
-      revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err)
+      safeEmit(onEvent, { type: 'node:failed', nodeId: node.id, runId, error })
+      throw err
     }
   }
 }

@@ -19,6 +19,7 @@ export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from '.
 export { renderStepPrompt } from './template'
 export type { StepTemplateContext } from './template'
 export type {
+  AgentLifecycleEvent,
   AgentSpawnExecutorConfig,
   AgentSpawnNodeResult,
   MechanicalActionConfig,

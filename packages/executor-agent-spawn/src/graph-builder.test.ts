@@ -6,7 +6,7 @@ import type { Plan, PlanMechanicalNode } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
-import type { AgentSpawnExecutorConfig } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-graph-root-'))
 
@@ -241,6 +241,103 @@ describe('createAgentLifecycleNodeExecutor', () => {
 
     await expect(executor(emptyState, { node: reviewNode, plan: twoStepPlan })).rejects.toThrow(
       /no session id has been recorded/
+    )
+  })
+})
+
+describe('createAgentLifecycleNodeExecutor — execution events', () => {
+  const emptyState: AgentSpawnGraphStateValue = {
+    runId: 'run-events',
+    results: {},
+    sessions: {},
+    revisionCounts: {}
+  }
+
+  const mechanicalNode: PlanMechanicalNode = {
+    id: 'apply-patch',
+    role: 'mechanical',
+    kind: 'mechanical',
+    action: 'apply-patch',
+    metadata: {}
+  }
+
+  it('emits node:start, one node:streaming per reported event, then node:complete for an agent-spawn node, all correlated by runId', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, onEvent: (e) => events.push(e) },
+      fakeSpawn(['{"type":"assistant","text":"working"}', '{"type":"result","session_id":"s1"}'])
+    )
+    const implementNode = twoStepPlan.graph.nodes.implement!
+
+    await executor(emptyState, { node: implementNode, plan: twoStepPlan })
+
+    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:streaming', 'node:streaming', 'node:complete'])
+    expect(events.every((e) => e.nodeId === 'implement' && e.runId === 'run-events')).toBe(true)
+  })
+
+  it('emits node:start then node:complete for a mechanical node, with no node:streaming', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        mechanicalActions: { 'apply-patch': { command: 'git', args: ['apply'] } },
+        onEvent: (e) => events.push(e)
+      },
+      fakeSpawn([])
+    )
+
+    await executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })
+
+    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:complete'])
+  })
+
+  it('emits node:failed with the error message and still rejects, when a mechanical action is undeclared', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor({ ...config, onEvent: (e) => events.push(e) }, fakeSpawn([]))
+
+    await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(
+      /No command configured for mechanical action 'apply-patch'/
+    )
+
+    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:failed'])
+    const failed = events[1]
+    if (failed?.type !== 'node:failed') throw new Error('unreachable')
+    expect(failed.error).toMatch(/No command configured for mechanical action 'apply-patch'/)
+    expect(failed.runId).toBe('run-events')
+  })
+
+  it("a throwing onEvent never corrupts a node's real result — the node's own success still returns normally", async () => {
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        mechanicalActions: { 'apply-patch': { command: 'git', args: ['apply'] } },
+        onEvent: () => {
+          throw new Error('observer bug — must never affect the executor')
+        }
+      },
+      fakeSpawn(['patch applied'])
+    )
+
+    const update = await executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })
+
+    expect(update.results?.['apply-patch']?.kind).toBe('mechanical')
+    expect(update.results?.['apply-patch']?.exitCode).toBe(0)
+    expect(update.revisionCounts?.['apply-patch']).toBe(1)
+  })
+
+  it("a throwing onEvent never replaces the real error — a node's own failure still rejects with its own message", async () => {
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        onEvent: () => {
+          throw new Error('observer bug — must never affect the executor')
+        }
+      },
+      fakeSpawn([])
+    )
+
+    await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(
+      /No command configured for mechanical action 'apply-patch'/
     )
   })
 })
