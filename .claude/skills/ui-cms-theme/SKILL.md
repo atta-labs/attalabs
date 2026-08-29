@@ -506,6 +506,17 @@ only runs its published-vs-`version` comparison when `version` is non-null; whil
 the CMS `status` field is trusted directly (never auto-derived, never auto-flips to
 "shipping"). `DeploymentTrack.tsx` renders no version stamp at all for a null `version`.
 
+**Render order is derived from `version`, not from `order`.** The GROQ query still
+returns documents in manual `order asc`, but `/roadmap` re-sorts them before rendering
+(`_lib/sort-milestones.ts`): every milestone carrying a `version` comes first, ascending
+by version, then the unversioned ones in their manual `order`. `order` is therefore only
+the ordering of what has NOT shipped — the moment an editor writes a real `version` back
+at completion, that rung moves up on its own, the same self-correcting property
+`deriveStatus` already gives the shipped/planned state. The comparison is `compareVersions`
+from `derive-status.ts` (per-segment numeric, tolerant of a non-numeric suffix), not GROQ's
+string `order()`, which would sort "0.19.10" above "0.19.3". A whitespace-only `version`
+counts as absent, not as version zero.
+
 **`image` is a fallback, not the primary visual, for the seven known release
 marks.** Those seven ship as CSS-var-themed SVGs inlined at build time via SVGR
 (`apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg`, one per `version`) —

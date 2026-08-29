@@ -22,14 +22,23 @@ function toNumericSegment(seg: string, raw: string): number {
   return n
 }
 
-export function isVersionAtLeast(candidate: string, threshold: string): boolean {
-  const c = candidate.split('.').map((seg) => toNumericSegment(seg, candidate))
-  const t = threshold.split('.').map((seg) => toNumericSegment(seg, threshold))
-  for (let i = 0; i < Math.max(c.length, t.length); i++) {
-    const diff = (c[i] ?? 0) - (t[i] ?? 0)
-    if (diff !== 0) return diff > 0
+// Segment-wise numeric compare returning the `Array#sort` contract (negative /
+// zero / positive) rather than a boolean: `sort-milestones.ts` orders the whole
+// ladder with it, and `isVersionAtLeast` below is now a thin reading of the same
+// result. One comparator, so the page's ORDER and each card's shipped/planned
+// STATE can never disagree about which of two versions is higher.
+export function compareVersions(a: string, b: string): number {
+  const left = a.split('.').map((seg) => toNumericSegment(seg, a))
+  const right = b.split('.').map((seg) => toNumericSegment(seg, b))
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0)
+    if (diff !== 0) return diff
   }
-  return true
+  return 0
+}
+
+export function isVersionAtLeast(candidate: string, threshold: string): boolean {
+  return compareVersions(candidate, threshold) >= 0
 }
 
 // `shipping`/`planned` are derived live from the published `@attalabs/vinaya`

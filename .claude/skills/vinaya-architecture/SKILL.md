@@ -25,7 +25,11 @@ apps/vinaya-portal/
                  `version` is optional and holds only a record of what already shipped, never
                  a predicted/target number — see `.claude/skills/ui-cms-theme/SKILL.md`'s
                  "Non-theme content document types" section for the full rule and how status
-                 derivation behaves while it's empty.
+                 derivation behaves while it's empty. Render ORDER is derived from that
+                 `version` too, not taken from the CMS: `_lib/sort-milestones.ts` puts every
+                 versioned milestone first, ascending, then the unversioned ones in the
+                 editor's manual `order` — so a rung that ships stops sitting below the
+                 unshipped ones without an editor renumbering anything.
 
 apps/vinaya-studio/
 └── web/        @atta/vinaya-studio-web — the local governance dashboard: `/studio`,
