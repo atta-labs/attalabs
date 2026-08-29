@@ -30,7 +30,7 @@ The folder is simply **the home for that project's specs and status** (`<path>/s
 | agents   | `packages/agents`     | `.claude/skills/vada-architecture/SKILL.md` | (state tracked globally for now) |
 | ui       | `packages/ui`         | `.claude/skills/ui-*`       | (state tracked globally for now)     |
 | attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
-| vinaya   | `(none — owns no directory)` | `.claude/skills/vinaya-architecture/SKILL.md` | Issue #768 (pinned) |
+| vinaya   | `(none — owns no directory)` | `.claude/skills/vinaya-architecture/SKILL.md` | (state tracked globally for now) |
 | vinaya-portal | `apps/vinaya-portal` | `.claude/skills/vinaya-architecture/SKILL.md` | (state tracked globally for now) |
 | vinaya-studio | `apps/vinaya-studio` | `.claude/skills/vinaya-architecture/SKILL.md` | (state tracked globally for now) |
 
