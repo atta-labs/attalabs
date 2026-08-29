@@ -51,10 +51,17 @@ import { scanRetiredVocabulary } from '@attalabs/aeg-core'
 
 const SCAN_EXTENSIONS = ['.md', '.ts', '.tsx', '.yml']
 
+// This file's own header prose names the exact patterns it bans (D-###,
+// "decision log", …) as documentation, the same way retired-vocabulary.ts
+// itself is in RETIRED_EXEMPT_SUBSTRINGS for its own pattern literals —
+// self-exempt for the same reason, not a loophole.
+const SELF_PATH = 'scripts/verify-vocabulary-gate.ts'
+
 const trackedFiles = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
   .trim()
   .split('\n')
   .filter(Boolean)
+  .filter((path) => path !== SELF_PATH)
   .filter((path) => SCAN_EXTENSIONS.some((ext) => path.endsWith(ext)) || path.endsWith('/doc-owners'))
 
 const files = trackedFiles.flatMap((path) => {
