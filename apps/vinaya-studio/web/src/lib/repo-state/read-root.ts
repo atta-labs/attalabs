@@ -48,6 +48,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { cache } from 'react'
 import { parseRegistry, type Tranche, type Lifecycle, type Project, type Registry } from '@attalabs/aeg-core'
+import { DEFAULT_BOARD_SLUG } from './default-board-slug'
 import {
   deriveTrancheFromForge,
   findMilestoneForSlug,
@@ -190,6 +191,95 @@ export async function readRegistry(startDir?: string): Promise<Registry> {
 export async function readProject(name: string): Promise<Project | undefined> {
   const registry = await readRegistry()
   return registry.find((p) => p.name === name)
+}
+
+// ---------- registry-optional project resolution (#811) ----------
+//
+// `readProject`/`readRegistry` above are untouched — every existing caller
+// keeps its exact registry-present semantics. Everything below is additive:
+// it activates ONLY when `findAegRoot()` finds no `.vinaya/projects.md` at
+// all, and it never re-derives a project name — `collectProjectNames` only
+// reads `task.projects` off `Tranche`s `loadActiveTranches`/
+// `loadArchivedTranches` already derived via `@attalabs/aeg-forge-state`.
+
+/** Pure: every non-empty project name declared across a list of
+ *  already-derived tranches, deduped. No I/O, no re-derivation — consumes
+ *  `task.projects` verbatim. */
+function collectProjectNames(items: ReadonlyArray<{ tranche: Tranche }>): Set<string> {
+  const names = new Set<string>()
+  for (const { tranche } of items) {
+    for (const task of tranche.tasks) {
+      for (const p of task.projects) if (p) names.add(p)
+    }
+  }
+  return names
+}
+
+async function forgeDerivedProjectNames(): Promise<Set<string>> {
+  const [active, archived] = await Promise.all([loadActiveTranches(), loadArchivedTranches()])
+  return collectProjectNames([...active, ...archived])
+}
+
+/** A resolved `/studio/projects/<name>` view. `registered` mirrors
+ *  `readProject`'s exact result (registry-present). `forge-derived` is a
+ *  name carried by at least one tranche, resolved with no registry to check
+ *  it against. `default` is the reserved `DEFAULT_BOARD_SLUG` view over
+ *  every projectless tranche — not a real project. */
+export type ProjectView =
+  | { kind: 'registered'; project: Project }
+  | { kind: 'forge-derived'; name: string }
+  | { kind: 'default' }
+
+/**
+ * Pure: the registry-absent-mode verdict for `name`, given the (already
+ * fetched) set of forge-derived names. `forgeNames.has(name)` is checked
+ * FIRST — a real forge-declared name always wins the `DEFAULT_BOARD_SLUG`
+ * string — so a tranche that genuinely declares `Project: _default` is
+ * never permanently shadowed by the synthetic board. The reserved slug
+ * becomes unreachable only in that one collision case (the default
+ * all-tranches view, not a real project, is the one that degrades); a real
+ * project's board must never be the one swallowed. Exported for tests only
+ * — every real caller goes through `resolveProjectView`.
+ */
+export function __resolveForgeAbsentView(name: string, forgeNames: ReadonlySet<string>): ProjectView | undefined {
+  if (forgeNames.has(name)) return { kind: 'forge-derived', name }
+  if (name === DEFAULT_BOARD_SLUG) return { kind: 'default' }
+  return undefined
+}
+
+/** Registry-optional counterpart to `readProject`. `startDir` is exposed
+ *  only for tests — every real caller omits it, matching `readRegistry`. */
+export async function resolveProjectView(name: string, startDir?: string): Promise<ProjectView | undefined> {
+  if (findAegRoot(startDir) !== null) {
+    const project = await readProject(name)
+    return project ? { kind: 'registered', project } : undefined
+  }
+  const names = await forgeDerivedProjectNames()
+  return __resolveForgeAbsentView(name, names)
+}
+
+/** A `Project`-shaped view has no forge-derived counterpart (path/specsPath
+ *  are registry-declared, never derived) — this is what `/studio/projects`
+ *  lists instead when there's no registry to read real rows from. */
+export type ForgeDerivedProject = { name: string }
+
+export type ProjectListing =
+  | { registryPresent: true; projects: Project[] }
+  | { registryPresent: false; projects: ForgeDerivedProject[] }
+
+/** Registry-optional counterpart to `readRegistry`, for the projects index
+ *  and its sub-bar. `startDir` is exposed only for tests. */
+export async function listProjectViews(startDir?: string): Promise<ProjectListing> {
+  if (findAegRoot(startDir) !== null) {
+    return { registryPresent: true, projects: await readRegistry(startDir) }
+  }
+  const names = await forgeDerivedProjectNames()
+  return {
+    registryPresent: false,
+    projects: Array.from(names)
+      .sort()
+      .map((name) => ({ name }))
+  }
 }
 
 async function toSummary(fileSlug: string, tranche: Tranche, archived: boolean): Promise<TrancheSummary> {
@@ -458,6 +548,34 @@ export async function tranchesForProject(projectName: string): Promise<{
   const archivedFiltered = archivedLoaded.items.filter(({ tranche }) =>
     tranche.tasks.some((t) => t.projects.includes(projectName))
   )
+
+  const [active, archived] = await Promise.all([
+    Promise.all(activeFiltered.map(({ fileSlug, tranche }) => toSummary(fileSlug, tranche, false))),
+    Promise.all(archivedFiltered.map(({ fileSlug, tranche }) => toSummary(fileSlug, tranche, true)))
+  ])
+  return { active, archived, forge: { active: activeLoaded.status, archived: archivedLoaded.status } }
+}
+
+/**
+ * The registry-absent default board's content (#811): every tranche that
+ * declares NO project at all — the same population `boardHref` routes to
+ * `DEFAULT_BOARD_SLUG` for. A tranche belongs here iff every task's
+ * `projects` is empty; one declared name anywhere in the tranche routes it
+ * to that name's own board instead (`tranchesForProject`), never here too.
+ */
+export async function tranchesWithNoProject(): Promise<{
+  active: TrancheSummary[]
+  archived: TrancheSummary[]
+  forge: { active: ForgeStatus; archived: ForgeStatus }
+}> {
+  const [activeLoaded, archivedLoaded] = await Promise.all([
+    loadActiveTranchesWithStatus(),
+    loadArchivedTranchesWithStatus()
+  ])
+
+  const isProjectless = ({ tranche }: { tranche: Tranche }) => !tranche.tasks.some((t) => t.projects.length > 0)
+  const activeFiltered = activeLoaded.items.filter(isProjectless)
+  const archivedFiltered = archivedLoaded.items.filter(isProjectless)
 
   const [active, archived] = await Promise.all([
     Promise.all(activeFiltered.map(({ fileSlug, tranche }) => toSummary(fileSlug, tranche, false))),

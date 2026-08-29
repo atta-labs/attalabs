@@ -34,9 +34,31 @@
  * has to match wherever a board-less row renders. A row that is silently
  * non-clickable reads as a broken link; it must say why (the Studio
  * does not lie by omission, including by omitting an explanation).
+ *
+ * **Registry-optional (#811).** `boardHref`'s third argument is `registered
+ * : ReadonlySet<string> | null` — a real Set is the registry-present path,
+ * untouched byte-for-byte from before this task. `null` means no
+ * `.vinaya/projects.md` exists at all: there is no registry to gate against,
+ * so every forge-declared project name gets a board (`resolveProjectView`,
+ * `read-root.ts`, resolves it against the tranches' own already-derived
+ * `task.projects` — never re-derived here), and a projectless tranche gets
+ * the one reserved `DEFAULT_BOARD_SLUG` board instead of `NO_BOARD_REASON`.
+ * The mode switch is registry EXISTENCE, nothing subtler — a caller decides
+ * which to pass by checking `findAegRoot() !== null` once per request, not
+ * by inspecting whether the registered set happens to be empty (an empty-
+ * but-present registry is a real, different state that must still render
+ * `NO_BOARD_REASON`, not a forge-derived board).
  */
 
 import type { TrancheSummary } from '@/lib/repo-state'
+// A direct leaf import, deliberately bypassing the `@/lib/repo-state` barrel:
+// that barrel also re-exports `read-root.ts`, which carries `import
+// 'server-only'` — this module is imported by client components
+// (`TranchesTabs.tsx`), and importing anything through the barrel, even an
+// unrelated value, executes every re-exported module's top level and throws.
+import { DEFAULT_BOARD_SLUG } from '@/lib/repo-state/default-board-slug'
+
+export { DEFAULT_BOARD_SLUG }
 
 /** Shown as a `title=` tooltip, and inline on the tranche card.
  *
@@ -44,28 +66,51 @@ import type { TrancheSummary } from '@/lib/repo-state'
  * cases: a tranche that declares no project at all (also `[]` for an open
  * Milestone with no Issues cut yet — so a reason asserting tasks exist would be
  * its own small lie), AND one whose declared projects are all retired /
- * unregistered. In neither case does a project page exist to link to. */
+ * unregistered. In neither case does a project page exist to link to.
+ * Registry-absent tranches never reach this reason — that mode always
+ * resolves a board (a named one, or the default). */
 export const NO_BOARD_REASON = 'No board — no registered project for this tranche.'
+
+/** Percent-encodes a forge-derived name (or `DEFAULT_BOARD_SLUG`) for use as
+ * a `/studio/projects/<segment>` URL segment. A registered name never passes
+ * through this — registry rows are already route-safe, and running them
+ * through it too would risk the byte-identical guarantee for no reason.
+ * Renders (never 500s on) a name with `/`, spaces, or other URL-hostile
+ * characters. */
+export function forgeProjectSegment(name: string): string {
+  return encodeURIComponent(name)
+}
 
 /**
  * The one board-route builder. Takes the project list rather than a summary so
  * the Tasks card — which resolves a board href per *task* (`task.projects`),
  * not per tranche summary — shares this exact rule instead of re-deriving it.
- * `registered` is the set of project names in `.vinaya/projects.md`;
- * the href points at the first project that is in it. An empty or unregistered
- * name is skipped (a `project:` label with no name would otherwise build
- * `/studio/projects//tranches/<slug>`; a retired one, a 404ing route).
+ * `registered` is the set of project names in `.vinaya/projects.md`, or
+ * `null` when no registry exists (see the module docstring). Registry-present:
+ * the href points at the first project that is in the set; an empty or
+ * unregistered name is skipped (a `project:` label with no name would
+ * otherwise build `/studio/projects//tranches/<slug>`; a retired one, a
+ * 404ing route) — unchanged from before this task. Registry-absent: the
+ * first declared name (any name — there is nothing to gate against) gets a
+ * board, and an empty `projects` list gets the default board.
  */
 export function boardHref(
   projects: readonly string[],
   fileSlug: string,
-  registered: ReadonlySet<string>
+  registered: ReadonlySet<string> | null
 ): string | null {
-  const project = projects.find((p) => p && registered.has(p))
-  return project ? `/studio/projects/${project}/tranches/${fileSlug}` : null
+  if (registered !== null) {
+    const project = projects.find((p) => p && registered.has(p))
+    return project ? `/studio/projects/${project}/tranches/${fileSlug}` : null
+  }
+  const project = projects.find((p) => p)
+  const segment = forgeProjectSegment(project ?? DEFAULT_BOARD_SLUG)
+  return `/studio/projects/${segment}/tranches/${fileSlug}`
 }
 
-/** A tranche's board href — its first registered project's detail route, or null. */
-export function trancheHref(it: TrancheSummary, registered: ReadonlySet<string>): string | null {
+/** A tranche's board href — its first registered project's detail route
+ *  (or the registry-absent equivalent), never null when `registered` is
+ *  `null` (see `boardHref`). */
+export function trancheHref(it: TrancheSummary, registered: ReadonlySet<string> | null): string | null {
   return boardHref(it.projects, it.fileSlug, registered)
 }

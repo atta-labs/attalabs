@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { boardHref, NO_BOARD_REASON } from './tranche-href'
+import { boardHref, DEFAULT_BOARD_SLUG, forgeProjectSegment, NO_BOARD_REASON } from './tranche-href'
 
 /**
  * `boardHref` is the one board-route rule, shared by three surfaces (the home
@@ -50,5 +50,46 @@ describe('NO_BOARD_REASON', () => {
     // A zero-task tranche (open Milestone, no Issues cut) also has no
     // project, so the reason must not claim anything about its tasks.
     expect(NO_BOARD_REASON).not.toMatch(/task/i)
+  })
+})
+
+/**
+ * Registry-absent mode (`registered === null`, #811) — no `.vinaya/projects.md`
+ * exists, so there is nothing to gate against: every declared name gets a
+ * board, and a projectless tranche gets the reserved default board instead
+ * of `NO_BOARD_REASON`. The registry-present suite above is untouched by
+ * this addition — same function, a real `Set` still takes the exact prior
+ * branch.
+ */
+describe('boardHref — registry-absent (registered: null)', () => {
+  it("builds the first declared project's board route — no registry to check it against", () => {
+    expect(boardHref(['aeg', 'desktop'], 'deprecation-v1', null)).toBe('/studio/projects/aeg/tranches/deprecation-v1')
+  })
+
+  it('routes a projectless tranche to the reserved default board instead of null', () => {
+    expect(boardHref([], 'admin-ui-library-picker-v1', null)).toBe(
+      `/studio/projects/${DEFAULT_BOARD_SLUG}/tranches/admin-ui-library-picker-v1`
+    )
+  })
+
+  it('treats an empty project name as absent, same as the registry-present branch', () => {
+    expect(boardHref([''], 'some-tranche', null)).toBe(`/studio/projects/${DEFAULT_BOARD_SLUG}/tranches/some-tranche`)
+  })
+
+  it('percent-encodes a non-slug-safe declared name instead of building a broken route', () => {
+    expect(boardHref(['a/b c'], 'hostile-name-v1', null)).toBe(
+      `/studio/projects/${encodeURIComponent('a/b c')}/tranches/hostile-name-v1`
+    )
+  })
+})
+
+describe('forgeProjectSegment', () => {
+  it('renders a hostile name as a safe URL segment instead of 500ing', () => {
+    expect(forgeProjectSegment('a/b?c#d')).toBe(encodeURIComponent('a/b?c#d'))
+    expect(forgeProjectSegment('a/b?c#d')).not.toMatch(/[/?#]/)
+  })
+
+  it('is a no-op on an already URL-safe name', () => {
+    expect(forgeProjectSegment('vada')).toBe('vada')
   })
 })

@@ -8,7 +8,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // package. Same mock as load-state-machine.test.ts.
 vi.mock('server-only', () => ({}))
 
-import { __resetAegRootCacheForTests, findAegRoot, readRegistry } from './read-root.js'
+// `resolveRepo: null` (forge unreachable) short-circuits every enumeration
+// path in `read-root.ts` before it needs a real Milestone/derivation — the
+// same safe-empty behavior every existing forge-unreachable case already
+// gets. `importOriginal` keeps every other export (e.g. `labels.ts`'s
+// `LABEL`, which `@attalabs/aeg-core`'s own module graph needs) real —
+// overriding the whole module drags those out from under an unrelated
+// import chain.
+vi.mock('@attalabs/aeg-forge-state', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@attalabs/aeg-forge-state')>()
+  return { ...actual, resolveRepo: vi.fn(async () => null) }
+})
+
+import {
+  __resetAegRootCacheForTests,
+  __resolveForgeAbsentView,
+  findAegRoot,
+  listProjectViews,
+  readRegistry,
+  resolveProjectView,
+  tranchesWithNoProject
+} from './read-root.js'
+import { DEFAULT_BOARD_SLUG } from './default-board-slug.js'
 
 // `findAegRoot`/`readRegistry` cache their result at module scope (real
 // callers never re-derive per request); `__resetAegRootCacheForTests` clears
@@ -72,5 +93,115 @@ describe('read-root — missing .vinaya/projects.md (single-project repos, #830)
       '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n'
     )
     expect(findAegRoot(dir)).toBe(dir)
+  })
+})
+
+/**
+ * Registry-optional resolution (#811). `resolveProjectView`/`listProjectViews`
+ * accept `startDir` (test-only, mirroring `readRegistry`) so the
+ * registry-present branch is provable against a real fixture without
+ * `VINAYA_REPO_ROOT`/`process.chdir()` gymnastics — it reuses `readProject`/
+ * `readRegistry` verbatim, so this also pins the byte-identity guarantee: a
+ * registered name resolves exactly like `readProject` already did, and an
+ * unregistered one still resolves to nothing (never a forge-derived board).
+ * The registry-absent branch is exercised against a forge mocked
+ * unreachable (`resolveRepo` → `null`, above) — every enumeration path
+ * degrades to `[]` before needing a real Milestone, so this proves the
+ * registry-absent path never crashes and never fabricates a name the forge
+ * never actually returned.
+ */
+describe('resolveProjectView / listProjectViews — registry-optional (#811)', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'read-root-test-'))
+    __resetAegRootCacheForTests()
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('registry present: a registered name resolves exactly like readProject', async () => {
+    mkdirSync(join(dir, '.vinaya'), { recursive: true })
+    writeFileSync(
+      join(dir, '.vinaya', 'projects.md'),
+      '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n| mobile | `apps/mobile` | `apps/mobile/specs` | (state tracked globally) |\n'
+    )
+    await expect(resolveProjectView('mobile', dir)).resolves.toEqual({
+      kind: 'registered',
+      project: { name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }
+    })
+  })
+
+  it('registry present: an unregistered name resolves to nothing — never a forge-derived board', async () => {
+    mkdirSync(join(dir, '.vinaya'), { recursive: true })
+    writeFileSync(
+      join(dir, '.vinaya', 'projects.md'),
+      '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n'
+    )
+    await expect(resolveProjectView('mobile', dir)).resolves.toBeUndefined()
+  })
+
+  it('registry absent: the reserved default slug resolves when no forge-derived project claims it', async () => {
+    await expect(resolveProjectView(DEFAULT_BOARD_SLUG, dir)).resolves.toEqual({ kind: 'default' })
+  })
+
+  it('registry absent, forge unreachable: any other name resolves to nothing rather than fabricating a board', async () => {
+    await expect(resolveProjectView('vada', dir)).resolves.toBeUndefined()
+  })
+
+  it('listProjectViews: registry present returns the real rows', async () => {
+    mkdirSync(join(dir, '.vinaya'), { recursive: true })
+    writeFileSync(
+      join(dir, '.vinaya', 'projects.md'),
+      '## Registry\n\n| Project | Path | Specs | Per-project state |\n|---|---|---|---|\n| mobile | `apps/mobile` | `apps/mobile/specs` | (state tracked globally) |\n'
+    )
+    await expect(listProjectViews(dir)).resolves.toEqual({
+      registryPresent: true,
+      projects: [{ name: 'mobile', path: 'apps/mobile', specsPath: 'apps/mobile/specs', statePath: null }]
+    })
+  })
+
+  it('listProjectViews: registry absent, forge unreachable, returns no fabricated names', async () => {
+    await expect(listProjectViews(dir)).resolves.toEqual({ registryPresent: false, projects: [] })
+  })
+
+  it('tranchesWithNoProject: forge unreachable degrades to empty lists, not a throw', async () => {
+    await expect(tranchesWithNoProject()).resolves.toEqual({
+      active: [],
+      archived: [],
+      forge: { active: { kind: 'unreachable' }, archived: { kind: 'unreachable' } }
+    })
+  })
+})
+
+/**
+ * A real forge-declared project literally named `DEFAULT_BOARD_SLUG` must
+ * win that slug over the synthetic default board — never be permanently
+ * shadowed. Proven at the pure precedence rule directly (no forge mocking
+ * needed: this is the exact decision `resolveProjectView` delegates to once
+ * it already has the forge-derived name set in hand).
+ */
+describe('__resolveForgeAbsentView — a real name always wins DEFAULT_BOARD_SLUG (#811 review fix)', () => {
+  it('a real forge-derived project named exactly DEFAULT_BOARD_SLUG resolves as forge-derived, not default', () => {
+    const forgeNames = new Set([DEFAULT_BOARD_SLUG, 'vada'])
+    expect(__resolveForgeAbsentView(DEFAULT_BOARD_SLUG, forgeNames)).toEqual({
+      kind: 'forge-derived',
+      name: DEFAULT_BOARD_SLUG
+    })
+  })
+
+  it('falls back to the default view only when no real project claims the slug', () => {
+    const forgeNames = new Set(['vada', 'herald'])
+    expect(__resolveForgeAbsentView(DEFAULT_BOARD_SLUG, forgeNames)).toEqual({ kind: 'default' })
+  })
+
+  it('an ordinary forge-derived name resolves as forge-derived', () => {
+    expect(__resolveForgeAbsentView('vada', new Set(['vada']))).toEqual({ kind: 'forge-derived', name: 'vada' })
+  })
+
+  it('a name that is neither a forge-derived project nor the reserved slug resolves to nothing', () => {
+    expect(__resolveForgeAbsentView('made-up', new Set(['vada']))).toBeUndefined()
   })
 })

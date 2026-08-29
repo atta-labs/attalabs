@@ -1,15 +1,28 @@
 import type { ReactNode } from 'react'
-import { readRegistry } from '@/lib/repo-state'
-import { ProjectsSubBar } from './ProjectsSubBar'
+import { listProjectViews } from '@/lib/repo-state'
+import { forgeProjectSegment } from '@/app/studio/_lib/tranche-href'
+import { withDefaultBoardEntry } from '@/lib/repo-state/default-board-slug'
+import { ProjectsSubBar, type SubBarProject } from './ProjectsSubBar'
 
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {
-  const projects = await readRegistry()
+  const listing = await listProjectViews()
+  // A real project literally named `DEFAULT_BOARD_SLUG` must win that slug —
+  // `withDefaultBoardEntry` skips the synthetic entry in that case, matching
+  // `resolveProjectView`'s routing precedence so the sub-bar never links to
+  // a board the router would then resolve differently.
+  const subBarProjects: SubBarProject[] = listing.registryPresent
+    ? listing.projects.map((p) => ({ segment: p.name, href: `/studio/projects/${p.name}` }))
+    : withDefaultBoardEntry(listing.projects).map((p) => ({
+        segment: forgeProjectSegment(p.name),
+        href: `/studio/projects/${forgeProjectSegment(p.name)}`,
+        label: 'label' in p ? p.label : undefined
+      }))
   // StudioShell owns the scroll container (`studio/layout.tsx`); this layout adds
   // no overflow/height of its own. The sub-bar is `sticky top-0` so it pins under
   // the topbar as StudioShell scrolls, instead of scrolling away with the content.
   return (
     <>
-      <ProjectsSubBar projects={projects} />
+      <ProjectsSubBar projects={subBarProjects} />
       {/* max-w-4xl keeps prose pages (task-detail briefs) at a readable measure. A
           wide board table that doesn't fit this width scrolls inside its own
           container (the responsive Table wrapper), so the column width no longer
