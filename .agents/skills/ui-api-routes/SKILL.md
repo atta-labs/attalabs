@@ -1,5 +1,5 @@
 ---
 name: ui-api-routes
-description: Patterns for Next.js App Router API routes in the Atta AI monorepo — validation, errors, timeouts, LLM calls
+description: Pointer skill — canonical content lives at `.claude/skills/ui-api-routes/SKILL.md`. Read that file directly; this file never duplicates its prose.
 ---
 Read `.claude/skills/ui-api-routes/SKILL.md` and follow it as your operating instructions for this task.
