@@ -60,7 +60,7 @@ jobs:
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: npx --yes @attalabs/vinaya@0.19.2 check review-gate
+        run: npx --yes @attalabs/vinaya@0.20.1 check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs.
   #

@@ -71,4 +71,4 @@ jobs:
           # it the adapter reads "no PR yet — local dev" and exits 0, and
           # the gate is green regardless of review state.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx --yes @attalabs/vinaya@0.19.2 check review-gate
+        run: npx --yes @attalabs/vinaya@0.20.1 check review-gate
