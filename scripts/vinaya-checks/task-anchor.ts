@@ -33,6 +33,7 @@
  * `vinaya.config.json` under `checks`, per the Issue's own Traps-to-avoid.
  */
 
+import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -41,6 +42,37 @@ import { type AnchorSourceFile, checkLocalAnchorCoverage } from '@attalabs/aeg-c
 const CHECK_NAME = 'attalabs/task-anchor'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 process.chdir(REPO_ROOT)
+
+// Same `${base}...HEAD` pattern `check-doc-coverage.ts` (@attalabs/aeg-core)
+// already uses for exactly this reason: `scope: 'full'` in vinaya.config.json
+// means this check runs on every PR, and this scan's own `collectScopeFiles()`
+// below is a fixed full-tree walk unconnected to any diff — without this
+// filter, every PR reprints the ENTIRE pre-existing backlog regardless of
+// what it actually touched (found live: identical ~17-line warning block on
+// unrelated PRs). Findings are still real and still emitted for whichever
+// file a PR actually changes — this narrows WHAT gets reported, not whether
+// the check runs.
+function changedFiles(base: string): string[] {
+  try {
+    return execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+      .trim()
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function resolveChangedFiles(): string[] {
+  const base = process.env.BASE_SHA || 'origin/main'
+  let changed = changedFiles(base)
+  if (changed.length === 0) changed = changedFiles('main')
+  return changed
+}
 
 type CheckError = {
   schema: 1
@@ -172,7 +204,10 @@ function main(): void {
     process.exit(1)
   }
 
-  for (const finding of result.findings) {
+  const changed = new Set(resolveChangedFiles())
+  const reportable = result.findings.filter((f) => changed.has(f.file))
+
+  for (const finding of reportable) {
     emitCheckError({
       schema: 1,
       check: CHECK_NAME,
@@ -189,8 +224,9 @@ function main(): void {
 
   // A vacuous pattern always fails, report-only or not — it means this
   // check is lying about its own coverage. Ordinary findings respect the
-  // rollout flag.
-  process.exit(!REPORT_ONLY && result.findings.length > 0 ? 1 : 0)
+  // rollout flag; findings outside the diff never affect the exit code
+  // either way, only whether they're printed at all (diff-scoping above).
+  process.exit(!REPORT_ONLY && reportable.length > 0 ? 1 : 0)
 }
 
 main()
