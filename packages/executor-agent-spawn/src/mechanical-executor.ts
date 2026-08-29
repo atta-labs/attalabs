@@ -49,7 +49,12 @@ export interface ExecuteMechanicalNodeParams {
 export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams): Promise<MechanicalNodeResult> {
   const { node, config, spawnFn = defaultSpawn } = params
 
-  const actionConfig = config.mechanicalActions?.[node.action]
+  // Own-property lookup, not a bare index: `action` arrives from the Plan, and
+  // a bare `actions[name]` resolves inherited keys (`__proto__`, `constructor`)
+  // to an object that is truthy but has no `command`, turning a clean refusal
+  // into a confusing spawn-time failure.
+  const actions = config.mechanicalActions
+  const actionConfig = actions && Object.hasOwn(actions, node.action) ? actions[node.action] : undefined
   if (!actionConfig) {
     throw new Error(
       `No command configured for mechanical action '${node.action}' (node '${node.id}'). Provide one in AgentSpawnExecutorConfig.mechanicalActions — an action this executor was not told about is never guessed at or run through a shell.`

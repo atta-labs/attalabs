@@ -112,6 +112,19 @@ describe('executeAgentSpawnNode', () => {
     )
   })
 
+  it('refuses an inherited key as a role name', async () => {
+    for (const agentRole of ['__proto__', 'constructor', 'toString']) {
+      await expect(
+        executeAgentSpawnNode({
+          node: { ...testNode, agentRole },
+          prompt: 'x',
+          config: baseConfig,
+          spawnFn: fakeSpawn({ stdoutLines: [] })
+        })
+      ).rejects.toThrow(new RegExp(`No binary configured for role '${agentRole}'`))
+    }
+  })
+
   it('refuses a role with no configured binary', async () => {
     await expect(
       executeAgentSpawnNode({

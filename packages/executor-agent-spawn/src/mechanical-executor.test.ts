@@ -107,6 +107,20 @@ describe('executeMechanicalNode', () => {
     expect(calls).toHaveLength(0)
   })
 
+  it('refuses an inherited key as an action name, without spawning anything', async () => {
+    const calls: SpawnCall[] = []
+    const spawnFn = fakeSpawn({}, calls)
+    const config = configWith({ 'git-apply': { command: 'git' } })
+
+    for (const action of ['__proto__', 'constructor', 'toString']) {
+      const node: PlanMechanicalNode = { ...applyPatch, action }
+      await expect(executeMechanicalNode({ node, config, spawnFn })).rejects.toThrow(
+        new RegExp(`No command configured for mechanical action '${action}'`)
+      )
+    }
+    expect(calls).toHaveLength(0)
+  })
+
   it('refuses when the config declares no mechanical actions at all', async () => {
     const spawnFn = fakeSpawn({})
     const config: AgentSpawnExecutorConfig = { workingDirectoryRoot, roleBinaries: {} }

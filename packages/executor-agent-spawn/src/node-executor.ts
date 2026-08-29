@@ -158,7 +158,12 @@ export interface ExecuteAgentSpawnNodeParams {
 export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams): Promise<AgentSpawnNodeResult> {
   const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn } = params
 
-  const binaryConfig = config.roleBinaries[node.agentRole]
+  // Own-property lookup, for the same reason the mechanical path uses one:
+  // `agentRole` arrives from the Plan, and an inherited key resolves to a
+  // truthy object with no `command`.
+  const binaryConfig = Object.hasOwn(config.roleBinaries, node.agentRole)
+    ? config.roleBinaries[node.agentRole]
+    : undefined
   if (!binaryConfig) {
     throw new Error(
       `No binary configured for role '${node.agentRole}' (node '${node.id}'). Provide one in AgentSpawnExecutorConfig.roleBinaries.`
