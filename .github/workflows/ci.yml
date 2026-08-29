@@ -115,4 +115,4 @@ jobs:
         run: bunx turbo test --affected
 
       - name: Vocabulary gate (repo-wide scan — not affected-scoped)
-        run: bash scripts/verify-vocabulary-gate.sh
+        run: bun scripts/verify-vocabulary-gate.ts
