@@ -305,4 +305,39 @@ describe('createAgentLifecycleNodeExecutor — execution events', () => {
     expect(failed.error).toMatch(/No command configured for mechanical action 'apply-patch'/)
     expect(failed.runId).toBe('run-events')
   })
+
+  it("a throwing onEvent never corrupts a node's real result — the node's own success still returns normally", async () => {
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        mechanicalActions: { 'apply-patch': { command: 'git', args: ['apply'] } },
+        onEvent: () => {
+          throw new Error('observer bug — must never affect the executor')
+        }
+      },
+      fakeSpawn(['patch applied'])
+    )
+
+    const update = await executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })
+
+    expect(update.results?.['apply-patch']?.kind).toBe('mechanical')
+    expect(update.results?.['apply-patch']?.exitCode).toBe(0)
+    expect(update.revisionCounts?.['apply-patch']).toBe(1)
+  })
+
+  it("a throwing onEvent never replaces the real error — a node's own failure still rejects with its own message", async () => {
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        onEvent: () => {
+          throw new Error('observer bug — must never affect the executor')
+        }
+      },
+      fakeSpawn([])
+    )
+
+    await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(
+      /No command configured for mechanical action 'apply-patch'/
+    )
+  })
 })

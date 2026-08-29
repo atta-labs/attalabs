@@ -19,7 +19,24 @@ import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-st
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { renderStepPrompt } from './template'
-import type { AgentSpawnExecutorConfig } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
+
+/**
+ * Calls `onEvent`, if supplied, and swallows anything it throws. An
+ * observer's own bug must never corrupt the run it is merely watching — an
+ * unguarded call site would let a throwing callback masquerade the node's
+ * real success as a failure (caught by the wrapper's own `try`/`catch`,
+ * discarding the real result) or replace the real error a `catch` block is
+ * already reporting.
+ */
+function safeEmit(onEvent: ((event: AgentLifecycleEvent) => void) | undefined, event: AgentLifecycleEvent): void {
+  if (!onEvent) return
+  try {
+    onEvent(event)
+  } catch {
+    // Deliberately swallowed — see the function doc above.
+  }
+}
 
 /** Context passed to a per-node executor: the node itself and its owning Plan. */
 export interface NodeExecutionContext {
@@ -61,12 +78,12 @@ export function createAgentLifecycleNodeExecutor(
   return async (state, { node, plan }) => {
     const { onEvent } = config
     const { runId } = state
-    onEvent?.({ type: 'node:start', nodeId: node.id, runId })
+    safeEmit(onEvent, { type: 'node:start', nodeId: node.id, runId })
 
     try {
       if (node.kind === 'mechanical') {
         const result = await executeMechanicalNode({ node, config, spawnFn })
-        onEvent?.({ type: 'node:complete', nodeId: node.id, runId })
+        safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
         // No `sessions` write: a mechanical node has no model turn and so no
         // session for a later step's `resume` to look up.
         return {
@@ -90,13 +107,11 @@ export function createAgentLifecycleNodeExecutor(
       const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
       const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn })
 
-      if (onEvent) {
-        for (const reported of result.events) {
-          const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
-          onEvent({ type: 'node:streaming', nodeId: node.id, runId, content })
-        }
+      for (const reported of result.events) {
+        const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
+        safeEmit(onEvent, { type: 'node:streaming', nodeId: node.id, runId, content })
       }
-      onEvent?.({ type: 'node:complete', nodeId: node.id, runId })
+      safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
 
       return {
         results: { [node.id]: result },
@@ -105,7 +120,7 @@ export function createAgentLifecycleNodeExecutor(
       }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
-      onEvent?.({ type: 'node:failed', nodeId: node.id, runId, error })
+      safeEmit(onEvent, { type: 'node:failed', nodeId: node.id, runId, error })
       throw err
     }
   }
