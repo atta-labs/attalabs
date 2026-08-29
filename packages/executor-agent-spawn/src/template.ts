@@ -8,14 +8,14 @@
 
 import Handlebars from 'handlebars'
 import type { PlanAgentSpawnNode } from '@atta/engine'
-import type { AgentSpawnNodeResult } from './types'
+import type { StepNodeResult } from './types'
 
 /** Handlebars context available to an agent-spawn node's prompt template. */
 export interface StepTemplateContext {
   /** The question the Plan was compiled for. */
   question: string
-  /** Prior agent-spawn nodes' results in this run, keyed by node id. */
-  results: Record<string, AgentSpawnNodeResult>
+  /** Prior nodes' results in this run, keyed by node id — agent-spawn and mechanical alike. */
+  results: Record<string, StepNodeResult>
 }
 
 /**

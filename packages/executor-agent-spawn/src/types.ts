@@ -1,11 +1,16 @@
 /**
  * @file types.ts
- * @description Public types for the agent-spawn executor: role-to-binary
- * configuration and the structured result each executed node produces.
+ * @description Public types for this executor: the caller-supplied
+ * configuration for each node kind, and the structured result each executed
+ * node produces.
  *
- * A Plan's agent-spawn node names a role (`PlanAgentSpawnNode.agentRole`),
- * never a binary — the caller resolves role → binary via `roleBinaries`
- * below, because the binary present on one machine may be absent on another.
+ * Both node kinds resolve a *name* declared in the Plan to something
+ * spawnable that only the caller knows. An agent-spawn node names a role
+ * (`PlanAgentSpawnNode.agentRole`), never a binary; a mechanical node names
+ * an action (`PlanMechanicalNode.action`), never a command line. The caller
+ * resolves them via `roleBinaries` / `mechanicalActions` below, because what
+ * is present on one machine may be absent on another — and because a name
+ * the caller has not declared up front must never become a spawned process.
  */
 
 /**
@@ -72,6 +77,13 @@ export interface AgentSpawnExecutorConfig {
    * business handing to an externally-authenticated process).
    */
   envAllowlist?: string[]
+  /**
+   * Action name → command configuration, keyed by the Plan's `action`
+   * strings. Optional: a Plan with no mechanical steps needs none. An action
+   * a mechanical node names but this map does not declare is refused, never
+   * guessed — see `executeMechanicalNode`.
+   */
+  mechanicalActions?: Record<string, MechanicalActionConfig>
 }
 
 /**
@@ -81,6 +93,8 @@ export interface AgentSpawnExecutorConfig {
  */
 export interface AgentSpawnNodeResult {
   nodeId: string
+  /** Discriminant — which node kind produced this result. */
+  kind: 'agent-spawn'
   /** Every structured event the process emitted on stdout, in order. */
   events: unknown[]
   /** Resumable session id, extracted from the event stream when present. */
@@ -88,3 +102,73 @@ export interface AgentSpawnNodeResult {
   exitCode: number
   durationMs: number
 }
+
+// ── Mechanical steps ────────────────────────────────────────────────────────
+//
+// A mechanical node performs an external action and has no model turn at all:
+// no prompt, no template, no session, no spawned agent. Its Plan node carries
+// exactly one field of substance — `action`, an action *name* (`git-apply`),
+// not a command line. `@atta/engine`'s own spec is explicit that this is "an
+// action name, not yet a real shell/function binding", and that the binding
+// layer must decide, up front, whether a flow may name a command its author
+// never declared. This package answers that: it may not. The name is a key
+// into `mechanicalActions`, an unknown key is refused, and the resolved
+// command is spawned with an argv array and no shell.
+
+/**
+ * How a single mechanical action name resolves to a spawnable process.
+ * Supplied by the caller at executor-construction time — never read from the
+ * Plan. `args` is a fixed argv array, never a shell string and never
+ * interpolated with Plan or graph state: a mechanical node's own declaration
+ * contributes the action name and nothing else to what runs.
+ */
+export interface MechanicalActionConfig {
+  /** Executable to spawn, e.g. "git", "gh". */
+  command: string
+  /** Full argv (excluding the command itself). Fixed by the caller; defaults to none. */
+  args?: string[]
+  /** Extra environment variables merged into the spawned process's environment, after the executor's own env allowlist (see `AgentSpawnExecutorConfig.envAllowlist`). */
+  env?: Record<string, string>
+  /**
+   * Kills the process and rejects if it hasn't closed within this many
+   * milliseconds. Defaults to `10` minutes when omitted, matching the
+   * agent-spawn default — a hung process is always eventually killed.
+   */
+  timeoutMs?: number
+  /**
+   * Exit codes this action declares as success. Defaults to `[0]`. This is
+   * the *only* place a non-zero exit becomes acceptable: whether `1` means
+   * "failed" or "no changes to apply" is the action's own business, and the
+   * caller who declared the action is the one who knows. Without an entry
+   * here, a non-zero exit throws — the executor never silently reports a run
+   * as successful when the command it ran did not succeed.
+   */
+  successExitCodes?: number[]
+}
+
+/**
+ * The structured result of executing one mechanical node. Unlike an
+ * agent-spawn result there are no `events` and no `sessionId`: a mechanical
+ * command emits ordinary output, not a structured agent event stream, so its
+ * stdout and stderr are kept verbatim as text rather than parsed.
+ */
+export interface MechanicalNodeResult {
+  nodeId: string
+  /** Discriminant — which node kind produced this result. */
+  kind: 'mechanical'
+  /** The Plan node's declared action name, verbatim. */
+  action: string
+  /** The command the action name resolved to, for after-the-fact attribution. */
+  command: string
+  exitCode: number
+  stdout: string
+  stderr: string
+  durationMs: number
+}
+
+/**
+ * Any node's result, as recorded in graph state. Discriminated on `kind` so
+ * a consumer reading `state.results[someNodeId]` narrows without guessing
+ * from field presence.
+ */
+export type StepNodeResult = AgentSpawnNodeResult | MechanicalNodeResult

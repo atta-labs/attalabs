@@ -125,6 +125,60 @@ describe('buildAgentSpawnStateGraph', () => {
     expect(finalState.revisionCounts.review).toBe(1)
     expect(capturedResumeArgs).toEqual(['--resume', 'session-from-implement'])
   })
+
+  it('runs a mechanical-only Plan end to end, recording exit status and output, with no role ever resolved', async () => {
+    const mechanicalOnlyPlan: Plan = {
+      ...twoStepPlan,
+      graph: {
+        nodes: {
+          'apply-patch': {
+            id: 'apply-patch',
+            role: 'mechanical',
+            kind: 'mechanical',
+            action: 'apply-patch',
+            metadata: {}
+          }
+        },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'apply-patch'
+      }
+    }
+
+    // No roleBinaries at all: if this Plan reached the agent-spawn path it
+    // would fail resolving a role rather than run, which is the point — a
+    // mechanical node must never launch an agent process.
+    const mechanicalOnlyConfig: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: { 'apply-patch': { command: 'git', args: ['apply', 'patch.diff'] } }
+    }
+
+    const spawnedCommands: string[] = []
+    const spawnFn: SpawnFn = (command, args, options) => {
+      spawnedCommands.push(command)
+      return fakeSpawn(['patch applied'])(command, args, options)
+    }
+
+    const executor = createAgentLifecycleNodeExecutor(mechanicalOnlyConfig, spawnFn)
+    const graph = buildAgentSpawnStateGraph(mechanicalOnlyPlan, executor)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-mechanical',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    const result = finalState.results['apply-patch']
+    expect(result?.kind).toBe('mechanical')
+    if (result?.kind !== 'mechanical') throw new Error('unreachable')
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toBe('patch applied\n')
+    expect(result.action).toBe('apply-patch')
+    expect(finalState.sessions).toEqual({})
+    expect(spawnedCommands).toEqual(['git'])
+  })
 })
 
 describe('createAgentLifecycleNodeExecutor', () => {
@@ -135,17 +189,50 @@ describe('createAgentLifecycleNodeExecutor', () => {
     revisionCounts: {}
   }
 
-  it('throws naming task 4 when asked to execute a mechanical node', async () => {
-    const mechanicalNode: PlanMechanicalNode = {
-      id: 'apply-patch',
-      role: 'mechanical',
-      kind: 'mechanical',
-      action: 'apply-patch',
-      metadata: {}
-    }
-    const executor = createAgentLifecycleNodeExecutor(config)
+  const mechanicalNode: PlanMechanicalNode = {
+    id: 'apply-patch',
+    role: 'mechanical',
+    kind: 'mechanical',
+    action: 'apply-patch',
+    metadata: {}
+  }
 
-    await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(/task 4/)
+  it('executes a mechanical node through the mechanical path, spawning its configured command', async () => {
+    const spawned: string[] = []
+    const spawnFn: SpawnFn = (command) => {
+      spawned.push(command)
+      return fakeSpawn([])(command, [], { cwd: workingDirectoryRoot, env: {} })
+    }
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, mechanicalActions: { 'apply-patch': { command: 'git', args: ['apply'] } } },
+      spawnFn
+    )
+
+    const update = await executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })
+
+    expect(spawned).toEqual(['git'])
+    expect(update.results?.['apply-patch']?.kind).toBe('mechanical')
+    expect(update.results?.['apply-patch']?.exitCode).toBe(0)
+    expect(update.revisionCounts?.['apply-patch']).toBe(1)
+  })
+
+  it('records no session for a mechanical node — it has no model turn to resume', async () => {
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, mechanicalActions: { 'apply-patch': { command: 'git' } } },
+      fakeSpawn([])
+    )
+
+    const update = await executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })
+
+    expect(update.sessions).toBeUndefined()
+  })
+
+  it('never resolves a mechanical node against roleBinaries — an undeclared action is refused', async () => {
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+
+    await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(
+      /No command configured for mechanical action 'apply-patch'/
+    )
   })
 
   it('throws when a node declares resume but no session was recorded yet', async () => {
