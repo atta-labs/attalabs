@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveStatus, isVersionAtLeast } from './derive-status'
+import { compareVersions, deriveStatus, isVersionAtLeast } from './derive-status'
 
 describe('isVersionAtLeast', () => {
   it('is true when candidate equals threshold', () => {
@@ -66,5 +66,28 @@ describe('deriveStatus', () => {
 
   it('dropped still wins over a null version', () => {
     expect(deriveStatus({ status: 'dropped', version: null }, published)).toBe('dropped')
+  })
+})
+
+describe('compareVersions', () => {
+  it('returns 0 for equal versions', () => {
+    expect(compareVersions('0.19.3', '0.19.3')).toBe(0)
+  })
+
+  it('is negative when the first version is lower', () => {
+    expect(compareVersions('0.19.0', '0.19.3')).toBeLessThan(0)
+  })
+
+  it('is positive when the first version is higher', () => {
+    expect(compareVersions('1.0.0', '0.24.0')).toBeGreaterThan(0)
+  })
+
+  it('compares segments numerically, not lexically', () => {
+    expect(compareVersions('0.19.10', '0.19.3')).toBeGreaterThan(0)
+  })
+
+  it('treats a missing trailing segment as 0', () => {
+    expect(compareVersions('0.19', '0.19.0')).toBe(0)
+    expect(compareVersions('0.19', '0.19.1')).toBeLessThan(0)
   })
 })

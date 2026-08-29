@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { getPublishedVersion } from '@/lib/published-version'
 import { DeploymentTrack, type DeploymentTrackItem } from './_components/DeploymentTrack'
 import { deriveStatus } from './_lib/derive-status'
+import { sortMilestones } from './_lib/sort-milestones'
 
 export const metadata: Metadata = {
   title: 'Roadmap · Vinaya'
@@ -13,7 +14,9 @@ export const metadata: Metadata = {
 // CMS-backed product page — five roadmap items live as `roadmapMilestone`
 // documents in Sanity, not as a hardcoded array. A content editor adds,
 // edits, or reorders them from Studio without a code change; this route
-// just reads and renders `getRoadmapMilestones()`'s manual `order`.
+// just reads `getRoadmapMilestones()` and orders the result itself — shipped
+// versions first, ascending, then the unversioned rungs in the editor's manual
+// `order` (`_lib/sort-milestones.ts`).
 //
 // Deliberately NOT derived from forge state (`listTranches()` / Milestones):
 // that spawns `gh` subprocesses which 500 in prod on Vercel, the same reason
@@ -41,10 +44,14 @@ async function loadMilestones(): Promise<RoadmapMilestone[] | null> {
 export default async function RoadmapPage() {
   const [milestones, publishedVersion] = await Promise.all([loadMilestones(), getPublishedVersion()])
 
+  // Sorted here, not in the GROQ query: `version` is a free-text CMS field, so
+  // ordering it needs the same per-segment numeric compare `deriveStatus` uses —
+  // something GROQ's string `order()` cannot express (it would put "0.19.10"
+  // before "0.19.3"). See `_lib/sort-milestones.ts` for the rule.
   const items: DeploymentTrackItem[] | null =
     milestones === null
       ? null
-      : milestones.map((milestone) => ({
+      : sortMilestones(milestones).map((milestone) => ({
           id: milestone._id,
           title: milestone.title,
           version: milestone.version,
