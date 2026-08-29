@@ -22,6 +22,7 @@ vi.mock('@attalabs/aeg-forge-state', async (importOriginal) => {
 
 import {
   __resetAegRootCacheForTests,
+  __resolveForgeAbsentView,
   findAegRoot,
   listProjectViews,
   readRegistry,
@@ -142,7 +143,7 @@ describe('resolveProjectView / listProjectViews — registry-optional (#811)', (
     await expect(resolveProjectView('mobile', dir)).resolves.toBeUndefined()
   })
 
-  it('registry absent: the reserved default slug resolves without touching the forge', async () => {
+  it('registry absent: the reserved default slug resolves when no forge-derived project claims it', async () => {
     await expect(resolveProjectView(DEFAULT_BOARD_SLUG, dir)).resolves.toEqual({ kind: 'default' })
   })
 
@@ -172,5 +173,35 @@ describe('resolveProjectView / listProjectViews — registry-optional (#811)', (
       archived: [],
       forge: { active: { kind: 'unreachable' }, archived: { kind: 'unreachable' } }
     })
+  })
+})
+
+/**
+ * A real forge-declared project literally named `DEFAULT_BOARD_SLUG` must
+ * win that slug over the synthetic default board — never be permanently
+ * shadowed. Proven at the pure precedence rule directly (no forge mocking
+ * needed: this is the exact decision `resolveProjectView` delegates to once
+ * it already has the forge-derived name set in hand).
+ */
+describe('__resolveForgeAbsentView — a real name always wins DEFAULT_BOARD_SLUG (#811 review fix)', () => {
+  it('a real forge-derived project named exactly DEFAULT_BOARD_SLUG resolves as forge-derived, not default', () => {
+    const forgeNames = new Set([DEFAULT_BOARD_SLUG, 'vada'])
+    expect(__resolveForgeAbsentView(DEFAULT_BOARD_SLUG, forgeNames)).toEqual({
+      kind: 'forge-derived',
+      name: DEFAULT_BOARD_SLUG
+    })
+  })
+
+  it('falls back to the default view only when no real project claims the slug', () => {
+    const forgeNames = new Set(['vada', 'herald'])
+    expect(__resolveForgeAbsentView(DEFAULT_BOARD_SLUG, forgeNames)).toEqual({ kind: 'default' })
+  })
+
+  it('an ordinary forge-derived name resolves as forge-derived', () => {
+    expect(__resolveForgeAbsentView('vada', new Set(['vada']))).toEqual({ kind: 'forge-derived', name: 'vada' })
+  })
+
+  it('a name that is neither a forge-derived project nor the reserved slug resolves to nothing', () => {
+    expect(__resolveForgeAbsentView('made-up', new Set(['vada']))).toBeUndefined()
   })
 })

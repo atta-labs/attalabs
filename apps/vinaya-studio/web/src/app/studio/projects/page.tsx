@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import { DEFAULT_BOARD_SLUG, listProjectViews } from '@/lib/repo-state'
+import { listProjectViews } from '@/lib/repo-state'
 import { forgeProjectSegment } from '@/app/studio/_lib/tranche-href'
+import { withDefaultBoardEntry } from '@/lib/repo-state/default-board-slug'
 
 export const metadata: Metadata = {
   title: 'Projects · Vinaya Studio'
@@ -17,7 +18,7 @@ export default async function ProjectsPage() {
     // are registry-declared, never derived), so each card carries only the
     // name forge-derived from the tranches, plus the reserved default board
     // for every tranche declaring no project at all.
-    const cards = [...listing.projects, { name: DEFAULT_BOARD_SLUG, label: 'All tranches' } as const]
+    const cards = withDefaultBoardEntry(listing.projects)
     return (
       <div className='space-y-6'>
         <header className='space-y-2'>

@@ -1,19 +1,22 @@
 import type { ReactNode } from 'react'
-import { DEFAULT_BOARD_SLUG, listProjectViews } from '@/lib/repo-state'
+import { listProjectViews } from '@/lib/repo-state'
 import { forgeProjectSegment } from '@/app/studio/_lib/tranche-href'
+import { withDefaultBoardEntry } from '@/lib/repo-state/default-board-slug'
 import { ProjectsSubBar, type SubBarProject } from './ProjectsSubBar'
 
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {
   const listing = await listProjectViews()
+  // A real project literally named `DEFAULT_BOARD_SLUG` must win that slug —
+  // `withDefaultBoardEntry` skips the synthetic entry in that case, matching
+  // `resolveProjectView`'s routing precedence so the sub-bar never links to
+  // a board the router would then resolve differently.
   const subBarProjects: SubBarProject[] = listing.registryPresent
     ? listing.projects.map((p) => ({ segment: p.name, href: `/studio/projects/${p.name}` }))
-    : [
-        ...listing.projects.map((p) => ({
-          segment: forgeProjectSegment(p.name),
-          href: `/studio/projects/${forgeProjectSegment(p.name)}`
-        })),
-        { segment: DEFAULT_BOARD_SLUG, href: `/studio/projects/${DEFAULT_BOARD_SLUG}`, label: 'All tranches' }
-      ]
+    : withDefaultBoardEntry(listing.projects).map((p) => ({
+        segment: forgeProjectSegment(p.name),
+        href: `/studio/projects/${forgeProjectSegment(p.name)}`,
+        label: 'label' in p ? p.label : undefined
+      }))
   // StudioShell owns the scroll container (`studio/layout.tsx`); this layout adds
   // no overflow/height of its own. The sub-bar is `sticky top-0` so it pins under
   // the topbar as StudioShell scrolls, instead of scrolling away with the content.

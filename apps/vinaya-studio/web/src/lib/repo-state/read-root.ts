@@ -230,6 +230,23 @@ export type ProjectView =
   | { kind: 'forge-derived'; name: string }
   | { kind: 'default' }
 
+/**
+ * Pure: the registry-absent-mode verdict for `name`, given the (already
+ * fetched) set of forge-derived names. `forgeNames.has(name)` is checked
+ * FIRST — a real forge-declared name always wins the `DEFAULT_BOARD_SLUG`
+ * string — so a tranche that genuinely declares `Project: _default` is
+ * never permanently shadowed by the synthetic board. The reserved slug
+ * becomes unreachable only in that one collision case (the default
+ * all-tranches view, not a real project, is the one that degrades); a real
+ * project's board must never be the one swallowed. Exported for tests only
+ * — every real caller goes through `resolveProjectView`.
+ */
+export function __resolveForgeAbsentView(name: string, forgeNames: ReadonlySet<string>): ProjectView | undefined {
+  if (forgeNames.has(name)) return { kind: 'forge-derived', name }
+  if (name === DEFAULT_BOARD_SLUG) return { kind: 'default' }
+  return undefined
+}
+
 /** Registry-optional counterpart to `readProject`. `startDir` is exposed
  *  only for tests — every real caller omits it, matching `readRegistry`. */
 export async function resolveProjectView(name: string, startDir?: string): Promise<ProjectView | undefined> {
@@ -237,9 +254,8 @@ export async function resolveProjectView(name: string, startDir?: string): Promi
     const project = await readProject(name)
     return project ? { kind: 'registered', project } : undefined
   }
-  if (name === DEFAULT_BOARD_SLUG) return { kind: 'default' }
   const names = await forgeDerivedProjectNames()
-  return names.has(name) ? { kind: 'forge-derived', name } : undefined
+  return __resolveForgeAbsentView(name, names)
 }
 
 /** A `Project`-shaped view has no forge-derived counterpart (path/specsPath
