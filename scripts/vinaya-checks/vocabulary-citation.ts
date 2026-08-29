@@ -125,6 +125,37 @@ import { evaluateVocabularyCitation, type VocabularyHit, type VocabularyPattern 
 const CHECK_NAME = 'attalabs/vocabulary-citation'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
+// Same `${base}...HEAD` pattern `check-doc-coverage.ts` (@attalabs/aeg-core)
+// already uses, and for the identical reason `task-anchor.ts` now applies
+// it too: `scope: 'full'` means this check runs on every PR, and `grepFn`
+// below sweeps the whole configured scope unconditionally — without this
+// filter, every PR reprints this repo's entire pre-existing vocabulary
+// backlog (~20 findings) regardless of what it actually touched. A real new
+// leak in a touched file is still reported; only the historical backlog in
+// UNTOUCHED files stops repeating on every unrelated PR.
+function changedFiles(base: string): string[] {
+  try {
+    return execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+      .trim()
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function resolveChangedFiles(): string[] {
+  const base = process.env.BASE_SHA || 'origin/main'
+  let changed = changedFiles(base)
+  if (changed.length === 0) changed = changedFiles('main')
+  return changed
+}
+
 type CheckError = {
   schema: 1
   check: string
@@ -337,7 +368,10 @@ function main(): void {
     })
   }
 
-  for (const finding of result.findings) {
+  const changed = new Set(resolveChangedFiles())
+  const reportable = result.findings.filter((f) => changed.has(f.file))
+
+  for (const finding of reportable) {
     emitCheckError({
       schema: 1,
       check: CHECK_NAME,
@@ -353,8 +387,10 @@ function main(): void {
 
   // A vacuous pattern always fails, report-only or not: it means this check is
   // lying about its own coverage, which is worse than any finding it could
-  // report. Ordinary findings respect the rollout flag.
-  process.exit(result.vacuousPatterns.length > 0 || (!REPORT_ONLY && result.findings.length > 0) ? 1 : 0)
+  // report — that's a config-integrity signal, not diff-scoped like ordinary
+  // findings. Ordinary findings respect the rollout flag; findings outside
+  // the diff never affect the exit code either way, only whether they print.
+  process.exit(result.vacuousPatterns.length > 0 || (!REPORT_ONLY && reportable.length > 0) ? 1 : 0)
 }
 
 main()
