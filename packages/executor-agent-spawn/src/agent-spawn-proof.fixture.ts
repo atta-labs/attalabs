@@ -1,7 +1,7 @@
 /**
- * @file e2e-proof.fixture.ts
- * @description The steps-shaped Flow fixture for `scripts/run-e2e-proof.ts` —
- * task 7's end-to-end proof that a Flow compiles and executes for real: one
+ * @file agent-spawn-proof.fixture.ts
+ * @description The steps-shaped Flow fixture for `scripts/run-agent-spawn-proof.ts` —
+ * this tranche's end-to-end proof that a Flow compiles and executes for real: one
  * `agent-spawn` step (a real `claude -p` process, no vendor SDK, no
  * `*_API_KEY`) followed by one `mechanical` step (a real `echo`, no model
  * turn). Deliberately not a `.yaml` file and not under
@@ -18,7 +18,7 @@
  * parameter type at the call site, which is what actually matters here.
  */
 
-/** The role every agent-spawn step in this fixture declares — bound to a real binary in `scripts/run-e2e-proof.ts`, never here. */
+/** The role every agent-spawn step in this fixture declares — bound to a real binary in `scripts/run-agent-spawn-proof.ts`, never here. */
 export const PROVER_ROLE = 'prover'
 
 export const AGENT_SPAWN_STEP_ID = 'spawn-real-agent'
@@ -32,12 +32,12 @@ export const MECHANICAL_STEP_ID = 'record-mechanical-step'
 export const AGENT_SPAWN_PROMPT =
   'Do not read, search, write, or execute anything. Output exactly the literal text PROOF-OK and nothing else.'
 
-export const e2eProofFlow = {
+export const agentSpawnProofFlow = {
   schemaVersion: '2.0',
-  id: 'agent-spawn-e2e-proof-fixture',
+  id: 'agent-spawn-proof-fixture',
   displayName: 'Agent-spawn end-to-end proof',
   description:
-    'Minimal fixture (task 7, engine-agent-spawn-v1): one agent-spawn step, one mechanical step. Proves compileFlow + the executor compose against a real spawned process — not a catalog flow.',
+    'Minimal fixture for the engine-agent-spawn tranche: one agent-spawn step, one mechanical step. Proves compileFlow + the executor compose against a real spawned process — not a catalog flow.',
   experimental: true,
   benchmarked: false,
   defaults: {

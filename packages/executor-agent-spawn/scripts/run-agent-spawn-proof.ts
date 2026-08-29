@@ -1,12 +1,13 @@
 /**
- * @file run-e2e-proof.ts
- * @description Task 7's end-to-end proof: compiles the steps-shaped fixture
- * in `../src/e2e-proof.fixture.ts` via the real `@atta/engine` `compileFlow`,
- * executes the resulting Plan through this package's real executor (no fake
- * `spawnFn`), and asserts on the captured event stream. Prints that stream
- * so it can be pasted as PR evidence — see `.claude/skills/atta-engine/SKILL.md`
- * and `.claude/skills/atta-adapter-langgraph/SKILL.md` for where the two
- * halves of this composition are each documented.
+ * @file run-agent-spawn-proof.ts
+ * @description The tranche's end-to-end proof: compiles the steps-shaped
+ * fixture in `../src/agent-spawn-proof.fixture.ts` via the real `@atta/engine`
+ * `compileFlow`, executes the resulting Plan through this package's real
+ * executor (no fake `spawnFn`), and asserts on the captured event stream.
+ * Prints that stream so it can be pasted as PR evidence — see
+ * `.claude/skills/atta-engine/SKILL.md` and
+ * `.claude/skills/atta-adapter-langgraph/SKILL.md` for where the two halves
+ * of this composition are each documented.
  *
  * Deliberately not named `*.test.ts`: it spawns a real `claude` process
  * authenticated by this machine's own already-logged-in session, and CI
@@ -15,7 +16,7 @@
  * neither is what a compile/lint/test gate should do. Run it explicitly,
  * from a machine with a logged-in `claude` CLI on `PATH`:
  *
- *   bun run packages/executor-agent-spawn/scripts/run-e2e-proof.ts
+ *   bun run packages/executor-agent-spawn/scripts/run-agent-spawn-proof.ts
  *
  * No observable side effects: the agent-spawn step runs in an isolated temp
  * directory under `--permission-mode plan --restricted`, with the tools
@@ -33,7 +34,7 @@ import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from '../
 import type { AgentSpawnGraphStateValue } from '../src/graph-state'
 import { buildChildEnv } from '../src/node-executor'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from '../src/types'
-import { AGENT_SPAWN_STEP_ID, e2eProofFlow, MECHANICAL_STEP_ID } from '../src/e2e-proof.fixture'
+import { AGENT_SPAWN_STEP_ID, agentSpawnProofFlow, MECHANICAL_STEP_ID } from '../src/agent-spawn-proof.fixture'
 
 // Real, unmocked default spawn (`node:child_process.spawn`) — the whole
 // point of this proof is that no fixture fakes the subprocess.
@@ -41,11 +42,11 @@ import { AGENT_SPAWN_STEP_ID, e2eProofFlow, MECHANICAL_STEP_ID } from '../src/e2
 async function main() {
   assertNoApiKeyInParentEnv()
 
-  const workingDirectoryRoot = realpathSync(mkdtempSync(join(tmpdir(), 'agent-spawn-e2e-proof-')))
+  const workingDirectoryRoot = realpathSync(mkdtempSync(join(tmpdir(), 'agent-spawn-proof-')))
   try {
     const flow = {
-      ...e2eProofFlow,
-      steps: e2eProofFlow.steps.map((step) =>
+      ...agentSpawnProofFlow,
+      steps: agentSpawnProofFlow.steps.map((step) =>
         step.id === AGENT_SPAWN_STEP_ID ? { ...step, workingDirectory: workingDirectoryRoot } : step
       )
     }
