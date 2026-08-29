@@ -120,11 +120,15 @@ export function LifeCycleHero3D() {
   }, [])
 
   return (
-    // The scroll runway. `h-[calc(100dvh-4.5rem)]` on the pinned pane is the same
-    // constant LifecycleSection/OwnershipSection pin against — the app shell's
-    // content region is the viewport minus the TopBar, never the whole window.
+    // The scroll runway. The pinned pane must be exactly the app shell's content
+    // region — `(site)/layout.tsx` is a `h-dvh` column with the TopBar above a
+    // `flex-1 overflow-y-auto` region — so its height is the viewport minus the
+    // TopBar, never the whole window. That TopBar measures 3.5rem (63px at this
+    // repo's 18px root); LifecycleSection/OwnershipSection pin against 4.5rem,
+    // which is 18px short, invisible on their centred content but a real gap
+    // under anything anchored to the pane's bottom edge, as this is.
     <section ref={sectionRef} className='relative h-[320dvh] bg-background text-foreground'>
-      <div className='sticky top-0 h-[calc(100dvh-4.5rem)] overflow-hidden'>
+      <div className='sticky top-0 h-[calc(100dvh-3.5rem)] overflow-hidden'>
         <canvas ref={canvasRef} aria-hidden className='absolute inset-0 z-0 block size-full' />
 
         {/* Hero copy: rises into a small persistent header, then hands the
