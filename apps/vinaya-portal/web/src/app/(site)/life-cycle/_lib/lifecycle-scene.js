@@ -11,17 +11,7 @@ import * as THREE from 'three'
  * one surviving module-scope DOM read builds green and throws only in
  * production, under SSR, with no local-dev signal.
  */
-export function mountLifecycleScene({
-  canvas,
-  labelLayer,
-  hero,
-  heroInner,
-  word,
-  readout,
-  track,
-  labelClass,
-  root = document
-}) {
+export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word, readout, track, labelClass, root }) {
   /* The canvas box is the viewport: measured in resize(), refreshed per frame. */
   let vw = 1
   let vh = 1
@@ -774,9 +764,10 @@ export function mountLifecycleScene({
   }
   setWord(0)
 
-  const cards = [...root.querySelectorAll('[data-card]')]
+  const scope = root ?? document
+  const cards = [...scope.querySelectorAll('[data-card]')]
   const heroEl = hero
-  const ticks = [...root.querySelectorAll('[data-tick]')]
+  const ticks = [...scope.querySelectorAll('[data-tick]')]
 
   // ?altitude=1|2|3 pins one tier — a deep link, and how the hero is inspected.
   const pinned = { 1: 0, 2: 0.5, 3: 1 }[new URLSearchParams(location.search).get('altitude')]

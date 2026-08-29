@@ -1,0 +1,75 @@
+/* The only CSS in the port.
+ *
+ * Everything else in LifeCycleHero3D.tsx is a Tailwind utility. These rules are here
+ * because they are scroll interpolations off a custom property that JS writes once
+ * per frame — Tailwind can express them as arbitrary values, but only with
+ * underscore-escaped spaces inside calc(), which produces write-only code:
+ *
+ *   text-[calc(1.2rem_+_(1_-_var(--hp))_*_clamp(1.85rem,4.2vw,3.3rem))]
+ *
+ * A named class is the correct call. Keep this file to the --hp rules; if you find
+ * yourself adding a colour or a padding here, it belongs in a utility instead.
+ *
+ * --hp goes 0 -> 1 over the first 26% of scroll: 0 is the full-size centred hero,
+ * 1 is the small persistent header.
+ */
+
+.inner {
+  transform: translateY(calc(0.85rem + (1 - var(--hp)) * 24vh));
+}
+
+/* The overline and the Plan · Execute · Archive row belong to the full-size hero
+   only. They fade at twice the rate of the rise (gone by halfway) and their height
+   collapses to zero.
+
+   Spacing is carried on each child's own margin rather than a flex gap on the
+   parent: a collapsed child must leave no gap behind, and `gap` would hold the
+   space open. This was a real defect once — do not "simplify" it back to gap. */
+.overline {
+  opacity: calc(1 - var(--hp) * 2);
+  height: calc((1 - var(--hp)) * 1.05rem);
+  margin-bottom: calc((1 - var(--hp)) * 1.25rem);
+}
+
+.words {
+  opacity: calc(1 - var(--hp) * 2);
+  height: calc((1 - var(--hp)) * 1.65rem);
+  margin-top: calc((1 - var(--hp)) * 1.75rem);
+}
+
+.title {
+  font-size: calc(1.2rem + (1 - var(--hp)) * clamp(1.85rem, 4.2vw, 3.3rem));
+}
+
+.word {
+  margin-top: calc(0.25rem + (1 - var(--hp)) * 2.75rem);
+  height: calc(1rem + (1 - var(--hp)) * 3.6rem);
+  font-size: calc(0.6875rem + (1 - var(--hp)) * 1.5rem);
+  letter-spacing: calc(0.16em - (1 - var(--hp)) * 0.17em);
+}
+
+/* Short windows: step the hero down its own responsive scale and pull it tighter,
+   so the graph keeps a usable band. Tailwind has no height breakpoint by default —
+   either add one to the theme and move these to utilities, or leave them here
+   beside the rules they modify. */
+@media (max-height: 780px) {
+  .inner {
+    transform: translateY(calc(0.85rem + (1 - var(--hp)) * 13vh));
+  }
+  .overline {
+    margin-bottom: calc((1 - var(--hp)) * 0.7rem);
+  }
+  .words {
+    margin-top: calc((1 - var(--hp)) * 0.9rem);
+    height: calc((1 - var(--hp)) * 1.4rem);
+    font-size: 0.9375rem;
+  }
+  .title {
+    font-size: calc(1.15rem + (1 - var(--hp)) * clamp(1.1rem, 3.6vw, 1.85rem));
+  }
+  .word {
+    margin-top: calc(0.25rem + (1 - var(--hp)) * 1.4rem);
+    height: calc(1rem + (1 - var(--hp)) * 2.4rem);
+    font-size: calc(0.6875rem + (1 - var(--hp)) * 1.1rem);
+  }
+}
