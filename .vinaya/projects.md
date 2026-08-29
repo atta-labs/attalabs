@@ -3,36 +3,38 @@ sidebar_title: Projects
 ---
 # Projects in this repo
 
-**The project registry.** Declares the projects in this repo and where each one's specs and per-project state live. The `Project` field on a task (a forge Issue) resolves against this file: `Project: vada` → the Developer reads that project's specs, the Archivist updates its per-project state.
+**The project registry.** Declares the projects in this repo and where each one's specs live. The `Project` field on a task (a forge Issue) resolves against this file: `Project: vada` → the Developer reads that project's specs. (The hand-maintained per-project state layer is retired — active state is derived from the forge; a non-derivable operational fact is an ordinary open Issue, closed when resolved.)
 
 ## What a project is (and isn't)
 
 A project is **a `(name, folder)` pair the developer declared** — nothing more. Not derived from the folder tree, not required to match a `package.json` name, not required to be a single package. AEG does not define what a project "really" is; the developer does, by choosing a name and a home folder when registering it.
 
-The folder is simply **the home for that project's specs and status** (`<path>/specs/`, `<path>/aeg-project/`). A project may be one package, an app, or a grouping built from several packages.
+The folder is simply **the home for that project's specs** (`<path>/specs/`). A project may be one package, an app, or a grouping built from several packages.
 
 - **Identity = the registry row.** A project exists because it has a row here, not because a folder with some name exists somewhere. Nothing searches the tree; names are unique by this registry, paths are whatever the human gave.
 - **Path = declared, never derived.** `--path` is a required argument to `aeg add-project`; the tool stores it.
 
-**Presence of this file means this is a multi-project repo** — the `Project` field is required. A single-project repo has **no** `projects.md`; every task shares one project, so the field is omitted, and state lives in the root `aeg-project/`. The registry appears only when there is more than one project to disambiguate.
+**Presence of this file means this is a multi-project repo** — the `Project` field is required. A single-project repo has **no** `projects.md`; every task shares one project, so the field is omitted. The registry appears only when there is more than one project to disambiguate.
 
 ## Registry
 
 | Project  | Path                  | Specs                       | Per-project state                    |
 |----------|-----------------------|-----------------------------|--------------------------------------|
-| admin    | `tools/admin`         | `tools/admin/specs/`        | (state tracked globally for now)     |
-| vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | `apps/vada-ai/aeg-project/`   |
-| herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | `apps/herald-ai/aeg-project/` |
-| aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | (state tracked globally for now)     |
-| aeg-forge-state | `packages/aeg-forge-state` | `packages/aeg-forge-state/specs/` | (state tracked globally for now) |
-| engine   | `packages/engine`     | `packages/engine/specs/`    | (state tracked globally for now)     |
-| adapter  | `packages/adapter-langgraph` | `.claude/skills/atta-adapter-langgraph/` | (state tracked globally for now) |
-| agents   | `packages/agents`     | `.claude/skills/vada-architecture/SKILL.md` | (state tracked globally for now) |
-| ui       | `packages/ui`         | `.claude/skills/ui-*`       | (state tracked globally for now)     |
-| attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | (state tracked globally for now)     |
-| vinaya   | `(none — owns no directory)` | `.claude/skills/vinaya-architecture/SKILL.md` | Issue #768 (pinned) |
-| vinaya-portal | `apps/vinaya-portal` | `.claude/skills/vinaya-architecture/SKILL.md` | (state tracked globally for now) |
-| vinaya-studio | `apps/vinaya-studio` | `.claude/skills/vinaya-architecture/SKILL.md` | (state tracked globally for now) |
+| admin    | `tools/admin`         | `tools/admin/specs/`        | — |
+| vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | — |
+| herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | — |
+| aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | — |
+| aeg-forge-state | `packages/aeg-forge-state` | `packages/aeg-forge-state/specs/` | — |
+| engine   | `packages/engine`     | `packages/engine/specs/`    | — |
+| adapter  | `packages/adapter-langgraph` | `.claude/skills/atta-adapter-langgraph/` | — |
+| agents   | `packages/agents`     | `.claude/skills/vada-architecture/SKILL.md` | — |
+| ui       | `packages/ui`         | `.claude/skills/ui-*`       | — |
+| attalabs | `apps/attalabs`       | `apps/attalabs/specs/`      | — |
+| vinaya   | `(none — owns no directory)` | `.claude/skills/vinaya-architecture/SKILL.md` | — |
+| vinaya-portal | `apps/vinaya-portal` | `.claude/skills/vinaya-architecture/SKILL.md` | — |
+| vinaya-studio | `apps/vinaya-studio` | `.claude/skills/vinaya-architecture/SKILL.md` | — |
+
+> **The per-project state column is retired** — every cell reads `—`. Active state is derived from the forge (Milestones + `vinaya/tranche:*` labels); a non-derivable operational fact (a pending manual op, a known production issue) is an ordinary open Issue, closed when resolved. The old `aeg-project/` state folders and the hand-edited pinned state Issues are both gone.
 
 > **engine** / **adapter** — `packages/engine` (`@atta/engine`, the plan compiler) and `packages/adapter-langgraph` (`@atta/adapter-langgraph`, LangGraph execution + the multi-vendor cognitive router): together the Atta Engine, the execution substrate Vāda runs on. Both are long-standing shared packages that had their own collision domains in the now-deleted `.aeg/packages` (`#990`) and their own skills, and task Issues have declared `Project: engine, adapter` since well before this row existed — the names were simply never registered, so every such task resolved against nothing. Registered retroactively for the same reason `admin`, `attalabs`, and `ui` each were: real code, real collision domain, no row. The two rows differ in where their specs live, deliberately: `packages/engine/specs/` exists and carries real content (the engine-layer rationale and the framework-choice comparison), so `engine` points there. `packages/adapter-langgraph/` has no specs directory, so `adapter` points at its skill instead — the shape `ui` uses, and for the same stated reason.
 
