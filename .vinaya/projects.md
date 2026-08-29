@@ -23,8 +23,6 @@ The folder is simply **the home for that project's specs** (`<path>/specs/`). A 
 | admin    | `tools/admin`         | `tools/admin/specs/`        | — |
 | vada     | `apps/vada-ai`        | `apps/vada-ai/specs/`       | — |
 | herald   | `apps/herald-ai`      | `apps/herald-ai/specs/`     | — |
-| aeg-core | `packages/aeg-core`   | `packages/aeg-core/specs/`  | — |
-| aeg-forge-state | `packages/aeg-forge-state` | `packages/aeg-forge-state/specs/` | — |
 | engine   | `packages/engine`     | `packages/engine/specs/`    | — |
 | adapter  | `packages/adapter-langgraph` | `.claude/skills/atta-adapter-langgraph/` | — |
 | agents   | `packages/agents`     | `.claude/skills/vada-architecture/SKILL.md` | — |
@@ -50,7 +48,7 @@ The folder is simply **the home for that project's specs** (`<path>/specs/`). A 
 
 > **attalabs** — The AttaLabs ecosystem hub app (`@atta/attalabs-web`/`-mobile`/`-mcp-server`, serving `attalabs.dev`), distinct from **Atta** (the deep-thinking AI product — Vāda+Vitakka+Sati; its dedicated app scaffold, `apps/atta-ai`, was retired — Atta remains a real, code-less concept, not a registered project). Registered here because it has real code and its own `apps/attalabs/specs/`, but had no registry row until it was added retroactively (found while sizing an unrelated task's `Project(s)` field). `apps/attalabs` carries no `-ai` suffix (meta/infra-app convention, like `apps/desktop`).
 
-> **aeg-core** / **aeg-forge-state** — **the code these rows named is deleted.** `packages/aeg-core` and `packages/aeg-forge-state` were the pure evaluators and forge-derivation adapter the AEG product ran on; both were deleted from this repo by the attalabs-adoption tranche (task 6, #895) once every consumer moved to the published `@attalabs/aeg-core`/`@attalabs/aeg-forge-state`. The two rows stay registered, not deleted alongside the code: a sibling task in the same tranche (task 8, #897, git-history purge) still declares `Project: aeg-core, aeg-forge-state` in its own dispatched Issue, and R1 (the coherence oracle's rationale gate) fails that Issue the moment either row disappears — removing them is task 8's job once its own rationale is corrected, not this task's, since this task cannot edit another task's Issue. Do not point a new task's `Project:` field at either name; there is no code left to own.
+> **aeg-core / aeg-forge-state — rows removed (2026-08-29).** `packages/aeg-core` and `packages/aeg-forge-state` were the pure evaluators and forge-derivation adapter the AEG product ran on; both were deleted from this repo by the attalabs-adoption tranche (task 6, `#895`) once every consumer moved to the published `@attalabs/aeg-core`/`@attalabs/aeg-forge-state`. The rows stayed registered for a time because two open Issues still declared `Project: aeg-core`/`aeg-forge-state` in their own rationale (the git-history-purge task `#897`, and later `#913`/`#513`) and the coherence oracle's rationale gate (R1) would fail whichever stayed open the moment a cited row disappeared. All three are now closed — `#897` (git-history purge) dropped as `NOT_PLANNED` by Principal decision (keeping full history for now); `#913`/`#513` closed as superseded, since the work they described (a source-tree counting script; `aeg-core`-primitive doctrine gates) targets code and doctrine that live in the standalone `atta-labs/vinaya` repo post-extraction, not attalabs — re-file either there if still wanted. Do not point a new task's `Project:` field at either name; there is no code left in this repo to own.
 
 ## How `Project` is validated
 
