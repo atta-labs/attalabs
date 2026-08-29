@@ -32,7 +32,7 @@ import 'server-only'
 import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
-import { loadActiveTranches, readRegistry } from '@/lib/repo-state'
+import { findAegRoot, loadActiveTranches, readRegistry } from '@/lib/repo-state'
 import { statusVisual, todoDispatchVisual } from '@/app/studio/projects/[name]/tranches/[slug]/_lib/status-display'
 import { boardHref } from '@/app/studio/_lib/tranche-href'
 
@@ -78,8 +78,11 @@ export function backlogToTasks(issues: BacklogIssue[]): DashboardTask[] {
 export async function loadDashboardTasks(): Promise<DashboardTask[]> {
   const [active, registry] = await Promise.all([loadActiveTranches(), readRegistry()])
   // Board links resolve only to registered projects — a retired name (e.g. a
-  // task still carrying `Project: aeg`) has no project page.
-  const registered = new Set(registry.map((p) => p.name))
+  // task still carrying `Project: aeg`) has no project page. `null` when no
+  // `.vinaya/projects.md` exists at all: `boardHref` then resolves every
+  // task to a forge-derived (or default) board instead of gating on this
+  // set (#811).
+  const registered = findAegRoot() !== null ? new Set(registry.map((p) => p.name)) : null
 
   // Fan the per-tranche forge reads out in parallel — each tranche's
   // snapshot + readiness are independent, and the underlying forge derivation

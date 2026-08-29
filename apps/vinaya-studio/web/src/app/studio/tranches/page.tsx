@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { listTranches, readRegistry } from '@/lib/repo-state'
+import { findAegRoot, listTranches, readRegistry } from '@/lib/repo-state'
 import { TranchesTabs } from './TranchesTabs'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -13,7 +13,12 @@ export default async function TranchesPage() {
   const [{ active, archived, forge }, registry] = await Promise.all([listTranches(), readRegistry()])
   // Registered project names — a board link resolves only to one of these
   // (`readProject` 404s on a retired name like `aeg`); passed to the client
-  // tabs so `trancheHref` skips unregistered projects.
+  // tabs so `trancheHref` skips unregistered projects. `registryPresent` is
+  // passed alongside since an EMPTY registry (present, zero rows) and an
+  // ABSENT one both produce an empty `registeredProjects` array but must
+  // resolve `trancheHref` differently (#811) — the array alone can't tell
+  // them apart.
+  const registryPresent = findAegRoot() !== null
   const registeredProjects = registry.map((p) => p.name)
 
   return (
@@ -26,7 +31,13 @@ export default async function TranchesPage() {
         </p>
       </header>
 
-      <TranchesTabs active={active} archived={archived} forge={forge} registeredProjects={registeredProjects} />
+      <TranchesTabs
+        active={active}
+        archived={archived}
+        forge={forge}
+        registeredProjects={registeredProjects}
+        registryPresent={registryPresent}
+      />
     </div>
   )
 }

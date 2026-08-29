@@ -6,9 +6,10 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { readTranche, readProject } from '@/lib/repo-state'
+import { readTranche, resolveProjectView } from '@/lib/repo-state'
 import { fetchPullRequestBriefs, type PullRequestBrief } from '@/lib/forge/fetch-pull-request-brief'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
+import { forgeProjectSegment } from '@/app/studio/_lib/tranche-href'
 import { statusVisual } from '../../_lib/status-display'
 
 // Forge reads derive live Issue/PR state from GitHub — never serve from cache.
@@ -88,9 +89,16 @@ const markdownComponents = {
 
 export default async function TaskDetailPage({ params }: { params: Promise<Params> }) {
   const { name, slug, taskId } = await params
-  const [project, detail] = await Promise.all([readProject(name), readTranche(slug)])
-  if (!project) notFound()
+  const [view, detail] = await Promise.all([resolveProjectView(name), readTranche(slug)])
+  if (!view) notFound()
   if (!detail) notFound()
+
+  // Registered: exactly the prior label/segment (no encoding — byte-identical).
+  // Registry-absent: the forge-derived name or the default board's label, with
+  // the URL segment percent-encoded the same way `boardHref` encodes it.
+  const projectLabel =
+    view.kind === 'registered' ? view.project.name : view.kind === 'default' ? 'All tranches' : view.name
+  const projectSegment = view.kind === 'registered' ? view.project.name : forgeProjectSegment(name)
 
   const { tranche, archived } = detail
   const taskRow = tranche.tasks.find((t) => t.id === taskId)
@@ -102,7 +110,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
 
   const brief = await loadBrief({ snapshot, slug, taskId })
   const visual = statusVisual(derived.status)
-  const trancheHref = `/studio/projects/${project.name}/tranches/${slug}`
+  const trancheHref = `/studio/projects/${projectSegment}/tranches/${slug}`
   const issueUrl =
     taskRow.issue !== null && snapshot.repo
       ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${taskRow.issue}`
@@ -115,8 +123,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           projects
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
-        <NextLink variant='unstyled' href={`/studio/projects/${project.name}`} className='hover:text-primary'>
-          {project.name}
+        <NextLink variant='unstyled' href={`/studio/projects/${projectSegment}`} className='hover:text-primary'>
+          {projectLabel}
         </NextLink>
         <span className='px-1.5 text-muted-foreground/60'>/</span>
         <NextLink variant='unstyled' href={trancheHref} className='hover:text-primary'>
@@ -147,7 +155,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<Param
           taskRow={taskRow}
           dependsOnNotMerged={derived.blockers.dependsOnNotMerged}
           conflictsWithOpen={derived.blockers.conflictsWithOpenOrInFlight}
-          projectName={project.name}
+          projectName={projectSegment}
           trancheSlug={slug}
         />
         <LinksPanel issueUrl={issueUrl} brief={brief} />

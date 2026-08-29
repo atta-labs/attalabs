@@ -13,7 +13,7 @@ function TranchesGrid({
 }: {
   tranches: TrancheSummary[]
   emptyHint: string | null
-  registered: ReadonlySet<string>
+  registered: ReadonlySet<string> | null
 }) {
   if (tranches.length === 0) {
     // A null hint means the empty state is explained elsewhere (the forge
@@ -33,15 +33,20 @@ export function TranchesTabs({
   active,
   archived,
   forge,
-  registeredProjects
+  registeredProjects,
+  registryPresent
 }: {
   active: TrancheSummary[]
   archived: TrancheSummary[]
   forge: { active: ForgeStatus; archived: ForgeStatus }
   /** Registered project names (from `projects.md`) — only these resolve a board. */
   registeredProjects: string[]
+  /** `false` means no `.vinaya/projects.md` exists — `registeredProjects` is
+   *  then irrelevant and every row resolves a forge-derived (or default)
+   *  board instead (#811). */
+  registryPresent: boolean
 }) {
-  const registered = new Set(registeredProjects)
+  const registered = registryPresent ? new Set(registeredProjects) : null
   return (
     <div className='space-y-4'>
       <ForgeBanners forge={forge} />

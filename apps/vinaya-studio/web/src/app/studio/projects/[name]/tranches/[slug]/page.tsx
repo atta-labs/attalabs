@@ -3,7 +3,7 @@ import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } fr
 import { AlertTriangle, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { readTranche, readProject } from '@/lib/repo-state'
+import { readTranche, resolveProjectView } from '@/lib/repo-state'
 import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
@@ -36,8 +36,8 @@ function formatCost(n: number | null): string {
 
 export default async function TranchePage({ params }: { params: Promise<Params> }) {
   const { name, slug } = await params
-  const [project, detail] = await Promise.all([readProject(name), readTranche(slug)])
-  if (!project) notFound()
+  const [view, detail] = await Promise.all([resolveProjectView(name), readTranche(slug)])
+  if (!view) notFound()
   if (!detail) notFound()
 
   const { tranche, archived } = detail

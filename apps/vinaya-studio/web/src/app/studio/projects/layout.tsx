@@ -1,15 +1,25 @@
 import type { ReactNode } from 'react'
-import { readRegistry } from '@/lib/repo-state'
-import { ProjectsSubBar } from './ProjectsSubBar'
+import { DEFAULT_BOARD_SLUG, listProjectViews } from '@/lib/repo-state'
+import { forgeProjectSegment } from '@/app/studio/_lib/tranche-href'
+import { ProjectsSubBar, type SubBarProject } from './ProjectsSubBar'
 
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {
-  const projects = await readRegistry()
+  const listing = await listProjectViews()
+  const subBarProjects: SubBarProject[] = listing.registryPresent
+    ? listing.projects.map((p) => ({ segment: p.name, href: `/studio/projects/${p.name}` }))
+    : [
+        ...listing.projects.map((p) => ({
+          segment: forgeProjectSegment(p.name),
+          href: `/studio/projects/${forgeProjectSegment(p.name)}`
+        })),
+        { segment: DEFAULT_BOARD_SLUG, href: `/studio/projects/${DEFAULT_BOARD_SLUG}`, label: 'All tranches' }
+      ]
   // StudioShell owns the scroll container (`studio/layout.tsx`); this layout adds
   // no overflow/height of its own. The sub-bar is `sticky top-0` so it pins under
   // the topbar as StudioShell scrolls, instead of scrolling away with the content.
   return (
     <>
-      <ProjectsSubBar projects={projects} />
+      <ProjectsSubBar projects={subBarProjects} />
       {/* max-w-4xl keeps prose pages (task-detail briefs) at a readable measure. A
           wide board table that doesn't fit this width scrolls inside its own
           container (the responsive Table wrapper), so the column width no longer

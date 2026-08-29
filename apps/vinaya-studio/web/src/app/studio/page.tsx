@@ -20,7 +20,7 @@
 import { NextLink } from '@atta/ui/lib/next-link'
 import { resolveGithubToken, resolveRepo } from '@attalabs/aeg-forge-state'
 import type { Metadata } from 'next'
-import { listTranches, readRegistry, type TrancheSummary } from '@/lib/repo-state'
+import { findAegRoot, listTranches, readRegistry, type TrancheSummary } from '@/lib/repo-state'
 import { trancheHref, NO_BOARD_REASON } from '@/app/studio/_lib/tranche-href'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutTrancheLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
@@ -84,8 +84,11 @@ export default async function HomePage() {
   const active = tranches.active
   // Only a registered project has a board route (`readProject` 404s otherwise);
   // pass the registered set so a retired-project tranche renders board-less
-  // instead of linking to a dead `/studio/projects/<retired>` page.
-  const registered = new Set(registry.map((p) => p.name))
+  // instead of linking to a dead `/studio/projects/<retired>` page. `null`
+  // means no `.vinaya/projects.md` exists at all — `trancheHref` then
+  // resolves every row to a forge-derived (or default) board instead of
+  // gating on this set (#811).
+  const registered = findAegRoot() !== null ? new Set(registry.map((p) => p.name)) : null
   // The Tasks card is the single work surface: tranche tasks (Ready / active /
   // blocked) plus the backlog, filterable by status.
   const allTasks = [...tasks, ...backlogToTasks(backlog.issues)]
