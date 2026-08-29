@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 /**
  * Vocabulary gate — repo-wide scan for retired AEG vocabulary (the deleted
  * decision log, the retired `team-leader` role, the `D-###` decision id, …)

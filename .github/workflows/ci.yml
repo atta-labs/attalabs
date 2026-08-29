@@ -19,11 +19,10 @@
 #     and completes near-instantly. This is sound, not a gap: repo-file gates
 #     (verify-docs, coherence, etc.) run in their own separate CI jobs
 #     regardless of what this job decides to test.
-#   - One exception to `--affected`: the vocabulary gate (the published
-#     @attalabs/aeg-core's retired-vocabulary.test.ts, ported via
-#     scripts/verify-vocabulary-gate.sh — see that script for why a naive
-#     working-directory swap onto the registry copy silently resolves the
-#     wrong repo root) scans the whole repo tree by path, not just one
+#   - One exception to `--affected`: the vocabulary gate
+#     (scripts/verify-vocabulary-gate.ts, calling the published
+#     @attalabs/aeg-core's scanRetiredVocabulary directly — see that
+#     script for why) scans the whole repo tree by path, not just one
 #     package — `--affected` scopes to packages whose OWN files differ from
 #     origin/main, which would let a PR that touches nothing under
 #     packages/* skip this test entirely regardless of what it plants
