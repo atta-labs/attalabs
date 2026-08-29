@@ -17,16 +17,27 @@ export default async function config(): Promise<NextConfig> {
     // `@attalabs/vinaya-sources` is deliberately absent: Studio has zero
     // imports of it (unlike `apps/vinaya-portal/web`).
     transpilePackages: ['@atta/ui', '@attalabs/aeg-core', '@attalabs/aeg-forge-state'],
-    // Studio is local-only and never deploys to Vercel (no ProductSwitch, no
-    // deploy-time gating — the app simply is not deployed), so unlike
-    // `apps/vinaya-portal/web`'s `next.config.ts`, there is deliberately no
-    // `outputFileTracingIncludes`
-    // here: that setting exists solely to keep Vercel's serverless bundle from
-    // silently dropping a computed-path read (`.vinaya/projects.md`) that a
-    // `force-dynamic` route needs at request time. With no serverless deploy
-    // target, `findAegRoot()`'s upward walk (`src/lib/repo-state/read-root.ts`)
-    // just runs against the real filesystem, in every environment this app
-    // actually runs in (`next dev`, a local `next build && next start`).
+    // Studio never deploys to Vercel, so `findAegRoot()`'s upward walk
+    // (`src/lib/repo-state/read-root.ts`) needs no tracing help — it runs
+    // against the real filesystem in every environment this app runs in
+    // directly (`next dev`, a local `next build && next start`).
+    //
+    // BUT `output: 'standalone'` above still runs Next's static-import file
+    // tracer regardless of deploy target — `vinaya-studio-artifact.yml`
+    // builds this exact standalone output and ships it inside the published
+    // `@attalabs/vinaya` npm package (`studio-standalone/`) for every
+    // adopter's `vinaya studio`. `api/coherence/route.ts` spawns
+    // `node_modules/@attalabs/aeg-core/bin/verify-coherence.ts` as a raw
+    // subprocess path (`execFile`), never a static `import` — invisible to
+    // the tracer, so the shipped standalone bundle silently omits it even
+    // though `@attalabs/aeg-core` is a real `dependencies` entry above and
+    // resolves fine under `next dev`. Found live: `vinaya studio` on a fresh
+    // adopter install threw "Module not found" on that exact path; this repo
+    // never caught it locally because dev/build-from-source always has the
+    // real node_modules tree, only the traced/shipped bundle doesn't.
+    outputFileTracingIncludes: {
+      '/api/coherence': ['../../../node_modules/@attalabs/aeg-core/bin/verify-coherence.ts']
+    },
     turbopack: {
       root: resolve(__dirname, '../../..'),
       resolveAlias: {
