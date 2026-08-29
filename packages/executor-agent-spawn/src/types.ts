@@ -58,9 +58,45 @@ export interface RoleBinaryConfig {
   timeoutMs?: number
 }
 
+/**
+ * One node-lifecycle transition, emitted while a Plan is executing: a node
+ * started, (agent-spawn only) one thing the spawned process reported on its
+ * structured stream, a node completed, or a node failed. `runId` correlates
+ * every event a run produces — task 6's own reason for existing — so an
+ * observer watching a nested or concurrent execution can place an event
+ * within its enclosing run, not just against the bare node id.
+ *
+ * Deliberately shape-matched, member for member, to `FlowEvent`'s node-scoped
+ * variants in `packages/ui/engine-flow/events.ts` — the sole event vocabulary
+ * this repo treats as authoritative for a flow diagram — rather than a
+ * second, independently-designed one. It is not *imported* from there: this
+ * package is a pure Node executor with no UI dependency (mirroring
+ * `packages/adapter-langgraph`, which carries the same discipline), and
+ * `@atta/ui` pulls in React/`@xyflow/react`. A caller in a surface that
+ * already depends on both packages (e.g. a web app bridging this callback
+ * into a `FlowEventSource`) can pass these values straight through — every
+ * field here is a required version of an optional `FlowEvent` field, so the
+ * assignment always typechecks with no mapping step. Keep the two shapes in
+ * lockstep by hand; nothing enforces it automatically.
+ */
+export type AgentLifecycleEvent =
+  | { type: 'node:start'; nodeId: string; runId: string }
+  | { type: 'node:streaming'; nodeId: string; runId: string; content: string }
+  | { type: 'node:complete'; nodeId: string; runId: string }
+  | { type: 'node:failed'; nodeId: string; runId: string; error: string }
+
 /** Role → binary configuration, keyed by the Plan's `agentRole` strings. */
 export interface AgentSpawnExecutorConfig {
   roleBinaries: Record<string, RoleBinaryConfig>
+  /**
+   * Called for every node-lifecycle transition, in the order it occurs —
+   * one path (`createAgentLifecycleNodeExecutor`'s returned executor) is the
+   * only place this is ever invoked, so ordering is a property of that
+   * function's control flow, never of which node kind happened to run when.
+   * Optional: a caller with no observer (a batch run, a test) supplies
+   * nothing and pays no cost.
+   */
+  onEvent?: (event: AgentLifecycleEvent) => void
   /**
    * Absolute path every agent-spawn node's `workingDirectory` must resolve
    * inside (after symlinks are followed) — the confinement root for every

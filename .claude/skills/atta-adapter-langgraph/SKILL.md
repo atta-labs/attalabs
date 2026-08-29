@@ -25,6 +25,8 @@ This is where Plans become real. Engine is pure; adapter is the runtime.
 
 A confirmation gate for an irreversible action is explicitly *not* part of this kind — pausing for an outside decision needs a suspension primitive that does not exist yet, and a node that can pause without resuming is worse than one that cannot pause.
 
+**Execution carries an emission responsibility.** `createAgentLifecycleNodeExecutor`'s returned executor — the one function that already dispatches every node to `node-executor.ts` or `mechanical-executor.ts` — is also this package's single emission path: it calls the optional `AgentSpawnExecutorConfig.onEvent` around whichever branch it runs, in this order — `node:start`, then (agent-spawn only) one `node:streaming` per event the spawned process reported, then `node:complete`, or `node:failed` on any thrown error. Every event carries `runId` (from `AgentSpawnGraphStateValue.runId`, set once at graph start), so an observer can place an event within its enclosing run, not just against the bare node id. The event type (`AgentLifecycleEvent`, in `types.ts`) is deliberately shape-matched member-for-member to `FlowEvent`'s node-scoped variants in `packages/ui/engine-flow/events.ts` — the one event vocabulary this repo treats as authoritative for a flow diagram — but is not imported from there: this package stays a pure Node executor with no `@atta/ui` dependency, the same discipline `packages/adapter-langgraph` already keeps. A caller that already depends on both packages can pass `onEvent`'s values straight into a `FlowEventSource` with no mapping step, since every field here is a required version of an optional `FlowEvent` field.
+
 ---
 
 ## Architecture
