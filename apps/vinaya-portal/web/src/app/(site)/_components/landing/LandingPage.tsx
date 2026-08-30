@@ -95,13 +95,10 @@ function VerificationSection({ releaseMetrics }: { releaseMetrics: ReleaseMetric
           </SectionTitle>
           <Text className='mx-auto mt-8 max-w-xl border-l-4 border-border pl-7 text-left text-xl leading-relaxed text-muted-foreground md:mx-0'>
             A 2026 study: randomly-generated rule files moved agent behaviour about as much as carefully curated ones.{' '}
-            <strong className='font-semibold text-foreground'>Instructions are not constraint.</strong>
+            <strong className='font-semibold text-foreground'>
+              What your rules say is not what is doing the work.
+            </strong>
           </Text>
-          <div className='mt-10'>
-            <ActionLink href='/compare' variant='secondary'>
-              Compare the approaches <ArrowRight className='size-4' />
-            </ActionLink>
-          </div>
         </div>
         <div className='md:text-center'>
           <EnforcementRatio value={enforcementRatio} />
