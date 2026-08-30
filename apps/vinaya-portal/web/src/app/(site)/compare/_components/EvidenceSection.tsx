@@ -1,7 +1,8 @@
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
-import { Heading, Text } from '@atta/ui/shared'
-import { CompareSection } from './CompareSection'
+import { Text } from '@atta/ui/shared'
+import { LandingSection } from '../../_components/landing/LandingSection'
+import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
 
 // Frozen against the arXiv full text — a divergence here is a stop condition,
 // never a silent correction. Handoff has no reported with-feedback figure;
@@ -15,15 +16,11 @@ const RULE_TYPES = [
 
 export function EvidenceSection() {
   return (
-    <CompareSection id='evidence' alt>
-      <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>the evidence</Text>
-      <Heading
-        level={2}
-        weight='normal'
-        className='mt-4 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl'
-      >
+    <LandingSection id='evidence' background='bg-card text-card-foreground'>
+      <SectionOverline className='text-muted-foreground'>the evidence</SectionOverline>
+      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
         What the rules-following research actually found
-      </Heading>
+      </SectionTitle>
 
       <div className='mt-10'>
         <Table>
@@ -79,6 +76,6 @@ export function EvidenceSection() {
           </NextLink>
         </Text>
       </div>
-    </CompareSection>
+    </LandingSection>
   )
 }

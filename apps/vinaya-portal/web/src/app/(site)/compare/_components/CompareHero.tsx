@@ -1,10 +1,11 @@
 import { Heading, Text } from '@atta/ui/shared'
-import { CompareSection } from './CompareSection'
+import { LandingSection } from '../../_components/landing/LandingSection'
+import { SectionOverline } from '../../_components/landing/SectionHeading'
 
 export function CompareHero() {
   return (
-    <CompareSection id='hero' className='py-16 sm:py-24 lg:py-28'>
-      <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>compare</Text>
+    <LandingSection id='hero' background='bg-background text-foreground' py='spacious'>
+      <SectionOverline className='text-muted-foreground'>compare</SectionOverline>
       <Heading
         level={1}
         weight='normal'
@@ -17,6 +18,6 @@ export function CompareHero() {
         agent does on its own — enforcement has to live outside the agent. This page compares what actually enforces,
         not what merely asks.
       </Text>
-    </CompareSection>
+    </LandingSection>
   )
 }

@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import { ArrowRight, ListChecks, UserCog, Workflow } from 'lucide-react'
-import { CompareSection } from './CompareSection'
+import { LandingSection } from '../../_components/landing/LandingSection'
+import { SectionOverline } from '../../_components/landing/SectionHeading'
 
 const CARDS = [
   {
@@ -24,10 +25,8 @@ const CARDS = [
 
 export function ConfigurabilityCards() {
   return (
-    <CompareSection id='configurability' alt>
-      <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>
-        configurability
-      </Text>
+    <LandingSection id='configurability' background='bg-card text-card-foreground'>
+      <SectionOverline className='text-muted-foreground'>configurability</SectionOverline>
       <div className='mt-4 flex flex-wrap items-end justify-between gap-6'>
         <Text className='max-w-xl text-balance font-serif text-3xl leading-tight tracking-tight sm:text-4xl'>
           It brings defaults, not a cage
@@ -54,6 +53,6 @@ export function ConfigurabilityCards() {
           </Card>
         ))}
       </div>
-    </CompareSection>
+    </LandingSection>
   )
 }

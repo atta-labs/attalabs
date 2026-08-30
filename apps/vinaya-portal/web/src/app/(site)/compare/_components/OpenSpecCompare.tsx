@@ -1,7 +1,8 @@
 import { Code, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
-import { Heading, Text } from '@atta/ui/shared'
+import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
-import { CompareSection } from './CompareSection'
+import { LandingSection } from '../../_components/landing/LandingSection'
+import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
 import { type Status, StatusCell } from './StatusCell'
 
 interface Row {
@@ -64,17 +65,11 @@ function CapabilityCell({ status, text }: { status: Status | 'text'; text?: stri
 
 export function OpenSpecCompare() {
   return (
-    <CompareSection id='openspec'>
-      <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>
-        openspec head-to-head
-      </Text>
-      <Heading
-        level={2}
-        weight='normal'
-        className='mt-4 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl'
-      >
+    <LandingSection id='openspec' background='bg-background text-foreground'>
+      <SectionOverline className='text-muted-foreground'>openspec head-to-head</SectionOverline>
+      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
         In the box: OpenSpec vs. Vinaya
-      </Heading>
+      </SectionTitle>
 
       <div className='mt-10'>
         <Table>
@@ -112,6 +107,6 @@ export function OpenSpecCompare() {
           </TableBody>
         </Table>
       </div>
-    </CompareSection>
+    </LandingSection>
   )
 }

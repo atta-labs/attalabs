@@ -1,8 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle, Code } from '@atta/ui/components'
+import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Heading, Text } from '@atta/ui/shared'
 import { GitPullRequestArrow, ShieldOff, Timer } from 'lucide-react'
-import { CompareSection } from './CompareSection'
+import { LandingSection } from '../../_components/landing/LandingSection'
+import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
 
 const CARDS = [
   {
@@ -35,66 +36,49 @@ const SOURCES = [
 
 export function NotDoesSection() {
   return (
-    <>
-      <CompareSection id='not-does'>
-        <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>
-          honest limits
-        </Text>
-        <Heading
-          level={2}
-          weight='normal'
-          className='mt-4 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl'
-        >
-          What Vinaya does not do
-        </Heading>
+    <LandingSection id='not-does' background='bg-background text-foreground'>
+      <SectionOverline className='text-muted-foreground'>honest limits</SectionOverline>
+      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+        What Vinaya does not do
+      </SectionTitle>
 
-        <div className='mt-10 grid gap-6 sm:grid-cols-3'>
-          {CARDS.map(({ icon: Icon, title, body }) => (
-            <Card key={title}>
-              <CardHeader>
-                <Icon className='size-5 text-muted-foreground' aria-hidden />
-                <CardTitle className='mt-3 font-serif text-xl font-normal tracking-tight'>{title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Text className='leading-relaxed text-muted-foreground'>{body}</Text>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </CompareSection>
+      <div className='mt-10 grid gap-6 sm:grid-cols-3'>
+        {CARDS.map(({ icon: Icon, title, body }) => (
+          <Card key={title}>
+            <CardHeader>
+              <Icon className='size-5 text-muted-foreground' aria-hidden />
+              <CardTitle className='mt-3 font-serif text-xl font-normal tracking-tight'>{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Text className='leading-relaxed text-muted-foreground'>{body}</Text>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </LandingSection>
+  )
+}
 
-      <CompareSection id='quickstart' alt className='text-center'>
-        <Heading
-          level={2}
-          weight='normal'
-          className='mx-auto max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl'
-        >
-          Ask for a rules file. Ship a gate.
-        </Heading>
-        <div className='mt-9 flex flex-col items-center gap-6'>
-          <Code className='bg-foreground/10 px-4 py-2 text-base font-bold text-foreground sm:text-lg'>
-            npx @attalabs/vinaya quickstart
-          </Code>
-          <NextLink href='/docs/cli' variant='button'>
-            Read the CLI docs
-          </NextLink>
-        </div>
-      </CompareSection>
-
-      <CompareSection id='sources'>
-        <Heading level={2} weight='normal' className='font-serif text-xl tracking-tight'>
-          Sources
-        </Heading>
-        <ul className='mt-6 flex flex-wrap gap-x-8 gap-y-3'>
-          {SOURCES.map((source) => (
-            <li key={source.href}>
-              <NextLink href={source.href} variant='subtle' target='_blank' rel='noreferrer'>
-                {source.label}
-              </NextLink>
-            </li>
-          ))}
-        </ul>
-      </CompareSection>
-    </>
+// Kept as a sibling export in this file (rather than its own file) — the sources
+// list is a short, static footer-like block with no state of its own; splitting
+// it out would add a file for one <ul>. Rendered after CloserSection in page.tsx
+// so the page ends on the quickstart CTA the way /life-cycle's own closer does,
+// not on a link list.
+export function SourcesSection() {
+  return (
+    <LandingSection id='sources' background='bg-background text-foreground'>
+      <Heading level={2} weight='normal' className='font-serif text-xl tracking-tight'>
+        Sources
+      </Heading>
+      <ul className='mt-6 flex flex-wrap gap-x-8 gap-y-3'>
+        {SOURCES.map((source) => (
+          <li key={source.href}>
+            <NextLink href={source.href} variant='subtle' target='_blank' rel='noreferrer'>
+              {source.label}
+            </NextLink>
+          </li>
+        ))}
+      </ul>
+    </LandingSection>
   )
 }
