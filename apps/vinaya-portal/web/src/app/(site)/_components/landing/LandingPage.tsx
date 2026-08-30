@@ -99,6 +99,11 @@ function VerificationSection({ releaseMetrics }: { releaseMetrics: ReleaseMetric
               What your rules say is not what is doing the work.
             </strong>
           </Text>
+          <div className='mt-10'>
+            <ActionLink href='/compare' variant='secondary'>
+              Compare the approaches <ArrowRight className='size-4' />
+            </ActionLink>
+          </div>
         </div>
         <div className='md:text-center'>
           <EnforcementRatio value={enforcementRatio} />
