@@ -12,6 +12,7 @@ import {
   Library,
   Play,
   Rocket,
+  Scale,
   Settings,
   Terminal,
   Tv,
@@ -110,6 +111,7 @@ const links: TopBarNavItem[] = [
     ),
     items: DOCS_ITEMS
   },
+  flatLink('Compare', '/compare', <Scale className='size-4' aria-hidden />),
   flatLink('Studio', '/the-studio', <Tv className='size-4' aria-hidden />),
   flatLink('Roadmap', '/roadmap', <Rocket className='size-4' aria-hidden />)
 ]
