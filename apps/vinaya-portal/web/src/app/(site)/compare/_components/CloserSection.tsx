@@ -8,7 +8,7 @@ import { SectionOverline, SectionTitle } from '../../_components/landing/Section
 
 export function CloserSection() {
   return (
-    <LandingSection id='quickstart' background='bg-card text-card-foreground' py='spacious' center>
+    <LandingSection id='quickstart' background='bg-background text-foreground' py='spacious' center>
       <SectionOverline className='text-muted-foreground'>quickstart</SectionOverline>
       <SectionTitle className='mx-auto mt-5 max-w-2xl' leading='tight'>
         <LetterReveal text='Ask for a rules file. Ship a gate.' />

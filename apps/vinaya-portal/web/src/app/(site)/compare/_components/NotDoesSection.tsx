@@ -36,7 +36,7 @@ const SOURCES = [
 
 export function NotDoesSection() {
   return (
-    <LandingSection id='not-does' background='bg-background text-foreground'>
+    <LandingSection id='not-does' background='bg-card text-card-foreground'>
       <SectionOverline className='text-center text-muted-foreground'>honest limits</SectionOverline>
       <SectionTitle className='mt-4 text-center' leading='tight'>
         What Vinaya does not do
@@ -66,7 +66,7 @@ export function NotDoesSection() {
 // not on a link list.
 export function SourcesSection() {
   return (
-    <LandingSection id='sources' background='bg-background text-foreground'>
+    <LandingSection id='sources' background='bg-card text-card-foreground'>
       <Heading level={2} weight='normal' className='text-center font-serif text-xl tracking-tight'>
         Sources
       </Heading>

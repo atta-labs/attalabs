@@ -56,7 +56,7 @@ function StatusBadge({ entry }: { entry: CapabilityEntry }) {
 
 export function CapabilityMatrix() {
   return (
-    <LandingSection id='matrix' background='bg-card text-card-foreground'>
+    <LandingSection id='matrix' background='bg-background text-foreground'>
       <SectionOverline className='text-center text-muted-foreground'>the full matrix</SectionOverline>
       <SectionTitle className='mt-4 text-center' leading='tight'>
         What each framework actually ships
@@ -65,6 +65,25 @@ export function CapabilityMatrix() {
         Every status cell links to the exact doc it was verified against. Not in core is not the same claim as
         impossible — it means the core distribution doesn’t ship it today.
       </Text>
+
+      <div className='mt-8 flex flex-wrap justify-center gap-6 font-mono text-[0.6875rem] text-muted-foreground'>
+        <span className='inline-flex items-center gap-1.5 text-success'>
+          <Check className='size-3' aria-hidden />
+          Native
+        </span>
+        <span className='inline-flex items-center gap-1.5 text-warning'>
+          <Puzzle className='size-3' aria-hidden />
+          Extension
+        </span>
+        <span className='inline-flex items-center gap-1.5'>
+          <Minus className='size-3' aria-hidden />
+          Not in core
+        </span>
+        <span className='inline-flex items-center gap-1.5 italic'>
+          <HelpCircle className='size-3' aria-hidden />
+          Not verified
+        </span>
+      </div>
 
       <div className='mt-10'>
         {/* 760, not the natural 880: `stickyHeader` flips the installed container to
@@ -79,7 +98,10 @@ export function CapabilityMatrix() {
               {FRAMEWORKS.map((fw) => (
                 <TableHead
                   key={fw.key}
-                  className={cn('font-semibold', fw.highlight ? 'text-primary' : 'text-foreground')}
+                  className={cn(
+                    'font-semibold',
+                    fw.highlight ? 'bg-primary/5 font-bold text-primary' : 'text-foreground'
+                  )}
                 >
                   {fw.name}
                 </TableHead>
@@ -92,7 +114,7 @@ export function CapabilityMatrix() {
                 <TableRow>
                   <TableCell
                     colSpan={FRAMEWORKS.length + 1}
-                    className='bg-muted/40 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground'
+                    className='border-t border-border bg-muted/40 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground'
                   >
                     {group.label}
                   </TableCell>

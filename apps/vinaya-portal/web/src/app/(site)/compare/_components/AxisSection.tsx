@@ -1,5 +1,7 @@
-import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+import { Badge } from '@atta/ui/components'
+import { cn } from '@atta/ui/lib/utils'
 import { Text } from '@atta/ui/shared'
+import { RevealGrid } from '../../_components/landing/LandingInteractions'
 import { LandingSection } from '../../_components/landing/LandingSection'
 import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
 import { StatusCell } from './StatusCell'
@@ -51,29 +53,27 @@ const BELOW_WATERLINE: Layer[] = [
   }
 ]
 
-function LayerRows({ layers }: { layers: Layer[] }) {
+const BAND = 'grid gap-7 py-7 md:grid-cols-[minmax(9rem,14rem)_minmax(12rem,1.1fr)_minmax(14rem,1.4fr)_6rem]'
+
+function LayerBand({ layer, submerged }: { layer: Layer; submerged?: boolean }) {
   return (
-    <>
-      {layers.map((layer) => (
-        <TableRow key={layer.name}>
-          <TableCell className='font-sans text-sm font-medium text-foreground'>{layer.name}</TableCell>
-          <TableCell className='text-sm text-muted-foreground'>{layer.description}</TableCell>
-          <TableCell className='text-sm text-muted-foreground'>
-            {layer.examples}
-            {layer.note && <Text className='mt-2 text-xs leading-relaxed text-muted-foreground/80'>{layer.note}</Text>}
-          </TableCell>
-          <TableCell>
-            {layer.vinaya ? (
-              <Badge variant='default' className='bg-primary font-mono text-[0.625rem] uppercase tracking-[0.16em]'>
-                Vinaya
-              </Badge>
-            ) : (
-              <StatusCell status='dash' />
-            )}
-          </TableCell>
-        </TableRow>
-      ))}
-    </>
+    <div className={cn(BAND, 'border-b border-border', submerged && '-mx-4 bg-muted/40 px-4')}>
+      <Text className='font-serif text-2xl leading-tight tracking-tight'>{layer.name}</Text>
+      <Text className='text-sm leading-relaxed text-muted-foreground'>{layer.description}</Text>
+      <div>
+        <Text className='text-sm leading-relaxed text-muted-foreground'>{layer.examples}</Text>
+        {layer.note && <Text className='mt-2 text-xs leading-relaxed text-muted-foreground/80'>{layer.note}</Text>}
+      </div>
+      <div>
+        {layer.vinaya ? (
+          <Badge variant='default' className='bg-primary font-mono text-[0.625rem] uppercase tracking-[0.16em]'>
+            Vinaya
+          </Badge>
+        ) : (
+          <StatusCell status='dash' />
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -85,29 +85,41 @@ export function AxisSection() {
         Where governance actually happens
       </SectionTitle>
 
-      <div className='mt-10'>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className='font-semibold text-foreground'>Layer</TableHead>
-              <TableHead className='font-semibold text-foreground'>What runs there</TableHead>
-              <TableHead className='font-semibold text-foreground'>Examples</TableHead>
-              <TableHead className='font-semibold text-foreground'>Vinaya</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <LayerRows layers={ABOVE_WATERLINE} />
-            <TableRow>
-              <TableCell colSpan={4} className='border-y border-warning/40 bg-warning/10 py-3 text-center'>
-                <Text className='font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-warning'>
-                  steering stops working below this line
-                </Text>
-              </TableCell>
-            </TableRow>
-            <LayerRows layers={BELOW_WATERLINE} />
-          </TableBody>
-        </Table>
-      </div>
+      <RevealGrid className='mt-12 border-t border-border'>
+        {ABOVE_WATERLINE.map((layer, index) => (
+          <div
+            key={layer.name}
+            className={cn(
+              'translate-y-3.5 opacity-0 transition-all duration-500 group-data-[visible=true]/reveal:translate-y-0 group-data-[visible=true]/reveal:opacity-100',
+              index % 3 === 1 && 'delay-[90ms]',
+              index % 3 === 2 && 'delay-[180ms]'
+            )}
+          >
+            <LayerBand layer={layer} />
+          </div>
+        ))}
+
+        <div className='flex items-center gap-5 border-y-2 border-dashed border-warning/50 bg-warning/10 py-3.5'>
+          <span className='h-px flex-1 bg-warning/40' aria-hidden />
+          <Text className='whitespace-nowrap font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-warning'>
+            steering stops working below this line
+          </Text>
+          <span className='h-px flex-1 bg-warning/40' aria-hidden />
+        </div>
+
+        {BELOW_WATERLINE.map((layer, index) => (
+          <div
+            key={layer.name}
+            className={cn(
+              'translate-y-3.5 opacity-0 transition-all duration-500 group-data-[visible=true]/reveal:translate-y-0 group-data-[visible=true]/reveal:opacity-100',
+              index % 3 === 1 && 'delay-[90ms]',
+              index % 3 === 2 && 'delay-[180ms]'
+            )}
+          >
+            <LayerBand layer={layer} submerged />
+          </div>
+        ))}
+      </RevealGrid>
     </LandingSection>
   )
 }

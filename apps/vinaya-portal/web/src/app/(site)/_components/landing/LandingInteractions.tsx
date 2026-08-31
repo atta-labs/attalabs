@@ -15,7 +15,7 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
   return window
 }
 
-export function RevealGrid({ children, className }: { children: ReactNode; className: string }) {
+export function RevealGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)
 

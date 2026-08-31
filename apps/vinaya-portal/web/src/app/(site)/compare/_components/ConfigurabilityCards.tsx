@@ -25,7 +25,7 @@ const CARDS = [
 
 export function ConfigurabilityCards() {
   return (
-    <LandingSection id='configurability' background='bg-card text-card-foreground'>
+    <LandingSection id='configurability' background='bg-background text-foreground'>
       <SectionOverline className='text-muted-foreground'>configurability</SectionOverline>
       <div className='mt-4 flex flex-wrap items-end justify-between gap-6'>
         <Text className='max-w-xl text-balance font-serif text-3xl leading-tight tracking-tight sm:text-4xl'>
