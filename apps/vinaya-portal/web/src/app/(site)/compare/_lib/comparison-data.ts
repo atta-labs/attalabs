@@ -113,7 +113,7 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
     stars: 280_000,
     reviewDate: REVIEW_DATE,
     primaryStrength:
-      'The most-adopted framework in this comparison — a TDD-first agentic-skills discipline with subagent-driven, fresh-context review, portable across nearly a dozen coding agents.',
+      'The most-starred framework in this comparison — a TDD-first agentic-skills discipline with subagent-driven, fresh-context review, portable across nearly a dozen coding agents.',
     capabilities: {
       multiAgent: n(
         'native',
