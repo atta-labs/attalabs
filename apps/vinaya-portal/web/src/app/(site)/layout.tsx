@@ -1,4 +1,3 @@
-import { getProductCms } from '@atta/cms'
 import { Footer } from '@atta/ui/footer'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Logo } from '@atta/ui/shared'
@@ -20,6 +19,7 @@ import {
   Workflow
 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { getPortalCms } from '@/lib/portal-cms'
 import { ElectricLabel } from './_components/ElectricLabel'
 import { FooterGate } from './_components/FooterGate'
 
@@ -117,7 +117,7 @@ const links: TopBarNavItem[] = [
 ]
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
-  const { branding } = await getProductCms('vinayaPortal')
+  const { branding } = await getPortalCms()
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
   // App-shell height: the shell is a full-viewport flex column — TopBar keeps

@@ -37,11 +37,14 @@ export default async function config(): Promise<NextConfig> {
     // `exports` field, same as the workspace-local @atta/ui above — Turbopack
     // refuses to compile .ts under node_modules unless listed here.
     transpilePackages: ['@atta/ui', '@attalabs/aeg-core', '@attalabs/aeg-forge-state', '@attalabs/vinaya-sources'],
-    // The landing, /the-harness and /docs derive their content live from the
-    // AEG doctrine files at request time (root layout is `force-dynamic`, the
-    // house pattern). On Vercel the serverless bundle only ships what tracing
-    // detects, and these reads use computed paths, so bundle them explicitly —
-    // the same mechanism vada (`../yamls/**`) and herald use.
+    // The landing, /the-harness and /docs derive their content from the AEG
+    // doctrine files via computed `fs` reads (task 3, #916 removed this app's
+    // former `force-dynamic` root layout — these routes now render
+    // static/ISR, and the reads happen at build/ISR-render time against the
+    // same bundled files instead of on every request). On Vercel the
+    // serverless bundle only ships what tracing detects, and these reads use
+    // computed paths, so bundle them explicitly — the same mechanism vada
+    // (`../yamls/**`) and herald use.
     //
     // The MARKER FILES BELONG HERE TOO, and they are the half that has broken
     // twice. `findRepoRoot()` (`src/lib/github-links.ts`) walks up from

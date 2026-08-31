@@ -301,6 +301,30 @@ Theme application is **fully server-side rendered**. There is no flash of unstyl
 
 **Key:** product clients use `useCdn: true` in production, so Sanity serves from edge CDN — fast, no cold starts at the theme fetch level.
 
+### The `staticColorScheme` shape (Vinaya Portal only)
+
+Steps 5a–6 above are the **plain shape** — every product except `vinaya-portal` uses it, unchanged. A real `await cookies()` read means a `cookies()` call anywhere in a route's render tree forces that whole route dynamic, which is fine for a product that already renders every route per-request, but was the reason `vinaya-portal` couldn't render static/ISR (task 3, `#916`) while still using `NextWebShell`.
+
+`NextWebShell`'s `staticColorScheme?: boolean` prop (default `false`, preserving the plain shape) is the opt-in for a product that wants static/ISR rendering instead:
+
+```
+5'. NextWebShell runs server-side (staticColorScheme: true):
+   a. No cookies() read — resolveColorScheme(undefined, cmsScheme) → CMS scheme, then 'dark'
+   b. generateThemeCSS(theme) → BOTH schemes, gated by [data-theme="dark"] (not
+      generateThemeCSSForScheme's single-scheme :root {})
+6'. <html data-theme="{that static default}"> — this is what gets cached in the
+    static shell; it does NOT reflect a visitor's cookie override
+7'. A blocking inline <script>, first in <head>, reads document.cookie and — only
+    if it finds an override — calls document.documentElement.setAttribute
+    ('data-theme', value) before anything paints. Because 6a already emitted BOTH
+    schemes' CSS, flipping the attribute is the entire correction: no style-tag
+    content to swap, unlike the client toggle below.
+```
+
+The tradeoff this makes: a visitor who has overridden their scheme sees the correct colors with JavaScript enabled (the script runs before first paint — no visible flash), but the raw server-rendered HTML byte-for-byte (view-source, or any no-JS client) shows the CMS/`'dark'` default instead of their choice. Every other product keeps the plain shape's byte-for-byte-correct, no-JS-required SSR precisely because this tradeoff is real — `staticColorScheme` is opt-in, never the default, and should stay that way unless a product genuinely needs the same static-rendering unlock `vinaya-portal` did.
+
+No experimental Next feature (PPR / `cacheComponents`) is involved in any of this — removing the unconditional `cookies()` read was sufficient on its own for Next's ordinary static/ISR rendering to apply once `force-dynamic` was also removed from the route. See `apps/vinaya-portal/web/README.md`'s "Rendering mode" section.
+
 ## Root Layout Pattern
 
 Every product's root `layout.tsx` **MUST** use `NextWebShell`. Never manually replicate what it does.
