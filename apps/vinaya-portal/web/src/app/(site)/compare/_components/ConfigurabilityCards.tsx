@@ -14,7 +14,7 @@ const CARDS = [
   {
     icon: Workflow,
     title: 'Your CI',
-    body: 'The generated workflows are yours the moment init writes them. Edit the YAML, add a job, wire in openspec validate — the merge gate stays the merge gate.'
+    body: 'The generated workflows are yours the moment init writes them. Edit the YAML, add a job, wire in an external validator, test suite, or policy check — the merge gate stays the merge gate.'
   },
   {
     icon: UserCog,

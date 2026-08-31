@@ -26,13 +26,13 @@ const ABOVE_WATERLINE: Layer[] = [
   {
     name: 'Workflow & spec',
     description: 'Ordered stages, named roles, a structured handoff between them.',
-    examples: 'Spec Kit, BMAD, OpenSpec, Vinaya',
+    examples: 'Superpowers, Spec Kit, BMAD, OpenSpec, Vinaya',
     vinaya: true
   },
   {
     name: 'Runtime gating',
     description: 'A hook that can intercept or block a tool call mid-session.',
-    examples: 'Kiro hooks'
+    examples: 'agent hooks and pre-tool controls'
   }
 ]
 

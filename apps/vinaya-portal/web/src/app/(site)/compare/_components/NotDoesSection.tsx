@@ -27,10 +27,10 @@ const SOURCES = [
   { label: 'arXiv 2607.26819', href: 'https://arxiv.org/abs/2607.26819' },
   { label: 'arXiv 2604.11088', href: 'https://arxiv.org/abs/2604.11088' },
   { label: 'arXiv 2602.11988', href: 'https://arxiv.org/abs/2602.11988' },
+  { label: 'Superpowers', href: 'https://github.com/obra/superpowers' },
   { label: 'GitHub Spec Kit', href: 'https://github.com/github/spec-kit' },
-  { label: 'BMAD-METHOD', href: 'https://github.com/bmad-code-org/BMAD-METHOD' },
   { label: 'OpenSpec', href: 'https://github.com/Fission-AI/OpenSpec' },
-  { label: 'Kiro hooks', href: 'https://kiro.dev/docs/hooks/' },
+  { label: 'BMAD-METHOD', href: 'https://github.com/bmad-code-org/BMAD-METHOD' },
   { label: 'GitHub Agentic Workflows (gh-aw)', href: 'https://github.com/github/gh-aw' }
 ] as const
 

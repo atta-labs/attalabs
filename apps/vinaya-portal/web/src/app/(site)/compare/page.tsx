@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { AxisSection } from './_components/AxisSection'
+import { CapabilityMatrix } from './_components/CapabilityMatrix'
 import { CloserSection } from './_components/CloserSection'
 import { CompareHero } from './_components/CompareHero'
 import { ConfigurabilityCards } from './_components/ConfigurabilityCards'
 import { EvidenceSection } from './_components/EvidenceSection'
-import { FrameworkTable } from './_components/FrameworkTable'
+import { FrameworkOverview } from './_components/FrameworkOverview'
 import { NotDoesSection, SourcesSection } from './_components/NotDoesSection'
-import { OpenSpecCompare } from './_components/OpenSpecCompare'
+import { WhereEachWins } from './_components/WhereEachWins'
 
 export const metadata: Metadata = {
   title: 'Compare — Vinaya',
@@ -20,8 +21,9 @@ export default function ComparePage() {
       <CompareHero />
       <EvidenceSection />
       <AxisSection />
-      <FrameworkTable />
-      <OpenSpecCompare />
+      <FrameworkOverview />
+      <CapabilityMatrix />
+      <WhereEachWins />
       <ConfigurabilityCards />
       <NotDoesSection />
       <CloserSection />
