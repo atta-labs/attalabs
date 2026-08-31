@@ -9,12 +9,12 @@ import { FRAMEWORKS, INCLUSION_THRESHOLD_STARS, REVIEW_DATE } from '../_lib/comp
 export function FrameworkOverview() {
   return (
     <LandingSection id='frameworks' background='bg-background text-foreground'>
-      <SectionOverline className='text-muted-foreground'>the open-source market</SectionOverline>
-      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+      <SectionOverline className='text-center text-muted-foreground'>the open-source market</SectionOverline>
+      <SectionTitle className='mt-4 text-center' leading='tight'>
         Five frameworks, one comparison
       </SectionTitle>
 
-      <blockquote className='mt-8 max-w-2xl border-l-4 border-border pl-6'>
+      <blockquote className='mx-auto mt-8 max-w-2xl border-l-4 border-border pl-6'>
         <Text className='leading-relaxed text-muted-foreground'>
           This comparison covers active open-source frameworks for AI-assisted software development with at least{' '}
           {INCLUSION_THRESHOLD_STARS.toLocaleString('en-US')} GitHub stars, reviewed {REVIEW_DATE}. Stars select the
@@ -22,7 +22,7 @@ export function FrameworkOverview() {
           extensions.
         </Text>
       </blockquote>
-      <Text as='p' className='mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground/80'>
+      <Text as='p' className='mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground/80'>
         A note on runtime automation: GitHub’s own Agentic Workflows (gh-aw) can require a workflow run to pass, but
         it’s a CI-automation product, not a development-methodology framework — mentioned for context, not scored below.
       </Text>

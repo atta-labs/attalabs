@@ -15,8 +15,8 @@ const CATEGORIES = [
 export function WhereEachWins() {
   return (
     <LandingSection id='where-each-wins' background='bg-card text-card-foreground'>
-      <SectionOverline className='text-muted-foreground'>where each wins</SectionOverline>
-      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+      <SectionOverline className='text-center text-muted-foreground'>where each wins</SectionOverline>
+      <SectionTitle className='mt-4 text-center' leading='tight'>
         No overall score — category leaders only
       </SectionTitle>
 

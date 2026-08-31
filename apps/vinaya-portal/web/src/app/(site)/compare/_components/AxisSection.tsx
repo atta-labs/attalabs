@@ -80,8 +80,8 @@ function LayerRows({ layers }: { layers: Layer[] }) {
 export function AxisSection() {
   return (
     <LandingSection id='axis' background='bg-background text-foreground'>
-      <SectionOverline className='text-muted-foreground'>five layers</SectionOverline>
-      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+      <SectionOverline className='text-center text-muted-foreground'>five layers</SectionOverline>
+      <SectionTitle className='mt-4 text-center' leading='tight'>
         Where governance actually happens
       </SectionTitle>
 

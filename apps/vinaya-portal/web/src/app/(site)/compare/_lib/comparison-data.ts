@@ -262,7 +262,7 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
       githubIssues: n(
         'not-in-core',
         'https://raw.githubusercontent.com/github/spec-kit/main/templates/commands/taskstoissues.md',
-        'An export command can push tasks.md into Issues, but tasks.md stays canonical.'
+        'An export command can push tasks.md into Issues, but Issues are a one-way projection — tasks.md stays canonical.'
       ),
       githubMilestones: n('not-in-core'),
       labelsAsFacts: n('not-in-core'),
@@ -456,7 +456,7 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
       studioDashboard: n(
         'native',
         'https://github.com/Fission-AI/OpenSpec/blob/main/docs/cli.md',
-        'openspec view: "an interactive dashboard for exploring specs and changes."'
+        'openspec view opens a terminal-based interface for browsing specs and changes — not a browser dashboard like Vinaya Studio.'
       )
     }
   },
@@ -541,9 +541,9 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
       ),
       threeRings: n('not-in-core'),
       customChecks: n(
-        'native',
+        'not-in-core',
         'https://github.com/bmad-code-org/BMAD-METHOD/blob/main/docs/reference/skills-and-agents.md',
-        'Review-lens set is explicitly customizable — customize.toml can add or replace shipped lenses.'
+        'Review lenses are customizable (customize.toml), but that’s AI-judgment review, not a deterministic executable check with an exit code.'
       ),
       configurableBriefSchema: n(
         'not-in-core',

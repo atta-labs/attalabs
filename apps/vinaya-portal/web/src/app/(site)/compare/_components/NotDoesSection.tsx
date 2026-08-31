@@ -8,8 +8,8 @@ import { SectionOverline, SectionTitle } from '../../_components/landing/Section
 const CARDS = [
   {
     icon: GitPullRequestArrow,
-    title: 'A pull request can delete its own gate',
-    body: 'A pull_request-triggered workflow runs the PR’s own copy of the YAML. Its author can delete the step, or the whole workflow, before it ever runs your check.'
+    title: 'A pull request controls its own check',
+    body: 'A pull_request-triggered workflow runs the PR’s own copy of the YAML — its author controls the workflow definition producing the required check, and can edit any step to exit 0, reporting success under the required name having run nothing at all.'
   },
   {
     icon: ShieldOff,
@@ -37,8 +37,8 @@ const SOURCES = [
 export function NotDoesSection() {
   return (
     <LandingSection id='not-does' background='bg-background text-foreground'>
-      <SectionOverline className='text-muted-foreground'>honest limits</SectionOverline>
-      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+      <SectionOverline className='text-center text-muted-foreground'>honest limits</SectionOverline>
+      <SectionTitle className='mt-4 text-center' leading='tight'>
         What Vinaya does not do
       </SectionTitle>
 
@@ -67,10 +67,10 @@ export function NotDoesSection() {
 export function SourcesSection() {
   return (
     <LandingSection id='sources' background='bg-background text-foreground'>
-      <Heading level={2} weight='normal' className='font-serif text-xl tracking-tight'>
+      <Heading level={2} weight='normal' className='text-center font-serif text-xl tracking-tight'>
         Sources
       </Heading>
-      <ul className='mt-6 flex flex-wrap gap-x-8 gap-y-3'>
+      <ul className='mt-6 flex flex-wrap justify-center gap-x-8 gap-y-3'>
         {SOURCES.map((source) => (
           <li key={source.href}>
             <NextLink href={source.href} variant='subtle' target='_blank' rel='noreferrer'>

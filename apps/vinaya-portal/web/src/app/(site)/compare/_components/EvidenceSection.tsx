@@ -5,20 +5,21 @@ import { LandingSection } from '../../_components/landing/LandingSection'
 import { SectionOverline, SectionTitle } from '../../_components/landing/SectionHeading'
 
 // Frozen against the arXiv full text — a divergence here is a stop condition,
-// never a silent correction. Handoff has no reported with-feedback figure;
-// rendered as — rather than invented.
+// never a silent correction. Handoff's with-feedback figure is heterogeneous
+// across models, not absent: 3 of 4 models stayed at 0%, one (DeepSeek-V4-Pro)
+// reached 3/9 (33%) — rendered as the resulting range, not collapsed to one point.
 const RULE_TYPES = [
   { rule: 'Disclose', unaided: '17–40%', withFeedback: '55–97%' },
   { rule: 'Verify', unaided: '4–92%', withFeedback: '90–100%' },
   { rule: 'Refuse', unaided: '0%', withFeedback: '≤ 23%' },
-  { rule: 'Handoff', unaided: '0%', withFeedback: '—' }
+  { rule: 'Handoff', unaided: '0%', withFeedback: '0–33%' }
 ] as const
 
 export function EvidenceSection() {
   return (
     <LandingSection id='evidence' background='bg-card text-card-foreground'>
-      <SectionOverline className='text-muted-foreground'>the evidence</SectionOverline>
-      <SectionTitle className='mt-4 max-w-2xl' leading='tight'>
+      <SectionOverline className='text-center text-muted-foreground'>the evidence</SectionOverline>
+      <SectionTitle className='mt-4 text-center' leading='tight'>
         What the rules-following research actually found
       </SectionTitle>
 
@@ -41,7 +42,7 @@ export function EvidenceSection() {
             ))}
           </TableBody>
           <TableCaption className='text-left'>
-            4 models, 49 repos, 1,120 runs —{' '}
+            4 models, 49 repos, 1,120 base runs —{' '}
             <NextLink href='https://arxiv.org/abs/2607.26819' variant='subtle'>
               arXiv 2607.26819
             </NextLink>
@@ -69,8 +70,8 @@ export function EvidenceSection() {
           </NextLink>
         </Text>
         <Text className='mt-6 leading-relaxed text-muted-foreground'>
-          A third study found context files added to a coding agent’s setup do not generally improve its success rate,
-          and increase cost by over 20%.{' '}
+          A third study found context files added to a coding agent’s setup do not generally improve its success rate —
+          even though agents largely follow what the files say — and increase cost by over 20%.{' '}
           <NextLink href='https://arxiv.org/abs/2602.11988' variant='subtle'>
             arXiv 2602.11988
           </NextLink>
