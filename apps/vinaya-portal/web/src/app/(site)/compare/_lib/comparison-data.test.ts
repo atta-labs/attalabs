@@ -60,9 +60,9 @@ describe('comparison-data', () => {
     }
   })
 
-  it('every star count is a rounded floor to the nearest 10,000, never a raw live count', () => {
+  it('every star count is rounded, never a raw live count', () => {
     for (const fw of FRAMEWORKS) {
-      expect(fw.stars % 10_000, `${fw.name}'s star count ${fw.stars} isn't rounded to the nearest 10,000`).toBe(0)
+      expect(fw.stars % 1_000, `${fw.name}'s star count ${fw.stars} isn't rounded to the nearest 1,000`).toBe(0)
     }
   })
 })

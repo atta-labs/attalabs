@@ -73,7 +73,12 @@ export interface FrameworkIdentity {
   repoUrl: string
   docsUrl: string
   license: string
-  /** Rounded floor to the nearest 10,000 — a snapshot at reviewDate, never a live count. */
+  /**
+   * A rounded snapshot at reviewDate, never a live count. Rounding a competitor's
+   * count UP past its real value inflates it — the page's own "stars select the
+   * set, they don't measure quality" framing depends on that never happening, so
+   * prefer flooring below the real count when a value needs correcting.
+   */
   stars: number
   reviewDate: string
   primaryStrength: string
@@ -334,7 +339,7 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
     repoUrl: 'https://github.com/Fission-AI/OpenSpec',
     docsUrl: 'https://github.com/Fission-AI/OpenSpec/blob/main/docs/cli.md',
     license: 'MIT',
-    stars: 70_000,
+    stars: 66_000,
     reviewDate: REVIEW_DATE,
     primaryStrength:
       'A propose → apply → archive spec workflow with a real validate --strict exit-code contract and a fully customizable artifact schema.',
