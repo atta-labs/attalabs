@@ -63,8 +63,8 @@ export function EvidenceSection() {
         <Text className='leading-relaxed text-muted-foreground'>
           A second, larger study — 5,000+ runs against SWE-bench Verified — found random rule files scored 63.8%,
           identical to curated rule files at 63.8% (Q=4.70, p=0.697), while every rule condition beat the no-rules
-          baseline of 50.0% by roughly 7–14 points. What the rules said made no measurable difference. That a rule file
-          existed at all did.{' '}
+          baseline of 50.0% by roughly 7–14 points. What the rules said made no measurable difference across those
+          conditions — pointing instead to a context-priming effect.{' '}
           <NextLink href='https://arxiv.org/abs/2604.11088' variant='subtle'>
             arXiv 2604.11088
           </NextLink>
