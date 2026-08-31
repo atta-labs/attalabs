@@ -129,6 +129,19 @@ export function CapabilityMatrix() {
                     ))}
                   </TableRow>
                 ))}
+                {group.label === 'Method & workflow' && (
+                  <TableRow>
+                    <TableCell colSpan={FRAMEWORKS.length + 1} className='border-t border-border py-4'>
+                      <Text className='text-sm leading-relaxed text-muted-foreground'>
+                        The groups below aren’t neutral in the same way. Method &amp; workflow are criteria any of these
+                        five products could reasonably be judged on. Forge lifecycle, Enforcement &amp; evidence, and
+                        Customization &amp; operation are Vinaya’s own architectural choices, scored the same way —
+                        included because they’re the argument this page makes, not because every framework should be
+                        expected to ship them.
+                      </Text>
+                    </TableCell>
+                  </TableRow>
+                )}
               </Fragment>
             ))}
           </TableBody>

@@ -585,7 +585,7 @@ const RAW_FRAMEWORKS: FrameworkIdentity[] = [
     stars: 0,
     reviewDate: REVIEW_DATE,
     primaryStrength:
-      'The only one of these that plans on your forge, gates merges with the same code as its own local hooks, and binds review and evidence to the exact commit under review.',
+      'Plans on your forge, gates merges with the same code as its own local hooks, and binds review and evidence to the exact commit under review.',
     highlight: true,
     capabilities: {
       multiAgent: n(
