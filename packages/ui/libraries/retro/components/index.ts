@@ -15,9 +15,10 @@ export { ChromeFrame } from './chrome/chrome-frame'
 // Interactive — Collapsible
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../installed/collapsible'
 
-// Interactive — Tabs (flat upstream exports — no adapter needed)
-export { Tabs, TabsContent, TabsList } from '../installed/tabs'
-export { TabsTrigger } from './interactive/tabs'
+// Interactive — Tabs (Root/List flat from upstream; Content/Trigger wrapped —
+// see .claude/skills/ui-library-system/SKILL.md "Flavor matrix")
+export { Tabs, TabsList } from '../installed/tabs'
+export { TabsContent, TabsTrigger } from './interactive/tabs'
 
 // Interactive — DropdownMenu
 export {

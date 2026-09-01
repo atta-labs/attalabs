@@ -119,11 +119,48 @@ same adapter if that changes. animate/brutal fall back to basic's Sheet, so they
 basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
 
 The same wrapper rule applies to equivalent behavior props with different upstream names.
-`TabsContent.forceMount` is the cross-library persistence contract used by Radix-backed
-libraries; Base UI calls it `keepMounted`. The editable basic and animate Tabs wrappers
-accept both names and forward `forceMount ?? keepMounted` as `keepMounted`, so inactive
-panels remain in the DOM without leaking an unknown prop. Do not rename consumer props per
-active library or edit an `installed/tabs.tsx` file.
+`TabsContent.forceMount` is the cross-library "stay mounted, hide when inactive" contract.
+**The real mechanism split for Tabs is basic+animate (Base UI) vs retro+brutal (native
+Radix)** — an earlier framing here ("Base UI = basic/animate vs Radix = retro/brutal, but
+animate's *own* CLI-installed primitive is secretly Radix too") was wrong on both halves at
+once, worth recording so the mistake isn't repeated:
+
+- `basic`'s `TabsContent` wraps `@base-ui/react/tabs` directly (`components/interactive/tabs.tsx`).
+- `animate`'s **active** `TabsContent` (exported from `components/index.ts` via `./tabs`, i.e.
+  `components/tabs.tsx`) *also* wraps `@base-ui/react/tabs` directly — it is Base UI, not
+  Radix. animate additionally vendors a real animate-ui CLI canonical at
+  `installed/tabs.tsx` → `installed/animate-ui/primitives/radix/tabs.tsx` (genuinely built on
+  raw Radix + `AnimatePresence`, with its own `TabsContents`/`TabsHighlight` components), but
+  **nothing imports it** — `TabsContents`/`TabsHighlight` have zero consumers repo-wide. It is
+  orphaned dead code, not the mechanism a consumer actually gets. Left untouched — `installed/`
+  stays verbatim whether or not it's wired up, and deleting an unused `installed/` file is a
+  separate concern from giving Tabs a working cross-library contract.
+- `retro` and `brutal` both wrap native Radix (`TabsPrimitive.Content` /
+  `@radix-ui/react-tabs`'s `Content`). Verified against `@radix-ui/react-tabs@1.1.21` source:
+  once `forceMount` is set, Radix's `Presence` keeps its internal `present` state — and
+  therefore Radix's own `hidden` DOM attribute — permanently non-hiding, so `hidden` cannot do
+  the hiding. Only the native `data-state="active"|"inactive"` attribute (always present,
+  `forceMount` or not) distinguishes an inactive mounted panel.
+
+Base UI's own `TabsPanel` is the opposite: it sets BOTH a real `hidden` DOM attribute (UA
+stylesheet `display:none`, no CSS required) and a `data-hidden` presence attribute, computed
+from selection state internally. So basic/animate's existing `keepMounted={forceMount ??
+keepMounted}` forwarding already gave a complete "one prop, no consumer CSS" contract;
+retro/brutal did not, until their `components/interactive/tabs.tsx` wrappers added it: both
+now merge a `data-[state=inactive]:hidden` class onto `TabsContent` unconditionally (inert
+when `forceMount` is unset, since an inactive panel is unmounted at that point anyway) and
+accept `keepMounted` as an alias for `forceMount`, coerced to Radix's literal `true |
+undefined` prop type. The net cross-library contract: **`<TabsContent forceMount>` (or
+`keepMounted`) keeps a panel mounted and hidden-when-inactive on all four libraries, with
+zero per-call-site CSS.** Do not rename consumer props per active library or edit an
+`installed/tabs*.tsx` file.
+
+One known gap this leaves open: the single shared `TabsContentProps` type
+(`packages/ui/types/interactive/tabs.ts`) is typed as `BaseTabs.Panel.Props & { forceMount?:
+boolean }` for every library, including retro/brutal, whose real `TabsContent` accepts
+Radix's `Content` props, not Base UI's `Panel` props. This mismatch is type-only (erased at
+compile time; it doesn't affect `TabsContent`'s actual runtime behavior or inferred prop
+type) and no current consumer imports the `TabsContentProps` type name.
 
 ### CLI workflow when adding or restoring a component
 
