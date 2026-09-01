@@ -21,11 +21,17 @@ import { Badge } from '@atta/ui/components'
  * `node:child_process`, which Turbopack cannot bundle for the browser.
  */
 
-export type LabelKind = 'project' | 'tier' | 'state' | 'needs' | 'flag' | 'other'
+export type LabelKind = 'project' | 'tier' | 'type' | 'state' | 'needs' | 'flag' | 'other'
 
 const KIND_CLASS: Record<LabelKind, string> = {
   project: 'text-primary border-primary/40',
   tier: 'text-foreground border-border',
+  // Classification metadata, not a status signal — the commit-type shape of
+  // the work, same axis as `tier` (what the Issue IS) rather than the
+  // state/flag/needs family (what needs attention). `primary` is already
+  // spoken for by `project`/`state`; `muted-foreground` is the doctrine's own
+  // "informational without weight" choice.
+  type: 'text-muted-foreground border-border',
   state: 'text-primary border-primary/40',
   needs: 'text-warning border-warning/40',
   // A detected anomaly awaiting a human — the one family that reads as wrong,
@@ -34,12 +40,13 @@ const KIND_CLASS: Record<LabelKind, string> = {
   other: 'text-muted-foreground border-border'
 }
 
-const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, state: 2, flag: 3, needs: 4, other: 5 }
+const KIND_RANK: Record<LabelKind, number> = { project: 0, tier: 1, type: 2, state: 3, flag: 4, needs: 5, other: 6 }
 
 export function labelKind(label: string): LabelKind {
   const entry = LABELS.find((l) => matchesLabel(l.key, label))
   if (!entry) return 'other'
   if (entry.category === 'tier') return 'tier'
+  if (entry.category === 'type') return 'type'
   if (entry.category === 'state') return 'state'
   if (entry.category === 'needs') return 'needs'
   if (entry.category === 'flag') return 'flag'
@@ -53,7 +60,7 @@ export function rankedLabels(labels: string[]): string[] {
   return [...labels].sort((a, b) => KIND_RANK[labelKind(a)] - KIND_RANK[labelKind(b)])
 }
 
-export type SplitLabels = { tier: string | null; flags: string[] }
+export type SplitLabels = { tier: string | null; type: string | null; flags: string[] }
 
 /**
  * Partition an Issue's labels into the families the table's columns render.
@@ -63,6 +70,7 @@ export type SplitLabels = { tier: string | null; flags: string[] }
 export function splitLabels(labels: string[]): SplitLabels {
   return {
     tier: labels.find((l) => labelKind(l) === 'tier') ?? null,
+    type: labels.find((l) => labelKind(l) === 'type') ?? null,
     flags: labels.filter((l) => {
       const kind = labelKind(l)
       return kind === 'needs' || kind === 'state' || kind === 'flag'
