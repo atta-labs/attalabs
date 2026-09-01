@@ -24,12 +24,19 @@ export const PROJECT_CONFIG = {
     displayName: 'Herald',
     libraryPinNote: `Pinned at build time in ${LIBRARY_PIN_FILE} ("herald" entry) — edit it and redeploy to change.`
   },
-  vinaya: {
-    projectId: PROJECT_IDS.vinaya,
-    configDocId: 'vinayaConfig',
-    previewUrl: 'http://localhost:3006',
-    displayName: 'Vinaya',
-    libraryPinNote: `This writes to vinayaConfig, which neither real Vinaya build reads — edit "vinayaPortal" or "vinayaStudio" in ${LIBRARY_PIN_FILE} instead.`
+  vinayaPortal: {
+    projectId: PROJECT_IDS.vinayaPortal,
+    configDocId: 'vinayaPortalConfig',
+    previewUrl: 'http://localhost:3007',
+    displayName: 'Vinaya Portal',
+    libraryPinNote: `Pinned at build time in ${LIBRARY_PIN_FILE} ("vinayaPortal" entry) — edit it and redeploy to change.`
+  },
+  vinayaStudio: {
+    projectId: PROJECT_IDS.vinayaStudio,
+    configDocId: 'vinayaStudioConfig',
+    previewUrl: 'http://localhost:3008',
+    displayName: 'Vinaya Studio',
+    libraryPinNote: `Pinned at build time in ${LIBRARY_PIN_FILE} ("vinayaStudio" entry) — edit it and redeploy to change.`
   }
 } as const
 
