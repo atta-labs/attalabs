@@ -179,8 +179,9 @@ const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' 
 ```
 
 `vinayaPortal` and `vinayaStudio` are additional product documents inside `vinaya`'s
-own Sanity project (same `PROJECT_IDS` entry), registered ahead of any app reading
-them — see `.claude/skills/ui-cms-theme/SKILL.md`.
+own Sanity project (same `PROJECT_IDS` entry). Both `vinaya-portal-web` and
+`vinaya-studio-web`'s own root layouts pass their own key — see
+`.claude/skills/ui-cms-theme/SKILL.md`.
 
 ### What You Configure in Each Studio
 
