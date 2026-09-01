@@ -198,6 +198,19 @@ type) and no current consumer imports the `TabsContentProps` type name.
   code that wants cross-library certainty for a specific call site should pick a variant
   every library exports (default / outline / ghost, depending on coverage) or hard-import
   from a single library.
+- **Widening a library's variant/size vocabulary beyond its installed registry** follows
+  animate's `xs`-size fix (`animate/components/interactive/button.tsx`): map the new
+  value onto the closest installed base value, then layer a className override — additive,
+  every existing caller keeps whatever installed value it already passed. brutal's
+  `outline`/`ghost`/`link`/`secondary`/`xs`/`icon-sm` extension
+  (`brutal/components/interactive/button.tsx`) applies the same mapping to a SECOND
+  surface: real app code that calls the exported `buttonVariants()` class-string function
+  directly (styling a plain `<Link>` as a button), not just the `<Button>` component. A
+  className override on `<Button>` can't reach a caller that never renders `<Button>`, so
+  the wrapper also exports a widened `buttonVariants()` — same base/className mapping,
+  re-exported under the original name — instead of re-exporting the installed cva
+  unchanged. Any future variant-vocabulary widening should check whether app code calls
+  `buttonVariants()` directly before assuming the `<Button>`-only override is sufficient.
 
 ---
 
