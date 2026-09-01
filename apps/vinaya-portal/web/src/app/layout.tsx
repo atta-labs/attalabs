@@ -1,15 +1,14 @@
-export const dynamic = 'force-dynamic'
-
-import { buildFaviconIcons, getProductCms } from '@atta/cms'
+import { buildFaviconIcons } from '@atta/cms'
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '@atta/ui/globals.css'
 import { PreviewThemeListener } from '@atta/ui/lib/preview-theme-listener'
+import { getPortalCms } from '@/lib/portal-cms'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { branding } = await getProductCms('vinayaPortal')
+  const { branding } = await getPortalCms()
   return {
     title: 'Vinaya — A harness for your software engineering process',
     description:
@@ -19,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const { config, branding } = await getProductCms('vinayaPortal')
+  const { config, branding } = await getPortalCms()
 
   return (
     <NextWebShell
@@ -28,6 +27,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       styleId='vinaya-theme'
       cookieName='vinaya-color-scheme'
       withAuth={false}
+      staticColorScheme
     >
       <PreviewThemeListener />
       {children}

@@ -221,6 +221,8 @@ A core check and a config-registered custom check are indistinguishable to the r
 
 Any route or check **in a deployed app** (`apps/vinaya-portal/web`) that locates the repo by walking up for a marker file (`vinaya.config.json`, `.vinaya/projects.md`) must have that marker declared in the serverless host's file-tracing config, or the walk fails silently at runtime with a green build. Introducing a new marker-walking reader is a two-place change (the walk itself + the tracing declaration) — this exact gap has left doctrine routes returning production-only 500s twice, both times traced to a marker that built green locally and was simply never declared. `apps/vinaya-studio/web` is the deliberate exception: it is never deployed, so it declares no tracing config for its one marker-walking reader (`read-root.ts`'s `findAegRoot()`) at all — there is no serverless bundle for the walk to fail inside.
 
+Portal's doctrine routes render static/ISR, not `force-dynamic`, as of task 3 (`#916`) — the walk still happens on the deployed lambda, just at build/ISR-regeneration time rather than on every request, so an undeclared marker still builds green and fails only there. See `apps/vinaya-portal/web/README.md`'s "Rendering mode" section for what unlocked that (removing `@atta/ui`'s `NextWebShell` cookie read, not an experimental Next feature).
+
 ### The `files` allowlist is the real ship boundary — not what exists in the CLI's own repo
 
 Something existing on disk in the standalone `atta-labs/vinaya` repo's `cli/` source tree does not mean it reaches an adopter. Before assuming a bin/script/asset is available post-install, check that repo's `package.json` `files` field and `cli/src/lib/artifacts.ts`, not just the source tree.
