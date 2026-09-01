@@ -187,7 +187,7 @@ Both are valid. Choose based on whether the library selection is static (per-app
 ### How It Works
 
 1. `packages/ui/scripts/generate-ui.ts` is called during the Next.js build via `next.config.ts`
-2. It reads the app's pinned library from the repo-committed `packages/ui/scripts/ui-library-pins.ts` — there is no live CMS fetch in the build path, so a checkout at a given SHA always produces the same generated output. `tools/admin`'s Library picker still writes `userInterface.library` to Sanity, but that write is a proposal a human then reflects into the pin file, not a build input.
+2. It reads the app's pinned library from the repo-committed `packages/ui/scripts/ui-library-pins.ts` — there is no live CMS fetch in the build path, so a checkout at a given SHA always produces the same generated output. `tools/admin`'s Library picker no longer has a publish action for build-time apps — it was removed, since it reached no build-time app's generated output.
 3. It writes `packages/ui/generated/{app}/components.ts` — a simple re-export of the active library
 4. The app's `tsconfig.json` maps `@atta/ui` → `generated/{app}/components`
 5. All imports resolve at build time — no dynamic import overhead at runtime

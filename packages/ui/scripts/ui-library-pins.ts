@@ -9,9 +9,11 @@ import type { UILibrary } from '../lib/library-loader'
  * pass vs `animate` fail 40 minutes apart). Changing a pin changes what the next
  * build emits — commit the change and redeploy.
  *
- * `tools/admin`'s per-project Library picker still writes `userInterface.library`
- * to Sanity, but that write is no longer a build input for any of these apps —
- * it is at most a proposal a human then reflects here.
+ * `tools/admin`'s per-project Library picker no longer writes anywhere — its
+ * publish action was removed, since it reached no build-time app's generated
+ * output. `userInterface.library` still exists as a CMS field (edit it
+ * directly in Sanity Studio if needed for other purposes), but nothing in a
+ * build-time app's pipeline reads it; only this pin file does.
  */
 export const UI_LIBRARY_PINS = {
   vada: 'retro',
