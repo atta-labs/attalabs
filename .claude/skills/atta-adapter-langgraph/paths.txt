@@ -1,1 +1,2 @@
 packages/adapter-langgraph/**
+packages/executor-agent-spawn/**
