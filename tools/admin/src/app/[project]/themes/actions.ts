@@ -130,19 +130,3 @@ export async function setActiveThemeAction(
     return { ok: false, message: describeCmsWriteError(error, project, 'set the active theme') }
   }
 }
-
-export async function setActiveLibraryAction(project: ProjectKey, id: string): Promise<CmsWriteResult> {
-  try {
-    const { writeClient } = getCmsClientsForProject(project)
-    const { configDocId } = PROJECT_CONFIG[project]
-    await writeClient
-      .patch(configDocId)
-      .set({
-        'userInterface.library': id
-      })
-      .commit()
-    return { ok: true }
-  } catch (error) {
-    return { ok: false, message: describeCmsWriteError(error, project, 'set the active library') }
-  }
-}

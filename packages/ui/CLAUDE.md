@@ -113,7 +113,7 @@ import { cn } from '@atta/ui/lib/utils'
 
 ## The Library System
 
-Four component libraries, one active per product. Set in Sanity CMS via `userInterface.library`.
+Four component libraries, one active per product. A build-time app's active library is a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`), not a live CMS read. A runtime-switching app (Herald's public profile) resolves it per-user from the database instead.
 
 | Library | Style |
 |---------|-------|
@@ -124,7 +124,7 @@ Four component libraries, one active per product. Set in Sanity CMS via `userInt
 
 **Runtime switching** is handled by `LibraryProvider` (inside `NextWebShell`). It dynamically imports the active library via `useLibraryLoader`, which guards against race conditions — a slower import won't overwrite a later one.
 
-**Never hard-switch libraries in component code** unless you have a specific reason to use a non-active library. The active library is resolved at runtime from the CMS config.
+**Never hard-switch libraries in component code** unless you have a specific reason to use a non-active library. A build-time app's active library comes from the pin file above; a runtime-switching app resolves it per-user instead.
 
 ---
 

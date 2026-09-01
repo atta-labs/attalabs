@@ -21,9 +21,10 @@ export const cmsConfig = {
  *
  * `vinayaPortal` and `vinayaStudio` deliberately share `vinaya`'s project id:
  * they are two additional product documents inside the same Sanity project,
- * not new projects. No app reads either key yet — both still pass `vinaya`
- * to `getProductCms` — so registering them here changes nothing any app
- * renders until a later change repoints a call site at its own key.
+ * not new projects. Both keys are read directly today — `vinaya-portal-web`
+ * and `vinaya-studio-web`'s own root layouts each pass their own key to
+ * `getProductCms`, and `tools/admin`'s root layout reads both for branding.
+ * The bare `vinaya` key still exists, but no current call site targets it.
  */
 export const PROJECT_IDS = {
   herald: 'e9gbd2d1',

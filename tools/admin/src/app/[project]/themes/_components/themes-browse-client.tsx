@@ -28,7 +28,7 @@ import { FontPicker } from '@/components/portal/font-picker'
 import { usePortalPreview } from '@/hooks/use-portal-preview'
 import { PortalPreviewFrame } from '@/components/portal/portal-preview-frame'
 import { exportShadcnCss } from '@/lib/export-shadcn-css'
-import { setActiveLibraryAction, setActiveThemeAction, setThemeFontsAction } from '../actions'
+import { setActiveThemeAction, setThemeFontsAction } from '../actions'
 import { CreateThemeDialog } from './create-theme-dialog'
 import { FourSquareSwatch } from './four-square-swatch'
 import { PROJECT_CONFIG } from '@/lib/project-config'
@@ -121,8 +121,6 @@ export function ThemesBrowseClient({
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(currentLibraryId)
-  const [isLibraryPending, startLibraryTransition] = useTransition()
-  const [librarySaved, setLibrarySaved] = useState(false)
   const { successToast, errorToast } = useToastContext()
   const [fontsByTheme, setFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>({})
   const [persistedFontsByTheme, setPersistedFontsByTheme] = useState<Record<string, Partial<Record<FontRole, string>>>>(
@@ -275,7 +273,6 @@ export function ThemesBrowseClient({
     }
 
     setSelectedLibraryId(libraryId)
-    setLibrarySaved(false)
 
     // Filtering the list stops NEW bad pairings; an already-selected theme would
     // otherwise survive the switch.
@@ -288,29 +285,6 @@ export function ThemesBrowseClient({
       setSelectedId(first._id)
     }
   }
-
-  function handlePublishLibrary() {
-    if (!selectedLibraryId) return
-    startLibraryTransition(async () => {
-      try {
-        const result = await setActiveLibraryAction(project, selectedLibraryId)
-        if (!result.ok) {
-          errorToast('Activation failed', result.message, 12000)
-          return
-        }
-        setLibrarySaved(true)
-        setTimeout(() => setLibrarySaved(false), 2000)
-        successToast(
-          'Library activated',
-          `${libraries.find((l) => l._id === selectedLibraryId)?.name ?? 'Library'} is now the active library.`
-        )
-      } catch {
-        errorToast('Activation failed', 'Could not reach the admin server. Try again.')
-      }
-    })
-  }
-
-  const hasLibraryChanges = selectedLibraryId !== currentLibraryId
 
   const headerContent = (
     <>
@@ -358,15 +332,15 @@ export function ThemesBrowseClient({
           ))}
         </SelectContent>
       </Select>
-      <Button
-        variant='outline'
-        size='sm'
-        onClick={handlePublishLibrary}
-        disabled={!hasLibraryChanges || isLibraryPending}
-        className='font-mono text-[10px]'
-      >
-        {isLibraryPending ? 'Saving...' : librarySaved ? 'Saved!' : 'Set Active Library'}
+      <Button variant='outline' size='sm' disabled className='font-mono text-[10px]'>
+        Pinned in repo
       </Button>
+      <span
+        className='max-w-56 truncate font-mono text-[9px] text-muted-foreground'
+        title={PROJECT_CONFIG[project].libraryPinNote}
+      >
+        {PROJECT_CONFIG[project].libraryPinNote}
+      </span>
     </>
   )
 

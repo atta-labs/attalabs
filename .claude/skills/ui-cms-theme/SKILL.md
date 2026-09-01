@@ -147,13 +147,13 @@ interface PortalUiConfig {
 }
 ```
 
-**`userInterface.library` is currently decisive, but only until the library resolution
-that reads it moves off a live build-time Sanity fetch.** Today `packages/ui/scripts/generate-ui.ts`
-reads this field at build time and that value *is* the active library. A planned change
-replaces that live read with a repo-committed pin; once it lands, this field becomes a
-proposal a maintainer can act on rather than the thing that decides the build. Don't
-treat it as load-bearing when deciding whether a new product document is safely additive
-— its authority is already scheduled to move.
+**`userInterface.library` is no longer decisive for build-time apps.** `packages/ui/scripts/generate-ui.ts`
+now reads a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`) instead of this
+field — this field is at most a proposal a maintainer reflects into the pin file, not the
+thing that decides the build. Don't treat it as load-bearing when deciding whether a new
+product document is safely additive. `userInterface.theme`/`colorScheme` are unaffected —
+those still resolve live through `getProductCms` at both build and runtime, as described
+above.
 
 ---
 
