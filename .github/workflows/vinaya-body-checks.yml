@@ -61,4 +61,4 @@ jobs:
           # PR_BODY is what makes body-bare-digits EVALUATE at all — the bin
           # reads `process.env.PR_BODY` only, never fetches it itself.
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: npx --yes @attalabs/vinaya@0.20.1 check body-bare-digits
+        run: npx --yes @attalabs/vinaya@0.22.0 check body-bare-digits
