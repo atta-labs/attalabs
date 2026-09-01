@@ -11,8 +11,9 @@
  * silently dropped its second project. Projects are read from the Issue
  * body's `**Project:**` field, never from a label (#614).
  *
- * Filters (project, tier, flags) and their vocabulary live in `BacklogTable`; this
- * server component only fetches, computes the distinct filter options, and
+ * Filters (project, tier, type, flags) and their vocabulary live in
+ * `BacklogTable`; this server component only fetches, computes the distinct
+ * filter options, and
  * stays honest about forge failure. Tranche/state are NOT filters here: the
  * backlog is by definition the open, no-`vinaya/tranche:*` set (`fetch-open-issues.ts`),
  * so every row is open and tranche-less — nothing to filter on.
@@ -54,6 +55,15 @@ function tierOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
     for (const name of issue.labels) if (labelKind(name) === 'tier') present.add(name)
+  }
+  return [...present].sort((a, b) => a.localeCompare(b))
+}
+
+/** Distinct type labels present. */
+function typeOptions(issues: BacklogIssue[]): string[] {
+  const present = new Set<string>()
+  for (const issue of issues) {
+    for (const name of issue.labels) if (labelKind(name) === 'type') present.add(name)
   }
   return [...present].sort((a, b) => a.localeCompare(b))
 }
@@ -102,6 +112,7 @@ export default async function BacklogPage() {
           issues={issues}
           projectOptions={projectOptions(issues, registry)}
           tierOptions={tierOptions(issues)}
+          typeOptions={typeOptions(issues)}
           flagOptions={flagOptions(issues)}
         />
       )}

@@ -22,18 +22,28 @@ import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/
  * matches it under either (never drop the second project). Projects come
  * from the Issue body's `**Project:**` field, not from a label (#614).
  *
- * Filters are project, tier, and flags — the families that actually vary across
- * backlog rows. Tranche and state do NOT vary here: the backlog is defined as
- * open Issues carrying NO `vinaya/tranche:*` label (`fetch-open-issues.ts`),
- * so every row is open and tranche-less. A row matches when it carries ANY
- * selected project (multi-project rows match either) AND its tier is selected
- * AND it carries any selected flag; an empty family means "all" for that
- * family. Filters are inline toggle chips (not a dropdown) — every option is
- * visible at a glance, and they wrap on narrow screens.
+ * Filters are project, tier, type, and flags — the families that actually vary
+ * across backlog rows. Tranche and state do NOT vary here: the backlog is
+ * defined as open Issues carrying NO `vinaya/tranche:*` label
+ * (`fetch-open-issues.ts`), so every row is open and tranche-less. A row
+ * matches when it carries ANY selected project (multi-project rows match
+ * either) AND its tier is selected AND its type is selected AND it carries
+ * any selected flag; an empty family means "all" for that family. Filters
+ * are inline toggle chips (not a dropdown) — every option is visible at a
+ * glance, and they wrap on narrow screens.
  *
  * The `#` and Title columns are split (like the tranche board's table). The
  * table sets a `min-w` so the library Table's own `overflow-auto` scroll
  * container kicks in on narrow screens instead of cramming the columns.
+ *
+ * `type` (task 11 #854) shares the Tier column, renamed "Tier / Type" —
+ * both are classification facts about what the Issue IS (impact, commit-type
+ * shape), not the state/flag/needs family's "what needs attention" — rather
+ * than crowding into the Flags cell, which would blur that distinction and
+ * make the "Flags" header inaccurate. The `table-fixed` width budget is
+ * already fully allocated (6/32/20/10/32), so this column's 10% is unchanged;
+ * `LABEL_CELL` already wraps a cell's badges, so a second badge just grows
+ * row height instead of breaking the layout.
  *
  * Label styling is keyed to a label's CATEGORY (read from the code-owned
  * vocabulary), never its value — one flat semantic-token variant per family
@@ -63,6 +73,9 @@ const FILTER_HEADING_ID = 'backlog-filter-heading'
 
 /** Tier chips drop the whole family prefix, not just the product one — `vinaya/tier:1` reads `1`. */
 const TIER_STRIP = label('tier-0').replace(/0$/, '')
+
+/** Type chips drop the whole family prefix, not just the product one — `vinaya/type:feat` reads `feat`. */
+const TYPE_STRIP = label('type-build').replace(/build$/, '')
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
 function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
@@ -122,6 +135,7 @@ export function BacklogTable({
   issues,
   projectOptions,
   tierOptions,
+  typeOptions,
   flagOptions
 }: {
   issues: BacklogIssue[]
@@ -129,11 +143,14 @@ export function BacklogTable({
   projectOptions: string[]
   /** Distinct tier labels present, low tier first. */
   tierOptions: string[]
+  /** Distinct type labels present. */
+  typeOptions: string[]
   /** Distinct flag labels present. */
   flagOptions: string[]
 }) {
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set())
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set())
   const [selectedFlags, setSelectedFlags] = useState<Set<string>>(new Set())
 
   const toggle = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (value: string) =>
@@ -147,16 +164,18 @@ export function BacklogTable({
   const filtered = useMemo(
     () =>
       issues.filter((issue) => {
-        const { tier, flags } = splitLabels(issue.labels)
+        const { tier, type, flags } = splitLabels(issue.labels)
         const projectOk = selectedProjects.size === 0 || issue.projects.some((p) => selectedProjects.has(p))
         const tierOk = selectedTiers.size === 0 || (tier !== null && selectedTiers.has(tier))
+        const typeOk = selectedTypes.size === 0 || (type !== null && selectedTypes.has(type))
         const flagOk = selectedFlags.size === 0 || flags.some((f) => selectedFlags.has(f))
-        return projectOk && tierOk && flagOk
+        return projectOk && tierOk && typeOk && flagOk
       }),
-    [issues, selectedProjects, selectedTiers, selectedFlags]
+    [issues, selectedProjects, selectedTiers, selectedTypes, selectedFlags]
   )
 
-  const anyFilter = selectedProjects.size > 0 || selectedTiers.size > 0 || selectedFlags.size > 0
+  const anyFilter =
+    selectedProjects.size > 0 || selectedTiers.size > 0 || selectedTypes.size > 0 || selectedFlags.size > 0
 
   return (
     <div className='space-y-3'>
@@ -187,6 +206,13 @@ export function BacklogTable({
           onToggle={toggle(setSelectedTiers)}
           strip={TIER_STRIP}
         />
+        <FilterGroup
+          name='Type'
+          options={typeOptions}
+          selected={selectedTypes}
+          onToggle={toggle(setSelectedTypes)}
+          strip={TYPE_STRIP}
+        />
         {/* Flags mixes families (needs / blocked / detection flags), so only the
             `vinaya/` product prefix comes off — never a family prefix. */}
         <FilterGroup
@@ -205,6 +231,7 @@ export function BacklogTable({
             onClick={() => {
               setSelectedProjects(new Set())
               setSelectedTiers(new Set())
+              setSelectedTypes(new Set())
               setSelectedFlags(new Set())
             }}
           >
@@ -227,7 +254,7 @@ export function BacklogTable({
               <TableHead className='w-[6%] px-2 font-semibold text-foreground'>#</TableHead>
               <TableHead className='w-[32%] font-semibold text-foreground'>Title</TableHead>
               <TableHead className='w-[20%] font-semibold text-foreground'>Project(s)</TableHead>
-              <TableHead className='w-[10%] font-semibold text-foreground'>Tier</TableHead>
+              <TableHead className='w-[10%] font-semibold text-foreground'>Tier / Type</TableHead>
               <TableHead className='w-[32%] font-semibold text-foreground'>Flags</TableHead>
             </TableRow>
           </TableHeader>
@@ -240,7 +267,7 @@ export function BacklogTable({
               </TableRow>
             ) : (
               filtered.map((issue) => {
-                const { tier, flags } = splitLabels(issue.labels)
+                const { tier, type, flags } = splitLabels(issue.labels)
                 return (
                   <TableRow key={issue.number}>
                     <TableCell className='px-2 align-top'>
@@ -273,7 +300,11 @@ export function BacklogTable({
                       </div>
                     </TableCell>
                     <TableCell className='align-top'>
-                      <div className={LABEL_CELL}>{tier ? <LabelBadge label={tier} /> : <Dash />}</div>
+                      <div className={LABEL_CELL}>
+                        {tier ? <LabelBadge label={tier} /> : null}
+                        {type ? <LabelBadge label={type} /> : null}
+                        {!tier && !type ? <Dash /> : null}
+                      </div>
                     </TableCell>
                     <TableCell className='align-top'>
                       <div className={LABEL_CELL}>
