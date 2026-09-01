@@ -187,7 +187,7 @@ Both are valid. Choose based on whether the library selection is static (per-app
 ### How It Works
 
 1. `packages/ui/scripts/generate-ui.ts` is called during the Next.js build via `next.config.ts`
-2. It fetches the active library from Sanity CMS for the given app
+2. It reads the app's pinned library from the repo-committed `packages/ui/scripts/ui-library-pins.ts` — there is no live CMS fetch in the build path, so a checkout at a given SHA always produces the same generated output. `tools/admin`'s Library picker still writes `userInterface.library` to Sanity, but that write is a proposal a human then reflects into the pin file, not a build input.
 3. It writes `packages/ui/generated/{app}/components.ts` — a simple re-export of the active library
 4. The app's `tsconfig.json` maps `@atta/ui` → `generated/{app}/components`
 5. All imports resolve at build time — no dynamic import overhead at runtime
@@ -208,7 +208,7 @@ export * from '../../libraries/{library}/components'
 export * from '../../canvas'
 ```
 
-The file is gitignored — it is created on every build from the CMS config.
+The file is gitignored — it is created on every build from the pinned library in `ui-library-pins.ts`.
 
 The split Vinaya apps deliberately pass different generator identities even though both
 documents live in the same Sanity project. Portal generates and aliases
@@ -422,7 +422,7 @@ Animate's `Textarea` re-exports basic's, so adding to basic automatically reache
    never bare `@atta/ui` (see "Import Bypass Bug" under Debugging) — every live app aliases
    this exact string, and app code must import it verbatim.
 
-3. **Set the library in Sanity CMS:** The `{app}Config` document's `userInterface.library` field controls which library gets written to the generated index.
+3. **Add the app's pin:** add an entry for the app in `packages/ui/scripts/ui-library-pins.ts` — this is what controls which library gets written to the generated index.
 
 4. **Gitignore the generated file:** `packages/ui/generated/` is already gitignored.
 
@@ -473,7 +473,7 @@ For runtime apps: the component must be exported from `package.json`'s default e
 
 ### Changing the active library for an app
 
-**Build-time:** Change `userInterface.library` in that app's `{app}Config` Sanity document, then rebuild. The generated index will update. `tools/admin`'s per-app `/themes` page also exposes a Library picker + "Set Active Library" action that performs this same write, as the supported alternative to hand-editing Sanity Studio.
+**Build-time:** Edit that app's entry in the repo-committed `packages/ui/scripts/ui-library-pins.ts`, commit, and redeploy. `tools/admin`'s per-app `/themes` page still exposes a Library picker for compatible-theme filtering, but its write no longer reaches any build-time app's generated output — the picker cannot change a build-time app's active library by itself.
 
 **Runtime:** Update the user's `library` field in the app's DB. `LibraryProvider` will re-import the new library on next render.
 
@@ -973,7 +973,8 @@ injection mechanism predictable for future composites.
 |------|---------|
 | `packages/ui/component-contract.mjs` | Contract: required components + types for all libraries |
 | `scripts/validate-ui-contract.mjs` | Validator — runs before every build and dev, exits 1 on failure |
-| `packages/ui/scripts/generate-ui.ts` | Generates `generated/{app}/components.ts` from CMS config |
+| `packages/ui/scripts/generate-ui.ts` | Generates `generated/{app}/components.ts` from the pinned library |
+| `packages/ui/scripts/ui-library-pins.ts` | Repo-committed per-app library pin, read at build time |
 | `packages/ui/generated/{app}/components.ts` | Auto-generated re-export of the active library (gitignored) |
 | `packages/ui/lib/library-provider.tsx` | `LibraryProvider` + `useComponents()` for runtime switching |
 | `packages/ui/lib/library-loader.ts` | `useLibraryLoader` — dynamic import with race condition guard |

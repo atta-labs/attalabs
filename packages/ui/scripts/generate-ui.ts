@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { cmsConfig, getProductConfig, PROJECT_IDS } from '@atta/cms'
+import { UI_LIBRARY_PINS, type PinnedApp } from './ui-library-pins'
 
 const _cache = new Map<string, UILibrary>()
 
@@ -26,7 +26,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
-type App = 'vada' | 'attalabs' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'herald'
+type App = PinnedApp
 
 export async function generateUIIndex(app: App): Promise<UILibrary> {
   const cached = _cache.get(app)
@@ -37,19 +37,9 @@ export async function generateUIIndex(app: App): Promise<UILibrary> {
   console.log(`│  UI GENERATION — ${appLabel}│`)
   console.log('└──────────────────────────────────────────────┘')
 
-  console.log('\n📡 CMS:')
-  console.log(`   Project: ${PROJECT_IDS[app]}`)
-  console.log(`   Dataset: ${cmsConfig.dataset}`)
+  const library = UI_LIBRARY_PINS[app]
 
-  const config = await getProductConfig(app).catch((error: unknown) => {
-    const reason = error instanceof Error ? error.message : String(error)
-    console.warn(`   ⚠ config fetch failed: ${reason}`)
-    return null
-  })
-  const fromCms = config?.userInterface?.library?.id != null
-  const library = (config?.userInterface?.library?.id ?? 'basic') as UILibrary
-
-  console.log(`\n📦 Library: ${library}${fromCms ? '' : ' (fallback — CMS returned no library)'}`)
+  console.log(`\n📌 Pin: packages/ui/scripts/ui-library-pins.ts → ${library}`)
 
   const dir = path.join(getGeneratedDir(), app)
   fs.mkdirSync(dir, { recursive: true })
