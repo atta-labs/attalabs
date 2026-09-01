@@ -88,6 +88,7 @@ packages/engine/src/flow-types.ts                     packages/engine/specs/engi
 packages/engine/src/compile-flow.ts                   packages/engine/specs/engine-future-capabilities.md
 packages/engine/src/types.ts                          packages/engine/specs/engine-future-capabilities.md
 packages/adapter-langgraph/**                         .claude/skills/atta-adapter-langgraph/SKILL.md
+packages/executor-agent-spawn/**                      .claude/skills/atta-adapter-langgraph/SKILL.md
 packages/ui/canvas/**                                 .claude/skills/ui-canvas-animation/SKILL.md
 packages/ui/styles/**                                 .claude/skills/ui-theme-tokens/SKILL.md
 
