@@ -606,3 +606,221 @@ describe('compileFlow — step decision (task 1 of engine-conditional-edges-v1)'
     expect(plan.graph.conditionalEdges).toEqual([])
   })
 })
+
+// ── dependsOn: fan-out/join edges (engine-parallel-steps-v1 task 1) ────────────
+
+const FAN_OUT_JOIN_YAML = `
+schema_version: "2.0"
+id: test-steps-fan-out-join
+display_name: Test Steps Fan-Out Join
+description: A test steps flow exercising fan-out and join via dependsOn
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: worker
+
+steps:
+  - id: start
+    type: agent
+    role: worker
+    prompt_template: "Start."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+  - id: branch-a
+    type: agent
+    role: worker
+    prompt_template: "Branch A."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+    depends_on: [start]
+  - id: branch-b
+    type: agent
+    role: worker
+    prompt_template: "Branch B."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+    depends_on: [start]
+  - id: join
+    type: mechanical
+    action: merge-results
+    depends_on: [branch-a, branch-b]
+`
+
+describe('compileFlow — dependsOn fan-out/join (engine-parallel-steps-v1 task 1)', () => {
+  it('omitted dependsOn on every step compiles to edges byte-identical to the default chain', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(edgesOf(plan)).toEqual([{ from: 'review', to: 'apply-patch', kind: 'flow' }])
+  })
+
+  it('a step naming multiple dependsOn entries produces one incoming edge per entry (join)', () => {
+    const plan = compileFlow(loadStepsFlow(FAN_OUT_JOIN_YAML), QUESTION, MODEL)
+    const incoming = edgesOf(plan).filter((e) => e.to === 'join')
+    expect(incoming.map(sortEdge).sort()).toEqual(
+      (
+        [
+          { from: 'branch-a', to: 'join', kind: 'flow' },
+          { from: 'branch-b', to: 'join', kind: 'flow' }
+        ] satisfies PlanEdge[]
+      )
+        .map(sortEdge)
+        .sort()
+    )
+  })
+
+  it('a step several others each declare as their sole dependency produces one outgoing edge to each (fan-out)', () => {
+    const plan = compileFlow(loadStepsFlow(FAN_OUT_JOIN_YAML), QUESTION, MODEL)
+    const outgoing = edgesOf(plan).filter((e) => e.from === 'start')
+    expect(outgoing.map(sortEdge).sort()).toEqual(
+      (
+        [
+          { from: 'start', to: 'branch-a', kind: 'flow' },
+          { from: 'start', to: 'branch-b', kind: 'flow' }
+        ] satisfies PlanEdge[]
+      )
+        .map(sortEdge)
+        .sort()
+    )
+  })
+
+  it('an explicit empty dependsOn on the entry step (index 0) is accepted', () => {
+    const yaml = MINIMAL_STEPS_YAML.replace(
+      '  - id: review\n    type: agent',
+      '  - id: review\n    depends_on: []\n    type: agent'
+    )
+    const plan = compileFlow(loadStepsFlow(yaml), QUESTION, MODEL)
+    expect(edgesOf(plan).filter((e) => e.to === 'review')).toEqual([])
+  })
+
+  it('a dependsOn entry naming a nonexistent step id is rejected', () => {
+    const yaml = MINIMAL_STEPS_YAML.replace(
+      '  - id: apply-patch\n    type: mechanical',
+      '  - id: apply-patch\n    type: mechanical\n    depends_on: [does-not-exist]'
+    )
+    expect(() => compileFlow(loadStepsFlow(yaml), QUESTION, MODEL)).toThrow(/dependsOn 'does-not-exist' does not exist/)
+  })
+
+  it('a direct dependsOn cycle (A depends on B, B depends on A) is rejected naming the cycle', () => {
+    const yaml = `
+schema_version: "2.0"
+id: test-steps-cycle-direct
+display_name: Test Steps Cycle Direct
+description: A direct dependsOn cycle
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: worker
+
+steps:
+  - id: a
+    type: mechanical
+    action: noop
+    depends_on: [b]
+  - id: b
+    type: mechanical
+    action: noop
+    depends_on: [a]
+`
+    expect(() => compileFlow(loadStepsFlow(yaml), QUESTION, MODEL)).toThrow(/dependsOn cycle detected/)
+  })
+
+  it('an indirect dependsOn cycle (A -> B -> C -> A) is rejected naming the cycle', () => {
+    const yaml = `
+schema_version: "2.0"
+id: test-steps-cycle-indirect
+display_name: Test Steps Cycle Indirect
+description: An indirect dependsOn cycle
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: worker
+
+steps:
+  - id: a
+    type: mechanical
+    action: noop
+    depends_on: [c]
+  - id: b
+    type: mechanical
+    action: noop
+    depends_on: [a]
+  - id: c
+    type: mechanical
+    action: noop
+    depends_on: [b]
+`
+    expect(() => compileFlow(loadStepsFlow(yaml), QUESTION, MODEL)).toThrow(/dependsOn cycle detected/)
+  })
+
+  it('decision and dependsOn compose without interference — decision stays on its node, dependsOn still produces the expected edges', () => {
+    const yaml = `
+schema_version: "2.0"
+id: test-steps-decision-plus-depends-on
+display_name: Test Steps Decision Plus DependsOn
+description: decision and dependsOn on the same flow, proving non-interaction
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: reviewer
+
+steps:
+  - id: review
+    type: agent
+    role: reviewer
+    prompt_template: "Review {{target}}."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+  - id: apply-patch
+    type: mechanical
+    action: git-apply
+    depends_on: [review]
+    decision:
+      examine: review
+      if_true: review
+      if_false: apply-patch
+      max_revisions: 2
+  - id: notify
+    type: mechanical
+    action: send-notification
+    depends_on: [review, apply-patch]
+`
+    const plan = compileFlow(loadStepsFlow(yaml), QUESTION, MODEL)
+
+    const applyPatch = nodeByAny(plan, 'apply-patch')
+    if (applyPatch.role !== 'mechanical') throw new Error('unreachable')
+    expect(applyPatch.decision).toEqual({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 2
+    })
+
+    expect(edgesOf(plan).map(sortEdge).sort()).toEqual(
+      (
+        [
+          { from: 'review', to: 'apply-patch', kind: 'flow' },
+          { from: 'review', to: 'notify', kind: 'flow' },
+          { from: 'apply-patch', to: 'notify', kind: 'flow' }
+        ] satisfies PlanEdge[]
+      )
+        .map(sortEdge)
+        .sort()
+    )
+    expect(plan.graph.conditionalEdges).toEqual([])
+  })
+})
