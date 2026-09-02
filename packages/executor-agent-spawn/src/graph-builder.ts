@@ -156,11 +156,27 @@ type DecisionRoute = 'ifTrue' | 'ifFalse' | 'exhausted'
  * failure, and no other emitted event shape fits it better — see the PR
  * body for why this shape was chosen over a new event variant).
  *
- * A `true` predicate result only routes to `ifTrue` when that target's
- * `revisionCounts` has not yet reached `decision.maxRevisions`; once it has,
+ * The ceiling applies to **whichever** target the predicate resolves to —
+ * `ifTrue` and `ifFalse` alike — because `@atta/engine`'s validator only
+ * requires `ifTrue` to be strictly prior to the declaring step; `ifFalse`
+ * merely has to exist, so a flow can legally point it backward too. A
+ * ceiling that only guarded `ifTrue` would leave a backward-pointing
+ * `ifFalse` free to loop an agent-spawn node's real subprocess spawn
+ * unboundedly, with no `recursionLimit` in this package to catch it. Once
+ * that target's `revisionCounts` has *exceeded* `decision.maxRevisions`,
  * routing goes to `'exhausted'` (wired to `END` by the caller) rather than
- * looping again or falling through to `ifFalse` — exhaustion is its own
- * terminal outcome, not a reinterpretation of "predicate was false".
+ * looping again — never a reinterpretation of "predicate was false".
+ *
+ * **Why `>`, not `>=`.** A target reached via `ifTrue` is validator-required
+ * to be strictly prior, meaning it has already executed once *before* the
+ * declaring decision ever evaluates for the first time — that pre-existing
+ * execution is the original attempt, not a revision. `maxRevisions` counts
+ * loop-*backs*, so the ceiling must allow routing while
+ * `revisionCounts[target] <= maxRevisions` (equivalently: refuse once it's
+ * strictly greater). Using `>=` here undercounts by exactly one revision at
+ * every ceiling — `maxRevisions: 1` would permit *zero* loop-backs,
+ * indistinguishable from "never revise" — which is what this comparison
+ * exists to avoid.
  */
 function buildDecisionPathFn(
   nodeId: string,
@@ -200,11 +216,10 @@ function buildDecisionPathFn(
       throw new Error(error)
     }
 
-    if (!isTrue) return 'ifFalse'
-
-    const priorRevisions = state.revisionCounts[decision.ifTrue] ?? 0
-    if (priorRevisions >= decision.maxRevisions) return 'exhausted'
-    return 'ifTrue'
+    const target = isTrue ? decision.ifTrue : decision.ifFalse
+    const targetRevisions = state.revisionCounts[target] ?? 0
+    if (targetRevisions > decision.maxRevisions) return 'exhausted'
+    return isTrue ? 'ifTrue' : 'ifFalse'
   }
 }
 
@@ -243,6 +258,19 @@ export function buildAgentSpawnStateGraph(
     if (node.kind !== 'agent-spawn' && node.kind !== 'mechanical') continue
     if (!node.decision) continue
     decisionNodeIds.add(nodeId)
+    // `@atta/engine`'s Flow validator already guarantees this for any Plan
+    // compiled from a real Flow, but this function accepts a bare `Plan` —
+    // a hand-constructed one, or one from a future source that skips that
+    // validator, could name a route target that was never declared. Failing
+    // here, at build time, with the offending id named, beats surfacing as
+    // an opaque LangGraph error the first time that route is ever taken.
+    for (const target of [node.decision.ifTrue, node.decision.ifFalse]) {
+      if (!Object.hasOwn(plan.graph.nodes, target)) {
+        throw new Error(
+          `Node '${nodeId}' declares a decision routing to '${target}', which is not a node in this Plan's graph.`
+        )
+      }
+    }
     const pathFn = buildDecisionPathFn(nodeId, node.decision, config)
     // Same compile-time-string-literal typing gap as the addEdge casts
     // below: LangGraph's addConditionalEdges typings expect node names known

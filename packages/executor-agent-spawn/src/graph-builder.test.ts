@@ -348,44 +348,58 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
   }
 
   const decisionActions = {
+    'attempt-action': { command: 'attempt-cmd' },
     'check-action': { command: 'check-cmd' },
-    'retry-action': { command: 'retry-cmd' },
     'finish-action': { command: 'finish-cmd' }
   }
 
   /**
-   * `examine` names the decision-declaring node's own id — legal at this
-   * level because these tests hand-construct a `Plan` directly, bypassing
-   * `@atta/engine`'s Flow validator (which forbids a self-referencing
-   * `examine`/`ifTrue` at authoring time). By the time `buildDecisionPathFn`
-   * runs, LangGraph has already merged `check`'s own result into state, so
-   * `state.results['check']` is present regardless of whether `examine`
-   * names an earlier node or this one.
+   * `attempt` executes once, unconditionally, before `check` — a
+   * `@atta/engine`-validator-legal topology (`examine`/`ifTrue` strictly
+   * prior to the declaring step, never a self-reference) rather than the
+   * self-referencing shortcut an earlier version of this suite used. That
+   * distinction matters: a self-referencing `ifTrue` masks exactly the
+   * off-by-one this suite now covers, because it can't be authored by a
+   * real Flow in the first place — `attempt` genuinely has run once by the
+   * time `check` first evaluates, which is what makes the ceiling's
+   * off-by-one and the `ifFalse` ceiling gap both real, testable bugs
+   * rather than artifacts of an unrealistic fixture.
    */
-  function buildBranchingPlan(decision: PlanStepDecision): Plan {
+  function buildLoopPlan(decision: PlanStepDecision, extraNodes: Record<string, PlanMechanicalNode> = {}): Plan {
     return {
       ...twoStepPlan,
       graph: {
         nodes: {
+          attempt: decisionMechanicalNode('attempt', 'attempt-action'),
           check: decisionMechanicalNode('check', 'check-action', decision),
-          retried: decisionMechanicalNode('retried', 'retry-action'),
-          finished: decisionMechanicalNode('finished', 'finish-action')
+          finish: decisionMechanicalNode('finish', 'finish-action'),
+          ...extraNodes
         },
-        edges: [],
+        edges: [{ from: 'attempt', to: 'check', kind: 'flow' }],
         conditionalEdges: [],
-        entryNode: 'check'
+        entryNode: 'attempt'
       }
     }
   }
 
-  it("routes to ifTrue when the predicate is true, examining the node's own just-produced result", async () => {
-    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
-    const plan = buildBranchingPlan(decision)
+  it('routes to ifTrue when the predicate is true, examining a genuinely prior node', async () => {
+    // maxRevisions is set high and unused as a bound here — the predicate
+    // itself flips to false after one call, so this test isolates "does a
+    // true result route to ifTrue" from ceiling math, which has its own
+    // dedicated tests below.
+    let calls = 0
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 5 }
+    const plan = buildLoopPlan(decision)
     const config: AgentSpawnExecutorConfig = {
       workingDirectoryRoot,
       roleBinaries: {},
       mechanicalActions: decisionActions,
-      decisionPredicates: { check: () => true }
+      decisionPredicates: {
+        check: () => {
+          calls += 1
+          return calls === 1
+        }
+      }
     }
     const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
     const graph = buildAgentSpawnStateGraph(plan, executor, config)
@@ -397,13 +411,15 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
       revisionCounts: {}
     })) as AgentSpawnGraphStateValue
 
-    expect(finalState.results.retried).toBeDefined()
-    expect(finalState.results.finished).toBeUndefined()
+    // 'attempt' ran once up front, then once more via the ifTrue loop-back,
+    // before the second evaluation's false result let it continue to 'finish'.
+    expect(finalState.revisionCounts.attempt).toBe(2)
+    expect(finalState.results.finish).toBeDefined()
   })
 
   it('routes to ifFalse when the predicate is false', async () => {
-    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
-    const plan = buildBranchingPlan(decision)
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 5 }
+    const plan = buildLoopPlan(decision)
     const config: AgentSpawnExecutorConfig = {
       workingDirectoryRoot,
       roleBinaries: {},
@@ -420,52 +436,113 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
       revisionCounts: {}
     })) as AgentSpawnGraphStateValue
 
-    expect(finalState.results.finished).toBeDefined()
-    expect(finalState.results.retried).toBeUndefined()
+    expect(finalState.results.finish).toBeDefined()
+    expect(finalState.revisionCounts.attempt).toBe(1)
   })
 
-  it("stops looping once ifTrue's target reaches maxRevisions, routing to END instead of ifTrue again", async () => {
-    const decision: PlanStepDecision = { examine: 'loop', ifTrue: 'loop', ifFalse: 'never', maxRevisions: 2 }
-    const plan: Plan = {
-      ...twoStepPlan,
-      graph: {
-        nodes: {
-          loop: decisionMechanicalNode('loop', 'loop-action', decision),
-          never: decisionMechanicalNode('never', 'never-action')
-        },
-        edges: [],
-        conditionalEdges: [],
-        entryNode: 'loop'
-      }
-    }
+  it("maxRevisions: 1 permits exactly one loop-back, not zero — the off-by-one this task's review caught", async () => {
+    // ifTrue ('attempt') is validator-required to be strictly prior, so it
+    // has already executed once before 'check' ever evaluates for the
+    // first time. A `>=` ceiling comparison would count that pre-existing
+    // execution as if it were already a revision, making `maxRevisions: 1`
+    // permit zero loop-backs — indistinguishable from "never revise".
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 1 }
+    const plan = buildLoopPlan(decision)
     const config: AgentSpawnExecutorConfig = {
       workingDirectoryRoot,
       roleBinaries: {},
-      mechanicalActions: {
-        'loop-action': { command: 'loop-cmd' },
-        'never-action': { command: 'never-cmd' }
-      },
-      // Always "needs revision" — the ceiling, not the predicate, is what
-      // must stop the loop.
-      decisionPredicates: { loop: () => true }
+      mechanicalActions: decisionActions,
+      // Always "needs revision" — the ceiling, not the predicate, must stop it.
+      decisionPredicates: { check: () => true }
     }
     const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
     const graph = buildAgentSpawnStateGraph(plan, executor, config)
 
     const finalState = (await graph.invoke({
-      runId: 'run-ceiling',
+      runId: 'run-ceiling-one',
       results: {},
       sessions: {},
       revisionCounts: {}
     })) as AgentSpawnGraphStateValue
 
-    expect(finalState.revisionCounts.loop).toBe(2)
-    expect(finalState.results.never).toBeUndefined()
+    // One genuine revision: 'attempt' runs twice (the original attempt,
+    // then exactly one loop-back), 'check' evaluates twice, then exhausts.
+    expect(finalState.revisionCounts.attempt).toBe(2)
+    expect(finalState.revisionCounts.check).toBe(2)
+    expect(finalState.results.finish).toBeUndefined()
+  })
+
+  it('maxRevisions: 2 permits exactly two loop-backs, then routes to END on the third evaluation', async () => {
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 2 }
+    const plan = buildLoopPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      decisionPredicates: { check: () => true }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-ceiling-two',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.revisionCounts.attempt).toBe(3)
+    expect(finalState.revisionCounts.check).toBe(3)
+    expect(finalState.results.finish).toBeUndefined()
+  })
+
+  it('bounds a backward-pointing ifFalse the same way — the engine validator never requires ifFalse to point forward', async () => {
+    // The predicate is always false, and ifFalse routes backward to
+    // 'attempt' — a topology the validator permits (rule-s7 only requires
+    // ifFalse to exist, unlike ifTrue's strictly-prior rule). Before this
+    // fix, the ifFalse branch had no ceiling check at all and would loop
+    // this agent's real subprocess spawn forever.
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'finish', ifFalse: 'attempt', maxRevisions: 1 }
+    const plan = buildLoopPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      decisionPredicates: { check: () => false }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-ceiling-iffalse',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.revisionCounts.attempt).toBe(2)
+    expect(finalState.results.finish).toBeUndefined()
+  })
+
+  it('throws a clear, named error at build time when a decision routes to a node that does not exist', () => {
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'ghost', maxRevisions: 1 }
+    const plan = buildLoopPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      decisionPredicates: { check: () => false }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+
+    expect(() => buildAgentSpawnStateGraph(plan, executor, config)).toThrow(
+      /Node 'check' declares a decision routing to 'ghost', which is not a node in this Plan's graph/
+    )
   })
 
   it('throws a clear, named error when no decisionPredicates entry exists for a decision-bearing node', async () => {
-    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
-    const plan = buildBranchingPlan(decision)
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 3 }
+    const plan = buildLoopPlan(decision)
     const config: AgentSpawnExecutorConfig = {
       workingDirectoryRoot,
       roleBinaries: {},
@@ -481,8 +558,8 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
   })
 
   it("a throwing decision predicate never corrupts the examined node's own recorded result", async () => {
-    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
-    const plan = buildBranchingPlan(decision)
+    const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 3 }
+    const plan = buildLoopPlan(decision)
     const events: AgentLifecycleEvent[] = []
     const config: AgentSpawnExecutorConfig = {
       workingDirectoryRoot,
@@ -502,12 +579,13 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
       graph.invoke({ runId: 'run-throwing-predicate', results: {}, sessions: {}, revisionCounts: {} })
     ).rejects.toThrow(/Decision predicate for node 'check' threw/)
 
-    // node:complete fired for 'check' — its own mechanical action ran and
-    // recorded a real result — strictly before the separate node:failed the
-    // routing failure reports. The predicate's bug never reached the
-    // executed node's own result.
-    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:complete', 'node:failed'])
-    const failed = events[2]
+    // node:complete fired for 'check' (and, before it, for 'attempt') —
+    // both nodes' own actions ran and recorded real results — strictly
+    // before the separate node:failed the routing failure reports. The
+    // predicate's bug never reached either executed node's own result.
+    const checkEvents = events.filter((e) => e.nodeId === 'check')
+    expect(checkEvents.map((e) => e.type)).toEqual(['node:start', 'node:complete', 'node:failed'])
+    const failed = checkEvents[2]
     if (failed?.type !== 'node:failed') throw new Error('unreachable')
     expect(failed.error).toMatch(/predicate bug/)
   })
