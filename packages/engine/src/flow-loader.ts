@@ -10,7 +10,8 @@ import type {
   FailureSignal,
   StepsFlow,
   AgentRole,
-  Step
+  Step,
+  StepDecision
 } from './flow-types'
 
 type RawFlowAgent = z.infer<typeof FlowAgentSchema>
@@ -99,6 +100,15 @@ export function loadStepsFlow(yamlContent: string): StepsFlow {
   const agents: AgentRole[] = d.agents.map((a) => ({ role: (a as { role: string }).role }))
 
   const steps: Step[] = d.steps.map((s): Step => {
+    const decision: StepDecision | undefined = s.decision
+      ? {
+          examine: s.decision.examine,
+          ifTrue: s.decision.if_true,
+          ifFalse: s.decision.if_false,
+          maxRevisions: s.decision.max_revisions
+        }
+      : undefined
+
     if (s.type === 'agent') {
       return {
         id: s.id,
@@ -108,13 +118,15 @@ export function loadStepsFlow(yamlContent: string): StepsFlow {
         permission: s.permission,
         workingDirectory: s.working_directory,
         maxTurns: s.max_turns,
-        resume: s.resume
+        resume: s.resume,
+        decision
       }
     }
     return {
       id: s.id,
       type: 'mechanical',
-      action: s.action
+      action: s.action,
+      decision
     }
   })
 

@@ -72,6 +72,17 @@ export const AgentRoleSchema = z
   })
   .strict()
 
+// A step-shaped decision: which step's result is examined, and where each
+// of the two outcomes routes. Bare step-id references only — no
+// contains/equals/matches predicate vocabulary; the meaning of the outcome
+// is resolved by the executor's caller at run time, never here.
+export const StepDecisionSchema = z.object({
+  examine: z.string().min(1),
+  if_true: z.string().min(1),
+  if_false: z.string().min(1),
+  max_revisions: z.number().int().min(1)
+})
+
 export const AgentStepSchema = z.object({
   id: z
     .string()
@@ -83,7 +94,8 @@ export const AgentStepSchema = z.object({
   permission: z.string().min(1),
   working_directory: z.string().min(1),
   max_turns: z.number().int().min(1),
-  resume: z.string().optional()
+  resume: z.string().optional(),
+  decision: StepDecisionSchema.optional()
 })
 
 export const MechanicalStepSchema = z.object({
@@ -92,7 +104,8 @@ export const MechanicalStepSchema = z.object({
     .min(1)
     .regex(/^[a-z0-9-]+$/, 'step id must be kebab-case'),
   type: z.literal('mechanical'),
-  action: z.string().min(1)
+  action: z.string().min(1),
+  decision: StepDecisionSchema.optional()
 })
 
 export const StepSchema = z.discriminatedUnion('type', [AgentStepSchema, MechanicalStepSchema])
