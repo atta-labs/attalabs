@@ -1,6 +1,6 @@
 import type { Agent } from '@atta/agents'
 import type { AnyFlow, Flow, Round, StepsFlow } from './flow-types'
-import type { Plan, PlanNode, PlanEdge, PlanConditionalEdge, RevisionCondition } from './types'
+import type { Plan, PlanNode, PlanEdge, PlanConditionalEdge, PlanStepDecision, RevisionCondition } from './types'
 import { validateFlow, validateStepsFlow } from './validate-flow'
 
 type Shape = 'solo' | 'brokered-no-synth' | 'brokered-synth' | 'rounds-audit' | 'agent-lifecycle'
@@ -358,8 +358,16 @@ function compileRoundsAudit(
  * validateStepsFlow already guarantees uniqueness), and a sequential 'flow'
  * edge between each consecutive pair of steps in declaration order.
  *
- * No executor exists yet to run these nodes (engine-agent-spawn-v1 tasks
- * 3/4) — this only makes the Plan describe what will run.
+ * A step's own `decision` (examine/ifTrue/ifFalse/maxRevisions) carries
+ * straight onto its compiled node as `PlanStepDecision` — 1:1 field mapping,
+ * no transformation. `graph.conditionalEdges` stays `[]` for this shape,
+ * unchanged: the decision is carried on the node, not pushed into that
+ * rounds-shape-only list (see this task's PR body for why). `Plan.maxRevisions`
+ * is the real max of every declared `decision.maxRevisions` across the
+ * flow's steps, `0` when none declare one.
+ *
+ * No executor exists yet to run these nodes, or to route on a decision (a
+ * later task) — this only makes the Plan describe what will run.
  */
 function compileSteps(
   flow: StepsFlow,
@@ -368,6 +376,15 @@ function compileSteps(
   const nodes: Record<string, PlanNode> = {}
 
   for (const step of flow.steps) {
+    const decision: PlanStepDecision | undefined = step.decision
+      ? {
+          examine: step.decision.examine,
+          ifTrue: step.decision.ifTrue,
+          ifFalse: step.decision.ifFalse,
+          maxRevisions: step.decision.maxRevisions
+        }
+      : undefined
+
     if (step.type === 'agent') {
       nodes[step.id] = {
         id: step.id,
@@ -379,6 +396,7 @@ function compileSteps(
         workingDirectory: step.workingDirectory,
         maxTurns: step.maxTurns,
         ...(step.resume !== undefined ? { resume: step.resume } : {}),
+        ...(decision !== undefined ? { decision } : {}),
         metadata: {}
       }
     } else {
@@ -387,6 +405,7 @@ function compileSteps(
         role: 'mechanical',
         kind: 'mechanical',
         action: step.action,
+        ...(decision !== undefined ? { decision } : {}),
         metadata: {}
       }
     }
@@ -403,11 +422,11 @@ function compileSteps(
 
   const entryNode = flow.steps[0]!.id
 
+  const maxRevisions = Math.max(0, ...flow.steps.map((s) => s.decision?.maxRevisions ?? 0))
+
   return {
     ...base,
-    // A steps-shaped Flow has no rounds/onFailure at all (the XOR forbids
-    // it) — 0 is a true structural fact for this shape, not a placeholder.
-    maxRevisions: 0,
+    maxRevisions,
     // responseMode/responseNode are left unset: no task in this tranche
     // defines what "the conclusion" of a steps flow is (see PR body).
     graph: {
