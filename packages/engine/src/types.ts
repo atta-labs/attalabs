@@ -225,6 +225,29 @@ export interface PlanAgentNode {
 }
 
 /**
+ * A step-shaped decision carried directly on a compiled agent-spawn or
+ * mechanical node: which step's result is examined, and where each of the
+ * two outcomes routes. Deliberately NOT expressed via `PlanConditionalEdge`/
+ * `StateCondition`/`RevisionCondition` — those are closed unions scoped to
+ * the rounds shape's substring-match `contains` check, and widening them
+ * would be a breaking change to that existing contract. Carrying the
+ * decision on the node instead keeps this addition purely additive: every
+ * rounds-only consumer of `graph.conditionalEdges` is unaffected, since this
+ * shape leaves that array `[]`. The meaning of `examine`'s outcome is
+ * resolved by the executor's caller at run time — never a predicate here.
+ */
+export interface PlanStepDecision {
+  /** Id of the step whose result is examined. */
+  examine: string
+  /** Step id to route to when the examined result is the positive outcome. */
+  ifTrue: string
+  /** Step id to route to when the examined result is the negative/continue outcome. */
+  ifFalse: string
+  /** Ceiling on how many times this decision may route back for revision. */
+  maxRevisions: number
+}
+
+/**
  * A node compiled from an AgentStep (steps-shaped Flow): spawns an external
  * agent process. Carries only what AgentStep declared — no Plan.agents entry
  * backs this node. `agentRole` is deliberately not named `role` — `role` on
@@ -251,6 +274,8 @@ export interface PlanAgentSpawnNode {
   maxTurns: number
   /** ID of a prior AgentSpawn/Mechanical node whose session this step resumes, if any. */
   resume?: string
+  /** The step-shaped decision declared on the source AgentStep, if any. */
+  decision?: PlanStepDecision
   /** Runtime metadata for execution bookkeeping. */
   metadata: PlanNodeMetadata
 }
@@ -268,6 +293,8 @@ export interface PlanMechanicalNode {
   kind: 'mechanical'
   /** The mechanical action this node performs. */
   action: string
+  /** The step-shaped decision declared on the source MechanicalStep, if any. */
+  decision?: PlanStepDecision
   /** Runtime metadata for execution bookkeeping. */
   metadata: PlanNodeMetadata
 }

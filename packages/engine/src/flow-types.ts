@@ -104,6 +104,25 @@ export interface AgentRole {
 }
 
 /**
+ * Declares that a step's result is examined and routes execution to one of
+ * two outcomes. Carries only *which* step's result is examined and *where*
+ * each outcome routes — bare step-id references, never a predicate embedded
+ * in the flow. The meaning of the outcome (what "true"/"false" means for a
+ * given step) is resolved by the executor's caller at run time, the same
+ * way `AgentStep.role` is resolved to a binary rather than carried here.
+ */
+export interface StepDecision {
+  /** Id of the step whose result is examined. */
+  examine: string
+  /** Step id to route to when the examined result is the positive outcome. */
+  ifTrue: string
+  /** Step id to route to when the examined result is the negative/continue outcome. */
+  ifFalse: string
+  /** Ceiling on how many times this decision may route back for revision. */
+  maxRevisions: number
+}
+
+/**
  * A step that spawns an external coding agent. Fields describe how to
  * launch it (role, permission scope, working directory, turn ceiling,
  * prior session to resume) — never what it may do once running. No
@@ -120,6 +139,7 @@ export interface AgentStep {
   workingDirectory: string
   maxTurns: number
   resume?: string
+  decision?: StepDecision
 }
 
 /** A step describing an external action with no model turn. */
@@ -127,6 +147,7 @@ export interface MechanicalStep {
   id: string
   type: 'mechanical'
   action: string
+  decision?: StepDecision
 }
 
 export type Step = AgentStep | MechanicalStep

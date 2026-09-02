@@ -222,4 +222,60 @@ export function validateStepsFlow(flow: StepsFlow): void {
       }
     }
   }
+
+  for (const step of flow.steps) {
+    if (step.decision === undefined) continue
+    const { examine, ifTrue, ifFalse, maxRevisions } = step.decision
+    const stepIdx = stepIndexMap.get(step.id)!
+
+    // rule-s5: examine must reference an existing, non-forward step id —
+    // mirrors resume's rule-s4 shape (existing + not-forward).
+    const examineIdx = stepIndexMap.get(examine)
+    if (examineIdx === undefined) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.examine '${examine}' does not exist`, {
+        rule: 'rule-s5-examine-refs-exist',
+        reason: `examine target '${examine}' not found in flow.steps`
+      })
+    }
+    if (examineIdx >= stepIdx) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.examine '${examine}' is not a prior step`, {
+        rule: 'rule-s5-examine-refs-exist',
+        reason: `examine '${examine}' at index ${examineIdx} is not prior to '${step.id}' at index ${stepIdx}`
+      })
+    }
+
+    // rule-s6: ifTrue must reference an existing, strictly prior step —
+    // mirrors validateFlow's rule-3 on_failure.target rule (no self-ref, no forward-ref).
+    const ifTrueIdx = stepIndexMap.get(ifTrue)
+    if (ifTrueIdx === undefined) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.ifTrue '${ifTrue}' does not exist`, {
+        rule: 'rule-s6-if-true-prior-step',
+        reason: `ifTrue target '${ifTrue}' not found in flow.steps`
+      })
+    }
+    if (ifTrueIdx >= stepIdx) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.ifTrue '${ifTrue}' is not a prior step`, {
+        rule: 'rule-s6-if-true-prior-step',
+        reason: `ifTrue '${ifTrue}' at index ${ifTrueIdx} is not prior to '${step.id}' at index ${stepIdx}`
+      })
+    }
+
+    // rule-s7: ifFalse must reference an existing step — the "continue" path,
+    // not necessarily prior (it may be the next step in declaration order).
+    if (!stepIndexMap.has(ifFalse)) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.ifFalse '${ifFalse}' does not exist`, {
+        rule: 'rule-s7-if-false-refs-exist',
+        reason: `ifFalse target '${ifFalse}' not found in flow.steps`
+      })
+    }
+
+    // rule-s8: maxRevisions >= 1 — defense-in-depth alongside the Zod
+    // schema's own .min(1), for a hand-constructed StepsFlow bypassing Zod.
+    if (maxRevisions < 1) {
+      throw new InvalidFlowConfigError(`step '${step.id}' decision.maxRevisions must be >= 1; got ${maxRevisions}`, {
+        rule: 'rule-s8-max-revisions-min-1',
+        reason: `maxRevisions < 1: ${maxRevisions}`
+      })
+    }
+  }
 }

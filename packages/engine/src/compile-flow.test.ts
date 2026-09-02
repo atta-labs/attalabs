@@ -539,3 +539,70 @@ describe('compileFlow — steps-shaped Flow (task 2, the fifth shape)', () => {
     expect(plan.responseNode).toBeUndefined()
   })
 })
+
+const STEPS_WITH_DECISION_YAML = `
+schema_version: "2.0"
+id: test-steps-decision
+display_name: Test Steps Decision
+description: A test steps flow with a decision
+experimental: false
+
+defaults:
+  model: claude-sonnet-4-6
+
+agents:
+  - role: reviewer
+
+steps:
+  - id: review
+    type: agent
+    role: reviewer
+    prompt_template: "Review {{target}}."
+    permission: read-only
+    working_directory: "{{worktree}}"
+    max_turns: 20
+  - id: apply-patch
+    type: mechanical
+    action: git-apply
+    decision:
+      examine: review
+      if_true: review
+      if_false: apply-patch
+      max_revisions: 2
+`
+
+describe('compileFlow — step decision (task 1 of engine-conditional-edges-v1)', () => {
+  it("carries the step's decision onto the compiled node unchanged", () => {
+    const plan = compileFlow(loadStepsFlow(STEPS_WITH_DECISION_YAML), QUESTION, MODEL)
+    const n = nodeByAny(plan, 'apply-patch')
+    if (n.role !== 'mechanical') throw new Error('unreachable')
+    expect(n.decision).toEqual({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 2
+    })
+  })
+
+  it('leaves decision undefined on a node whose step declared none', () => {
+    const plan = compileFlow(loadStepsFlow(STEPS_WITH_DECISION_YAML), QUESTION, MODEL)
+    const n = nodeByAny(plan, 'review')
+    if (n.role !== 'agent-spawn') throw new Error('unreachable')
+    expect(n.decision).toBeUndefined()
+  })
+
+  it('Plan.maxRevisions is the real max of every declared decision.maxRevisions', () => {
+    const plan = compileFlow(loadStepsFlow(STEPS_WITH_DECISION_YAML), QUESTION, MODEL)
+    expect(plan.maxRevisions).toBe(2)
+  })
+
+  it('Plan.maxRevisions is 0 when no step declares a decision', () => {
+    const plan = compileFlow(loadStepsFlow(MINIMAL_STEPS_YAML), QUESTION, MODEL)
+    expect(plan.maxRevisions).toBe(0)
+  })
+
+  it('graph.conditionalEdges stays [] even when a step declares a decision', () => {
+    const plan = compileFlow(loadStepsFlow(STEPS_WITH_DECISION_YAML), QUESTION, MODEL)
+    expect(plan.graph.conditionalEdges).toEqual([])
+  })
+})

@@ -231,16 +231,27 @@ interface AgentStep {
   workingDirectory: string
   maxTurns: number
   resume?: string               // must reference a prior step's id
+  decision?: StepDecision       // examine/ifTrue/ifFalse/maxRevisions — see below
 }
 
 interface MechanicalStep {
   id: string
   type: 'mechanical'
   action: string
+  decision?: StepDecision
+}
+
+interface StepDecision {
+  examine: string                // step id whose result is examined
+  ifTrue: string                 // step id to route to on the positive outcome
+  ifFalse: string                // step id to route to on the negative/continue outcome
+  maxRevisions: number           // >= 1
 }
 ```
 
 A `steps` entry describes how to *launch* an agent — role, permission scope, working directory, turn ceiling, prior session to resume — and nothing about what it does once running: no tool bindings, no binary name. The executor (a later task, a new package) binds `role` to an actual binary, since the binary present on one machine may be absent on another.
+
+A step's optional `decision` names *which* step's result is examined and *where* each of two outcomes routes — bare step-id references only, never a `contains`/`equals`/`matches` predicate. The meaning of the outcome is resolved by the executor's caller at run time, the same way `role` is resolved to a binary rather than carried in the Flow. `compileFlow` carries a declared `decision` straight onto the compiled `PlanAgentSpawnNode`/`PlanMechanicalNode` as `PlanStepDecision` (types.ts), and `Plan.maxRevisions` becomes the real max of every step's `decision.maxRevisions` (`0` when none declare one). This is carried on the node, not pushed into `graph.conditionalEdges` — that list stays `[]` for the `agent-lifecycle` shape, since `PlanConditionalEdge`/`StateCondition`/`RevisionCondition` are closed unions scoped to the rounds shape's substring-match check and widening them would be a breaking change. `validateStepsFlow` rejects a `decision` whose `examine`/`ifTrue` is not an existing, strictly prior step id, whose `ifFalse` is not an existing step id, or whose `maxRevisions` is `< 1`.
 
 `loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Neither is re-exported through `index.ts` yet — no task in this tranche consumes them from outside the engine package.
 

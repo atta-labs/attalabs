@@ -105,6 +105,52 @@ describe('FlowSchema — steps discriminated union', () => {
   })
 })
 
+describe('FlowSchema — step decision', () => {
+  it('accepts a well-formed decision on an agent step', () => {
+    const flow = {
+      ...STEPS_ONLY,
+      steps: [
+        {
+          ...STEPS_ONLY.steps[0],
+          decision: { examine: 'review', if_true: 'review', if_false: 'merge', max_revisions: 2 }
+        },
+        STEPS_ONLY.steps[1]
+      ]
+    }
+    const result = FlowSchema.safeParse(flow)
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts a well-formed decision on a mechanical step', () => {
+    const flow = {
+      ...STEPS_ONLY,
+      steps: [
+        STEPS_ONLY.steps[0],
+        {
+          ...STEPS_ONLY.steps[1],
+          decision: { examine: 'merge', if_true: 'review', if_false: 'merge', max_revisions: 1 }
+        }
+      ]
+    }
+    const result = FlowSchema.safeParse(flow)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a decision with max_revisions < 1', () => {
+    const flow = {
+      ...STEPS_ONLY,
+      steps: [
+        {
+          ...STEPS_ONLY.steps[0],
+          decision: { examine: 'review', if_true: 'review', if_false: 'merge', max_revisions: 0 }
+        },
+        STEPS_ONLY.steps[1]
+      ]
+    }
+    expect(FlowSchema.safeParse(flow).success).toBe(false)
+  })
+})
+
 describe('FlowSchema — agents[] shape is tied to the declared Flow kind', () => {
   it('refuses a rounds-shaped Flow whose agents are role-only (steps-shaped)', () => {
     const bad = { ...ROUNDS_ONLY, agents: [{ role: 'reviewer' }] }
