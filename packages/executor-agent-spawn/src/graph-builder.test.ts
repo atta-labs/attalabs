@@ -109,7 +109,7 @@ describe('buildAgentSpawnStateGraph', () => {
     }
 
     const executor = createAgentLifecycleNodeExecutor(configWithCapture, spawnFn)
-    const graph = buildAgentSpawnStateGraph(twoStepPlan, executor)
+    const graph = buildAgentSpawnStateGraph(twoStepPlan, executor, configWithCapture)
 
     const finalState = (await graph.invoke({
       runId: 'run-1',
@@ -161,7 +161,7 @@ describe('buildAgentSpawnStateGraph', () => {
     }
 
     const executor = createAgentLifecycleNodeExecutor(mechanicalOnlyConfig, spawnFn)
-    const graph = buildAgentSpawnStateGraph(mechanicalOnlyPlan, executor)
+    const graph = buildAgentSpawnStateGraph(mechanicalOnlyPlan, executor, mechanicalOnlyConfig)
 
     const finalState = (await graph.invoke({
       runId: 'run-mechanical',

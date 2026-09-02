@@ -6,20 +6,28 @@
  * structurally injects a classifier node before every tool-enabled node.
  * An agent-lifecycle Plan has no rounds, no tools, no classifier.
  *
- * Node ids and the sequential edge chain come straight from `@atta/engine`'s
- * `compileSteps` — a linear walk of `plan.graph.edges`, terminal nodes wired
- * to `END`. No conditional edges exist in this shape (`plan.graph.entryNode`
- * and `plan.graph.conditionalEdges` are the only other fields it sets, and
- * the latter is always empty here).
+ * Node ids come straight from `@atta/engine`'s `compileSteps`, and so does
+ * the sequential edge chain in `plan.graph.edges` — but that chain is only
+ * ever the *default* outgoing route for a node. A node whose
+ * `plan.graph.nodes[nodeId].decision` is set (task 2's own surface) gets its
+ * outgoing routing wired with `addConditionalEdges` instead, and that node's
+ * entry in `plan.graph.edges` (which `compileSteps` still emits
+ * unconditionally, decision or not) is skipped rather than also wired as a
+ * plain edge — the decision is the only routing authority for that node.
+ * `plan.graph.conditionalEdges` stays out of scope here: that field is
+ * rounds-shape-only and is always empty for this Plan shape (task 1's own
+ * finding, confirmed again for this task) — routing reads `node.decision`
+ * exclusively, never that array. Because a decision's `ifTrue` can route
+ * back to an earlier node, this graph is not assumed acyclic anywhere below.
  */
 
 import { END, StateGraph } from '@langchain/langgraph'
-import type { Plan, PlanNode } from '@atta/engine'
+import type { Plan, PlanNode, PlanStepDecision } from '@atta/engine'
 import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { renderStepPrompt } from './template'
-import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, StepNodeResult } from './types'
 
 /**
  * Calls `onEvent`, if supplied, and swallows anything it throws. An
@@ -126,21 +134,136 @@ export function createAgentLifecycleNodeExecutor(
   }
 }
 
+/** The three routes a decision's path function can resolve to — see `buildDecisionPathFn`. */
+type DecisionRoute = 'ifTrue' | 'ifFalse' | 'exhausted'
+
+/**
+ * Builds the `addConditionalEdges` path function for one decision-bearing
+ * node. Runs after that node's own execution has already merged into
+ * `state` (LangGraph applies a node's returned partial state via the
+ * annotation's reducer before routing its outgoing edge), so
+ * `state.results[decision.examine]` is guaranteed present whether `examine`
+ * names an earlier node or this node's own id.
+ *
+ * Never evaluates the condition itself — always defers to
+ * `config.decisionPredicates[nodeId]`, the caller-supplied predicate. Two
+ * failure shapes are refused identically, per this task's own trap: no
+ * predicate configured for a node that declares a `decision`, and a
+ * predicate that throws while evaluating. Neither silently defaults to
+ * `ifFalse`/`ifTrue` — both throw a clear, named error and additionally
+ * report it as a `node:failed` event (reusing that event's existing shape:
+ * this is a post-completion routing failure, not a second kind of node
+ * failure, and no other emitted event shape fits it better — see the PR
+ * body for why this shape was chosen over a new event variant).
+ *
+ * A `true` predicate result only routes to `ifTrue` when that target's
+ * `revisionCounts` has not yet reached `decision.maxRevisions`; once it has,
+ * routing goes to `'exhausted'` (wired to `END` by the caller) rather than
+ * looping again or falling through to `ifFalse` — exhaustion is its own
+ * terminal outcome, not a reinterpretation of "predicate was false".
+ */
+function buildDecisionPathFn(
+  nodeId: string,
+  decision: PlanStepDecision,
+  config: AgentSpawnExecutorConfig
+): (state: AgentSpawnGraphStateValue) => DecisionRoute {
+  return (state) => {
+    const { onEvent } = config
+    const { runId } = state
+
+    const examinedResult = state.results[decision.examine]
+    if (!examinedResult) {
+      const error = `Decision on node '${nodeId}' examines '${decision.examine}', but no result has been recorded for it yet.`
+      safeEmit(onEvent, { type: 'node:failed', nodeId, runId, error })
+      throw new Error(error)
+    }
+
+    // Own-property lookup, for the same reason roleBinaries/mechanicalActions
+    // use one: `nodeId` arrives from the Plan, and a bare index resolves an
+    // inherited key (`__proto__`, `constructor`) to a value that is truthy
+    // but not a function.
+    const predicates = config.decisionPredicates
+    const predicate = predicates && Object.hasOwn(predicates, nodeId) ? predicates[nodeId] : undefined
+    if (!predicate) {
+      const error = `No decision predicate configured for node '${nodeId}' (examine '${decision.examine}'). Provide one in AgentSpawnExecutorConfig.decisionPredicates — a decision this executor was not told how to evaluate is never guessed at, and a throwing predicate is refused the same way.`
+      safeEmit(onEvent, { type: 'node:failed', nodeId, runId, error })
+      throw new Error(error)
+    }
+
+    let isTrue: boolean
+    try {
+      isTrue = predicate(examinedResult as StepNodeResult)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      const error = `Decision predicate for node '${nodeId}' threw and is refused the same way an unconfigured predicate is: ${message}`
+      safeEmit(onEvent, { type: 'node:failed', nodeId, runId, error })
+      throw new Error(error)
+    }
+
+    if (!isTrue) return 'ifFalse'
+
+    const priorRevisions = state.revisionCounts[decision.ifTrue] ?? 0
+    if (priorRevisions >= decision.maxRevisions) return 'exhausted'
+    return 'ifTrue'
+  }
+}
+
 /**
  * Translates a compiled agent-lifecycle Plan into a compiled LangGraph
- * StateGraph. One graph node per Plan node (id preserved verbatim), the
- * Plan's sequential `flow` edges reproduced as-is, terminal nodes (no
- * outgoing edge) wired to `END`, and `plan.graph.entryNode` wired as the
- * graph's start.
+ * StateGraph. One graph node per Plan node (id preserved verbatim), and
+ * `plan.graph.entryNode` wired as the graph's start. Each node's outgoing
+ * routing is either:
+ *
+ * - **Decision-bearing** (`node.decision` set): wired with
+ *   `addConditionalEdges` per `buildDecisionPathFn` above — `ifTrue`,
+ *   `ifFalse`, or `'exhausted'` → `END`. That node's entry in
+ *   `plan.graph.edges` (`compileSteps` emits one regardless of `decision`)
+ *   is deliberately not also wired as a plain edge; the decision is this
+ *   node's only routing authority.
+ * - **Plain** (no `decision`): `plan.graph.edges` reproduced as-is, and any
+ *   node with no outgoing edge wired to `END` — unchanged from before this
+ *   task.
  */
-export function buildAgentSpawnStateGraph(plan: Plan, executor: AgentLifecycleNodeExecutor) {
+export function buildAgentSpawnStateGraph(
+  plan: Plan,
+  executor: AgentLifecycleNodeExecutor,
+  config: AgentSpawnExecutorConfig
+) {
   const graph = new StateGraph(AgentSpawnGraphState)
 
   for (const [nodeId, node] of Object.entries(plan.graph.nodes)) {
     graph.addNode(nodeId, async (state: AgentSpawnGraphStateValue) => executor(state, { node, plan }))
   }
 
+  const decisionNodeIds = new Set<string>()
+  for (const [nodeId, node] of Object.entries(plan.graph.nodes)) {
+    // `decision` exists only on the two agent-lifecycle node variants — a
+    // rounds-shaped PlanAgentNode carries no such field at all — so this
+    // package's own two node kinds are the only ones ever checked for it.
+    if (node.kind !== 'agent-spawn' && node.kind !== 'mechanical') continue
+    if (!node.decision) continue
+    decisionNodeIds.add(nodeId)
+    const pathFn = buildDecisionPathFn(nodeId, node.decision, config)
+    // Same compile-time-string-literal typing gap as the addEdge casts
+    // below: LangGraph's addConditionalEdges typings expect node names known
+    // at compile time, this package wires an arbitrary Plan's runtime ids.
+    ;(
+      graph as unknown as {
+        addConditionalEdges: (
+          from: string,
+          path: (state: AgentSpawnGraphStateValue) => DecisionRoute,
+          pathMap: Record<DecisionRoute, string | typeof END>
+        ) => void
+      }
+    ).addConditionalEdges(nodeId, pathFn, {
+      ifTrue: node.decision.ifTrue,
+      ifFalse: node.decision.ifFalse,
+      exhausted: END
+    })
+  }
+
   for (const edge of plan.graph.edges) {
+    if (decisionNodeIds.has(edge.from)) continue
     // LangGraph's addNode/addEdge typings require string-literal node names
     // known at compile time; this package wires an arbitrary Plan's runtime
     // node ids, so the cast is required at every edge call site.
@@ -149,6 +272,7 @@ export function buildAgentSpawnStateGraph(plan: Plan, executor: AgentLifecycleNo
 
   const nodesWithOutgoingEdge = new Set(plan.graph.edges.map((edge) => edge.from))
   for (const nodeId of Object.keys(plan.graph.nodes)) {
+    if (decisionNodeIds.has(nodeId)) continue
     if (!nodesWithOutgoingEdge.has(nodeId)) {
       ;(graph as unknown as { addEdge: (from: string, to: typeof END) => void }).addEdge(nodeId, END)
     }
