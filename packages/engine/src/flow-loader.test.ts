@@ -254,6 +254,32 @@ describe('loadStepsFlow', () => {
     const flow = loadStepsFlow(MINIMAL_STEPS_YAML)
     expect(() => validateStepsFlow(flow)).not.toThrow()
   })
+
+  it('round-trips a decision from snake_case YAML to camelCase StepDecision', () => {
+    const yaml = MINIMAL_STEPS_YAML.replace(
+      '    action: merge-pr\n',
+      '    action: merge-pr\n' +
+        '    decision:\n' +
+        '      examine: review\n' +
+        '      if_true: review\n' +
+        '      if_false: merge\n' +
+        '      max_revisions: 3\n'
+    )
+    const flow = loadStepsFlow(yaml)
+    const merge = flow.steps.find((s) => s.id === 'merge')!
+    expect(merge.decision).toEqual({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'merge',
+      maxRevisions: 3
+    })
+  })
+
+  it('leaves decision undefined when the YAML step omits it', () => {
+    const flow = loadStepsFlow(MINIMAL_STEPS_YAML)
+    const review = flow.steps.find((s) => s.id === 'review')!
+    expect(review.decision).toBeUndefined()
+  })
 })
 
 describe('rounds XOR steps — refused at load', () => {

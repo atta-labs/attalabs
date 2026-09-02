@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NotImplementedError } from '../errors'
-import type { Flow, FlowAgent, Round, Step, StepsFlow } from '../flow-types'
+import type { Flow, FlowAgent, Round, Step, StepDecision, StepsFlow } from '../flow-types'
 import { InvalidFlowConfigError, resolveAgentFailure, validateFlow, validateStepsFlow } from '../validate-flow'
 
 // ── Shared fixtures ──────────────────────────────────────────────────────────
@@ -838,5 +838,122 @@ describe('validateStepsFlow — XOR restated', () => {
 
   it('throws when steps array is empty', () => {
     expect(() => validateStepsFlow(makeStepsFlow({ steps: [] }))).toThrow('at least one step')
+  })
+})
+
+// ── validateStepsFlow — step decision (task 1 of engine-conditional-edges-v1) ─
+
+function makeStepsFlowWithDecision(decision: StepDecision): StepsFlow {
+  const steps: Step[] = [
+    {
+      id: 'review',
+      type: 'agent',
+      role: 'reviewer',
+      promptTemplate: 'Review.',
+      permission: 'read-only',
+      workingDirectory: '/tmp',
+      maxTurns: 20
+    },
+    {
+      id: 'apply-patch',
+      type: 'mechanical',
+      action: 'git-apply',
+      decision
+    }
+  ]
+  return makeStepsFlow({ steps })
+}
+
+describe('validateStepsFlow — decision.examine references an existing, non-forward step', () => {
+  it('passes with a well-formed decision', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).not.toThrow()
+  })
+
+  it('throws when examine references a nonexistent step', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'ghost',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow("decision.examine 'ghost' does not exist")
+  })
+
+  it('throws when examine references a forward (self) step', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'apply-patch',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('is not a prior step')
+  })
+})
+
+describe('validateStepsFlow — decision.ifTrue must reference an existing, strictly prior step', () => {
+  it('throws when ifTrue references a nonexistent step', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'ghost',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow("decision.ifTrue 'ghost' does not exist")
+  })
+
+  it('throws when ifTrue references a non-prior (self) step', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'apply-patch',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('is not a prior step')
+  })
+})
+
+describe('validateStepsFlow — decision.ifFalse references an existing step (no prior-ness constraint)', () => {
+  it('passes when ifFalse references the step itself (the continuation path)', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).not.toThrow()
+  })
+
+  it('throws when ifFalse references a nonexistent step', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'ghost',
+      maxRevisions: 1
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow("decision.ifFalse 'ghost' does not exist")
+  })
+})
+
+describe('validateStepsFlow — decision.maxRevisions >= 1 (defense-in-depth alongside Zod)', () => {
+  it('throws when a hand-constructed decision carries maxRevisions < 1, bypassing Zod', () => {
+    const flow = makeStepsFlowWithDecision({
+      examine: 'review',
+      ifTrue: 'review',
+      ifFalse: 'apply-patch',
+      maxRevisions: 0
+    })
+    expect(() => validateStepsFlow(flow)).toThrow(InvalidFlowConfigError)
+    expect(() => validateStepsFlow(flow)).toThrow('decision.maxRevisions must be >= 1')
   })
 })
