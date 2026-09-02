@@ -119,14 +119,16 @@ export function loadStepsFlow(yamlContent: string): StepsFlow {
         workingDirectory: s.working_directory,
         maxTurns: s.max_turns,
         resume: s.resume,
-        decision
+        decision,
+        dependsOn: s.depends_on
       }
     }
     return {
       id: s.id,
       type: 'mechanical',
       action: s.action,
-      decision
+      decision,
+      dependsOn: s.depends_on
     }
   })
 

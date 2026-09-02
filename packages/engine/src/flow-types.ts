@@ -140,6 +140,13 @@ export interface AgentStep {
   maxTurns: number
   resume?: string
   decision?: StepDecision
+  /**
+   * Ids of steps this step depends on. When omitted, defaults to the
+   * preceding step in declaration order (or no dependency for the first
+   * step) — see `resolveStepDependsOn` in validate-flow.ts, the single
+   * source of truth for this resolution.
+   */
+  dependsOn?: string[]
 }
 
 /** A step describing an external action with no model turn. */
@@ -148,6 +155,13 @@ export interface MechanicalStep {
   type: 'mechanical'
   action: string
   decision?: StepDecision
+  /**
+   * Ids of steps this step depends on. When omitted, defaults to the
+   * preceding step in declaration order (or no dependency for the first
+   * step) — see `resolveStepDependsOn` in validate-flow.ts, the single
+   * source of truth for this resolution.
+   */
+  dependsOn?: string[]
 }
 
 export type Step = AgentStep | MechanicalStep

@@ -232,6 +232,7 @@ interface AgentStep {
   maxTurns: number
   resume?: string               // must reference a prior step's id
   decision?: StepDecision       // examine/ifTrue/ifFalse/maxRevisions — see below
+  dependsOn?: string[]           // see resolveStepDependsOn below
 }
 
 interface MechanicalStep {
@@ -239,6 +240,7 @@ interface MechanicalStep {
   type: 'mechanical'
   action: string
   decision?: StepDecision
+  dependsOn?: string[]           // see resolveStepDependsOn below
 }
 
 interface StepDecision {
@@ -252,6 +254,8 @@ interface StepDecision {
 A `steps` entry describes how to *launch* an agent — role, permission scope, working directory, turn ceiling, prior session to resume — and nothing about what it does once running: no tool bindings, no binary name. The executor (a later task, a new package) binds `role` to an actual binary, since the binary present on one machine may be absent on another.
 
 A step's optional `decision` names *which* step's result is examined and *where* each of two outcomes routes — bare step-id references only, never a `contains`/`equals`/`matches` predicate. The meaning of the outcome is resolved by the executor's caller at run time, the same way `role` is resolved to a binary rather than carried in the Flow. `compileFlow` carries a declared `decision` straight onto the compiled `PlanAgentSpawnNode`/`PlanMechanicalNode` as `PlanStepDecision` (types.ts), and `Plan.maxRevisions` becomes the real max of every step's `decision.maxRevisions` (`0` when none declare one). This is carried on the node, not pushed into `graph.conditionalEdges` — that list stays `[]` for the `agent-lifecycle` shape, since `PlanConditionalEdge`/`StateCondition`/`RevisionCondition` are closed unions scoped to the rounds shape's substring-match check and widening them would be a breaking change. `validateStepsFlow` rejects a `decision` whose `examine`/`ifTrue` is not an existing, strictly prior step id, whose `ifFalse` is not an existing step id, or whose `maxRevisions` is `< 1`.
+
+A step's optional `dependsOn` names the ids of the steps it must wait on, forming a real fan-out/join dependency graph rather than a strictly linear chain. `resolveStepDependsOn(steps, index)` (`validate-flow.ts`) is the single source of truth for a step's effective dependencies, imported by both the compiler and the validator so they can never drift apart: an explicit `dependsOn` (including an explicit empty array) is used verbatim; an omitted one defaults to `[steps[index - 1].id]` for every step but the first, and to `[]` for the first. `validateStepsFlow` rejects a `dependsOn` entry naming a nonexistent step id and rejects a cycle in the resolved graph — general cycle detection, not a forward-reference restriction, since a dependency may legitimately point at a step declared later in the array. This is entirely independent of `decision`: `decision` is node-level routing metadata consumed only by the executor at run time, never represented as a `PlanEdge`, so the two features cannot interact and `dependsOn`'s acyclicity check never inspects `decision` fields.
 
 `loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Neither is re-exported through `index.ts` yet — no task in this tranche consumes them from outside the engine package.
 
@@ -303,7 +307,7 @@ Downstream code (adapter, mcp-server, dashboard, UI's `flow-helpers.ts`) depends
 | Terminal end | `__END__` | `__END__` |
 | Agent-spawn / mechanical step (`agent-lifecycle` shape) | the step's own declared `id`, verbatim | `review`, `apply-patch` |
 
-`slotIndex` increments with each revision cycle. The conditional edge from the last auditor of a slot wires to either the next `terminal-{slotIndex+1}` (revise path) or `__END__` (accept path) based on `anyOf` evaluation of audit outputs against the `RevisionCondition`. Steps carry no such convention — each step already declares its own unique `id` (uniqueness enforced by `validateStepsFlow`), so the compiler reuses it rather than inventing a synthetic numbering scheme, and edges between steps are a plain sequential `flow` chain in declaration order.
+`slotIndex` increments with each revision cycle. The conditional edge from the last auditor of a slot wires to either the next `terminal-{slotIndex+1}` (revise path) or `__END__` (accept path) based on `anyOf` evaluation of audit outputs against the `RevisionCondition`. Steps carry no such convention — each step already declares its own unique `id` (uniqueness enforced by `validateStepsFlow`), so the compiler reuses it rather than inventing a synthetic numbering scheme. Edges between steps are resolved-dependency edges, not a fixed chain: a step with no explicit `dependsOn` gets one `flow` edge from its immediate predecessor (the byte-identical-to-a-chain default); a step that declares `dependsOn` gets one `flow` edge per named dependency, in any position — declaration order does not constrain the dependency graph, only cycles are rejected.
 
 ---
 

@@ -95,7 +95,8 @@ export const AgentStepSchema = z.object({
   working_directory: z.string().min(1),
   max_turns: z.number().int().min(1),
   resume: z.string().optional(),
-  decision: StepDecisionSchema.optional()
+  decision: StepDecisionSchema.optional(),
+  depends_on: z.array(z.string().min(1)).optional()
 })
 
 export const MechanicalStepSchema = z.object({
@@ -105,7 +106,8 @@ export const MechanicalStepSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'step id must be kebab-case'),
   type: z.literal('mechanical'),
   action: z.string().min(1),
-  decision: StepDecisionSchema.optional()
+  decision: StepDecisionSchema.optional(),
+  depends_on: z.array(z.string().min(1)).optional()
 })
 
 export const StepSchema = z.discriminatedUnion('type', [AgentStepSchema, MechanicalStepSchema])
