@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
-import type { Plan, PlanMechanicalNode } from '@atta/engine'
+import type { Plan, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
@@ -339,5 +339,204 @@ describe('createAgentLifecycleNodeExecutor — execution events', () => {
     await expect(executor(emptyState, { node: mechanicalNode, plan: twoStepPlan })).rejects.toThrow(
       /No command configured for mechanical action 'apply-patch'/
     )
+  })
+})
+
+describe('buildAgentSpawnStateGraph — conditional routing on a decision', () => {
+  function decisionMechanicalNode(id: string, action: string, decision?: PlanStepDecision): PlanMechanicalNode {
+    return { id, role: 'mechanical', kind: 'mechanical', action, ...(decision ? { decision } : {}), metadata: {} }
+  }
+
+  const decisionActions = {
+    'check-action': { command: 'check-cmd' },
+    'retry-action': { command: 'retry-cmd' },
+    'finish-action': { command: 'finish-cmd' }
+  }
+
+  /**
+   * `examine` names the decision-declaring node's own id — legal at this
+   * level because these tests hand-construct a `Plan` directly, bypassing
+   * `@atta/engine`'s Flow validator (which forbids a self-referencing
+   * `examine`/`ifTrue` at authoring time). By the time `buildDecisionPathFn`
+   * runs, LangGraph has already merged `check`'s own result into state, so
+   * `state.results['check']` is present regardless of whether `examine`
+   * names an earlier node or this one.
+   */
+  function buildBranchingPlan(decision: PlanStepDecision): Plan {
+    return {
+      ...twoStepPlan,
+      graph: {
+        nodes: {
+          check: decisionMechanicalNode('check', 'check-action', decision),
+          retried: decisionMechanicalNode('retried', 'retry-action'),
+          finished: decisionMechanicalNode('finished', 'finish-action')
+        },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'check'
+      }
+    }
+  }
+
+  it("routes to ifTrue when the predicate is true, examining the node's own just-produced result", async () => {
+    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
+    const plan = buildBranchingPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      decisionPredicates: { check: () => true }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-branch-true',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.results.retried).toBeDefined()
+    expect(finalState.results.finished).toBeUndefined()
+  })
+
+  it('routes to ifFalse when the predicate is false', async () => {
+    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
+    const plan = buildBranchingPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      decisionPredicates: { check: () => false }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-branch-false',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.results.finished).toBeDefined()
+    expect(finalState.results.retried).toBeUndefined()
+  })
+
+  it("stops looping once ifTrue's target reaches maxRevisions, routing to END instead of ifTrue again", async () => {
+    const decision: PlanStepDecision = { examine: 'loop', ifTrue: 'loop', ifFalse: 'never', maxRevisions: 2 }
+    const plan: Plan = {
+      ...twoStepPlan,
+      graph: {
+        nodes: {
+          loop: decisionMechanicalNode('loop', 'loop-action', decision),
+          never: decisionMechanicalNode('never', 'never-action')
+        },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'loop'
+      }
+    }
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: {
+        'loop-action': { command: 'loop-cmd' },
+        'never-action': { command: 'never-cmd' }
+      },
+      // Always "needs revision" — the ceiling, not the predicate, is what
+      // must stop the loop.
+      decisionPredicates: { loop: () => true }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-ceiling',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.revisionCounts.loop).toBe(2)
+    expect(finalState.results.never).toBeUndefined()
+  })
+
+  it('throws a clear, named error when no decisionPredicates entry exists for a decision-bearing node', async () => {
+    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
+    const plan = buildBranchingPlan(decision)
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions
+      // No decisionPredicates at all.
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    await expect(
+      graph.invoke({ runId: 'run-unconfigured', results: {}, sessions: {}, revisionCounts: {} })
+    ).rejects.toThrow(/No decision predicate configured for node 'check'/)
+  })
+
+  it("a throwing decision predicate never corrupts the examined node's own recorded result", async () => {
+    const decision: PlanStepDecision = { examine: 'check', ifTrue: 'retried', ifFalse: 'finished', maxRevisions: 3 }
+    const plan = buildBranchingPlan(decision)
+    const events: AgentLifecycleEvent[] = []
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions,
+      onEvent: (e) => events.push(e),
+      decisionPredicates: {
+        check: () => {
+          throw new Error('predicate bug — must never affect the executed node')
+        }
+      }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    await expect(
+      graph.invoke({ runId: 'run-throwing-predicate', results: {}, sessions: {}, revisionCounts: {} })
+    ).rejects.toThrow(/Decision predicate for node 'check' threw/)
+
+    // node:complete fired for 'check' — its own mechanical action ran and
+    // recorded a real result — strictly before the separate node:failed the
+    // routing failure reports. The predicate's bug never reached the
+    // executed node's own result.
+    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:complete', 'node:failed'])
+    const failed = events[2]
+    if (failed?.type !== 'node:failed') throw new Error('unreachable')
+    expect(failed.error).toMatch(/predicate bug/)
+  })
+
+  it('wires a node with no decision through a plain edge to END, unchanged from before this task', async () => {
+    const plan: Plan = {
+      ...twoStepPlan,
+      graph: {
+        nodes: { solo: decisionMechanicalNode('solo', 'finish-action') },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'solo'
+      }
+    }
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: decisionActions
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, fakeSpawn([]))
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-plain',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.results.solo?.kind).toBe('mechanical')
   })
 })
