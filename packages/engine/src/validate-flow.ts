@@ -1,5 +1,5 @@
 import { NotImplementedError, VadaEngineError } from './errors'
-import type { AgentFailurePolicy, Flow, Round, StepsFlow } from './flow-types'
+import type { AgentFailurePolicy, Flow, Round, Step, StepsFlow } from './flow-types'
 
 export class InvalidFlowConfigError extends VadaEngineError {
   readonly name = 'InvalidFlowConfigError'
@@ -156,6 +156,25 @@ export function validateFlow(flow: Flow): void {
 }
 
 /**
+ * Resolves step `index`'s effective dependencies. The single source of
+ * truth for "what are step `index`'s dependencies" — imported by both the
+ * validator's acyclicity check and the compiler's edge-building, so they
+ * can never drift apart.
+ *
+ * An explicit `dependsOn` (including an explicit empty array) is used
+ * verbatim. An omitted one defaults to the immediately preceding step for
+ * every step but the first, and to no dependency for the first step —
+ * this is the backward-compatibility guarantee: a Flow where every step
+ * omits `dependsOn` resolves to today's linear chain.
+ */
+export function resolveStepDependsOn(steps: Step[], index: number): string[] {
+  const step = steps[index]!
+  if (step.dependsOn !== undefined) return step.dependsOn
+  if (index === 0) return []
+  return [steps[index - 1]!.id]
+}
+
+/**
  * Validates a StepsFlow's structural rules. Distinct from validateFlow
  * (which validates the rounds shape and refuses to compile a steps Flow):
  * this is the steps-shape counterpart, covering step-id uniqueness, agent
@@ -277,5 +296,55 @@ export function validateStepsFlow(flow: StepsFlow): void {
         reason: `maxRevisions < 1: ${maxRevisions}`
       })
     }
+  }
+
+  // rule-s9: every dependsOn entry (after resolution) must reference an
+  // existing step id, at any position — the dependency graph is
+  // independent of declaration order, unlike resume/examine/ifTrue.
+  const dependsOnByStep = new Map<string, string[]>()
+  for (let i = 0; i < flow.steps.length; i++) {
+    const step = flow.steps[i]!
+    const deps = resolveStepDependsOn(flow.steps, i)
+    dependsOnByStep.set(step.id, deps)
+    for (const dep of deps) {
+      if (!stepIndexMap.has(dep)) {
+        throw new InvalidFlowConfigError(`step '${step.id}' dependsOn '${dep}' does not exist`, {
+          rule: 'rule-s9-depends-on-refs-exist',
+          reason: `dependsOn target '${dep}' not found in flow.steps`
+        })
+      }
+    }
+  }
+
+  // rule-s10: the resolved dependsOn graph must be acyclic. General cycle
+  // detection (DFS with visiting/visited coloring), not a forward-ref
+  // restriction — a dependency may legitimately point at a step declared
+  // later in the array.
+  const visiting = new Set<string>()
+  const visited = new Set<string>()
+  const path: string[] = []
+
+  const visit = (stepId: string): void => {
+    if (visited.has(stepId)) return
+    if (visiting.has(stepId)) {
+      const cycleStart = path.indexOf(stepId)
+      const cycle = [...path.slice(cycleStart), stepId].join(' -> ')
+      throw new InvalidFlowConfigError(`dependsOn cycle detected: ${cycle}`, {
+        rule: 'rule-s10-depends-on-acyclic',
+        reason: `cycle in resolved dependsOn graph: ${cycle}`
+      })
+    }
+    visiting.add(stepId)
+    path.push(stepId)
+    for (const dep of dependsOnByStep.get(stepId) ?? []) {
+      visit(dep)
+    }
+    path.pop()
+    visiting.delete(stepId)
+    visited.add(stepId)
+  }
+
+  for (const step of flow.steps) {
+    visit(step.id)
   }
 }

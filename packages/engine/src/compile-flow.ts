@@ -1,7 +1,7 @@
 import type { Agent } from '@atta/agents'
 import type { AnyFlow, Flow, Round, StepsFlow } from './flow-types'
 import type { Plan, PlanNode, PlanEdge, PlanConditionalEdge, PlanStepDecision, RevisionCondition } from './types'
-import { validateFlow, validateStepsFlow } from './validate-flow'
+import { resolveStepDependsOn, validateFlow, validateStepsFlow } from './validate-flow'
 
 type Shape = 'solo' | 'brokered-no-synth' | 'brokered-synth' | 'rounds-audit' | 'agent-lifecycle'
 
@@ -412,12 +412,16 @@ function compileSteps(
   }
 
   const edges: PlanEdge[] = []
-  for (let i = 0; i < flow.steps.length - 1; i++) {
-    edges.push({
-      from: flow.steps[i]!.id,
-      to: flow.steps[i + 1]!.id,
-      kind: 'flow'
-    })
+  for (let i = 0; i < flow.steps.length; i++) {
+    const step = flow.steps[i]!
+    const dependsOn = resolveStepDependsOn(flow.steps, i)
+    for (const depId of dependsOn) {
+      edges.push({
+        from: depId,
+        to: step.id,
+        kind: 'flow'
+      })
+    }
   }
 
   const entryNode = flow.steps[0]!.id
