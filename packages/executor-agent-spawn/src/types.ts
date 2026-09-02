@@ -120,6 +120,22 @@ export interface AgentSpawnExecutorConfig {
    * guessed — see `executeMechanicalNode`.
    */
   mechanicalActions?: Record<string, MechanicalActionConfig>
+  /**
+   * Predicate → decision configuration, keyed by the id of the step that
+   * *declares* the `decision` (`PlanAgentSpawnNode.decision`/
+   * `PlanMechanicalNode.decision`'s owning node), never by `decision.examine`
+   * or either of its targets — the same keyed-by-Plan-carried-name
+   * resolution `roleBinaries`/`mechanicalActions` already use. Each function
+   * receives the examined step's own recorded result
+   * (`state.results[decision.examine]`) and returns whether the positive
+   * (`ifTrue`) outcome applies. Optional: a Plan with no `decision`-bearing
+   * nodes needs none. A node that declares a `decision` but has no entry
+   * here — or whose predicate throws — is refused the same way an
+   * unconfigured `roleBinaries`/`mechanicalActions` key is: a clear, named
+   * error, never a silent default to `ifFalse` or `ifTrue`. The predicate
+   * itself is caller code; this package never evaluates a condition inline.
+   */
+  decisionPredicates?: Record<string, (result: StepNodeResult) => boolean>
 }
 
 /**
