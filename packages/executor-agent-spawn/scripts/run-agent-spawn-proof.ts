@@ -102,7 +102,7 @@ async function main() {
     assertNoApiKeyInChildEnv(config)
 
     const executor = createAgentLifecycleNodeExecutor(config)
-    const graph = buildAgentSpawnStateGraph(plan, executor)
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
 
     const runId = randomUUID()
     const finalState = (await graph.invoke({
