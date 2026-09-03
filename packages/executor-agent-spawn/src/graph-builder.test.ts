@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
-import type { Plan, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
+import type { Plan, PlanAgentSpawnNode, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
@@ -27,6 +27,70 @@ function fakeSpawn(stdoutLines: string[]): SpawnFn {
       for (const line of stdoutLines) for (const listener of stdoutListeners) listener(`${line}\n`)
       for (const listener of closeListeners) listener(0)
     })
+    return process
+  }
+}
+
+/**
+ * Like `fakeSpawn`, but its `close` event fires only after `ticks` chained
+ * `queueMicrotask` hops rather than one — a deterministic way to make one
+ * fake process "slower" than another without a real timer. Node drains its
+ * microtask queue FIFO, so a spawn scheduled with more ticks is guaranteed
+ * to close after one scheduled with fewer, with no wall-clock race: the
+ * ordering is a property of how many hops each takes, not of how fast they
+ * happen to run.
+ */
+function fakeSpawnAfterTicks(stdoutLines: string[], ticks: number): SpawnFn {
+  return () => {
+    const stdoutListeners: Array<(chunk: string) => void> = []
+    const closeListeners: Array<(code: number | null) => void> = []
+    const process: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: (_event, listener) => stdoutListeners.push(listener) },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: () => {}
+    }
+    let remaining = ticks
+    const tick = () => {
+      if (remaining <= 0) {
+        for (const line of stdoutLines) for (const listener of stdoutListeners) listener(`${line}\n`)
+        for (const listener of closeListeners) listener(0)
+        return
+      }
+      remaining -= 1
+      queueMicrotask(tick)
+    }
+    queueMicrotask(tick)
+    return process
+  }
+}
+
+/** Same delay mechanics as `fakeSpawnAfterTicks`, but closes with a non-zero exit code — for proving a branch's own failure. */
+function fakeSpawnFailAfterTicks(exitCode: number, ticks: number): SpawnFn {
+  return () => {
+    const closeListeners: Array<(code: number | null) => void> = []
+    const process: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: () => {} },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: () => {}
+    }
+    let remaining = ticks
+    const tick = () => {
+      if (remaining <= 0) {
+        for (const listener of closeListeners) listener(exitCode)
+        return
+      }
+      remaining -= 1
+      queueMicrotask(tick)
+    }
+    queueMicrotask(tick)
     return process
   }
 }
@@ -616,5 +680,182 @@ describe('buildAgentSpawnStateGraph — conditional routing on a decision', () =
     })) as AgentSpawnGraphStateValue
 
     expect(finalState.results.solo?.kind).toBe('mechanical')
+  })
+})
+
+describe('buildAgentSpawnStateGraph — fan-out and join topology (engine-parallel-steps-v1 task 2)', () => {
+  /**
+   * `start` fans out to two independent agent-spawn branches, joined by a
+   * mechanical `join` — the same shape `@atta/engine`'s own
+   * `FAN_OUT_JOIN_YAML` compiler fixture proves at the edge-compilation
+   * layer (`compile-flow.test.ts`). No `decision` anywhere in this Plan:
+   * fan-out/join is unconditional topology, kept deliberately separate from
+   * the conditional-routing suite above.
+   */
+  function fanOutJoinPlan(): Plan {
+    const start: PlanMechanicalNode = {
+      id: 'start',
+      role: 'mechanical',
+      kind: 'mechanical',
+      action: 'start-action',
+      metadata: {}
+    }
+    const branchA: PlanAgentSpawnNode = {
+      id: 'branch-a',
+      role: 'agent-spawn',
+      kind: 'agent-spawn',
+      promptTemplate: 'Branch A.',
+      agentRole: 'worker-a',
+      permission: 'default',
+      workingDirectory: workingDirectoryRoot,
+      maxTurns: 5,
+      metadata: {}
+    }
+    const branchB: PlanAgentSpawnNode = {
+      id: 'branch-b',
+      role: 'agent-spawn',
+      kind: 'agent-spawn',
+      promptTemplate: 'Branch B.',
+      agentRole: 'worker-b',
+      permission: 'default',
+      workingDirectory: workingDirectoryRoot,
+      maxTurns: 5,
+      metadata: {}
+    }
+    const join: PlanMechanicalNode = {
+      id: 'join',
+      role: 'mechanical',
+      kind: 'mechanical',
+      action: 'join-action',
+      metadata: {}
+    }
+    return {
+      ...twoStepPlan,
+      graph: {
+        nodes: { start, 'branch-a': branchA, 'branch-b': branchB, join },
+        edges: [
+          { from: 'start', to: 'branch-a', kind: 'flow' },
+          { from: 'start', to: 'branch-b', kind: 'flow' },
+          { from: 'branch-a', to: 'join', kind: 'flow' },
+          { from: 'branch-b', to: 'join', kind: 'flow' }
+        ],
+        conditionalEdges: [],
+        entryNode: 'start'
+      }
+    }
+  }
+
+  function fanOutJoinConfig(onEvent: (event: AgentLifecycleEvent) => void): AgentSpawnExecutorConfig {
+    return {
+      workingDirectoryRoot,
+      roleBinaries: {
+        'worker-a': { command: 'worker-a-cmd', allowedPermissions: ['default'], buildArgs: () => [] },
+        'worker-b': { command: 'worker-b-cmd', allowedPermissions: ['default'], buildArgs: () => [] }
+      },
+      mechanicalActions: {
+        'start-action': { command: 'start-cmd' },
+        'join-action': { command: 'join-cmd' }
+      },
+      onEvent
+    }
+  }
+
+  it('runs both branches concurrently — interleaved, not sequential — and joins exactly once after both complete', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const plan = fanOutJoinPlan()
+    const config = fanOutJoinConfig((e) => events.push(e))
+
+    // branch-a is the "slow" branch (30 microtask hops to close), branch-b
+    // the "fast" one (1 hop) — a deterministic, non-wall-clock way to force
+    // overlap. If the executor ran branches sequentially, branch-b could
+    // never start (let alone complete) until branch-a's close fires 30
+    // hops later; observing branch-b complete before branch-a even
+    // completes is only possible if LangGraph invoked both node functions
+    // before either settled.
+    const spawnFn: SpawnFn = (command, args, options) => {
+      if (command === 'worker-a-cmd') return fakeSpawnAfterTicks(['{"type":"result"}'], 30)(command, args, options)
+      if (command === 'worker-b-cmd') return fakeSpawnAfterTicks(['{"type":"result"}'], 1)(command, args, options)
+      return fakeSpawn([])(command, args, options)
+    }
+
+    const executor = createAgentLifecycleNodeExecutor(config, spawnFn)
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    const finalState = (await graph.invoke({
+      runId: 'run-fanout',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    const indexOfType = (type: AgentLifecycleEvent['type'], nodeId: string) =>
+      events.findIndex((e) => e.type === type && e.nodeId === nodeId)
+    const branchAStart = indexOfType('node:start', 'branch-a')
+    const branchAComplete = indexOfType('node:complete', 'branch-a')
+    const branchBComplete = indexOfType('node:complete', 'branch-b')
+    const joinStarts = events.filter((e) => e.type === 'node:start' && e.nodeId === 'join')
+    const joinCompletes = events.filter((e) => e.type === 'node:complete' && e.nodeId === 'join')
+
+    // (a) genuine concurrency, proved by event interleaving, not timing:
+    // branch-a has already started, and branch-b has already completed,
+    // while branch-a is still mid-flight.
+    expect(branchAStart).toBeGreaterThanOrEqual(0)
+    expect(branchAStart).toBeLessThan(branchBComplete)
+    expect(branchBComplete).toBeLessThan(branchAComplete)
+
+    // (b) the join node's own executor is invoked exactly once, only after
+    // both branches have completed.
+    expect(joinStarts).toHaveLength(1)
+    expect(joinCompletes).toHaveLength(1)
+    const joinStartIndex = events.indexOf(joinStarts[0]!)
+    expect(branchAComplete).toBeLessThan(joinStartIndex)
+    expect(branchBComplete).toBeLessThan(joinStartIndex)
+
+    // (c) every event carries the nodeId of the node that produced it —
+    // attribution survives interleaving. Each node's own event-type
+    // sequence is exactly what that node kind emits, with no cross-node
+    // bleed.
+    const typesFor = (nodeId: string) => events.filter((e) => e.nodeId === nodeId).map((e) => e.type)
+    expect(typesFor('branch-a')).toEqual(['node:start', 'node:streaming', 'node:complete'])
+    expect(typesFor('branch-b')).toEqual(['node:start', 'node:streaming', 'node:complete'])
+    expect(typesFor('join')).toEqual(['node:start', 'node:complete'])
+    expect(typesFor('start')).toEqual(['node:start', 'node:complete'])
+    expect(events.every((e) => e.runId === 'run-fanout')).toBe(true)
+
+    expect(finalState.results.join?.kind).toBe('mechanical')
+    expect(finalState.revisionCounts.join).toBe(1)
+    expect(finalState.revisionCounts['branch-a']).toBe(1)
+    expect(finalState.revisionCounts['branch-b']).toBe(1)
+  })
+
+  it('a branch failure rejects invoke() and the join node never runs, even after its sibling already succeeded', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const plan = fanOutJoinPlan()
+    const config = fanOutJoinConfig((e) => events.push(e))
+
+    // branch-b succeeds quickly; branch-a fails afterward — proving the
+    // join is skipped even when one sibling had already completed
+    // successfully by the time the other one failed, not merely when both
+    // are still pending.
+    const spawnFn: SpawnFn = (command, args, options) => {
+      if (command === 'worker-a-cmd') return fakeSpawnFailAfterTicks(1, 10)(command, args, options)
+      if (command === 'worker-b-cmd') return fakeSpawnAfterTicks(['{"type":"result"}'], 1)(command, args, options)
+      return fakeSpawn([])(command, args, options)
+    }
+
+    const executor = createAgentLifecycleNodeExecutor(config, spawnFn)
+    const graph = buildAgentSpawnStateGraph(plan, executor, config)
+
+    await expect(
+      graph.invoke({ runId: 'run-fail-join', results: {}, sessions: {}, revisionCounts: {} })
+    ).rejects.toThrow(/Agent-spawn node 'branch-a'.*exited with code 1/)
+
+    const joinStarts = events.filter((e) => e.type === 'node:start' && e.nodeId === 'join')
+    expect(joinStarts).toHaveLength(0)
+
+    const branchBComplete = events.find((e) => e.type === 'node:complete' && e.nodeId === 'branch-b')
+    expect(branchBComplete).toBeDefined()
+    const branchAFailed = events.find((e) => e.type === 'node:failed' && e.nodeId === 'branch-a')
+    expect(branchAFailed).toBeDefined()
   })
 })
