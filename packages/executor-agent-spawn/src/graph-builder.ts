@@ -19,6 +19,26 @@
  * finding, confirmed again for this task) — routing reads `node.decision`
  * exclusively, never that array. Because a decision's `ifTrue` can route
  * back to an earlier node, this graph is not assumed acyclic anywhere below.
+ *
+ * Fan-out and join (`engine-parallel-steps-v1` task 2) need no code of
+ * their own here. A step several others each name as their sole
+ * `dependsOn` compiles (task 1, `@atta/engine`) to several `PlanEdge`s
+ * sharing one `from` — the edge-replay loop below already calls `addEdge`
+ * once per edge, so fan-out falls straight out of it. A step naming several
+ * dependencies compiles to several edges sharing one `to` — several
+ * `addEdge` calls into the same node id, which is already how LangGraph
+ * joins: a node with multiple declared incoming edges runs once, only
+ * after every one of them has fired, native Pregel behavior this file does
+ * not re-implement. "Fail the join" falls out the same way, with no new
+ * state: a branch node's own failure already throws inside
+ * `createAgentLifecycleNodeExecutor`'s `catch` block, which rejects the
+ * whole `graph.compile().invoke()` call before the join node's turn can
+ * ever come up in the traversal — the join's result is simply never
+ * recorded, so it can never read as a pass. See
+ * `graph-builder.test.ts`'s `'buildAgentSpawnStateGraph — fan-out and join
+ * topology'` suite for the real proof (concurrent branch execution via
+ * interleaved events, the join running exactly once, and a branch failure
+ * rejecting `invoke()` with the join never starting).
  */
 
 import { END, StateGraph } from '@langchain/langgraph'
