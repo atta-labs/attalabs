@@ -61,7 +61,7 @@ jobs:
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: npx --yes @attalabs/vinaya@0.23.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.24.1 check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs.
   #
@@ -103,13 +103,26 @@ jobs:
           # query matches that immutable display_title exactly.
           set -o pipefail
           RUN_TITLE="Vinaya Review Gate PR #$PR_NUMBER @ $HEAD_SHA"
+          # O7 (found live 2026-09-04): dropped `select(.status == "completed")`
+          # — two retriggers for the same head race the SAME required run
+          # (PR #401, PR #409: runs 33841069791/33841065139), and the loser's
+          # query landed while the winner's `gh run rerun` had already
+          # flipped the run to `in_progress`. Requiring `completed` made
+          # that run invisible to the loser entirely — not "already handled,
+          # skip", but "nothing matched, give up" — so when that in-flight
+          # attempt itself later failed, nothing retried it again and the
+          # gate stayed red until a hand rerun. Matching on title+event alone
+          # (any status) lets the loser find the SAME run mid-run and try
+          # `gh run rerun` on it too; the existing "declined (already
+          # queued)" fallback below already handles that outcome harmlessly
+          # — it is not a new failure mode, only a query that used to see
+          # nothing at all now sees the run and takes the same safe no-op.
           RUN_ID=$(gh api --paginate \
             "repos/${{ github.repository }}/actions/workflows/vinaya-review.yml/runs?event=pull_request_target&per_page=100" \
             | jq -sr --arg title "$RUN_TITLE" '
                 [.[].workflow_runs[]
                  | select(.display_title == $title)
                  | select(.event == "pull_request_target")
-                 | select(.status == "completed")
                  | select(.conclusion != "cancelled")
                  | .id][0] // empty')
           if [ -z "$RUN_ID" ]; then

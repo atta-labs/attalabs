@@ -59,7 +59,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          DELIM="PR_BODY_$(date +%s%N)"
+          DELIM="PR_BODY_$(openssl rand -hex 16)"
           echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
           gh pr view "$PR_NUMBER" --json body --jq .body >> "$GITHUB_ENV"
           echo "$DELIM" >> "$GITHUB_ENV"
@@ -71,4 +71,4 @@ jobs:
           # "no PR yet — local dev" and falls through to the ordinary
           # bare-digit scan.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx --yes @attalabs/vinaya@0.23.0 check body-bare-digits
+        run: npx --yes @attalabs/vinaya@0.24.1 check body-bare-digits

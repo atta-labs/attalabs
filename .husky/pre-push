@@ -17,5 +17,10 @@ done
 
 # >>> vinaya:managed:pre-push >>>
 # Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
-npx --yes @attalabs/vinaya@0.23.0 check --all --local || exit 1
+# Forward git's own pre-push stdin (one "<local ref> <local sha> <remote
+# ref> <remote sha>" line per ref being pushed) so main-branch-refusal can
+# tell a tag-only push apart from one that also carries a branch ref.
+VINAYA_PUSH_REFS="$(cat)"
+export VINAYA_PUSH_REFS
+npx --yes @attalabs/vinaya@0.24.1 check --all --local || exit 1
 # <<< vinaya:managed:pre-push <<<
