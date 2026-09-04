@@ -11,8 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@attalabs/aeg-core": "^0.22.0",
-    "@attalabs/aeg-forge-state": "^0.22.0",
+    "@attalabs/aeg-core": "^0.23.0",
+    "@attalabs/aeg-forge-state": "^0.23.0",
     "@atta/cms": "workspace:*",
     "@atta/instrumentation": "workspace:*",
     "@atta/ui": "workspace:*",

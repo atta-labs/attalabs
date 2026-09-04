@@ -10,9 +10,13 @@
 # comment fires a different GitHub event that this
 # workflow structurally cannot receive — and keeping the comment path in a
 # separate FILE means this workflow's runs never list permanently-skipped
-# comment jobs on the PR's checks panel. When a clean final verdict lands,
-# the verdict workflow re-runs this one, so the required check below goes
-# green natively with no manual rerun.
+# comment jobs on the PR's checks panel. The CI-green retrigger half lives
+# in its own workflow too (vinaya-review-retrigger.yml, Issue #402 O4): it
+# only ever fires on `workflow_run`, so it never appears as a check-run —
+# skipped or otherwise — against this workflow's own `pull_request_target`
+# runs. When a clean final verdict lands, or CI turns green, one of those
+# two workflows re-runs this one, so the required check below goes green
+# natively with no manual rerun.
 name: Vinaya Review Gate
 run-name: "Vinaya Review Gate PR #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }}"
 
@@ -32,12 +36,12 @@ on:
 #
 # The key carries the head SHA as well as the PR number, and that second half
 # is load-bearing. Keyed on the PR alone, every run for that PR shares one
-# group — including a rerun of an EARLIER commit's run, which the verdict
-# retrigger performs. Measured on PR #22: re-running the old commit's run
-# (attempt 4) cancelled the current commit's run after one second, so a push
-# appeared to produce a cancelled gate. Runs for different commits must not be
-# able to cancel each other; runs for the SAME commit still collapse, which is
-# the duplicate this group exists to remove.
+# group — including a rerun of an EARLIER commit's run, which a retrigger
+# performs. Measured on PR #22: re-running the old commit's run (attempt 4)
+# cancelled the current commit's run after one second, so a push appeared to
+# produce a cancelled gate. Runs for different commits must not be able to
+# cancel each other; runs for the SAME commit still collapse, which is the
+# duplicate this group exists to remove.
 #
 # `cancel-in-progress` is safe here and not merely tolerable: the job is a
 # pure re-evaluation of forge state that takes seconds, so a cancelled run had
@@ -54,6 +58,7 @@ jobs:
       contents: read
       pull-requests: read
       issues: read
+      checks: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,4 +76,4 @@ jobs:
           # it the adapter reads "no PR yet — local dev" and exits 0, and
           # the gate is green regardless of review state.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx --yes @attalabs/vinaya@0.22.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.23.0 check review-gate

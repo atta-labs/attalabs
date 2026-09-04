@@ -50,6 +50,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # PR_BODY is what makes body-bare-digits EVALUATE at all — the bin
+      # reads `process.env.PR_BODY` only, never fetches it itself. Fetched
+      # live from the forge, never the event payload — same reasoning as
+      # `vinaya-checks.yml`'s own PR_BODY step.
+      - name: Fetch PR body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          DELIM="PR_BODY_$(date +%s%N)"
+          echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
+          gh pr view "$PR_NUMBER" --json body --jq .body >> "$GITHUB_ENV"
+          echo "$DELIM" >> "$GITHUB_ENV"
       - name: Body checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +71,4 @@ jobs:
           # "no PR yet — local dev" and falls through to the ordinary
           # bare-digit scan.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          # PR_BODY is what makes body-bare-digits EVALUATE at all — the bin
-          # reads `process.env.PR_BODY` only, never fetches it itself.
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: npx --yes @attalabs/vinaya@0.22.0 check body-bare-digits
+        run: npx --yes @attalabs/vinaya@0.23.0 check body-bare-digits

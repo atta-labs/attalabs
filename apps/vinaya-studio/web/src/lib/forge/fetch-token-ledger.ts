@@ -44,7 +44,13 @@
  */
 
 import { graphql } from '@octokit/graphql'
-import { aggregateTaskTokenRows, buildBranchName, type LedgerRow, type TokenSourcePr } from '@attalabs/aeg-core'
+import {
+  aggregateTaskTokenRows,
+  buildBranchName,
+  type LedgerRow,
+  PRINCIPAL_ALLOWLIST,
+  type TokenSourcePr
+} from '@attalabs/aeg-core'
 import { resolveGithubToken } from '@attalabs/aeg-forge-state'
 
 export type FetchTokenLedgerInput = {
@@ -107,9 +113,9 @@ export async function fetchTrancheTokenLedger(input: FetchTokenLedgerInput): Pro
     const prs: TokenSourcePr[] = prNodes.map((pr) => ({
       number: pr.number,
       body: pr.body ?? '',
-      comments: pr.comments.nodes.map((c) => c.body)
+      comments: pr.comments.nodes.map((c) => ({ body: c.body, author: c.author?.login ?? null }))
     }))
-    ledgers.set(task.id, aggregateTaskTokenRows(prs))
+    ledgers.set(task.id, aggregateTaskTokenRows(prs, PRINCIPAL_ALLOWLIST))
   }
 
   return { ledgers, unavailable: false }
@@ -129,7 +135,7 @@ function buildBatchQuery(tranche: string, tasks: FetchTokenLedgerInput['tasks'])
       states: [MERGED],
       orderBy: { field: CREATED_AT, direction: ASC }
     ) {
-      nodes { number body comments(first: 100) { nodes { body } } }
+      nodes { number body comments(first: 100) { nodes { body author { login } } } }
     }`
     })
     .join('')
@@ -146,7 +152,7 @@ function aliasFor(taskId: string): string {
   return `t_${sanitized}`
 }
 
-type CommentsNode = { nodes: Array<{ body: string }> }
+type CommentsNode = { nodes: Array<{ body: string; author: { login: string } | null }> }
 type PrNode = { number: number; body: string | null; comments: CommentsNode }
 type PrsNode = { nodes: PrNode[] } | undefined
 

@@ -3,20 +3,52 @@
 
 This repo is governed by Vinaya: obligations that would otherwise depend on
 an agent following instructions run as functions instead, layered in three
-enforcement rings.
+enforcement rings (the full model is inside the doctrine — see "Where the
+full doctrine lives" below).
 
-- **Ring 0 (git hooks)** — always on, never configurable. Every commit and
-  push runs the registered checks locally, before anything reaches the forge.
-- **Ring 1 (forge-write interception)** — opt-in. Validates a PR/Issue body
-  against the configured brief schema before the write reaches the forge.
-- **Ring 2 (async audits)** — opt-in. Forge-scheduled mechanisms (archive,
-  dead-branch-push and direct-main-push detection) that run after the fact.
+- **Ring 0 (hooks)** — always on, never configurable. Every commit and push
+  runs the registered checks locally, before anything reaches the forge.
+- **Ring 1 (branch rules)** — always on. The forge re-runs the identical
+  checks as CI on every pull request and blocks merge while any is red —
+  the backstop for writers the local hooks can't reach (web UI, other
+  tools, humans).
+- **Ring 2 (audits)** — always on. Forge-scheduled, after merge,
+  continuous: drift (archive state, dead-branch-push, direct-main-push) is
+  surfaced as findings regardless of who or what wrote it.
+
+`vinaya.config.json`'s `rings` block does not switch these on or off — every
+ring above runs unconditionally, for every adopter, by default.
+`ring1_forgeWriteInterception` and `ring2_asyncAudits` are opt-in
+**accelerators**, not on/off switches: `false` or absent (the default) is a
+no-op — the real work above keeps running exactly as described above;
+`true` skips only the non-security-critical part of that ring's work once
+you've outgrown it (brief-schema validation for ring 1; dead-branch-push
+bookkeeping for ring 2). Neither flag ever disables direct-main-push
+detection — that stays unconditional by design.
+
+## Your role
+
+Pick the role you're working as and load its doctrine before doing
+anything substantive:
+
+    vinaya doctrine --role <name>
+
+prints the absolute path to that role's doctrine — `architect`,
+`developer`, `reviewer`, `planner`, `security`, `archivist`,
+`tranche-archivist`, `brief-author`, or `principal`. If your agent tool
+supports slash-style commands, the same doctrine is likely exposed as
+`/vinaya <role>` — check your tool's command list before falling back to
+the raw CLI form.
+
+Regardless of role, load the front door first, every session: run
+`vinaya doctrine` with no `--role` (see "Where the full doctrine lives"
+below for what that resolves to).
 
 ## Where governance lives in this repo
 
-- **`vinaya.config.json`** — the ruleset: which rings are on, the registered
-  `checks`, the `roles` overrides/additions, and the brief schema a PR/Issue
-  body must satisfy.
+- **`vinaya.config.json`** — the ruleset: the two accelerator flags above, the
+  registered `checks`, the `roles` overrides/additions, and the brief
+  schema a PR/Issue body must satisfy.
 - **`.vinaya/hooks`** and **`.vinaya/doc-owners`** — the installed
   git-hook scripts (ring 0) and the code-to-doc coherence manifest.
 
@@ -73,9 +105,6 @@ machine with:
    It prints the front door's absolute path on this machine, installing
    the package first if it has to; the `aeg-root/` directory above it is
    the full doctrine.
-
-If your agent tool supports slash-style commands, it may also expose these
-as `/vinaya <role>` — check your tool's command list.
 
 Live task status is derived from the forge (Issues, labels, comments) via
 `vinaya check` — it is never written into a file here.
