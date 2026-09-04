@@ -101,6 +101,11 @@
         "path": ".husky/pre-push",
         "marker": "pre-push",
         "comment": "hash"
+      },
+      {
+        "path": ".claude/hooks/track-transcript.sh",
+        "marker": "track-transcript",
+        "comment": "hash"
       }
     ],
     "labels": ["vinaya/blocked", "vinaya/override:docs", "vinaya/direct-main-push", "vinaya/dead-branch-push"],

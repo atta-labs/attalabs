@@ -63,22 +63,33 @@ jobs:
       - name: Adopter CI setup
         run: |
           npm install -g bun && bun install --frozen-lockfile --ignore-scripts
+      # PR_BODY is what makes test-plan/closes-n/pr-report-density EVALUATE:
+      # none of the three fetches the body itself (all read
+      # `process.env.PR_BODY` only) — without it they read "no body —
+      # nothing to check" and pass vacuously regardless of the PR's real
+      # content, on every run. Fetched live from the forge, never the
+      # event payload — a rerun of an old run must read the body as it
+      # stands NOW, not as it stood when the triggering event fired.
+      - name: Fetch PR body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          DELIM="PR_BODY_$(date +%s%N)"
+          echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
+          gh pr view "$PR_NUMBER" --json body --jq .body >> "$GITHUB_ENV"
+          echo "$DELIM" >> "$GITHUB_ENV"
       - name: Run checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          # PR_BODY is what makes test-plan/closes-n EVALUATE: neither check
-          # fetches the body itself (both read `process.env.PR_BODY` only) —
-          # without it they read "no body — nothing to check" and pass
-          # vacuously regardless of the PR's real content, on every run.
-          PR_BODY: ${{ github.event.pull_request.body }}
           BRANCH: ${{ github.head_ref }}
         # pipefail is load-bearing: this job's default shell is `bash -e`
         # WITHOUT pipefail, so an unguarded pipe through tee would mask the
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.22.0 check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes @attalabs/vinaya@0.23.0 check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,

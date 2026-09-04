@@ -17,5 +17,5 @@ done
 
 # >>> vinaya:managed:pre-push >>>
 # Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
-npx --yes @attalabs/vinaya@0.22.0 check --all --local || exit 1
+npx --yes @attalabs/vinaya@0.23.0 check --all --local || exit 1
 # <<< vinaya:managed:pre-push <<<

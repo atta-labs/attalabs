@@ -64,6 +64,7 @@ function findPackageJsonFiles(dir: string, out: string[] = []): string[] {
       entry.name === 'node_modules' ||
       entry.name === '.git' ||
       entry.name === '.worktrees' ||
+      entry.name === '.claude' ||
       entry.name === '.next' ||
       entry.name === '.turbo' ||
       entry.name === 'dist' ||
