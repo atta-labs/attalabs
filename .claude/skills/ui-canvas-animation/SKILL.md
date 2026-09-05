@@ -676,7 +676,8 @@ packages/ui/canvas/
 ├── herald-logo.tsx        — Herald's real brand logo (Sanity `branding-herald`), reused verbatim as `currentColor` SVG inside an AIASphere's clipped children slot — one of the TWO sanctioned SVG marks in that hero, a real product asset not a decorative illustration (AttaLabs ecosystem hero's Herald node)
 ├── engine-mark.tsx        — Canvas-drawn plan nodes converging through a funnel into one execution node, ringed by a slowly rotating gear (AttaLabs ecosystem hero's Atta Engine node). Authored in a 300×410 reference box, scaled from its width, so the gear alone carries the same diameter as the sphere marks and the plan fan gets its own band above
 ├── vada-face.tsx          — Vāda's real emblematic agent faces (Strategist / Critic / Devil's Advocate), ported verbatim from the product's own agent-faces-full.tsx — the hero's other sanctioned SVG mark, real product assets rather than decorative illustration (AttaLabs ecosystem hero's Vāda node)
-└── assistant-wave.tsx     — Standalone SVG wave
+├── assistant-wave.tsx     — Standalone SVG wave
+└── vinaya-hero/           — The landing hero's 3D scene modules (harness-model.js, field-3d.js, underworld-beam.js), copied byte-for-byte from an approved Claude Design handoff and biome-ignored (`!packages/ui/canvas/vinaya-hero` in biome.json) for the same reason `libraries/*/installed/*` is: verbatim vendored source that must stay pasteable against its origin, never hand-reformatted. Plain three.js factory functions (`buildHarness`, `buildField`, `buildBeam`), not React components — exported as dedicated subpaths (`@atta/ui/canvas/vinaya-hero/harness-model` etc.), mirroring `hero-fabric.tsx`'s own subpath pattern rather than folding into the `canvas/index.ts` barrel. Consumed by `apps/vinaya-portal/web`'s `hero-canvas/hero-scene.js`, itself dynamic-`import()`ed to keep `three` out of the SSR module graph.
 ```
 
 ### Page-Specific Renderers (apps/vada-ai/web/src/app/)
