@@ -20,6 +20,7 @@
       "!packages/cms/vada-ai",
       "!packages/cms/vinaya-ai",
       "!packages/ui/libraries/*/installed",
+      "!packages/ui/canvas/vinaya-hero",
       "!.worktrees",
       "!.claude/worktrees",
       "!**/.clerk",
