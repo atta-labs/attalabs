@@ -167,7 +167,14 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
         flashHex: card,
         activeRadius: 13
       })
-      const seatY = -DISH - (harness.dims.coreLift - harness.dims.coreRadius)
+      /* Seat the RING, not the core. The harness must always sit above the fabric, including
+         the shock wave's crest. Seating so the core's bottom kisses the dish floor ties the
+         ring's height to the core's lift — and raising that lift (the cel-shaded core sits
+         0.22R above the collar, up from 0.13R) pushed the ring down into the dish until the
+         wave passed over its arms. The seat is pinned to the lift the dish was tuned against;
+         the core's lift above the collar is a core-vs-collar decision and never moves the ring. */
+      const SEAT_LIFT = 0.13
+      const seatY = -DISH - (harness.dims.coreRadius * SEAT_LIFT - harness.dims.coreRadius)
       harness.group.position.y = seatY
       scene.add(harness.group, field.mesh)
       const beam = buildBeam(THREE, { ink, sand, card, topY: seatY + harness.dims.coreLift, depth: 34, rimRadius: 9 })
