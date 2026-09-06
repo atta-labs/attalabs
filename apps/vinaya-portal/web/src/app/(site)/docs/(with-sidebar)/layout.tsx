@@ -9,11 +9,11 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
 
   return (
     // Fills the (site) app-shell's scroll region exactly. `h-full` resolves
-    // against `(site)/layout.tsx`'s `flex-1` content area (a definite height =
-    // viewport − TopBar), so this no longer hardcodes the TopBar's pixel height
-    // — and no longer nests a second `calc(100dvh-56px)` box inside the shell's
-    // own `overflow-y-auto` region. `min-h-0` lets it shrink instead of forcing
-    // that outer region to scroll.
+    // against `(site)/layout.tsx`'s `h-dvh` content area (a definite height,
+    // minus its own `pt-14` reserved for the fixed TopBar), so this no longer
+    // hardcodes the TopBar's pixel height — and no longer nests a second
+    // `calc(100dvh-56px)` box inside the shell's own `overflow-y-auto` region.
+    // `min-h-0` lets it shrink instead of forcing that outer region to scroll.
     // Below `lg` this stacks: `DocSidebarHost`'s drawer bar on top, content
     // below. At `lg`+ it is the same two-column row it has always been (the
     // bar is `lg:hidden`, the rail `hidden lg:flex`).

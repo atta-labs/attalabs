@@ -76,6 +76,13 @@ function linkRowContent(icon: ReactNode, label: ReactNode) {
 export interface TopBarProps {
   /** Pre-built logo node rendered as-is (no link wrapper added). Takes precedence over logoText/logoUrl. */
   logo?: ReactNode
+  /**
+   * Extra className merged onto the `topbar`-variant `ChromeFrame`, after its own default
+   * classes — a consumer can override e.g. the background opacity for its own effect
+   * without touching the shared component. Unset by every existing caller, so this is a
+   * no-op everywhere it isn't explicitly passed.
+   */
+  chromeClassName?: string
   logoText?: string
   logoHref?: string
   logoUrl?: string | null
@@ -305,6 +312,7 @@ function TopBarWithAuth({
   logoHref = '/',
   logoUrl,
   logoTagline,
+  chromeClassName,
   links = [],
   signedInLinks = [],
   extraActions,
@@ -345,7 +353,7 @@ function TopBarWithAuth({
 
   return (
     <nav className='w-full'>
-      <ChromeFrame variant='topbar'>
+      <ChromeFrame variant='topbar' className={chromeClassName}>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (
@@ -503,6 +511,7 @@ function TopBarNoAuth({
   logoHref = '/',
   logoUrl,
   logoTagline,
+  chromeClassName,
   links = [],
   extraActions
 }: InnerProps) {
@@ -536,7 +545,7 @@ function TopBarNoAuth({
 
   return (
     <nav className='w-full'>
-      <ChromeFrame variant='topbar'>
+      <ChromeFrame variant='topbar' className={chromeClassName}>
         {/* Logo — pinned left */}
         <div className='flex flex-1 items-center'>
           {logo ? (

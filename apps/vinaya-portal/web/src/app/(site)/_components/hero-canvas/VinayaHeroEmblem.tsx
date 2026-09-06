@@ -1,239 +1,158 @@
 'use client'
 
-import { Button } from '@atta/ui/components'
+import './hero-core.css'
+
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowDown, GitBranch } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { HeroFabric } from '@atta/ui/canvas/hero-fabric'
-import { EnergyFieldBg } from '../EnergyFieldBg'
-import { LetterReveal } from '../LetterReveal'
-import { HarnessStructure } from './HarnessStructure'
-import { CONDUIT_ANGLES_DEG } from './harness-geometry'
+import { type ReactNode, useEffect, useRef } from 'react'
+import { useHeroLockupNodes } from '../hero-lockup-context'
+import { attachLockupFlip, dockImmediately } from './lockup-flip'
 
-// The harness's electricity-arc angles in radians — the grid agents in the fabric are born
-// at these points (the electricity), then walk the mesh toward the cursor.
-const EMIT_ANGLES = CONDUIT_ANGLES_DEG.map((d) => (d * Math.PI) / 180)
-
-// Persisted "has the build already played" flag (Vāda pattern): first visit animates,
-// every visit after — this session or a later one — shows the final state instantly.
-const SEEN_KEY = 'vinaya-hero-seen'
-
-// Ring px scales with the viewport but caps so slogan + emblem fit one screen.
-function useResponsiveRing() {
-  const [ringSize, setRingSize] = useState(400)
-  useEffect(() => {
-    const compute = () => {
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      setRingSize(Math.round(Math.min(380, vw * 0.7, vh * 0.48)))
-    }
-    compute()
-    window.addEventListener('resize', compute)
-    return () => window.removeEventListener('resize', compute)
-  }, [])
-  return ringSize
-}
-
-// main's squeeze pulse (0→1): compresses under the clamp's pressure, then rebounds past 1
-// and settles — the physical "grab" whose rebound punches out the shock wave.
-function pulseScale(x: number): number {
-  if (x <= 0 || x >= 1) return 1
-  if (x < 0.22) return 1 - 0.17 * (x / 0.22) // compress 1 → 0.83
-  if (x < 0.5) return 0.83 + 0.28 * ((x - 0.22) / 0.28) // rebound 0.83 → 1.11
-  return 1.11 - 0.11 * ((x - 0.5) / 0.5) // settle 1.11 → 1.0
-}
-
-// The harness center — the protected `main` branch. Exported so other
-// sections can reuse the same mark instead of inventing a second circle.
-export function MainBranchNode({ size }: { size: number }) {
-  return (
-    <svg
-      viewBox='0 0 100 100'
-      width={size}
-      height={size}
-      aria-label='Protected main branch'
-      className='overflow-visible'
-    >
-      <title>Protected main branch</title>
-      <circle cx={50} cy={50} r={48} className='fill-secondary stroke-primary' strokeWidth={2} />
-      <text x={50} y={42} textAnchor='middle' className='fill-primary font-mono text-base font-bold'>
-        main
-      </text>
-      <GitBranch x={37} y={50} width={26} height={26} strokeWidth={2.75} className='fill-none stroke-primary' />
-    </svg>
-  )
-}
+/* Class strings for the letters `hero-scene.js` splits into <i> tags — authored here so
+   Tailwind's @source scan (which only reads .ts/.tsx) actually generates them; a class
+   string literal inside the .js factory compiles to nothing. */
+const LETTER_CLASS = { word: 'inline-block whitespace-nowrap', letter: 'inline-block not-italic' }
 
 function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
   const isLanding = landingActions !== undefined
-  const ringSize = useResponsiveRing()
-  const mainSize = Math.round(ringSize * 0.3)
-  const mainRadius = mainSize / 2
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const heroViewportRef = useRef<HTMLDivElement>(null)
+  const getLockupNodes = useHeroLockupNodes()
 
-  const [coreRevealed, setCoreRevealed] = useState(false)
-  const [screwProgress, setScrewProgress] = useState(0)
-  const [deployProgress, setDeployProgress] = useState(0)
-  const [clamp, setClamp] = useState(0)
-  const [spark, setSpark] = useState(0)
-  const [content, setContent] = useState(0)
-  const [gravity, setGravity] = useState(0)
-  const [pulseKey, setPulseKey] = useState(0)
-  const [mainPulse, setMainPulse] = useState(0)
-  const rafs = useRef<number[]>([])
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
-  const ringBoxRef = useRef<HTMLDivElement>(null)
-
-  // Plays the build on every load — the once-only gate below is deliberately
-  // disabled (Principal-set), not deleted. Restoring it is a one-line flip:
-  // uncomment the `if (seen) { ... return }` block below and nothing else.
+  // Mounts the ported Claude Design scene from a dynamic import so `three` stays out of
+  // the SSR module graph (the `/life-cycle` precedent). `cancelled` guards the async
+  // import racing an unmount; App Router remounts on client navigation and React 18
+  // StrictMode double-invokes effects in dev, so `dispose()` is mandatory, not defensive.
   useEffect(() => {
-    let _seen = false
-    try {
-      _seen = window.localStorage.getItem(SEEN_KEY) === '1'
-    } catch {
-      // localStorage unavailable (private mode / SSR guard) — just play the animation.
-    }
-
-    // if (seen) {
-    //   setCoreRevealed(true)
-    //   setScrewProgress(1)
-    //   setDeployProgress(1)
-    //   setClamp(1)
-    //   setSpark(1)
-    //   setContent(1)
-    //   setGravity(1)
-    //   return
-    // }
-
-    const ramp = (dur: number, set: (v: number) => void) => {
-      const t0 = performance.now()
-      const step = (now: number) => {
-        const p = Math.min(1, (now - t0) / dur)
-        set(p)
-        if (p < 1) rafs.current.push(requestAnimationFrame(step))
-      }
-      rafs.current.push(requestAnimationFrame(step))
-    }
-    const at = (ms: number, fn: () => void) => {
-      timers.current.push(setTimeout(fn, ms))
-    }
-
-    // Four clearly separated beats, each internally simultaneous, with a
-    // deliberate pause between beats so the build reads as a sequence rather
-    // than one continuous blur: screws → frame → electricity → grab.
-    at(500, () => setCoreRevealed(true)) // 1. main scales in
-    at(700, () => ramp(500, setScrewProgress)) // 2. all 4 corner screws rise together (700-1200ms)
-    at(1500, () => ramp(700, setDeployProgress)) // 3. all 4 ring bands deploy from their screws (1500-2200ms)
-    at(2550, () => ramp(450, setSpark)) // 4. all 4 currents strike + connect-flash (2550-3000ms)
-    at(3350, () => ramp(800, setClamp)) // 5. columns extend + hook/screw latch onto main (3350-4150ms)
-    // 6. As the hooks bite, main SQUEEZES under the pressure (compress → rebound).
-    at(4100, () => ramp(620, setMainPulse))
-    // 7. The rebound punches out the shock wave + curvature — the consequence of the grab.
-    //    Curvature radiates from main outward (radialFold) at the wave's pace, synced to the
-    //    ClosingPulse and to main's rebound.
-    at(4230, () => {
-      ramp(1300, setGravity)
-      setPulseKey((k) => k + 1)
+    let cancelled = false
+    let scene: { dispose: () => void } | undefined
+    import('./hero-scene').then(({ mountHeroScene }) => {
+      if (cancelled || !canvasRef.current) return
+      scene = mountHeroScene({
+        canvas: canvasRef.current,
+        root: rootRef.current,
+        labelClass: LETTER_CLASS
+      })
     })
-    at(4450, () => ramp(600, setContent)) // 8. text + CTA fade in
-    at(5150, () => {
-      // Remember it played — every later visit skips straight to the final state.
-      try {
-        window.localStorage.setItem(SEEN_KEY, '1')
-      } catch {
-        // ignore
-      }
-    })
-
     return () => {
-      for (const t of timers.current) clearTimeout(t)
-      for (const r of rafs.current) cancelAnimationFrame(r)
+      cancelled = true
+      scene?.dispose()
     }
   }, [])
 
+  // The hero renders no wordmark of its own — it only writes a `transform` onto the
+  // topbar's real lockup node (the single-lockup rule, stated in `hero-lockup-context.tsx`). `getLockupNodes()` reads a plain
+  // mutable object populated by callback refs during commit, so it's already correct by
+  // the time this effect runs (no re-render/subscription needed).
+  //
+  // Statically imported, unlike `hero-scene.js` above: that dynamic import exists to keep
+  // `three` out of the SSR module graph, a real cost this tiny DOM/math module doesn't
+  // carry. A dynamic import here bought nothing but a load race — the giant, centered
+  // hero-scale transform this effect applies only appears once its network+parse round
+  // trip resolves, so a slow chunk load left the lockup visibly sitting at its tiny
+  // natural topbar position (the "not centered" reports) until it resolved. A static
+  // import runs synchronously on mount instead.
+  //
+  // Even so, this effect still runs one paint after the browser's first paint of the
+  // un-transformed DOM — `HeroLockup.tsx` hides the whole lockup by default on landing
+  // (`[[data-bare=true]_&]:opacity-0`) for exactly that gap, and the `requestAnimationFrame`
+  // below reveals it. Scheduled right after `attachLockupFlip` attaches its own rAF loop,
+  // it runs strictly after that loop's first tick (callbacks fire in request order) — so
+  // opacity only turns on once a transform has actually been computed, never before.
+  //
+  // The per-letter cascade (`HeroLockup.tsx`'s `Letters`) is revealed from the SAME
+  // callback: each letter already carries its own CSS `transitionDelay`, so flipping them
+  // all to visible in one pass here is enough to produce the staggered letter-by-letter
+  // reveal — no per-letter timing logic needed on this side.
+  useEffect(() => {
+    const { lockup, word, desc, mark, bar } = getLockupNodes()
+    const hero = heroViewportRef.current
+    if (!hero || !lockup || !word) return
+
+    const revealLetters = () => {
+      for (const el of lockup.querySelectorAll<HTMLElement>('[data-letter]')) {
+        el.style.opacity = '1'
+        el.style.transform = 'translateY(0)'
+      }
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) {
+      dockImmediately({ lockup, desc, mark, bar })
+      lockup.style.opacity = '1'
+      revealLetters()
+      return
+    }
+    const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
+    const revealRaf = requestAnimationFrame(() => {
+      lockup.style.opacity = '1'
+      revealLetters()
+    })
+    return () => {
+      stop()
+      cancelAnimationFrame(revealRaf)
+    }
+  }, [getLockupNodes])
+
   return (
-    <div className='relative h-full w-full'>
-      {/* Self-contained fabric — warped grid + curvature + shock wave, centered on main. */}
-      <HeroFabric centerRef={ringBoxRef} gravity={gravity} pulseKey={pulseKey} emitAngles={EMIT_ANGLES} />
+    <div ref={rootRef} className='relative h-full w-full'>
+      <div data-hero-track className='relative h-[320vh] w-full'>
+        <div
+          ref={heroViewportRef}
+          data-hero-viewport
+          className='sticky top-0 h-dvh w-full overflow-hidden bg-background'
+        >
+          {/* translate-y is a pure post-render visual nudge — it doesn't touch hero-scene.js's
+              own resize/aspect math (still sized off this div's untranslated box), so the
+              harness's own camera framing stays exactly as authored; this just shifts the
+              already-rendered image down a bit within the (overflow-hidden) viewport, per
+              live feedback that it read too close to the wordmark above it. */}
+          <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full translate-y-12' />
 
-      {/* Cursor-reactive energy over the fabric — same effect as the Workflow section, but
-          grid-less so it layers on HeroFabric's own mesh instead of doubling it. */}
-      <EnergyFieldBg showGrid={false} particles={false} />
-
-      <div className='relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 pb-10 text-center sm:pb-16'>
-        <div className='flex flex-col items-center justify-center gap-3'>
+          {/* title + sub: hidden at scroll 0, revealed a line at a time */}
           {isLanding ? (
-            <>
+            <div className='pointer-events-none absolute inset-x-0 top-0 z-2 flex h-[52%] flex-col items-center justify-center gap-2 px-6 text-center'>
               <Heading
                 level={1}
                 weight='normal'
-                className='text-balance font-serif text-3xl leading-none tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl'
+                className='m-0 text-balance font-serif text-[clamp(1.875rem,5.4vw,4rem)] leading-none tracking-tight text-foreground'
               >
-                <LetterReveal text='Agents write code' />
+                <span data-hero-h1a data-text='Agents write code' />
                 <br />
-                <LetterReveal text='Vinaya ships software' startIndex={17} />
+                <span data-hero-h1b data-text='Vinaya ships software' />
               </Heading>
-              <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground sm:text-xl md:text-2xl'>
-                <LetterReveal text='Your agent moves fast. Vinaya holds the wheel.' startIndex={39} delayStepMs={10} />
+              <Text className='m-0 mt-3.5 text-balance font-sans text-[clamp(0.9375rem,1.7vw,1.375rem)] leading-normal text-muted-foreground'>
+                <span data-hero-sub data-text='Your agent moves fast. Vinaya holds the line.' />
               </Text>
-            </>
+            </div>
           ) : (
-            <>
+            <div className='pointer-events-none absolute inset-x-0 top-0 z-2 flex h-[52%] flex-col items-center justify-center gap-2 px-6 text-center'>
               <Heading
                 level={1}
-                className='text-balance font-sans text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
+                className='m-0 text-balance font-sans text-3xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl'
               >
                 Sustainable software development
                 <br />
                 for the <span className='rounded-lg bg-accent px-3'>AI era</span>.
               </Heading>
-              <Text className='text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
+              <Text className='m-0 text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
                 A harness for your software engineering process
               </Text>
-            </>
-          )}
-        </div>
-        <div ref={ringBoxRef} className='relative shrink-0' style={{ width: ringSize, height: ringSize }}>
-          {/* main — scales in at the center; the columns clamp onto it. */}
-          <div className='absolute inset-0 flex items-center justify-center opacity-90'>
-            <div
-              className={`transition-all duration-700 ease-out ${coreRevealed ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
-            >
-              {/* squeeze-pulse under the clamp pressure — inner wrapper so it composes with
-                  the reveal scale above without fighting it */}
-              <div style={{ transform: `scale(${pulseScale(mainPulse)})` }}>
-                <MainBranchNode size={mainSize} />
-              </div>
             </div>
-          </div>
-
-          {/* The wireframe harness — accent, builds from nothing (draw-on). */}
-          <HarnessStructure
-            size={ringSize}
-            coreRadius={mainRadius - 3}
-            screwProgress={screwProgress}
-            deployProgress={deployProgress}
-            clamp={clamp}
-            spark={spark}
-          />
-        </div>
-
-        <div
-          className={isLanding ? 'flex flex-wrap items-center justify-center gap-4' : undefined}
-          style={{ opacity: content }}
-        >
-          {isLanding ? (
-            landingActions
-          ) : (
-            <Button
-              type='button'
-              size='lg'
-              onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              See how it works
-              <ArrowDown className='size-4' />
-            </Button>
           )}
+
+          {/* scroll cue, shown only once the build has finished */}
+          <div
+            data-hero-descend
+            className='pointer-events-none absolute bottom-[clamp(1.5rem,5vh,3rem)] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2.5 opacity-0 transition-opacity duration-600 ease-out'
+          >
+            <span className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>Scroll</span>
+            <span className='flex flex-col items-center gap-[0.1667rem]'>
+              <span className='block h-px w-[1.8889rem] bg-foreground' />
+              <span className='block h-px w-[1.2222rem] bg-foreground/55' />
+              <span className='block h-px w-[0.6667rem] bg-foreground/30' />
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -241,10 +160,17 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
 }
 
 // Outer — a normal in-flow section (NOT a fixed overlay), so it scrolls away like every
-// other section: the page is a flat stack.
+// other section: the page is a flat stack. Its height now follows the sticky scroll
+// track inside it rather than a fixed viewport height. No `overflow-hidden` here: that
+// would make this section itself an intervening scroll container for the inner sticky
+// viewport (CSS gives every `overflow` value but `visible` a scrollport), which breaks
+// `position: sticky` — the viewport's own `overflow-hidden` clips the canvas instead.
+// `SiteContentPad` (`(site)/_components/SiteContentPad.tsx`) skips its `pt-14` on the
+// landing route specifically so this section starts at the true page top, y=0 — the
+// canvas paints under the fixed, transparent TopBarChromeHost.
 export function VinayaHeroEmblem({ landingActions }: { landingActions?: ReactNode }) {
   return (
-    <section id='hero' className='relative h-[calc(100dvh-4rem)] min-h-[42rem] w-full overflow-hidden bg-background'>
+    <section id='hero' className='relative w-full bg-background'>
       <EmblemInner landingActions={landingActions} />
     </section>
   )

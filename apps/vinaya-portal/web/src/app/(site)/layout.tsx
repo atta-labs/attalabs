@@ -22,6 +22,10 @@ import type { ReactNode } from 'react'
 import { getPortalCms } from '@/lib/portal-cms'
 import { ElectricLabel } from './_components/ElectricLabel'
 import { FooterGate } from './_components/FooterGate'
+import { HeroLockup } from './_components/HeroLockup'
+import { HeroLockupProvider } from './_components/hero-lockup-context'
+import { SiteContentPad } from './_components/SiteContentPad'
+import { TopBarChromeHost } from './_components/TopBarChromeHost'
 
 // Every flat item gets a crackling border that lights up only while its own
 // route is active (`ElectricLabel` compares `href` against `usePathname()`
@@ -120,35 +124,47 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const { branding } = await getPortalCms()
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
 
-  // App-shell height: the shell is a full-viewport flex column — TopBar keeps
-  // its own intrinsic height, the content region takes exactly the rest. Pages
-  // that want to fill the viewport (docs/harness, docs/reference and its
-  // sibling doctrine pages) use `h-full` against this region; long pages
-  // (Home, the /docs hub) scroll inside it. No page hardcodes the
-  // TopBar's pixel height (the old `calc(100dvh-56px)`), so the shell can never
-  // drift a few pixels into a stray window scroll.
+  // App-shell height: TopBarChromeHost is `fixed` (out of flow) so the hero section can
+  // sit flush at the true page top and paint its canvas underneath the bar — that's what
+  // lets `chromeClassName`'s transparency show fabric through it instead of blurring
+  // nothing. `SiteContentPad` compensates with `pt-14` on every route except landing
+  // (see its own doc comment for why that padding can't live on this `overflow-y-auto`
+  // container itself — it would fight the hero's `position: sticky`). Pages that want to
+  // fill the viewport (docs/harness, docs/reference and its sibling doctrine pages) use
+  // `h-full` against this region, still a definite height.
   return (
-    <div className='flex h-dvh flex-col'>
-      {/* z-30 keeps the TopBar above the hero emblem's fixed canvas (z-0). */}
-      <div className='relative z-30'>
+    <HeroLockupProvider>
+      {/* z-30 keeps the TopBar above the hero emblem's canvas (z-0). TopBarChromeHost
+          also registers itself as the `bar` node the landing hero's lockup-flip loop
+          writes `data-bare` onto — see `hero-lockup-context.tsx` for the mechanism. */}
+      <TopBarChromeHost>
         <TopBar
           logo={
             <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-              <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+              <HeroLockup logoUrl={logoUrl} />
             </NextLink>
           }
+          // Vinaya's own topbar chrome, all of it carried here so the shared ChromeFrame
+          // stays untouched for every other consumer. Docked: glass, not a solid bar —
+          // `bg-background/35` lets the fabric show through, `backdrop-blur-md` keeps nav
+          // text legible over it. `border-transparent` is unconditional: Vinaya never wants
+          // a topbar border. Bare (landing cold-open, `data-bare="true"` on the
+          // `TopBarChromeHost` ancestor): the background drops to transparent so the canvas
+          // paints straight through the bar. The `[[data-bare=true]_&]:` ancestor selector
+          // outranks the plain `bg-background/35` utility, so no order dependence.
+          chromeClassName='border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none'
           links={links}
           withAuth={false}
         />
-      </div>
-      <div className='min-h-0 flex-1 overflow-y-auto'>
+      </TopBarChromeHost>
+      <div className='h-dvh overflow-y-auto'>
         <FooterGate
           footer={
             <Footer
               product='vinaya'
               logo={
                 <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-                  <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Engineering', 'Harness']} />
+                  <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Git', 'Harness']} />
                 </NextLink>
               }
               links={[
@@ -163,9 +179,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
             />
           }
         >
-          {children}
+          <SiteContentPad>{children}</SiteContentPad>
         </FooterGate>
       </div>
-    </div>
+    </HeroLockupProvider>
   )
 }

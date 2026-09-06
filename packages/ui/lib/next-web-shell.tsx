@@ -112,7 +112,7 @@ export async function NextWebShell({
   }
 
   return (
-    <html lang='en' data-theme={colorScheme}>
+    <html lang='en' data-theme={colorScheme} suppressHydrationWarning={staticColorScheme || undefined}>
       {/* biome-ignore lint/style/noHeadElement: root layout renders the document head */}
       <head>
         {staticColorScheme && (
