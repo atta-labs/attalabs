@@ -695,6 +695,9 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
 
   /* ── electricity: real tubes along the source's wave curve, across each gap ──── */
   const sparkMat = new THREE_.MeshBasicMaterial({ name: 'spark', color: inkHex })
+  /* the sparks' colour is driven per frame (ink → --success as `main` turns green, below), so
+     they need the CURRENT token values, which retheme() refreshes */
+  let sparkPalette = { ink: inkHex, green: greenHex }
   const halfBand = (rOut - rIn) / 2
   const times = WAVE_VARIANTS.map(() => 0)
   for (const deg of CONDUIT_ANGLES_DEG) {
@@ -967,6 +970,9 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
        facing the camera, turning green as it settles */
     const spin = state.spin ?? 0
     const green = cl(state.green ?? 0)
+    /* the outer ring's electricity turns green with `main`: same `green` ramp the label
+       cross-fade rides, so the arcs, the core's label and the current all settle together */
+    sparkMat.color.setHex(mixHex(sparkPalette.ink, sparkPalette.green, green))
     /* main starts with its face pointing UP — readable in the plan view — and rights
        itself as the camera tips, so the single turn reads as a diagonal tumble and lands
        exactly facing the viewer at the end. */
@@ -1024,6 +1030,7 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
       if (m.userData.tint) m.color.setHex(next[m.userData.tint])
     })
     metalSide.color.setHex(mixHex(next.sand, next.ink, 0.34))
+    sparkPalette = { ink: next.ink, green: next.green }
     labelMat.map?.dispose()
     labelMat.map = mkTex(next.ink)
     for (const t of trailMats) t.mat.map = labelMat.map
