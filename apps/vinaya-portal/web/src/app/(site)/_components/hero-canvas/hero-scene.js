@@ -237,7 +237,7 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
         }
 
         harness.update(state)
-        field.update(dt, { mass: 1, time: t })
+        field.update(dt, { mass: 1, time: t, lift: 1 - tip }) // ridge height fades as the camera tips (see field-3d.js)
         if (pointerIn) {
           rayc.setFromCamera(ndc, camera)
           if (rayc.ray.intersectPlane(groundPlane, hit)) field.setCursor(hit)

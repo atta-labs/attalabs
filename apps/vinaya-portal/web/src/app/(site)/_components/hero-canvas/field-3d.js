@@ -242,6 +242,12 @@ export function buildField(THREE_ = THREE, opts = {}) {
        arrived, so the fabric is already curved the moment the core exists. */
     const mass = clamp01(state.mass ?? 1)
     const time = state.time ?? 0
+    /* How much of the shock wave's HEIGHT to render. From the plan view a lifted ridge
+       reads as a ring; from the tipped view the same ridge is seen edge-on, and every
+       hairline crossing its crest lands on one screen curve — their alphas stack into a
+       bright arc per front. The caller fades this with the camera tip; the in-plane
+       radial push below is what carries the wave once the camera is low. */
+    const lift = clamp01(state.lift ?? 1)
     for (let i = pulses.length - 1; i >= 0; i--) {
       const p = pulses[i]
       p.t += dt
@@ -277,7 +283,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
         for (const fr of FRONTS) {
           const dd = d - p.t * fr.speed
           const osc = osc0 * Math.exp(-(dd * dd) / (fr.sigma * fr.sigma))
-          y += osc * fr.amp
+          y += osc * fr.amp * lift
           radial += osc * fr.amp * 1.35
         }
       }
