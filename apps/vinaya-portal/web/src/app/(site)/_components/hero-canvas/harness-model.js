@@ -40,6 +40,15 @@ function mixHex(a, b, t) {
   const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255
   return ((Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t))
 }
+/* relative luminance of an sRGB hex — decides whether the core shades by the
+   card→sand→ink ramp (light card) or by plain darkening (dark card, see the cel shader) */
+function hexLum(hex) {
+  const ch = (v) => {
+    const u = v / 255
+    return u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * ch((hex >> 16) & 255) + 0.7152 * ch((hex >> 8) & 255) + 0.0722 * ch(hex & 255)
+}
 /* Colour comes from the design system's variables or not at all — there are no literal
    colour fallbacks anywhere in this file. A missing token is a bug, so it throws. */
 export function token(name) {
@@ -377,12 +386,17 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
   const LDEEP = new THREE_.Vector3(-0.66, 0.56, 0.26).normalize()
   const DEEP = CORE.ramp === 'deep'
   let sphereMat = core
+  /* Uniform colours must be LINEAR and the fragment must run three's own output transform:
+     a ShaderMaterial gets neither automatically, and missing either lifts the whole ramp back
+     toward white — which looks exactly like the bug this path exists to fix. */
+  const lin = (hex) => new THREE_.Color().setHex(hex, THREE_.SRGBColorSpace)
 
   if (DEEP) {
-    /* Uniform colours must be LINEAR and the fragment must run three's own output transform:
-       a ShaderMaterial gets neither automatically, and missing either lifts the whole ramp back
-       toward white — which looks exactly like the bug this path exists to fix. */
-    const lin = (hex) => new THREE_.Color().setHex(hex, THREE_.SRGBColorSpace)
+    /* The card→sand→ink ramp is aimed at a LIGHT card, where sand and ink are both darker
+       than the card and the shadow side goes darker. On a dark card the same ramp runs the
+       other way — sand and ink are both lighter — so the shadow side would brighten, and by
+       a lot. uDark switches the shadow side to plain darkening of the card instead, which is
+       what the flat path always did in dark mode and reads correctly there. */
     sphereMat = new THREE_.ShaderMaterial({
       name: 'main-core-cel',
       uniforms: {
@@ -393,7 +407,8 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
         uV: { value: VDIR },
         uAo: { value: CORE.contact ? 1 : 0 },
         uLift: { value: CORE_LIFT },
-        uR: { value: coreRadius }
+        uR: { value: coreRadius },
+        uDark: { value: hexLum(cardHex) < 0.5 ? 1 : 0 }
       },
       vertexShader: `
         varying vec3 vN; varying vec3 vP;
@@ -404,19 +419,22 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
       fragmentShader: `
         varying vec3 vN; varying vec3 vP;
         uniform vec3 uCard, uSand, uInk, uL, uV;
-        uniform float uAo, uLift, uR;
+        uniform float uAo, uLift, uR, uDark;
         void main() {
           vec3 n = normalize(vN);
           float d = dot(n, uL);
           float t = d > 0.55 ? 0.0 : d > 0.34 ? 0.10 : d > 0.14 ? 0.22 : 0.36;
           float facing = dot(n, uV);
           if (d < 0.0 && facing > 0.0 && facing < 0.17) t = 0.16;   // rim crescent
-          // card and secondary are close in light mode; the second mix toward primary is
+          // light card: card and secondary are close, so the second mix toward primary is
           // what makes the ramp register at all
-          vec3 col = mix(mix(uCard, uSand, min(1.0, t * 1.1)), uInk, t * 0.22);
+          vec3 lit = mix(mix(uCard, uSand, min(1.0, t * 1.1)), uInk, t * 0.22);
+          // dark card: darken the card itself, gently — the wire net carries the form there
+          vec3 dim = uCard * (1.0 - t * 0.6);
+          vec3 col = mix(lit, dim, uDark);
           float reach = uR * 0.8;
           float ao = pow(clamp((reach - uLift - vP.y) / reach, 0.0, 1.0), 1.6);
-          col = mix(col, uInk, ao * 0.13 * uAo);
+          col = mix(col, mix(uInk, vec3(0.0), uDark), ao * 0.13 * uAo);
           gl_FragColor = vec4(col, 1.0);
           #include <colorspace_fragment>
         }`
@@ -931,9 +949,57 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
 
   update({ core: 1, screw: 1, deploy: 1, clamp: 1, spark: 1, mainPulse: 1 })
 
+  /* ── retheme: repaint in place ─────────────────────────────────────────────
+     A theme switch must NOT rebuild the harness — a rebuild replays the build animation and
+     re-locks the scroll, when all that changed is the palette. Every colour in this group is
+     one of four tokens or one known mix of two, so each material is tagged once here with
+     the token it carries (by colour equality against the values this build read), and
+     retheme() re-reads the tokens and repaints by tag: material colours, the two label
+     textures (the trails share the main label's map), the one mixed colour, and the cel
+     shader's uniforms including its light/dark switch. Geometry is untouched. */
+  const TOKENS = { ink: '--primary', sand: '--secondary', card: '--card', green: '--success' }
+  const eachMat = (fn) =>
+    group.traverse((o) => {
+      if (!o.material) return
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) fn(m)
+    })
+  {
+    const ref = { ink: new THREE_.Color(inkHex), sand: new THREE_.Color(metalHex), card: new THREE_.Color(cardHex), green: new THREE_.Color(greenHex) }
+    eachMat((m) => {
+      if (m.isShaderMaterial || !m.color) return
+      for (const k in ref) {
+        if (m.color.equals(ref[k])) {
+          m.userData.tint = k
+          break
+        }
+      }
+    })
+  }
+  function retheme() {
+    const next = {}
+    for (const k in TOKENS) next[k] = token(TOKENS[k])
+    eachMat((m) => {
+      if (m.userData.tint) m.color.setHex(next[m.userData.tint])
+    })
+    metalSide.color.setHex(mixHex(next.sand, next.ink, 0.34))
+    labelMat.map?.dispose()
+    labelMat.map = mkTex(next.ink)
+    for (const t of trailMats) t.mat.map = labelMat.map
+    labelGreenMat.map?.dispose()
+    labelGreenMat.map = mkTex(next.green)
+    if (DEEP) {
+      const u = sphereMat.uniforms
+      u.uCard.value = lin(next.card)
+      u.uSand.value = lin(next.sand)
+      u.uInk.value = lin(next.ink)
+      u.uDark.value = hexLum(next.card) < 0.5 ? 1 : 0
+    }
+  }
+
   return {
     group,
     update,
+    retheme,
     materials: { metal, metalSide, ink, core, edgeMat, wireMat, labelMat, sparkMat },
     dims: { c, k, rOut, rIn, rMid, coreRadius, gripR, coreLift: CORE_LIFT }
   }

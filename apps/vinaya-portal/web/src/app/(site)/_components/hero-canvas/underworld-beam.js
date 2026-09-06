@@ -200,5 +200,28 @@ export function buildBeam(THREE_ = THREE, opts = {}) {
     }
   }
 
-  return { group, update, materials: { starMat } }
+  /* theme switch: repaint in place — never rebuild (see hero-scene.js). Each basic material
+     is tagged once with the token its colour came from; retheme() repaints by tag plus the
+     cosmos shader's uniform. */
+  {
+    const ref = { ink: new THREE_.Color(ink), sand: new THREE_.Color(sand), card: new THREE_.Color(card) }
+    group.traverse((o) => {
+      const m = o.material
+      if (!m || m.isShaderMaterial || !m.color) return
+      for (const k in ref) {
+        if (m.color.equals(ref[k])) {
+          m.userData.tint = k
+          break
+        }
+      }
+    })
+  }
+  function retheme(next) {
+    group.traverse((o) => {
+      const m = o.material
+      if (m?.userData?.tint) m.color.setHex(next[m.userData.tint])
+    })
+    starMat.uniforms.uColor.value.setHex(next.sand, THREE_.LinearSRGBColorSpace)
+  }
+  return { group, update, retheme, materials: { starMat } }
 }

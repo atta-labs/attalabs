@@ -331,5 +331,10 @@ export function buildField(THREE_ = THREE, opts = {}) {
   surfGeo.attributes.aSurf.needsUpdate = true
 
   update(0, { mass: 1, time: 0 })
-  return { mesh, fine, surface, update, pulse, setCursor, setFade, setEffects, material: mat, surfaceMaterial: surfMat, contactY }
+  /* theme switch: repaint the two colour uniforms in place — never rebuild (see hero-scene.js) */
+  function retheme({ ink, surface }) {
+    mat.uniforms.uColor.value.setHex(ink, THREE_.LinearSRGBColorSpace)
+    surfMat.uniforms.uColor.value.setHex(surface, THREE_.LinearSRGBColorSpace)
+  }
+  return { mesh, fine, surface, update, pulse, setCursor, setFade, setEffects, retheme, material: mat, surfaceMaterial: surfMat, contactY }
 }

@@ -141,8 +141,9 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
 
   const scrollHost = hero.closest('.overflow-y-auto')
 
-  /* one (re)build per theme: `field`/`harness`/`beam` are torn down and rebuilt with fresh
-     tokens rather than mutated in place, per the handoff's own instruction. */
+  /* the live trio once built — what applyTheme() repaints. null while nothing is mounted. */
+  let live = null
+
   function build() {
     let locked = !reduced
     if (locked && scrollHost) scrollHost.classList.add('overflow-hidden')
@@ -170,6 +171,8 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
       scene.add(harness.group, field.mesh)
       const beam = buildBeam(THREE, { ink, sand, card, topY: seatY + harness.dims.coreLift, depth: 34, rimRadius: 9 })
       scene.add(beam.group)
+      live = { harness, field, beam }
+      applyTheme() // a theme flip during the async build lands on the tokens read now, not at kickoff
       resize()
       place(88, 13.5, seatY, 0)
 
@@ -256,6 +259,7 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
         hero.removeEventListener('pointermove', onMove)
         hero.removeEventListener('pointerleave', onLeave)
         if (scrollHost) scrollHost.classList.remove('overflow-hidden')
+        live = null
         scene.remove(harness.group, field.mesh, beam.group)
         scene.traverse((o) => {
           o.geometry?.dispose?.()
@@ -275,17 +279,22 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     }
   }
 
-  /* theme change rebuilds the scene from fresh tokens — materials capture token values at
-     build time, so flipping data-theme alone leaves the 3D on the old palette. */
+  /* theme change repaints IN PLACE. Materials capture token values at build time, so
+     flipping data-theme alone leaves the 3D on the old palette — but rebuilding the scene
+     replays the whole build animation and re-locks the scroll for a palette change, which
+     is wrong. Each module owns a retheme() that re-reads the tokens and repaints its own
+     colours, uniforms and label textures; geometry and animation state are untouched. */
   function applyTheme() {
-    cleanupBuild()
     bg = token('--background')
     ink = token('--primary')
     sand = token('--secondary')
     card = token('--card')
     scene.background = new THREE.Color(bg)
     renderer.setClearColor(bg, 1)
-    build()
+    if (!live) return
+    live.harness.retheme()
+    live.field.retheme({ ink, surface: bg })
+    live.beam.retheme({ ink, sand, card })
   }
   const themeObserver = new MutationObserver(applyTheme)
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
