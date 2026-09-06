@@ -34,6 +34,11 @@ export function buildField(THREE_ = THREE, opts = {}) {
   const positions = new Float32Array(vertexCount * 3)
   const alphas = new Float32Array(vertexCount)
   const surfAlphas = new Float32Array(vertexCount)
+  /* crest energy per vertex, 0..1 — the shock wave's fronts light the fabric's own lines as
+     they pass (added foreground alpha, no new colour), the same idiom as the cursor light on
+     the portal's 2D fabric. A lifted ridge is invisible from the plan view; this is what
+     makes the wave readable there. */
+  const crests = new Float32Array(vertexCount)
   for (let i = 0; i < vertexCount; i++) {
     positions[i * 3] = base[i * 2]
     positions[i * 3 + 2] = base[i * 2 + 1]
@@ -86,6 +91,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
   const posAttr = new THREE_.BufferAttribute(positions, 3)
   geo.setAttribute('position', posAttr)
   geo.setAttribute('aAlpha', new THREE_.BufferAttribute(alphas, 1))
+  geo.setAttribute('aCrest', new THREE_.BufferAttribute(crests, 1))
   geo.setIndex(index)
 
   /* hairlines that fade with distance — the horizon dissolves instead of ending */
@@ -102,10 +108,13 @@ export function buildField(THREE_ = THREE, opts = {}) {
       uFade: { value: new THREE_.Vector2(opts.fadeStart ?? 7.5, opts.fadeEnd ?? 15) },
       uTime: { value: 0 },
       uFlicker: { value: 0 },
-      uTime2: { value: 0 }
+      uTime2: { value: 0 },
+      uCrest: { value: opts.crestAmount ?? 0.35 }
     },
     vertexShader: `
       attribute float aAlpha;
+      attribute float aCrest;
+      varying float vCrest;
       varying float vA;
       varying float vLit;
       varying float vDepth;
@@ -114,6 +123,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
       uniform vec3 uCursor; uniform float uLitR;
       void main() {
         vA = aAlpha;
+        vCrest = aCrest;
         vXZ = position.xz;
         vHash = fract(sin(dot(position.xz, vec2(12.9898, 78.233))) * 43758.5453);
         float d = length(position.xz - uCursor.xz);
@@ -124,7 +134,8 @@ export function buildField(THREE_ = THREE, opts = {}) {
       }`,
     fragmentShader: `
       uniform vec3 uColor; uniform float uOpacity; uniform float uLitAmt; uniform vec2 uFade;
-      uniform float uTime; uniform float uFlicker;
+      uniform float uTime; uniform float uFlicker; uniform float uCrest;
+      varying float vCrest;
       varying float vA;
       varying float vLit;
       varying float vDepth;
@@ -138,8 +149,10 @@ export function buildField(THREE_ = THREE, opts = {}) {
         float far = 1.0 - smoothstep(uFade.x, uFade.y, vDepth);
         /* (1) vacuum flicker: each node brightens briefly on its own random phase */
         float flick = pow(max(0.0, sin(6.2831853 * (uTime * 0.22 + vHash))), 46.0) * uFlicker;
+        /* the shock wave: its crest lights the lines it passes, and only those */
         float a = (vA * uOpacity + vLit * vLit * uLitAmt * step(0.02, vA)
                    + flick * 0.55 * step(0.02, vA)
+                   + vCrest * vCrest * uCrest * step(0.02, vA)
                  ) * far;
         if (a <= 0.002) discard;
         gl_FragColor = vec4(uColor, a);
@@ -156,6 +169,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
   const fineGeo = new THREE_.BufferGeometry()
   fineGeo.setAttribute('position', posAttr)
   fineGeo.setAttribute('aAlpha', geo.attributes.aAlpha)
+  fineGeo.setAttribute('aCrest', geo.attributes.aCrest)
   fineGeo.setIndex(fineIndex)
   const fineMat = mat.clone()
   fineMat.uniforms = {
@@ -167,7 +181,8 @@ export function buildField(THREE_ = THREE, opts = {}) {
     uFade: { value: mat.uniforms.uFade.value },
     uTime: { value: 0 },
     uFlicker: { value: 0 },
-    uTime2: { value: 0 }
+    uTime2: { value: 0 },
+    uCrest: { value: (opts.crestAmount ?? 0.35) * 0.7 }
   }
   const fine = new THREE_.LineSegments(fineGeo, fineMat)
   fine.name = 'fabric-fine'
@@ -283,15 +298,19 @@ export function buildField(THREE_ = THREE, opts = {}) {
       y += Math.sin(acP2[n] + ph2) * 0.01
       /* the travelling fronts move the sheet BOTH ways: outward in-plane (which a top-down
          camera can see) and in height (which reads once the camera has tipped) */
+      let crest = 0
       for (const p of pulses) {
         const osc0 = Math.sin(acRipple[n] - p.t * 7) * p.life
         for (const fr of FRONTS) {
           const dd = d - p.t * fr.speed
-          const osc = osc0 * Math.exp(-(dd * dd) / (fr.sigma * fr.sigma))
+          const env = Math.exp(-(dd * dd) / (fr.sigma * fr.sigma))
+          const osc = osc0 * env
           y += osc * fr.amp * lift
           radial += osc * fr.amp * 1.35
+          crest += env * p.life * (fr.amp / FRONTS[0].amp)
         }
       }
+      crests[i] = Math.min(1, crest)
       for (const dn of dents) {
         const ddx = x - dn.x, ddz = z - dn.z
         const q = ddx * ddx + ddz * ddz
@@ -306,6 +325,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
       pos[i * 3 + 2] = z + acNz[n] * radial
     }
     geo.attributes.position.needsUpdate = true
+    geo.attributes.aCrest.needsUpdate = true
     surfGeo.attributes.position.needsUpdate = true
   }
 
