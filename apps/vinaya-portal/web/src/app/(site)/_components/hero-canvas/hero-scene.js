@@ -31,7 +31,6 @@ const H1_SPAN = 0.18 // line 1 completes…
 const H1B_FROM = 0.47 // …before line 2 starts
 const SUB_FROM = 0.68
 const SUB_SPAN = 0.16
-const CTA_AT = 0.8
 const DISH = 0.62
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x))
@@ -63,13 +62,9 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
   const scope = root ?? document
   const track = scope.querySelector('[data-hero-track]')
   const hero = scope.querySelector('[data-hero-viewport]')
-  const lockup = scope.querySelector('[data-hero-lockup]')
-  const corner = scope.querySelector('[data-hero-corner]')
-  const markEl = scope.querySelector('[data-hero-mark]')
   const h1a = scope.querySelector('[data-hero-h1a]')
   const h1b = scope.querySelector('[data-hero-h1b]')
   const subEl = scope.querySelector('[data-hero-sub]')
-  const ctaEl = scope.querySelector('[data-hero-cta]')
   const descendEl = scope.querySelector('[data-hero-descend]')
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -118,28 +113,12 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     camera.lookAt(target)
   }
 
-  /* the wordmark + descriptor travel as ONE block and dissolve into the corner lockup */
-  let markHome = null
+  /* the wordmark itself is the topbar's lockup now (TOPBAR-LOCKUP.md) — VinayaHeroEmblem
+     drives it separately via lockup-flip.js. This scene owns only the title/sub/cta/descend
+     copy. */
   function setCopy(p, buildDone) {
-    const hr = hero.getBoundingClientRect()
-    const q = smoothstep(0.01, 0.3, p)
-    if (!markHome) {
-      const r = lockup.getBoundingClientRect()
-      if (r.width) markHome = { x: r.left - hr.left, y: r.top - hr.top, w: r.width, h: r.height }
-    }
-    if (markHome) {
-      const s = 1 - 0.68 * q
-      const mk = markEl.getBoundingClientRect()
-      const tx = mk.left - hr.left - markHome.x
-      const ty = mk.top - hr.top + mk.height / 2 - (markHome.y + (markHome.h * s) / 2)
-      lockup.style.transform = `translate(${(tx * q).toFixed(1)}px, ${(ty * q).toFixed(1)}px) scale(${s.toFixed(3)})`
-      const handoff = smoothstep(0.3, 0.52, p)
-      lockup.style.opacity = (1 - handoff).toFixed(3)
-      corner.style.opacity = smoothstep(0.42, 0.62, p).toFixed(3)
-    }
     const cue = buildDone ? 1 - smoothstep(0.005, 0.06, p) : 0
     descendEl.style.opacity = cue.toFixed(3)
-    ctaEl.style.opacity = smoothstep(CTA_AT, CTA_AT + 0.1, p).toFixed(3)
     revealLetters(L_H1A, p, H1_FROM, H1_SPAN)
     revealLetters(L_H1B, p, H1B_FROM, H1_SPAN)
     revealLetters(L_SUB, p, SUB_FROM, SUB_SPAN)

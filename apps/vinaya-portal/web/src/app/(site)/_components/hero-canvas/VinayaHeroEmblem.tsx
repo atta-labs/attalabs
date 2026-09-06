@@ -1,10 +1,9 @@
 'use client'
 
-import { Button } from '@atta/ui/components'
-import { VinayaMark } from '@atta/ui/footer/marks/vinaya'
 import { Heading, Text } from '@atta/ui/shared'
-import { ArrowDown } from 'lucide-react'
 import { type ReactNode, useEffect, useRef } from 'react'
+import { useHeroLockupNodes } from '../hero-lockup-context'
+import { attachLockupFlip, dockImmediately } from './lockup-flip'
 
 /* Class strings for the letters `hero-scene.js` splits into <i> tags — authored here so
    Tailwind's @source scan (which only reads .ts/.tsx) actually generates them; a class
@@ -15,6 +14,8 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
   const isLanding = landingActions !== undefined
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const heroViewportRef = useRef<HTMLDivElement>(null)
+  const getLockupNodes = useHeroLockupNodes()
 
   // Mounts the ported Claude Design scene from a dynamic import so `three` stays out of
   // the SSR module graph (the `/life-cycle` precedent). `cancelled` guards the async
@@ -37,23 +38,74 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
     }
   }, [])
 
+  // Per TOPBAR-LOCKUP.md: the hero renders no wordmark of its own — it only writes a
+  // `transform` onto the topbar's real lockup node. `getLockupNodes()` reads a plain
+  // mutable object populated by callback refs during commit, so it's already correct by
+  // the time this effect runs (no re-render/subscription needed).
+  //
+  // Statically imported, unlike `hero-scene.js` above: that dynamic import exists to keep
+  // `three` out of the SSR module graph, a real cost this tiny DOM/math module doesn't
+  // carry. A dynamic import here bought nothing but a load race — the giant, centered
+  // hero-scale transform this effect applies only appears once its network+parse round
+  // trip resolves, so a slow chunk load left the lockup visibly sitting at its tiny
+  // natural topbar position (the "not centered" reports) until it resolved. A static
+  // import runs synchronously on mount instead.
+  //
+  // Even so, this effect still runs one paint after the browser's first paint of the
+  // un-transformed DOM — `HeroLockup.tsx` hides the whole lockup by default on landing
+  // (`[[data-bare=true]_&]:opacity-0`) for exactly that gap, and the `requestAnimationFrame`
+  // below reveals it. Scheduled right after `attachLockupFlip` attaches its own rAF loop,
+  // it runs strictly after that loop's first tick (callbacks fire in request order) — so
+  // opacity only turns on once a transform has actually been computed, never before.
+  //
+  // The per-letter cascade (`HeroLockup.tsx`'s `Letters`) is revealed from the SAME
+  // callback: each letter already carries its own CSS `transitionDelay`, so flipping them
+  // all to visible in one pass here is enough to produce the staggered letter-by-letter
+  // reveal — no per-letter timing logic needed on this side.
+  useEffect(() => {
+    const { lockup, word, desc, mark, bar } = getLockupNodes()
+    const hero = heroViewportRef.current
+    if (!hero || !lockup || !word) return
+
+    const revealLetters = () => {
+      for (const el of lockup.querySelectorAll<HTMLElement>('[data-letter]')) {
+        el.style.opacity = '1'
+        el.style.transform = 'translateY(0)'
+      }
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) {
+      dockImmediately({ lockup, desc, mark, bar })
+      lockup.style.opacity = '1'
+      revealLetters()
+      return
+    }
+    const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
+    const revealRaf = requestAnimationFrame(() => {
+      lockup.style.opacity = '1'
+      revealLetters()
+    })
+    return () => {
+      stop()
+      cancelAnimationFrame(revealRaf)
+    }
+  }, [getLockupNodes])
+
   return (
     <div ref={rootRef} className='relative h-full w-full'>
       <div data-hero-track className='relative h-[320vh] w-full'>
-        <div data-hero-viewport className='sticky top-0 h-dvh w-full overflow-hidden bg-background'>
-          <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full' />
-
-          {/* the centred wordmark — travels to the corner on scroll */}
-          <div className='pointer-events-none absolute inset-x-0 top-[16%] z-2 text-center leading-none'>
-            <span data-hero-lockup className='inline-flex flex-col items-center will-change-transform'>
-              <span className='text-[clamp(2.25rem,5vw,3.75rem)] font-normal tracking-[-0.02em] text-foreground'>
-                Vinaya
-              </span>
-              <span className='mt-1 font-mono text-base uppercase tracking-[0.3em] text-muted-foreground'>
-                Git harness
-              </span>
-            </span>
-          </div>
+        <div
+          ref={heroViewportRef}
+          data-hero-viewport
+          className='sticky top-0 h-dvh w-full overflow-hidden bg-background'
+        >
+          {/* translate-y is a pure post-render visual nudge — it doesn't touch hero-scene.js's
+              own resize/aspect math (still sized off this div's untranslated box), so the
+              harness's own camera framing stays exactly as authored; this just shifts the
+              already-rendered image down a bit within the (overflow-hidden) viewport, per
+              live feedback that it read too close to the wordmark above it. */}
+          <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full translate-y-12' />
 
           {/* title + sub: hidden at scroll 0, revealed a line at a time */}
           {isLanding ? (
@@ -70,12 +122,6 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
               <Text className='m-0 mt-3.5 text-balance font-sans text-[clamp(0.9375rem,1.7vw,1.375rem)] leading-normal text-muted-foreground'>
                 <span data-hero-sub data-text='Your agent moves fast. Vinaya holds the line.' />
               </Text>
-              <div
-                data-hero-cta
-                className='pointer-events-auto mt-7 flex flex-wrap items-center justify-center gap-4 opacity-0'
-              >
-                {landingActions}
-              </div>
             </div>
           ) : (
             <div className='pointer-events-none absolute inset-x-0 top-0 z-2 flex h-[52%] flex-col items-center justify-center gap-2 px-6 text-center'>
@@ -90,33 +136,8 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
               <Text className='m-0 text-balance font-sans text-lg leading-relaxed text-muted-foreground'>
                 A harness for your software engineering process
               </Text>
-              <div data-hero-cta className='pointer-events-auto mt-7 opacity-0'>
-                <Button
-                  type='button'
-                  size='lg'
-                  onClick={() => document.getElementById('hero-classic')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  See how it works
-                  <ArrowDown className='size-4' />
-                </Button>
-              </div>
             </div>
           )}
-
-          {/* the header lockup it hands off to */}
-          <div
-            data-hero-corner
-            className='pointer-events-none absolute left-7 top-6 z-4 flex items-center gap-[0.3rem] opacity-0'
-          >
-            <div data-hero-mark className='size-10 shrink-0 text-foreground'>
-              <VinayaMark className='size-10' />
-            </div>
-            <span className='font-mono text-xs uppercase leading-tight tracking-[0.16em] text-foreground'>
-              Git
-              <br />
-              harness
-            </span>
-          </div>
 
           {/* scroll cue, shown only once the build has finished */}
           <div
@@ -124,10 +145,10 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
             className='pointer-events-none absolute bottom-[clamp(1.5rem,5vh,3rem)] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2.5 opacity-0 transition-opacity duration-600 ease-out'
           >
             <span className='font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground'>Scroll</span>
-            <span className='flex flex-col items-center gap-[3px]'>
-              <span className='block h-px w-[34px] bg-foreground' />
-              <span className='block h-px w-[22px] bg-foreground/55' />
-              <span className='block h-px w-[12px] bg-foreground/30' />
+            <span className='flex flex-col items-center gap-[0.1667rem]'>
+              <span className='block h-px w-[1.8889rem] bg-foreground' />
+              <span className='block h-px w-[1.2222rem] bg-foreground/55' />
+              <span className='block h-px w-[0.6667rem] bg-foreground/30' />
             </span>
           </div>
         </div>
@@ -142,6 +163,9 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
 // would make this section itself an intervening scroll container for the inner sticky
 // viewport (CSS gives every `overflow` value but `visible` a scrollport), which breaks
 // `position: sticky` — the viewport's own `overflow-hidden` clips the canvas instead.
+// `SiteContentPad` (`(site)/_components/SiteContentPad.tsx`) skips its `pt-14` on the
+// landing route specifically so this section starts at the true page top, y=0 — the
+// canvas paints under the fixed, transparent TopBarChromeHost.
 export function VinayaHeroEmblem({ landingActions }: { landingActions?: ReactNode }) {
   return (
     <section id='hero' className='relative w-full bg-background'>

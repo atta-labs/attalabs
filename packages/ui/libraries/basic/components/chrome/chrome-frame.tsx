@@ -41,7 +41,17 @@ export function ChromeFrame({ variant, className, children, ...props }: ChromeFr
     )
   }
   return (
-    <div className={cn('relative flex h-14 w-full items-center border-border border-b px-6', className)} {...props}>
+    <div
+      className={cn(
+        // `data-bare` is an ANCESTOR attribute (the landing hero's own chrome host writes
+        // it, never this component) — see TOPBAR-LOCKUP.md. Border and background are the
+        // only two properties bare state touches; every other consumer of this variant
+        // never sets the attribute at all, so this rule is dormant everywhere else.
+        'relative flex h-14 w-full items-center border-border border-b bg-background px-6 [[data-bare=true]_&]:border-transparent [[data-bare=true]_&]:bg-transparent',
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   )
