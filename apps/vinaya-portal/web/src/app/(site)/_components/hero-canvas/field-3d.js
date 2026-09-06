@@ -249,8 +249,13 @@ export function buildField(THREE_ = THREE, opts = {}) {
     { speed: 0.7, sigma: 1.0, amp: 0.13 }
   ]
 
-  /* one shock wave, fired the moment the harness latches */
-  function pulse() { pulses.push({ t: 0, life: 1 }) }
+  /* The latch's shock wave, and — with opts — smaller ripples that read as events rather
+     than announcements: `amp` scales height and in-plane swing (and the crest light), `decay`
+     is how long the front lives, which is what sets how far it travels. Defaults are the
+     latch wave exactly. */
+  function pulse(opts = {}) {
+    pulses.push({ t: 0, life: 1, amp: opts.amp ?? 1, decay: opts.decay ?? 5.2 })
+  }
 
   function update(dt, state = {}) {
     /* The well is the MASS's dent, not the pulse's: its depth tracks how much of main has
@@ -271,7 +276,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
     for (let i = pulses.length - 1; i >= 0; i--) {
       const p = pulses[i]
       p.t += dt
-      p.life = Math.max(0, 1 - p.t / 5.2)
+      p.life = Math.max(0, 1 - p.t / p.decay)
       if (p.life <= 0.01) pulses.splice(i, 1)
     }
     const pos = geo.attributes.position.array
@@ -300,14 +305,14 @@ export function buildField(THREE_ = THREE, opts = {}) {
          camera can see) and in height (which reads once the camera has tipped) */
       let crest = 0
       for (const p of pulses) {
-        const osc0 = Math.sin(acRipple[n] - p.t * 7) * p.life
+        const osc0 = Math.sin(acRipple[n] - p.t * 7) * p.life * p.amp
         for (const fr of FRONTS) {
           const dd = d - p.t * fr.speed
           const env = Math.exp(-(dd * dd) / (fr.sigma * fr.sigma))
           const osc = osc0 * env
           y += osc * fr.amp * lift
           radial += osc * fr.amp * 1.35
-          crest += env * p.life * (fr.amp / FRONTS[0].amp)
+          crest += env * p.life * p.amp * (fr.amp / FRONTS[0].amp)
         }
       }
       crests[i] = Math.min(1, crest)

@@ -10,20 +10,25 @@ import { buildBeam } from './underworld-beam'
  * factory behind a dynamic `import()` so `three` stays out of the SSR module graph (the
  * `/life-cycle` precedent, `.claude/skills/vinaya-architecture/SKILL.md`).
  *
- * DO NOT retune the timeline below — it is copied verbatim from the approved handoff.
+ * DO NOT retune the timeline below. It is the approved handoff's sequence, with main's
+ * arrival prepended per the later "main's arrival" handoff: an `open` ramp at the head and
+ * every original beat shifted 0.75 s later, relative rhythm untouched.
  * Every `document`/`window`/`getComputedStyle` read lives inside `mountHeroScene`.
  */
 
 /* ── the timeline. Build beats are seconds; everything else is scroll progress 0–1 ── */
 const BUILD = [
-  ['screw', 0.55, 0.5],
-  ['deploy', 1.3, 0.7],
-  ['spark', 2.3, 0.45],
-  ['clamp', 3.1, 0.8],
-  ['mainPulse', 3.85, 0.62],
-  ['merge', 3.98, 0.55]
+  ['open', 0.25, 0.9], // main's aperture — the sheet is empty until it opens
+  ['screw', 1.3, 0.5],
+  ['deploy', 2.05, 0.7],
+  ['spark', 3.05, 0.45],
+  ['clamp', 3.85, 0.8],
+  ['mainPulse', 4.6, 0.62],
+  ['merge', 4.73, 0.55]
 ]
-const WAVE_T = 3.98
+const WAVE_T = 4.73 // fires with `merge`
+const ARRIVAL_T = 0.2 // the small ripple that precedes main's opening
+const FLASH_T = 5.35 // the build flash trails the latch, same distance as before the shift
 const TIP_FROM = 0.02
 const TIP_TO = 0.72
 const H1_FROM = 0.28
@@ -36,6 +41,7 @@ const DISH = 0.62
 const clamp01 = (x) => Math.max(0, Math.min(1, x))
 const lerp = (a, b, t) => a + (b - a) * t
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
+const easeOut = (t) => 1 - (1 - t) ** 3
 const smoothstep = (a, b, x) => {
   const t = clamp01((x - a) / (b - a))
   return t * t * (3 - 2 * t)
@@ -214,6 +220,12 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
       const t0 = performance.now()
       let last = t0
       let firedWave = false
+      let firedArrival = false
+      /* main's arrival: the sphere and its contour open from nothing; the label (and with it
+         the wire net and travellers, which ride the spinner) only once the surface is whole */
+      const mainSphere = harness.group.getObjectByName('main-sphere')
+      const mainContour = harness.group.getObjectByName('main-contour')
+      const mainSpinner = harness.group.getObjectByName('main-spinner')
 
       const frame = (now) => {
         raf = requestAnimationFrame(frame)
@@ -241,15 +253,28 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
         state.cursor = pointerIn ? hit : null
         state.waveAxis = tip
         state.tip = tip
-        state.buildFlash = reduced ? 0 : clamp01(1 - (t - 4.6) / 2.2)
+        state.buildFlash = reduced ? 0 : clamp01(1 - (t - FLASH_T) / 2.2)
+        if (!firedArrival && t >= ARRIVAL_T) {
+          firedArrival = true
+          field.pulse({ amp: 0.2, decay: 1.1 }) // small, local; the latch keeps full strength
+        }
         if (!firedWave && (t >= WAVE_T || reduced)) {
           firedWave = true
           field.pulse()
         }
 
         harness.update(state)
+        /* after harness.update(), which rewrites main's transform every frame. Sphere and
+           contour only — the group carries the label spinner and the clamp's squeeze. */
+        const open = easeOut(state.open ?? 1)
+        const openScale = Math.max(0.0001, open) // never exactly 0: a zero matrix is non-invertible
+        mainSphere.scale.setScalar(openScale)
+        mainContour.scale.setScalar(openScale)
+        mainSphere.visible = open > 0.02
+        mainContour.visible = open > 0.02
+        mainSpinner.visible = open > 0.99
         field.update(dt, {
-          mass: 1,
+          mass: open, // the well deepens as main opens
           time: t,
           lift: 1 - tip, // ridge height fades as the camera tips (see field-3d.js)
           // the sheet never rises above the ring's underside inside the harness footprint
