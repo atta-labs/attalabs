@@ -38,8 +38,8 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
     }
   }, [])
 
-  // Per TOPBAR-LOCKUP.md: the hero renders no wordmark of its own — it only writes a
-  // `transform` onto the topbar's real lockup node. `getLockupNodes()` reads a plain
+  // The hero renders no wordmark of its own — it only writes a `transform` onto the
+  // topbar's real lockup node (the single-lockup rule, stated in `hero-lockup-context.tsx`). `getLockupNodes()` reads a plain
   // mutable object populated by callback refs during commit, so it's already correct by
   // the time this effect runs (no re-render/subscription needed).
   //

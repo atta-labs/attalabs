@@ -1,9 +1,10 @@
 /**
  * The complete FLIP loop — this is the whole mechanism, nothing omitted.
  *
- * Ported verbatim from the approved handoff (TOPBAR-LOCKUP.md + implementation/lockup-flip.js).
- * The inlined maths IS final and complete — this file is only the surrounding rAF plumbing
- * (bind, guard, cleanup). There is no third source.
+ * Ported from the Principal-supplied topbar-lockup handoff (a design document handed over at
+ * dispatch and never committed — the task's standing rule for design handoffs). Its rule is
+ * restated in `../hero-lockup-context.tsx`; the maths is inlined below, final and complete —
+ * this file adds only the surrounding rAF plumbing (bind, guard, cleanup). No third source.
  *
  * Call once from the hero, after the topbar has registered its lockup node.
  *
@@ -21,57 +22,46 @@ const smooth = (a, b, x) => {
 }
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 
+/**
+ * Tuned constants. Each is a design decision against the approved Claude Design reference
+ * (the handoff's own values where unchanged, adjusted with the Principal where noted), not a
+ * derivation — the comment on each names the constraint it encodes.
+ */
 export const FLIP = {
-  HERO_SCALE: 3.6, // lowered from the handoff's 4.8, then 4, then 3.2 — the harness is
-  // drawn on a WebGL canvas, not a DOM box, so nothing here (Tailwind or JS) can measure or
-  // react to where it actually sits; its screen position comes from hero-scene.js's camera
-  // and shifts with the hero's ASPECT RATIO, not just its height. Reported live on a
-  // narrow/tall viewport: the descriptor line was nearly touching the harness's top edge
-  // despite comfortable clearance on a wide/short one. 3.2 was a safe but visibly
-  // undersized compromise against the approved Claude Design reference — 3.6 is a
-  // deliberate middle point, verified with real clearance on a wide/short viewport; a
-  // narrow/tall one could not be reproduced in this environment (`resize_window` doesn't
-  // actually change the viewport here) and needs a live check.
-  HERO_Y: 0.02, // hero anchor, fraction of viewport height. Deliberately small enough that
-  // `TOPBAR_CLEARANCE_PX`'s floor (below) governs the word's vertical position on
-  // virtually every realistic viewport — an explicit, topbar-anchored position that does
-  // NOT drift with aspect ratio, is worth more here than a proportional fraction tuned to
-  // one specific screenshot at a time (0.2, 0.115, and 0.08 were each tried and each
-  // failed on a DIFFERENT aspect ratio or viewport height — see git history on this file).
+  // Hero-state scale of the topbar lockup. The handoff specified 4.8; lowered because the
+  // harness is drawn on a WebGL canvas whose screen position follows the hero's ASPECT RATIO
+  // (hero-scene.js's camera), not a DOM box this loop can measure against, so one value has
+  // to leave clearance above the harness on wide/short and narrow/tall viewports alike.
+  // Measured descriptor-to-harness clearance at 3.6, hero box constrained to each size:
+  // 390×844 ≈ 68px, 320×800 ≈ 57px, 375×667 ≈ 20px — the short-viewport end is the tight
+  // one, since the harness rides up as the box gets shorter. Below ~667px tall, expect it
+  // to close further; a viewport-aware scale would be the fix if that ever matters.
+  HERO_SCALE: 3.6,
+  // Hero anchor as a fraction of viewport height. Deliberately small so the
+  // TOPBAR_CLEARANCE_PX floor below governs on every realistic viewport: a floor read from
+  // the topbar's live height does not drift with aspect ratio, a proportional fraction does.
+  HERO_Y: 0.02,
   TOPBAR_CLEARANCE_PX: 24, // minimum gap below the topbar's live bottom edge
   TRAVEL_END: 0.42, // transform is exactly `none` from here on
-  DESC_HERO: 0.5, // descriptor counter-scale at hero size — raised from the handoff's
-  // 0.34, which read as too small next to the word at hero scale (reported live). A
-  // 0.583 compensated value existed briefly while `HeroLockup.tsx`'s `desc` rest size was
-  // `text-xs`; that rest size reverted back to `text-sm` to match `word`, so this reverts
-  // with it (0.875rem×0.5 is the hero-scale size that was actually approved).
+  // Descriptor counter-scale at hero size. The handoff's 0.34 read too small next to the
+  // word at hero scale; 0.5 against HeroLockup.tsx's `text-sm` rest size is the approved
+  // hero-scale size — the two values must be read together.
+  DESC_HERO: 0.5,
   MARK_IN: [0.3, 0.44],
-  BARE_GAP_MAX: 0.25, // rem — the word↔desc gap while bare grows from 0 at the true giant
-  // hero state up to this value as `q` (this same file's scroll-progress easing) approaches
-  // 1, rather than sitting at a single fixed value the whole time bare is true. `gap-0` in
-  // HeroLockup.tsx was correct for the ACTUAL giant hero state (reported live, confirmed
-  // via DevTools) but the SAME zero value also covered the tail of the dock transition,
-  // where the lockup has already shrunk to near its final small size while still bare —
-  // at that size, zero gap reads as visibly too tight (reported live, separately from the
-  // giant-state complaint). There is no clean binary line between "giant" and "about to
-  // dock" — it's the same continuous `q` the scale itself rides — so the gap needs to
-  // ride it too, not sit on one fixed value for the whole bare phase. `0.25` matches
-  // `gap-1`'s rem value, so the gap arrives at exactly the docked value by the moment
-  // `docked` flips (`q` reaches 1 at the same `p = TRAVEL_END` `docked` does) — no visible
-  // jump at the handoff.
-  MARK_MAX: 2.75 // rem — raised from the handoff's 1.35; must match HeroLockup.tsx's own
-  // `w-[2.75rem]`/`h-[2.75rem]` rest-state classes or the mark jumps size the instant this
-  // loop's first frame runs (reported live, a real visible pop).
-  // No CHROME_IN range: `docked` below is a hard `p >= TRAVEL_END` cutover, not a smoothed
-  // threshold with its own tunable window. A smoothed range (the handoff's [0.3, 0.46],
-  // then a shifted [0.44, 0.52]) is a SEPARATE window from `TRAVEL_END` by construction,
-  // and whichever side of `TRAVEL_END` it sits on, `s` and the dock state disagree for a
-  // stretch — either `s` still >1 while the spread layout has already turned on (renders
-  // bigger than its resting size, then snaps down), or the reverse (size/position already
-  // fully settled while the spacing and "GIT"/"HARNESS" text are still the bare state's) —
-  // both reported live, in that order, from tuning the range instead of removing it.
-  // Deriving `docked` from `TRAVEL_END` itself makes `s` and the dock state change in the
-  // same frame, always — no window left for them to disagree in either direction.
+  // rem — the word↔desc gap while bare. Zero at the true giant hero state, growing with `q`
+  // to exactly `gap-1`'s value by the moment `docked` flips, so the docked layout takes over
+  // with no visible jump. A single fixed value is wrong at one end or the other: the bare
+  // phase spans everything from giant to nearly-docked with no binary line between them, so
+  // the gap has to ride the same continuous `q` the scale rides.
+  BARE_GAP_MAX: 0.25,
+  // rem — must equal HeroLockup.tsx's `w-[2.75rem]`/`h-[2.75rem]` rest-state classes: this
+  // loop drives that same span's width toward MARK_MAX, so a mismatch pops the mark's size on
+  // the loop's first frame.
+  MARK_MAX: 2.75
+  // No separate chrome-fade window: `docked` (below) is `p >= TRAVEL_END`, the same condition
+  // that settles `s` to 1. Any independently-tuned window disagrees with TRAVEL_END for some
+  // scroll range by construction — either the docked layout turns on while `s` is still > 1,
+  // or the reverse — so the two states must flip in the same frame.
 }
 
 export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {

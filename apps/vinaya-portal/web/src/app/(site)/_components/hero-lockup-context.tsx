@@ -3,10 +3,25 @@
 import { createContext, type ReactNode, useCallback, useContext, useRef } from 'react'
 
 /**
- * The single lockup mechanism from TOPBAR-LOCKUP.md: there is exactly one lockup node in
- * the DOM, owned by the topbar, and the landing hero only ever writes a `transform` onto
- * it (via `lockup-flip.js`'s `attachLockupFlip`). This context is the wiring that lets two
- * DOM-owning components that don't render inside each other — `HeroLockup` inside the
+ * The single-lockup mechanism, as specified by the Principal-supplied topbar-lockup
+ * handoff (a design document handed over at dispatch and never committed — the task's
+ * standing rule for design handoffs). Restated here because this file is the mechanism's
+ * home and there is no in-repo copy of the handoff to point at:
+ *
+ *   There is exactly one lockup in the DOM, and the topbar owns it. The hero renders no
+ *   wordmark; it only writes a `transform` onto the topbar's lockup node (via
+ *   `lockup-flip.js`'s `attachLockupFlip`). At the end of the scroll that transform is
+ *   `none`, so the landing is exact by construction — the element was never anywhere else.
+ *
+ *   Over the hero the topbar is the same component, same layout, same position — stripped
+ *   ("bare"): bottom border and background transparent, the mark's slot `width: 0;
+ *   opacity: 0`, nav and theme toggle visible and clickable throughout. Docked: border and
+ *   background back, mark slot open. Nothing is unmounted, `display: none`d, or swapped.
+ *
+ * `data-bare` on `TopBarChromeHost` is that bare flag, and `lockup-flip.js` is its only
+ * writer; the chrome it gates is Vinaya's own `chromeClassName` string in
+ * `(site)/layout.tsx`, not the shared `ChromeFrame`. This context is the wiring that lets
+ * two DOM-owning components that don't render inside each other — `HeroLockup` inside the
  * topbar, `VinayaHeroEmblem` inside the page — reach the same real nodes.
  *
  * Registration is via callback refs, not `useRef` + `useEffect`: callback refs fire during

@@ -113,7 +113,7 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     camera.lookAt(target)
   }
 
-  /* the wordmark itself is the topbar's lockup now (TOPBAR-LOCKUP.md) — VinayaHeroEmblem
+  /* the wordmark itself is the topbar's lockup now (see hero-lockup-context.tsx) — VinayaHeroEmblem
      drives it separately via lockup-flip.js. This scene owns only the title/sub/cta/descend
      copy. */
   function setCopy(p, buildDone) {

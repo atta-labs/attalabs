@@ -27,96 +27,56 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
 }
 
 /**
- * The topbar's wordmark, and the ONLY wordmark in the DOM — per TOPBAR-LOCKUP.md, the
- * landing hero renders no wordmark of its own, it only writes a `transform` onto this
- * node (see `hero-canvas/lockup-flip.js`). Resting size is the bar's real size; the hero
- * state is this same element scaled up (`FLIP.HERO_SCALE` in `lockup-flip.js`) and
- * centred, not a second copy.
+ * The topbar's wordmark, and the ONLY wordmark in the DOM — the landing hero renders no
+ * wordmark of its own, it only writes a `transform` onto this node (see
+ * `hero-canvas/lockup-flip.js`; the rule itself is stated in `hero-lockup-context.tsx`).
+ * Resting size is the bar's real size; the hero state is this same element scaled up
+ * (`FLIP.HERO_SCALE`) and centred, not a second copy.
  *
- * The mark is the CMS-driven brand image (`branding.logoSolidDark/Light`) — the same
- * asset `Logo` renders today — never the static `VinayaMark` SVG (that's a resting-only
- * silhouette used elsewhere, not "the logo").
+ * The mark is the CMS-driven brand image (`branding.logoSolidDark/Light`) — the same asset
+ * `Logo` renders — never the static `VinayaMark` SVG (a resting-only silhouette used
+ * elsewhere, not "the logo").
  *
- * The mark's slot starts shut (`width: 0`) only on the landing page, and only for the
- * cold-open's first ~third of the scroll — driven imperatively by the hero's
- * `attachLockupFlip` loop (`mark.style.width`), which fully owns the value from its first
- * frame onward. Below is a CSS fallback for the gap before that loop's effect runs on
- * mount: keyed off the same `data-bare` ancestor attribute `TopBarChromeHost` already sets
- * (SSR-correct per route — `'true'` only on landing), so it introduces no new data
- * attribute and no new "who owns this" question — the loop still only ever writes
- * `data-bare`, same as the ChromeFrame border/background it also gates. Without it, a real
- * flash of the small resting logo (and full bordered chrome) painted before the loop
- * attached, on every landing load. Every other page renders this at rest, fully visible,
- * `data-bare` there is always `'false'`.
+ * Two `[[data-bare=true]_&]` CSS fallbacks cover the gap between first paint and the FLIP
+ * loop's first frame, keyed off the same `data-bare` attribute `TopBarChromeHost` already
+ * SSRs per route (`'true'` on landing alone, so every other page renders this at rest,
+ * fully visible, with no JS dependency):
+ * - the mark's slot starts shut (`w-0 opacity-0`) — the loop owns `mark.style.width` from
+ *   its first frame on, opening it over `FLIP.MARK_IN`;
+ * - the whole lockup starts at `opacity-0` — the effect that attaches the loop runs one
+ *   paint after the browser's first paint of the un-transformed DOM, which would otherwise
+ *   flash the small, natural-position wordmark before it snaps to hero scale.
+ *   `VinayaHeroEmblem.tsx` reveals it from a `requestAnimationFrame` scheduled right after
+ *   the loop attaches, so opacity turns on only once a transform has been computed.
  *
- * The lockup root itself carries the same `[[data-bare=true]_&]:opacity-0` fallback, for a
- * DIFFERENT gap than the mark's: even with the FLIP loop's `import` now static (see
- * `VinayaHeroEmblem.tsx`), its effect still runs one paint after the browser's first paint
- * of the un-transformed DOM — a real, visible instant of the small, natural-position
- * wordmark before it snaps to hero scale, reported live. Hiding the whole lockup by default
- * on landing and revealing it only once that first frame has computed a transform (the
- * `requestAnimationFrame` callback in `VinayaHeroEmblem.tsx`, scheduled right after the
- * loop attaches — same-frame ordering guarantees it runs after the loop's own first tick)
- * trades that flash for a single invisible frame instead.
+ * Sizing constraints the FLIP loop depends on:
+ * - the mark's `2.75rem` must equal `lockup-flip.js`'s `MARK_MAX` (that file animates this
+ *   same span's width toward it; a mismatch pops the mark's size on the loop's first
+ *   frame). It is deliberately taller than the word+descriptor column (≈2.4rem): the
+ *   reference lockup's mark overshoots the text block on both edges, and matching the
+ *   column height instead makes a sub-pixel `items-center` rounding difference read as
+ *   misalignment.
+ * - `word` is regular weight and `desc` sits close to half the word's cap height, matching
+ *   the approved reference's proportions. The loop measures both live (`offsetWidth`,
+ *   `getBoundingClientRect()`), so these sizes are free parameters, not assumptions baked
+ *   into the maths.
+ * - `items-start` on the column is load-bearing: a flex column's default `align-items:
+ *   stretch` gives `word` and `desc` the same (widest-child) box width, and the loop
+ *   centres the box — left-aligned glyphs inside a stretched box land visibly off-centre.
+ * - `gap-0` while bare, `gap-1` while docked: a plain flex gap has no stretch/distribute
+ *   mechanic for the transform's scale to amplify (0 × any scale is 0), and the docked
+ *   value is a fixed rest value once `s` has settled to 1. The bare-phase gap is animated
+ *   continuously by the loop (`desc.style.marginTop`, see `FLIP.BARE_GAP_MAX`) rather than
+ *   through a second CSS value.
  *
- * The mark's rem size (`2.75rem`) is shared with `hero-canvas/lockup-flip.js`'s
- * `MARK_MAX` — that file drives the SAME span's width via `mark.style.width` (opening it
- * 0 → target over the cold-open's `MARK_IN` window), so the rest-state class here and the
- * animated target there must agree or the mark would jump size the instant the loop's
- * first frame runs. Deliberately TALLER than the word+descriptor column (≈2.4rem): the
- * reference lockup's mark overshoots the text block on both edges rather than sitting
- * flush inside it — matching that height instead made the mark read as merely "contained,"
- * and made a sub-pixel `items-center` rounding difference (confirmed by measurement:
- * mark height 36px vs column height 38px, centers agreeing to within 1px) look like a
- * real misalignment it wasn't. Overshooting both ways removes that illusion entirely.
- *
- * Word/descriptor sizing matches the approved Claude Design mockup's own proportions —
- * `word` regular weight (not bold), `desc` sized close to HALF the word's cap height, not
- * a small caption line under it. An earlier pass made `word` bold and `desc` tiny
- * (`text-[0.625rem]`) chasing a DIFFERENT reference image; reported live as a real
- * regression against the actual approved design, not a matter of taste. `attachLockupFlip`'s
- * formulas measure these nodes live (`word.offsetWidth`, etc.) every frame, so any size
- * here is a free parameter, not a hardcoded assumption baked into the FLIP math elsewhere.
- *
- * `items-start` on the column wrapper is load-bearing, not decorative: a flex column's
- * default `align-items: stretch` stretches every child to the container's own (widest-child)
- * cross-axis width — confirmed live, `word` and `desc` reported the exact same
- * `getBoundingClientRect().width` despite different text and font sizes. The FLIP math
- * centers whatever box `getBoundingClientRect()` reports, correctly — but stretched, the
- * text (left-aligned by default inside its own box) sits in only part of that box, so the
- * box lands centered while the glyphs visibly don't. Invisible at the old, narrower font
- * sizes where natural widths nearly matched; a real, visible offset once the sizes grew
- * apart. `items-start` makes each child's box hug its own text again.
- *
- * `gap-0`/`[[data-bare=false]_&]:gap-1` on that same column is the THIRD mechanism tried
- * for the word↔desc spacing, replacing both an earlier `self-stretch`/`justify-between`
- * spread (stretched the column to the mark's own `2.75rem` height and distributed the two
- * lines to its top/bottom edges) and, before that, a bare-only negative margin. Both were
- * real regressions in different directions: `self-stretch` carried the mark's fixed
- * 2.75rem height into the hero-scale render too, where the transform's scale blew it up
- * into a huge gap; a `gap-2` floor added on top of the spread to fix a transition-tail
- * complaint instead inflated the PERMANENT docked gap on every page (there is no
- * code-level distinction between "just docked" and "docked and scrolled further" —
- * `data-bare` is a flat binary). A plain flex `gap`, with no stretch/distribute mechanic
- * at all, sidesteps that whole class of bug: `gap-0` while bare is exactly zero
- * regardless of the FLIP transform's current scale (0 × any scale is still 0 — the
- * amplification problem simply doesn't apply to zero), and `gap-1` while docked is a
- * fixed, unscaled rest value once `s` has settled to 1. Confirmed live via the actual
- * DOM (`data-bare="true"` in DevTools) — not another screenshot guess.
- *
- * The DOCKED topbar and the BARE hero show different text on the same two ref'd nodes —
- * "Vinaya" / "Git harness" while bare, "GIT" / "HARNESS" while docked (topbar-only,
- * requested live: the wordmark drops "Vinaya" once landed, HeroLockup keeps showing
- * "Vinaya" at hero scale). `word`/`desc` stay the single ref'd elements `attachLockupFlip`
- * measures and transforms; each wraps TWO content spans, CSS-grid-stacked into the same
+ * The docked topbar and the bare hero show different text on the same two ref'd nodes —
+ * "Vinaya" / "Git harness" while bare, "GIT" / "HARNESS" while docked (a topbar-only
+ * wordmark change). Each ref'd node wraps TWO content spans, CSS-grid-stacked into the same
  * cell (`grid` on the wrapper, `col-start-1 row-start-1` on both) rather than toggled via
- * `hidden`/`block` — a hard display swap can't transition, so the two texts popped
- * instantly instead of crossfading (reported live). Grid-stacking keeps both spans
- * genuinely in flow (no `position: absolute`, which is off the table here) so a plain
- * `opacity` transition crossfades them; the wrapper's own size (what `offsetWidth`/
- * `getBoundingClientRect()` report to the FLIP loop) becomes the LARGER of the two
- * overlapping texts rather than exactly whichever is visible — a minor, accepted
- * trade-off ("Vinaya" and "GIT" are close in width) for a soft transition instead of a pop.
+ * `hidden`/`block`: a display swap can't transition, so the texts would pop instead of
+ * crossfading. Grid-stacking keeps both genuinely in flow (no `position: absolute`) so a
+ * plain `opacity` transition crossfades them; the wrapper's measured size becomes the
+ * LARGER of the two texts — an accepted trade-off, "Vinaya" and "GIT" are close in width.
  */
 export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | null; alt?: string }) {
   const setNode = useHeroLockupRegister()
