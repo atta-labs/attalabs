@@ -44,7 +44,7 @@ function mixHex(a, b, t) {
    `root` gets `color: var(name)`, and its computed `color` comes back as a concrete colour
    even when the variable is a color-mix() — which getPropertyValue() would hand back as
    unresolved text. Used for the hero-scoped ramp targets in hero-core.css. */
-function cssColor(root, name) {
+export function cssColor(root, name) {
   const probe = document.createElement('span')
   probe.style.color = `var(${name})`
   root.appendChild(probe)
@@ -59,6 +59,13 @@ function cssColor(root, name) {
   }
   if (hex == null) throw new Error(`design token ${name} did not resolve to a colour (${raw})`)
   return hex
+}
+/* a plain numeric custom property (a strength, not a colour), read off `root`'s cascade */
+export function cssNumber(root, name) {
+  const raw = getComputedStyle(root).getPropertyValue(name).trim()
+  const v = Number.parseFloat(raw)
+  if (!Number.isFinite(v)) throw new Error(`design token ${name} did not resolve to a number (${raw})`)
+  return v
 }
 /* Colour comes from the design system's variables or not at all — there are no literal
    colour fallbacks anywhere in this file. A missing token is a bug, so it throws. */

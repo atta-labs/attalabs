@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { buildHarness, token } from './harness-model'
+import { buildHarness, cssColor, cssNumber, token } from './harness-model'
 import { buildField } from './field-3d'
 import { buildBeam } from './underworld-beam'
 
@@ -79,6 +79,10 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
   let ink = token('--primary')
   let sand = token('--secondary')
   let card = token('--card')
+  /* the fabric's ink and strength are hero-scoped CSS variables (hero-core.css), resolved
+     off the hero element so the dark-scheme values apply */
+  let fabricInk = cssColor(hero, '--hero-fabric-ink')
+  let fabricAlpha = cssNumber(hero, '--hero-fabric-alpha')
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))
@@ -156,13 +160,13 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     buildHarness(THREE, harnessOpts).then((harness) => {
       if (cancelled || disposed) return
       const field = buildField(THREE, {
-        ink,
+        ink: fabricInk,
         radius: 34,
         divisions: 272,
         dishDepth: DISH,
         dishR: 2.15,
         coreR: 0,
-        opacity: 0.15,
+        opacity: fabricAlpha,
         surface: bg,
         flashHex: card,
         activeRadius: 13
@@ -303,11 +307,13 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     ink = token('--primary')
     sand = token('--secondary')
     card = token('--card')
+    fabricInk = cssColor(hero, '--hero-fabric-ink')
+    fabricAlpha = cssNumber(hero, '--hero-fabric-alpha')
     scene.background = new THREE.Color(bg)
     renderer.setClearColor(bg, 1)
     if (!live) return
     live.harness.retheme()
-    live.field.retheme({ ink, surface: bg })
+    live.field.retheme({ ink: fabricInk, surface: bg, opacity: fabricAlpha })
     live.beam.retheme({ ink, sand, card })
   }
   const themeObserver = new MutationObserver(applyTheme)

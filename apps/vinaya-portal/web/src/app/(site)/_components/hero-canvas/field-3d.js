@@ -364,9 +364,13 @@ export function buildField(THREE_ = THREE, opts = {}) {
 
   update(0, { mass: 1, time: 0 })
   /* theme switch: repaint the two colour uniforms in place — never rebuild (see hero-scene.js) */
-  function retheme({ ink, surface }) {
+  function retheme({ ink, surface, opacity }) {
     mat.uniforms.uColor.value.setHex(ink, THREE_.LinearSRGBColorSpace)
     surfMat.uniforms.uColor.value.setHex(surface, THREE_.LinearSRGBColorSpace)
+    if (opacity != null) {
+      mat.uniforms.uOpacity.value = opacity
+      fineMat.uniforms.uOpacity.value = opacity * 0.55
+    }
   }
   return { mesh, fine, surface, update, pulse, setCursor, setFade, setEffects, retheme, material: mat, surfaceMaterial: surfMat, contactY }
 }

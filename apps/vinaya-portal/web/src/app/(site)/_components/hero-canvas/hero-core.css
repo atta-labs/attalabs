@@ -8,8 +8,14 @@
 [data-hero-viewport] {
   --hero-core-shade: var(--secondary);
   --hero-core-deep: var(--primary);
+  /* The fabric's hairlines: ink and strength. The portal's 2D fabric draws --foreground at a
+     low alpha in both schemes; the 3D sheet adds a depth fade on top, and cream over
+     near-black at the light-scheme strength all but vanishes — so dark carries more. */
+  --hero-fabric-ink: var(--foreground);
+  --hero-fabric-alpha: 0.15;
 }
 [data-theme='dark'] [data-hero-viewport] {
   --hero-core-shade: color-mix(in oklch, var(--card), var(--primary) 18%);
   --hero-core-deep: color-mix(in oklch, var(--card), var(--primary) 40%);
+  --hero-fabric-alpha: 0.3;
 }
