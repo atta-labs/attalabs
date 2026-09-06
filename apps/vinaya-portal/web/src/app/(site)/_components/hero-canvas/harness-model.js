@@ -470,8 +470,8 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
      past the front sphere is visible, so it reads as one crisp contour from every angle —
      the 3D equivalent of the source circle's stroke. */
   const contour = new THREE_.Mesh(
-    new THREE_.SphereGeometry(coreRadius * 1.018, 96, 64),
-    new THREE_.MeshBasicMaterial({ name: 'main-contour', color: inkHex, side: THREE_.BackSide })
+    new THREE_.SphereGeometry(coreRadius * 1.009, 96, 64),
+    new THREE_.MeshBasicMaterial({ name: 'main-contour', color: inkHex, side: THREE_.BackSide, transparent: true, opacity: 0.55, depthWrite: false })
   )
   contour.name = 'main-contour'
   mainGroup.add(contour)
@@ -570,6 +570,38 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
      shaded sphere mesh stays on mainGroup: its terminator, crescent and collar occlusion are
      lighting, fixed to the light and camera, and would be wrong to rotate with the body. */
   spinner.add(wire)
+
+  /* Meridian travellers: a few tiny --success dots that climb the wire net's
+     meridians from the south pole to the north, each on its own half-meridian at its own
+     slow pace, fading in and out at the poles. They live in the wire group, so they turn
+     with the surface. Gated on the merge (same gate as the micro-arcs): nothing until the
+     shock wave has fired and the green current is live. Deliberately faint. */
+  const TRAVELLERS = 18
+  const travellerGeo = new THREE_.SphereGeometry(coreRadius * 0.03, 8, 6)
+  const travellers = []
+  for (let i = 0; i < TRAVELLERS; i++) {
+    const mat = new THREE_.MeshBasicMaterial({ name: `meridian-dot-${i}`, color: greenHex, transparent: true, opacity: 0, depthWrite: false })
+    const dot = new THREE_.Mesh(travellerGeo, mat)
+    dot.name = `meridian-dot-${i}`
+    const half = Math.floor(hash01(i * 7.3 + 1) * 16)        // 8 meridians × 2 halves
+    travellers.push({
+      mesh: dot,
+      mat,
+      lon: (half % 8) / 8 * Math.PI + (half >= 8 ? Math.PI : 0),
+      speed: 0.045 + hash01(i * 3.1 + 2) * 0.06,              // cycles per second: 9–22 s per climb
+      offset: hash01(i * 5.7 + 3)
+    })
+    wire.add(dot)
+  }
+  const travellerR = coreRadius * 1.006
+  function updateTravellers(now, gate) {
+    for (const d of travellers) {
+      const t = (now * d.speed + d.offset) % 1                 // 0 = south pole, 1 = north pole
+      const lat = -Math.PI / 2 + t * Math.PI
+      d.mesh.position.set(Math.cos(d.lon) * Math.cos(lat) * travellerR, Math.sin(lat) * travellerR, Math.sin(d.lon) * Math.cos(lat) * travellerR)
+      d.mat.opacity = gate * 0.55 * Math.sin(Math.PI * t) ** 1.5
+    }
+  }
   mainGroup.add(spinner)
 
   /* Micro-arcs: very soft, very transparent green flickers that jump from a random point
@@ -912,6 +944,7 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
 
     /* the soft micro-arcs, spawned at random while the merge current runs */
     const now = state.time ?? 0
+    updateTravellers(now, mergeAmt) // none before the shock wave; they arrive with the green current
     const dtm = Math.min(0.06, Math.max(0, now - lastMicroTime))
     lastMicroTime = now
     for (const s of micros) {
