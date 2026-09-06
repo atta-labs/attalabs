@@ -474,7 +474,8 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
     }
     wire.add(new THREE_.Line(new THREE_.BufferGeometry().setFromPoints(pts), wireMat))
   }
-  mainGroup.add(wire)
+  // added to the label's spinner below, not to mainGroup — the net is SURFACE and must turn
+  // with the label; the cel shading on the sphere mesh is LIGHT and must not.
 
   /* the label, on a spherical patch so it curves with the surface */
   function labelCanvas(hex) {
@@ -537,6 +538,11 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
     spinner.add(tp)
     trailMats.push({ mat: tm, mesh: tp, i })
   }
+  /* The wire net rides the spinner too. Once the surface is visible (wire + ramp), a label
+     turning over a static net reads as text sliding across a ball, not a ball turning. The
+     shaded sphere mesh stays on mainGroup: its terminator, crescent and collar occlusion are
+     lighting, fixed to the light and camera, and would be wrong to rotate with the body. */
+  spinner.add(wire)
   mainGroup.add(spinner)
 
   /* Micro-arcs: very soft, very transparent green flickers that jump from a random point
