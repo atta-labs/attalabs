@@ -84,7 +84,10 @@ const PULL_RANGE = PULL_RANGE_PX * k         // the source's cursor pull, in wor
 const MAX_PULL = MAX_PULL_PX * k
 const hash01 = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s) }
 
-export async function buildHarness(THREE_ = THREE) {
+export async function buildHarness(THREE_ = THREE, opts = {}) {
+  /* main-core options. Defaults reproduce the flat, wireless core exactly, so the factory is
+     inert until a caller opts in (hero-scene.js does: wire 0.07, ramp 'deep', contact, lift 0.22). */
+  const CORE = { ramp: 'flat', wire: 0, contact: false, lift: 0.13, ...(opts.core || {}) }
   const group = new THREE.Group()
   group.name = 'vinaya-harness'
 
@@ -102,7 +105,7 @@ export async function buildHarness(THREE_ = THREE) {
   const ink = new THREE_.MeshBasicMaterial({ name: 'ink', color: inkHex })
   const core = new THREE_.MeshBasicMaterial({ name: 'main-core', color: cardHex })
   const edgeMat = new THREE_.LineBasicMaterial({ name: 'outline', color: inkHex })
-  const wireMat = new THREE_.LineBasicMaterial({ name: 'core-wire', color: inkHex, transparent: true, opacity: 0.3 })
+  const wireMat = new THREE_.LineBasicMaterial({ name: 'core-wire', color: inkHex, transparent: true, opacity: CORE.wire || 0.3 })
   const outline = (mesh, angle) => {
     const e = new THREE_.LineSegments(new THREE_.EdgesGeometry(mesh.geometry, angle ?? 24), edgeMat)
     e.name = mesh.name + '-outline'
@@ -348,31 +351,91 @@ export async function buildHarness(THREE_ = THREE) {
   }
 
   /* ── main: the protected branch, a real sphere at coreRadius ─────────────
-     It rides PROUD of the collar plane (centre lifted 0.30·R) so it reads as a whole
-     sphere from a low camera instead of being cut in half by the ring. */
-  const CORE_LIFT = coreRadius * 0.13
+     It rides PROUD of the collar plane (centre lifted CORE.lift·R — 0.22 in the hero, so
+     the collar crosses below the widest point, where sphere and egg stop being ambiguous)
+     so it reads as a whole sphere from a low camera instead of being cut in half. */
+  const CORE_LIFT = coreRadius * CORE.lift
   const mainGroup = new THREE_.Group()
   mainGroup.name = 'main'
   mainGroup.position.y = CORE_LIFT
   group.add(mainGroup)
 
-  /* main: a solid sphere with flat cel shading — enough tonal separation to read as a body,
-     nothing like a photographic highlight. The tones are neutral multipliers over the
-     --card token, so no new colour is introduced. */
-  const sphereGeo = new THREE_.SphereGeometry(coreRadius, 96, 64)
-  const nrmAttr = sphereGeo.attributes.normal
-  const cols = new Float32Array(nrmAttr.count * 3)
-  const LDIR = new THREE_.Vector3(-0.45, 0.78, 0.44).normalize()
-  for (let i = 0; i < nrmAttr.count; i++) {
-    const d = nrmAttr.getX(i) * LDIR.x + nrmAttr.getY(i) * LDIR.y + nrmAttr.getZ(i) * LDIR.z
-    const tone = d > 0.55 ? 1 : d > 0.12 ? 0.96 : d > -0.3 ? 0.905 : 0.85
-    cols[i * 3] = tone
-    cols[i * 3 + 1] = tone
-    cols[i * 3 + 2] = tone
+  /* main: a solid sphere with cel shading — enough tonal separation to read as a body,
+     nothing like a photographic highlight. Two paths:
+       'flat' — the original: neutral multipliers over --card written into a colour attribute.
+                In light mode --card and --background sit within a few percent of each other,
+                so a ~15% spread of white on white wraps nothing: the core reads as an oval
+                outline in a cup. Dark mode was never affected.
+       'deep' — a per-fragment terminator: four bands ramping --card → --secondary → --primary,
+                a narrow rim crescent at the shadow-side silhouette, and contact occlusion
+                rising from the collar plane. Cut in the FRAGMENT shader — hard thresholds on
+                vertex colours follow the mesh facets and the terminator comes out a sawtooth.
+     No new colour either way: every tone mixes --card, --secondary and --primary. Unlit, so it
+     stays a technical drawing. */
+  const sphereGeo = new THREE_.SphereGeometry(coreRadius, 160, 112)
+  const VDIR = new THREE_.Vector3(0, 0.42, 1).normalize() // ~the hero camera; places the crescent
+  const LDEEP = new THREE_.Vector3(-0.66, 0.56, 0.26).normalize()
+  const DEEP = CORE.ramp === 'deep'
+  let sphereMat = core
+
+  if (DEEP) {
+    /* Uniform colours must be LINEAR and the fragment must run three's own output transform:
+       a ShaderMaterial gets neither automatically, and missing either lifts the whole ramp back
+       toward white — which looks exactly like the bug this path exists to fix. */
+    const lin = (hex) => new THREE_.Color().setHex(hex, THREE_.SRGBColorSpace)
+    sphereMat = new THREE_.ShaderMaterial({
+      name: 'main-core-cel',
+      uniforms: {
+        uCard: { value: lin(cardHex) },
+        uSand: { value: lin(metalHex) },
+        uInk: { value: lin(inkHex) },
+        uL: { value: LDEEP },
+        uV: { value: VDIR },
+        uAo: { value: CORE.contact ? 1 : 0 },
+        uLift: { value: CORE_LIFT },
+        uR: { value: coreRadius }
+      },
+      vertexShader: `
+        varying vec3 vN; varying vec3 vP;
+        void main() {
+          vN = normal; vP = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        varying vec3 vN; varying vec3 vP;
+        uniform vec3 uCard, uSand, uInk, uL, uV;
+        uniform float uAo, uLift, uR;
+        void main() {
+          vec3 n = normalize(vN);
+          float d = dot(n, uL);
+          float t = d > 0.55 ? 0.0 : d > 0.34 ? 0.10 : d > 0.14 ? 0.22 : 0.36;
+          float facing = dot(n, uV);
+          if (d < 0.0 && facing > 0.0 && facing < 0.17) t = 0.16;   // rim crescent
+          // card and secondary are close in light mode; the second mix toward primary is
+          // what makes the ramp register at all
+          vec3 col = mix(mix(uCard, uSand, min(1.0, t * 1.1)), uInk, t * 0.22);
+          float reach = uR * 0.8;
+          float ao = pow(clamp((reach - uLift - vP.y) / reach, 0.0, 1.0), 1.6);
+          col = mix(col, uInk, ao * 0.13 * uAo);
+          gl_FragColor = vec4(col, 1.0);
+          #include <colorspace_fragment>
+        }`
+    })
+  } else {
+    const nrmAttr = sphereGeo.attributes.normal
+    const cols = new Float32Array(nrmAttr.count * 3)
+    const LDIR = new THREE_.Vector3(-0.45, 0.78, 0.44).normalize()
+    for (let i = 0; i < nrmAttr.count; i++) {
+      const d = nrmAttr.getX(i) * LDIR.x + nrmAttr.getY(i) * LDIR.y + nrmAttr.getZ(i) * LDIR.z
+      const tone = d > 0.55 ? 1 : d > 0.12 ? 0.96 : d > -0.3 ? 0.905 : 0.85
+      cols[i * 3] = tone
+      cols[i * 3 + 1] = tone
+      cols[i * 3 + 2] = tone
+    }
+    sphereGeo.setAttribute('color', new THREE_.BufferAttribute(cols, 3))
+    core.vertexColors = true
   }
-  sphereGeo.setAttribute('color', new THREE_.BufferAttribute(cols, 3))
-  core.vertexColors = true
-  const sphere = new THREE_.Mesh(sphereGeo, core)
+  const sphere = new THREE_.Mesh(sphereGeo, sphereMat)
   sphere.name = 'main-sphere'
   mainGroup.add(sphere)
 
@@ -386,12 +449,14 @@ export async function buildHarness(THREE_ = THREE) {
   contour.name = 'main-contour'
   mainGroup.add(contour)
 
-  /* main stays SOLID — no wire lines on the core */
+  /* wire net: lines that wrap the form are the strongest sphere cue and cost nothing tonally.
+     Latitudes crowd toward the top and the terminator rather than an even ladder. Off (no
+     lines at all) unless the caller sets CORE.wire, which is also the line alpha. */
   const wire = new THREE_.Group()
   wire.name = 'main-wire'
   const R = coreRadius * 1.001
-  const WIRE = false
-  for (const lat of WIRE ? [-0.9, -0.45, 0, 0.45, 0.9] : []) {
+  const WIRE = !!CORE.wire
+  for (const lat of WIRE ? [-0.98, -0.66, -0.34, -0.06, 0.24, 0.55, 0.86] : []) {
     const rr = Math.cos(lat) * R
     const pts = []
     for (let i = 0; i <= 96; i++) {
@@ -400,8 +465,8 @@ export async function buildHarness(THREE_ = THREE) {
     }
     wire.add(new THREE_.Line(new THREE_.BufferGeometry().setFromPoints(pts), wireMat))
   }
-  for (let j = 0; j < (WIRE ? 6 : 0); j++) {
-    const lon = (j / 6) * Math.PI
+  for (let j = 0; j < (WIRE ? 8 : 0); j++) {
+    const lon = (j / 8) * Math.PI
     const pts = []
     for (let i = 0; i <= 64; i++) {
       const t = -Math.PI / 2 + (i / 64) * Math.PI
