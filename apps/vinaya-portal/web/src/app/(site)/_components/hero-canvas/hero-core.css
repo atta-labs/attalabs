@@ -1,0 +1,15 @@
+/* Main-core cel-ramp targets, DERIVED from the theme's own tokens — no colour is authored here.
+   The shader's logic is identical in every scheme: it ramps --card toward --hero-core-shade and
+   then --hero-core-deep. In light those are --secondary and --primary outright (the handoff's
+   tuning). In dark, --secondary sits within a hair of --card (no band at all) while --primary
+   is far lighter, so the same ramp run on the raw tokens is a hard cream wash; both targets
+   are instead --primary mixed most of the way back toward --card, which keeps the ramp's
+   direction and shape and lands it quiet. Tune dark here, never in the shader. */
+[data-hero-viewport] {
+  --hero-core-shade: var(--secondary);
+  --hero-core-deep: var(--primary);
+}
+[data-theme='dark'] [data-hero-viewport] {
+  --hero-core-shade: color-mix(in oklch, var(--card), var(--primary) 18%);
+  --hero-core-deep: color-mix(in oklch, var(--card), var(--primary) 40%);
+}

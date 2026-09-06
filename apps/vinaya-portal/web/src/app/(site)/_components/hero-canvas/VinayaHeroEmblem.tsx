@@ -1,5 +1,7 @@
 'use client'
 
+import './hero-core.css'
+
 import { Heading, Text } from '@atta/ui/shared'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { useHeroLockupNodes } from '../hero-lockup-context'

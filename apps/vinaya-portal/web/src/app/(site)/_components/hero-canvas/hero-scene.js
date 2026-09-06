@@ -152,7 +152,8 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     // main-core options — the 1c fix for the core reading as an egg in light mode: wire net
     // at 0.07 alpha, per-fragment cel terminator, collar contact, centre lifted 0.13R → 0.22R.
     // See harness-model.js's main block for what each does. Defaults there are inert.
-    buildHarness(THREE, { core: { wire: 0.07, ramp: 'deep', contact: true, lift: 0.22 } }).then((harness) => {
+    const harnessOpts = { tokenRoot: hero, core: { wire: 0.07, ramp: 'deep', contact: true, lift: 0.22 } }
+    buildHarness(THREE, harnessOpts).then((harness) => {
       if (cancelled || disposed) return
       const field = buildField(THREE, {
         ink,

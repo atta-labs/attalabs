@@ -40,14 +40,25 @@ function mixHex(a, b, t) {
   const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255
   return ((Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t))
 }
-/* relative luminance of an sRGB hex — decides whether the core shades by the
-   card→sand→ink ramp (light card) or by plain darkening (dark card, see the cel shader) */
-function hexLum(hex) {
-  const ch = (v) => {
-    const u = v / 255
-    return u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4
+/* Resolve a CSS custom property to a hex colour THROUGH the cascade: a probe element under
+   `root` gets `color: var(name)`, and its computed `color` comes back as a concrete colour
+   even when the variable is a color-mix() — which getPropertyValue() would hand back as
+   unresolved text. Used for the hero-scoped ramp targets in hero-core.css. */
+function cssColor(root, name) {
+  const probe = document.createElement('span')
+  probe.style.color = `var(${name})`
+  root.appendChild(probe)
+  const raw = getComputedStyle(probe).color.trim()
+  probe.remove()
+  let hex = oklchToHex(raw)
+  if (hex == null) {
+    const rgb = raw.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i)
+    const srgb = raw.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/i)
+    const c = rgb ? rgb.slice(1, 4).map((v) => Math.round(parseFloat(v))) : srgb ? srgb.slice(1, 4).map((v) => Math.round(parseFloat(v) * 255)) : null
+    if (c) hex = (c[0] << 16) | (c[1] << 8) | c[2]
   }
-  return 0.2126 * ch((hex >> 16) & 255) + 0.7152 * ch((hex >> 8) & 255) + 0.0722 * ch(hex & 255)
+  if (hex == null) throw new Error(`design token ${name} did not resolve to a colour (${raw})`)
+  return hex
 }
 /* Colour comes from the design system's variables or not at all — there are no literal
    colour fallbacks anywhere in this file. A missing token is a bug, so it throws. */
@@ -97,6 +108,8 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
   /* main-core options. Defaults reproduce the flat, wireless core exactly, so the factory is
      inert until a caller opts in (hero-scene.js does: wire 0.07, ramp 'deep', contact, lift 0.22). */
   const CORE = { ramp: 'flat', wire: 0, contact: false, lift: 0.13, ...(opts.core || {}) }
+  // where the hero-scoped ramp-target variables (hero-core.css) are resolved from
+  const tokenRoot = opts.tokenRoot ?? document.documentElement
   const group = new THREE.Group()
   group.name = 'vinaya-harness'
 
@@ -392,23 +405,22 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
   const lin = (hex) => new THREE_.Color().setHex(hex, THREE_.SRGBColorSpace)
 
   if (DEEP) {
-    /* The card→sand→ink ramp is aimed at a LIGHT card, where sand and ink are both darker
-       than the card and the shadow side goes darker. On a dark card the same ramp runs the
-       other way — sand and ink are both lighter — so the shadow side would brighten, and by
-       a lot. uDark switches the shadow side to plain darkening of the card instead, which is
-       what the flat path always did in dark mode and reads correctly there. */
+    /* One ramp, every scheme: --card → --hero-core-shade → --hero-core-deep. The two targets
+       are CSS variables scoped to the hero (hero-core.css) and derived from the theme's own
+       tokens — --secondary/--primary in light, the same two mixed back toward --card in
+       dark, where they would otherwise be far lighter than the card and brighten the shadow
+       side. The shader never asks which scheme it is in; only the colours change. */
     sphereMat = new THREE_.ShaderMaterial({
       name: 'main-core-cel',
       uniforms: {
         uCard: { value: lin(cardHex) },
-        uSand: { value: lin(metalHex) },
-        uInk: { value: lin(inkHex) },
+        uShade: { value: lin(cssColor(tokenRoot, '--hero-core-shade')) },
+        uDeep: { value: lin(cssColor(tokenRoot, '--hero-core-deep')) },
         uL: { value: LDEEP },
         uV: { value: VDIR },
         uAo: { value: CORE.contact ? 1 : 0 },
         uLift: { value: CORE_LIFT },
-        uR: { value: coreRadius },
-        uDark: { value: hexLum(cardHex) < 0.5 ? 1 : 0 }
+        uR: { value: coreRadius }
       },
       vertexShader: `
         varying vec3 vN; varying vec3 vP;
@@ -418,23 +430,20 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
         }`,
       fragmentShader: `
         varying vec3 vN; varying vec3 vP;
-        uniform vec3 uCard, uSand, uInk, uL, uV;
-        uniform float uAo, uLift, uR, uDark;
+        uniform vec3 uCard, uShade, uDeep, uL, uV;
+        uniform float uAo, uLift, uR;
         void main() {
           vec3 n = normalize(vN);
           float d = dot(n, uL);
           float t = d > 0.55 ? 0.0 : d > 0.34 ? 0.10 : d > 0.14 ? 0.22 : 0.36;
           float facing = dot(n, uV);
           if (d < 0.0 && facing > 0.0 && facing < 0.17) t = 0.16;   // rim crescent
-          // light card: card and secondary are close, so the second mix toward primary is
-          // what makes the ramp register at all
-          vec3 lit = mix(mix(uCard, uSand, min(1.0, t * 1.1)), uInk, t * 0.22);
-          // dark card: darken the card itself, gently — the wire net carries the form there
-          vec3 dim = uCard * (1.0 - t * 0.6);
-          vec3 col = mix(lit, dim, uDark);
+          // card and shade are close (light: card vs secondary), so the second mix toward
+          // deep is what makes the ramp register at all
+          vec3 col = mix(mix(uCard, uShade, min(1.0, t * 1.1)), uDeep, t * 0.22);
           float reach = uR * 0.8;
           float ao = pow(clamp((reach - uLift - vP.y) / reach, 0.0, 1.0), 1.6);
-          col = mix(col, mix(uInk, vec3(0.0), uDark), ao * 0.13 * uAo);
+          col = mix(col, uDeep, ao * 0.13 * uAo);
           gl_FragColor = vec4(col, 1.0);
           #include <colorspace_fragment>
         }`
@@ -990,9 +999,8 @@ export async function buildHarness(THREE_ = THREE, opts = {}) {
     if (DEEP) {
       const u = sphereMat.uniforms
       u.uCard.value = lin(next.card)
-      u.uSand.value = lin(next.sand)
-      u.uInk.value = lin(next.ink)
-      u.uDark.value = hexLum(next.card) < 0.5 ? 1 : 0
+      u.uShade.value = lin(cssColor(tokenRoot, '--hero-core-shade'))
+      u.uDeep.value = lin(cssColor(tokenRoot, '--hero-core-deep'))
     }
   }
 
