@@ -1,14 +1,14 @@
 import * as THREE from 'three'
-import { buildHarness, token } from '@atta/ui/canvas/vinaya-hero/harness-model'
-import { buildField } from '@atta/ui/canvas/vinaya-hero/field-3d'
-import { buildBeam } from '@atta/ui/canvas/vinaya-hero/underworld-beam'
+import { buildHarness, token } from './harness-model'
+import { buildField } from './field-3d'
+import { buildBeam } from './underworld-beam'
 
 /**
  * Mount factory for the approved Claude Design hero (`implementation/VinayaHero.tsx` in the
- * handoff). The three canvas builders live verbatim at `packages/ui/canvas/vinaya-hero/` —
- * this file is the orchestration layer `VinayaHero.tsx` inlined into its `useEffect`, moved
- * into a `.js` factory behind a dynamic `import()` so `three` stays out of the SSR module
- * graph (the `/life-cycle` precedent, `.claude/skills/vinaya-architecture/SKILL.md`).
+ * handoff). The three canvas builders live verbatim alongside this file — this file is the
+ * orchestration layer `VinayaHero.tsx` inlined into its `useEffect`, moved into a `.js`
+ * factory behind a dynamic `import()` so `three` stays out of the SSR module graph (the
+ * `/life-cycle` precedent, `.claude/skills/vinaya-architecture/SKILL.md`).
  *
  * DO NOT retune the timeline below — it is copied verbatim from the approved handoff.
  * Every `document`/`window`/`getComputedStyle` read lives inside `mountHeroScene`.
