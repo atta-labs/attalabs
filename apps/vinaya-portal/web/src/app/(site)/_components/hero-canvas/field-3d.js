@@ -248,6 +248,11 @@ export function buildField(THREE_ = THREE, opts = {}) {
        bright arc per front. The caller fades this with the camera tip; the in-plane
        radial push below is what carries the wave once the camera is low. */
     const lift = clamp01(state.lift ?? 1)
+    /* The harness is always on top of the fabric. Under its footprint (radius r) the sheet
+       may never rise above the ring's underside (y) — the shock wave's crest otherwise passes
+       through the spark arcs, which swing below the ring's mid-plane. The caller supplies
+       both from the harness's real dimensions and seat. */
+    const under = state.underHarness
     for (let i = pulses.length - 1; i >= 0; i--) {
       const p = pulses[i]
       p.t += dt
@@ -295,6 +300,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
       for (const w of waveFronts) {
         y += Math.sin((x * w.dx + z * w.dz) * 0.42 - w.t * 1.05) * 0.075 * w.env
       }
+      if (under && d <= under.r && y > under.y) y = under.y
       pos[i * 3] = x + acNx[n] * radial
       pos[i * 3 + 1] = y
       pos[i * 3 + 2] = z + acNz[n] * radial
