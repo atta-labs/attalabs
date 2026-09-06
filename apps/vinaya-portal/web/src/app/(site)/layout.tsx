@@ -136,7 +136,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <HeroLockupProvider>
       {/* z-30 keeps the TopBar above the hero emblem's canvas (z-0). TopBarChromeHost
           also registers itself as the `bar` node the landing hero's lockup-flip loop
-          writes `data-bare` onto — see TOPBAR-LOCKUP.md. */}
+          writes `data-bare` onto — see `hero-lockup-context.tsx` for the mechanism. */}
       <TopBarChromeHost>
         <TopBar
           logo={
@@ -144,13 +144,15 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
               <HeroLockup logoUrl={logoUrl} />
             </NextLink>
           }
-          // The fabric shows through even when docked — glass, not a solid bar. Opacity
-          // lowered from an earlier `/70` (reported as still reading too solid) to `/35`,
-          // keeping `backdrop-blur-md` so nav text stays legible over the moving fabric.
-          // `border-transparent` overrides the shared ChromeFrame's default `border-border`
-          // unconditionally (not just while bare) — Vinaya never wants a topbar border.
-          // Additive className, opt-in, so no other TopBar consumer is affected.
-          chromeClassName='border-transparent bg-background/35 backdrop-blur-md'
+          // Vinaya's own topbar chrome, all of it carried here so the shared ChromeFrame
+          // stays untouched for every other consumer. Docked: glass, not a solid bar —
+          // `bg-background/35` lets the fabric show through, `backdrop-blur-md` keeps nav
+          // text legible over it. `border-transparent` is unconditional: Vinaya never wants
+          // a topbar border. Bare (landing cold-open, `data-bare="true"` on the
+          // `TopBarChromeHost` ancestor): the background drops to transparent so the canvas
+          // paints straight through the bar. The `[[data-bare=true]_&]:` ancestor selector
+          // outranks the plain `bg-background/35` utility, so no order dependence.
+          chromeClassName='border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none'
           links={links}
           withAuth={false}
         />

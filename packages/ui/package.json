@@ -23,7 +23,6 @@
     "./lib/preview-theme-listener": "./lib/preview-theme-listener.tsx",
     "./canvas": "./canvas/index.ts",
     "./canvas/hero-fabric": "./canvas/hero-fabric.tsx",
-    "./footer/marks/vinaya": "./footer/marks/vinaya-mark.tsx",
     "./engine-flow": "./engine-flow/index.ts",
     "./agents": "./agents/index.ts",
     "./lib/*": "./lib/*.ts",

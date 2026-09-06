@@ -48,17 +48,10 @@ export function ChromeFrame({ variant, className, children, ...props }: ChromeFr
   // below the bar, and `overflow-hidden` here clipped it to nothing before
   // it could ever paint (only the trigger's own rounded corner showed).
   return (
-    // `data-bare` is an ANCESTOR attribute (the landing hero's own chrome host writes it,
-    // never this component) — see TOPBAR-LOCKUP.md. retro's own idiom for bare state is
-    // dropping the whole floating-card look (border, background, offset shadow), not just
-    // border/background — a floating card with no border/fill still reads as a card-shaped
-    // hole. Every other consumer of this variant never sets the attribute, so this rule is
-    // dormant everywhere else.
     <div className='w-full px-2 pt-2'>
       <Card
         className={cn(
           'relative flex h-14 w-full flex-row items-center gap-0 rounded px-6 py-0 overflow-visible',
-          '[[data-bare=true]_&]:border-transparent [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none',
           className
         )}
         {...props}

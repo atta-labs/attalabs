@@ -665,20 +665,6 @@ look). Lives at
 `{basic,retro}/components/chrome/chrome-frame.tsx`; `ChromeFrameProps` /
 `ChromeFrameVariant` in `types/chrome/chrome-frame.ts`.
 
-**`ChromeFrame`'s `topbar` variant reads an ancestor `data-bare` attribute for a
-per-library "bare" state** — basic's border/background and retro's whole
-floating-card look (border, background, offset shadow) both go transparent when
-some ancestor element carries `data-bare="true"`, via a Tailwind arbitrary
-ancestor selector (`[[data-bare=true]_&]:border-transparent`, etc.), never a
-`library === '…'` branch. `ChromeFrame` itself never writes the attribute — only
-a consumer's own chrome host does (Vinaya's landing hero writes it onto its
-`TopBarChromeHost` wrapper while its cold-open wordmark is still scaled up,
-flipping it back once the wordmark docks; see `TOPBAR-LOCKUP.md` and
-`apps/vinaya-portal/web/src/app/(site)/_components/TopBarChromeHost.tsx`). No
-other consumer sets this attribute, so the rule is dormant everywhere else — a
-free, no-op CSS hook any future consumer can opt into the same way, without a
-new `ChromeFrame` prop or variant.
-
 **retro's `topbar` variant overrides its own Card to `overflow-visible`**
 (#816). retro's `installed/card.tsx` hardcodes
 `overflow-hidden` (for image-corner clipping); the `topbar` variant's Card
