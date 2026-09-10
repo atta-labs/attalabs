@@ -1,14 +1,23 @@
-import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@atta/ui/components'
-import { sumLedger, type DerivedStatus, type DispatchResult, type LedgerRow } from '@attalabs/aeg-core'
-import { AlertTriangle, UserRound } from 'lucide-react'
+import {
+  Badge,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@atta/ui/components'
+import { sumLedger, type DerivedStatus } from '@attalabs/aeg-core'
+import { AlertTriangle, RefreshCw, UserRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { readTranche, resolveProjectView } from '@/lib/repo-state'
-import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
-import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
-import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
+import { resolveProjectView } from '@/lib/repo-state'
+import { refreshTrancheSnapshotAction } from '@/lib/forge/refresh-snapshot-action'
 import { bucketTaskStatuses } from '@/lib/forge/task-buckets'
 import { timeCall } from '@/lib/forge/timing'
+import { loadTranchePageData } from '@/lib/forge/tranche-page-snapshot'
 import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
 import { CoherencePanel } from './_components/CoherencePanel'
 import { TrancheTabs } from './_components/TrancheTabs'
@@ -35,18 +44,23 @@ function formatCost(n: number | null): string {
   return `$${n.toFixed(4)}`
 }
 
+function formatSnapshotTime(storedAtMs: number): string {
+  return new Date(storedAtMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export default async function TranchePage({ params }: { params: Promise<Params> }) {
   const { name, slug } = await params
-  const [view, detail] = await Promise.all([
+  const [view, page] = await Promise.all([
     timeCall('resolveProjectView', () => resolveProjectView(name)),
-    timeCall('readTranche', () => readTranche(slug))
+    loadTranchePageData(slug)
   ])
   if (!view) notFound()
-  if (!detail) notFound()
+  if (page.notFound) notFound()
 
+  const { data, storedAt, stale } = page
+  const { detail, snapshot, readiness: readinessMap, tokenLedger } = data
   const { tranche, archived } = detail
 
-  const snapshot = await timeCall('loadTrancheSnapshot', () => loadTrancheSnapshot(tranche, slug))
   const taskStatusMap = new Map<string, DerivedStatus>()
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
@@ -58,13 +72,6 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
   // one abandoned task read Active here while its card read 94%.
   const taskCounts = bucketTaskStatuses(taskStatusMap.values(), tranche.tasks.length)
   const trancheStatus = deriveTrancheStatus({ ...taskCounts, forgeAvailable: !snapshot.unavailable }, archived)
-
-  // Dispatch-readiness sub-state for `todo` rows (#372 bundled finding):
-  // `checkDispatchReadiness` computed server-side, display-only — DerivedStatus
-  // is untouched. Archived tranches have no dispatchable work; skip.
-  const readinessMap = archived
-    ? new Map<string, DispatchResult>()
-    : await timeCall('loadDispatchReadiness', () => loadDispatchReadiness(tranche, slug, snapshot))
 
   // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
   // (excludes it from derivation). Rendered as a subordinate chip on
@@ -92,24 +99,6 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
   const issueUrl = (n: number): string | null =>
     snapshot.repo ? `https://github.com/${snapshot.repo.owner}/${snapshot.repo.repo}/issues/${n}` : null
 
-  // Live-fetched off merged PRs + verdict comments (task 4b, #445) —
-  // no longer the `<slug>.tokens.md` file read. `.tokens.md` itself is not
-  // deleted here (task 7's job, once this is proven).
-  const snapshotRepo = snapshot.repo
-  const tokenLedger = snapshotRepo
-    ? await timeCall('fetchTrancheTokenLedger', () =>
-        fetchTrancheTokenLedger({
-          owner: snapshotRepo.owner,
-          repo: snapshotRepo.repo,
-          tranche: slug,
-          tasks: tranche.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
-        })
-      )
-    : {
-        ledgers: new Map<string, LedgerRow[]>(),
-        unavailable: true,
-        reason: 'Could not resolve repository (no git remote found and AEG_REPO unset).'
-      }
   const ledgerRows = Array.from(tokenLedger.ledgers.values()).flat()
   const ledgerTotals = ledgerRows.length > 0 ? sumLedger(ledgerRows) : null
 
@@ -125,6 +114,18 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
           ) : (
             <Badge className='bg-success/10 text-success'>Active</Badge>
           )}
+          <span className='ml-auto flex items-center gap-2'>
+            <p className='font-mono text-xs text-muted-foreground'>
+              Snapshot from {formatSnapshotTime(storedAt)}
+              {stale ? ' · refreshing…' : ''}
+            </p>
+            <form action={refreshTrancheSnapshotAction.bind(null, name, slug)}>
+              <Button type='submit' variant='outline' size='sm' className='gap-1.5 font-mono text-xs'>
+                <RefreshCw className='size-3.5' aria-hidden />
+                Refresh
+              </Button>
+            </form>
+          </span>
         </div>
         <h1 className='font-serif text-3xl tracking-tight text-foreground'>{tranche.name || slug}</h1>
         {tranche.goal ? (
