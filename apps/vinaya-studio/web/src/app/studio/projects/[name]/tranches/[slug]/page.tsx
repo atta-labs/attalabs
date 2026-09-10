@@ -8,6 +8,7 @@ import { loadDispatchReadiness } from '@/lib/forge/dispatch-readiness'
 import { fetchTrancheTokenLedger } from '@/lib/forge/fetch-token-ledger'
 import { loadTrancheSnapshot } from '@/lib/forge/load-snapshot'
 import { bucketTaskStatuses } from '@/lib/forge/task-buckets'
+import { timeCall } from '@/lib/forge/timing'
 import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
 import { CoherencePanel } from './_components/CoherencePanel'
 import { TrancheTabs } from './_components/TrancheTabs'
@@ -36,13 +37,16 @@ function formatCost(n: number | null): string {
 
 export default async function TranchePage({ params }: { params: Promise<Params> }) {
   const { name, slug } = await params
-  const [view, detail] = await Promise.all([resolveProjectView(name), readTranche(slug)])
+  const [view, detail] = await Promise.all([
+    timeCall('resolveProjectView', () => resolveProjectView(name)),
+    timeCall('readTranche', () => readTranche(slug))
+  ])
   if (!view) notFound()
   if (!detail) notFound()
 
   const { tranche, archived } = detail
 
-  const snapshot = await loadTrancheSnapshot(tranche, slug)
+  const snapshot = await timeCall('loadTrancheSnapshot', () => loadTrancheSnapshot(tranche, slug))
   const taskStatusMap = new Map<string, DerivedStatus>()
   for (const dt of snapshot.derived.tasks) {
     taskStatusMap.set(dt.task.id, dt.status)
@@ -60,7 +64,7 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
   // is untouched. Archived tranches have no dispatchable work; skip.
   const readinessMap = archived
     ? new Map<string, DispatchResult>()
-    : await loadDispatchReadiness(tranche, slug, snapshot)
+    : await timeCall('loadDispatchReadiness', () => loadDispatchReadiness(tranche, slug, snapshot))
 
   // Dispatch-visibility signal only — `assigned` is not part of `DerivedStatus`
   // (excludes it from derivation). Rendered as a subordinate chip on
@@ -91,13 +95,16 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
   // Live-fetched off merged PRs + verdict comments (task 4b, #445) —
   // no longer the `<slug>.tokens.md` file read. `.tokens.md` itself is not
   // deleted here (task 7's job, once this is proven).
-  const tokenLedger = snapshot.repo
-    ? await fetchTrancheTokenLedger({
-        owner: snapshot.repo.owner,
-        repo: snapshot.repo.repo,
-        tranche: slug,
-        tasks: tranche.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
-      })
+  const snapshotRepo = snapshot.repo
+  const tokenLedger = snapshotRepo
+    ? await timeCall('fetchTrancheTokenLedger', () =>
+        fetchTrancheTokenLedger({
+          owner: snapshotRepo.owner,
+          repo: snapshotRepo.repo,
+          tranche: slug,
+          tasks: tranche.tasks.map((task) => ({ id: String(task.id), issue: task.issue }))
+        })
+      )
     : {
         ledgers: new Map<string, LedgerRow[]>(),
         unavailable: true,
