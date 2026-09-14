@@ -7,11 +7,27 @@
  * Issue's own rationale: 36s-63s, five sequential reads, three fanning out
  * further, `gh` shelled out to synchronously up to three times inside
  * `aeg-forge-state`). `resolveProjectView` is deliberately NOT part of the
- * cached bundle: in a multi-project repo with a `.vinaya/projects.md`
- * registry (this repo has one), it is a local file read, not a forge call —
- * see `read-root.ts`'s `resolveProjectView`. It is still timed at the call
- * site in the page, per O1, but caching it would mean keying the store by
- * project name too for no benefit here.
+ * cached bundle: in a registry-PRESENT repo (a `.vinaya/projects.md` file
+ * exists — this repo has one) it really is a local file read, not a forge
+ * call — see `read-root.ts`'s `resolveProjectView`. It is still timed at the
+ * call site in the page, per O1, but caching it would mean keying the store
+ * by project name too for no benefit here.
+ *
+ * That "no forge call" claim is scoped to registry-present repos only, and
+ * this module does not close that gap (found live in review, corrected
+ * here rather than left silently wrong): in a registry-ABSENT repo (no
+ * `.vinaya/projects.md` anywhere above the walk root), `resolveProjectView`
+ * falls through to `forgeDerivedProjectNames()`, which lists and derives
+ * every active/archived tranche from the forge — real `gh`/GitHub reads,
+ * memoized only per-request via React's `cache()` (see `read-root.ts`'s
+ * `cachedListActiveTrancheSlugs`/`cachedDeriveTrancheFromForgeKnown`), not
+ * across requests. So on a registry-absent repo, EVERY tranche-page load —
+ * warm or cold — still hits the forge through this one uncached call, even
+ * though `loadTranchePageData` below is serving everything else from disk.
+ * This PR is deliberately scoped to registry-present repos for that O2
+ * guarantee; bringing `resolveProjectView`'s registry-absent path into this
+ * store (or a store of its own) is left as a follow-up, not silently
+ * assumed to already be covered.
  *
  * The cached bundle is keyed by `owner/repo/slug` — repo and tranche, per
  * the brief's Boundary — never by token (`GITHUB_TOKEN` may differ between
@@ -40,6 +56,7 @@
  */
 
 import 'server-only'
+import crypto from 'node:crypto'
 import type { DispatchResult, LedgerRow } from '@attalabs/aeg-core'
 import { resolveRepo } from '@attalabs/aeg-forge-state'
 import { readTranche, type TrancheDetail } from '@/lib/repo-state'
@@ -66,8 +83,17 @@ export type TranchePageResult =
 
 const inFlightRefreshes = new Set<string>()
 
+/** Hashes the `(owner, repo, slug)` tuple rather than flattening it into a
+ *  delimited string: repo names can themselves contain `_`, so
+ *  `${owner}__${repo}__${slug}` let two different tuples collide on the same
+ *  sanitized filename (e.g. owner `a`, repo `b__c`, slug `d` vs. owner `a`,
+ *  repo `b`, slug `c__d`). Hashing the tuple as a JSON array removes the
+ *  ambiguity the delimiter introduced. */
 function cacheKey(owner: string, repo: string, slug: string): string {
-  return `${owner}__${repo}__${slug}`
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify([owner, repo, slug]))
+    .digest('hex')
 }
 
 async function computeTrancheStoreData(slug: string): Promise<TrancheStoreData | null> {
@@ -142,7 +168,15 @@ export async function loadTranchePageData(slug: string): Promise<TranchePageResu
   const data = await computeTrancheStoreData(slug)
   if (!data) return { notFound: true }
   const storedAt = Date.now()
-  await writeCacheEnvelope(key, data)
+  // Guarded the same way `refreshInBackground` guards its own write: a
+  // disk-write failure (permission denied, disk full) must not discard the
+  // already-derived `data` and fail the whole page render — it degrades to
+  // "this load isn't cached", not "this load 500s".
+  try {
+    await writeCacheEnvelope(key, data)
+  } catch (err) {
+    console.warn(`[tranche-page-snapshot] cache write failed for "${key}": ${(err as Error).message}`)
+  }
   return { notFound: false, data, storedAt, stale: false }
 }
 

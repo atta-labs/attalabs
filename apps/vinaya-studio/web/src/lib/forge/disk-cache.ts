@@ -16,6 +16,7 @@
 
 import 'server-only'
 import { promises as fs } from 'node:fs'
+import crypto from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -77,9 +78,40 @@ export async function readCacheEnvelope<T>(key: string): Promise<CacheEnvelope<T
 
 /** Writes `data` under `key`, stamping `storedAt` as now. Only ever called
  *  with a successfully-derived value — per `resolve-repo.ts`'s own rule, a
- *  failed/not-found lookup is never cached. */
+ *  failed/not-found lookup is never cached.
+ *
+ *  Writes to a sibling temp file first, then `fs.rename()`s it into place.
+ *  `fs.rename` is atomic on POSIX (same filesystem, which a sibling file
+ *  guarantees) — a concurrent `readCacheEnvelope` either sees the old
+ *  complete file or the new complete file, never a torn write from a direct
+ *  `fs.writeFile` that would fail `JSON.parse` and force a false cold
+ *  recompute.
+ *
+ *  The cache dir and file are created with restrictive permissions (`0o700`/
+ *  `0o600`): this data — repo/PR state and token-ledger cost figures — must
+ *  not be world-readable on a shared machine. `fs.writeFile`'s own `mode`
+ *  option only applies when the file doesn't already exist, so the temp
+ *  file's mode is set explicitly at open, and the final path gets an
+ *  explicit `fs.chmod` after the rename in case an earlier version of this
+ *  file (pre-fix) already exists there with the old, looser mode. */
 export async function writeCacheEnvelope<T>(key: string, data: T): Promise<void> {
   const envelope: CacheEnvelope<T> = { storedAt: Date.now(), data }
-  await fs.mkdir(cacheRoot(), { recursive: true })
-  await fs.writeFile(filePathFor(key), JSON.stringify(envelope, replacer), 'utf8')
+  await fs.mkdir(cacheRoot(), { recursive: true, mode: 0o700 })
+  const finalPath = filePathFor(key)
+  // The random suffix (not just pid+timestamp) matters: two concurrent
+  // writers in the SAME process can land in the same millisecond (e.g. a
+  // cold compute and an independently-triggered background refresh racing
+  // for the same not-yet-cached key), and `process.pid` is identical for
+  // both — without it they could pick the same temp path and one writer's
+  // `fs.rename` would race the other's `fs.writeFile`.
+  const unique = `${process.pid}.${Date.now()}.${crypto.randomBytes(6).toString('hex')}`
+  const tmpPath = path.join(path.dirname(finalPath), `.${path.basename(finalPath)}.${unique}.tmp`)
+  try {
+    await fs.writeFile(tmpPath, JSON.stringify(envelope, replacer), { encoding: 'utf8', mode: 0o600 })
+    await fs.rename(tmpPath, finalPath)
+    await fs.chmod(finalPath, 0o600)
+  } catch (err) {
+    await fs.rm(tmpPath, { force: true })
+    throw err
+  }
 }

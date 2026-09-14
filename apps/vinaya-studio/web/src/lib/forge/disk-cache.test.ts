@@ -143,3 +143,79 @@ describe('disk-cache round trip (O5: stored snapshot matches a freshly derived o
     expect(result?.storedAt).toBeLessThanOrEqual(after)
   })
 })
+
+describe('writeCacheEnvelope — atomic write (finding 3: no torn read)', () => {
+  it('never leaves a partial file at the final path: a reader either sees nothing or a complete, parseable envelope', async () => {
+    // A direct `fs.writeFile` to the final path can be observed mid-write by
+    // a concurrent reader. The temp-file+rename approach makes that
+    // impossible: `fs.rename` is atomic on POSIX, so the final path only
+    // ever names a complete file. Simulate many concurrent readers racing a
+    // single writer and assert every read is either null (not yet renamed)
+    // or a fully valid envelope — never a JSON.parse failure.
+    const writes = Array.from({ length: 20 }, (_, i) => writeCacheEnvelope('race-key', { n: i }))
+    const reads = Array.from({ length: 40 }, () => readCacheEnvelope<{ n: number }>('race-key'))
+
+    const [, results] = await Promise.all([Promise.all(writes), Promise.all(reads)])
+
+    for (const result of results) {
+      if (result === null) continue
+      expect(typeof result.data.n).toBe('number')
+      expect(typeof result.storedAt).toBe('number')
+    }
+  })
+
+  it('does not leave a stray temp file behind after a successful write', async () => {
+    await writeCacheEnvelope('no-leftover-tmp-key', { ok: true })
+
+    const entries = await fs.readdir(tmpDir)
+    const tmpFiles = entries.filter((name) => name.includes('.tmp'))
+    expect(tmpFiles).toEqual([])
+  })
+
+  it('cleans up its own temp file when the write itself fails, and rejects rather than silently dropping the write', async () => {
+    const badData: unknown = {}
+    ;(badData as { self?: unknown }).self = badData // circular — JSON.stringify throws
+
+    await expect(writeCacheEnvelope('circular-key', badData)).rejects.toThrow()
+
+    const entries = await fs.readdir(tmpDir)
+    const tmpFiles = entries.filter((name) => name.includes('.tmp'))
+    expect(tmpFiles).toEqual([])
+    await expect(readCacheEnvelope('circular-key')).resolves.toBeNull()
+  })
+})
+
+describe('writeCacheEnvelope — restrictive permissions (finding 5: cache is not world-readable)', () => {
+  it('creates the cache directory as 0o700 (owner-only)', async () => {
+    // `tmpDir` itself already exists (from `fs.mkdtemp` in `beforeEach`, which
+    // is 0o700 by default on its own) — `fs.mkdir`'s `mode` option only takes
+    // effect for a directory it actually creates, so point the override at a
+    // not-yet-existing nested path to exercise that code path for real.
+    const freshCacheDir = path.join(tmpDir, 'not-yet-created', 'vinaya-studio')
+    __setDiskCacheRootForTests(freshCacheDir)
+
+    await writeCacheEnvelope('perm-dir-key', { ok: true })
+
+    const stat = await fs.stat(freshCacheDir)
+    expect(stat.mode & 0o777).toBe(0o700)
+  })
+
+  it('writes the cache file as 0o600 (owner read/write only, no group/other access)', async () => {
+    await writeCacheEnvelope('perm-file-key', { ok: true })
+
+    const filePath = path.join(tmpDir, 'perm-file-key.json')
+    const stat = await fs.stat(filePath)
+    expect(stat.mode & 0o777).toBe(0o600)
+  })
+
+  it('re-tightens the mode via chmod even when a file already exists at that path with a looser mode', async () => {
+    const filePath = path.join(tmpDir, 'preexisting-key.json')
+    await fs.writeFile(filePath, '{}', { mode: 0o644 })
+    await fs.chmod(filePath, 0o644)
+
+    await writeCacheEnvelope('preexisting-key', { ok: true })
+
+    const stat = await fs.stat(filePath)
+    expect(stat.mode & 0o777).toBe(0o600)
+  })
+})
