@@ -70,9 +70,12 @@ const markdownComponents = {
   // `@atta/ui` Table owns its own horizontal-scroll container, so a wide markdown
   // table scrolls inside its own box instead of bleeding past the column.
   // `containerClassName` puts the block margin on that scroll wrapper.
-  // `[&_thead_th]:top-10` pins the header below the Studio ProjectsSubBar.
+  // `[&_thead_th]:top-0`: the header pins flush to the shell's scroll top —
+  // Studio's `ProjectsSubBar` used to sit above it (hence `top-10`) but was
+  // replaced by the persistent sidebar shell (task 2 #1054), which reserves
+  // no vertical space inside this scroll region.
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <Table stickyHeader containerClassName='my-4 @min-[780px]/tbl:[&_thead_th]:top-10' {...props} />
+    <Table stickyHeader containerClassName='my-4 @min-[780px]/tbl:[&_thead_th]:top-0' {...props} />
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableHeader {...props} />,
   tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => <TableBody {...props} />,
