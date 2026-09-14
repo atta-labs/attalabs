@@ -8,8 +8,10 @@ import {
   SheetTitle,
   SheetTrigger,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,12 +22,13 @@ import {
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
-import { Menu } from 'lucide-react'
+import { GitBranch, Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getAegNavIcon } from '@/lib/nav-icons'
 
 export type StudioProjectLink = { segment: string; href: string; label: string }
+export type StudioRepoFooter = { repoLabel: string | null; branch: string | null; vinayaVersion: string }
 
 /** Fixed top-level nav — Studio has exactly these five entries; unlike the
  *  docs sidebar this isn't a generic renderer over a CMS/doctrine nav model. */
@@ -114,10 +117,44 @@ function NavBody({ pathname, projectLinks }: { pathname: string; projectLinks: S
   )
 }
 
+function RepoFooter({ footer }: { footer: StudioRepoFooter }) {
+  return (
+    <SidebarFooter className='gap-1 border-t border-sidebar-border px-4 py-3'>
+      <SidebarGroupLabel className='px-0 font-sans text-xs font-bold uppercase tracking-widest text-sidebar-foreground/60'>
+        Repository
+      </SidebarGroupLabel>
+      <dl className='grid gap-1 font-mono text-[11px] text-sidebar-foreground/75'>
+        <div className='flex items-center gap-1.5'>
+          <GitBranch className='size-3 shrink-0' aria-hidden />
+          <dd className='truncate'>{footer.repoLabel ?? 'no repository resolved'}</dd>
+        </div>
+        {footer.branch && (
+          <div className='flex items-center gap-1.5'>
+            <dt className='sr-only'>Branch</dt>
+            <dd className='truncate'>{footer.branch}</dd>
+          </div>
+        )}
+        <div className='flex items-center gap-1.5'>
+          <dt className='sr-only'>Vinaya version</dt>
+          <dd className='truncate'>vinaya@{footer.vinayaVersion}</dd>
+        </div>
+      </dl>
+    </SidebarFooter>
+  )
+}
+
 /** The fixed desktop rail. Hidden below `lg`, where the same nav body is
  *  reached through the drawer below instead — mirrors
  *  `apps/vinaya-portal/web`'s `DocSidebar`/`DocSidebarHost` split. */
-function StudioSidebarRail({ pathname, projectLinks }: { pathname: string; projectLinks: StudioProjectLink[] }) {
+function StudioSidebarRail({
+  pathname,
+  projectLinks,
+  footer
+}: {
+  pathname: string
+  projectLinks: StudioProjectLink[]
+  footer: StudioRepoFooter
+}) {
   return (
     <SidebarProvider
       style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
@@ -125,12 +162,19 @@ function StudioSidebarRail({ pathname, projectLinks }: { pathname: string; proje
     >
       <ChromeFrame variant='rail' className='flex min-h-0 flex-1 flex-col'>
         <NavBody pathname={pathname} projectLinks={projectLinks} />
+        <RepoFooter footer={footer} />
       </ChromeFrame>
     </SidebarProvider>
   )
 }
 
-export function StudioSidebarHost({ projectLinks }: { projectLinks: StudioProjectLink[] }) {
+export function StudioSidebarHost({
+  projectLinks,
+  footer
+}: {
+  projectLinks: StudioProjectLink[]
+  footer: StudioRepoFooter
+}) {
   const pathname = usePathname() ?? ''
   const [open, setOpen] = useState(false)
 
@@ -141,7 +185,7 @@ export function StudioSidebarHost({ projectLinks }: { projectLinks: StudioProjec
 
   return (
     <>
-      <StudioSidebarRail pathname={pathname} projectLinks={projectLinks} />
+      <StudioSidebarRail pathname={pathname} projectLinks={projectLinks} footer={footer} />
 
       <div className='relative z-10 shrink-0 lg:hidden'>
         <ChromeFrame variant='bar' className='h-11 items-center gap-3 px-4'>
@@ -155,6 +199,7 @@ export function StudioSidebarHost({ projectLinks }: { projectLinks: StudioProjec
               <SheetTitle className='sr-only'>Studio navigation</SheetTitle>
               <SidebarProvider className='flex h-full min-h-0 w-full flex-col'>
                 <NavBody pathname={pathname} projectLinks={projectLinks} />
+                <RepoFooter footer={footer} />
               </SidebarProvider>
             </SheetContent>
           </Sheet>
