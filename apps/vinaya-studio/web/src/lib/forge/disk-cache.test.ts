@@ -218,4 +218,17 @@ describe('writeCacheEnvelope — restrictive permissions (finding 5: cache is no
     const stat = await fs.stat(filePath)
     expect(stat.mode & 0o777).toBe(0o600)
   })
+
+  it('re-tightens the cache directory mode via chmod even when the directory already exists with a looser mode', async () => {
+    // `fs.mkdir`'s own `mode` option, like `writeFile`'s, only applies when
+    // the directory doesn't already exist — it's a documented no-op on an
+    // already-existing directory's mode. Create the cache dir ahead of time
+    // with a looser mode to exercise the explicit `chmod` fallback.
+    await fs.chmod(tmpDir, 0o755)
+
+    await writeCacheEnvelope('preexisting-dir-key', { ok: true })
+
+    const stat = await fs.stat(tmpDir)
+    expect(stat.mode & 0o777).toBe(0o700)
+  })
 })

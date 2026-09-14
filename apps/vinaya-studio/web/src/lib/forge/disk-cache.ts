@@ -96,7 +96,13 @@ export async function readCacheEnvelope<T>(key: string): Promise<CacheEnvelope<T
  *  file (pre-fix) already exists there with the old, looser mode. */
 export async function writeCacheEnvelope<T>(key: string, data: T): Promise<void> {
   const envelope: CacheEnvelope<T> = { storedAt: Date.now(), data }
+  // `mkdir`'s own `mode` option, like `writeFile`'s, only applies when the
+  // directory doesn't already exist — it's a documented no-op on an
+  // already-existing directory's mode. An explicit `chmod` re-tightens it
+  // in case an earlier version of this cache dir (pre-fix) already exists
+  // there with the old, looser mode.
   await fs.mkdir(cacheRoot(), { recursive: true, mode: 0o700 })
+  await fs.chmod(cacheRoot(), 0o700)
   const finalPath = filePathFor(key)
   // The random suffix (not just pid+timestamp) matters: two concurrent
   // writers in the SAME process can land in the same millisecond (e.g. a
