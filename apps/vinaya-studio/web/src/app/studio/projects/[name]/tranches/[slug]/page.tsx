@@ -158,8 +158,10 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
               ) : (
                 // The `@atta/ui` Table owns all table behavior. `stickyHeader` (opt-in —
                 // off by default on the shared primitive) pins the header on scroll
-                // (page-scroll sticky, no fixed height); `containerClassName` shifts the
-                // pin down past the sticky ProjectsSubBar (`top-10`).
+                // (page-scroll sticky, no fixed height); `containerClassName` pins it
+                // flush to the shell's scroll top (`top-0` — the sticky `ProjectsSubBar`
+                // this once cleared with `top-10` was replaced by the persistent sidebar
+                // shell, task 2 #1054, which reserves no space in this scroll region).
                 // `table-fixed` + percentage widths fit the columns on a laptop (no
                 // horizontal scroll) while the bounded Task column wraps long titles to
                 // two lines; `min-w-[760px]` keeps labels readable and lets the Studio
@@ -170,7 +172,7 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
                   <Table
                     stickyHeader
                     className='min-w-[760px] table-fixed'
-                    containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'
+                    containerClassName='@min-[780px]/tbl:[&_thead_th]:top-0'
                   >
                     <TableHeader className='[&_th]:whitespace-nowrap'>
                       <TableRow>
@@ -331,10 +333,11 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
           ) : ledgerRows.length === 0 ? (
             <p className='font-sans text-sm text-muted-foreground/70'>No ledger data yet.</p>
           ) : (
-            // Header pins on scroll by default; `top-10` clears the ProjectsSubBar.
+            // Header pins on scroll by default; `top-0` pins it flush to the shell's
+            // scroll top (see the identical `ProjectsSubBar` note above).
             // No card `overflow-hidden` so the pinned header can stick to the shell.
             <div>
-              <Table stickyHeader className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-10'>
+              <Table stickyHeader className='min-w-[720px]' containerClassName='@min-[780px]/tbl:[&_thead_th]:top-0'>
                 <TableHeader>
                   <TableRow>
                     <TableHead className='font-semibold text-foreground'>Phase</TableHead>
