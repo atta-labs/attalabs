@@ -53,7 +53,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.2
 
       # --ignore-scripts: the steps below need the packages, not the
       # lifecycle hooks — a branch-controlled postinstall must not run in a
