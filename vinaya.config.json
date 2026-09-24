@@ -15,6 +15,11 @@
       "scope": "full"
     }
   },
+  "reviewPolicy": {
+    "codeReviewThreshold": "MAJOR",
+    "securityThreshold": "HIGH",
+    "maxRounds": 7
+  },
   "ci": {
     "setup": "set -euo pipefail\nnpm install -g bun@1.4.2 && bun install --frozen-lockfile --ignore-scripts\nGITLEAKS_VERSION=8.30.1\nGITLEAKS_SHA256=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb\ncurl -fsSL -o /tmp/gitleaks.tar.gz \"https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz\"\necho \"${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz\" | sha256sum -c -\nsudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks\nsudo chmod +x /usr/local/bin/gitleaks\ngitleaks version"
   },
