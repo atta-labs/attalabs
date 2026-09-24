@@ -16,15 +16,14 @@ full doctrine lives" below).
   continuous: drift (archive state, dead-branch-push, direct-main-push) is
   surfaced as findings regardless of who or what wrote it.
 
-`vinaya.config.json`'s `rings` block does not switch these on or off — every
-ring above runs unconditionally, for every adopter, by default.
-`ring1_forgeWriteInterception` and `ring2_asyncAudits` are opt-in
-**accelerators**, not on/off switches: `false` or absent (the default) is a
-no-op — the real work above keeps running exactly as described above;
-`true` skips only the non-security-critical part of that ring's work once
-you've outgrown it (brief-schema validation for ring 1; dead-branch-push
-bookkeeping for ring 2). Neither flag ever disables direct-main-push
-detection — that stays unconditional by design.
+`vinaya.config.json`'s `rings` block does not switch these three rings on or
+off — every ring above runs unconditionally, for every adopter, by default.
+`ring1_forgeWriteInterception` and `ring2_asyncAudits` name a narrower,
+non-security-critical slice of that work each: `true` (or absent — the
+default) runs it, exactly as described above; `false` opts OUT of that one
+slice once you've outgrown it (brief-schema validation for ring 1;
+dead-branch-push bookkeeping for ring 2). Neither flag ever disables
+direct-main-push detection — that stays unconditional by design.
 
 ## Your role
 
@@ -35,7 +34,7 @@ anything substantive:
 
 prints the absolute path to that role's doctrine — `architect`,
 `developer`, `reviewer`, `planner`, `security`, `archivist`,
-`tranche-archivist`, `brief-author`, or `principal`. If your agent tool
+`tranche-archivist`, or `principal`. If your agent tool
 supports slash-style commands, the same doctrine is likely exposed as
 `/vinaya <role>` — check your tool's command list before falling back to
 the raw CLI form.

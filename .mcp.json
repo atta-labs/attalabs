@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "vinaya-task-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--yes",
+        "@attalabs/vinaya@0.32.0",
+        "task-tools",
+        "serve"
+      ]
+    }
+  }
+}

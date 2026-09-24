@@ -6,17 +6,24 @@ name: Vinaya Checks
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, reopened, edited]
 
-# One run per pull request COMMIT, always. Several `types:` above can fire in the
-# same instant — `vinaya pr create` opens the PR and applies its tranche
-# label immediately after, so `opened` and `labeled` arrive together and
-# GitHub starts TWO runs of this workflow. Both then report under the same
-# check name, and the merge box counts both: one can go green while its twin
-# holds a stale red, which no later verdict clears because each run only ever
-# re-evaluates itself. Measured live on atta-labs/vinaya#18 — two runs created
-# in the same second, one success, one failure, PR blocked with both reviews
-# already approved.
+# No `synchronize` above: a push's own `vinaya pr
+# report --push` always follows it with a body edit (`gh pr edit`) carrying
+# that push's real head, which fires `edited` — the only trigger left this
+# workflow needs, against a body that already names the new head. A push
+# with no following edit simply produces no run, by design; `evidence-fresh`
+# at the merge gate is what still catches that case.
+#
+# Several `types:` above can still fire in the same instant — `vinaya pr
+# create` opens the PR and applies its tranche label immediately after, so
+# `opened` and `labeled` arrive together and GitHub starts TWO runs of this
+# workflow. Both then report under the same check name, and the merge box
+# counts both: one can go green while its twin holds a stale red, which no
+# later verdict clears because each run only ever re-evaluates itself.
+# Measured live on atta-labs/vinaya#18 — two runs created in the same
+# second, one success, one failure, PR blocked with both reviews already
+# approved.
 #
 # The key carries the head SHA as well as the PR number, and that second half
 # is load-bearing. Keyed on the PR alone, every run for that PR shares one
@@ -42,6 +49,14 @@ jobs:
       contents: read
       pull-requests: read
       issues: read
+      # O2's shared-build lookup (`vinayaSetupSteps(..., 'shared-build')`)
+      # calls `gh api .../actions/workflows/ci.yml/runs` and
+      # `.../actions/runs/$RUN_ID/artifacts`, then downloads via
+      # `actions/download-artifact@v4` with a cross-run `run-id` — all three
+      # need `actions: read` on GITHUB_TOKEN, which an explicit `permissions:`
+      # block does not grant by default (security review finding: every run
+      # 403'd on the lookup/download without this).
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,34 +77,75 @@ jobs:
       # this step adds no trust surface that did not already exist.
       - name: Adopter CI setup
         run: |
-          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
+          npm install -g bun@1.4.2 && bun install --frozen-lockfile --ignore-scripts
       # PR_BODY is what makes test-plan/closes-n/pr-report-density EVALUATE:
       # none of the three fetches the body itself (all read
       # `process.env.PR_BODY` only) — without it they read "no body —
       # nothing to check" and pass vacuously regardless of the PR's real
       # content, on every run. Fetched live from the forge, never the
       # event payload — a rerun of an old run must read the body as it
-      # stands NOW, not as it stood when the triggering event fired.
+      # stands NOW, not as it stood when the triggering event fired. See
+      # `verifiedFetchPrBodyStep`'s own doc comment for why this re-reads
+      # with a bounded backoff instead of trusting the first read.
       - name: Fetch PR body
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.head_ref }}
         run: |
+          ATTEMPTS=0
+          MAX_ATTEMPTS=6
+          SLEEP_SECONDS=5
+          while :; do
+            BODY="$(gh pr view "$PR_NUMBER" --json body --jq .body)"
+            WAIT_FOR=""
+            if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
+              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
+              if ! printf '%s\n' "$CLOSES_REGION" | grep -qE '#[0-9]+'; then
+                WAIT_FOR="a real Closes #N inside the AEG:CLOSES region for task branch $BRANCH"
+              fi
+            fi
+            if [ -z "$WAIT_FOR" ]; then
+              break
+            fi
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "::error::Gave up after $ATTEMPTS attempts waiting for $WAIT_FOR." >&2
+              exit 1
+            fi
+            sleep "$SLEEP_SECONDS"
+          done
           DELIM="PR_BODY_$(openssl rand -hex 16)"
           echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
-          gh pr view "$PR_NUMBER" --json body --jq .body >> "$GITHUB_ENV"
+          printf '%s\n' "$BODY" >> "$GITHUB_ENV"
           echo "$DELIM" >> "$GITHUB_ENV"
       - name: Run checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.head_ref }}
+          # O3: this job's gate events deliver live to the `logs.url` server
+          # destination the default branch's own `vinaya.config.json`
+          # declares — never a fork PR's own working-tree copy
+          # (`resolveTrustAnchorLogsDestination`). VINAYA_UNATTENDED is what
+          # makes that gate apply here at all; without it this run would be
+          # classified attended and would honour the PR's own diff directly.
+          VINAYA_UNATTENDED: '1'
+          # A write-only ingest token, never a value this job can use to read
+          # anything back — GitHub withholds every repository secret from a
+          # fork-originated pull_request run, so this resolves to an empty
+          # string there. `log()` treats an empty/absent value referenced by
+          # a configured `logs.headers` entry as "no credential" and records
+          # nothing for this run, naming why, rather than delivering with a
+          # blank credential or silently falling back to this ephemeral
+          # runner's own disk.
+          VINAYA_LOG_TOKEN: ${{ secrets.VINAYA_LOG_TOKEN }}
         # pipefail is load-bearing: this job's default shell is `bash -e`
         # WITHOUT pipefail, so an unguarded pipe through tee would mask the
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.24.1 check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes @attalabs/vinaya@0.32.0 check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,

@@ -51,7 +51,15 @@ function readFrontmatter(path: string): Record<string, string> {
 // this linear chain depicts. Whether/how to show a milestone-planning stage
 // above `/start`'s existing pipeline is a real product/content decision,
 // not decided here.
-const CONTRACTS_MODELED_ELSEWHERE = new Set(['security-archivist.md', 'architect-planner.md'])
+//
+// `planner-operator.md` and `principal-operator.md` are similarly outside
+// the linear tranche workflow and are not modeled in STAGES.
+const CONTRACTS_MODELED_ELSEWHERE = new Set([
+  'security-archivist.md',
+  'architect-planner.md',
+  'planner-operator.md',
+  'principal-operator.md'
+])
 
 describe('STAGES — matches the contract files on disk', () => {
   it('declares exactly the contract files that exist in aeg-root/contracts/, modulo CONTRACTS_MODELED_ELSEWHERE', () => {
