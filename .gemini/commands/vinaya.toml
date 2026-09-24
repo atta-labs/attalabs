@@ -1,2 +1,2 @@
 description = "Act as an AEG role for this repo."
-prompt = "!{vinaya doctrine --role {{args}}}"
+prompt = "!{vinaya doctrine --role {{args}} --print}"

@@ -1,4 +1,4 @@
-export type StageId = 'plan' | 'brief' | 'develop' | 'review' | 'security' | 'archive' | 'wrap-up'
+export type StageId = 'plan' | 'develop' | 'review' | 'security' | 'archive' | 'wrap-up'
 
 export type Stage = {
   id: StageId
@@ -25,22 +25,14 @@ export const STAGES: readonly Stage[] = [
     role: 'planner',
     receives: 'an intent',
     produces: 'a tranche — milestone + labeled Issues',
-    contractFile: 'planner-brief.md'
-  },
-  {
-    id: 'brief',
-    label: 'Brief',
-    role: 'brief-author',
-    receives: "one task's Issue",
-    produces: 'a brief',
-    contractFile: 'brief-developer.md'
+    contractFile: 'planner-developer.md'
   },
   {
     id: 'develop',
     label: 'Develop',
     role: 'developer',
-    receives: 'a brief',
-    produces: 'a pull request carrying the brief and the code',
+    receives: 'a tranche',
+    produces: 'a pull request carrying the code',
     contractFile: 'developer-reviewer.md'
   },
   {

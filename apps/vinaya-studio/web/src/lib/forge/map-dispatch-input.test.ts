@@ -213,7 +213,7 @@ describe('end-to-end through checkDispatchReadiness', () => {
         })
       )
     )
-    expect(result).toEqual({ ready: true, blockers: [] })
+    expect(result).toEqual({ ready: true, blockers: [], blockerDetails: [] })
   })
 
   it('an unmerged prior row no longer blocks (row-adjacency gate removed)', () => {
@@ -231,6 +231,6 @@ describe('end-to-end through checkDispatchReadiness', () => {
         })
       )
     )
-    expect(result).toEqual({ ready: true, blockers: [] })
+    expect(result).toEqual({ ready: true, blockers: [], blockerDetails: [] })
   })
 })

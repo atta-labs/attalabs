@@ -9,6 +9,14 @@ description: Vinaya product architecture — the portal/studio split (the extrac
 
 Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` turns any GitHub repo into a governed one. Everything under `apps/vinaya-portal/` and `apps/vinaya-studio/` exists to ship that packaging — it does not reimplement governance logic. The single rule that disambiguates almost every design question in this tree: **Vinaya renders and spawns; the published `@attalabs/aeg-core` and `@attalabs/aeg-forge-state` decide.** If a change under either of these apps starts computing a governance verdict instead of consuming one, it is very likely in the wrong package.
 
+## Current version
+
+**attalabs is pinned to `@attalabs/vinaya` v0.32.0.** The upgrade from `0.24.1` brought breaking changes to the contract structure and API signatures:
+
+**Contract model changes:** The Brief stage and `brief-author` role were removed — the linear STAGES chain now runs Plan → Develop → Review → Security (parallel) → Archive → Wrap up. The `planner-developer.md` contract now directly connects Plan to Develop; `planner-brief.md` no longer exists. Two new contracts, `planner-operator.md` and `principal-operator.md`, describe above-tranche roles and are explicitly modeled in `CONTRACTS_MODELED_ELSEWHERE` because they fall outside the linear per-tranche workflow.
+
+**API changes:** `@attalabs/aeg-core`'s `checkDispatchReadiness` function now returns a `blockerDetails` field in addition to `blockers` and `ready`, providing structured detail on each blocking condition. Test expectations in `apps/vinaya-studio/web/src/lib/forge/map-dispatch-input.test.ts` were updated to match.
+
 ## Architecture — one web surface split into two apps; cli and sources extracted
 
 The product used to be a single `web` workspace that served both the public marketing/docs site and the local-only Studio dashboard behind a runtime `isVercelDeploy()` gate — one deployment, two products, one gate that had to be correct on every route. The Portal/Studio split replaces that runtime answer with a structural one: the public surface and the local-only surface are now two separate apps that never share a deployment. Its vendored `cli/` and pre-extraction `sources/` workspace members are gone too — the CLI's canonical home is now the standalone `atta-labs/vinaya` repo (`apps/cli`), installed here as the published `@attalabs/vinaya` from npm; everything an app renders comes from the published `@attalabs/vinaya-sources` (registry) instead. Neither app carries a `specs/` directory of its own yet — each gets one when someone needs it, a separate, later decision.
