@@ -47,6 +47,8 @@ Omit `version` to resolve the latest published `@attalabs/vinaya` from npm. It d
 
 **Then:** `bun run check` for the full sweep (typecheck + biome + affected tests + the forbidden-colors scan), fix anything real it surfaces, commit, push, open the PR the normal way (`npx --yes @attalabs/vinaya pr create --title "..." --body-file <path>` — never raw `gh pr create`, blocked by this repo's forge gate).
 
+**`bun run check` should come back clean with no reformat needed.** Two vinaya-generated files are excluded from Biome (`biome.json`'s `files.includes`): `.mcp.json`, and `vinaya.config.json` (Issue #1063, O5). Both are files `vinaya upgrade` itself rewrites — `.mcp.json` in full, and `vinaya.config.json`'s `managed` ownership manifest — using vinaya's own JSON layout, which does not match this repo's Biome formatter settings (e.g. `vinaya.config.json`'s `managed.labels`/`managed.agents` arrays print one element per line, where Biome would collapse them to one line). Without the exclusion, every `vinaya upgrade` leaves the repo failing `bun run check` until someone manually reformats a file vinaya is about to rewrite again on the next upgrade anyway — the exclusion is not a lint exemption, it is recognizing that these two files are owned by vinaya's own generator, not by this repo's formatter.
+
 ## What NOT to do
 
 - Don't hand-edit any of the four version-pin locations directly — always go through the script, or if you must do it by hand, still run `vinaya upgrade --yes` afterward for the CI/hook half; a `package.json`-only edit leaves Ring 0/Ring 1 stale.
