@@ -26,6 +26,7 @@
       "!.worktrees",
       "!.claude/worktrees",
       "!.mcp.json",
+      "!vinaya.config.json",
       "!**/.clerk",
       "!**/.vercel"
     ]
