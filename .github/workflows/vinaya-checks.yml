@@ -77,7 +77,7 @@ jobs:
       # this step adds no trust surface that did not already exist.
       - name: Adopter CI setup
         run: |
-          npm install -g bun && bun install --frozen-lockfile --ignore-scripts
+          npm install -g bun@1.4.2 && bun install --frozen-lockfile --ignore-scripts
       # PR_BODY is what makes test-plan/closes-n/pr-report-density EVALUATE:
       # none of the three fetches the body itself (all read
       # `process.env.PR_BODY` only) — without it they read "no body —
