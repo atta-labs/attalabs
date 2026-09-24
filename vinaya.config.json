@@ -92,13 +92,14 @@
       ".agents/skills/vinaya-architect/SKILL.md",
       ".agents/skills/vinaya-archivist/SKILL.md",
       ".agents/skills/vinaya-developer/SKILL.md",
+      ".agents/skills/vinaya-operator/SKILL.md",
       ".agents/skills/vinaya-planner/SKILL.md",
       ".agents/skills/vinaya-reviewer/SKILL.md",
       ".agents/skills/vinaya-security/SKILL.md",
       ".agents/skills/vinaya-tranche-archivist/SKILL.md",
       ".claude/commands/vinaya.md",
-      ".gemini/commands/vinaya.toml",
-      ".mcp.json"
+      ".mcp.json",
+      ".gemini/commands/vinaya.toml"
     ],
     "blocks": [
       {
@@ -112,16 +113,26 @@
         "comment": "hash"
       },
       {
+        "path": ".husky/commit-msg",
+        "marker": "commit-msg",
+        "comment": "hash"
+      },
+      {
         "path": ".claude/hooks/track-transcript.sh",
         "marker": "track-transcript",
         "comment": "hash"
       }
     ],
     "labels": [
-      "vinaya/blocked",
-      "vinaya/override:docs",
-      "vinaya/direct-main-push",
-      "vinaya/dead-branch-push"
+      "vinaya/backlog",
+      "vinaya/type:build",
+      "vinaya/type:chore",
+      "vinaya/type:docs",
+      "vinaya/type:perf",
+      "vinaya/type:refactor",
+      "vinaya/type:revert",
+      "vinaya/type:style",
+      "vinaya/type:test"
     ],
     "agents": [
       "claude",

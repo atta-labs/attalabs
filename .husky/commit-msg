@@ -1,1 +1,7 @@
 commitlint --edit "$1"
+
+# >>> vinaya:managed:commit-msg >>>
+# Vinaya commit-message gate. Validates the message's first line against
+# this repo's Type(scope): Description convention.
+VINAYA_HOST=hook npx --yes @attalabs/vinaya@0.32.0 commit-msg "$1" "$2" || exit 1
+# <<< vinaya:managed:commit-msg <<<
