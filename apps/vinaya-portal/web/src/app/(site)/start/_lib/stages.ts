@@ -31,8 +31,8 @@ export const STAGES: readonly Stage[] = [
     id: 'develop',
     label: 'Develop',
     role: 'developer',
-    receives: 'a tranche',
-    produces: 'a pull request carrying the code',
+    receives: 'a brief',
+    produces: 'a pull request carrying the brief and the code',
     contractFile: 'developer-reviewer.md'
   },
   {

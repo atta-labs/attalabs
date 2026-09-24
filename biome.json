@@ -25,6 +25,7 @@
       "!apps/vinaya-portal/web/src/app/(site)/_components/hero-canvas/underworld-beam.js",
       "!.worktrees",
       "!.claude/worktrees",
+      "!.mcp.json",
       "!**/.clerk",
       "!**/.vercel"
     ]

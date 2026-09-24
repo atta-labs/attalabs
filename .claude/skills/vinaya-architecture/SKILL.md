@@ -9,13 +9,11 @@ description: Vinaya product architecture — the portal/studio split (the extrac
 
 Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` turns any GitHub repo into a governed one. Everything under `apps/vinaya-portal/` and `apps/vinaya-studio/` exists to ship that packaging — it does not reimplement governance logic. The single rule that disambiguates almost every design question in this tree: **Vinaya renders and spawns; the published `@attalabs/aeg-core` and `@attalabs/aeg-forge-state` decide.** If a change under either of these apps starts computing a governance verdict instead of consuming one, it is very likely in the wrong package.
 
-## Current version
+## The contract chain the Portal renders
 
-**attalabs is pinned to `@attalabs/vinaya` v0.32.0.** The upgrade from `0.24.1` brought breaking changes to the contract structure and API signatures:
+The `/start` pipeline (`apps/vinaya-portal/web/src/app/(site)/start/_lib/stages.ts`) mirrors the contract files bundled in the pinned `@attalabs/vinaya`'s `aeg-root/contracts/`: Plan → Develop → Review, with Security alongside Review, then Archive → Wrap up. The Planner renders each task's brief itself (`planner-developer.md`); there is no separate Brief stage or `brief-author` role. `architect-planner.md`, `security-archivist.md`, `planner-operator.md` and `principal-operator.md` sit outside that linear chain and are listed in `stages.test.ts`'s `CONTRACTS_MODELED_ELSEWHERE`; the test fails when a contract file on disk is neither in `STAGES` nor in that set.
 
-**Contract model changes:** The Brief stage and `brief-author` role were removed — the linear STAGES chain now runs Plan → Develop → Review → Security (parallel) → Archive → Wrap up. The `planner-developer.md` contract now directly connects Plan to Develop; `planner-brief.md` no longer exists. Two new contracts, `planner-operator.md` and `principal-operator.md`, describe above-tranche roles and are explicitly modeled in `CONTRACTS_MODELED_ELSEWHERE` because they fall outside the linear per-tranche workflow.
-
-**API changes:** `@attalabs/aeg-core`'s `checkDispatchReadiness` function now returns a `blockerDetails` field in addition to `blockers` and `ready`, providing structured detail on each blocking condition. Test expectations in `apps/vinaya-studio/web/src/lib/forge/map-dispatch-input.test.ts` were updated to match.
+Studio consumes `@attalabs/aeg-core`'s `checkDispatchReadiness`, which returns `blockerDetails` (one structured entry per blocker) alongside `blockers` and `ready`.
 
 ## Architecture — one web surface split into two apps; cli and sources extracted
 
