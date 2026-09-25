@@ -16,6 +16,7 @@ import {
 } from 'react'
 import { siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
+import { LandingSection } from './LandingSection'
 import { SectionOverline, SectionTitle } from './SectionHeading'
 
 // Card's exported type has no `ref` (motion.div forwards it fine at runtime
@@ -328,6 +329,7 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
 
 export function LifecycleSection() {
   const sectionRef = useRef<HTMLElement>(null)
+  const taglineRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const railFillRef = useRef<HTMLSpanElement>(null)
   const stageOneRef = useRef<HTMLElement>(null)
@@ -412,7 +414,14 @@ export function LifecycleSection() {
       }
 
       syncTrackOffset()
-      const travel = Math.max(1, rect.height - (viewportHeight - 64))
+      // Progress starts when the section's top — the tagline, not the pinned
+      // stage block below it — reaches the viewport top. The section is taller
+      // than the pinned runway by exactly the tagline's own height, so that
+      // height comes back out of `travel`: the tabs and rail advance over the
+      // same scroll distance as the runway itself, and hold their end state for
+      // the tagline's height at the bottom of the pin instead of stretching.
+      const taglineHeight = taglineRef.current?.offsetHeight ?? 0
+      const travel = Math.max(1, rect.height - taglineHeight - (viewportHeight - 64))
       const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
       trackAnimation.currentTime = progress * 1000
       railAnimation.currentTime = progress * 1000
@@ -456,55 +465,68 @@ export function LifecycleSection() {
   const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
 
   return (
-    <section
-      ref={sectionRef}
-      id='what-it-is'
-      className='bg-secondary/70 text-secondary-foreground min-[700px]:h-[300dvh]'
-    >
-      <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
-        <div className='flex flex-wrap items-baseline justify-between gap-5'>
-          <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
-          <NextLink
-            href='/life-cycle'
-            variant='unstyled'
-            className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
-          >
-            See lifecycle <ArrowRight className='size-3.5' />
-          </NextLink>
-        </div>
-        <div className='mt-4 flex items-center gap-4'>
-          <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
-            <GitHubMark className='size-9 md:size-12' />
-          </Card>
-          <div>
-            <SectionTitle className='max-w-5xl'>
-              <LetterReveal text='Plan, solve, archive' />
-            </SectionTitle>
-            <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
-              The same three stages, every time you ship.
-            </Text>
+    <section ref={sectionRef} id='what-it-is' className='bg-secondary/70 text-secondary-foreground'>
+      {/* The tagline scrolls normally at the top of this section, so the scroll
+          math above (keyed off the section's own rect) starts at the tagline.
+          Only the stage block below it pins. */}
+      <LandingSection ref={taglineRef} id='tagline' background='bg-card text-card-foreground' py='compact' center>
+        <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
+          <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
+            <LetterReveal text='A harness for your software engineering process' />
+          </span>
+          <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
+            with GitHub as the only source of truth.
+          </span>
+        </Heading>
+      </LandingSection>
+      {/* The pinned runway keeps its own 300dvh, so the section grows by exactly
+          the tagline's rendered height and the pin still spans the same distance. */}
+      <div className='min-[700px]:h-[300dvh]'>
+        <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
+          <div className='flex flex-wrap items-baseline justify-between gap-5'>
+            <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
+            <NextLink
+              href='/life-cycle'
+              variant='unstyled'
+              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
+            >
+              See lifecycle <ArrowRight className='size-3.5' />
+            </NextLink>
           </div>
-        </div>
+          <div className='mt-4 flex items-center gap-4'>
+            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
+              <GitHubMark className='size-9 md:size-12' />
+            </Card>
+            <div>
+              <SectionTitle className='max-w-5xl'>
+                <LetterReveal text='Plan, solve, archive' />
+              </SectionTitle>
+              <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
+                The same three stages, every time you ship.
+              </Text>
+            </div>
+          </div>
 
-        <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex'>
-          <div className='flex shrink-0 gap-7 font-mono text-[0.625rem] uppercase tracking-[0.18em]'>
-            <PhaseLabel active={phase === 0}>01 plan a milestone</PhaseLabel>
-            <PhaseLabel active={phase === 1}>02 solve its tasks</PhaseLabel>
-            <PhaseLabel active={phase === 2}>03 archive a milestone</PhaseLabel>
+          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex'>
+            <div className='flex shrink-0 gap-7 font-mono text-[0.625rem] uppercase tracking-[0.18em]'>
+              <PhaseLabel active={phase === 0}>01 plan a milestone</PhaseLabel>
+              <PhaseLabel active={phase === 1}>02 solve its tasks</PhaseLabel>
+              <PhaseLabel active={phase === 2}>03 archive a milestone</PhaseLabel>
+            </div>
+            <div className='relative h-0.5 flex-1 overflow-hidden rounded-full bg-border'>
+              <span ref={railFillRef} className='absolute inset-y-0 left-0 w-0 bg-foreground' />
+            </div>
           </div>
-          <div className='relative h-0.5 flex-1 overflow-hidden rounded-full bg-border'>
-            <span ref={railFillRef} className='absolute inset-y-0 left-0 w-0 bg-foreground' />
-          </div>
-        </div>
 
-        <div className='mt-7 overflow-hidden min-[700px]:mt-3 min-[700px]:min-h-0 min-[700px]:flex-none'>
-          <div
-            ref={trackRef}
-            className='grid h-full gap-4 min-[700px]:w-max min-[700px]:grid-cols-[repeat(3,max-content)] min-[700px]:items-start'
-          >
-            <PlanStage active={active[0]} stageRef={stageOneRef} />
-            <SolveStage active={active[1]} stageRef={stageTwoRef} />
-            <ArchiveStage active={active[2]} closed={closed} stageRef={stageThreeRef} />
+          <div className='mt-7 overflow-hidden min-[700px]:mt-3 min-[700px]:min-h-0 min-[700px]:flex-none'>
+            <div
+              ref={trackRef}
+              className='grid h-full gap-4 min-[700px]:w-max min-[700px]:grid-cols-[repeat(3,max-content)] min-[700px]:items-start'
+            >
+              <PlanStage active={active[0]} stageRef={stageOneRef} />
+              <SolveStage active={active[1]} stageRef={stageTwoRef} />
+              <ArchiveStage active={active[2]} closed={closed} stageRef={stageThreeRef} />
+            </div>
           </div>
         </div>
       </div>

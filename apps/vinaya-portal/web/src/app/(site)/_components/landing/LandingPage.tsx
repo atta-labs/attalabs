@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Heading, Text } from '@atta/ui/shared'
+import { Text } from '@atta/ui/shared'
 import { ArrowRight } from 'lucide-react'
 import { VinayaHeroEmblem } from '../hero-canvas/VinayaHeroEmblem'
 import { LetterReveal } from '../LetterReveal'
@@ -60,21 +60,6 @@ function UnderlineLink({ href, children }: { href: string; children: React.React
 function HeroSection() {
   return (
     <VinayaHeroEmblem landingActions={<ScrollToSectionButton targetId='tagline'>View more</ScrollToSectionButton>} />
-  )
-}
-
-function TaglineSection() {
-  return (
-    <LandingSection id='tagline' background='bg-card text-card-foreground' py='compact' center>
-      <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
-        <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
-          <LetterReveal text='A harness for your software engineering process' />
-        </span>
-        <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
-          with GitHub as the only source of truth.
-        </span>
-      </Heading>
-    </LandingSection>
   )
 }
 
@@ -271,7 +256,6 @@ export function LandingPage({ releaseMetrics }: { releaseMetrics: ReleaseMetrics
   return (
     <main>
       <HeroSection />
-      <TaglineSection />
       <LifecycleSection />
       <OwnershipSection />
       <VerificationSection releaseMetrics={releaseMetrics} />
