@@ -48,6 +48,11 @@ const COLS = 55
 const ROWS = 35
 const STRIDE = COLS + 1
 
+// Fine grid — same layout at 2× density for a layered double-square effect.
+const COLS2 = 110
+const ROWS2 = 70
+const STRIDE2 = COLS2 + 1
+
 interface GridVertex {
   bx: number
   by: number
@@ -58,6 +63,14 @@ for (let r = 0; r <= ROWS; r++)
     BASE_VERTS.push({
       bx: -MARGIN + (c / COLS) * (1 + 2 * MARGIN),
       by: -MARGIN + (r / ROWS) * (1 + 2 * MARGIN)
+    })
+
+const BASE_VERTS2: GridVertex[] = []
+for (let r = 0; r <= ROWS2; r++)
+  for (let c = 0; c <= COLS2; c++)
+    BASE_VERTS2.push({
+      bx: -MARGIN + (c / COLS2) * (1 + 2 * MARGIN),
+      by: -MARGIN + (r / ROWS2) * (1 + 2 * MARGIN)
     })
 
 // ── Ripple state ──────────────────────────────────────────────────────────────
@@ -281,29 +294,6 @@ function computeWaterWave(bx: number, by: number, t: number): { x: number; y: nu
   return {
     x: Math.sin(p1) * 5.0 + Math.sin(p2) * 3.0 + Math.sin(p3) * 2.0 + tanX,
     y: Math.sin(p1 + 1.0) * 4.5 + Math.sin(p2 + 0.8) * 2.8 + Math.sin(p3 + 1.3) * 1.8 + tanY
-  }
-}
-
-// Every grid line is drawn at this one width (CSS px). At 2 px a line always fully covers at
-// least one pixel of its cross-section (from DPR 1 up), so its brightness does not change as
-// computeShimmer drifts it across the pixel grid, and it is well clear of Skia's hairline mode
-// (strokes at most 1 device px wide are drawn one segment at a time, doubling the ink at every
-// vertex).
-const GRID_LINE_WIDTH = 2
-
-// Adds every row and every column of the displaced grid to the current path as open polylines.
-function addGridPath(ctx: CanvasRenderingContext2D, pos: ReadonlyArray<{ x: number; y: number }>): void {
-  for (let r = 0; r <= ROWS; r++) {
-    for (let c = 0; c <= COLS; c++) {
-      const p = pos[r * STRIDE + c]!
-      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
-  }
-  for (let c = 0; c <= COLS; c++) {
-    for (let r = 0; r <= ROWS; r++) {
-      const p = pos[r * STRIDE + c]!
-      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
   }
 }
 
@@ -823,44 +813,170 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
     }
   })
 
+  // ── Fine grid displaced positions (same displacement formula, 2× density) ──
+  const pos2 = BASE_VERTS2.map((v) => {
+    const x0 = v.bx * W
+    const y0 = v.by * H
+    const dx = x0 - GX
+    const dy = y0 - GY
+    const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
+    const nx = dx / dist
+    const ny = dy / dist
+
+    const wave = config.waterWave ? computeWaterWave(v.bx, v.by, t) : computeShimmer(v.bx, v.by, t)
+
+    const PULL_MAX = RING_R * 0.55
+    const u = dist / RING_R
+    const pull = (config.gravityMultiplier ?? 1) * foldStrength(dist) * PULL_MAX * u * Math.exp(-(u * u) / 2)
+
+    let rippleX = 0
+    let rippleY = 0
+    for (const rp of ripples) {
+      const rdx = x0 - rp.cx
+      const rdy = y0 - rp.cy
+      const rdist = Math.sqrt(rdx * rdx + rdy * rdy) || 0.001
+      const waveFront = (t - rp.startT) * 4
+      const envelope = Math.exp(-((rdist - waveFront) ** 2) / 2000)
+      const waveAmt = envelope * rp.life * (rp.amp ?? 4) * Math.sin(rdist * 0.04 - t * 0.05)
+      if (rp.mode === 'radial') {
+        rippleX += (rdx / rdist) * waveAmt
+        rippleY += (rdy / rdist) * waveAmt
+      } else {
+        rippleX += -ny * waveAmt
+        rippleY += nx * waveAmt
+      }
+    }
+
+    let pulseX = 0
+    let pulseY = 0
+    for (const cp of closingPulses) {
+      const pdx = x0 - cp.cx
+      const pdy = y0 - cp.cy
+      const pdist = Math.sqrt(pdx * pdx + pdy * pdy) || 0.001
+      const pnx = pdx / pdist
+      const pny = pdy / pdist
+      const age = t - cp.startT
+      const fronts = [
+        { speed: 5, sigma: 90, amp: 28 },
+        { speed: 3, sigma: 120, amp: 18 },
+        { speed: 1.6, sigma: 150, amp: 12 }
+      ]
+      for (const f of fronts) {
+        const waveFront = age * f.speed * pulseReach
+        const envelope = Math.exp(-((pdist - waveFront) ** 2) / (f.sigma * f.sigma))
+        const osc = Math.sin(pdist * 0.025 - age * 0.12) * envelope * cp.life * f.amp * (cp.intensity ?? 1)
+        pulseX += pnx * osc - pny * osc * 0.15
+        pulseY += pny * osc + pnx * osc * 0.15
+      }
+    }
+
+    const mirrorX = splitX !== undefined && x0 < splitX ? -1 : 1
+    return {
+      x: x0 - nx * pull + (wave.x + rippleX + pulseX) * mirrorX,
+      y: y0 - ny * pull + wave.y + rippleY + pulseY
+    }
+  })
+
   // ── Draw grid lines ───────────────────────────────────────────────────────
   // Use --foreground via globalAlpha so it works on both dark and light themes.
   // Dark ink on a light bg reads far fainter than white ink on dark at the same alpha,
   // so light mode needs a higher base to stay legible.
   // Light mode kept subtle — a faint texture you sense, not a painted-on grid.
   const BASE_ALPHA = isLightTheme() ? 0.11 : 0.12
-  // One uniform grid: every row and column is the same GRID_LINE_WIDTH line, all in ONE path
-  // and ONE stroke(). A stroke paints the union of its lines, so every pixel, including each
-  // crossing and polyline join, gets the grid ink exactly once. Vertices come from this
-  // frame's `pos`, so the grid moves with computeShimmer.
   ctx.save()
   ctx.strokeStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
+  ctx.lineWidth = 0.7
+
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath()
+    for (let c = 0; c <= COLS; c++) {
+      const p = pos[r * STRIDE + c]!
+      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.globalAlpha = BASE_ALPHA
+    ctx.stroke()
+  }
+
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath()
+    for (let r = 0; r <= ROWS; r++) {
+      const p = pos[r * STRIDE + c]!
+      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.globalAlpha = BASE_ALPHA
+    ctx.stroke()
+  }
+
+  // Fine grid overlay — only odd-indexed lines (even indices land on coarse lines,
+  // drawing them would double the opacity there and create alternating brightness).
+  ctx.lineWidth = 0.5
   ctx.globalAlpha = BASE_ALPHA
-  ctx.lineWidth = GRID_LINE_WIDTH
-  ctx.beginPath()
-  addGridPath(ctx, pos)
-  ctx.stroke()
+  for (let r = 1; r < ROWS2; r += 2) {
+    ctx.beginPath()
+    for (let c = 0; c <= COLS2; c++) {
+      const p = pos2[r * STRIDE2 + c]!
+      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
+  for (let c = 1; c < COLS2; c += 2) {
+    ctx.beginPath()
+    for (let r = 0; r <= ROWS2; r++) {
+      const p = pos2[r * STRIDE2 + c]!
+      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
+    }
+    ctx.stroke()
+  }
   ctx.restore()
 
   // ── Cursor light: brighten the REAL fabric lines the cursor passes over ──
-  // The same grid path is stroked once more with a radial gradient centred on the pointer:
-  // added ink falls off as (1 − d/RADIUS)² to nothing at the rim. Being one stroke of the same
-  // path at the same width, the lit lines stay the grid's own lines, and every lit pixel,
-  // crossings included, gets the added ink once.
+  // Redraws each in-radius grid segment (coarse + fine) with extra foreground alpha on top
+  // of the base ink, proportional to proximity — the actual square texture lights up around
+  // the pointer. No new geometry, no color change: the fabric's own lines, just brighter.
   const ptr = state.pointer
   if (ptr?.active) {
     const RADIUS = 150
     // Softer added ink in light mode — foreground is dark there, so a strong add reads as a
     // heavy painted patch rather than a subtle glow.
-    const LIT_MAX = isLightTheme() ? 0.16 : 0.35
-    const lit = ctx.createRadialGradient(ptr.x, ptr.y, 0, ptr.x, ptr.y, RADIUS)
-    for (const k of [0, 0.25, 0.5, 0.75, 1]) lit.addColorStop(k, fgAt((1 - k) * (1 - k) * LIT_MAX))
+    const LIT_MAX = isLightTheme() ? 0.32 : 0.7
     ctx.save()
-    ctx.strokeStyle = lit
-    ctx.lineWidth = GRID_LINE_WIDTH
-    ctx.beginPath()
-    addGridPath(ctx, pos)
-    ctx.stroke()
+    ctx.strokeStyle = fgAt(1)
+    ctx.lineCap = 'round'
+    const litSeg = (a: { x: number; y: number }, b: { x: number; y: number }, lw: number) => {
+      const mx = (a.x + b.x) / 2
+      const my = (a.y + b.y) / 2
+      const d = Math.hypot(mx - ptr.x, my - ptr.y)
+      if (d > RADIUS) return
+      const e = 1 - d / RADIUS // 1 at the cursor, 0 at the rim
+      ctx.globalAlpha = e * e * LIT_MAX // added brightness (base ink already drawn beneath)
+      ctx.lineWidth = lw
+      ctx.beginPath()
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
+      ctx.stroke()
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c < COLS; c++) litSeg(pos[r * STRIDE + c]!, pos[r * STRIDE + c + 1]!, 0.9)
+    }
+    for (let c = 0; c <= COLS; c++) {
+      for (let r = 0; r < ROWS; r++) litSeg(pos[r * STRIDE + c]!, pos[(r + 1) * STRIDE + c]!, 0.9)
+    }
+    // dots on the REAL grid corners near the cursor — same vertices whose lines lit above,
+    // so the cursor's dot cluster sits exactly on the fabric, not a floating overlay grid.
+    ctx.fillStyle = fgAt(1)
+    const dotMax = isLightTheme() ? 0.5 : 0.95
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c <= COLS; c++) {
+        const p = pos[r * STRIDE + c]!
+        const d = Math.hypot(p.x - ptr.x, p.y - ptr.y)
+        if (d > RADIUS) continue
+        const e = 1 - d / RADIUS
+        ctx.globalAlpha = e * e * dotMax
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 0.8 + e * 1.8, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
     ctx.restore()
   }
 

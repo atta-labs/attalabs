@@ -123,6 +123,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
       uTime2: { value: 0 },
       uCrest: { value: opts.crestAmount ?? 0.35 }
     },
+    defines: { LINE_DEPTH_PULL: '0.002' },
     vertexShader: `
       attribute float aAlpha;
       attribute float aCrest;
@@ -143,6 +144,18 @@ export function buildField(THREE_ = THREE, opts = {}) {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         vDepth = -mv.z;                 // distance from the EYE, not from the origin
         gl_Position = projectionMatrix * mv;
+        /* The lines lie exactly ON the opaque sheet (same vertices), so line and sheet have
+           the same depth, and which one wins is down to each GPU's rounding: a line
+           rasterises its depth differently from a triangle, and MSAA samples the triangle
+           off the line's centre. polygonOffset(1, 1) on the sheet is one depth step, less
+           than that mismatch on real GPUs, so the sheet hid the lines in blotchy patches
+           that crept with the shimmer. Pull the lines' DEPTH (not their screen position)
+           toward the eye by a fixed fraction of their distance, far beyond any rounding at
+           every depth (precision falls off with distance, so a relative bias keeps the same
+           margin), yet a hair — ~0.03 world units at the hero's framing — against the
+           harness sitting on the sheet. */
+        vec4 pulled = projectionMatrix * vec4(mv.xy, mv.z * (1.0 - LINE_DEPTH_PULL), 1.0);
+        gl_Position.z = pulled.z / pulled.w * gl_Position.w;
       }`,
     fragmentShader: `
       uniform vec3 uColor; uniform float uOpacity; uniform float uLitAmt; uniform vec2 uFade;

@@ -410,7 +410,7 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 **Key point: Fabric behavior is now config-driven (see "Fabric Configuration" above).** Pass a `FabricConfig` to the same `createFabricRenderer()` / `createSplitFabricRenderer()` factories shown there, then wire the result to `AIACanvas.bg` the same way as "Wiring to Canvas Components" above.
 
 **What it renders:**
-1. A displaced grid mesh (one uniform density, one line width) with ripple effects on sphere joins
+1. A displaced grid mesh (two-density layers: coarse + fine) with ripple effects on sphere joins
 2. **Tron particles** — spawn from the grid border, travel along displaced grid edges toward a target agent sphere, then detach for a straight-line final approach and join with a collision glow (or shock wave, depending on config)
 3. **Birth animations** — before a particle spawns, the origin cell illuminates with matrix characters and energy tendrils
 4. **Closing pulses** — radial ripple effect when a particle joins a sphere (gated by `config.shockWaveOnArrival`)
@@ -424,23 +424,6 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 - `dying` state: particle stops moving and fades out (trail erosion)
 - Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
 - Settle gate: particles don't spawn until the canvas has settled
-
-**Base grid: one uniform grid, one stroke.** `renderFabricBgCore` draws the grid as a single 55×35 mesh. There is no coarse/fine split, so every square is the same kind. `addGridPath` adds every row and column as a polyline through this frame's shimmer-displaced vertices. Then one `stroke()` at `lineWidth = GRID_LINE_WIDTH` (2 CSS px) and `globalAlpha = BASE_ALPHA` paints them all. Every line is the same width at every DPR (no per-DPR widening). Because it is one stroke, row×column crossings and polyline joins are composited once and read as the same ink as the line itself.
-
-**Cursor light:** one extra `stroke()` of the same grid path at the same width. Its `strokeStyle` is a radial gradient centered on the pointer (alpha falls off as (1−k)²·`LIT_MAX`). There are no per-segment caps and no vertex dots, so the lit region is as even as the rest of the grid.
-
-Why it looks like this:
-
-- Lines under 1 device px are drawn by Skia (Chrome) as per-segment hairlines, which double the ink at every vertex.
-- A sub-pixel-wide line's ink bunches into one pixel or spreads over two depending on its sub-pixel position. As `computeShimmer` drifts vertices, darker and lighter patches then crawl along the lines ("the grid is moving").
-- At 2 CSS px (≥ 2 device px) a line's peak coverage doesn't depend on its sub-pixel position. Measured in Chrome (GPU and software, DPR 1 and 2), frame-to-frame brightness change was 0% and crossing:line peak was 1.00.
-
-Keep it this way:
-
-- **One width, one density.** Don't reintroduce a second grid layer or per-line widths. Two kinds of lines make two kinds of squares, plus double composites where they overlap.
-- **Don't split the grid** into a `stroke()` per line or per pass. Each extra composite darkens wherever it overlaps.
-- **Don't draw the grid under 2 device px** or shrink `GRID_LINE_WIDTH` below 2. The hairline and crawl artifacts come back.
-- **Verify grid changes in real Chrome** (GPU and software), at DPR 1 and 2, across the shimmer loop. CPU-only Skia (`@napi-rs/canvas`) doesn't reproduce the GPU artifacts.
 
 **State shape passed to `drawFabric`:**
 ```ts

@@ -12,12 +12,12 @@
      low alpha in both schemes; the 3D sheet adds a depth fade on top, and cream over
      near-black at the light-scheme strength all but vanishes — so dark carries more. */
   --hero-fabric-ink: var(--foreground);
-  /* one opacity for BOTH meshes (coarse and fine): the old pair was coarse 0.15 / fine
-     0.55× that, so this is their average — the same overall weight, one kind of line */
-  --hero-fabric-alpha: 0.12;
+  /* one opacity for BOTH meshes (coarse and fine), matched to the portal family's 2D
+     fabric (vada.attalabs.dev) as the benchmark for a subtle "fabric of the universe" */
+  --hero-fabric-alpha: 0.08;
 }
 [data-theme='dark'] [data-hero-viewport] {
   --hero-core-shade: color-mix(in oklch, var(--card), var(--primary) 18%);
   --hero-core-deep: color-mix(in oklch, var(--card), var(--primary) 40%);
-  --hero-fabric-alpha: 0.23;
+  --hero-fabric-alpha: 0.12;
 }
