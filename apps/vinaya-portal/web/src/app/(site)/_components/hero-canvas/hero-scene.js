@@ -90,7 +90,7 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
   let fabricInk = cssColor(hero, '--hero-fabric-ink')
   let fabricAlpha = cssNumber(hero, '--hero-fabric-alpha')
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, stencil: true })
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))
   renderer.localClippingEnabled = true
   const scene = new THREE.Scene()
