@@ -465,7 +465,7 @@ export function LifecycleSection() {
   const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
 
   return (
-    <section ref={sectionRef} id='what-it-is' className='bg-secondary/70 text-secondary-foreground'>
+    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground'>
       {/* The tagline scrolls normally at the top of this section, so the scroll
           math above (keyed off the section's own rect) starts at the tagline.
           Only the stage block below it pins. */}
