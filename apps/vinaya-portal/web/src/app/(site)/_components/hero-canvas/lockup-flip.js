@@ -6,10 +6,15 @@
  * restated in `../hero-lockup-context.tsx`; the maths is inlined below, final and complete —
  * this file adds only the surrounding rAF plumbing (bind, guard, cleanup). No third source.
  *
- * Call once from the hero, after the topbar has registered its lockup node.
+ * Call once from the hero's LAYOUT effect, after the topbar has registered its lockup node.
  *
  *   const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
  *   // …on unmount: stop()
+ *
+ * `attachLockupFlip` computes and writes its first frame synchronously, before it returns,
+ * and only then schedules the rAF loop — so called from a `useLayoutEffect` the hero-scale
+ * transform already exists when the browser paints, and the caller can reveal the lockup in
+ * the same effect with no frame in which it shows its small, un-transformed rest state.
  *
  * `hero` must be the sticky viewport element; its parent is the scroll track.
  * All six nodes are the topbar's / hero's real DOM nodes. Nothing is created here.
@@ -67,8 +72,7 @@ export const FLIP = {
 export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
   let raf = 0
 
-  const frame = () => {
-    raf = requestAnimationFrame(frame)
+  const step = () => {
     if (!hero || !lockup || !hero.isConnected) return
 
     const tr = hero.parentElement.getBoundingClientRect()
@@ -134,6 +138,13 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
     }
   }
 
+  const frame = () => {
+    raf = requestAnimationFrame(frame)
+    step()
+  }
+
+  /* First frame synchronously (see the header comment), then the loop. */
+  step()
   raf = requestAnimationFrame(frame)
   return () => cancelAnimationFrame(raf)
 }

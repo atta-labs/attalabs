@@ -3,7 +3,7 @@
 import './hero-core.css'
 
 import { Heading, Text } from '@atta/ui/shared'
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
 import { useHeroLockupNodes } from '../hero-lockup-context'
 import { attachLockupFlip, dockImmediately } from './lockup-flip'
 
@@ -53,18 +53,23 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
   // natural topbar position (the "not centered" reports) until it resolved. A static
   // import runs synchronously on mount instead.
   //
-  // Even so, this effect still runs one paint after the browser's first paint of the
-  // un-transformed DOM — `HeroLockup.tsx` hides the whole lockup by default on landing
-  // (`[[data-bare=true]_&]:opacity-0`) for exactly that gap, and the `requestAnimationFrame`
-  // below reveals it. Scheduled right after `attachLockupFlip` attaches its own rAF loop,
-  // it runs strictly after that loop's first tick (callbacks fire in request order) — so
-  // opacity only turns on once a transform has actually been computed, never before.
+  // A LAYOUT effect, not a passive one: `useEffect` runs after the browser has already
+  // painted the committed DOM, so on a client navigation to landing (and on every commit
+  // where nothing else hides it) the lockup got one painted frame at its small, natural
+  // topbar position before this effect moved it — the load flash. `useLayoutEffect` runs
+  // after commit but BEFORE paint, and `attachLockupFlip` writes its first frame
+  // synchronously before returning (see its header comment), so by the time this effect
+  // flips `opacity` on, the hero-scale transform is already on the node: the reveal is in
+  // the same pre-paint task as the transform, with no rAF hop between them. On a hard
+  // reload the SSR'd HTML is painted before any JS runs at all; that window is covered by
+  // `HeroLockup.tsx`'s `[[data-bare=true]_&]:opacity-0` (the SSR'd `data-bare` is `'true'`
+  // on landing), which this effect lifts only once the transform exists.
   //
-  // The per-letter cascade (`HeroLockup.tsx`'s `Letters`) is revealed from the SAME
-  // callback: each letter already carries its own CSS `transitionDelay`, so flipping them
-  // all to visible in one pass here is enough to produce the staggered letter-by-letter
+  // The per-letter cascade (`HeroLockup.tsx`'s `Letters`) is revealed in the SAME
+  // pass: each letter already carries its own CSS `transitionDelay`, so flipping them
+  // all to visible at once is enough to produce the staggered letter-by-letter
   // reveal — no per-letter timing logic needed on this side.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const { lockup, word, desc, mark, bar } = getLockupNodes()
     const hero = heroViewportRef.current
     if (!hero || !lockup || !word) return
@@ -84,14 +89,9 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
       return
     }
     const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
-    const revealRaf = requestAnimationFrame(() => {
-      lockup.style.opacity = '1'
-      revealLetters()
-    })
-    return () => {
-      stop()
-      cancelAnimationFrame(revealRaf)
-    }
+    lockup.style.opacity = '1'
+    revealLetters()
+    return stop
   }, [getLockupNodes])
 
   return (
