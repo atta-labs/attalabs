@@ -5,7 +5,7 @@ import './hero-core.css'
 import { Heading, Text } from '@atta/ui/shared'
 import { type ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
 import { useHeroLockupNodes } from '../hero-lockup-context'
-import { attachLockupFlip, dockImmediately } from './lockup-flip'
+import { attachLockupFlip, dockImmediately, resetLockup } from './lockup-flip'
 
 /* Class strings for the letters `hero-scene.js` splits into <i> tags — authored here so
    Tailwind's @source scan (which only reads .ts/.tsx) actually generates them; a class
@@ -69,6 +69,17 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
   // pass: each letter already carries its own CSS `transitionDelay`, so flipping them
   // all to visible at once is enough to produce the staggered letter-by-letter
   // reveal — no per-letter timing logic needed on this side.
+  //
+  // Cleanup has to UNDO, not just stop. The lockup nodes live in the persisted
+  // `(site)/layout.tsx` topbar and outlive this component, so cancelling the rAF loop
+  // leaves the last frame's inline `transform`/`opacity`/`marginTop`/`width` on them — a
+  // frozen mid-animation fragment on whichever route was navigated to. `resetLockup`
+  // clears every inline write back to the CSS rest state (see its own comment). It runs
+  // from this layout effect's cleanup, i.e. synchronously inside the commit that unmounts
+  // the hero, before the destination route paints, and before any later commit could
+  // re-mount a hero — so a rapid nav away-and-back can't interleave a stale cleanup with
+  // a fresh attach. The reduced-motion branch writes the same nodes (`dockImmediately`),
+  // so it gets the same cleanup.
   useLayoutEffect(() => {
     const { lockup, word, desc, mark, bar } = getLockupNodes()
     const hero = heroViewportRef.current
@@ -86,12 +97,15 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
       dockImmediately({ lockup, desc, mark, bar })
       lockup.style.opacity = '1'
       revealLetters()
-      return
+      return () => resetLockup({ lockup, word, desc, mark, bar })
     }
     const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
     lockup.style.opacity = '1'
     revealLetters()
-    return stop
+    return () => {
+      stop()
+      resetLockup({ lockup, word, desc, mark, bar })
+    }
   }, [getLockupNodes])
 
   return (

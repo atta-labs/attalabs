@@ -9,7 +9,7 @@
  * Call once from the hero's LAYOUT effect, after the topbar has registered its lockup node.
  *
  *   const stop = attachLockupFlip({ hero, lockup, word, desc, mark, bar })
- *   // …on unmount: stop()
+ *   // …on unmount: stop(); resetLockup({ lockup, word, desc, mark, bar })
  *
  * `attachLockupFlip` computes and writes its first frame synchronously, before it returns,
  * and only then schedules the rAF loop — so called from a `useLayoutEffect` the hero-scale
@@ -147,6 +147,49 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
   step()
   raf = requestAnimationFrame(frame)
   return () => cancelAnimationFrame(raf)
+}
+
+/**
+ * Undo every inline write this module (and the hero's reveal) made on the shared nodes.
+ *
+ * The lockup lives in the persisted `(site)/layout.tsx` topbar, so it outlives the hero:
+ * `stop()` only prevents FUTURE writes, while the last frame's `transform`/`opacity`/
+ * `marginTop`/`width` stay on those nodes forever — a frozen, mid-animation fragment on
+ * every route navigated to afterwards, and a stale inline `opacity: 1` that defeats
+ * `HeroLockup.tsx`'s `[[data-bare=true]_&]:opacity-0` first-paint guard on the next visit
+ * to landing. Clearing each property to `''` hands it back to the CSS classes, which are
+ * the route-correct rest state by construction (visible and docked everywhere but landing,
+ * hidden-until-revealed on landing). Call after `stop()`, from the same cleanup.
+ *
+ * `word` is only ever measured here, never written; it's accepted so the call site passes
+ * the same node set it attached with. The letters (`[data-letter]`, written by the hero's
+ * reveal) are cleared too, for the same stale-opacity reason.
+ *
+ * `bar.dataset.bare` is React-owned (`TopBarChromeHost` renders it from the pathname) but
+ * React only writes it when that prop CHANGES, so a value this loop wrote survives any
+ * render that doesn't. It's reset to `'false'` — the value every non-landing route renders
+ * — because the hero unmounts only when leaving landing (or under StrictMode's simulated
+ * remount, where the re-attached loop's synchronous first frame rewrites it before paint).
+ */
+export function resetLockup({ lockup, word, desc, mark, bar }) {
+  if (lockup) {
+    lockup.style.transform = ''
+    lockup.style.opacity = ''
+    for (const el of lockup.querySelectorAll('[data-letter]')) {
+      el.style.opacity = ''
+      el.style.transform = ''
+    }
+  }
+  if (word) word.style.transform = ''
+  if (desc) {
+    desc.style.transform = ''
+    desc.style.marginTop = ''
+  }
+  if (mark) {
+    mark.style.width = ''
+    mark.style.opacity = ''
+  }
+  if (bar) bar.dataset.bare = 'false'
 }
 
 /** prefers-reduced-motion: jump straight to docked and never start the loop. */
