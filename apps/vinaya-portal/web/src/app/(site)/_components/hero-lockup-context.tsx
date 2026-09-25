@@ -29,6 +29,13 @@ import { createContext, type ReactNode, useCallback, useContext, useRef } from '
  * tree the ref-holding element sits. That ordering guarantee is what lets the hero's own
  * mount effect read fully-populated nodes on its very first run, with no subscription or
  * re-render needed — `getNodes()` reads a plain mutable object, not React state.
+ *
+ * Because the nodes outlive the hero, every inline style the hero writes onto them is the
+ * hero's to undo: its unmount cleanup calls `lockup-flip.js`'s `resetLockup` after stopping
+ * the loop, so no other route ever inherits a mid-animation transform. The cleanup acts on
+ * the nodes the hero captured at attach time, not on a fresh `getNodes()` read: a second
+ * `HeroLockup` instance (the mobile menu sheet renders the `logo` slot again) re-registers
+ * these keys while it's open and nulls them when it closes.
  */
 
 type LockupNodeKey = 'lockup' | 'word' | 'desc' | 'mark' | 'bar'
