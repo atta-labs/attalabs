@@ -885,48 +885,48 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   const BASE_ALPHA = isLightTheme() ? 0.11 : 0.12
   ctx.save()
   ctx.strokeStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
-  ctx.lineWidth = 0.7
+  ctx.globalAlpha = BASE_ALPHA
 
+  // Each grid pass is ONE path: one beginPath(), every row AND column polyline as its own
+  // subpath, one stroke(). A single stroke() paints the union of its subpaths' coverage, so a
+  // row/column crossing composites its anti-aliased ink exactly once. Stroking rows and columns
+  // as separate paths (the previous shape) laid BASE_ALPHA twice at every crossing — darker
+  // dots that drifted with computeShimmer's per-frame vertex motion. The vertices are still
+  // read from this frame's `pos`/`pos2`, so the mesh moves exactly as before.
+  ctx.lineWidth = 0.7
+  ctx.beginPath()
   for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath()
     for (let c = 0; c <= COLS; c++) {
       const p = pos[r * STRIDE + c]!
       c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
     }
-    ctx.globalAlpha = BASE_ALPHA
-    ctx.stroke()
   }
-
   for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath()
     for (let r = 0; r <= ROWS; r++) {
       const p = pos[r * STRIDE + c]!
       r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
     }
-    ctx.globalAlpha = BASE_ALPHA
-    ctx.stroke()
   }
+  ctx.stroke()
 
   // Fine grid overlay — only odd-indexed lines (even indices land on coarse lines,
   // drawing them would double the opacity there and create alternating brightness).
+  // Same single-path shape as the coarse pass, so fine row/column crossings composite once.
   ctx.lineWidth = 0.5
-  ctx.globalAlpha = BASE_ALPHA
+  ctx.beginPath()
   for (let r = 1; r < ROWS2; r += 2) {
-    ctx.beginPath()
     for (let c = 0; c <= COLS2; c++) {
       const p = pos2[r * STRIDE2 + c]!
       c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
     }
-    ctx.stroke()
   }
   for (let c = 1; c < COLS2; c += 2) {
-    ctx.beginPath()
     for (let r = 0; r <= ROWS2; r++) {
       const p = pos2[r * STRIDE2 + c]!
       r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
     }
-    ctx.stroke()
   }
+  ctx.stroke()
   ctx.restore()
 
   // ── Cursor light: brighten the REAL fabric lines the cursor passes over ──

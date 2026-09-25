@@ -425,6 +425,10 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 - Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
 - Settle gate: particles don't spawn until the canvas has settled
 
+**Grid strokes — one path per pass, so each crossing composites once.** `renderFabricBgCore` strokes the base grid in two passes, coarse (`lineWidth` 0.7) and fine overlay (0.5, odd-indexed lines only). Each pass is one `beginPath()`, every row and column polyline as its own `moveTo`/`lineTo` subpath, and one `stroke()`. A single `stroke()` paints the union of its subpaths, so a row/column crossing gets `BASE_ALPHA` once. Stroking rows and columns as separate paths lays `BASE_ALPHA` twice at every crossing: darker dots that drift with `computeShimmer`. Don't reintroduce a `stroke()` per line. Don't hide the doubling with a `globalCompositeOperation` trick or a lower `BASE_ALPHA` either, because that thins the whole grid, not just the crossings. The cursor-light block's per-segment redraw on top of the base ink is deliberate and separate from this.
+
+**Rasterizer limit (Skia: Chrome, and `@napi-rs/canvas`):** a stroke at most 1 *device* pixel wide is drawn as a coverage-modulated hairline, one segment at a time. There a single path still composites twice at crossings. So the single-path fix takes effect once `lineWidth × devicePixelRatio > 1`: from DPR ≈ 1.5 for the coarse pass, and above DPR 2 for the fine pass. The coarse and fine passes are separate strokes (different widths), so a fine line crossing a coarse line still composites twice at every DPR.
+
 **State shape passed to `drawFabric`:**
 ```ts
 {
