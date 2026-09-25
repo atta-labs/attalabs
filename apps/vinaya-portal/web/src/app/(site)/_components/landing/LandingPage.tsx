@@ -108,7 +108,7 @@ function AudienceSection() {
     [
       'for the founder / cto',
       'Your team uses AI. Your repo stays sane',
-      'Everyone ships with whatever AI they like — same gates, one process, one clean history. Brief, checks, and approval live on every task’s PR, so three years from now you can still answer why.'
+      'However the code gets written, it lands through one process into one clean history. Brief, checks, and approval live on every task’s PR, so three years from now you can still answer why.'
     ],
     [
       'for the tech lead',
@@ -118,7 +118,7 @@ function AudienceSection() {
     [
       'for the engineer',
       'Bring your own agent',
-      'Cursor, Claude Code, Codex — your choice. Vinaya checks the merge, not the model. And your teammates’ PRs arrive one task at a time, small enough to actually review.'
+      'Cursor, Claude Code, Codex — keep the one you already use. Vinaya checks the merge, not the model, and every task starts from a written brief, so you know what done means before you start.'
     ]
   ] as const
 
@@ -192,9 +192,8 @@ function FinalSection() {
   )
 }
 
-// `(site)/page.tsx` still fetches and passes the release metrics that the removed
-// governance-ratio block rendered. That route file sits outside this change, so the
-// prop stays accepted, and unused, until the page stops passing it.
+// `releaseMetrics` is unused: nothing on Home renders it. Drop this prop together with the
+// `getPublishedReleaseMetrics` fetch in `(site)/page.tsx` that supplies it.
 export function LandingPage(_props: { releaseMetrics: ReleaseMetrics }) {
   return (
     <main>
