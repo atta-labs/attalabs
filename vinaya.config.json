@@ -3,18 +3,31 @@
     "attalabs/vocabulary-citation": {
       "run": "./scripts/vinaya-checks/vocabulary-citation.ts",
       "scope": "full",
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "env": {
+        "BASE_SHA": {
+          "optional": true
+        }
+      }
     },
     "attalabs/task-anchor": {
       "run": "./scripts/vinaya-checks/task-anchor.ts",
       "scope": "full",
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "env": {
+        "BASE_SHA": {
+          "optional": true
+        }
+      }
     },
     "atta-labs/secret-scan": {
       "run": "./scripts/vinaya-checks/secret-scan.ts",
       "scope": "full"
     }
   },
+  "principals": [
+    "daniboomerang"
+  ],
   "reviewPolicy": {
     "codeReviewThreshold": "MAJOR",
     "securityThreshold": "HIGH",
@@ -60,6 +73,55 @@
       ]
     }
   },
+  "projects": [
+    {
+      "name": "admin",
+      "path": "tools/admin"
+    },
+    {
+      "name": "vada",
+      "path": "apps/vada-ai"
+    },
+    {
+      "name": "herald",
+      "path": "apps/herald-ai"
+    },
+    {
+      "name": "engine",
+      "path": "packages/engine"
+    },
+    {
+      "name": "adapter",
+      "path": "packages/adapter-langgraph"
+    },
+    {
+      "name": "executor-agent-spawn",
+      "path": "packages/executor-agent-spawn"
+    },
+    {
+      "name": "agents",
+      "path": "packages/agents"
+    },
+    {
+      "name": "ui",
+      "path": "packages/ui"
+    },
+    {
+      "name": "attalabs",
+      "path": "apps/attalabs"
+    },
+    {
+      "name": "vinaya"
+    },
+    {
+      "name": "vinaya-portal",
+      "path": "apps/vinaya-portal"
+    },
+    {
+      "name": "vinaya-studio",
+      "path": "apps/vinaya-studio"
+    }
+  ],
   "managed": {
     "version": 3,
     "files": [
