@@ -9,8 +9,8 @@ import { useHeroLockupRegister } from './hero-lockup-context'
  * to the viewport top (not in normal flow) so the hero section can sit flush at the true
  * page top and paint its canvas underneath — that's what makes `chromeClassName`'s
  * transparency actually show fabric through the bar instead of blurring nothing. Every
- * other route compensates with `SiteContentPad`'s `pt-14` (see its own doc comment for why
- * that padding can't live on the scroll container itself).
+ * other route compensates with `SiteContentPad`'s `pt-14`, carried on the shell's scroll
+ * container itself (see its own doc comment for how that interacts with `sticky`).
  *
  * Registers itself as the `bar` node the landing hero's `attachLockupFlip` writes
  * `data-bare` onto — the bare-state flag described in `hero-lockup-context.tsx`. The
