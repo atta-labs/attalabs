@@ -86,7 +86,7 @@ export function ConfigBoardSection() {
   }, [])
 
   return (
-    <LandingSection background='bg-background text-foreground'>
+    <LandingSection background='bg-card text-card-foreground'>
       <div className='grid gap-12 text-center md:grid-cols-2 md:items-center md:gap-16 md:text-left'>
         <div>
           <NextLink href='/config' variant='unstyled'>
@@ -105,6 +105,9 @@ export function ConfigBoardSection() {
           <Text className='mt-7 max-w-md text-xl leading-relaxed text-muted-foreground'>
             Define your gates. Your checks. Extend the agents you already use. Ours ships as the default — nothing you
             add or replace ever touches a second file.
+          </Text>
+          <Text className='mt-4 max-w-md font-serif text-xl leading-relaxed text-foreground'>
+            Your tracker, your method, your agent — same gates.
           </Text>
           <NextLink
             href='/config'

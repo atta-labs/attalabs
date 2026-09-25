@@ -116,49 +116,6 @@ export function CommandLinkChip({ href, label, command }: { href: string; label:
   )
 }
 
-export function EnforcementRatio({ value }: { value: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [display, setDisplay] = useState(value)
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-    let animationFrame = 0
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
-        observer.disconnect()
-        const startedAt = performance.now()
-        const tick = (now: number) => {
-          const progress = Math.min(1, (now - startedAt) / 1500)
-          const eased = 1 - (1 - progress) ** 4
-          setDisplay(Math.round(value * eased))
-          if (progress < 1) animationFrame = requestAnimationFrame(tick)
-        }
-        setDisplay(0)
-        animationFrame = requestAnimationFrame(tick)
-      },
-      { threshold: 0.35 }
-    )
-
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-      cancelAnimationFrame(animationFrame)
-    }
-  }, [value])
-
-  return (
-    <div
-      ref={ref}
-      className='mt-12 font-serif text-8xl leading-none tracking-tighter tabular-nums sm:text-9xl lg:text-[9.375rem]'
-    >
-      {display}%
-    </div>
-  )
-}
-
 export function RingProgress({ delayed = false }: { delayed?: boolean }) {
   const [filled, setFilled] = useState(true)
 

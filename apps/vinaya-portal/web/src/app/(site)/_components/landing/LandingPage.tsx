@@ -6,15 +6,8 @@ import { VinayaHeroEmblem } from '../hero-canvas/VinayaHeroEmblem'
 import { LetterReveal } from '../LetterReveal'
 import { ButtonLink } from './ButtonLink'
 import { ConfigBoardSection } from './ConfigBoardSection'
-import {
-  CommandCopy,
-  CommandLinkChip,
-  EnforcementRatio,
-  RevealGrid,
-  RingProgress,
-  ScrollToSectionButton
-} from './LandingInteractions'
-import { KeepYourStackSection } from './KeepYourStackSection'
+import { HarnessDiagramSection } from './HarnessDiagramSection'
+import { CommandCopy, CommandLinkChip, RevealGrid, RingProgress, ScrollToSectionButton } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
@@ -63,45 +56,6 @@ function HeroSection() {
   )
 }
 
-function VerificationSection({ releaseMetrics }: { releaseMetrics: ReleaseMetrics }) {
-  const enforcementRatio = Math.round(
-    (releaseMetrics.executableLines / (releaseMetrics.executableLines + releaseMetrics.doctrineLines)) * 100
-  )
-  const formattedExecutableLines = releaseMetrics.executableLines.toLocaleString('en-US')
-  const formattedDoctrineLines = releaseMetrics.doctrineLines.toLocaleString('en-US')
-
-  return (
-    <LandingSection background='bg-background text-foreground'>
-      <div className='grid gap-12 text-center md:grid-cols-2 md:items-start md:gap-16 md:text-left'>
-        <div>
-          <SectionTitle leading='tight' className='mx-auto max-w-xl md:mx-0'>
-            <LetterReveal text='Vinaya’s governance is executable' />
-          </SectionTitle>
-          <Text className='mx-auto mt-8 max-w-xl border-l-4 border-border pl-7 text-left text-xl leading-relaxed text-muted-foreground md:mx-0'>
-            A 2026 study: randomly-generated rule files moved agent behaviour about as much as carefully curated ones.{' '}
-            <strong className='font-semibold text-foreground'>
-              What your rules say is not what is doing the work.
-            </strong>
-          </Text>
-          <div className='mt-10'>
-            <ActionLink href='/compare' variant='secondary'>
-              Compare the approaches <ArrowRight className='size-4' />
-            </ActionLink>
-          </div>
-        </div>
-        <div className='md:text-center'>
-          <EnforcementRatio value={enforcementRatio} />
-          <Text className='mt-4 font-mono text-xs leading-loose tracking-wide text-muted-foreground'>
-            measured at v{releaseMetrics.version} — {formattedExecutableLines} lines of code that enforces the flow
-            <br />
-            against {formattedDoctrineLines} lines of doctrine · counted at every release
-          </Text>
-        </div>
-      </div>
-    </LandingSection>
-  )
-}
-
 function RingsSection() {
   const rings = [
     ['ring 0', 'your machine', "Clean, or it doesn't push", false],
@@ -141,8 +95,9 @@ function RingsSection() {
         <br />
         are the same code.
       </Text>
-      <div className='mt-7 text-center'>
+      <div className='mt-7 flex flex-wrap justify-center gap-x-6 gap-y-3'>
         <UnderlineLink href='/docs/rings'>See more</UnderlineLink>
+        <UnderlineLink href='/compare'>Why this beats a rules file</UnderlineLink>
       </div>
     </LandingSection>
   )
@@ -151,9 +106,9 @@ function RingsSection() {
 function AudienceSection() {
   const audiences = [
     [
-      'for the cto',
-      'Every change traceable',
-      'Brief, checks, and approval live on every task’s PR. Three years from now, you can still answer why.'
+      'for the founder / cto',
+      'Your team uses AI. Your repo stays sane',
+      'Everyone ships with whatever AI they like — same gates, one process, one clean history. Brief, checks, and approval live on every task’s PR, so three years from now you can still answer why.'
     ],
     [
       'for the tech lead',
@@ -164,26 +119,11 @@ function AudienceSection() {
       'for the engineer',
       'Bring your own agent',
       'Cursor, Claude Code, Codex — your choice. Vinaya checks the merge, not the model. And your teammates’ PRs arrive one task at a time, small enough to actually review.'
-    ],
-    [
-      'for the product manager',
-      'See where everything is. Without asking',
-      'Status is read live from GitHub — planned, in progress, in review, done. Nobody updates a board. It can’t be stale.'
-    ],
-    [
-      'for the junior engineer',
-      'Learn the way the team ships',
-      'Plan, brief, develop, review — the same loop every time, and you can take any step in it. You review real PRs, and the gates catch you before the team has to.'
-    ],
-    [
-      'for the founder',
-      'Your team uses AI. Your repo stays sane',
-      'Everyone ships with whatever AI they like — same gates, one process, one clean history. And the token ledger shows what each feature cost.'
     ]
   ] as const
 
   return (
-    <LandingSection background='bg-secondary/70 text-secondary-foreground'>
+    <LandingSection background='bg-background text-foreground'>
       <SectionTitle className='text-center'>
         <LetterReveal text='Who it’s for' />
       </SectionTitle>
@@ -252,17 +192,19 @@ function FinalSection() {
   )
 }
 
-export function LandingPage({ releaseMetrics }: { releaseMetrics: ReleaseMetrics }) {
+// `(site)/page.tsx` still fetches and passes the release metrics that the removed
+// governance-ratio block rendered. That route file sits outside this change, so the
+// prop stays accepted, and unused, until the page stops passing it.
+export function LandingPage(_props: { releaseMetrics: ReleaseMetrics }) {
   return (
     <main>
       <HeroSection />
       <LifecycleSection />
       <OwnershipSection />
-      <VerificationSection releaseMetrics={releaseMetrics} />
+      <HarnessDiagramSection />
       <RingsSection />
       <AudienceSection />
       <ConfigBoardSection />
-      <KeepYourStackSection />
       <ZeroLockInSection />
       <FinalSection />
     </main>
