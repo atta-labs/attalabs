@@ -180,7 +180,7 @@ function ZeroLockInSection() {
 
 function FinalSection() {
   return (
-    <LandingSection background='bg-card text-card-foreground' py='spacious' center>
+    <LandingSection background='bg-secondary text-secondary-foreground' py='spacious' center>
       <SectionTitle>
         <LetterReveal text='Start in your repo' />
       </SectionTitle>

@@ -86,7 +86,7 @@ export function ConfigBoardSection() {
   }, [])
 
   return (
-    <LandingSection background='bg-card text-card-foreground'>
+    <LandingSection background='bg-secondary text-secondary-foreground'>
       <div className='grid gap-12 text-center md:grid-cols-2 md:items-center md:gap-16 md:text-left'>
         <div>
           <NextLink href='/config' variant='unstyled'>

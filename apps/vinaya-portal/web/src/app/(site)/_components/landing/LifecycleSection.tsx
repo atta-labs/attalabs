@@ -469,7 +469,13 @@ export function LifecycleSection() {
       {/* The tagline scrolls normally at the top of this section, so the scroll
           math above (keyed off the section's own rect) starts at the tagline.
           Only the stage block below it pins. */}
-      <LandingSection ref={taglineRef} id='tagline' background='bg-card text-card-foreground' py='compact' center>
+      <LandingSection
+        ref={taglineRef}
+        id='tagline'
+        background='bg-secondary text-secondary-foreground'
+        py='compact'
+        center
+      >
         <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
           <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
             <LetterReveal text='A harness for your software engineering process' />
