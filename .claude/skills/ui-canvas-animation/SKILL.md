@@ -425,12 +425,23 @@ Agent colors arrive as either hex `#rrggbb` (Chrome normalizes custom properties
 - Ring exclusion zone: particles avoid the AIARing area (accounts for fabric displacement)
 - Settle gate: particles don't spawn until the canvas has settled
 
-**Base grid — one filled path, so every crossing is one layer of ink.** `renderFabricBgCore` draws the whole base grid as a single filled path: the coarse grid (0.7 wide) and the fine overlay (0.5 wide, odd-indexed lines only). Each row and column is a thin closed outline built by `addLineOutline` from this frame's shimmer-displaced vertices, and one `fill('nonzero')` at `BASE_ALPHA` paints their union. Every pixel is composited once, weighted by how much of it the grid covers, so row×column and fine×coarse crossings read as one layer at every `devicePixelRatio`. A crossing pixel is still slightly denser than a line pixel when lines are thinner than a pixel, because more of that pixel is covered. That is correct coverage, not a second composite.
+**Base grid: one filled path, never under 2 device px wide.** `renderFabricBgCore` draws the whole base grid as a single filled path straight onto the destination: the coarse grid (nominally 0.7 wide) and the fine overlay (nominally 0.5 wide, odd-indexed lines only). Each row and column is a closed outline (`addLineOutline`) built from this frame's shimmer-displaced vertices, and one `fill('nonzero')` paints their union. Every pixel is composited once, so row×column crossings, fine×coarse crossings and polyline joins read as one layer of ink.
 
-- **Why fill, not stroke:** Skia (Chrome, `@napi-rs/canvas`) draws a stroke at most 1 *device* pixel wide as a coverage-modulated hairline, one segment at a time. At that width, even one stroked path composites twice wherever two segments meet (0.7/0.5 at DPR 1). Fills have no hairline mode.
-- **Keep all outlines winding the same way** (normal = direction rotated +90°), so overlaps add up under nonzero instead of cancelling into holes.
-- **Don't split the grid** into a `stroke()`/`fill()` per line or per pass. Each extra call composites `BASE_ALPHA` again wherever it overlaps the others.
-- **Don't hide the doubling** with a `globalCompositeOperation` trick or a lower `BASE_ALPHA`. That thins the whole grid, not just the crossings.
+**Minimum width:** lines are never narrower than `GRID_MIN_DEVICE_WIDTH` (2) device pixels. When the nominal widths are too thin for the display, both widths scale up by the same factor and the opacity (`BASE_ALPHA / widen`) scales down by it. Each line's ink per unit length (width × opacity) and the coarse:fine ratio stay as designed. Thinner lines break in three ways as `computeShimmer` drifts them across the pixel grid:
+
+- A sub-pixel line's ink bunches into one pixel or spreads over two depending on its sub-pixel position, so darker and lighter patches travel along it.
+- Skia (Chrome) strokes a line at most 1 device px wide as a per-segment hairline, which doubles the ink at every vertex.
+- Chrome's GPU fill of sub-pixel outlines renders them dotted and broken.
+
+From 2 device px, a line's peak coverage doesn't depend on its sub-pixel position.
+
+Keep it this way:
+
+- **Don't split the grid** into a `stroke()`/`fill()` per line or per pass. Each extra composite darkens wherever it overlaps.
+- **Keep all outlines winding the same way** (normal = direction rotated +90°), so overlaps add up under nonzero and never cancel into holes.
+- **Don't hide doubling with a lower `BASE_ALPHA`.** That thins the whole grid.
+- **Avoid an offscreen layer here.** Compositing a full-screen layer every frame (plus `destination-out`) was roughly 40× slower in Chrome's GPU path than this direct fill.
+- **Verify grid changes in real Chrome** (GPU and software), at DPR 1 and 2, across the shimmer loop. CPU-only Skia (`@napi-rs/canvas`) doesn't reproduce the GPU artifacts.
 - **The cursor-light block is separate:** its per-segment, round-capped redraw on top of the base ink is deliberate and not part of this.
 
 **State shape passed to `drawFabric`:**

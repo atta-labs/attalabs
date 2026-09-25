@@ -297,6 +297,14 @@ function computeWaterWave(bx: number, by: number, t: number): { x: number; y: nu
   }
 }
 
+// Grid lines are never drawn narrower than this many DEVICE pixels. A thinner line holds its
+// ink in one pixel or spreads it over two depending on where it sits on the pixel grid, so as
+// the shimmer drifts it the line visibly brightens and darkens along its length. Chrome's GPU
+// rasterizer also renders sub-pixel-wide fills dotted and broken, and Skia strokes a line at
+// most 1 device pixel wide as a per-segment hairline, doubling the ink at every vertex. From
+// 2 device pixels, a line's peak coverage no longer depends on its sub-pixel position.
+const GRID_MIN_DEVICE_WIDTH = 2
+
 // Appends one grid line (the polyline through `count` vertices of `pts`, starting at index
 // `start` and stepping by `step`) to the current path as a closed outline `2·half` wide:
 // out along its +normal side, back along its −normal side, the normal at each vertex taken
@@ -919,25 +927,27 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // so light mode needs a higher base to stay legible.
   // Light mode kept subtle — a faint texture you sense, not a painted-on grid.
   const BASE_ALPHA = isLightTheme() ? 0.11 : 0.12
-  // The whole base grid, coarse (0.7 wide) and fine overlay (0.5 wide, odd-indexed lines
-  // only), is ONE filled path: every row and column is a thin closed outline, and a
-  // single fill() paints their union. Every pixel gets BASE_ALPHA once, weighted by how
-  // much of it the grid covers, so each crossing (row×column, fine×coarse) reads as one
-  // layer of ink. It is filled rather than stroked because Skia (Chrome) strokes a line
-  // at most 1 device pixel wide as a hairline, one segment at a time, which composites
-  // twice wherever two segments meet. Fills have no such mode, so this holds at every
-  // devicePixelRatio. The outlines are rebuilt from this frame's `pos`/`pos2`, so the grid
-  // still moves with computeShimmer.
+  // The whole base grid is ONE filled path composited once at BASE_ALPHA-scaled opacity, drawn
+  // straight onto the destination: every row and column of the coarse grid and of the fine
+  // overlay (odd-indexed lines only; even indices land on coarse lines) is a closed outline
+  // (addLineOutline), and a single fill('nonzero') paints their union. Every pixel is
+  // composited once, so row×column and fine×coarse crossings and polyline joins read as one
+  // layer of ink. Lines are at least GRID_MIN_DEVICE_WIDTH device pixels wide (see there) so
+  // they stay continuous and even while computeShimmer drifts them. A widened grid keeps its
+  // look by keeping each line's ink per unit length (width × opacity): the nominal widths are
+  // 0.7 (coarse) and 0.5 (fine) at BASE_ALPHA, so both widths scale by the same factor and the
+  // opacity by its inverse. Vertices come from this frame's `pos`/`pos2`.
+  const m = ctx.getTransform()
+  const deviceScale = Math.hypot(m.a, m.b) || 1
+  const widen = Math.max(1, GRID_MIN_DEVICE_WIDTH / (0.5 * deviceScale))
+  const COARSE_HALF = (0.7 * widen) / 2
+  const FINE_HALF = (0.5 * widen) / 2
   ctx.save()
   ctx.fillStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
-  ctx.globalAlpha = BASE_ALPHA
+  ctx.globalAlpha = BASE_ALPHA / widen
   ctx.beginPath()
-  const COARSE_HALF = 0.7 / 2
-  const FINE_HALF = 0.5 / 2
   for (let r = 0; r <= ROWS; r++) addLineOutline(ctx, pos, r * STRIDE, 1, COLS + 1, COARSE_HALF)
   for (let c = 0; c <= COLS; c++) addLineOutline(ctx, pos, c, STRIDE, ROWS + 1, COARSE_HALF)
-  // Fine overlay: only odd-indexed lines (even indices land on coarse lines, where drawing
-  // them would add a second line's coverage and create alternating brightness).
   for (let r = 1; r < ROWS2; r += 2) addLineOutline(ctx, pos2, r * STRIDE2, 1, COLS2 + 1, FINE_HALF)
   for (let c = 1; c < COLS2; c += 2) addLineOutline(ctx, pos2, c, STRIDE2, ROWS2 + 1, FINE_HALF)
   ctx.fill('nonzero')
