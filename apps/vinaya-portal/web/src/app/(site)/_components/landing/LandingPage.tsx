@@ -16,7 +16,6 @@ import {
 } from './LandingInteractions'
 import { KeepYourStackSection } from './KeepYourStackSection'
 import { LandingSection } from './LandingSection'
-import { LifecycleHarnessSection } from './LifecycleHarnessSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
 import { SectionOverline, SectionTitle } from './SectionHeading'
@@ -274,7 +273,6 @@ export function LandingPage({ releaseMetrics }: { releaseMetrics: ReleaseMetrics
       <HeroSection />
       <TaglineSection />
       <LifecycleSection />
-      <LifecycleHarnessSection />
       <OwnershipSection />
       <VerificationSection releaseMetrics={releaseMetrics} />
       <RingsSection />
