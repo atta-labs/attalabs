@@ -79,7 +79,8 @@ export function buildField(THREE_ = THREE, opts = {}) {
   const fineIndex = []
   const at = (r, c) => r * (N + 1) + c
   /* two densities from ONE vertex grid, like the portal's fabric: every second line is the
-     coarse mesh, the rest is the fine mesh drawn fainter */
+     coarse mesh, the rest is the fine mesh. Both are drawn by ONE material at ONE opacity:
+     a fainter fine mesh made two kinds of lines and two kinds of squares. */
   for (let r = 0; r <= N; r++) {
     for (let c = 0; c < N; c++) (r % 2 === 0 ? index : fineIndex).push(at(r, c), at(r, c + 1))
   }
@@ -92,13 +93,24 @@ export function buildField(THREE_ = THREE, opts = {}) {
   geo.setAttribute('position', posAttr)
   geo.setAttribute('aAlpha', new THREE_.BufferAttribute(alphas, 1))
   geo.setAttribute('aCrest', new THREE_.BufferAttribute(crests, 1))
-  geo.setIndex(index)
+  geo.setIndex([...index, ...fineIndex])
 
-  /* hairlines that fade with distance — the horizon dissolves instead of ending */
+  /* hairlines that fade with distance — the horizon dissolves instead of ending.
+     SINGLE LAYER: LineSegments blends every segment on its own, so each pixel two segments
+     share (every vertex along a line, every row×column crossing) took the ink twice and
+     read as a bright dot that crawled with the shimmer. The stencil test lets the fabric
+     ink each pixel at most once per frame; the renderer (created with `stencil: true` in
+     hero-scene.js) clears the stencil every frame. */
   const mat = new THREE_.ShaderMaterial({
     name: 'fabric',
     transparent: true,
     depthWrite: false,
+    stencilWrite: true,
+    stencilRef: 1,
+    stencilFunc: THREE_.NotEqualStencilFunc,
+    stencilFail: THREE_.KeepStencilOp,
+    stencilZFail: THREE_.KeepStencilOp,
+    stencilZPass: THREE_.ReplaceStencilOp,
     uniforms: {
       uColor: { value: new THREE_.Color().setHex(inkHex, THREE_.LinearSRGBColorSpace) },
       uOpacity: { value: opts.opacity ?? 0.3 },
@@ -164,31 +176,6 @@ export function buildField(THREE_ = THREE, opts = {}) {
   mesh.name = 'fabric'
   mesh.frustumCulled = false
   mesh.renderOrder = 1
-
-  /* the fine mesh: same vertices, the in-between lines, fainter */
-  const fineGeo = new THREE_.BufferGeometry()
-  fineGeo.setAttribute('position', posAttr)
-  fineGeo.setAttribute('aAlpha', geo.attributes.aAlpha)
-  fineGeo.setAttribute('aCrest', geo.attributes.aCrest)
-  fineGeo.setIndex(fineIndex)
-  const fineMat = mat.clone()
-  fineMat.uniforms = {
-    uColor: { value: mat.uniforms.uColor.value },
-    uOpacity: { value: (opts.opacity ?? 0.3) * 0.55 },
-    uCursor: { value: mat.uniforms.uCursor.value },      // shared vector: one write moves both
-    uLitR: { value: mat.uniforms.uLitR.value },
-    uLitAmt: { value: (opts.litAmount ?? 0.5) * 0.7 },
-    uFade: { value: mat.uniforms.uFade.value },
-    uTime: { value: 0 },
-    uFlicker: { value: 0 },
-    uTime2: { value: 0 },
-    uCrest: { value: (opts.crestAmount ?? 0.35) * 0.7 }
-  }
-  const fine = new THREE_.LineSegments(fineGeo, fineMat)
-  fine.name = 'fabric-fine'
-  fine.frustumCulled = false
-  fine.renderOrder = 1
-  mesh.add(fine)
 
   /* An OPAQUE surface sharing the same vertices: the sheet is a real skin, so anything
      below it is hidden instead of showing through and sorting badly. Rendered first and
@@ -291,7 +278,6 @@ export function buildField(THREE_ = THREE, opts = {}) {
       }
     }
     mat.uniforms.uTime.value = time
-    fineMat.uniforms.uTime.value = time
 
     const ph1 = -time * 0.6, ph2 = -time * 0.5
     for (let n = 0; n < AC; n++) {
@@ -343,7 +329,6 @@ export function buildField(THREE_ = THREE, opts = {}) {
   function setEffects(o) {
     Object.assign(fx, o)
     mat.uniforms.uFlicker.value = fx.flicker ? 1 : 0
-    fineMat.uniforms.uFlicker.value = fx.flicker ? 1 : 0
   }
 
   function setCursor(v) {
@@ -372,10 +357,7 @@ export function buildField(THREE_ = THREE, opts = {}) {
   function retheme({ ink, surface, opacity }) {
     mat.uniforms.uColor.value.setHex(ink, THREE_.LinearSRGBColorSpace)
     surfMat.uniforms.uColor.value.setHex(surface, THREE_.LinearSRGBColorSpace)
-    if (opacity != null) {
-      mat.uniforms.uOpacity.value = opacity
-      fineMat.uniforms.uOpacity.value = opacity * 0.55
-    }
+    if (opacity != null) mat.uniforms.uOpacity.value = opacity
   }
-  return { mesh, fine, surface, update, pulse, setCursor, setFade, setEffects, retheme, material: mat, surfaceMaterial: surfMat, contactY }
+  return { mesh, surface, update, pulse, setCursor, setFade, setEffects, retheme, material: mat, surfaceMaterial: surfMat, contactY }
 }
