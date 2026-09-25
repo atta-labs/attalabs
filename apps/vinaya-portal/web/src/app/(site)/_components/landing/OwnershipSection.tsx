@@ -19,7 +19,7 @@ function DocCardHeader({
   badge: string
 }) {
   return (
-    <CardHeader className='flex-row items-center gap-2.5 border-b border-border px-4 py-3'>
+    <CardHeader className='flex-row flex-wrap items-center gap-2.5 border-b border-border px-4 py-3'>
       <Icon className='size-4 shrink-0 text-muted-foreground' />
       <span className='font-mono text-sm'>
         {title} {subtitle && <span className='text-muted-foreground'>{subtitle}</span>}

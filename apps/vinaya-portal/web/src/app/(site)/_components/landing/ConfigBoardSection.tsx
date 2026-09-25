@@ -122,9 +122,9 @@ export function ConfigBoardSection() {
               return (
                 <div
                   key={row.label}
-                  className='flex items-baseline justify-between gap-6 border-t border-border py-6 text-left last:border-b'
+                  className='flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-t border-border py-6 text-left last:border-b'
                 >
-                  <div className='flex items-baseline font-mono text-2xl font-medium sm:text-3xl lg:text-4xl'>
+                  <div className='flex items-baseline font-mono text-2xl font-medium sm:text-3xl md:text-2xl lg:text-4xl'>
                     <span
                       className={`inline-block overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-500 ${
                         on ? 'max-w-[6ch] opacity-100' : 'max-w-0 opacity-0'

@@ -87,9 +87,9 @@ export function CommandCopy({ command }: { command: string }) {
       type='button'
       variant='outline'
       onClick={copy}
-      className='h-auto gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
+      className='h-auto max-w-full gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
     >
-      <span className='whitespace-nowrap'>{command}</span>
+      <span className='min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]'>{command}</span>
       <span className='flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground'>
         {copied ? <Check className='size-4' /> : <Copy className='size-4' />}
         {copied ? 'copied' : 'copy'}
@@ -103,12 +103,12 @@ export function CommandLinkChip({ href, label, command }: { href: string; label:
     <NextLink
       href={href}
       variant='unstyled'
-      className='group flex w-full flex-col items-center gap-2.5 text-center sm:w-auto sm:items-start sm:text-left'
+      className='group flex w-full min-w-0 max-w-full flex-col items-center gap-2.5 text-center lg:w-auto lg:items-start lg:text-left'
     >
       <span className='font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground'>{label}</span>
-      <Card className='px-7 transition-colors group-hover:border-foreground'>
-        <span className='flex items-center gap-3 font-mono text-xl whitespace-nowrap sm:text-2xl'>
-          {command}
+      <Card className='max-w-full px-5 transition-colors group-hover:border-foreground sm:px-7'>
+        <span className='flex items-center gap-3 font-mono text-xl sm:text-2xl'>
+          <span className='min-w-0 [overflow-wrap:anywhere]'>{command}</span>
           <ArrowUpRight className='size-7 shrink-0 text-muted-foreground' />
         </span>
       </Card>

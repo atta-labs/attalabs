@@ -236,9 +236,9 @@ function ZeroLockInSection() {
         <LetterReveal text='Out with one command' startIndex={20} />
       </SectionTitle>
 
-      <div className='mx-auto mt-11 flex max-w-md flex-col items-center gap-6 sm:max-w-none sm:flex-row sm:justify-center sm:gap-7'>
+      <div className='mx-auto mt-11 flex max-w-md flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:justify-center lg:gap-7'>
         <CommandLinkChip href='/docs/quickstart' label='plug in' command='npx @attalabs/vinaya quickstart' />
-        <Text className='rotate-90 font-mono text-4xl text-secondary-foreground/65 sm:rotate-0'>⇄</Text>
+        <Text className='rotate-90 font-mono text-4xl text-secondary-foreground/65 lg:rotate-0'>⇄</Text>
         <CommandLinkChip href='/docs/cli/eject' label='unplug' command='vinaya eject' />
       </div>
       <Text className='mx-auto mt-9 max-w-xl text-balance font-serif text-xl leading-relaxed text-secondary-foreground/65'>
