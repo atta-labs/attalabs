@@ -3,12 +3,22 @@
     "attalabs/vocabulary-citation": {
       "run": "./scripts/vinaya-checks/vocabulary-citation.ts",
       "scope": "full",
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "env": {
+        "BASE_SHA": {
+          "optional": true
+        }
+      }
     },
     "attalabs/task-anchor": {
       "run": "./scripts/vinaya-checks/task-anchor.ts",
       "scope": "full",
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "env": {
+        "BASE_SHA": {
+          "optional": true
+        }
+      }
     },
     "atta-labs/secret-scan": {
       "run": "./scripts/vinaya-checks/secret-scan.ts",
