@@ -400,6 +400,11 @@ export function LifecycleSection() {
       const rect = section.getBoundingClientRect()
       const viewportHeight = window.innerHeight || 800
       if (window.innerWidth < 700) {
+        // The column layout never slides: rewind the desktop scrub so a track left
+        // mid-slide by a wide viewport (a window narrowed or a phone rotated) sits
+        // back at its origin instead of hanging off the left edge, out of view.
+        trackAnimation.currentTime = 0
+        railAnimation.currentTime = 0
         const nextRun = [stageOneRef, stageTwoRef, stageThreeRef].map((ref) => {
           const node = ref.current
           if (!node) return false
