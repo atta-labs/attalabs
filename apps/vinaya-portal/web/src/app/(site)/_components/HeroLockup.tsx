@@ -43,11 +43,11 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  * fully visible, with no JS dependency):
  * - the mark's slot starts shut (`w-0 opacity-0`) — the loop owns `mark.style.width` from
  *   its first frame on, opening it over `FLIP.MARK_IN`;
- * - the whole lockup starts at `opacity-0` — the effect that attaches the loop runs one
- *   paint after the browser's first paint of the un-transformed DOM, which would otherwise
- *   flash the small, natural-position wordmark before it snaps to hero scale.
- *   `VinayaHeroEmblem.tsx` reveals it from a `requestAnimationFrame` scheduled right after
- *   the loop attaches, so opacity turns on only once a transform has been computed.
+ * - the whole lockup starts at `opacity-0` — on a hard reload the SSR'd HTML is painted
+ *   before any JS runs, which would otherwise flash the small, natural-position wordmark
+ *   before it snaps to hero scale. `VinayaHeroEmblem.tsx` lifts it from a `useLayoutEffect`
+ *   (before paint), in the same pass as `attachLockupFlip`'s synchronous first frame, so
+ *   opacity turns on only once a transform has been computed — never a frame earlier.
  *
  * Sizing constraints the FLIP loop depends on:
  * - the mark's `2.75rem` must equal `lockup-flip.js`'s `MARK_MAX` (that file animates this

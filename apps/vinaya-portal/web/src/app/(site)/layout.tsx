@@ -127,11 +127,11 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   // App-shell height: TopBarChromeHost is `fixed` (out of flow) so the hero section can
   // sit flush at the true page top and paint its canvas underneath the bar — that's what
   // lets `chromeClassName`'s transparency show fabric through it instead of blurring
-  // nothing. `SiteContentPad` compensates with `pt-14` on every route except landing
-  // (see its own doc comment for why that padding can't live on this `overflow-y-auto`
-  // container itself — it would fight the hero's `position: sticky`). Pages that want to
-  // fill the viewport (docs/harness, docs/reference and its sibling doctrine pages) use
-  // `h-full` against this region, still a definite height.
+  // nothing. `SiteContentPad` is the shell's one `h-dvh overflow-y-auto` scroll container
+  // and also carries the `pt-14` that compensates for the bar on every route except
+  // landing. It wraps `{children}` directly (`FooterGate` renders no DOM node), so pages
+  // that fill the viewport (the docs shells, the harness rings page) resolve `h-full`
+  // against it — a definite height — and scroll their own panes inside it.
   return (
     <HeroLockupProvider>
       {/* z-30 keeps the TopBar above the hero emblem's canvas (z-0). TopBarChromeHost
@@ -157,7 +157,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           withAuth={false}
         />
       </TopBarChromeHost>
-      <div className='h-dvh overflow-y-auto'>
+      <SiteContentPad>
         <FooterGate
           footer={
             <Footer
@@ -179,9 +179,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
             />
           }
         >
-          <SiteContentPad>{children}</SiteContentPad>
+          {children}
         </FooterGate>
-      </div>
+      </SiteContentPad>
     </HeroLockupProvider>
   )
 }
