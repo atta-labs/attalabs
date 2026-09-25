@@ -10,9 +10,8 @@ import { LandingSection } from './LandingSection'
 import { SectionTitle } from './SectionHeading'
 
 // Brand marks — simple-icons path strings rendered monochrome (currentColor): theme-correct
-// in light + dark, no icon-library runtime in the bundle. Antigravity uses Google's mark
-// (same convention as WorkflowSection.tsx). Grok has no simple-icon, so it falls back to a
-// themed lucide glyph below.
+// in light + dark, no icon-library runtime in the bundle. Antigravity uses Google's mark.
+// Grok has no simple-icon, so it falls back to a themed lucide glyph below.
 const BRAND_PATH: Record<string, string> = {
   Jira: siJira.path,
   Linear: siLinear.path,
