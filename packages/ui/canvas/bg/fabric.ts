@@ -297,6 +297,42 @@ function computeWaterWave(bx: number, by: number, t: number): { x: number; y: nu
   }
 }
 
+// Appends one grid line (the polyline through `count` vertices of `pts`, starting at index
+// `start` and stepping by `step`) to the current path as a closed outline `2·half` wide:
+// out along its +normal side, back along its −normal side, the normal at each vertex taken
+// from the direction between its neighbours. Every outline winds the same way (normal =
+// direction rotated +90°), so under the nonzero rule overlapping outlines always add up and
+// never cancel into a hole.
+function addLineOutline(
+  ctx: CanvasRenderingContext2D,
+  pts: ReadonlyArray<{ x: number; y: number }>,
+  start: number,
+  step: number,
+  count: number,
+  half: number
+): void {
+  const nx = new Float64Array(count)
+  const ny = new Float64Array(count)
+  for (let i = 0; i < count; i++) {
+    const a = pts[start + Math.max(0, i - 1) * step]!
+    const b = pts[start + Math.min(count - 1, i + 1) * step]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const len = Math.hypot(dx, dy) || 1
+    nx[i] = (-dy / len) * half
+    ny[i] = (dx / len) * half
+  }
+  for (let i = 0; i < count; i++) {
+    const p = pts[start + i * step]!
+    i === 0 ? ctx.moveTo(p.x + nx[i]!, p.y + ny[i]!) : ctx.lineTo(p.x + nx[i]!, p.y + ny[i]!)
+  }
+  for (let i = count - 1; i >= 0; i--) {
+    const p = pts[start + i * step]!
+    ctx.lineTo(p.x - nx[i]!, p.y - ny[i]!)
+  }
+  ctx.closePath()
+}
+
 function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: number): void {
   const { ctx, t, W, H, settleProgress, rings, recentEvents, onSphereAbsorb } = state
 
@@ -883,50 +919,28 @@ function renderFabricBgCore(state: BgState, config: FabricConfig, splitX?: numbe
   // so light mode needs a higher base to stay legible.
   // Light mode kept subtle — a faint texture you sense, not a painted-on grid.
   const BASE_ALPHA = isLightTheme() ? 0.11 : 0.12
+  // The whole base grid, coarse (0.7 wide) and fine overlay (0.5 wide, odd-indexed lines
+  // only), is ONE filled path: every row and column is a thin closed outline, and a
+  // single fill() paints their union. Every pixel gets BASE_ALPHA once, weighted by how
+  // much of it the grid covers, so each crossing (row×column, fine×coarse) reads as one
+  // layer of ink. It is filled rather than stroked because Skia (Chrome) strokes a line
+  // at most 1 device pixel wide as a hairline, one segment at a time, which composites
+  // twice wherever two segments meet. Fills have no such mode, so this holds at every
+  // devicePixelRatio. The outlines are rebuilt from this frame's `pos`/`pos2`, so the grid
+  // still moves with computeShimmer.
   ctx.save()
-  ctx.strokeStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
+  ctx.fillStyle = fgAt(1) // solid foreground — alpha controlled via globalAlpha below
   ctx.globalAlpha = BASE_ALPHA
-
-  // Each grid pass is ONE path: one beginPath(), every row AND column polyline as its own
-  // subpath, one stroke(). A single stroke() paints the union of its subpaths' coverage, so a
-  // row/column crossing composites its anti-aliased ink exactly once. Stroking rows and columns
-  // as separate paths (the previous shape) laid BASE_ALPHA twice at every crossing — darker
-  // dots that drifted with computeShimmer's per-frame vertex motion. The vertices are still
-  // read from this frame's `pos`/`pos2`, so the mesh moves exactly as before.
-  ctx.lineWidth = 0.7
   ctx.beginPath()
-  for (let r = 0; r <= ROWS; r++) {
-    for (let c = 0; c <= COLS; c++) {
-      const p = pos[r * STRIDE + c]!
-      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
-  }
-  for (let c = 0; c <= COLS; c++) {
-    for (let r = 0; r <= ROWS; r++) {
-      const p = pos[r * STRIDE + c]!
-      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
-  }
-  ctx.stroke()
-
-  // Fine grid overlay — only odd-indexed lines (even indices land on coarse lines,
-  // drawing them would double the opacity there and create alternating brightness).
-  // Same single-path shape as the coarse pass, so fine row/column crossings composite once.
-  ctx.lineWidth = 0.5
-  ctx.beginPath()
-  for (let r = 1; r < ROWS2; r += 2) {
-    for (let c = 0; c <= COLS2; c++) {
-      const p = pos2[r * STRIDE2 + c]!
-      c === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
-  }
-  for (let c = 1; c < COLS2; c += 2) {
-    for (let r = 0; r <= ROWS2; r++) {
-      const p = pos2[r * STRIDE2 + c]!
-      r === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)
-    }
-  }
-  ctx.stroke()
+  const COARSE_HALF = 0.7 / 2
+  const FINE_HALF = 0.5 / 2
+  for (let r = 0; r <= ROWS; r++) addLineOutline(ctx, pos, r * STRIDE, 1, COLS + 1, COARSE_HALF)
+  for (let c = 0; c <= COLS; c++) addLineOutline(ctx, pos, c, STRIDE, ROWS + 1, COARSE_HALF)
+  // Fine overlay: only odd-indexed lines (even indices land on coarse lines, where drawing
+  // them would add a second line's coverage and create alternating brightness).
+  for (let r = 1; r < ROWS2; r += 2) addLineOutline(ctx, pos2, r * STRIDE2, 1, COLS2 + 1, FINE_HALF)
+  for (let c = 1; c < COLS2; c += 2) addLineOutline(ctx, pos2, c, STRIDE2, ROWS2 + 1, FINE_HALF)
+  ctx.fill('nonzero')
   ctx.restore()
 
   // ── Cursor light: brighten the REAL fabric lines the cursor passes over ──
