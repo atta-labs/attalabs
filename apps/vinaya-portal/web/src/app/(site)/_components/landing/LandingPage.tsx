@@ -7,7 +7,7 @@ import { LetterReveal } from '../LetterReveal'
 import { ButtonLink } from './ButtonLink'
 import { ConfigBoardSection } from './ConfigBoardSection'
 import { HarnessDiagramSection } from './HarnessDiagramSection'
-import { CommandCopy, CommandLinkChip, RevealGrid, RingProgress, ScrollToSectionButton } from './LandingInteractions'
+import { CommandCopy, LabeledCommandCopy, RevealGrid, RingProgress, ScrollToSectionButton } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
@@ -153,20 +153,20 @@ function AudienceSection() {
 
 function ZeroLockInSection() {
   return (
-    <LandingSection background='bg-secondary/70 text-secondary-foreground' center>
-      <SectionOverline className='text-base text-secondary-foreground/65'>zero lock-in</SectionOverline>
+    <LandingSection background='bg-background text-foreground' center>
+      <SectionOverline className='text-base text-muted-foreground'>zero lock-in</SectionOverline>
       <SectionTitle className='mx-auto mt-5 max-w-2xl'>
         <LetterReveal text='In with one command' />
         <br />
         <LetterReveal text='Out with one command' startIndex={20} />
       </SectionTitle>
 
-      <div className='mx-auto mt-11 flex max-w-md flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:justify-center lg:gap-7'>
-        <CommandLinkChip href='/docs/quickstart' label='plug in' command='npx @attalabs/vinaya quickstart' />
-        <Text className='rotate-90 font-mono text-4xl text-secondary-foreground/65 lg:rotate-0'>⇄</Text>
-        <CommandLinkChip href='/docs/cli/eject' label='unplug' command='vinaya eject' />
+      <div className='mx-auto mt-11 flex max-w-md flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:items-end lg:justify-center lg:gap-7'>
+        <LabeledCommandCopy href='/docs/quickstart' label='plug in' command={QUICKSTART_COMMAND} />
+        <Text className='rotate-90 font-mono text-4xl text-muted-foreground lg:rotate-0'>⇄</Text>
+        <LabeledCommandCopy href='/docs/cli/eject' label='unplug' command='vinaya eject' />
       </div>
-      <Text className='mx-auto mt-9 max-w-xl text-balance font-serif text-xl leading-relaxed text-secondary-foreground/65'>
+      <Text className='mx-auto mt-9 max-w-xl text-balance font-serif text-xl leading-relaxed text-muted-foreground'>
         Eject removes exactly what quickstart installed. Nothing else.
       </Text>
 
@@ -180,7 +180,7 @@ function ZeroLockInSection() {
 
 function FinalSection() {
   return (
-    <LandingSection background='bg-background text-foreground' py='spacious' center>
+    <LandingSection background='bg-card text-card-foreground' py='spacious' center>
       <SectionTitle>
         <LetterReveal text='Start in your repo' />
       </SectionTitle>

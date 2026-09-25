@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Card } from '@atta/ui/components'
+import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowDown, ArrowUpRight, Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -98,21 +98,21 @@ export function CommandCopy({ command }: { command: string }) {
   )
 }
 
-export function CommandLinkChip({ href, label, command }: { href: string; label: string; command: string }) {
+// The zero-lock-in pair: the same copy box as "Start in your repo", with its label linking to
+// the command's docs page so the copy target and the reference stay one tap apart.
+export function LabeledCommandCopy({ href, label, command }: { href: string; label: string; command: string }) {
   return (
-    <NextLink
-      href={href}
-      variant='unstyled'
-      className='group flex w-full min-w-0 max-w-full flex-col items-center gap-2.5 text-center lg:w-auto lg:items-start lg:text-left'
-    >
-      <span className='font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground'>{label}</span>
-      <Card className='max-w-full px-5 transition-colors group-hover:border-foreground sm:px-7'>
-        <span className='flex items-center gap-3 font-mono text-xl sm:text-2xl'>
-          <span className='min-w-0 [overflow-wrap:anywhere]'>{command}</span>
-          <ArrowUpRight className='size-7 shrink-0 text-muted-foreground' />
-        </span>
-      </Card>
-    </NextLink>
+    <div className='flex w-full min-w-0 max-w-full flex-col items-center gap-2.5 lg:w-auto'>
+      <NextLink
+        href={href}
+        variant='unstyled'
+        className='group inline-flex items-center gap-1 font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground'
+      >
+        {label}
+        <ArrowUpRight className='size-4 shrink-0' />
+      </NextLink>
+      <CommandCopy command={command} />
+    </div>
   )
 }
 
