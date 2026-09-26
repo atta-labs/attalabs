@@ -541,18 +541,27 @@ from `derive-status.ts` (per-segment numeric, tolerant of a non-numeric suffix),
 string `order()`, which would sort "0.19.10" above "0.19.3". A whitespace-only `version`
 counts as absent, not as version zero.
 
-**`image` is a fallback, not the primary visual, for the seven known release
-marks.** Those seven ship as CSS-var-themed SVGs inlined at build time via SVGR
-(`apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg`, one per `version`) —
-inlining is load-bearing: the marks theme entirely off `--primary`/`--card`/
-`--border`/`--foreground`, and those custom properties do not cross the
-separate-document boundary an `<img src>`/CMS-asset load creates, so a mark
-loaded that way renders in fixed fallback colors regardless of theme. The page
-prefers the inlined mark for a matching `version`; `image` only renders (via
-`next/image`, unthemed) for a future item whose `version` has no matching file
-in `_marks/`. The CMS asset itself is still kept in sync as an editorial
-preview — the baked `light`-mode SVG variant, since Sanity Studio's own thumbnail
-has no access to the site's runtime theme vars either.
+**`image` is the card's artwork, and the only source of it.** Each milestone's own
+`image` decides what its card shows — never its `version`, so an empty, renumbered or
+new version still shows its own artwork, and a new milestone's artwork needs no code
+change. An SVG `image` is inlined into the page's DOM rather than loaded as an `<img>`:
+the marks theme entirely off `--primary`/`--foreground` and run `marks-motion.css`'s
+`mm-*` keyframes, and neither the custom properties nor the page's CSS cross the
+separate-document boundary an `<img src>` load creates — a mark loaded that way renders
+in fixed fallback colors and never animates. `/roadmap`'s `page.tsx` (a Server
+Component) resolves each card's artwork through `_lib/resolve-artwork.ts`. Only a
+`.svg` asset on `https://cdn.sanity.io/images/` is fetched (content-hashed, so cached
+indefinitely); it counts as SVG only when the response's `content-type` agrees, and is
+sanitized server-side before the markup reaches the client track. A raster image goes
+straight to `next/image` without being fetched here; a URL off the CDN, a failed or
+oversized fetch, or markup that sanitizes to nothing falls back to a placeholder icon.
+Author uploaded marks with colors as presentation attributes (`fill`/`stroke`), never
+inside `style` — the sanitizer keeps only the marks' motion declarations in `style`,
+reduces `class` to `mm`/`mm-*` and drops every `id` — with values as
+`var(--token, currentColor)` —
+a literal color (including a `#fff` last-resort inside `var()`) is what shows whenever
+the token is missing. Editing the artwork is a Sanity content operation, not a code
+change.
 
 ---
 

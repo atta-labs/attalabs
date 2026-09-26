@@ -1,12 +1,18 @@
-/* Milestone marks — motion (designer handoff, apps/vinaya-portal/web/src/app/(site)/roadmap/_marks/*.svg).
-   Keyframes CANNOT live inside the SVG files (SVG <style> and <animate> get
-   stripped by most sanitizers) — each mark carries inline `animation: mm-*`
-   declarations per element; this file defines the names those reference.
-   Imported once, directly in `page.tsx` (Next.js App Router scopes a CSS
-   import to the segment it's imported into — no need to touch the shared
-   site layout). Animation runs on INLINED marks only, which is what SVGR
-   compiles them to; an <img>-loaded mark would be a separate document and
-   render static regardless of this file.
+/* Milestone marks — motion (designer handoff). The marks themselves are each
+   roadmap card's own SVG in the CMS (`roadmapMilestone.image`), fetched and
+   sanitized on the server (`_lib/resolve-artwork.ts`) and inlined into the
+   page's DOM by `_components/DeploymentTrack.tsx` — the one importer of this
+   file (a CSS import is scoped to the segment it's imported into, so the
+   shared site layout stays untouched).
+   Keyframes CANNOT live inside the SVG files (the sanitizer strips SVG
+   <style>, and <animate> is stripped by most sanitizers) — each mark carries
+   inline `animation: mm-*` declarations per element; this file defines the
+   names those reference. Animation runs on INLINED marks only; an
+   <img>-loaded mark would be a separate document and render static
+   regardless of this file.
+
+   Every mark's root <svg> carries `class="mm"`, which the reduced-motion rule
+   below targets — the sanitizer keeps it.
 
    THE RULE: never animate the geometry of a shape that carries the meaning.
    Travel (mm-flow) and opacity (mm-lock) are always safe; mm-run only ever runs
