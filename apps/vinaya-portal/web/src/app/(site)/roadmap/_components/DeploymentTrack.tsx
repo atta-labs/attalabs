@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
 import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
-import { clamp01, computeCardStageProgress, computeDeployedPx } from '../_lib/deployment-progress'
+import { computeCardProgress, computeCardStageProgress, computeDeployedPx } from '../_lib/deployment-progress'
 import '../marks-motion.css'
 import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 
@@ -19,6 +19,18 @@ import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 // derived progress value `q` — junction seats (0→0.26), spur extends
 // (0.26→0.58), panel arrives (0.58→1). The tip position is a pure function of
 // scroll (never a keyframe), so scrolling back rewinds it exactly.
+//
+// Every value that feeds `q` and the three custom properties below comes from a live
+// `getBoundingClientRect()`/`offsetTop`/`offsetHeight` read taken fresh on the current
+// frame — `computeCardProgress`/`computeCardStageProgress` (`_lib/deployment-progress.ts`)
+// are plain functions of that frame's numbers alone, with no memory of any prior call, so
+// re-deriving a position always reproduces the same values whether reached by scrolling
+// down or back up. The only value carried frame-to-frame (`velTargetRef`/`vel`, further
+// down) drives cosmetic crackle/glow intensity exclusively — it must never feed back into
+// `q`, `deployed`, or `--b`/`--a`/`--c`, or exact rewind breaks. None of this math takes a
+// viewport width: the 840px split (`CONFIG.splitAbove`) only ever reorders and repositions
+// the same DOM via CSS below, so a card's animated state computes identically on both
+// sides of it by construction, not by convention.
 //
 // Every dimension below is a Tailwind class — never a `style={{}}` prop, per
 // RULE 3 — and every one of them, including the arbitrary-value ones, is
@@ -332,7 +344,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
 
       for (const card of cards) {
         const mid = card.offsetTop + card.offsetHeight / 2
-        const q = still ? 1 : clamp01((t - mid) / CONFIG.spurReach)
+        const q = still ? 1 : computeCardProgress(t, mid, CONFIG.spurReach)
         const stage = computeCardStageProgress(q)
         card.style.setProperty('--b', stage.b.toFixed(4))
         card.style.setProperty('--a', stage.a.toFixed(4))

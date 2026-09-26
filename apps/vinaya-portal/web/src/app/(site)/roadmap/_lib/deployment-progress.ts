@@ -15,6 +15,18 @@ export function computeDeployedPx(H: number, line: number, trackTop: number): nu
   return Math.max(0, Math.min(H, line - trackTop))
 }
 
+// One card's own progress (0→1) from the beam first reaching it (`deployed === cardMid`)
+// to fully clearing `spurReach` past it. Extracted out of the per-frame DOM loop (rather
+// than left inline there) so the "state is a pure function of current scroll position,
+// recomputed fresh every frame" contract is a named, tested function instead of an
+// implicit property of the loop body — nothing here reads viewport width or a prior
+// frame's value, so the same `(deployed, cardMid, spurReach)` triple always yields the
+// same `q`, on either side of the 840px layout split, whether reached by scrolling down
+// or back up.
+export function computeCardProgress(deployed: number, cardMid: number, spurReach: number): number {
+  return clamp01((deployed - cardMid) / spurReach)
+}
+
 // `q` is one card's own progress (0→1) from the beam first reaching it to fully clearing
 // `CONFIG.spurReach` past it. The three CSS custom properties this drives are staged
 // windows over that same `q`, each renormalized to its own 0→1 range and clamped, so
