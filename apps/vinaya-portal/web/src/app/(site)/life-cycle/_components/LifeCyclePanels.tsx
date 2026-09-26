@@ -3,6 +3,7 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
+import type { Ref } from 'react'
 import { LetterReveal } from '../../_components/LetterReveal'
 import { RevealGrid } from '../../_components/landing/LandingInteractions'
 import { LandingSection } from '../../_components/landing/LandingSection'
@@ -93,11 +94,14 @@ function StageBlock({ stage }: { stage: LifeCycleContent['stages'][number] }) {
 function LifeCyclePanel({
   altitude,
   content,
-  onChange
+  onChange,
+  startRef
 }: {
   altitude: LifeCycleId
   content: LifeCycleContent
   onChange: (id: LifeCycleId) => void
+  /** The first section — what an altitude change scrolls to, flush under the switcher. */
+  startRef?: Ref<HTMLElement>
 }) {
   // The switcher is a horizontal tab row, not a vertical hierarchy — 'down'
   // (one altitude in: milestone → tranche → task) moves right along it,
@@ -106,7 +110,7 @@ function LifeCyclePanel({
 
   return (
     <>
-      <LandingSection background='bg-card text-card-foreground' center>
+      <LandingSection ref={startRef} background='bg-card text-card-foreground' center>
         <SectionTitle className='mx-auto max-w-3xl' leading='tight'>
           <LetterReveal text={content.heading} />
         </SectionTitle>
@@ -159,12 +163,30 @@ function LifeCyclePanel({
   )
 }
 
-export function LifeCyclePanels({ active, onChange }: { active: LifeCycleId; onChange: (id: LifeCycleId) => void }) {
+export function LifeCyclePanels({
+  active,
+  onChange,
+  switcherRef,
+  panelStartRef
+}: {
+  active: LifeCycleId
+  onChange: (id: LifeCycleId) => void
+  switcherRef?: Ref<HTMLDivElement>
+  panelStartRef?: Ref<HTMLElement>
+}) {
+  // Fade only, no slide: the first section is the scroll target measured right
+  // after this panel remounts, and a `translate` enter animation would shift
+  // its measured box off its real layout position for the animation's duration.
   return (
     <div className='bg-card text-card-foreground'>
-      <LifeCycleSwitcher active={active} onChange={onChange} />
-      <div key={active} className='animate-in fade-in slide-in-from-bottom-2 duration-300'>
-        <LifeCyclePanel altitude={active} content={LIFECYCLE_CONTENT[active]} onChange={onChange} />
+      <LifeCycleSwitcher ref={switcherRef} active={active} onChange={onChange} />
+      <div key={active} className='animate-in fade-in duration-300'>
+        <LifeCyclePanel
+          altitude={active}
+          content={LIFECYCLE_CONTENT[active]}
+          onChange={onChange}
+          startRef={panelStartRef}
+        />
       </div>
     </div>
   )
