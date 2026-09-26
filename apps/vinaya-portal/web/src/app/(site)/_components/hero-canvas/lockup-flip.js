@@ -42,6 +42,13 @@ export const FLIP = {
   // one, since the harness rides up as the box gets shorter. Below ~667px tall, expect it
   // to close further; a viewport-aware scale would be the fix if that ever matters.
   HERO_SCALE: 3.6,
+  // px — the hero-state lockup's minimum margin from each side of the viewport. HERO_SCALE
+  // is a ceiling, not a fixed value: on a viewport too narrow for the wider of the two
+  // visible lines (the word at `s`, or the descriptor at `s × DESC_HERO`) to fit inside
+  // this margin at HERO_SCALE, the hero scale drops to the largest value that does fit —
+  // see `heroScale` below. Desktop widths are unaffected; phones get a smaller giant state
+  // instead of a descriptor running off both edges.
+  HERO_GUTTER_PX: 16,
   // Hero anchor as a fraction of viewport height. Deliberately small so the
   // TOPBAR_CLEARANCE_PX floor below governs on every realistic viewport: a floor read from
   // the topbar's live height does not drift with aspect ratio, a proportional fraction does.
@@ -88,15 +95,54 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
     const restX = rest.left - hr.left
     const restY = rest.top - hr.top
 
-    const s = 1 + (FLIP.HERO_SCALE - 1) * (1 - q)
     const wordW = word.offsetWidth
+    const descW = desc ? desc.offsetWidth : 0
+    /* The widest line at hero size, in rest-state px: the word rides the lockup's scale alone,
+       the descriptor rides it times its own DESC_HERO counter-scale (TRAP 3 below). Both
+       widths are live layout measurements of the text currently shown, so the fit tracks the
+       copy rather than a width assumed here. */
+    const widest = Math.max(wordW, descW * FLIP.DESC_HERO)
+    const heroScale =
+      widest > 0
+        ? Math.max(1, Math.min(FLIP.HERO_SCALE, (hr.width - 2 * FLIP.HERO_GUTTER_PX) / widest))
+        : FLIP.HERO_SCALE
+    const s = 1 + (heroScale - 1) * (1 - q)
 
     /* TRAP 2 — centre on the WORD, not the lockup. The mark's slot collapses to width 0 over
        the hero but the lockup's flex gap survives, and the gap is multiplied by the scale
        (0.3rem × 4.8 ≈ 26px of drift). Deriving from the word's own untransformed left is
        robust to any mark width or fade window. */
     const wordLead = word.getBoundingClientRect().left - hr.left - restX
-    const tx = (hr.width / 2 - (wordW * s) / 2 - restX - wordLead * s) * (1 - q)
+    let tx = (hr.width / 2 - (wordW * s) / 2 - restX - wordLead * s) * (1 - q)
+
+    /* TRAP 3's counter-scale, computed here (written below) because the edge clamp needs it.
+       Capped so the descriptor's on-screen scale (`c × s`) never exceeds its hero-state value:
+       `c` rises linearly while `s` falls linearly, so their product bulges mid-flight above
+       both endpoints (≈3% over the hero size at HERO_SCALE, ≈7% at a phone's fitted scale) —
+       the descriptor would grow before shrinking into the bar, and outgrow the width
+       `heroScale` fitted it to. The cap is exact at both endpoints (`c` = DESC_HERO at q=0,
+       1 at q=1), so neither the hero nor the docked state moves. */
+    const descPeak = Math.max(FLIP.DESC_HERO * heroScale, 1)
+    const c = Math.min(FLIP.DESC_HERO + (1 - FLIP.DESC_HERO) * q, descPeak / s)
+    const off = ((wordW - descW * c) / 2) * (1 - q)
+
+    /* Edge clamp. The two endpoints both fit — the hero state by `heroScale`, the rest state by
+       the topbar's own layout — but the path between them does not have to: the descriptor's
+       visible width (`descW × c × s`) and its offset move at different rates, so on a narrow
+       viewport a mid-flight frame can reach past the edge neither endpoint touches. Measure the
+       lockup's visible horizontal extent for this frame (the word and descriptor share one
+       left edge, `items-start`; the mark and gap sit left of it, so the lockup's own left is
+       the leftmost point) and slide `tx` back inside. Each allowed edge is the gutter, or the
+       rest state's own edge where that already sits beyond the gutter, so the clamp is 0 at
+       both endpoints and continuous between them — it never moves the docked position. */
+    const lineL = s * Math.min(0, wordLead + off)
+    const lineR = s * Math.max(wordLead + wordW, wordLead + off + descW * c)
+    const allowL = Math.min(FLIP.HERO_GUTTER_PX, restX)
+    const allowR = Math.max(hr.width - FLIP.HERO_GUTTER_PX, restX + wordLead + Math.max(wordW, descW))
+    const overR = restX + tx + lineR - allowR
+    const underL = allowL - (restX + tx + lineL)
+    if (overR > 0) tx -= overR
+    else if (underL > 0) tx += underL
 
     /* Floor against the topbar's OWN live height, not the fraction below — see FLIP.HERO_Y's
        comment for why a viewport-height fraction alone can't be trusted to clear a
@@ -111,8 +157,6 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
     /* TRAP 3 — the descriptor cannot ride a uniform scale: the bar's word:descriptor ratio is
        ~2.3 and the hero wants ~7. It carries its own counter-scale, which also lands at 1. */
     if (desc) {
-      const c = FLIP.DESC_HERO + (1 - FLIP.DESC_HERO) * q
-      const off = ((wordW - desc.offsetWidth * c) / 2) * (1 - q)
       desc.style.transform = `translateX(${off.toFixed(2)}px) scale(${c.toFixed(4)})`
       /* Grows from 0 (giant hero) toward FLIP.BARE_GAP_MAX (tail of the dock transition) as
          q→1 — see FLIP.BARE_GAP_MAX's own comment. Cleared to 0 once docked so it never
