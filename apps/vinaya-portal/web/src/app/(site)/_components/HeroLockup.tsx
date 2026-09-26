@@ -70,7 +70,7 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  *   through a second CSS value.
  *
  * The docked topbar and the bare hero show different text on the same two ref'd nodes —
- * "Vinaya" / "Git harness" while bare, "GIT" / "HARNESS" while docked (a topbar-only
+ * "Vinaya" / "Development harness" while bare, "DEVELOPMENT" / "HARNESS" while docked (a topbar-only
  * wordmark change). Each ref'd node wraps TWO content spans, CSS-grid-stacked into the same
  * cell (`grid` on the wrapper, `col-start-1 row-start-1` on both) rather than toggled via
  * `hidden`/`block`: a display swap can't transition, so the texts would pop instead of
@@ -101,12 +101,12 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
             <Letters text='Vinaya' delayStep={40} />
           </span>
           <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-100'>
-            <Letters text='GIT' delayStep={40} />
+            <Letters text='DEVELOPMENT' delayStep={40} />
           </span>
         </span>
         <span ref={(el) => setNode('desc', el)} className='origin-left grid'>
           <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-0'>
-            <Letters text='Git harness' delayStep={25} />
+            <Letters text='Development harness' delayStep={25} />
           </span>
           <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-100'>
             <Letters text='HARNESS' delayStep={25} />
