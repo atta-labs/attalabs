@@ -13,11 +13,16 @@ import * as THREE from 'three'
 
 /* ── tokens ──────────────────────────────────────────────────────────────── */
 function oklchToHex(str) {
-  const m = str.trim().match(/^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+)/i)
+  /* `none` is a legal component (CSS Color 4: it reads as 0). The CMS writes every
+     achromatic colour — white, black, any grey — with a `none` hue (@atta/cms's
+     cssColorToOklch), so a theme applied at runtime (/?preview=true) hands us e.g.
+     `oklch(1 0 none)` for --background. */
+  const m = str.trim().match(/^oklch\(\s*([\d.]+%?|none)\s+([\d.]+%?|none)\s+([\d.]+|none)/i)
   if (!m) return null
-  const L = m[1].endsWith('%') ? parseFloat(m[1]) / 100 : parseFloat(m[1])
-  const C = m[2].endsWith('%') ? (parseFloat(m[2]) / 100) * 0.4 : parseFloat(m[2])
-  const h = (parseFloat(m[3]) * Math.PI) / 180
+  const num = (v) => (v.toLowerCase() === 'none' ? 0 : parseFloat(v))
+  const L = m[1].endsWith('%') ? num(m[1]) / 100 : num(m[1])
+  const C = m[2].endsWith('%') ? (num(m[2]) / 100) * 0.4 : num(m[2])
+  const h = (num(m[3]) * Math.PI) / 180
   const a = C * Math.cos(h), b = C * Math.sin(h)
   const l_ = L + 0.3963377774 * a + 0.2158037573 * b
   const m_ = L - 0.1055613458 * a - 0.0638541728 * b
@@ -44,7 +49,7 @@ function mixHex(a, b, t) {
    `root` gets `color: var(name)`, and its computed `color` comes back as a concrete colour
    even when the variable is a color-mix() — which getPropertyValue() would hand back as
    unresolved text. Used for the hero-scoped ramp targets in hero-core.css. */
-export function cssColor(root, name) {
+function probeColor(root, name) {
   const probe = document.createElement('span')
   probe.style.color = `var(${name})`
   root.appendChild(probe)
@@ -57,6 +62,10 @@ export function cssColor(root, name) {
     const c = rgb ? rgb.slice(1, 4).map((v) => Math.round(parseFloat(v))) : srgb ? srgb.slice(1, 4).map((v) => Math.round(parseFloat(v) * 255)) : null
     if (c) hex = (c[0] << 16) | (c[1] << 8) | c[2]
   }
+  return { hex, raw }
+}
+export function cssColor(root, name) {
+  const { hex, raw } = probeColor(root, name)
   if (hex == null) throw new Error(`design token ${name} did not resolve to a colour (${raw})`)
   return hex
 }
@@ -67,12 +76,25 @@ export function cssNumber(root, name) {
   if (!Number.isFinite(v)) throw new Error(`design token ${name} did not resolve to a number (${raw})`)
   return v
 }
+/* A root design token as a hex colour, or null while it can't be read — an admin preview
+   frame (/?preview=true) paints the theme onto <html> at runtime, after first mount.
+   An authored oklch() is parsed directly; any other authored form (hex, rgb(), a var()
+   chain) goes through the cascade probe. An unset token stays null: a probe of an
+   undefined var() would silently inherit the surrounding text colour. */
+export function readToken(name) {
+  const root = document.documentElement
+  const raw = getComputedStyle(root).getPropertyValue(name).trim()
+  if (!raw) return null
+  const hex = oklchToHex(raw)
+  if (hex != null) return hex
+  return probeColor(document.body ?? root, name).hex
+}
 /* Colour comes from the design system's variables or not at all — there are no literal
-   colour fallbacks anywhere in this file. A missing token is a bug, so it throws. */
+   colour fallbacks anywhere in this file. A missing token is a bug, so it throws; callers
+   that can meet a not-yet-painted theme gate on readToken() first (hero-scene.js). */
 export function token(name) {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  const hex = raw && oklchToHex(raw)
-  if (hex === null || hex === undefined) throw new Error(`design token ${name} is not defined`)
+  const hex = readToken(name)
+  if (hex == null) throw new Error(`design token ${name} is not defined`)
   return hex
 }
 

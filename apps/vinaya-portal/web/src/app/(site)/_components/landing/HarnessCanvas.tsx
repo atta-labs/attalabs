@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-// The Vinaya harness mark itself — the same <canvas> painting LifecycleHarnessSection
+// The Vinaya harness mark itself — the same <canvas> painting HarnessDiagramSection
 // draws (box, bolts, VINAYA/HARNESS labels, branches merging into main), extracted so
 // other sections can drop in the real thing instead of a stand-in shape. No concept
 // badges here — those are specific to the lifecycle section's own copy.
@@ -76,7 +76,7 @@ export function HarnessCanvas({ className = '' }: { className?: string }) {
       // The harness frame itself (rail position, left/right edges) is fixed — only the
       // branches inside it (arc, below) and the concept badges animate. It used to
       // interpolate from an "open" box down to this closed geometry as you scrolled,
-      // which read as the whole harness contracting; LifecycleHarnessSection already
+      // which read as the whole harness contracting; HarnessDiagramSection already
       // targets this exact closed geometry for badge placement, so anchoring the frame
       // here permanently is the fix, not a new constant.
       const rail = half * 0.85

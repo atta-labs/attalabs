@@ -19,7 +19,7 @@ function DocCardHeader({
   badge: string
 }) {
   return (
-    <CardHeader className='flex-row items-center gap-2.5 border-b border-border px-4 py-3'>
+    <CardHeader className='flex-row flex-wrap items-center gap-2.5 border-b border-border px-4 py-3'>
       <Icon className='size-4 shrink-0 text-muted-foreground' />
       <span className='font-mono text-sm'>
         {title} {subtitle && <span className='text-muted-foreground'>{subtitle}</span>}
@@ -141,9 +141,9 @@ function CiDoc() {
 type StageIndex = 0 | 1 | 2
 
 const STAGES = [
-  { label: 'Decide first', dim: 'Plan on milestones', Doc: MilestoneDoc },
-  { label: 'Review again', dim: 'Small PRs', Doc: PullRequestDoc },
-  { label: 'Your CI', dim: 'Your checks', Doc: CiDoc }
+  { label: 'Readable issues', dim: 'before any code', Doc: MilestoneDoc },
+  { label: 'Small PRs', dim: 'you can actually review', Doc: PullRequestDoc },
+  { label: 'Your CI', dim: 'your checks beside ours', Doc: CiDoc }
 ] as const
 
 function scrollParent(element: HTMLElement): HTMLElement | Window {
@@ -160,8 +160,8 @@ export function OwnershipSection() {
   const sectionRef = useRef<HTMLElement>(null)
   const railFillRef = useRef<HTMLDivElement>(null)
   // phase mirrors the current scroll position, live in both directions —
-  // the list and the card track shrink back down scrolling up, same as
-  // they grow scrolling down.
+  // the card track steps back scrolling up, same as it steps forward
+  // scrolling down.
   const [phase, setPhase] = useState<StageIndex>(0)
 
   useEffect(() => {
@@ -235,16 +235,6 @@ export function OwnershipSection() {
             <SectionTitle className='mt-5'>
               <LetterReveal text='Own your code again' />
             </SectionTitle>
-            <div className='mt-6 flex flex-col gap-1.5'>
-              {STAGES.slice(0, phase + 1).map((stage) => (
-                <Text key={stage.label} className='font-serif text-2xl leading-none tracking-tight sm:text-3xl'>
-                  <LetterReveal text={stage.label} />{' '}
-                  <span className='text-secondary-foreground/65'>
-                    <LetterReveal text={stage.dim} delayStepMs={12} />
-                  </span>
-                </Text>
-              ))}
-            </div>
           </div>
 
           <div className='min-w-0'>

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { buildHarness, cssColor, cssNumber, token } from './harness-model'
+import { buildHarness, cssColor, cssNumber, readToken } from './harness-model'
 import { buildField } from './field-3d'
 import { buildBeam } from './underworld-beam'
 
@@ -64,7 +64,73 @@ function splitLetters(el, labelClass) {
   return [...el.querySelectorAll('i')]
 }
 
-export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} }) {
+/* Every design token the scene and its builders read, as one all-or-nothing snapshot, or
+   null while any of them can't be read. The root tokens are the ones harness-model.js's
+   retheme() re-reads (TOKENS there), plus --background and --foreground (the fabric ink's
+   source); the hero-scoped four are hero-core.css's derived ramp and fabric variables,
+   resolved off the hero element. */
+const ROOT_TOKENS = ['--background', '--foreground', '--primary', '--secondary', '--card', '--success']
+function readPalette(hero) {
+  const hex = {}
+  for (const name of ROOT_TOKENS) {
+    const v = readToken(name)
+    if (v == null) return null
+    hex[name] = v
+  }
+  try {
+    cssColor(hero, '--hero-core-shade')
+    cssColor(hero, '--hero-core-deep')
+    return {
+      bg: hex['--background'],
+      ink: hex['--primary'],
+      sand: hex['--secondary'],
+      card: hex['--card'],
+      fabricInk: cssColor(hero, '--hero-fabric-ink'),
+      fabricAlpha: cssNumber(hero, '--hero-fabric-alpha')
+    }
+  } catch {
+    return null
+  }
+}
+
+/* The hero never throws on a theme it can't read yet. Inside the admin preview frame
+   (/?preview=true) the theme arrives by postMessage and is painted onto <html>'s inline
+   style after this mounts (@atta/ui's PreviewThemeListener), so the scene waits for a
+   readable palette, re-checking whenever <html>'s style/class/data-theme or <head>'s
+   stylesheets change, and only then starts. There is no literal-colour fallback: until
+   the tokens read, the canvas stays unpainted over the section's own background. */
+export function mountHeroScene(opts) {
+  const hero = (opts.root ?? document).querySelector('[data-hero-viewport]')
+  let scene = null
+  let waiter = null
+  const tryStart = () => {
+    if (scene) return true
+    const palette = readPalette(hero)
+    if (!palette) return false
+    waiter?.disconnect()
+    waiter = null
+    scene = startHeroScene(opts, palette)
+    return true
+  }
+  if (!tryStart()) {
+    waiter = new MutationObserver(tryStart)
+    waiter.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] })
+    waiter.observe(document.head, { childList: true, subtree: true, characterData: true })
+  }
+  return {
+    applyTheme() {
+      scene?.applyTheme()
+    },
+    dispose() {
+      waiter?.disconnect()
+      waiter = null
+      scene?.dispose()
+      scene = null
+    }
+  }
+}
+
+function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palette) {
   const scope = root ?? document
   const track = scope.querySelector('[data-hero-track]')
   const hero = scope.querySelector('[data-hero-viewport]')
@@ -80,15 +146,10 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
   const L_SUB = splitLetters(subEl, labelClass)
   for (const l of [...L_H1A, ...L_H1B, ...L_SUB]) l.style.transition = 'none'
 
-  /* every colour comes from the theme; token() throws if one is missing */
-  let bg = token('--background')
-  let ink = token('--primary')
-  let sand = token('--secondary')
-  let card = token('--card')
-  /* the fabric's ink and strength are hero-scoped CSS variables (hero-core.css), resolved
-     off the hero element so the dark-scheme values apply */
-  let fabricInk = cssColor(hero, '--hero-fabric-ink')
-  let fabricAlpha = cssNumber(hero, '--hero-fabric-alpha')
+  /* every colour comes from the theme, read once by mountHeroScene's readPalette(). The
+     fabric's ink and strength are hero-scoped CSS variables (hero-core.css), resolved off
+     the hero element so the dark-scheme values apply */
+  let { bg, ink, sand, card, fabricInk, fabricAlpha } = palette
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, stencil: true })
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))
@@ -163,7 +224,7 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
     // at 0.07 alpha, per-fragment cel terminator, collar contact, centre lifted 0.13R → 0.22R.
     // See harness-model.js's main block for what each does. Defaults there are inert.
     const harnessOpts = { tokenRoot: hero, core: { wire: 0.07, ramp: 'deep', contact: true, lift: 0.22 } }
-    buildHarness(THREE, harnessOpts).then((harness) => {
+    const building = buildHarness(THREE, harnessOpts).then((harness) => {
       if (cancelled || disposed) return
       const field = buildField(THREE, {
         ink: fabricInk,
@@ -317,6 +378,11 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
         })
       }
     })
+    /* a build that throws must never surface as an unhandled rejection, nor leave the
+       page scroll-locked behind a hero that will never finish building */
+    building.catch(() => {
+      if (scrollHost) scrollHost.classList.remove('overflow-hidden')
+    })
     cleanupBuild = () => {
       cancelled = true
     }
@@ -328,12 +394,11 @@ export function mountHeroScene({ canvas, root, labelClass, onReady = () => {} })
      is wrong. Each module owns a retheme() that re-reads the tokens and repaints its own
      colours, uniforms and label textures; geometry and animation state are untouched. */
   function applyTheme() {
-    bg = token('--background')
-    ink = token('--primary')
-    sand = token('--secondary')
-    card = token('--card')
-    fabricInk = cssColor(hero, '--hero-fabric-ink')
-    fabricAlpha = cssNumber(hero, '--hero-fabric-alpha')
+    /* a half-applied theme (a preview frame mid-swap) keeps the current palette; the
+       observer fires again once the rest of the tokens land */
+    const next = readPalette(hero)
+    if (!next) return
+    ;({ bg, ink, sand, card, fabricInk, fabricAlpha } = next)
     scene.background = new THREE.Color(bg)
     renderer.setClearColor(bg, 1)
     if (!live) return

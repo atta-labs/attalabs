@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Card } from '@atta/ui/components'
+import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowDown, ArrowUpRight, Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -87,9 +87,9 @@ export function CommandCopy({ command }: { command: string }) {
       type='button'
       variant='outline'
       onClick={copy}
-      className='h-auto gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
+      className='h-auto max-w-full gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
     >
-      <span className='whitespace-nowrap'>{command}</span>
+      <span className='min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]'>{command}</span>
       <span className='flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground'>
         {copied ? <Check className='size-4' /> : <Copy className='size-4' />}
         {copied ? 'copied' : 'copy'}
@@ -98,63 +98,20 @@ export function CommandCopy({ command }: { command: string }) {
   )
 }
 
-export function CommandLinkChip({ href, label, command }: { href: string; label: string; command: string }) {
+// The zero-lock-in pair: the same copy box as "Start in your repo", with its label linking to
+// the command's docs page so the copy target and the reference stay one tap apart.
+export function LabeledCommandCopy({ href, label, command }: { href: string; label: string; command: string }) {
   return (
-    <NextLink
-      href={href}
-      variant='unstyled'
-      className='group flex w-full flex-col items-center gap-2.5 text-center sm:w-auto sm:items-start sm:text-left'
-    >
-      <span className='font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground'>{label}</span>
-      <Card className='px-7 transition-colors group-hover:border-foreground'>
-        <span className='flex items-center gap-3 font-mono text-xl whitespace-nowrap sm:text-2xl'>
-          {command}
-          <ArrowUpRight className='size-7 shrink-0 text-muted-foreground' />
-        </span>
-      </Card>
-    </NextLink>
-  )
-}
-
-export function EnforcementRatio({ value }: { value: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [display, setDisplay] = useState(value)
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-    let animationFrame = 0
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
-        observer.disconnect()
-        const startedAt = performance.now()
-        const tick = (now: number) => {
-          const progress = Math.min(1, (now - startedAt) / 1500)
-          const eased = 1 - (1 - progress) ** 4
-          setDisplay(Math.round(value * eased))
-          if (progress < 1) animationFrame = requestAnimationFrame(tick)
-        }
-        setDisplay(0)
-        animationFrame = requestAnimationFrame(tick)
-      },
-      { threshold: 0.35 }
-    )
-
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-      cancelAnimationFrame(animationFrame)
-    }
-  }, [value])
-
-  return (
-    <div
-      ref={ref}
-      className='mt-12 font-serif text-8xl leading-none tracking-tighter tabular-nums sm:text-9xl lg:text-[9.375rem]'
-    >
-      {display}%
+    <div className='flex w-full min-w-0 max-w-full flex-col items-center gap-2.5 lg:w-auto'>
+      <NextLink
+        href={href}
+        variant='unstyled'
+        className='group inline-flex items-center gap-1 font-mono text-sm uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground'
+      >
+        {label}
+        <ArrowUpRight className='size-4 shrink-0' />
+      </NextLink>
+      <CommandCopy command={command} />
     </div>
   )
 }

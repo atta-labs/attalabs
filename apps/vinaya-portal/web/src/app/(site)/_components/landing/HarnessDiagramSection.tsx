@@ -15,7 +15,7 @@ import { useEffect, useRef } from 'react'
 import { LetterReveal } from '../LetterReveal'
 import { HarnessCanvas } from './HarnessCanvas'
 import { LandingSection } from './LandingSection'
-import { SectionOverline, SectionTitle } from './SectionHeading'
+import { SectionTitle } from './SectionHeading'
 
 // One flat, single-height row, inside the box — no per-badge alignment to a specific
 // branch, no stacked levels. Order is the only thing that carries meaning (the sequence
@@ -50,7 +50,7 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
   return window
 }
 
-export function LifecycleHarnessSection() {
+export function HarnessDiagramSection() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const conceptRefs = useRef<Array<HTMLSpanElement | null>>([])
 
@@ -232,15 +232,12 @@ export function LifecycleHarnessSection() {
 
   return (
     <LandingSection background='bg-background text-foreground'>
-      <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
-      <SectionTitle className='mt-4'>
+      {/* A brand-mark pause after the stages and the ownership UI: the title and the
+          harness drawing only — no overline or stage labels, which the lifecycle
+          section above already carries. */}
+      <SectionTitle>
         <LetterReveal text='Your GitHub, perfectly structured' />
       </SectionTitle>
-      <div className='mt-10 flex flex-wrap gap-8 border-t border-border pt-3 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground'>
-        <span>01 plan a milestone</span>
-        <span>02 solve its tasks</span>
-        <span>03 archive a milestone</span>
-      </div>
       {/* Back to h-[70vh] alone: the box itself is deliberately tall on mobile — that height
           is the scroll RUNWAY the entry/exit progress math needs (a short box completes its
           whole entry→exit viewport-fraction window in a few pixels of scroll, so the
