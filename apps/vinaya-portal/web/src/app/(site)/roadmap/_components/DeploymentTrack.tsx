@@ -195,19 +195,33 @@ function MilestoneVisual({ artwork }: { artwork: MilestoneArtwork }) {
   return (
     <div
       aria-hidden
-      // Icon-sized (fixed height, aspect-ratio sets the width) at desktop; below the
-      // harness breakpoint it becomes a full-width banner instead (height following
-      // width via the same aspect-ratio) — the marks are 4:3 rectangles on purpose so
-      // they read well at that size, not just as a cropped icon.
-      className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent max-[52.5rem]:h-auto max-[52.5rem]:w-full max-[52.5rem]:shrink'
+      // Icon-sized at every width: a fixed height, with the aspect ratio setting the
+      // width. A full-width banner below the breakpoint made each card several times
+      // taller than its desktop counterpart, so the card keeps one compact design.
+      className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent'
     >
       {artwork.kind === 'svg' ? (
         // The card's own CMS SVG, inlined so it reads the theme tokens and runs
         // `marks-motion.css`'s keyframes (an `<img>` is a separate document and could
         // do neither). `markup` was sanitized on the server (`_lib/sanitize-svg.ts`)
         // before it reached this client component. The uploaded root carries a fixed
-        // `width`/`height`; `[&>svg]:size-full` fits it to this box via its `viewBox`.
-        <div className='size-full [&>svg]:size-full' dangerouslySetInnerHTML={{ __html: artwork.markup }} />
+        // `width`/`height`; `[&>svg]:size-full` alone fits it to this box via its
+        // `viewBox` ONLY where the engine treats this wrapper's `aspect-[4/3]`-derived
+        // height as a definite size for percentage resolution — Chromium does, but that
+        // is not the reliably cross-engine part of the spec, so on an engine that
+        // instead falls back to `height:auto` there, `height:100%` on this div (and in
+        // turn on the injected `<svg>`) resolves to nothing, and both collapse to the
+        // svg's own raw `width`/`height` attributes (e.g. 400×300) — the exact
+        // "renders too large for its container" overflow this box exists to prevent.
+        // `absolute inset-0` sidesteps that: an absolutely positioned box's size comes
+        // from its containing block's padding box directly, a codepath every engine
+        // resolves the same way regardless of how that box's own height was derived.
+        // Same fix `next/image`'s `fill` (the `kind === 'image'` branch below) already
+        // gets for free; this mirrors it for the inlined-SVG path by hand.
+        <div
+          className='absolute inset-0 [&>svg]:absolute [&>svg]:inset-0 [&>svg]:size-full'
+          dangerouslySetInnerHTML={{ __html: artwork.markup }}
+        />
       ) : artwork.kind === 'image' ? (
         <Image src={artwork.url} alt='' fill sizes='85px' className='object-cover' />
       ) : (
@@ -517,7 +531,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
           effect above, so the two stay in sync with zero bookkeeping here. Must come
           BEFORE the beam in source so the beam paints over the deck's aperture gap
           instead of under it. */}
-        <div aria-hidden className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[1.125rem]'>
+        <div aria-hidden className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[3.375rem]'>
           <div className='absolute top-[-1.375rem] left-[-2.125rem] h-[4.25rem] w-[4.25rem] rounded-full opacity-[calc(0.22+0.78*var(--v,0))] motion-reduce:opacity-[0.22] bg-[radial-gradient(circle,color-mix(in_oklab,var(--primary)_32%,transparent)_0%,transparent_62%)]' />
           <svg
             viewBox='0 0 200 124'
@@ -574,7 +588,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
         <div
           ref={beamOuterRef}
           aria-hidden
-          className='pointer-events-none absolute top-0 left-1/2 h-0 w-5 -translate-x-1/2 overflow-hidden max-[52.5rem]:left-2 max-[52.5rem]:translate-x-0'
+          className='pointer-events-none absolute top-0 left-1/2 h-0 w-5 -translate-x-1/2 overflow-hidden max-[52.5rem]:left-[2.75rem] max-[52.5rem]:translate-x-0'
         >
           <div
             ref={beamInnerRef}
@@ -591,19 +605,22 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
           it sits on top of its own glow. Only the nose is static; the other three read
           `--v` for opacity/scale, so the "atmosphere" is earned by scroll speed instead of
           looping. Positioned like `beamOuter`: `left-1/2` desktop, the beam's own mobile
-          centerline (`1.125rem`, see the junction's comment) below the breakpoint — a
+          centerline (`3.375rem`, see the junction's comment) below the breakpoint — a
           zero-width box needs no `-translate-x-1/2` correction the way a wide one would. */}
         <div
           ref={headRef}
           aria-hidden
-          className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[1.125rem]'
+          className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[3.375rem]'
         >
           <div ref={atmoRef}>
             <div className='absolute top-[-2.75rem] left-[-6.5rem] h-[13rem] w-[13rem] rounded-full opacity-[calc(0.16+0.84*var(--v,0))] scale-[calc(0.72+0.44*var(--v,0))] motion-reduce:hidden bg-[radial-gradient(circle,color-mix(in_oklab,var(--primary)_40%,transparent)_0%,color-mix(in_oklab,var(--primary)_11%,transparent)_38%,transparent_66%)]' />
             <div className='absolute top-[-7rem] left-[-0.5625rem] h-[7rem] w-[1.125rem] opacity-[var(--v,0)] motion-reduce:hidden bg-[linear-gradient(to_top,color-mix(in_oklab,var(--primary)_58%,transparent),transparent)]' />
             <svg
               viewBox='0 0 140 100'
-              className='absolute top-[0.125rem] left-[-4.375rem] h-[6.25rem] w-[8.75rem] opacity-[calc(0.2+0.8*var(--v,0))]'
+              // Scaled down below the breakpoint about its own top-center, so the arcs'
+              // 4.375rem half-width fits inside the mobile centerline instead of running
+              // off the viewport's left edge.
+              className='absolute top-[0.125rem] left-[-4.375rem] h-[6.25rem] w-[8.75rem] origin-top opacity-[calc(0.2+0.8*var(--v,0))] max-[52.5rem]:scale-75'
               fill='none'
             >
               <path
@@ -684,17 +701,22 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
             >
               <div
                 aria-hidden
-                // `max-[52.5rem]:left-[1.125rem]` is the beam's own mobile CENTERLINE, not
-                // its left edge — the beam is a narrow `w-5` (1.25rem) box at `left-2`
-                // (0.5rem), so its center sits at 0.5rem + 1.25rem/2 = 1.125rem. A first
-                // pass copied the beam's `left-2` verbatim onto this box, which matched
+                // `max-[52.5rem]:left-[3.375rem]` is the beam's own mobile CENTERLINE, not
+                // its left edge — the beam is a narrow `w-5` (1.25rem) box at
+                // `left-[2.75rem]`, so its center sits at 2.75rem + 1.25rem/2 = 3.375rem.
+                // That centerline is set by the widest thing hanging off it, the launchpad:
+                // its `scale-50` deck is 6.25rem wide, so a 3.125rem half-width plus a
+                // 0.25rem margin keeps the pad (and the narrower rocket nose) inside the
+                // viewport's left edge — a centerline hugging the gutter clips them, and
+                // the page's `overflow-x-hidden` hides that as a cut-off, not a scrollbar.
+                // A first pass copied the beam's left offset verbatim onto this box, which matched
                 // their LEFT EDGES instead of their centers — fine for the beam's own
                 // narrow width, but this wrapper is a much wider `size-10` (2.5rem) box, so
                 // matching left edges pushed its true center well to the right of the beam.
                 // `-translate-x-1/2` stays active at every breakpoint (only the anchor
                 // changes) so a wide box centers on a POINT the same way it does on
                 // desktop, rather than left-aligning to one.
-                className='absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2 opacity-[var(--b,0)] scale-[calc(0.74+0.26*var(--b,0))] max-[52.5rem]:left-[1.125rem] motion-reduce:scale-100 motion-reduce:opacity-100'
+                className='absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2 opacity-[var(--b,0)] scale-[calc(0.74+0.26*var(--b,0))] max-[52.5rem]:left-[3.375rem] motion-reduce:scale-100 motion-reduce:opacity-100'
               >
                 <JunctionGlyph />
               </div>
@@ -711,9 +733,11 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                 // Deriving it from the polygon's own coordinates instead of a tuned
                 // constant is what keeps this from drifting out of sync again. The mobile
                 // value is the SAME hex half-width added to the beam's mobile centerline
-                // (1.125rem, see the junction wrapper above) — the hex's real size doesn't
+                // (3.375rem, see the junction wrapper above) — the hex's real size doesn't
                 // change between breakpoints, only where the beam's centerline sits does.
-                className='pointer-events-none absolute top-1/2 left-[calc(50%+0.974375rem)] h-5 -translate-y-1/2 overflow-hidden [--spur-len:2.9375rem] w-[calc(var(--spur-len)*var(--a,0))] max-[52.5rem]:left-[2.099375rem] max-[52.5rem]:[--spur-len:5.3125rem] motion-reduce:w-[var(--spur-len)]'
+                // The mobile spur length is what's left between that start and the panel's
+                // fixed margin, so moving the centerline never moves or narrows the cards.
+                className='pointer-events-none absolute top-1/2 left-[calc(50%+0.974375rem)] h-5 -translate-y-1/2 overflow-hidden [--spur-len:2.9375rem] w-[calc(var(--spur-len)*var(--a,0))] max-[52.5rem]:left-[4.349375rem] max-[52.5rem]:[--spur-len:3.0625rem] motion-reduce:w-[var(--spur-len)]'
               >
                 <div className='absolute top-0 left-0 h-5 w-[var(--spur-len)] border-y-2 border-foreground bg-[repeating-linear-gradient(to_right,var(--foreground)_0_1px,transparent_1px_26px)]' />
               </div>
@@ -724,11 +748,16 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                   // below; `--c` drives just opacity, never a translate.
                   'opacity-[var(--c,0)] motion-reduce:opacity-100',
                   // Panel margin = spur's own start offset (0.974375rem desktop /
-                  // 2.099375rem mobile) + its length (2.9375rem desktop / 5.3125rem
+                  // 4.349375rem mobile) + its length (2.9375rem desktop / 3.0625rem
                   // mobile) — derived from the SAME geometry the spur itself uses, not an
                   // approximated constant, so the panel always lands exactly where the
                   // spur ends instead of leaving a gap.
                   'ml-[calc(50%+3.911875rem)] max-[52.5rem]:ml-[7.411875rem]',
+                  // Below the breakpoint the panel would otherwise run from the spur to the
+                  // viewport's right edge — ~700px wide just under 840px, and flush against
+                  // the edge on a phone. `max-w-[24rem]` keeps it a compact reading column
+                  // and `mr-4` keeps a gutter.
+                  'max-[52.5rem]:mr-4 max-[52.5rem]:max-w-[24rem]',
                   // Un-mirror just the panel's own rendering — its LAYOUT POSITION (the
                   // margin above) still comes from the flipped ancestor, which is what
                   // lands it on the correct side; only its painted content (the Card and
@@ -740,16 +769,12 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
               >
                 <Card>
                   <CardHeader>
-                    {/* Below the harness breakpoint the mark goes full-width BELOW the
-                      title/version row instead of a small icon beside it — the marks are
-                      deliberately 4:3 rectangles precisely so they read well at that
-                      width, not just as a small icon crop. `order-2` (mobile) puts the
-                      mark after the text block despite coming first in markup, matching
-                      the desktop reading order (icon, then title) without duplicating
-                      either block. */}
-                    <Flex align='center' gap={4} className='max-[52.5rem]:flex-col max-[52.5rem]:items-stretch'>
+                    {/* Icon beside the title at every width. Only on a narrow phone
+                      (under 480px), where the icon would squeeze the title to a sliver,
+                      does the icon stack above the title instead. */}
+                    <Flex align='center' gap={4} className='max-[30rem]:flex-col max-[30rem]:items-start'>
                       <MilestoneVisual artwork={item.artwork} />
-                      <Flex direction='column' gap={1} className='min-w-0 max-[52.5rem]:order-first'>
+                      <Flex direction='column' gap={1} className='min-w-0'>
                         <CardTitle
                           className={`font-serif text-xl font-normal text-foreground ${
                             item.status === 'dropped' ? 'line-through' : ''
