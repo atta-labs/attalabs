@@ -70,19 +70,6 @@ function PhaseLabel({ active, children }: { active: boolean; children: React.Rea
   )
 }
 
-function BulletList({ items }: { items: readonly string[] }) {
-  return (
-    <ul className='mt-5 flex flex-col gap-2.5'>
-      {items.map((item) => (
-        <li key={item} className='flex items-baseline gap-3 font-sans text-lg leading-tight tracking-tight'>
-          <span className='size-1.5 shrink-0 -translate-y-0.5 rounded-full bg-foreground' />
-          {item}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 function ObjectCard({
   icon: Icon,
   children,
@@ -116,7 +103,6 @@ function StageShell({
   index,
   title,
   headline,
-  bullets,
   badge,
   active,
   stageRef,
@@ -125,7 +111,6 @@ function StageShell({
   index: string
   title: string
   headline: React.ReactNode
-  bullets: readonly string[]
   badge: string
   active: boolean
   stageRef: RefObject<HTMLElement | null>
@@ -145,7 +130,6 @@ function StageShell({
         <Heading level={3} weight='normal' className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl'>
           {headline}
         </Heading>
-        <BulletList items={bullets} />
         <GitHubBadge>{badge}</GitHubBadge>
       </div>
       <div className='mt-7 flex min-h-52 flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
@@ -167,7 +151,6 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
           Its issues
         </>
       }
-      bullets={['One milestone', 'One issue per task']}
       badge='milestone + issues'
       active={active}
       stageRef={stageRef}
@@ -211,7 +194,6 @@ function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject
           One pull request
         </>
       }
-      bullets={['One branch', 'One pull request']}
       badge='branch + pull request'
       active={active}
       stageRef={stageRef}
@@ -275,7 +257,6 @@ function ArchiveStage({
           Then the milestone
         </>
       }
-      bullets={['Nothing by hand', 'Closes when the last task lands']}
       badge='milestone closed'
       active={active}
       stageRef={stageRef}
