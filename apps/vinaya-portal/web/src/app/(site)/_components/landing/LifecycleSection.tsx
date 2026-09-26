@@ -2,8 +2,8 @@
 
 import { Badge, Card, CardContent } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Heading, Text } from '@atta/ui/shared'
-import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, RotateCcw, User } from 'lucide-react'
+import { Heading } from '@atta/ui/shared'
+import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, User } from 'lucide-react'
 import {
   useEffect,
   useRef,
@@ -29,8 +29,7 @@ type StageIndex = 0 | 1 | 2
 const ISSUE_DELAYS = ['delay-[140ms]', 'delay-[260ms]', 'delay-[380ms]'] as const
 const LANE_DELAYS = [
   ['delay-0', 'delay-[160ms]', 'delay-[320ms]'],
-  ['delay-[100ms]', 'delay-[340ms]', 'delay-[580ms]'],
-  ['delay-[50ms]', 'delay-[240ms]', 'delay-[440ms]']
+  ['delay-[100ms]', 'delay-[340ms]', 'delay-[580ms]']
 ] as const
 const BACK_DELAYS = ['delay-0', 'delay-[100ms]', 'delay-[200ms]'] as const
 
@@ -182,7 +181,7 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
 }
 
 function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
-  const lanes = [471, 472, 473] as const
+  const lanes = [471, 472] as const
   return (
     <StageShell
       index='02'
@@ -289,9 +288,6 @@ function ArchiveStage({
             </div>
           ))}
         </div>
-        <Text className='mt-1 flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground'>
-          <RotateCcw className='size-3' /> the next one opens
-        </Text>
       </div>
     </StageShell>
   )
