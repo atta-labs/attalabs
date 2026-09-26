@@ -127,7 +127,7 @@ function StageShell({
     <RefCard
       ref={stageRef}
       data-active={active}
-      className='group/stage flex min-h-[42rem] flex-col px-7 py-8 shadow-none min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-4'
+      className='group/stage flex flex-col px-7 py-8 shadow-none min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-4'
     >
       <div className='flex flex-col'>
         <div className='flex items-baseline gap-3 font-mono uppercase'>
@@ -143,7 +143,7 @@ function StageShell({
         </Heading>
         <GitHubBadge>{badge}</GitHubBadge>
       </div>
-      <div className='mt-7 flex min-h-52 flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
+      <div className='mt-7 flex flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-h-52 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
         {children}
       </div>
     </RefCard>
