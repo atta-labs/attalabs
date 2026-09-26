@@ -181,8 +181,8 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
      once at the top of `frame()` guarantees at most one `setSize()` per rendered frame,
      and that it is always immediately followed by a `render()` in the same tick — no
      cleared-but-unpainted frame can ever reach the screen. (A damped scroll-progress value
-     was tried first and shipped separately; it does not touch this — the canvas went blank
-     at scroll position zero, where the camera never moves.) */
+     was tried first, in an earlier commit on this same still-unmerged PR; it does not touch
+     this — the canvas went blank at scroll position zero, where the camera never moves.) */
   let resizePending = false
   const resizeObserver = new ResizeObserver(() => {
     resizePending = true
