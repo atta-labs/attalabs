@@ -419,14 +419,16 @@ export function LifecycleSection() {
       }
 
       syncTrackOffset()
-      // Progress starts when the section's top — the tagline, not the pinned
-      // stage block below it — reaches the viewport top. The section is taller
-      // than the pinned runway by exactly the tagline's own height, so that
-      // height comes back out of `travel`: the tabs and rail advance over the
-      // same scroll distance as the runway itself, and hold their end state for
-      // the tagline's height at the bottom of the pin instead of stretching.
-      const taglineHeight = taglineRef.current?.offsetHeight ?? 0
-      const travel = Math.max(1, rect.height - taglineHeight - (viewportHeight - 64))
+      // Progress starts when the section's top — the intro block above the pin,
+      // not the pinned runway below it — reaches the viewport top. The section
+      // is taller than the pinned runway by exactly the intro block's own
+      // height, so that height comes back out of `travel`: the tabs and rail
+      // advance over the same scroll distance as the runway itself, and hold
+      // their end state for the intro block's height at the bottom of the pin
+      // instead of stretching. This is height-based only — it holds regardless
+      // of which heading the intro block or the pinned runway show.
+      const introHeight = taglineRef.current?.offsetHeight ?? 0
+      const travel = Math.max(1, rect.height - introHeight - (viewportHeight - 64))
       const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
       trackAnimation.currentTime = progress * 1000
       railAnimation.currentTime = progress * 1000
@@ -471,9 +473,11 @@ export function LifecycleSection() {
 
   return (
     <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground'>
-      {/* The tagline scrolls normally at the top of this section, so the scroll
-          math above (keyed off the section's own rect) starts at the tagline.
-          Only the stage block below it pins. */}
+      {/* This intro heading scrolls normally at the top of the section, so the
+          scroll math above (keyed off the section's own rect) starts here.
+          Only the stage runway below it pins — and once pinned, its own
+          heading (below) is what stays fixed at the top of the viewport
+          throughout the scroll-through. */}
       <LandingSection
         ref={taglineRef}
         id='tagline'
@@ -481,17 +485,16 @@ export function LifecycleSection() {
         py='compact'
         center
       >
-        <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
-          <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
-            <LetterReveal text='A harness for your software engineering process' />
-          </span>
-          <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
-            with GitHub as the only source of truth.
-          </span>
-        </Heading>
+        <SectionTitle className='mx-auto max-w-5xl text-balance'>
+          <LetterReveal text='Plan, solve, archive' />
+        </SectionTitle>
+        <Text className='mx-auto mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
+          The same three stages, every time you ship.
+        </Text>
       </LandingSection>
       {/* The pinned runway keeps its own 300dvh, so the section grows by exactly
-          the tagline's rendered height and the pin still spans the same distance. */}
+          the intro block's rendered height and the pin still spans the same
+          distance. */}
       <div className='min-[700px]:h-[300dvh]'>
         <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
           <div className='flex flex-wrap items-baseline justify-between gap-5'>
@@ -508,14 +511,14 @@ export function LifecycleSection() {
             <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
               <GitHubMark className='size-9 md:size-12' />
             </Card>
-            <div>
-              <SectionTitle className='max-w-5xl'>
-                <LetterReveal text='Plan, solve, archive' />
-              </SectionTitle>
-              <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
-                The same three stages, every time you ship.
-              </Text>
-            </div>
+            <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
+              <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
+                <LetterReveal text='A harness for your software engineering process' />
+              </span>
+              <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
+                with GitHub as the only source of truth.
+              </span>
+            </Heading>
           </div>
 
           <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex'>
