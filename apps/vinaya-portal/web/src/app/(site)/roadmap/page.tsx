@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { getPublishedVersion } from '@/lib/published-version'
 import { DeploymentTrack, type DeploymentTrackItem } from './_components/DeploymentTrack'
 import { deriveStatus } from './_lib/derive-status'
+import { resolveArtwork } from './_lib/resolve-artwork'
 import { sortMilestones } from './_lib/sort-milestones'
 
 export const metadata: Metadata = {
@@ -48,18 +49,24 @@ export default async function RoadmapPage() {
   // ordering it needs the same per-segment numeric compare `deriveStatus` uses —
   // something GROQ's string `order()` cannot express (it would put "0.19.10"
   // before "0.19.3"). See `_lib/sort-milestones.ts` for the rule.
+  //
+  // Each card's artwork is resolved here, on the server — fetched, SVG-sniffed and
+  // sanitized (`_lib/resolve-artwork.ts`) — so the client track only ever receives
+  // markup that is already safe to inline, and the sanitizer never ships to the browser.
   const items: DeploymentTrackItem[] | null =
     milestones === null
       ? null
-      : sortMilestones(milestones).map((milestone) => ({
-          id: milestone._id,
-          title: milestone.title,
-          version: milestone.version,
-          description: milestone.description,
-          truth: milestone.truth,
-          status: deriveStatus(milestone, publishedVersion),
-          image: milestone.image
-        }))
+      : await Promise.all(
+          sortMilestones(milestones).map(async (milestone) => ({
+            id: milestone._id,
+            title: milestone.title,
+            version: milestone.version,
+            description: milestone.description,
+            truth: milestone.truth,
+            status: deriveStatus(milestone, publishedVersion),
+            artwork: await resolveArtwork(milestone.image)
+          }))
+        )
 
   return (
     // `w-full`, no `max-w`/`mx-auto` here — this page's fabric backdrop lives on

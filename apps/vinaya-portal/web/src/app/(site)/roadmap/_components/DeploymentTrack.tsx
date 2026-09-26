@@ -7,18 +7,11 @@ import { Flex, Text } from '@atta/ui/shared'
 import { ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
-import type { ComponentType, SVGProps } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
 import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
 import { clamp01, computeCardStageProgress, computeDeployedPx } from '../_lib/deployment-progress'
 import '../marks-motion.css'
-import MilestoneLayerMark from '../_marks/0.19.0-milestone-layer.svg'
-import DeterminismHardeningMark from '../_marks/0.20.0-determinism-hardening.svg'
-import AgenticInterfaceMark from '../_marks/0.21.0-agentic-interface.svg'
-import ReviewThatAnswersItselfMark from '../_marks/0.22.0-review-that-answers-itself.svg'
-import TaskFinishesItselfMark from '../_marks/0.23.0-task-finishes-itself.svg'
-import TrancheFinishesItselfMark from '../_marks/0.24.0-tranche-finishes-itself.svg'
-import MilestoneFinishesItselfMark from '../_marks/1.0.0-milestone-finishes-itself.svg'
+import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 
 // Deployment harness (designer handoff) — a scroll-linked "install" animation
 // wrapping the existing card design, not a new card design. Contract from the
@@ -44,7 +37,7 @@ import MilestoneFinishesItselfMark from '../_marks/1.0.0-milestone-finishes-itse
 // no Tailwind equivalent" case RULE 3 already carves out, done through the
 // DOM rather than a JSX `style` prop so no inline style ever appears in
 // markup. Colors are semantic tokens or `var(--foreground)`/`var(--background)`
-// SVG presentation attributes, matching how the milestone marks above already
+// SVG presentation attributes, matching how the inlined CMS milestone marks
 // theme themselves — no hardcoded colors either way.
 const CONFIG = {
   beamLine: 62, // % down the viewport the beam tip rides
@@ -183,16 +176,6 @@ function drawPadCrackle(
   ctx.globalAlpha = 1
 }
 
-const MARK_BY_VERSION: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
-  '0.19.0': MilestoneLayerMark,
-  '0.20.0': DeterminismHardeningMark,
-  '0.21.0': AgenticInterfaceMark,
-  '0.22.0': ReviewThatAnswersItselfMark,
-  '0.23.0': TaskFinishesItselfMark,
-  '0.24.0': TrancheFinishesItselfMark,
-  '1.0.0': MilestoneFinishesItselfMark
-}
-
 const STATUS_META: Record<RoadmapMilestone['status'], { label: string; badgeClass: string }> = {
   shipping: { label: 'Shipped', badgeClass: 'text-success border-success/40' },
   planned: { label: 'Planned', badgeClass: 'text-primary border-primary/40' },
@@ -208,18 +191,7 @@ function StatusBadge({ status }: { status: RoadmapMilestone['status'] }) {
   )
 }
 
-function MilestoneVisual({ version, image }: { version: string | null; image: RoadmapMilestone['image'] }) {
-  const Mark = version ? MARK_BY_VERSION[version] : undefined
-  // `MARK_BY_VERSION` is hand-typed against the versions this ladder currently ships
-  // marks for, with no link back to the CMS's free-text `version` field. `version` is
-  // null for every milestone that hasn't shipped yet (never a predicted/target number —
-  // see the schema) — that is the expected, common case this falls through to `image`
-  // for, not a defect, so it warns only when a REAL version string names no mark: an
-  // editor typo, or a newly-shipped milestone whose mark hasn't been added yet.
-  if (version && !Mark && process.env.NODE_ENV !== 'production') {
-    console.warn(`[roadmap] no mark registered for version "${version}" in MARK_BY_VERSION`)
-  }
-
+function MilestoneVisual({ artwork }: { artwork: MilestoneArtwork }) {
   return (
     <div
       aria-hidden
@@ -229,10 +201,15 @@ function MilestoneVisual({ version, image }: { version: string | null; image: Ro
       // they read well at that size, not just as a cropped icon.
       className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent max-[52.5rem]:h-auto max-[52.5rem]:w-full max-[52.5rem]:shrink'
     >
-      {Mark ? (
-        <Mark className='mm size-full' />
-      ) : image?.url ? (
-        <Image src={image.url} alt='' fill sizes='85px' className='object-cover' />
+      {artwork.kind === 'svg' ? (
+        // The card's own CMS SVG, inlined so it reads the theme tokens and runs
+        // `marks-motion.css`'s keyframes (an `<img>` is a separate document and could
+        // do neither). `markup` was sanitized on the server (`_lib/sanitize-svg.ts`)
+        // before it reached this client component. The uploaded root carries a fixed
+        // `width`/`height`; `[&>svg]:size-full` fits it to this box via its `viewBox`.
+        <div className='size-full [&>svg]:size-full' dangerouslySetInnerHTML={{ __html: artwork.markup }} />
+      ) : artwork.kind === 'image' ? (
+        <Image src={artwork.url} alt='' fill sizes='85px' className='object-cover' />
       ) : (
         <Flex align='center' justify='center' className='size-full text-accent-foreground'>
           <ImageIcon className='size-6' />
@@ -274,7 +251,7 @@ export type DeploymentTrackItem = {
   description: string
   truth: string
   status: RoadmapMilestone['status']
-  image: RoadmapMilestone['image']
+  artwork: MilestoneArtwork
 }
 
 export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
@@ -771,7 +748,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                       the desktop reading order (icon, then title) without duplicating
                       either block. */}
                     <Flex align='center' gap={4} className='max-[52.5rem]:flex-col max-[52.5rem]:items-stretch'>
-                      <MilestoneVisual version={item.version} image={item.image} />
+                      <MilestoneVisual artwork={item.artwork} />
                       <Flex direction='column' gap={1} className='min-w-0 max-[52.5rem]:order-first'>
                         <CardTitle
                           className={`font-serif text-xl font-normal text-foreground ${
