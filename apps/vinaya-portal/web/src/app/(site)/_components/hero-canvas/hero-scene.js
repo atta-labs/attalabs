@@ -168,7 +168,25 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
     camera.aspect = hero.clientWidth / hero.clientHeight
     camera.updateProjectionMatrix()
   }
-  const resizeObserver = new ResizeObserver(resize)
+  /* THE ACTUAL FLICKER FIX. A live window drag fires the ResizeObserver far faster than
+     once per rendered frame — every size the browser lays out during the drag, not once
+     per vsync. `renderer.setSize()` reallocates the WebGL drawing buffer (and, at this
+     canvas's antialias+devicePixelRatio, its multisample renderbuffers), which is not
+     free; calling it synchronously from the observer callback let a burst of resize
+     notifications run several of these reallocations back to back with no `render()` call
+     landing in between. A freshly resized canvas is spec-cleared to transparent until the
+     next draw, so a burst like that held the canvas on that cleared frame for the whole
+     burst — visibly the harness and fabric vanishing, then snapping back once the drag
+     paused and a render finally landed. Deferring the actual resize into a flag consumed
+     once at the top of `frame()` guarantees at most one `setSize()` per rendered frame,
+     and that it is always immediately followed by a `render()` in the same tick — no
+     cleared-but-unpainted frame can ever reach the screen. (A damped scroll-progress value
+     was tried first, in an earlier commit on this same still-unmerged PR; it does not touch
+     this — the canvas went blank at scroll position zero, where the camera never moves.) */
+  let resizePending = false
+  const resizeObserver = new ResizeObserver(() => {
+    resizePending = true
+  })
   resizeObserver.observe(hero)
 
   const target = new THREE.Vector3()
@@ -282,6 +300,20 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
       let last = t0
       let firedWave = false
       let firedArrival = false
+      /* progress() reads the track's live rect: `travel = trackHeight - hero.clientHeight`,
+         both of which move with the viewport's height (the track is `320vh`, the hero
+         `h-dvh`). Resizing the window changes `travel` on every layout pass while the
+         actual scrolled distance in pixels does not rescale with it, so at any nonzero
+         scroll offset `progress()` returns a different number the instant the window's
+         height changes, snapping the camera a step every such layout pass. `pSmooth`
+         chases the raw signal instead of tracking it exactly, so that step becomes a few
+         frames of motion instead of a jump — real, but only when scrolled partway into the
+         hero; at scroll position zero (`progress()` pinned at `0` either side of the
+         resize) this has nothing to smooth. It is NOT the flicker reported live: that
+         reproduced at scroll zero too. See `resizePending` below, which is. Bypassed
+         (snapped straight to the target) during the scroll-locked build and under
+         reduced-motion, where the value must already be exact. */
+      let pSmooth = 0
       /* main's arrival: the sphere and its contour open from nothing; the label (and with it
          the wire net and travellers, which ride the spinner) only once the surface is whole */
       const mainSphere = harness.group.getObjectByName('main-sphere')
@@ -290,10 +322,24 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
 
       const frame = (now) => {
         raf = requestAnimationFrame(frame)
+        /* Consumed here, not in the observer callback — see resizePending's declaration
+           comment. This must run before render() below, and nothing between here and that
+           render() call may `return`/`continue` past it, or a resized-but-unpainted frame
+           can reach the screen again. */
+        if (resizePending) {
+          resizePending = false
+          resize()
+        }
         const dt = Math.min(0.05, (now - last) / 1000)
         last = now
         const t = (now - t0) / 1000
-        const p = reduced ? 1 : locked ? 0 : progress()
+        const pTarget = reduced ? 1 : locked ? 0 : progress()
+        if (reduced || locked) {
+          pSmooth = pTarget // no added motion under reduced-motion; exact 0 through the build lock
+        } else {
+          pSmooth += (pTarget - pSmooth) * 0.2
+        }
+        const p = pSmooth
         const tip = easeInOut(clamp01((p - TIP_FROM) / (TIP_TO - TIP_FROM)))
 
         const state = {}
