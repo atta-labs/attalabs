@@ -14,7 +14,7 @@ import {
   type RefAttributes,
   type RefObject
 } from 'react'
-import { siGithub } from 'simple-icons'
+import { siGit, siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
 import { SectionTitle } from './SectionHeading'
 
@@ -37,6 +37,14 @@ function GitHubMark({ className }: { className?: string }) {
   return (
     <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
       <path d={siGithub.path} />
+    </svg>
+  )
+}
+
+function GitMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
+      <path d={siGit.path} />
     </svg>
   )
 }
@@ -463,18 +471,9 @@ export function LifecycleSection() {
           </div>
         </div>
         <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:px-10 min-[700px]:py-6'>
-          <div className='flex flex-wrap items-baseline justify-end gap-5'>
-            <NextLink
-              href='/life-cycle'
-              variant='unstyled'
-              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
-            >
-              See lifecycle <ArrowRight className='size-3.5' />
-            </NextLink>
-          </div>
-          <div className='mt-4 flex items-center gap-4'>
+          <div className='flex items-center gap-4'>
             <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
-              <GitHubMark className='size-9 md:size-12' />
+              <GitMark className='size-9 md:size-12' />
             </Card>
             <div>
               <SectionTitle className='max-w-5xl'>
@@ -503,6 +502,16 @@ export function LifecycleSection() {
               <SolveStage active={active[1]} stageRef={stageTwoRef} />
               <ArchiveStage active={active[2]} closed={closed} stageRef={stageThreeRef} />
             </div>
+          </div>
+
+          <div className='mt-6 flex justify-center min-[700px]:mt-5'>
+            <NextLink
+              href='/life-cycle'
+              variant='unstyled'
+              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
+            >
+              See lifecycle <ArrowRight className='size-3.5' />
+            </NextLink>
           </div>
         </div>
       </div>
