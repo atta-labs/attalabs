@@ -12,7 +12,7 @@ import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
 import { computeTrackFrame } from '../_lib/deployment-progress'
 import '../marks-motion.css'
 import type { MilestoneArtwork } from '../_lib/resolve-artwork'
-import { computeLanding, HarnessLanding, LandingLegs } from './HarnessLanding'
+import { computeLanding, HarnessLanding, LANDING, LandingLegs } from './HarnessLanding'
 
 // Deployment harness (designer handoff) — a scroll-linked "install" animation
 // wrapping the existing card design, not a new card design. Contract from the
@@ -299,13 +299,6 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   // separate loops on purpose: the deploy math only needs to recompute on scroll/resize,
   // but the crackle must keep shimmering continuously even while the page sits still.
   const deployedRef = useRef(0)
-  // The `deployed` value at which the LAST card finishes arriving (its own `--c` hits
-  // 1) — not the track's raw pixel height, which runs well past that point (the
-  // `h-[40rem]` run-out exists so the beam can keep growing while the last card's
-  // spur/panel animate in; scroll physically maxes out before `deployed` ever reaches
-  // it). "Touching bottom" for the nose cone means the harness has nothing left to
-  // install, which is this threshold, not the track's total height.
-  const installDoneAtRef = useRef(Number.POSITIVE_INFINITY)
   const headRef = useRef<HTMLDivElement>(null)
   // Wraps glow/plume/atmosphere only — NOT the nose — so the two can fade independently:
   // the rocket stays fully drawn once deployment starts, the atmosphere around it fades
@@ -326,6 +319,9 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   // The landing pad's anchor (deck top) — `style.top` written by the scroll effect below.
   const landRef = useRef<HTMLDivElement>(null)
   const lockRef = useRef(0) // --lk, read by the crackle loop
+  // The track's trailing run-out — its height is written by the scroll effect below (see
+  // `fitRunOut`), not fixed in a class.
+  const runOutRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const track = trackRef.current
@@ -335,6 +331,54 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     if (!track || !beamOuter || !beamInner || cards.length === 0) return
 
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    // The animation reads the beam's position purely off `getBoundingClientRect`,
+    // which is already viewport-relative regardless of which ancestor actually
+    // scrolls — so the only scroll-container-specific thing here is which
+    // element's `scroll` event to listen on (and, in `fitRunOut`, whose content end to
+    // measure). `NextWebShell`'s app chrome scrolls an inner `overflow-y-auto` region,
+    // not `window`, on every product this route could ship under — walk up for it
+    // instead of assuming window.
+    let scrollTarget: HTMLElement | Window = window
+    for (let el = track.parentElement; el; el = el.parentElement) {
+      const style = getComputedStyle(el)
+      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) {
+        scrollTarget = el
+        break
+      }
+    }
+    const scrollEl = scrollTarget instanceof HTMLElement ? scrollTarget : document.documentElement
+
+    // Sizes the trailing run-out so the page ends where the landing does. Two floors, the
+    // larger wins: (1) the track reaches the bottom of the landscape, so the planet ends
+    // at the track's edge and the footer follows it directly; (2) at max scroll the beam
+    // line still reaches `landEnd` (L = 1), which on a tall viewport or a short footer
+    // needs more track than the landscape alone. Only layout goes in — card offsets, the
+    // landscape's rendered size, the viewport, the content after the track — never the
+    // scroll position, so this settles to one value and the landing stays a pure
+    // function of scroll. A fixed class could not do both: the deck's depth below the
+    // last card follows that card's height, which the CMS copy and the viewport width set.
+    function fitRunOut(deckTop: number, landEnd: number) {
+      const runOut = runOutRef.current
+      const landscape = landRef.current?.firstElementChild
+      if (!track || !runOut || !landRef.current || !landscape || !Number.isFinite(landEnd)) return
+      const trackRect = track.getBoundingClientRect()
+      const groundBelowDeck = landscape.getBoundingClientRect().bottom - landRef.current.getBoundingClientRect().top
+      // The scroll viewport's bottom edge and the scrollable content's end, both
+      // viewport-relative; `tail` is everything after the track (the footer).
+      const viewTop =
+        scrollEl === document.documentElement ? 0 : scrollEl.getBoundingClientRect().top + scrollEl.clientTop
+      const viewBottom = viewTop + scrollEl.clientHeight
+      const tail = viewTop - scrollEl.scrollTop + scrollEl.scrollHeight - trackRect.bottom
+      const line = (window.innerHeight * CONFIG.beamLine) / 100
+      // At max scroll the track's bottom sits at `viewBottom - tail`, so `deployed`
+      // there is `line - viewBottom + tail + trackHeight`; 2px of slack absorbs the
+      // browser rounding max scroll down to a whole pixel.
+      const landsAt = landEnd + Math.max(0, viewBottom - line - tail) + 2
+      const target = Math.max(deckTop + groundBelowDeck, landsAt)
+      const height = Math.max(0, target - runOut.offsetTop)
+      if (Math.abs(runOut.offsetHeight - height) > 0.5) runOut.style.height = `${height}px`
+    }
 
     function update() {
       if (!track || !beamOuter || !beamInner) return
@@ -365,6 +409,8 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       // `deployed` is measured in.
       const remPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
       const land = computeLanding(frame.deployed, frame.installDoneAt, remPx)
+      // Before this frame's style writes, so its layout reads reuse the layout above.
+      fitRunOut(land.deckTop, frame.installDoneAt + LANDING.approachRem * remPx)
       for (const [k, v] of Object.entries(land.vars)) track.style.setProperty(k, v)
       if (landRef.current) landRef.current.style.top = `${land.deckTop}px`
 
@@ -373,7 +419,6 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       deployedRef.current = land.headTop // head + crackle stop at touchdown
       velTargetRef.current = land.landed ? 0 : frame.velTarget // glow dies at contact
       lastTForVelRef.current = frame.deployed
-      installDoneAtRef.current = frame.installDoneAt
       lockRef.current = land.lock
 
       cards.forEach((card, i) => {
@@ -393,21 +438,6 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
         queued = false
         update()
       })
-    }
-
-    // The animation reads the beam's position purely off `getBoundingClientRect`,
-    // which is already viewport-relative regardless of which ancestor actually
-    // scrolls — so the only scroll-container-specific thing here is which
-    // element's `scroll` event to listen on. `NextWebShell`'s app chrome
-    // scrolls an inner `overflow-y-auto` region, not `window`, on every product
-    // this route could ship under — walk up for it instead of assuming window.
-    let scrollTarget: HTMLElement | Window = window
-    for (let el = track.parentElement; el; el = el.parentElement) {
-      const style = getComputedStyle(el)
-      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) {
-        scrollTarget = el
-        break
-      }
     }
 
     scrollTarget.addEventListener('scroll', onFrame, { passive: true })
@@ -532,8 +562,10 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     // whole viewport regardless of screen width, while `trackRef` below constrains the
     // beam/cards to a readable column. A single `max-w-5xl` wrapper around both would put
     // the fabric behind the same gutter as the text, which is exactly the "still has x
-    // padding" the outer max-w previously produced.
-    <div className='relative w-full pb-[40vh]'>
+    // padding" the outer max-w previously produced. No bottom padding: the track's own
+    // run-out (see `fitRunOut`) ends it at the landscape's bottom, and `-mb-8` cancels
+    // `page.tsx`'s `py-8` bottom so the planet meets the footer's rule directly.
+    <div className='relative w-full -mb-8'>
       {/* The "fabric of the universe" backdrop, mounted FIRST so every later sibling
           (beam, canvas, head, cards) paints over it. Invisible at rest, fades in once
           the rocket starts moving (see `fabricOpacity` in the effect above) rather than
@@ -847,7 +879,9 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
           )
         })}
 
-        <div aria-hidden className='h-[40rem]' />
+        {/* The run-out — room for the landing's approach and the planet under the pad. Its
+          height is set by `fitRunOut`; the classes are only the pre-hydration estimate. */}
+        <div ref={runOutRef} aria-hidden className='h-[28.5rem] max-[52.5rem]:h-[16.5rem]' />
       </div>
     </div>
   )
