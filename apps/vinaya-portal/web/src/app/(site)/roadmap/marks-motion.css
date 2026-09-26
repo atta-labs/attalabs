@@ -25,3 +25,7 @@
 @keyframes mm-run    { to { stroke-dashoffset: -100; } }
 
 @media (prefers-reduced-motion: reduce) { svg.mm * { animation: none !important; } }
+
+/* The roadmap landing (`_components/HarnessLanding.tsx`) — the only keyframes it
+   needs: the primary star sparkles in the sky. */
+@keyframes vin-twinkle { 0%, 100% { transform: scale(0.55); } 50% { transform: scale(1.1); } }
