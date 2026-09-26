@@ -77,20 +77,24 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  * instead of crossfading. Grid-stacking keeps both genuinely in flow (no `position:
  * absolute`) so a plain `opacity` transition crossfades them.
  *
- * The hidden text of each pair is `w-0`, so the shared cell is always exactly the SHOWN
- * text's width, never the larger of the two. Both halves of the layout depend on it:
- * - Docked, the topbar reserves only the docked text's width. Were the hidden "Development
- *   harness" still sizing the descriptor cell, the lockup would be ~100px wider than
- *   anything visible — enough to wrap the bar on phones and to run under the centred nav
- *   on narrow desktops.
- * - Bare, `word.offsetWidth` and `desc.offsetWidth` are the widths of what is on screen, so
- *   `lockup-flip.js` centres the visible glyphs (not a wider invisible cell) and fits its
- *   hero scale to the viewport from the real text width (`FLIP.HERO_GUTTER_PX`).
- * The zero-width span's text still overflows its box visibly (`whitespace-nowrap`, default
+ * No hidden or crossfading text ever carries layout width, so the topbar's own layout is
+ * sized by the docked text alone:
+ * - The bare pair (`data-lockup-bare`) is `w-0` in EVERY state, not just while hidden. While
+ *   bare the lockup is laid out at its small rest size under a transform, and the bar lays
+ *   out its theme toggle and menu button from that untransformed width — were the bare
+ *   "Development harness" sizing its cell there, it would push the menu button off a phone's
+ *   edge through the whole hero and jump it back at the dock. `lockup-flip.js` reads the
+ *   bare text's width from its content (`scrollWidth`) for its centring and fit maths.
+ * - The docked pair is `w-0` while bare, so it cannot size the bar before the dock either,
+ *   and `w-auto` once docked (and by default), so the docked bar reserves exactly the docked
+ *   text's width.
+ * A zero-width span's text still overflows its box visibly (`whitespace-nowrap`, default
  * `overflow: visible`) from the cell's left edge, so the fading-out text stays exactly where
- * it was through the 500ms crossfade instead of jumping. `whitespace-nowrap` on every text
- * span is also what keeps a line from breaking: each letter is its own `inline-block`, and
- * the line may otherwise wrap between any two of them.
+ * it was through the 500ms crossfade instead of jumping. Where the bar is too narrow for the
+ * bare descriptor at rest size, the FLIP loop scales its span (`origin-left`) down as it
+ * lands, so the overflowing text never reaches the bar's controls. `whitespace-nowrap` on
+ * every text span is also what keeps a line from breaking: each letter is its own
+ * `inline-block`, and the line may otherwise wrap between any two of them.
  *
  * The docked text is the DEFAULT (no `data-bare` ancestor) and bare is the
  * `[[data-bare=true]_&]` override, because the mobile menu sheet re-renders this component
@@ -101,8 +105,8 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  *
  * Below 360px the docked text steps down to `text-xs` with tighter tracking: at `text-sm`
  * the docked lockup plus the bar's theme toggle and menu button need more than a 320px bar
- * holds. The bare text needs no such step — its hero size is fitted by the loop, and it is
- * `w-0` whenever the bar is docked.
+ * holds. The bare text needs no such step — its hero size and its landing size are both
+ * fitted by the loop, and it never takes layout width.
  */
 export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | null; alt?: string }) {
   const setNode = useHeroLockupRegister()
@@ -123,7 +127,10 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
       )}
       <span className='flex flex-col items-start gap-1 [[data-bare=true]_&]:gap-0'>
         <span ref={(el) => setNode('word', el)} className='grid'>
-          <span className='col-start-1 row-start-1 w-0 whitespace-nowrap font-mono text-sm font-normal tracking-normal text-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:w-auto [[data-bare=true]_&]:opacity-100'>
+          <span
+            data-lockup-bare
+            className='col-start-1 row-start-1 w-0 whitespace-nowrap font-mono text-sm font-normal tracking-normal text-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:opacity-100'
+          >
             <Letters text='Vinaya' delayStep={40} />
           </span>
           <span className='col-start-1 row-start-1 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out max-[360px]:text-xs max-[360px]:tracking-[0.12em] [[data-bare=true]_&]:w-0 [[data-bare=true]_&]:opacity-0'>
@@ -131,7 +138,10 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
           </span>
         </span>
         <span ref={(el) => setNode('desc', el)} className='origin-left grid'>
-          <span className='col-start-1 row-start-1 w-0 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:w-auto [[data-bare=true]_&]:opacity-100'>
+          <span
+            data-lockup-bare
+            className='col-start-1 row-start-1 w-0 origin-left whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:opacity-100'
+          >
             <Letters text='Development harness' delayStep={25} />
           </span>
           <span className='col-start-1 row-start-1 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out max-[360px]:text-xs max-[360px]:tracking-[0.12em] [[data-bare=true]_&]:w-0 [[data-bare=true]_&]:opacity-0'>
