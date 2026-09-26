@@ -13,10 +13,12 @@ import { LIFE_CYCLES } from '../_lib/life-cycles'
 // that padding. No slot in the shared TopBar is involved.
 //
 // Fixed height, no collapse: it always shows the full tab row, so it always
-// says where you are. It is a full-width opaque bar rather than a floating
-// card, so panel content scrolls cleanly underneath it instead of showing
-// around it, and the tabs stretch to share the bar's width rather than
-// overflowing it on narrow viewports.
+// says where you are. It is a full-width bar rather than a floating card, so
+// panel content scrolls underneath it instead of around it, and the tabs
+// stretch to share the bar's width rather than overflowing it on narrow
+// viewports. Its surface is the TopBar's own glass (same classes as
+// `chromeClassName` in `(site)/layout.tsx`), so the two read as one chrome
+// stack: content blurs through both instead of hitting an opaque band.
 //
 // The outer wrapper owns `sticky` (and the ref the scroll math measures)
 // because `ChromeFrame` is library-resolved: retro's bar wraps its `className`
@@ -33,7 +35,10 @@ export function LifeCycleSwitcher({
 }) {
   return (
     <div ref={ref} className='sticky top-0 z-20'>
-      <ChromeFrame variant='bar' className='justify-center px-4 py-2'>
+      <ChromeFrame
+        variant='bar'
+        className='justify-center border-transparent bg-background/35 px-4 py-2 backdrop-blur-md'
+      >
         <Tabs value={active} onValueChange={(value) => onChange(value as LifeCycleId)} className='w-full max-w-md'>
           <TabsList className='w-full'>
             {LIFE_CYCLES.map((cycle) => (
