@@ -86,7 +86,7 @@ export function ConfigBoardSection() {
   }, [])
 
   return (
-    <LandingSection background='bg-background text-foreground'>
+    <LandingSection background='bg-secondary text-secondary-foreground'>
       <div className='grid gap-12 text-center md:grid-cols-2 md:items-center md:gap-16 md:text-left'>
         <div>
           <NextLink href='/config' variant='unstyled'>
@@ -106,6 +106,9 @@ export function ConfigBoardSection() {
             Define your gates. Your checks. Extend the agents you already use. Ours ships as the default — nothing you
             add or replace ever touches a second file.
           </Text>
+          <Text className='mt-4 max-w-md font-serif text-xl leading-relaxed text-foreground'>
+            Your tracker, your method, your agent — same gates.
+          </Text>
           <NextLink
             href='/config'
             variant='unstyled'
@@ -122,9 +125,9 @@ export function ConfigBoardSection() {
               return (
                 <div
                   key={row.label}
-                  className='flex items-baseline justify-between gap-6 border-t border-border py-6 text-left last:border-b'
+                  className='flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-t border-border py-6 text-left last:border-b'
                 >
-                  <div className='flex items-baseline font-mono text-2xl font-medium sm:text-3xl lg:text-4xl'>
+                  <div className='flex items-baseline font-mono text-2xl font-medium sm:text-3xl md:text-2xl lg:text-4xl'>
                     <span
                       className={`inline-block overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-500 ${
                         on ? 'max-w-[6ch] opacity-100' : 'max-w-0 opacity-0'
