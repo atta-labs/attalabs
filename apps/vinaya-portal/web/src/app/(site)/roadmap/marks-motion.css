@@ -2,16 +2,21 @@
    Keyframes CANNOT live inside the SVG files (SVG <style> and <animate> get
    stripped by most sanitizers) — each mark carries inline `animation: mm-*`
    declarations per element; this file defines the names those reference.
-   Imported once, directly in `page.tsx` (Next.js App Router scopes a CSS
-   import to the segment it's imported into — no need to touch the shared
-   site layout). Animation runs on INLINED marks only, which is what SVGR
-   compiles them to; an <img>-loaded mark would be a separate document and
-   render static regardless of this file.
+   Imported once, in `_components/DeploymentTrack.tsx`, the component that
+   renders the marks (a CSS import is scoped to the segment it's imported
+   into, so the shared site layout stays untouched). Animation runs on INLINED
+   marks only, which is what SVGR compiles them to; an <img>-loaded mark would
+   be a separate document and render static regardless of this file.
+
+   SVGR's svgo pass prefixes the SVG's own `class="mm"` (prefixIds), so the
+   `mm` class the reduced-motion rule below matches comes from the
+   `className='mm …'` DeploymentTrack passes to every Mark — keep it there.
 
    THE RULE: never animate the geometry of a shape that carries the meaning.
    Travel (mm-flow) and opacity (mm-lock) are always safe; mm-run only ever runs
    over a static underlay, so the loop is never broken. mm-flow's distance is
-   per-element via --mm-d. */
+   per-element via --mm-d, written as `calc(Npx)`: SVGR coerces a bare `Npx`
+   style value to a unitless number, which leaves translateX() invalid. */
 
 @keyframes mm-lock   { 0%, 18% { opacity: .5; } 38%, 80% { opacity: 1; } 100% { opacity: .5; } }
 @keyframes mm-unfurl { 0%, 84% { transform: scaleX(1); } 91% { transform: scaleX(.55); } 100% { transform: scaleX(1); } }
