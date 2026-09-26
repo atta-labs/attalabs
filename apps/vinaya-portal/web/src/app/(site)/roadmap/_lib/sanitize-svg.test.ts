@@ -1,4 +1,8 @@
-// @vitest-environment jsdom
+// @vitest-environment node
+// Node, not jsdom: production runs the sanitizer in Next's Node server runtime,
+// where isomorphic-dompurify builds its own jsdom window. A jsdom test
+// environment would hand it the test's window instead.
+import { JSDOM } from 'jsdom'
 import { describe, expect, it, vi } from 'vitest'
 
 // `server-only` throws unconditionally on plain import — Next's bundler aliases
@@ -20,8 +24,8 @@ const TASK_MARK = `<svg class="mm" xmlns="http://www.w3.org/2000/svg" viewBox="0
   <rect x="0" y="230" width="400" height="24" fill="var(--primary, currentColor)" style="transform-box:fill-box;transform-origin:left;animation:mm-unfurl 3.6s ease-out infinite"></rect>
 </svg>`
 
-function parse(markup: string): SVGSVGElement {
-  const doc = new DOMParser().parseFromString(`<div>${markup}</div>`, 'text/html')
+function parse(markup: string): Element {
+  const doc = new JSDOM(`<div>${markup}</div>`).window.document
   const svg = doc.querySelector('svg')
   if (!svg) throw new Error('sanitized output carries no <svg>')
   return svg
@@ -94,5 +98,59 @@ describe('sanitizeSvg — a hostile SVG is neutralized', () => {
 
   it('keeps the root class so the reduced-motion rule still matches', () => {
     expect(parse(out).getAttribute('class')).toBe('mm')
+  })
+})
+
+// Payloads that DOMPurify alone lets through, because it does not look inside CSS:
+// each one resolves to a remote fetch (or a page-covering overlay) in a browser.
+describe('sanitizeSvg — CSS-level bypasses are closed', () => {
+  const styleOf = (markup: string) => parse(sanitizeSvg(markup)).querySelector('rect')?.getAttribute('style') ?? null
+  const wrap = (style: string) =>
+    `<svg class="mm" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" style="${style}"></rect></svg>`
+
+  it.each([
+    ['CSS-escaped url()', 'background:\\75 rl(https://evil.example/a)'],
+    ['backslash inside url', 'background:u\\rl(https://evil.example/a)'],
+    ['line-continued url string', 'background:url(&quot;https://ev\\\nil.example/a&quot;)'],
+    ['image-set()', 'background-image:image-set(&quot;https://evil.example/a.png&quot; 1x)'],
+    ['-webkit-image-set()', 'background-image:-webkit-image-set(&quot;https://evil.example/a.png&quot; 1x)'],
+    ['plain url()', 'background:url(https://evil.example/t.png)'],
+    ['url() inside a custom property', '--mm-d:url(https://evil.example/a)']
+  ])('drops %s from inline style', (_label, style) => {
+    const out = styleOf(wrap(style))
+    expect(out ?? '').not.toMatch(/evil|url|image-set|\\/i)
+  })
+
+  it('drops a page-covering overlay but keeps the motion declarations beside it', () => {
+    const out = styleOf(
+      wrap(
+        'position:fixed;inset:0;z-index:2147483647;width:100vw!important;animation:mm-lock 3.4s ease-in-out 0.2s infinite'
+      )
+    )
+    expect(out).toBe('animation:mm-lock 3.4s ease-in-out 0.2s infinite')
+  })
+
+  it('drops escaped or image-set references in presentation attributes', () => {
+    const out = sanitizeSvg(
+      `<svg xmlns="http://www.w3.org/2000/svg"><rect fill="\\75 rl(https://evil.example/a)"></rect><rect fill="url(  'https://evil.example/b')"></rect><rect fill="url(#ok)"></rect></svg>`
+    )
+    expect(out).not.toContain('evil.example')
+    expect(out).toContain('fill="url(#ok)"')
+  })
+})
+
+describe('sanitizeSvg — the mark cannot borrow the page CSS', () => {
+  it('keeps only mm / mm-* class tokens, so utility classes cannot pull the root out of its card', () => {
+    const svg = parse(
+      sanitizeSvg(`<svg class="mm fixed inset-0 z-50 mm-hero" xmlns="http://www.w3.org/2000/svg"></svg>`)
+    )
+    expect(svg.getAttribute('class')).toBe('mm mm-hero')
+  })
+
+  it('drops a class made only of foreign tokens, and every id', () => {
+    const out = sanitizeSvg(
+      `<svg class="fixed inset-0" id="root" xmlns="http://www.w3.org/2000/svg"><rect id="a" class="h-screen" width="1" height="1"></rect></svg>`
+    )
+    expect(out).not.toMatch(/class=|id=/)
   })
 })

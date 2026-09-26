@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Roadmap · Vinaya'
 }
 
-// CMS-backed product page — five roadmap items live as `roadmapMilestone`
+// CMS-backed product page — the roadmap items live as `roadmapMilestone`
 // documents in Sanity, not as a hardcoded array. A content editor adds,
 // edits, or reorders them from Studio without a code change; this route
 // just reads `getRoadmapMilestones()` and orders the result itself — shipped

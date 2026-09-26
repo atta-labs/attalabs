@@ -549,11 +549,16 @@ the marks theme entirely off `--primary`/`--foreground` and run `marks-motion.cs
 `mm-*` keyframes, and neither the custom properties nor the page's CSS cross the
 separate-document boundary an `<img src>` load creates — a mark loaded that way renders
 in fixed fallback colors and never animates. `/roadmap`'s `page.tsx` (a Server
-Component) resolves each card's artwork through `_lib/resolve-artwork.ts`: it fetches
-the asset (content-hashed CDN URL, so cached indefinitely), detects SVG by the
-response's `content-type`, and sanitizes it server-side before passing the markup to
-the client track; a non-SVG image falls back to `next/image`, a failed fetch to a
-placeholder icon. Author uploaded marks with colors as `var(--token, currentColor)` —
+Component) resolves each card's artwork through `_lib/resolve-artwork.ts`. Only a
+`.svg` asset on `https://cdn.sanity.io/images/` is fetched (content-hashed, so cached
+indefinitely); it counts as SVG only when the response's `content-type` agrees, and is
+sanitized server-side before the markup reaches the client track. A raster image goes
+straight to `next/image` without being fetched here; a URL off the CDN, a failed or
+oversized fetch, or markup that sanitizes to nothing falls back to a placeholder icon.
+Author uploaded marks with colors as presentation attributes (`fill`/`stroke`), never
+inside `style` — the sanitizer keeps only the marks' motion declarations in `style`,
+reduces `class` to `mm`/`mm-*` and drops every `id` — with values as
+`var(--token, currentColor)` —
 a literal color (including a `#fff` last-resort inside `var()`) is what shows whenever
 the token is missing. Editing the artwork is a Sanity content operation, not a code
 change.
