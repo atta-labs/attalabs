@@ -63,32 +63,46 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  * - `items-start` on the column is load-bearing: a flex column's default `align-items:
  *   stretch` gives `word` and `desc` the same (widest-child) box width, and the loop
  *   centres the box — left-aligned glyphs inside a stretched box land visibly off-centre.
- * - `gap-0` while bare, `gap-1` while docked: a plain flex gap has no stretch/distribute
- *   mechanic for the transform's scale to amplify (0 × any scale is 0), and the docked
- *   value is a fixed rest value once `s` has settled to 1. The bare-phase gap is animated
- *   continuously by the loop (`desc.style.marginTop`, see `FLIP.BARE_GAP_MAX`) rather than
- *   through a second CSS value.
+ * - `gap-0` while bare, `gap-1` while docked (and by default — see below): a plain flex gap
+ *   has no stretch/distribute mechanic for the transform's scale to amplify (0 × any scale
+ *   is 0), and the docked value is a fixed rest value once `s` has settled to 1. The
+ *   bare-phase gap is animated continuously by the loop (`desc.style.marginTop`, see
+ *   `FLIP.BARE_GAP_MAX`) rather than through a second CSS value.
  *
  * The docked topbar and the bare hero show different text on the same two ref'd nodes —
- * "Vinaya" / "Development harness" while bare, "DEVELOPMENT" / "HARNESS" while docked (a topbar-only
- * wordmark change). Each ref'd node wraps TWO content spans, CSS-grid-stacked into the same
- * cell (`grid` on the wrapper, `col-start-1 row-start-1` on both) rather than toggled via
- * `hidden`/`block`: a display swap can't transition, so the texts would pop instead of
- * crossfading. Grid-stacking keeps both genuinely in flow (no `position: absolute`) so a
- * plain `opacity` transition crossfades them; the wrapper's measured size becomes the
- * LARGER of the two texts, an accepted trade-off. The bare word's span carries its own
- * `justify-self-center` for exactly this reason: a grid item's default `justify-self:
- * stretch` fills the shared (larger) cell and left-aligns its own text inside it, which
- * only stayed invisible while "Vinaya" and "GIT" happened to be close in width — once the
- * docked word grew past it ("DEVELOPMENT" is nearly twice "Vinaya"'s width), the bare text
- * sat flush against the cell's left edge instead of centred, even though the FLIP loop
- * below correctly centres the CELL (via `word.offsetWidth`, the larger width) in the
- * viewport. `justify-self-center` shrinks the bare span back to its own content width and
- * centres it within that cell, so the visible glyphs land on the same centreline the loop
- * computes regardless of how the two texts' widths compare. The docked word doesn't need
- * this: it's the wider (or equal) one already, so it already fills — and is centred by
- * filling — its own cell, and the topbar's own alignment is left-flowing by convention, not
- * centred, so nothing there should be pulled toward the middle.
+ * "Vinaya" / "Development harness" while bare, "DEVELOPMENT" / "HARNESS" while docked (a
+ * topbar-only wordmark change). Each ref'd node wraps TWO content spans, CSS-grid-stacked
+ * into the same cell (`grid` on the wrapper, `col-start-1 row-start-1` on both) rather than
+ * toggled via `hidden`/`block`: a display swap can't transition, so the texts would pop
+ * instead of crossfading. Grid-stacking keeps both genuinely in flow (no `position:
+ * absolute`) so a plain `opacity` transition crossfades them.
+ *
+ * The hidden text of each pair is `w-0`, so the shared cell is always exactly the SHOWN
+ * text's width, never the larger of the two. Both halves of the layout depend on it:
+ * - Docked, the topbar reserves only the docked text's width. Were the hidden "Development
+ *   harness" still sizing the descriptor cell, the lockup would be ~100px wider than
+ *   anything visible — enough to wrap the bar on phones and to run under the centred nav
+ *   on narrow desktops.
+ * - Bare, `word.offsetWidth` and `desc.offsetWidth` are the widths of what is on screen, so
+ *   `lockup-flip.js` centres the visible glyphs (not a wider invisible cell) and fits its
+ *   hero scale to the viewport from the real text width (`FLIP.HERO_GUTTER_PX`).
+ * The zero-width span's text still overflows its box visibly (`whitespace-nowrap`, default
+ * `overflow: visible`) from the cell's left edge, so the fading-out text stays exactly where
+ * it was through the 500ms crossfade instead of jumping. `whitespace-nowrap` on every text
+ * span is also what keeps a line from breaking: each letter is its own `inline-block`, and
+ * the line may otherwise wrap between any two of them.
+ *
+ * The docked text is the DEFAULT (no `data-bare` ancestor) and bare is the
+ * `[[data-bare=true]_&]` override, because the mobile menu sheet re-renders this component
+ * in a portal outside `TopBarChromeHost`: with no ancestor flag, it shows the docked
+ * wordmark the bar itself shows on every non-landing route, which fits the sheet's header
+ * at 320px where the bare descriptor cannot. The bar always SSRs `data-bare`, so it is
+ * unaffected by which state is the default.
+ *
+ * Below 360px the docked text steps down to `text-xs` with tighter tracking: at `text-sm`
+ * the docked lockup plus the bar's theme toggle and menu button need more than a 320px bar
+ * holds. The bare text needs no such step — its hero size is fitted by the loop, and it is
+ * `w-0` whenever the bar is docked.
  */
 export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | null; alt?: string }) {
   const setNode = useHeroLockupRegister()
@@ -107,20 +121,20 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
           <img src={logoUrl} alt={alt} className='h-[2.75rem] w-auto dark:invert' />
         </span>
       )}
-      <span className='flex flex-col items-start gap-0 [[data-bare=false]_&]:gap-1'>
+      <span className='flex flex-col items-start gap-1 [[data-bare=true]_&]:gap-0'>
         <span ref={(el) => setNode('word', el)} className='grid'>
-          <span className='col-start-1 row-start-1 justify-self-center font-mono text-sm font-normal tracking-normal text-foreground opacity-100 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-0'>
+          <span className='col-start-1 row-start-1 w-0 whitespace-nowrap font-mono text-sm font-normal tracking-normal text-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:w-auto [[data-bare=true]_&]:opacity-100'>
             <Letters text='Vinaya' delayStep={40} />
           </span>
-          <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-100'>
+          <span className='col-start-1 row-start-1 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out max-[360px]:text-xs max-[360px]:tracking-[0.12em] [[data-bare=true]_&]:w-0 [[data-bare=true]_&]:opacity-0'>
             <Letters text='DEVELOPMENT' delayStep={40} />
           </span>
         </span>
         <span ref={(el) => setNode('desc', el)} className='origin-left grid'>
-          <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-0'>
+          <span className='col-start-1 row-start-1 w-0 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=true]_&]:w-auto [[data-bare=true]_&]:opacity-100'>
             <Letters text='Development harness' delayStep={25} />
           </span>
-          <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-100'>
+          <span className='col-start-1 row-start-1 whitespace-nowrap font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-100 transition-opacity duration-500 ease-out max-[360px]:text-xs max-[360px]:tracking-[0.12em] [[data-bare=true]_&]:w-0 [[data-bare=true]_&]:opacity-0'>
             <Letters text='HARNESS' delayStep={25} />
           </span>
         </span>

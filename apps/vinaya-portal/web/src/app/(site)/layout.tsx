@@ -33,12 +33,20 @@ import { TopBarChromeHost } from './_components/TopBarChromeHost'
 // not decoration. This app's only such use. The icon lives INSIDE the
 // ElectricLabel's children (not TopBar's separate `icon` slot) so it sits
 // inside the lightning border when active, not stranded outside it.
+//
+// Icons drop out between `lg` and `xl` (`lg:max-xl:hidden`, here and on the
+// Docs trigger's own icon below): TopBar centres the desktop nav absolutely,
+// so its left edge sits at half the leftover width, and from 1024px up to
+// ~1160px that edge falls inside the docked wordmark (`HeroLockup`'s
+// "DEVELOPMENT" ends at x≈217). The seven icons are ~170px of the nav's
+// ~725px; without them the nav clears the wordmark by ≥19px at 1024px. From
+// `xl` the centred nav has the room again and the icons return.
 function flatLink(label: string, href: string, icon: ReactNode, exact?: boolean) {
   return {
     label: (
       <ElectricLabel href={href} exact={exact}>
         <span className='flex items-center gap-1.5'>
-          {icon}
+          <span className='contents lg:max-xl:hidden'>{icon}</span>
           {label}
         </span>
       </ElectricLabel>
@@ -104,7 +112,7 @@ const links: TopBarNavItem[] = [
     label: (
       <ElectricLabel href='/docs'>
         <span className='flex items-center gap-1.5'>
-          <BookOpen className='size-4' aria-hidden />
+          <BookOpen className='size-4 lg:max-xl:hidden' aria-hidden />
           Docs
           <ChevronDown
             className='size-3 transition-transform duration-300 group-data-[state=open]:rotate-180'
