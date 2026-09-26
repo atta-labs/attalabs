@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { LIFE_CYCLE_SWITCHER_ANCHOR_ID } from '../_lib/life-cycles'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { LifeCycleId } from '../_lib/life-cycles'
+import { scrollToPanelStart } from '../_lib/scroll-to-panel-start'
 import { LifeCycleHero3D } from './LifeCycleHero3D'
 import { LifeCyclePanels } from './LifeCyclePanels'
 
@@ -12,20 +12,37 @@ import { LifeCyclePanels } from './LifeCyclePanels'
 // other would make a scroll position silently reselect a tab the reader picked.
 export function LifeCycleExperience() {
   const [active, setActive] = useState<LifeCycleId>('milestone')
+  // Bumped on every altitude change so the scroll runs once per request, after
+  // the new panel has committed — never on first mount.
+  const [scrollRequest, setScrollRequest] = useState(0)
+  const switcherRef = useRef<HTMLDivElement>(null)
+  const panelStartRef = useRef<HTMLElement>(null)
 
   // Every control that changes altitude (the switcher's tabs, a panel's
   // handoff button) goes through here, so the reader always lands at the
-  // top of the new panel instead of wherever they'd scrolled to.
+  // top of the new panel's first section instead of wherever they'd scrolled to.
   const handleChange = (id: LifeCycleId) => {
-    document.getElementById(LIFE_CYCLE_SWITCHER_ANCHOR_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setActive(id)
+    setScrollRequest((n) => n + 1)
   }
+
+  useLayoutEffect(() => {
+    if (scrollRequest === 0) return
+    const section = panelStartRef.current
+    const switcher = switcherRef.current
+    if (section && switcher) scrollToPanelStart(section, switcher)
+  }, [scrollRequest])
 
   return (
     <>
       <LifeCycleHero3D />
 
-      <LifeCyclePanels active={active} onChange={handleChange} />
+      <LifeCyclePanels
+        active={active}
+        onChange={handleChange}
+        switcherRef={switcherRef}
+        panelStartRef={panelStartRef}
+      />
     </>
   )
 }
