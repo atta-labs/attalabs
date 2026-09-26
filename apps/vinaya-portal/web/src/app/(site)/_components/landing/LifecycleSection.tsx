@@ -16,7 +16,7 @@ import {
 } from 'react'
 import { siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
-import { SectionOverline, SectionTitle } from './SectionHeading'
+import { SectionTitle } from './SectionHeading'
 
 // Card's exported type has no `ref` (motion.div forwards it fine at runtime
 // under React 19, but the component itself isn't typed with RefAttributes) —
@@ -486,8 +486,7 @@ export function LifecycleSection() {
           </div>
         </div>
         <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:px-10 min-[700px]:py-6'>
-          <div className='flex flex-wrap items-baseline justify-between gap-5'>
-            <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
+          <div className='flex flex-wrap items-baseline justify-end gap-5'>
             <NextLink
               href='/life-cycle'
               variant='unstyled'
@@ -504,9 +503,6 @@ export function LifecycleSection() {
               <SectionTitle className='max-w-5xl'>
                 <LetterReveal text='Plan, solve, archive' />
               </SectionTitle>
-              <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
-                The same three stages, every time you ship.
-              </Text>
             </div>
           </div>
 
