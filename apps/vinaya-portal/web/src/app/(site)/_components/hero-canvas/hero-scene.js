@@ -282,6 +282,20 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
       let last = t0
       let firedWave = false
       let firedArrival = false
+      /* progress() reads the track's live rect: `travel = trackHeight - hero.clientHeight`,
+         both of which move with the viewport's height (the track is `320vh`, the hero
+         `h-dvh`). Resizing the window changes `travel` on every layout pass while the
+         actual scrolled distance in pixels does not rescale with it, so at any nonzero
+         scroll offset `progress()` returns a different number the instant the window's
+         height changes — and a live window resize fires that recomputation dozens of
+         times a second. Feeding that straight into `place()` below snapped the camera to
+         a new elevation/distance every such frame: the harness and fabric visibly jumped
+         and reappeared mid-resize, which is the reported "flicker". `pSmooth` chases the
+         raw signal instead of tracking it exactly, so a step in the input becomes a few
+         frames of motion instead of a single-frame snap. It's bypassed (snapped straight
+         to the target) during the scroll-locked build and under reduced-motion, where the
+         value must already be exact. */
+      let pSmooth = 0
       /* main's arrival: the sphere and its contour open from nothing; the label (and with it
          the wire net and travellers, which ride the spinner) only once the surface is whole */
       const mainSphere = harness.group.getObjectByName('main-sphere')
@@ -293,7 +307,13 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
         const dt = Math.min(0.05, (now - last) / 1000)
         last = now
         const t = (now - t0) / 1000
-        const p = reduced ? 1 : locked ? 0 : progress()
+        const pTarget = reduced ? 1 : locked ? 0 : progress()
+        if (reduced || locked) {
+          pSmooth = pTarget // no added motion under reduced-motion; exact 0 through the build lock
+        } else {
+          pSmooth += (pTarget - pSmooth) * 0.2
+        }
+        const p = pSmooth
         const tip = easeInOut(clamp01((p - TIP_FROM) / (TIP_TO - TIP_FROM)))
 
         const state = {}
