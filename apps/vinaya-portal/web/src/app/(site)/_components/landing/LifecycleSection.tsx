@@ -460,23 +460,23 @@ export function LifecycleSection() {
           and both render in flow. */}
       <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
         <div id='tagline' className='bg-secondary text-secondary-foreground'>
-          <div className='mx-auto max-w-[73.75rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-3'>
+          <div className='mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6'>
             <Heading
               level={2}
               weight='normal'
-              className='text-balance font-serif text-3xl font-semibold leading-snug tracking-tight sm:text-4xl min-[87.5rem]:text-5xl'
+              className='text-balance font-serif text-3xl font-semibold leading-snug tracking-tight sm:text-4xl xl:text-[2.625rem] min-[87.5rem]:text-[3.125rem]'
             >
               <LetterReveal text='A harness for your software engineering process' />
             </Heading>
           </div>
         </div>
-        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:px-10 min-[700px]:py-6'>
+        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6'>
           <div className='flex items-center gap-4'>
             <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
               <GitMark className='size-9 md:size-12' />
             </Card>
             <div>
-              <SectionTitle className='max-w-5xl'>
+              <SectionTitle className='max-w-5xl lg:text-[3.375rem]'>
                 <LetterReveal text='Plan, solve, archive' />
               </SectionTitle>
             </div>
