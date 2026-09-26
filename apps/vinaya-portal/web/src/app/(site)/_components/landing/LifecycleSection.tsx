@@ -464,7 +464,7 @@ export function LifecycleSection() {
             <Heading
               level={2}
               weight='normal'
-              className='text-balance font-serif text-3xl font-semibold leading-snug tracking-tight sm:text-4xl xl:text-[2.625rem] min-[87.5rem]:text-[3.125rem]'
+              className='text-balance font-serif text-3xl leading-snug tracking-tight sm:text-4xl xl:text-[2.625rem] min-[87.5rem]:text-[3.125rem]'
             >
               <LetterReveal text='A harness for your software engineering process' />
             </Heading>
