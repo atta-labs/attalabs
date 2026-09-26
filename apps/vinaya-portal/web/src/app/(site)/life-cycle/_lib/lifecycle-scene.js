@@ -791,8 +791,8 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
 
   /* ── reduced motion: one composed, static frame ─────────────────────────────
      The whole graph — milestone, every tranche, the finished branch — fitted into
-     the band under the header from the tranche altitude's own viewing direction,
-     with every label on. Nothing in it reads scroll, time or the pointer. */
+     the band under the header, viewed from between the tranche and task altitudes'
+     directions, with every label on. Nothing in it reads scroll, time or the pointer. */
   const composed = { pos: new THREE.Vector3(), tgt: new THREE.Vector3(), dist: 10, dirty: true }
   /* How small the composed frame draws depends on the window, so which words would
      collide does too. The frame is static, so this runs once per fit, not per frame:
@@ -811,10 +811,19 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
       })
       .sort((a, b) => a.r.top - b.r.top)
     for (const b of boxes) {
+      const h = b.r.bottom - b.r.top
       let top = b.r.top
-      for (const o of placed) {
-        const h = b.r.bottom - b.r.top
-        if (b.r.left < o.right && o.left < b.r.right && top < o.bottom && o.top < top + h) top = o.bottom + 2
+      // a push can land the label on a box already checked, so re-scan until it
+      // clears them all; every push is strictly downward, so this terminates
+      let moved = true
+      while (moved) {
+        moved = false
+        for (const o of placed) {
+          if (b.r.left < o.right && o.left < b.r.right && top < o.bottom && o.top < top + h) {
+            top = o.bottom + 2
+            moved = true
+          }
+        }
       }
       b.l.nudge = top - b.r.top
       placed.push({ left: b.r.left, right: b.r.right, top, bottom: top + (b.r.bottom - b.r.top) })
@@ -977,7 +986,7 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     const hp = reduced ? 1 : smooth(clamp01(p / 0.26))
     const fade = reduced ? 1 : 1 - smooth(clamp01((p - 0.62) / 0.18))
     if (Math.abs(hp - lastHp) > 0.0015 || Math.abs(fade - lastFade) > 0.004) {
-      composed.dirty = true
+      if (reduced) composed.dirty = true
       lastHp = hp
       lastFade = fade
       heroEl.style.setProperty('--hp', hp.toFixed(4))
