@@ -633,7 +633,7 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     /* Not in the handoff: the cycle used to wrap from the finished branch to an empty
        one in a single frame, taking the chip and its word with it mid-read. The
        drawing now rewinds over this window instead, so the wrap is never a cut. */
-    rewind: [0.93, 1]
+    rewind: [0.96, 1]
   }
   // the frame reduced motion holds: the whole branch drawn, merged, before any rewind
   const Q_COMPOSED = 0.9

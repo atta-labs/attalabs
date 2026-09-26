@@ -213,7 +213,7 @@ export function LifeCycleHero3D() {
               key={a.no}
               data-card={a.no}
               data-on={a.no === '01'}
-              className='absolute bottom-0 left-0 w-full translate-y-3 bg-background/78 opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-100 ease-out data-[on=true]:translate-y-0 data-[on=true]:opacity-100 data-[on=true]:delay-100 data-[on=true]:duration-200 motion-reduce:relative motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none'
+              className='absolute bottom-0 left-0 w-full translate-y-3 bg-background/78 opacity-0 backdrop-blur-sm transition-[opacity,translate] duration-100 ease-out data-[on=true]:translate-y-0 data-[on=true]:opacity-100 data-[on=true]:delay-100 data-[on=true]:duration-200 motion-reduce:relative motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none'
             >
               <CardContent>
                 <Text as='p' className='m-0 font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-primary'>
