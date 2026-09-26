@@ -476,13 +476,12 @@ export function LifecycleSection() {
       <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
         <div id='tagline' className='bg-secondary text-secondary-foreground'>
           <div className='mx-auto max-w-[73.75rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-3'>
-            <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
-              <span className='block text-2xl font-semibold sm:text-3xl min-[700px]:text-2xl lg:text-3xl'>
-                <LetterReveal text='A harness for your software engineering process' />
-              </span>
-              <span className='mt-1 block text-base text-muted-foreground sm:text-lg min-[700px]:mt-0 min-[700px]:text-base'>
-                with GitHub as the only source of truth.
-              </span>
+            <Heading
+              level={2}
+              weight='normal'
+              className='text-balance font-serif text-3xl font-semibold leading-snug tracking-tight sm:text-4xl min-[87.5rem]:text-5xl'
+            >
+              <LetterReveal text='A harness for your software engineering process' />
             </Heading>
           </div>
         </div>
