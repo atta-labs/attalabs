@@ -127,14 +127,18 @@ function StageShell({
     <RefCard
       ref={stageRef}
       data-active={active}
-      className='group/stage flex min-h-[42rem] flex-col px-7 py-8 shadow-none min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6'
+      className='group/stage flex min-h-[42rem] flex-col px-7 py-8 shadow-none min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-4'
     >
       <div className='flex flex-col'>
         <div className='flex items-baseline gap-3 font-mono uppercase'>
           <span className='text-xs tracking-[0.26em] text-muted-foreground'>{index}</span>
           <span className='text-2xl font-semibold tracking-[0.14em] md:text-3xl'>{title}</span>
         </div>
-        <Heading level={3} weight='normal' className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl'>
+        <Heading
+          level={3}
+          weight='normal'
+          className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl min-[700px]:[@media(max-height:760px)]:mt-3 min-[700px]:[@media(max-height:760px)]:text-3xl'
+        >
           {headline}
         </Heading>
         <GitHubBadge>{badge}</GitHubBadge>
@@ -457,23 +461,26 @@ export function LifecycleSection() {
           not at `top-0`, where the bar would cover the tagline's first line; that is
           also the `64` the progress math above starts from. Its height is the rest of
           the viewport below the bar, so the stage track keeps every pixel it can. Below 700px nothing pins
-          and both render in flow. */}
+          and both render in flow. Because that height is fixed, the tagline's size is capped at
+          `4.2cqi` of its own container so it stays on one line at every pinned width, and the
+          `max-height:760px` classes tighten the vertical spacing so the stage cards and the See
+          lifecycle link still fit on a short desktop viewport. */}
       <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
         <div id='tagline' className='bg-secondary text-secondary-foreground'>
-          <div className='mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6'>
+          <div className='@container mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
             <Heading
               level={2}
               weight='normal'
-              className='text-balance font-serif text-3xl leading-snug tracking-tight sm:text-4xl xl:text-[2.625rem] min-[87.5rem]:text-[3.125rem]'
+              className='text-balance font-serif text-(length:--tagline-size) leading-snug tracking-tight [--tagline-size:1.875rem] sm:[--tagline-size:2.25rem] min-[700px]:text-[length:min(var(--tagline-size),4.2cqi)] xl:[--tagline-size:2.625rem] min-[87.5rem]:[--tagline-size:3.125rem]'
             >
               <LetterReveal text='A harness for your software engineering process' />
             </Heading>
           </div>
         </div>
-        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6'>
+        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
           <div className='flex items-center gap-4'>
-            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
-              <GitMark className='size-9 md:size-12' />
+            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20 min-[700px]:[@media(max-height:760px)]:size-14'>
+              <GitMark className='size-9 md:size-12 min-[700px]:[@media(max-height:760px)]:size-8' />
             </Card>
             <div>
               <SectionTitle className='max-w-5xl lg:text-[3.375rem]'>
@@ -482,7 +489,7 @@ export function LifecycleSection() {
             </div>
           </div>
 
-          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex'>
+          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex min-[700px]:[@media(max-height:760px)]:mt-3'>
             <div className='flex shrink-0 gap-7 font-mono text-[0.625rem] uppercase tracking-[0.18em]'>
               <PhaseLabel active={phase === 0}>01 plan a milestone</PhaseLabel>
               <PhaseLabel active={phase === 1}>02 solve its tasks</PhaseLabel>
@@ -504,7 +511,7 @@ export function LifecycleSection() {
             </div>
           </div>
 
-          <div className='mt-6 flex justify-center min-[700px]:mt-5'>
+          <div className='mt-6 flex justify-center min-[700px]:mt-5 min-[700px]:[@media(max-height:760px)]:mt-3'>
             <NextLink
               href='/life-cycle'
               variant='unstyled'
