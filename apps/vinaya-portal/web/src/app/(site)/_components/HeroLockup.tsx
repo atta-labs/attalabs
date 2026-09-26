@@ -76,7 +76,19 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  * `hidden`/`block`: a display swap can't transition, so the texts would pop instead of
  * crossfading. Grid-stacking keeps both genuinely in flow (no `position: absolute`) so a
  * plain `opacity` transition crossfades them; the wrapper's measured size becomes the
- * LARGER of the two texts — an accepted trade-off, "Vinaya" and "GIT" are close in width.
+ * LARGER of the two texts, an accepted trade-off. The bare word's span carries its own
+ * `justify-self-center` for exactly this reason: a grid item's default `justify-self:
+ * stretch` fills the shared (larger) cell and left-aligns its own text inside it, which
+ * only stayed invisible while "Vinaya" and "GIT" happened to be close in width — once the
+ * docked word grew past it ("DEVELOPMENT" is nearly twice "Vinaya"'s width), the bare text
+ * sat flush against the cell's left edge instead of centred, even though the FLIP loop
+ * below correctly centres the CELL (via `word.offsetWidth`, the larger width) in the
+ * viewport. `justify-self-center` shrinks the bare span back to its own content width and
+ * centres it within that cell, so the visible glyphs land on the same centreline the loop
+ * computes regardless of how the two texts' widths compare. The docked word doesn't need
+ * this: it's the wider (or equal) one already, so it already fills — and is centred by
+ * filling — its own cell, and the topbar's own alignment is left-flowing by convention, not
+ * centred, so nothing there should be pulled toward the middle.
  */
 export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | null; alt?: string }) {
   const setNode = useHeroLockupRegister()
@@ -97,7 +109,7 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
       )}
       <span className='flex flex-col items-start gap-0 [[data-bare=false]_&]:gap-1'>
         <span ref={(el) => setNode('word', el)} className='grid'>
-          <span className='col-start-1 row-start-1 font-mono text-sm font-normal tracking-normal text-foreground opacity-100 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-0'>
+          <span className='col-start-1 row-start-1 justify-self-center font-mono text-sm font-normal tracking-normal text-foreground opacity-100 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-0'>
             <Letters text='Vinaya' delayStep={40} />
           </span>
           <span className='col-start-1 row-start-1 font-mono text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground opacity-0 transition-opacity duration-500 ease-out [[data-bare=false]_&]:opacity-100'>
