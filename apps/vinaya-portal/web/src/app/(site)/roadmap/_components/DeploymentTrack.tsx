@@ -195,13 +195,10 @@ function MilestoneVisual({ artwork }: { artwork: MilestoneArtwork }) {
   return (
     <div
       aria-hidden
-      // Icon-sized (fixed height, aspect-ratio sets the width) at desktop; below the
-      // harness breakpoint it becomes a full-width banner instead (height following
-      // width via the same aspect-ratio) — the marks are 4:3 rectangles on purpose so
-      // they read well at that size, not just as a cropped icon. The banner is capped at
-      // `max-w-[20rem]`: the single-sided layout runs up to 840px wide, and an uncapped
-      // full-width 4:3 banner there grows to ~700×525px, dwarfing the card's own text.
-      className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent max-[52.5rem]:h-auto max-[52.5rem]:w-full max-[52.5rem]:max-w-[20rem] max-[52.5rem]:shrink'
+      // Icon-sized at every width: a fixed height, with the aspect ratio setting the
+      // width. A full-width banner below the breakpoint made each card several times
+      // taller than its desktop counterpart, so the card keeps one compact design.
+      className='relative h-16 aspect-[4/3] shrink-0 overflow-hidden rounded-md border border-border bg-accent'
     >
       {artwork.kind === 'svg' ? (
         // The card's own CMS SVG, inlined so it reads the theme tokens and runs
@@ -756,6 +753,11 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                   // approximated constant, so the panel always lands exactly where the
                   // spur ends instead of leaving a gap.
                   'ml-[calc(50%+3.911875rem)] max-[52.5rem]:ml-[7.411875rem]',
+                  // Below the breakpoint the panel would otherwise run from the spur to the
+                  // viewport's right edge — ~700px wide just under 840px, and flush against
+                  // the edge on a phone. `max-w-[24rem]` keeps it a compact reading column
+                  // and `mr-4` keeps a gutter.
+                  'max-[52.5rem]:mr-4 max-[52.5rem]:max-w-[24rem]',
                   // Un-mirror just the panel's own rendering — its LAYOUT POSITION (the
                   // margin above) still comes from the flipped ancestor, which is what
                   // lands it on the correct side; only its painted content (the Card and
@@ -767,16 +769,12 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
               >
                 <Card>
                   <CardHeader>
-                    {/* Below the harness breakpoint the mark goes full-width BELOW the
-                      title/version row instead of a small icon beside it — the marks are
-                      deliberately 4:3 rectangles precisely so they read well at that
-                      width, not just as a small icon crop. `order-2` (mobile) puts the
-                      mark after the text block despite coming first in markup, matching
-                      the desktop reading order (icon, then title) without duplicating
-                      either block. */}
-                    <Flex align='center' gap={4} className='max-[52.5rem]:flex-col max-[52.5rem]:items-stretch'>
+                    {/* Icon beside the title at every width. Only on a narrow phone
+                      (under 480px), where the icon would squeeze the title to a sliver,
+                      does the icon stack above the title instead. */}
+                    <Flex align='center' gap={4} className='max-[30rem]:flex-col max-[30rem]:items-start'>
                       <MilestoneVisual artwork={item.artwork} />
-                      <Flex direction='column' gap={1} className='min-w-0 max-[52.5rem]:order-first'>
+                      <Flex direction='column' gap={1} className='min-w-0'>
                         <CardTitle
                           className={`font-serif text-xl font-normal text-foreground ${
                             item.status === 'dropped' ? 'line-through' : ''
