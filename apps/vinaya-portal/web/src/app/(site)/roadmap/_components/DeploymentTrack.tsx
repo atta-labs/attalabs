@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
 import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
-import { clamp01, computeCardStageProgress, computeDeployedPx } from '../_lib/deployment-progress'
+import { computeTrackFrame } from '../_lib/deployment-progress'
 import '../marks-motion.css'
 import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 
@@ -19,6 +19,19 @@ import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 // derived progress value `q` — junction seats (0→0.26), spur extends
 // (0.26→0.58), panel arrives (0.58→1). The tip position is a pure function of
 // scroll (never a keyframe), so scrolling back rewinds it exactly.
+//
+// Every value that feeds `q` and the three custom properties below comes from a live
+// `getBoundingClientRect()`/`offsetTop`/`offsetHeight` read taken fresh on the current
+// frame, run through `computeTrackFrame` (`_lib/deployment-progress.ts`), which takes that
+// geometry plus the one thing carried frame-to-frame (`lastTForVelRef`/`velTargetRef`, the
+// beam's own velocity target) and returns the new state. Its own doc comment — and its
+// tests — pin that `deployed` and every card's stage depend on the geometry argument alone;
+// the carried history feeds only the returned velocity target, which drives cosmetic
+// crackle/glow intensity below and must never feed back into `q`, `deployed`, or
+// `--b`/`--a`/`--c`, or exact rewind breaks. None of this math takes a viewport width: the
+// 840px split (`CONFIG.splitAbove`) only ever reorders and repositions the same DOM via CSS
+// below, so a card's animated state computes identically on both sides of it by
+// construction, not by convention.
 //
 // Every dimension below is a Tailwind class — never a `style={{}}` prop, per
 // RULE 3 — and every one of them, including the arbitrary-value ones, is
@@ -323,35 +336,40 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       if (!track || !beamOuter || !beamInner) return
       const r = track.getBoundingClientRect()
       const H = track.offsetHeight
-
       const line = (window.innerHeight * CONFIG.beamLine) / 100
       const [first] = cards
       if (!first) return
-      const t = still ? H : computeDeployedPx(H, line, r.top)
+
+      // `computeTrackFrame` takes this frame's live geometry and the previous frame's
+      // carried history (deployed position + velocity target) and returns the new state —
+      // see its own doc comment for why `deployed`/`cardStages` can only depend on
+      // `geometry`, never on `history`.
+      const frame = computeTrackFrame(
+        {
+          reduced: still,
+          trackHeight: H,
+          trackTop: r.top,
+          line,
+          spurReach: CONFIG.spurReach,
+          cardOffsets: cards.map((card) => ({ top: card.offsetTop, height: card.offsetHeight }))
+        },
+        { lastDeployed: lastTForVelRef.current, velTarget: velTargetRef.current }
+      )
 
       beamInner.style.height = `${H}px`
-      beamOuter.style.height = `${t}px`
-      deployedRef.current = t
-      // 22px of tip movement between scroll ticks reads as full speed — the designer
-      // handoff's own sensitivity constant for the head's velocity input.
-      if (lastTForVelRef.current !== null) {
-        const delta = Math.abs(t - lastTForVelRef.current)
-        velTargetRef.current = Math.max(velTargetRef.current, Math.min(1, delta / 22))
-      }
-      lastTForVelRef.current = t
-      const last = cards[cards.length - 1]
-      if (last) {
-        installDoneAtRef.current = last.offsetTop + last.offsetHeight / 2 + CONFIG.spurReach
-      }
+      beamOuter.style.height = `${frame.deployed}px`
+      deployedRef.current = frame.deployed
+      velTargetRef.current = frame.velTarget
+      lastTForVelRef.current = frame.deployed
+      installDoneAtRef.current = frame.installDoneAt
 
-      for (const card of cards) {
-        const mid = card.offsetTop + card.offsetHeight / 2
-        const q = still ? 1 : clamp01((t - mid) / CONFIG.spurReach)
-        const stage = computeCardStageProgress(q)
+      cards.forEach((card, i) => {
+        const stage = frame.cardStages[i]
+        if (!stage) return
         card.style.setProperty('--b', stage.b.toFixed(4))
         card.style.setProperty('--a', stage.a.toFixed(4))
         card.style.setProperty('--c', stage.c.toFixed(4))
-      }
+      })
     }
 
     let queued = false
