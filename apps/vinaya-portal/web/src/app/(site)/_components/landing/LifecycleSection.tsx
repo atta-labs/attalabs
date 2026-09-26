@@ -16,7 +16,6 @@ import {
 } from 'react'
 import { siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
-import { LandingSection } from './LandingSection'
 import { SectionOverline, SectionTitle } from './SectionHeading'
 
 // Card's exported type has no `ref` (motion.div forwards it fine at runtime
@@ -329,7 +328,6 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
 
 export function LifecycleSection() {
   const sectionRef = useRef<HTMLElement>(null)
-  const taglineRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const railFillRef = useRef<HTMLSpanElement>(null)
   const stageOneRef = useRef<HTMLElement>(null)
@@ -419,14 +417,10 @@ export function LifecycleSection() {
       }
 
       syncTrackOffset()
-      // Progress starts when the section's top — the tagline, not the pinned
-      // stage block below it — reaches the viewport top. The section is taller
-      // than the pinned runway by exactly the tagline's own height, so that
-      // height comes back out of `travel`: the tabs and rail advance over the
-      // same scroll distance as the runway itself, and hold their end state for
-      // the tagline's height at the bottom of the pin instead of stretching.
-      const taglineHeight = taglineRef.current?.offsetHeight ?? 0
-      const travel = Math.max(1, rect.height - taglineHeight - (viewportHeight - 64))
+      // Progress starts when the section's top reaches the viewport top, which
+      // is the moment the pin engages: the tagline is the first thing inside the
+      // pinned block, so there is no unpinned lead-in above it to subtract.
+      const travel = Math.max(1, rect.height - (viewportHeight - 64))
       const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
       trackAnimation.currentTime = progress * 1000
       railAnimation.currentTime = progress * 1000
@@ -470,30 +464,29 @@ export function LifecycleSection() {
   const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
 
   return (
-    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground'>
-      {/* The tagline scrolls normally at the top of this section, so the scroll
-          math above (keyed off the section's own rect) starts at the tagline.
-          Only the stage block below it pins. */}
-      <LandingSection
-        ref={taglineRef}
-        id='tagline'
-        background='bg-secondary text-secondary-foreground'
-        py='compact'
-        center
-      >
-        <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
-          <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
-            <LetterReveal text='A harness for your software engineering process' />
-          </span>
-          <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
-            with GitHub as the only source of truth.
-          </span>
-        </Heading>
-      </LandingSection>
-      {/* The pinned runway keeps its own 300dvh, so the section grows by exactly
-          the tagline's rendered height and the pin still spans the same distance. */}
-      <div className='min-[700px]:h-[300dvh]'>
-        <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
+    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground min-[700px]:h-[300dvh]'>
+      {/* One pinned block for the whole runway: the tagline banner on top, then the
+          stage block under it, so the tagline stays fixed at the top of the viewport
+          for the entire tab scroll-through. `id='tagline'` stays on the banner as the
+          hero's scroll target. It pins at `top-14`, under the fixed TopBar (`3.5rem`),
+          not at `top-0`, where the bar would cover the tagline's first line; that is
+          also the `64` the progress math above starts from. Its height is the rest of
+          the viewport below the bar, so the stage track keeps every pixel it can. Below 700px nothing pins
+          and both render in flow. */}
+      <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
+        <div id='tagline' className='bg-secondary text-secondary-foreground'>
+          <div className='mx-auto max-w-[73.75rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-3'>
+            <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
+              <span className='block text-2xl font-semibold sm:text-3xl min-[700px]:text-2xl lg:text-3xl'>
+                <LetterReveal text='A harness for your software engineering process' />
+              </span>
+              <span className='mt-1 block text-base text-muted-foreground sm:text-lg min-[700px]:mt-0 min-[700px]:text-base'>
+                with GitHub as the only source of truth.
+              </span>
+            </Heading>
+          </div>
+        </div>
+        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:px-10 min-[700px]:py-6'>
           <div className='flex flex-wrap items-baseline justify-between gap-5'>
             <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
             <NextLink
