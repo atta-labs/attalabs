@@ -244,13 +244,18 @@ function fitBareDesc({ bar, lockup, rest, wordRest, word, desc, wordLead, descW,
   /* The bar's own controls: every link and button in it outside the lockup's own link, read
      fresh each frame (the theme toggle mounts client-side, replacing its SSR'd node). Hidden
      ones (the desktop nav on phones, the menu button on desktop) measure zero and are
-     skipped, so one query serves every breakpoint. */
+     skipped, so one query serves every breakpoint. Only controls in the lockup's own row
+     count — those whose box overlaps the lockup's resting box vertically. An open dropdown
+     (the nav's "Docs" group) renders its links inside `bar` too, but below the row; counting
+     them would set `left`/`bottom` from a panel that is not in the descriptor's path and
+     shrink it to nothing while the panel is open. */
   let left = Number.POSITIVE_INFINITY
   let bottom = Number.NEGATIVE_INFINITY
   for (const el of bar.querySelectorAll('a, button')) {
     if (el.contains(lockup)) continue
     const r = el.getBoundingClientRect()
     if (r.width === 0 || r.height === 0 || r.left <= rest.left) continue
+    if (r.top >= rest.bottom || r.bottom <= rest.top) continue
     left = Math.min(left, r.left)
     bottom = Math.max(bottom, r.bottom)
   }
