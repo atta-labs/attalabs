@@ -206,8 +206,23 @@ function MilestoneVisual({ artwork }: { artwork: MilestoneArtwork }) {
         // `marks-motion.css`'s keyframes (an `<img>` is a separate document and could
         // do neither). `markup` was sanitized on the server (`_lib/sanitize-svg.ts`)
         // before it reached this client component. The uploaded root carries a fixed
-        // `width`/`height`; `[&>svg]:size-full` fits it to this box via its `viewBox`.
-        <div className='size-full [&>svg]:size-full' dangerouslySetInnerHTML={{ __html: artwork.markup }} />
+        // `width`/`height`; `[&>svg]:size-full` alone fits it to this box via its
+        // `viewBox` ONLY where the engine treats this wrapper's `aspect-[4/3]`-derived
+        // height as a definite size for percentage resolution — Chromium does, but that
+        // is not the reliably cross-engine part of the spec, so on an engine that
+        // instead falls back to `height:auto` there, `height:100%` on this div (and in
+        // turn on the injected `<svg>`) resolves to nothing, and both collapse to the
+        // svg's own raw `width`/`height` attributes (e.g. 400×300) — the exact
+        // "renders too large for its container" overflow this box exists to prevent.
+        // `absolute inset-0` sidesteps that: an absolutely positioned box's size comes
+        // from its containing block's padding box directly, a codepath every engine
+        // resolves the same way regardless of how that box's own height was derived.
+        // Same fix `next/image`'s `fill` (the `kind === 'image'` branch below) already
+        // gets for free; this mirrors it for the inlined-SVG path by hand.
+        <div
+          className='absolute inset-0 [&>svg]:absolute [&>svg]:inset-0 [&>svg]:size-full'
+          dangerouslySetInnerHTML={{ __html: artwork.markup }}
+        />
       ) : artwork.kind === 'image' ? (
         <Image src={artwork.url} alt='' fill sizes='85px' className='object-cover' />
       ) : (
