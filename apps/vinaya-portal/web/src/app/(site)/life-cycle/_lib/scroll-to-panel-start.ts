@@ -11,7 +11,8 @@ function scrollParent(element: HTMLElement): HTMLElement | null {
   return null
 }
 
-// Smooth-scrolls `section` so its top lands flush under the sticky `switcher`.
+// Scrolls `section` so its top lands flush under the sticky `switcher` —
+// smoothly, or instantly when the reader asks for reduced motion.
 //
 // Everything is measured at call time, nothing hardcoded: the switcher's stuck
 // position is the scroll container's top edge plus its own padding (the `pt-14`
@@ -30,5 +31,6 @@ export function scrollToPanelStart(section: HTMLElement, switcher: HTMLElement) 
   const landingY = containerTop + paddingTop + stickyTop + switcher.getBoundingClientRect().height
 
   const delta = section.getBoundingClientRect().top - landingY
-  container.scrollTo({ top: container.scrollTop + delta, behavior: 'smooth' })
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  container.scrollTo({ top: container.scrollTop + delta, behavior: reduced ? 'instant' : 'smooth' })
 }
