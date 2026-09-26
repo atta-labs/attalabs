@@ -127,52 +127,93 @@ export function LifeCycleHero3D() {
     // repo's 18px root); LifecycleSection/OwnershipSection pin against 4.5rem,
     // which is 18px short, invisible on their centred content but a real gap
     // under anything anchored to the pane's bottom edge, as this is.
-    <section ref={sectionRef} className='relative h-[320dvh] bg-background text-foreground'>
-      <div className='sticky top-0 h-[calc(100dvh-3.5rem)] overflow-hidden'>
-        <canvas ref={canvasRef} aria-hidden className='absolute inset-0 z-0 block size-full' />
+    //
+    // Under reduced motion there is nothing to scroll through: the scene holds one
+    // composed frame of all three altitudes, so the runway collapses to that one
+    // pane and all three captions show at once (see the captions block below).
+    <section ref={sectionRef} className='relative h-[320dvh] bg-background text-foreground motion-reduce:h-auto'>
+      <div className='sticky top-0 h-[calc(100dvh-3.5rem)] overflow-hidden motion-reduce:static motion-reduce:h-auto motion-reduce:overflow-visible'>
+        {/* The stage: canvas, header, rail and label layer share this one box, so the
+            label projection and the canvas measure the same rectangle. */}
+        <div className='absolute inset-0 overflow-hidden motion-reduce:relative motion-reduce:h-[calc(100dvh-3.5rem)]'>
+          <canvas ref={canvasRef} aria-hidden className='absolute inset-0 z-0 block size-full' />
 
-        {/* Hero copy: rises into a small persistent header, then hands the
+          {/* Hero copy: rises into a small persistent header, then hands the
             screen over to the in-scene title at the head of the branch. */}
-        <div
-          ref={heroRef}
-          className='pointer-events-none absolute inset-0 z-[2] flex flex-col items-center justify-start px-6 text-center [--hp:0]'
-        >
-          <div ref={innerRef} className={`${s.inner} flex flex-col items-center gap-0 will-change-transform`}>
-            <Text
-              as='p'
-              className={`${s.overline} overflow-hidden font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground`}
-            >
-              three altitudes — three processes
-            </Text>
-            {/* A plain h1, not Heading: the title's font-size is interpolated off
+          <div
+            ref={heroRef}
+            className='pointer-events-none absolute inset-0 z-[2] flex flex-col items-center justify-start px-6 text-center [--hp:0]'
+          >
+            <div ref={innerRef} className={`${s.inner} flex flex-col items-center gap-0 will-change-transform`}>
+              <Text
+                as='p'
+                className={`${s.overline} overflow-hidden font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-muted-foreground`}
+              >
+                three altitudes — three processes
+              </Text>
+              {/* A plain h1, not Heading: the title's font-size is interpolated off
                 `--hp` every frame, and Heading always emits a `text-*` class of its
                 own that would race the module rule for the same property. */}
-            <h1 className={`${s.title} m-0 max-w-[56rem] font-normal leading-[1.05] tracking-[-0.025em]`}>
-              Vinaya&rsquo;s life cycle
-            </h1>
-            <div
-              className={`${s.words} flex justify-center gap-3.5 overflow-hidden font-mono text-lg uppercase tracking-[0.28em]`}
-            >
-              <span>Plan</span>
-              <span className='text-muted-foreground'>·</span>
-              <span>Execute</span>
-              <span className='text-muted-foreground'>·</span>
-              <span>Archive</span>
-            </div>
-            {/* Per-letter morph is driven by the scene, off the same eased scroll
+              <h1 className={`${s.title} m-0 max-w-[56rem] font-normal leading-[1.05] tracking-[-0.025em]`}>
+                Vinaya&rsquo;s life cycle
+              </h1>
+              <div
+                className={`${s.words} flex justify-center gap-3.5 overflow-hidden font-mono text-lg uppercase tracking-[0.28em]`}
+              >
+                <span>Plan</span>
+                <span className='text-muted-foreground'>·</span>
+                <span>Execute</span>
+                <span className='text-muted-foreground'>·</span>
+                <span>Archive</span>
+              </div>
+              {/* Per-letter morph is driven by the scene, off the same eased scroll
                 value as the camera — see the PR body for why LifeCycleWordFlow
                 cannot carry this one. */}
-            <p ref={wordRef} className={`${s.word} flex items-center justify-center font-mono text-muted-foreground`} />
+              <p
+                ref={wordRef}
+                className={`${s.word} flex items-center justify-center font-mono text-muted-foreground motion-reduce:hidden`}
+              />
+            </div>
           </div>
+
+          {/* Altitude rail. */}
+          <div className='absolute bottom-10 right-9 z-[2] flex flex-col items-end gap-2 max-lg:hidden motion-reduce:hidden'>
+            <Text
+              as='p'
+              className='mb-[0.35rem] font-mono text-[0.625rem] uppercase tracking-[0.28em] text-muted-foreground'
+            >
+              scroll to descend
+            </Text>
+            <div className='flex flex-col items-end gap-[0.35rem]'>
+              {ALTITUDES.map((a) => (
+                <i
+                  key={a.no}
+                  data-tick={a.no}
+                  className='block h-0.5 w-6 bg-border transition-all duration-200 ease-out data-[on=true]:w-10 data-[on=true]:bg-primary'
+                />
+              ))}
+            </div>
+            <span ref={readoutRef} className='font-mono text-[0.6875rem] tracking-[0.22em] text-muted-foreground' />
+          </div>
+
+          {/* Labels anchored to objects in the scene, positioned per frame. */}
+          <div ref={labelsRef} aria-hidden className='pointer-events-none absolute inset-0 z-[2]' />
         </div>
 
-        {/* Altitude captions: one card per tier, cross-faded by the scene. */}
-        <div className='absolute bottom-10 left-9 z-[2] w-[min(21rem,34vw)] max-lg:inset-x-5 max-lg:bottom-7 max-lg:w-auto'>
+        {/* Altitude captions: one card per tier; the scene sets `data-on` on the one
+            the reader is on. Stacked in one spot, so the hand-off is sequential, not a
+            cross-fade: the outgoing card fades out fast, and the incoming one waits
+            that long before fading in — two cards' text never overlap on screen.
+            Reduced motion shows all three: a row along the pane's foot on lg+ (the
+            scene's composed frame is fitted above it), in flow below the pane under
+            lg, where three stacked cards would bury the drawing. */}
+        <div className='absolute bottom-10 left-9 z-[2] w-[min(21rem,34vw)] max-lg:inset-x-5 max-lg:bottom-7 max-lg:w-auto motion-reduce:grid motion-reduce:w-auto motion-reduce:gap-4 max-lg:motion-reduce:static max-lg:motion-reduce:px-5 max-lg:motion-reduce:pb-7 lg:motion-reduce:right-9 lg:motion-reduce:grid-cols-3'>
           {ALTITUDES.map((a) => (
             <Card
               key={a.no}
               data-card={a.no}
-              className='absolute bottom-0 left-0 w-full bg-background/78 backdrop-blur-sm transition-[opacity,transform] duration-200 ease-out'
+              data-on={a.no === '01'}
+              className='absolute bottom-0 left-0 w-full translate-y-3 bg-background/78 opacity-0 backdrop-blur-sm transition-[opacity,translate] duration-100 ease-out data-[on=true]:translate-y-0 data-[on=true]:opacity-100 data-[on=true]:delay-100 data-[on=true]:duration-200 motion-reduce:relative motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none'
             >
               <CardContent>
                 <Text as='p' className='m-0 font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-primary'>
@@ -196,29 +237,6 @@ export function LifeCycleHero3D() {
             </Card>
           ))}
         </div>
-
-        {/* Altitude rail. */}
-        <div className='absolute bottom-10 right-9 z-[2] flex flex-col items-end gap-2 max-lg:hidden'>
-          <Text
-            as='p'
-            className='mb-[0.35rem] font-mono text-[0.625rem] uppercase tracking-[0.28em] text-muted-foreground'
-          >
-            scroll to descend
-          </Text>
-          <div className='flex flex-col items-end gap-[0.35rem]'>
-            {ALTITUDES.map((a) => (
-              <i
-                key={a.no}
-                data-tick={a.no}
-                className='block h-0.5 w-6 bg-border transition-all duration-200 ease-out data-[on=true]:w-10 data-[on=true]:bg-primary'
-              />
-            ))}
-          </div>
-          <span ref={readoutRef} className='font-mono text-[0.6875rem] tracking-[0.22em] text-muted-foreground' />
-        </div>
-
-        {/* Labels anchored to objects in the scene, positioned per frame. */}
-        <div ref={labelsRef} aria-hidden className='pointer-events-none absolute inset-0 z-[2]' />
       </div>
     </section>
   )

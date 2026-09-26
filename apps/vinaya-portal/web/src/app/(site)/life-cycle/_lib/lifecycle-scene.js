@@ -611,10 +611,14 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   reject.visible = false
   gitG.add(reject)
 
-  /* The loop the task actually runs. Review sends it back once — nothing past the two
+  /* The run the task actually makes. Review sends it back once — nothing past the two
      spurs is drawn until it comes back green, so verify and merge cannot appear before
-     the work has earned them. Windows are fractions of one cycle. */
-  const CYCLE = 9
+     the work has earned them. Windows are fractions of one run.
+
+     Not a timed loop any more: the handoff played this on a 9s clock, so a reader who
+     scrolled at their own pace arrived mid-cycle, or scrolled past before merge was
+     ever drawn. The run is now a function of scroll (TASK_P, in frame()) — scrolling
+     down draws it through to the Merged chip, scrolling up undraws it. */
   const CUE = {
     brief: [0.05, 0.11],
     develop: [0.17, 0.23],
@@ -631,6 +635,9 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     mergeDot: [0.81, 0.845],
     chip: [0.83, 0.87]
   }
+  // the finished run: the whole branch drawn and merged — where scroll ends, and the
+  // frame reduced motion holds
+  const Q_COMPOSED = 0.9
   const at = (q, w) => smooth(clamp01((q - w[0]) / (w[1] - w[0])))
   // the last stretch is a hold on the finished branch before the next task starts
   const LANE_KEYS = [
@@ -658,15 +665,12 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   const gates = {}
   let lastLaneF = 0
 
-  /* Once the descent finishes the DOM header fades out and the page's title reappears
-     anchored in the drawing itself, at the head of the branch — so it travels with
-     the scene instead of sitting on top of it. */
-  const titleAnchor = new THREE.Object3D()
-  titleAnchor.name = 'heroTitle'
-  titleAnchor.position.set(live.pos.x - 1.0, LIVE_BOT + 0.25, Z)
-  gitG.add(titleAnchor)
-
   /* ── labels ────────────────────────────────────────────────────────────── */
+  /* A stage's word never waits on the loop: its commit still pops in on cue, but the
+     word holds this floor all cycle, so the task's labels are there to read whenever
+     the reader arrives — whichever way they scrolled in, whatever phase the loop is
+     in. Only 'Merged', which is the chip's own face, rides its gate all the way. */
+  const STAGE_FLOOR = 0.6
   const LABELS = [
     { text: 'milestone', obj: banner, off: V(-0.06, 0, 0), tier: 0, tone: 'ink', cls: 'tiny', tilt: V(0.3, 0, 0) },
     { text: 'tranches', obj: TRANCHES[3].group, off: V(0.66, 0.24, 0), tier: 0, tone: 'muted', align: 'left' },
@@ -685,28 +689,34 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
       tier: 2,
       tone: 'ink',
       gate: s.id,
+      floor: STAGE_FLOOR,
       align: i === 0 ? 'left' : undefined
     })),
     {
       text: 'one pull request',
       obj: prG,
       off: V(1.42, LANE_B - 0.5, Z),
+      // narrow windows draw the branch small enough that this runs into 'security'
+      offNarrow: V(1.42, LANE_B - 0.66, Z),
       tier: 2,
       tone: 'muted',
       local: true,
-      gate: 'develop'
+      gate: 'develop',
+      floor: STAGE_FLOOR
     },
-    { text: 'merge', obj: mergeCommit, off: V(0, 0.2, 0), tier: 2, tone: 'ink', gate: 'merge' },
-    { text: 'Merged', obj: badge, off: V(0.14, 0.005, 0), tier: 2, tone: 'merged', cls: 'chip', gate: 'chip' },
+    /* The composed frame draws the branch smaller than the task altitude does, and at
+       that size 'merge' runs into 'verify' — it hangs under its dot there instead. */
     {
-      text: 'Vinaya’s life cycle',
-      obj: titleAnchor,
-      off: V(0, 0, 0),
+      text: 'merge',
+      obj: mergeCommit,
+      off: reduced ? V(0, -0.2, 0) : V(0, 0.2, 0),
+      offNarrow: V(0, -0.2, 0),
       tier: 2,
       tone: 'ink',
-      cls: 'title',
-      align: 'left'
-    }
+      gate: 'merge',
+      floor: STAGE_FLOOR
+    },
+    { text: 'Merged', obj: badge, off: V(0.14, 0.005, 0), tier: 2, tone: 'merged', cls: 'chip', gate: 'chip' }
   ]
   LABELS.forEach((l) => {
     const el = document.createElement('span')
@@ -725,6 +735,143 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   ]
   const cPos = new THREE.Vector3()
   const cTgt = new THREE.Vector3()
+
+  /* ── reading focus: which altitude the reader is on ─────────────────────────
+     One partition of scroll drives every "what am I reading" signal — the labels,
+     the caption card, the rail, the readout and the morphing word — so none of
+     them can disagree about the altitude. The boundaries are the midpoints of the
+     camera's two legs in scroll terms (CAM_LEGS, below; each leg eases with smooth(),
+     fastest at its midpoint), so the focus changes hands where the view actually does.
+
+     Labels hand off with an OVERLAP: the arriving altitude's labels are fully
+     legible before the leaving altitude's start to fade, so no scroll position
+     has neither — the old camera-band gating left two such dead zones, near
+     p≈0.25 and p≈0.7. Every weight is a pure function of p, never of the
+     direction of travel, so scrolling back up replays the same frames exactly. */
+  const HANDOFF = [0.25, 0.64]
+  const OVERLAP = 0.06
+  const FADE = 0.08
+  function labelTier(i, v) {
+    const arrive = i === 0 ? 1 : smooth(clamp01((v - (HANDOFF[i - 1] - OVERLAP - FADE)) / FADE))
+    const leave = i === 2 ? 1 : 1 - smooth(clamp01((v - (HANDOFF[i] + OVERLAP)) / FADE))
+    return arrive * leave
+  }
+  /* The caption cards are stacked in one spot, so exactly one may show at a time.
+     The focus flips at a boundary only once p is clear of it by HYST, so a reader
+     resting on a boundary never sees the card flicker; the band is the same width
+     either side, so the flip is symmetric in both directions of travel. */
+  const HYST = 0.015
+  function focusOf(v, prev) {
+    let i = prev
+    while (i < 2 && v > HANDOFF[i] + HYST) i++
+    while (i > 0 && v < HANDOFF[i - 1] - HYST) i--
+    return i
+  }
+
+  /* ── reduced motion: one composed, static frame ─────────────────────────────
+     The whole graph — milestone, every tranche, the finished branch — fitted into
+     the band under the header, viewed from between the tranche and task altitudes'
+     directions, with every label on. Nothing in it reads scroll, time or the pointer. */
+  const composed = { pos: new THREE.Vector3(), tgt: new THREE.Vector3(), dist: 10, dirty: true }
+  /* How small the composed frame draws depends on the window, so which words would
+     collide does too. The frame is static, so this runs once per fit, not per frame:
+     measure every label, then walk them top to bottom, pushing each one down clear of
+     any label above it that it would overlap. */
+  let relaxPending = false
+  function relaxLabels() {
+    const placed = []
+    const boxes = LABELS.filter((l) => +l.el.style.opacity > 0.01)
+      .map((l) => {
+        // measured where it sits now, less the nudge the previous fit gave it
+        const m = l.el.getBoundingClientRect()
+        const was = l.nudge ?? 0
+        l.nudge = 0
+        return { l, r: { left: m.left, right: m.right, top: m.top - was, bottom: m.bottom - was } }
+      })
+      .sort((a, b) => a.r.top - b.r.top)
+    for (const b of boxes) {
+      const h = b.r.bottom - b.r.top
+      let top = b.r.top
+      // a push can land the label on a box already checked, so re-scan until it
+      // clears them all; every push is strictly downward, so this terminates
+      let moved = true
+      while (moved) {
+        moved = false
+        for (const o of placed) {
+          if (b.r.left < o.right && o.left < b.r.right && top < o.bottom && o.top < top + h) {
+            top = o.bottom + 2
+            moved = true
+          }
+        }
+      }
+      b.l.nudge = top - b.r.top
+      placed.push({ left: b.r.left, right: b.r.right, top, bottom: top + (b.r.bottom - b.r.top) })
+    }
+  }
+  const box = new THREE.Box3()
+  const corner = new THREE.Vector3()
+  function fitComposed() {
+    graph.updateMatrixWorld(true)
+    box.setFromObject(graph)
+    // room for the words that hang off the drawing's right and bottom edges
+    box.max.x += 0.7
+    box.min.y -= 0.2
+    const center = box.getCenter(new THREE.Vector3())
+    // halfway between the tranche and task altitudes' directions: from the task's
+    // alone the milestone's banner turns edge-on, from the tranche's alone the branch
+    // is foreshortened until its words run into each other
+    const dir = KEYS[1].pos
+      .clone()
+      .sub(KEYS[1].tgt)
+      .normalize()
+      .add(KEYS[2].pos.clone().sub(KEYS[2].tgt).normalize())
+      .normalize()
+    // the caption row, when it overlays the pane (lg+), is the band's floor
+    const capBox = cards[0]?.parentElement.getBoundingClientRect()
+    const capTop = capBox ? capBox.top - vTop : vh
+    const floorPx = capTop > clearBelow && capTop < vh ? capTop - 16 : vh - 24
+    const bandPx = Math.max(130, floorPx - clearBelow)
+    const pxBox = (d) => {
+      camera.position.copy(center).addScaledVector(dir, d)
+      camera.lookAt(center)
+      camera.updateMatrixWorld()
+      let x0 = Number.POSITIVE_INFINITY
+      let x1 = Number.NEGATIVE_INFINITY
+      let y0 = Number.POSITIVE_INFINITY
+      let y1 = Number.NEGATIVE_INFINITY
+      for (let k = 0; k < 8; k++) {
+        corner.set(k & 1 ? box.max.x : box.min.x, k & 2 ? box.max.y : box.min.y, k & 4 ? box.max.z : box.min.z)
+        corner.project(camera)
+        const sx = (corner.x * 0.5 + 0.5) * vw
+        const sy = (-corner.y * 0.5 + 0.5) * vh
+        x0 = Math.min(x0, sx)
+        x1 = Math.max(x1, sx)
+        y0 = Math.min(y0, sy)
+        y1 = Math.max(y1, sy)
+      }
+      return { x0, x1, y0, y1 }
+    }
+    let lo = 2
+    let hi = 80
+    for (let k = 0; k < 24; k++) {
+      const mid = (lo + hi) / 2
+      const b = pxBox(mid)
+      if (b.x1 - b.x0 <= vw * 0.92 && b.y1 - b.y0 <= bandPx * 0.94) hi = mid
+      else lo = mid
+    }
+    const b = pxBox(hi)
+    const upp = (2 * hi * Math.tan((34 * Math.PI) / 180 / 2)) / vh
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0)
+    const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1)
+    const shift = right
+      .multiplyScalar(((b.x0 + b.x1) / 2 - vw / 2) * upp)
+      .addScaledVector(up, -((b.y0 + b.y1) / 2 - (clearBelow + 12 + bandPx / 2)) * upp)
+    composed.tgt.copy(center).add(shift)
+    composed.pos.copy(composed.tgt).addScaledVector(dir, hi)
+    composed.dist = hi
+    composed.dirty = false
+    relaxPending = true
+  }
   // second projection slot, for a label that must sit on its surface's own angle
   const tiltW = new THREE.Vector3()
   const tiltP = new THREE.Vector3()
@@ -773,6 +920,7 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   const pinned = { 1: 0, 2: 0.5, 3: 1 }[new URLSearchParams(location.search).get('altitude')]
   let target = pinned ?? 0
   let p = target
+  let focus = target < HANDOFF[0] ? 0 : target < HANDOFF[1] ? 1 : 2
   let px = 0
   let py = 0
   let mx = 0
@@ -784,9 +932,7 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   addEventListener('pointermove', onPointerMove, { passive: true })
 
   let clearBelow = 0
-  let heroTop = 0
   let lastHp = -1
-  let lastFade = -1
   function resize() {
     const r = canvas.getBoundingClientRect()
     vw = Math.max(1, Math.round(r.width))
@@ -796,8 +942,8 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     renderer.setSize(vw, vh, false)
     camera.aspect = vw / vh
     camera.updateProjectionMatrix()
-    heroTop = heroEl.getBoundingClientRect().top - vTop
     lastHp = -1 // the hero's rise is measured in vh, so its footprint changes with the window
+    composed.dirty = true
   }
   addEventListener('resize', resize)
   // The pane resizes with the app shell, not only with the window — a window
@@ -806,21 +952,20 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
   resizeObserver.observe(canvas)
   resize()
 
-  /* Two things ride the same scroll value the camera does: the header's rise (--hp),
-     and its exit (opacity) on the last leg, where the title would otherwise sit on
-     top of the branch. Re-measuring only when it has actually moved keeps this to one
-     forced layout per changed frame instead of one per frame. */
+  /* The header's rise (--hp) rides the same scroll value the camera does. The header
+     then stays, as the page's title, for the whole descent: the handoff faded it out on
+     the last leg and re-drew the title inside the drawing, but the task view is now
+     zoomed in on the branch and has no room for it. Re-measuring only when it has
+     actually moved keeps this to one forced layout per changed frame. */
   function heroBand(p) {
-    const hp = smooth(clamp01(p / 0.26))
-    const fade = 1 - smooth(clamp01((p - 0.62) / 0.18))
-    if (Math.abs(hp - lastHp) > 0.0015 || Math.abs(fade - lastFade) > 0.004) {
+    // reduced motion holds the small header
+    const hp = reduced ? 1 : smooth(clamp01(p / 0.26))
+    if (Math.abs(hp - lastHp) > 0.0015) {
+      if (reduced) composed.dirty = true
       lastHp = hp
-      lastFade = fade
       heroEl.style.setProperty('--hp', hp.toFixed(4))
-      heroInner.style.opacity = fade.toFixed(3)
       waveScale = 0.3 + (1 - hp) * 0.7
-      const bottom = heroInner.getBoundingClientRect().bottom - vTop + 14
-      clearBelow = heroTop + (bottom - heroTop) * fade
+      clearBelow = heroInner.getBoundingClientRect().bottom - vTop + 14
     }
   }
 
@@ -837,7 +982,47 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     live.draw()
   }
 
-  const band = (c, half) => smooth(clamp01(1 - Math.abs(p - c) / half))
+  /* Camera progress, remapped from scroll progress so each altitude ARRIVES early and
+     then HOLDS: the handoff eased straight across the runway, so the task view only
+     completed at the very end of the scroll and the reader was already leaving. Each
+     leg now runs over a window, and the view parks between them — above all at the
+     task altitude, which holds for the last stretch while its run draws (TASK_P). */
+  const CAM_LEGS = [
+    [0.08, 0.42],
+    [0.5, 0.78]
+  ]
+  function camP(v) {
+    if (v <= CAM_LEGS[0][0]) return 0
+    if (v <= CAM_LEGS[0][1]) return 0.5 * ((v - CAM_LEGS[0][0]) / (CAM_LEGS[0][1] - CAM_LEGS[0][0]))
+    if (v <= CAM_LEGS[1][0]) return 0.5
+    if (v <= CAM_LEGS[1][1]) return 0.5 + 0.5 * ((v - CAM_LEGS[1][0]) / (CAM_LEGS[1][1] - CAM_LEGS[1][0]))
+    return 1
+  }
+  let c = 0
+  // portrait-ish windows, where the task view is fitted to width rather than height
+  const narrow = () => camera.aspect < 0.8
+  const band = (center, half) => smooth(clamp01(1 - Math.abs(c - center) / half))
+
+  /* The task view frames the branch itself, zoomed in: the handoff's task key kept
+     the tranche tables in shot, which left the branch — the point of the whole
+     descent — small, and on a portrait window cut off merge and the Merged chip.
+     The frame runs from the first stage to the chip (in gitG's own coordinates,
+     padded for the words that hang off it); a narrow window starts it at develop
+     instead, trading the lane's start for size, never the merged end. */
+  const TAN_HALF_FOV = Math.tan((34 * Math.PI) / 180 / 2)
+  const taskFrame = (x0) => {
+    const a = gitG.localToWorld(V(x0, LANE_B - 0.8, Z))
+    const b = gitG.localToWorld(V(4.55, LANE_A + 0.3, Z))
+    return { min: a, max: b, center: a.clone().lerp(b, 0.5) }
+  }
+  graph.updateMatrixWorld(true)
+  const TASK_WIDE = taskFrame(-0.3)
+  const TASK_NARROW = taskFrame(0.55)
+  // the scroll window the task's run is drawn across — it starts as the task view
+  // takes the focus and is finished, merged, a little before the runway ends
+  const TASK_P = [0.6, 0.94]
+  const taskTgt = new THREE.Vector3()
+
   const proj = new THREE.Vector3()
 
   function frame(ms) {
@@ -848,44 +1033,85 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
     const cr = canvas.getBoundingClientRect()
     vLeft = cr.left
     vTop = cr.top
-    if (pinned === undefined) {
+    if (pinned === undefined && !reduced) {
       const r = track.getBoundingClientRect()
       target = clamp01((vTop - r.top) / Math.max(1, r.height - vh))
     }
     p += (target - p) * 0.07
     heroBand(p)
+    c = reduced ? 0.5 : camP(p)
 
-    const wM = band(0, 0.5)
-    const wT = band(0.5, 0.45)
-    const wK = band(1, 0.5)
-    const seg2 = p < 0.5 ? 0 : 1
-    const f = smooth(clamp01(p * 2 - seg2))
-    cPos.lerpVectors(KEYS[seg2].pos, KEYS[seg2 + 1].pos, f)
-    cTgt.lerpVectors(KEYS[seg2].tgt, KEYS[seg2 + 1].tgt, f)
+    // Under reduced motion the scene's contrast is the tranche altitude's — the
+    // middle of the three, where milestone, tables and branch all keep a floor.
+    const wM = reduced ? 0.5 : band(0, 0.5)
+    const wT = reduced ? 1 : band(0.5, 0.45)
+    const wK = reduced ? 0.8 : band(1, 0.5)
 
-    const bandPx = Math.max(130, vh - clearBelow)
-    const fitCap = KEYS[seg2].fit + (KEYS[seg2 + 1].fit - KEYS[seg2].fit) * f
-    const off = cPos
-      .clone()
-      .sub(cTgt)
-      .multiplyScalar(Math.min(fitCap, Math.max(1, 470 / bandPx)))
-    const dist = off.length()
-    const unitsPerPx = (2 * dist * Math.tan((34 * Math.PI) / 180 / 2)) / vh
-    const bandF = KEYS[seg2].band + (KEYS[seg2 + 1].band - KEYS[seg2].band) * f
-    cTgt.y += (clearBelow + bandPx * bandF - vh / 2) * unitsPerPx
-    cPos.copy(cTgt).add(off)
-    scene.fog.near = dist * 0.7
-    scene.fog.far = dist * 2.6
+    if (reduced) {
+      if (composed.dirty) fitComposed()
+      camera.position.copy(composed.pos)
+      camera.lookAt(composed.tgt)
+      scene.fog.near = composed.dist * 0.9
+      scene.fog.far = composed.dist * 3
+    } else {
+      const seg2 = c < 0.5 ? 0 : 1
+      const f = smooth(clamp01(c * 2 - seg2))
+      cPos.lerpVectors(KEYS[seg2].pos, KEYS[seg2 + 1].pos, f)
+      cTgt.lerpVectors(KEYS[seg2].tgt, KEYS[seg2 + 1].tgt, f)
 
-    mx += (px - mx) * 0.05
-    my += (py - my) * 0.05
-    const ang = (reduced ? 0 : Math.sin(t * 0.07) * 0.09) + mx * 0.08
-    camera.position.set(
-      cPos.x * Math.cos(ang) - cPos.z * Math.sin(ang),
-      cPos.y - my * 0.36 + (reduced ? 0 : Math.sin(t * 0.11) * 0.05),
-      cPos.x * Math.sin(ang) + cPos.z * Math.cos(ang)
-    )
-    camera.lookAt(cTgt.x + mx * 0.14, cTgt.y, cTgt.z)
+      const bandPx = Math.max(130, vh - clearBelow)
+      const fitCap = KEYS[seg2].fit + (KEYS[seg2 + 1].fit - KEYS[seg2].fit) * f
+      const off = cPos
+        .clone()
+        .sub(cTgt)
+        .multiplyScalar(Math.min(fitCap, Math.max(1, 470 / bandPx)))
+      let dist = off.length()
+      const unitsPerPx = (2 * dist * TAN_HALF_FOV) / vh
+      const bandF = KEYS[seg2].band + (KEYS[seg2 + 1].band - KEYS[seg2].band) * f
+      cTgt.y += (clearBelow + bandPx * bandF - vh / 2) * unitsPerPx
+
+      /* Arriving at the task: blend into the zoomed branch frame. It is fitted into the
+         free region — under the header, right of the caption card on lg+ (and clear of
+         the rail at the foot), above the full-width card below lg. */
+      const k = seg2 === 1 ? f : 0
+      if (k > 0) {
+        const fr = narrow() ? TASK_NARROW : TASK_WIDE
+        const wide = vw >= 1024
+        const card = cards[focus]?.getBoundingClientRect()
+        const left = wide && card ? card.right - vLeft + 24 : 16
+        const right = vw - (wide ? 32 : 16)
+        const top = clearBelow + 8
+        const bottom = wide ? vh - 96 : card ? Math.min(vh - 16, card.top - vTop - 12) : vh - 16
+        const wPx = Math.max(120, right - left)
+        const hPx = Math.max(120, bottom - top)
+        const dFit = Math.max(
+          ((fr.max.x - fr.min.x) / 2 / (TAN_HALF_FOV * camera.aspect)) * (vw / wPx),
+          ((fr.max.y - fr.min.y) / 2 / TAN_HALF_FOV) * (vh / hPx)
+        )
+        const upp = (2 * dFit * TAN_HALF_FOV) / vh
+        taskTgt.copy(fr.center)
+        taskTgt.x -= ((left + right) / 2 - vw / 2) * upp
+        taskTgt.y += ((top + bottom) / 2 - vh / 2) * upp
+        cTgt.lerp(taskTgt, k)
+        dist += (dFit - dist) * k
+        off.setLength(dist)
+      }
+      cPos.copy(cTgt).add(off)
+      scene.fog.near = dist * 0.7
+      scene.fog.far = dist * 2.6
+
+      mx += (px - mx) * 0.05
+      my += (py - my) * 0.05
+      // the idle yaw pivots round the world origin; zoomed in on the branch it would
+      // swing the frame sideways, so it settles out as the task view arrives
+      const ang = (Math.sin(t * 0.07) * 0.09 + mx * 0.08) * (1 - 0.85 * (c > 0.5 ? smooth(clamp01(c * 2 - 1)) : 0))
+      camera.position.set(
+        cPos.x * Math.cos(ang) - cPos.z * Math.sin(ang),
+        cPos.y - my * 0.36 + Math.sin(t * 0.11) * 0.05,
+        cPos.x * Math.sin(ang) + cPos.z * Math.cos(ang)
+      )
+      camera.lookAt(cTgt.x + mx * 0.14, cTgt.y, cTgt.z)
+    }
 
     if (!reduced) for (const b of bob) b.obj.position.y = b.base + Math.sin(t * 0.5 + b.phase) * b.amp
 
@@ -924,7 +1150,7 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
 
     /* the task's own loop, played on repeat once you're at its altitude: review sends
        it back once, develop fixes it, and only then are verify and merge drawn */
-    const q = reduced ? 1 : (t / CYCLE) % 1
+    const q = reduced ? Q_COMPOSED : Q_COMPOSED * clamp01((p - TASK_P[0]) / (TASK_P[1] - TASK_P[0]))
     const laneF = laneFrac(q)
     laneMesh.geometry.setDrawRange(0, Math.max(6, Math.round(LANE_IDX * laneF)))
     reviewSpur.geometry.setDrawRange(0, Math.max(6, Math.round(SPUR_IDX * at(q, CUE.spurs))))
@@ -976,17 +1202,21 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
       sphere.rotation.x = Math.sin(t * 0.05) * 0.12
     }
 
-    const tierW = [wM, wT, wK]
+    const labelW = reduced ? [1, 1, 1] : [labelTier(0, p), labelTier(1, p), labelTier(2, p)]
     scene.updateMatrixWorld(true)
     camera.updateMatrixWorld()
     LABELS.forEach((l) => {
-      if (l.local) l.world.copy(l.off).applyMatrix4(l.obj.matrixWorld)
-      else l.obj.getWorldPosition(l.world).add(l.off)
+      const off = l.offNarrow && narrow() ? l.offNarrow : l.off
+      if (l.local) l.world.copy(off).applyMatrix4(l.obj.matrixWorld)
+      else l.obj.getWorldPosition(l.world).add(off)
       proj.copy(l.world).project(camera)
-      const on = clamp01(tierW[l.tier] * 2.1 - 0.8) * (l.gate ? (gates[l.gate] ?? 1) : 1) * (proj.z < 1 ? 1 : 0)
+      const g = l.gate ? (gates[l.gate] ?? 1) : 1
+      const gate = l.floor ? l.floor + (1 - l.floor) * g : g
+      const tierOn = labelW[l.tier]
+      const on = tierOn * gate * (proj.z < 1 ? 1 : 0)
       l.el.style.opacity = String(on)
       if (on > 0.01) {
-        const ax = l.align === 'left' ? '0' : '-50%'
+        const ax = l.align === 'left' ? '0' : l.align === 'right' ? '-100%' : '-50%'
         /* A label lying ON a surface takes that surface's screen angle: project a
            second point along the surface's own axis and read the angle between them,
            so the word stays parallel to the flag however the camera swings. */
@@ -998,16 +1228,21 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
           const dy = (proj.y - tiltP.y) * vh
           rot = ` rotate(${((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2)}deg)`
         }
-        l.el.style.transform = `translate(${(proj.x * 0.5 + 0.5) * vw}px, ${(-proj.y * 0.5 + 0.5) * vh}px)${rot} translate(${ax}, -50%)`
+        const nudge = reduced ? (l.nudge ?? 0) : 0
+        l.el.style.transform = `translate(${(proj.x * 0.5 + 0.5) * vw}px, ${(-proj.y * 0.5 + 0.5) * vh + nudge}px)${rot} translate(${ax}, -50%)`
       }
     })
+    if (relaxPending) {
+      relaxPending = false
+      relaxLabels()
+    }
 
-    const idx = p < 0.34 ? 0 : p < 0.7 ? 1 : 2
-    if (idx !== morphTo) {
+    focus = focusOf(p, focus)
+    const idx = focus
+    if (!reduced && idx !== morphTo) {
       morphTo = idx
-      morphStart = reduced ? -1 : ms
+      morphStart = ms
       swapped = false
-      if (reduced) setWord(idx)
     }
     if (morphStart > 0) {
       const w = clamp01((ms - morphStart) / MORPH_MS)
@@ -1021,10 +1256,10 @@ export function mountLifecycleScene({ canvas, labelLayer, hero, heroInner, word,
         wave(0)
       }
     }
+    // the cross-fade itself is the cards' own data-on transition, authored in the .tsx
+    // so the outgoing card is gone before the incoming one starts — never both at once
     cards.forEach((el, i) => {
-      const w = tierW[i]
-      el.style.opacity = String(clamp01(w * 3 - 1.55))
-      el.style.transform = `translateY(${(1 - clamp01(w * 1.6)) * 12}px)`
+      el.setAttribute('data-on', String(reduced || i === idx))
     })
     ticks.forEach((el, i) => {
       el.setAttribute('data-on', String(i === idx))
