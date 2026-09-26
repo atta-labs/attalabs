@@ -41,3 +41,69 @@ export function computeCardStageProgress(q: number): { b: number; a: number; c: 
     c: clamp01((q - 0.58) / 0.42)
   }
 }
+
+// 22px of beam travel between two frames reads as full speed — the designer handoff's own
+// sensitivity constant for the head's velocity input (cosmetic crackle/glow only).
+const VELOCITY_FULL_SPEED_PX = 22
+
+export type CardOffset = { top: number; height: number }
+
+// Everything the scroll effect measures fresh from the DOM this frame — no history, no
+// carried state. `line` is the already-resolved viewport-relative y the beam tip tracks
+// toward (`(window.innerHeight * CONFIG.beamLine) / 100`), matching `computeDeployedPx`'s
+// own `line` parameter.
+export type TrackFrameGeometry = {
+  reduced: boolean
+  trackHeight: number
+  trackTop: number
+  line: number
+  spurReach: number
+  cardOffsets: CardOffset[]
+}
+
+// The only state the real effect carries from one frame to the next: the previous frame's
+// deployed position (to measure how far the beam just moved) and the running velocity
+// target itself. Both feed the cosmetic velocity output below — neither may feed `deployed`
+// or a card's stage.
+export type TrackFrameHistory = {
+  lastDeployed: number | null
+  velTarget: number
+}
+
+export type TrackFrameResult = {
+  deployed: number
+  cardStages: Array<{ b: number; a: number; c: number }>
+  velTarget: number
+  installDoneAt: number
+}
+
+// The full per-frame computation `DeploymentTrack.tsx`'s scroll effect calls — split out so
+// the "state is a pure function of current scroll position, nothing carried across frames
+// feeds it" contract is a property THIS function can be tested against directly, rather than
+// trusted by reading the call site. `deployed` and every card's stage come from `geometry`
+// alone; `history` — the one thing the real effect keeps in a ref across frames — feeds
+// ONLY the returned `velTarget` (cosmetic crackle/glow intensity elsewhere), never a card's
+// `--b`/`--a`/`--c` or the beam's own position. Holding `geometry` fixed and varying
+// `history` must never move `deployed` or `cardStages` — a test that violates this by
+// blending history into position is exactly the regression this split guards against.
+export function computeTrackFrame(geometry: TrackFrameGeometry, history: TrackFrameHistory): TrackFrameResult {
+  const { reduced, trackHeight, trackTop, line, spurReach, cardOffsets } = geometry
+  const deployed = reduced ? trackHeight : computeDeployedPx(trackHeight, line, trackTop)
+
+  let velTarget = history.velTarget
+  if (history.lastDeployed !== null) {
+    const delta = Math.abs(deployed - history.lastDeployed)
+    velTarget = Math.max(velTarget, Math.min(1, delta / VELOCITY_FULL_SPEED_PX))
+  }
+
+  const cardStages = cardOffsets.map(({ top, height }) => {
+    const mid = top + height / 2
+    const q = reduced ? 1 : computeCardProgress(deployed, mid, spurReach)
+    return computeCardStageProgress(q)
+  })
+
+  const last = cardOffsets[cardOffsets.length - 1]
+  const installDoneAt = last ? last.top + last.height / 2 + spurReach : Number.POSITIVE_INFINITY
+
+  return { deployed, cardStages, velTarget, installDoneAt }
+}
