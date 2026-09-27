@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  DEFAULT_GRACEFUL_TERMINATION_MS,
+  FORCED_TERMINATION_SIGNAL,
   GRACEFUL_TERMINATION_SIGNAL,
+  isProcessAbandoned,
   ProcessCancelledError,
+  ProcessTimedOutError,
   spawnProcessLifecycle,
   type SpawnedProcessLike
 } from './process-lifecycle'
+import { attachStreamReader } from './stream-reader'
 
 /** A scripted child process: emits its events on command and records every signal delivered to it. */
 interface FakeChild extends SpawnedProcessLike {
@@ -62,6 +67,9 @@ function spawnFake(overrides?: { signal?: AbortSignal; timeoutMs?: number; grace
   })
   return { child, handle }
 }
+
+/** Yields to the event loop for `ms`, letting the lifecycle's own timers fire. */
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('spawnProcessLifecycle — cancellation propagation (O1)', () => {
   it('signals the active child when the cancellation signal fires', async () => {
@@ -186,5 +194,81 @@ describe('spawnProcessLifecycle — cancellation propagation (O1)', () => {
     // is what keeps this exit from being missed entirely.
     child.emitClose(0)
     await expect(handle.waitForExit()).resolves.toBe(0)
+  })
+})
+
+describe('spawnProcessLifecycle — bounded termination escalation (O3)', () => {
+  it('escalates to the forced signal when the graceful one does not end the process in time', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal, gracefulTerminationMs: 10 })
+    const waiting = handle.waitForExit()
+
+    controller.abort()
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL])
+
+    // The child never closes: the wait must still settle, on the deadline.
+    const error = (await waiting.catch((err: unknown) => err)) as ProcessCancelledError
+
+    expect(error).toBeInstanceOf(ProcessCancelledError)
+    expect(error.forced).toBe(true)
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL, FORCED_TERMINATION_SIGNAL])
+    expect(error.message).toContain(FORCED_TERMINATION_SIGNAL)
+  })
+
+  it('does not send the forced signal when the child exits on the graceful one', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal, gracefulTerminationMs: 10 })
+    const waiting = handle.waitForExit()
+
+    controller.abort()
+    child.emitClose(143)
+    await waiting.catch(() => undefined)
+    await sleep(40)
+
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL])
+  })
+
+  it('escalates after a timeout too, so a child that ignores the graceful signal still ends', async () => {
+    const { child, handle } = spawnFake({ timeoutMs: 5, gracefulTerminationMs: 10 })
+
+    await expect(handle.waitForExit()).rejects.toBeInstanceOf(ProcessTimedOutError)
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL])
+
+    // The escalation deliberately outlives the rejection: the caller already
+    // knows the step is over, and the process still has to be made to end.
+    await sleep(40)
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL, FORCED_TERMINATION_SIGNAL])
+  })
+
+  it('abandons a child that survived the forced signal, so the stream reader stops framing', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal, gracefulTerminationMs: 10 })
+    const reported: unknown[] = []
+    attachStreamReader(child, (events) => reported.push(...events))
+    const waiting = handle.waitForExit()
+
+    child.emitStdout('{"seq":1}\n')
+    controller.abort()
+    await waiting.catch(() => undefined)
+
+    expect(isProcessAbandoned(child)).toBe(true)
+
+    // A child that outlived SIGKILL can keep writing to a pipe nothing waits
+    // on; reporting those records for an already-cancelled node is worse than
+    // dropping them.
+    child.emitStdout('{"seq":2}\n')
+    expect(reported).toEqual([{ seq: 1 }])
+  })
+
+  it('never abandons a child that closed on its own', async () => {
+    const { child, handle } = spawnFake()
+    child.emitClose(0)
+    await handle.waitForExit()
+    expect(isProcessAbandoned(child)).toBe(false)
+  })
+
+  it('gives the graceful signal a bounded window by default', () => {
+    expect(DEFAULT_GRACEFUL_TERMINATION_MS).toBeGreaterThan(0)
+    expect(Number.isFinite(DEFAULT_GRACEFUL_TERMINATION_MS)).toBe(true)
   })
 })
