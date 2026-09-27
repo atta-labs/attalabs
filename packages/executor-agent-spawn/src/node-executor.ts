@@ -1,70 +1,32 @@
 /**
  * @file node-executor.ts
- * @description Spawns the external process for one agent-spawn node, writes
- * its rendered prompt to stdin, captures its structured (NDJSON) stdout
- * stream, and returns a structured result. No vendor SDK, no `*_API_KEY`
- * anywhere here — the spawned process authenticates via its own
- * already-logged-in subscription session.
+ * @description Composes the process lifecycle (`process-lifecycle.ts`) and
+ * the stream reader (`stream-reader.ts`) into one agent-spawn node
+ * execution: resolves the node's role/permission/working-directory,
+ * spawns the process, writes its rendered prompt to stdin, waits for the
+ * process to fully close, and returns a structured result. No vendor SDK,
+ * no `*_API_KEY` anywhere here — the spawned process authenticates via its
+ * own already-logged-in subscription session.
  */
 
-import { spawn } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { isAbsolute, sep } from 'node:path'
 import type { PlanAgentSpawnNode } from '@atta/engine'
+import {
+  defaultSpawn,
+  DEFAULT_TIMEOUT_MS,
+  spawnProcessLifecycle,
+  type SpawnedProcessLike,
+  type SpawnFn
+} from './process-lifecycle'
+import { attachStreamReader, finalizeEvents } from './stream-reader'
 import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
 
-/** No `timeoutMs` means the caller never bounds a step's own runtime; the executor still must — a process that never exits must not hang the run forever. Shared with the mechanical executor so both node kinds are bounded identically. */
-export const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000
+export { defaultSpawn, DEFAULT_TIMEOUT_MS }
+export type { SpawnedProcessLike, SpawnFn }
 
 /** The minimum a spawned process needs to resolve its own binaries and find its already-logged-in session state — not the parent process's full (possibly secret-bearing) environment. Shared with the mechanical executor. */
 export const DEFAULT_ENV_ALLOWLIST = ['PATH', 'HOME']
-
-/**
- * The subset of Node's `ChildProcess` this module depends on. Narrowed to
- * an interface (rather than importing `child_process`'s type directly into
- * every call site) so tests can inject a fake process without spawning a
- * real one.
- */
-export interface SpawnedProcessLike {
-  stdin: { write(chunk: string): void; end(): void } | null
-  stdout: { on(event: 'data', listener: (chunk: Buffer | string) => void): void } | null
-  stderr: { on(event: 'data', listener: (chunk: Buffer | string) => void): void } | null
-  on(event: 'close', listener: (code: number | null) => void): void
-  on(event: 'error', listener: (err: Error) => void): void
-  kill(signal?: NodeJS.Signals): void
-}
-
-export type SpawnFn = (
-  command: string,
-  args: string[],
-  options: { cwd: string; env: NodeJS.ProcessEnv }
-) => SpawnedProcessLike
-
-export const defaultSpawn: SpawnFn = (command, args, options) =>
-  spawn(command, args, options) as unknown as SpawnedProcessLike
-
-/**
- * Parses the process's stdout as newline-delimited JSON. Throws naming the
- * offending line rather than falling back to prose-scraping — a candidate
- * agent with no structured output mode is a reporting concern, not
- * something this function silently works around.
- */
-function parseNdjson(raw: string, nodeId: string): unknown[] {
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-
-  return lines.map((line, index) => {
-    try {
-      return JSON.parse(line)
-    } catch {
-      throw new Error(
-        `Agent-spawn node '${nodeId}' produced non-JSON output on line ${index + 1} of its structured stream: ${line.slice(0, 200)}`
-      )
-    }
-  })
-}
 
 /**
  * Resolves and confines a node's declared `workingDirectory`: it must be an
@@ -142,21 +104,33 @@ export interface ExecuteAgentSpawnNodeParams {
   config: AgentSpawnExecutorConfig
   /** Injectable for tests; defaults to `node:child_process`'s `spawn`. */
   spawnFn?: SpawnFn
+  /**
+   * Called once, with every event this node's process reported, right
+   * after its stdout is fully parsed — matching today's behavior exactly.
+   * Named distinctly from `AgentSpawnExecutorConfig.onEvent` (`types.ts`),
+   * an unrelated, incompatibly-shaped hook for a different lifecycle
+   * (`node:start`/`node:streaming`/`node:complete`/`node:failed`) that is
+   * also in scope wherever this param is. Inert seam: a future task makes
+   * event observation live by editing only `stream-reader.ts`, never this
+   * composer.
+   */
+  onParsedEvents?: (events: unknown[]) => void
+  /**
+   * Accepted and forwarded to the process lifecycle handle; nothing in
+   * this package acts on it yet. Inert seam: a future task makes
+   * cancellation real by editing only `process-lifecycle.ts`, never this
+   * composer.
+   */
+  signal?: AbortSignal
 }
 
 /**
  * Executes one agent-spawn node: spawns its role's configured binary,
  * writes the rendered prompt to stdin, waits for the process to fully
  * close, and captures its structured output stream into the result.
- *
- * Waits on the `close` event, not `exit` — `exit` can fire before stdio
- * streams finish flushing, which would silently truncate the captured
- * stream. A process that never exits is killed and the promise rejects
- * instead of hanging forever — `timeoutMs` always applies (default `10`
- * minutes when the role's config doesn't override it).
  */
 export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams): Promise<AgentSpawnNodeResult> {
-  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn } = params
+  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn, onParsedEvents, signal } = params
 
   // Own-property lookup, for the same reason the mechanical path uses one:
   // `agentRole` arrives from the Plan, and an inherited key resolves to a
@@ -187,46 +161,30 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
 
   const timeoutMs = binaryConfig.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const startedAt = Date.now()
-  const child = spawnFn(binaryConfig.command, args, {
+
+  const lifecycle = spawnProcessLifecycle({
+    spawnFn,
+    command: binaryConfig.command,
+    args,
     cwd,
-    env: buildChildEnv(binaryConfig, config.envAllowlist)
+    env: buildChildEnv(binaryConfig, config.envAllowlist),
+    timeoutMs,
+    nodeId: node.id,
+    agentRole: node.agentRole,
+    signal
   })
 
-  const stdoutChunks: string[] = []
-  const stderrChunks: string[] = []
-  child.stdout?.on('data', (chunk) => stdoutChunks.push(chunk.toString()))
-  child.stderr?.on('data', (chunk) => stderrChunks.push(chunk.toString()))
-  child.stdin?.write(prompt)
-  child.stdin?.end()
+  const reader = attachStreamReader(lifecycle.child, onParsedEvents)
+  lifecycle.child.stdin?.write(prompt)
+  lifecycle.child.stdin?.end()
 
-  const exitCode = await new Promise<number>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      child.kill('SIGTERM')
-      reject(
-        new Error(
-          `Agent-spawn node '${node.id}' (role '${node.agentRole}') exceeded its ${timeoutMs}ms timeout and was killed.`
-        )
-      )
-    }, timeoutMs)
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      reject(
-        new Error(
-          `Failed to spawn '${binaryConfig.command}' for role '${node.agentRole}' (node '${node.id}'): ${err.message}`
-        )
-      )
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve(code ?? 0)
-    })
-  })
+  const exitCode = await lifecycle.waitForExit()
 
-  const events = parseNdjson(stdoutChunks.join(''), node.id)
+  const events = finalizeEvents(reader, node.id)
 
   if (exitCode !== 0) {
     throw new Error(
-      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${stderrChunks.join('').slice(0, 2000) || '(empty)'}`
+      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${reader.stderrChunks.join('').slice(0, 2000) || '(empty)'}`
     )
   }
 
