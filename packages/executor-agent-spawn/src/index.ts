@@ -12,6 +12,7 @@ export { AgentSpawnGraphState } from './graph-state'
 export type { AgentSpawnGraphStateValue } from './graph-state'
 export { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 export type {
+  AgentLifecycleLegOptions,
   AgentLifecycleNodeExecutor,
   AgentSpawnGraphCompileOptions,
   NodeExecutionContext
@@ -20,6 +21,9 @@ export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
+export { readRunOutcome, resumeControlledRun, startControlledRun } from './run-control'
+export type { ResumeControlledRunParams, StartControlledRunParams } from './run-control'
+export { createRunControl, RunHaltedError, runHaltOf } from './run-halt'
 export {
   createRunIdentity,
   readRunCheckpoint,
@@ -41,6 +45,16 @@ export type {
   RoleBinaryArgsParams,
   RoleBinaryConfig,
   RunCheckpointState,
+  RunCompletedOutcome,
+  RunControl,
+  RunExhaustedOutcome,
+  RunExhaustion,
+  RunFailedOutcome,
   RunIdentity,
+  RunOutcome,
+  RunOutcomeBase,
+  RunOutcomeReason,
+  RunOutcomeRecord,
+  RunPausedOutcome,
   StepNodeResult
 } from './types'

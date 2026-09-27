@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { Plan } from '@atta/engine'
 import { MemorySaver } from '@langchain/langgraph'
+import { readRunOutcome } from './run-control'
 import {
   createRunIdentity,
   readRunCheckpoint,
@@ -497,5 +498,53 @@ describe('readRunCheckpoint entry validation (round 2 review)', () => {
     const read = await readRunCheckpoint(checkpointer, identity)
     expect(read?.sessions.implement).toBe('session-from-implement')
     expect(read?.results.implement?.kind).toBe('agent-spawn')
+  })
+})
+
+describe('startRun records a finished run outcome too', () => {
+  it('persists completed, so the store answers the same for either start path', async () => {
+    // Moving the `completed` record out of the graph first left this path with no
+    // writer at all, so a run finished here read back as `undefined` — which
+    // `readRunOutcome` defines as "no outcome yet". An operator could not tell a
+    // finished run from one still executing, and only one of the two start paths
+    // was affected.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('startrun-records-completed')
+    const { state } = await startRun({
+      plan: twoStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity,
+      spawnFn: fakeSpawn([])
+    })
+
+    expect(Object.keys(state.results).sort()).toEqual(['implement', 'review'])
+    const record = await readRunOutcome(checkpointer, identity)
+    expect(record?.reason).toBe('completed')
+  })
+
+  it('leaves a recorded exhaustion alone rather than overwriting it with completed', async () => {
+    // `startRun` resolves for an exhausted run exactly as it does for a completed
+    // one, so the write has to be skipped on the recorded reason rather than on how
+    // the invoke settled.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('startrun-keeps-exhausted')
+    const decision = { examine: 'implement', ifTrue: 'implement', ifFalse: 'review', maxRevisions: 1 }
+    const plan = twoStepPlan()
+    const implement = plan.graph.nodes.implement
+    const review = plan.graph.nodes.review
+    if (!implement || !review) throw new Error('expected both steps')
+    plan.graph.nodes.review = { ...review, decision } as typeof review
+
+    await startRun({
+      plan,
+      config: { ...executorConfig(), decisionPredicates: { review: () => true } },
+      checkpointer,
+      identity,
+      spawnFn: fakeSpawn([]),
+      recursionLimit: 50
+    })
+
+    expect((await readRunOutcome(checkpointer, identity))?.reason).toBe('exhausted')
   })
 })

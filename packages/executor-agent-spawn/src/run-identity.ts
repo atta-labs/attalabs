@@ -47,21 +47,45 @@
  * a spawned process printed can be in it — and choose its retention,
  * encryption and access accordingly.
  *
- * **What is not here.** Halting a run, resuming a halted one, and the typed
- * vocabulary for a run's persisted outcome are the next task's surface, not
- * this one's. `readRunCheckpoint` is a read, and nothing in this file
- * interrupts, cancels, or restarts anything — `startRun` refuses a thread that
- * already holds a checkpoint rather than restarting it, for the reason its own
- * doc gives.
+ * **Three carriers, not one.** `results` is the largest but not the only place
+ * this content comes to rest. The `outcome` channel is checkpointed alongside it,
+ * and LangGraph separately persists a failed task's serialized error as a pending
+ * write on the thread — whose `message` is surfaced verbatim as
+ * `RunFailedOutcome.error` and as `readRunOutcome`'s `error`/`detail`. That
+ * message is not a summary: a failed mechanical node's error embeds the command's
+ * raw `stderr` (capped at two thousand characters by `mechanical-executor.ts`, not
+ * redacted), and a failed agent-spawn node's embeds its own. So a run that broke
+ * stores a slice of subprocess output in a second place, reachable by a caller
+ * that reads only the outcome and never the state — the retention, encryption and
+ * access choices above govern all three, and a consumer that logs or displays an
+ * outcome's `error` is displaying that output.
+ *
+ * **What is not here.** The typed control surface itself — a halt handle, a
+ * resume that continues from a checkpoint, and the typed outcome a leg of a run
+ * resolves to — lives in `run-control.ts` and `run-halt.ts`, built on what this
+ * file provides. This file interrupts, cancels and restarts nothing:
+ * `readRunCheckpoint` is a read, `startRun` refuses a thread that already holds
+ * a checkpoint rather than restarting it, and the one thing it forwards towards a
+ * halt is the caller's `control` handle, which only a node boundary in
+ * `graph-builder.ts` ever acts on. It does own one write the control surface also
+ * needs — `persistCompletedRecord` — because both start paths have to record a
+ * finished run and neither should be the one that forgets.
  */
 
 import { randomUUID } from 'node:crypto'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
-import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor, terminalPlanNodeIds } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import type { AgentSpawnExecutorConfig, RunCheckpointState, RunIdentity, StepNodeResult } from './types'
+import type {
+  AgentSpawnExecutorConfig,
+  RunCheckpointState,
+  RunControl,
+  RunIdentity,
+  RunOutcomeRecord,
+  StepNodeResult
+} from './types'
 
 /**
  * Characters a run id may contain. Deliberately narrow: the id is interpolated
@@ -155,7 +179,7 @@ export function createRunIdentity(runId: string = randomUUID()): RunIdentity {
  * without this call the empty-id, length and charset refusals above would
  * apply only to identities built through this module's own constructors.
  */
-function assertDerivedIdentity(identity: RunIdentity): void {
+export function assertDerivedIdentity(identity: RunIdentity): void {
   const derived = threadIdForRun(identity.runId)
   if (identity.threadId !== derived) {
     throw new Error(
@@ -184,9 +208,14 @@ export function runInvokeConfig(identity: RunIdentity, recursionLimit?: number):
   return config
 }
 
-/** The initial graph state for a run — every channel at its documented starting value. */
-function initialStateFor(identity: RunIdentity): AgentSpawnGraphStateValue {
-  return { runId: identity.runId, results: {}, sessions: {}, revisionCounts: {} }
+/**
+ * The initial graph state for a run — every channel at its documented starting
+ * value. Exported so every start path builds it identically: a channel omitted
+ * on one path and present on another is how two entry points to the same graph
+ * start diverging.
+ */
+export function initialRunState(identity: RunIdentity): AgentSpawnGraphStateValue {
+  return { runId: identity.runId, results: {}, sessions: {}, revisionCounts: {}, outcome: undefined }
 }
 
 export interface StartRunParams {
@@ -221,6 +250,18 @@ export interface StartRunParams {
    * "record this run id" step fails should not get an unrecorded run.
    */
   onIdentity?: (identity: RunIdentity) => void
+  /**
+   * A halt handle for this run, forwarded to the node executor. Supplied, the
+   * run stops at its next node boundary once `control.halt()` fires; omitted,
+   * nothing can stop it short of a node failing.
+   *
+   * `startRun` still *throws* on a halt, as it does on any node failure — it
+   * has one non-throwing shape and reporting a halt as a typed outcome is
+   * `startControlledRun`'s job (`run-control.ts`). What this parameter buys a
+   * direct `startRun` caller is that the halt is possible at all, and that its
+   * error is recognisable with `runHaltOf`.
+   */
+  control?: RunControl
   /** Test/injection seam, forwarded to `createAgentLifecycleNodeExecutor` unchanged. */
   spawnFn?: SpawnFn
   /**
@@ -265,6 +306,35 @@ export function runIdentityOf(error: unknown): RunIdentity | undefined {
 }
 
 /**
+ * Refuses to begin a run on a thread that already holds a checkpoint. Shared by
+ * every start path so the refusal, and the reason for it, are stated once.
+ *
+ * A start always begins at the Plan's entry node, so beginning a second time
+ * under one identity would re-execute completed steps — spawning their
+ * subprocesses again — while the keyed-merge reducers preserved the earlier
+ * attempt's entries for every node the second never reached. The checkpoint
+ * would then hold two attempts blended into one run's state with nothing
+ * marking the seam, and `revisionCounts` would be worse than stale: the
+ * executor increments from the checkpointed value, so a `decision`-bearing Plan
+ * could hit its `maxRevisions` ceiling on the retry's first step.
+ *
+ * Continuing an existing run is `resumeControlledRun`'s job, and it is a
+ * different operation precisely because it starts from the checkpoint rather
+ * than from the entry node.
+ */
+export async function assertNoExistingCheckpoint(
+  checkpointer: BaseCheckpointSaver,
+  identity: RunIdentity
+): Promise<void> {
+  const existing = await checkpointer.getTuple(runInvokeConfig(identity))
+  if (existing) {
+    throw new Error(
+      `Run '${identity.runId}' already has a checkpoint on thread '${identity.threadId}' — a start always begins at the Plan's entry node, so continuing here would re-execute completed steps and blend two attempts into one run's state. Mint a new identity to start a new run, resume this one with resumeControlledRun, or just read its state with readRunCheckpoint.`
+    )
+  }
+}
+
+/**
  * Begins a run: mints (or accepts) its identity, compiles the Plan's graph
  * against the caller's checkpointer, and invokes it bound to that identity's
  * thread.
@@ -278,42 +348,52 @@ export function runIdentityOf(error: unknown): RunIdentity | undefined {
  * been written, which is this task's named failure mode. Persisting the `runId`
  * remains the caller's job and the one thing a caller must not skip.
  *
- * **A thread that already holds a checkpoint is refused, not restarted.**
- * `startRun` always invokes from the Plan's entry node, so running twice under
- * one identity would re-execute completed steps — spawning their subprocesses
- * again — while the keyed-merge reducers preserved the previous attempt's
- * entries for every node the second attempt did not reach. The checkpoint would
- * then hold two attempts blended into one run's state with no marker
- * distinguishing them, and `revisionCounts` would be worse than stale: the
- * executor increments from the checkpointed value, so a `decision`-bearing Plan
- * could hit its `maxRevisions` ceiling on the retry's first step. Refusing is
- * not a resume implementation — resuming a checkpointed run is the next task's
- * surface — it is declining to corrupt state this task is responsible for. A
- * caller that wants a genuinely new run mints a new identity; one that wants
- * the old run's state calls `readRunCheckpoint`.
+ * **A thread that already holds a checkpoint is refused, not restarted** — see
+ * `assertNoExistingCheckpoint` for why that blend of two attempts is worse than
+ * an honest refusal. A caller that wants a genuinely new run mints a new
+ * identity; one that wants to continue the existing run calls
+ * `resumeControlledRun`; one that only wants its state calls
+ * `readRunCheckpoint`.
+ *
+ * **It throws rather than reporting an outcome.** A halt, a node failure and an
+ * exhausted revision ceiling all surface here as a rejection or an ordinary
+ * resolution, with nothing distinguishing them — telling them apart is
+ * `startControlledRun`'s job (`run-control.ts`), which is the entry point to
+ * prefer when the caller needs to know *why* a run stopped.
+ *
+ * **It does still record the run's outcome, though it does not report it.** A run
+ * that reaches a terminal node here persists `completed` through
+ * `persistCompletedRecord`, exactly as the control operations do, so
+ * `readRunOutcome` answers the same way whichever entry point started the run.
+ * Without that, a finished `startRun` would read back as `undefined` — which that
+ * function defines as "no outcome yet" — leaving an operator unable to tell a
+ * finished run from one still executing. An exhausted ceiling was already recorded
+ * by the graph itself and is left alone.
  */
 export async function startRun(params: StartRunParams): Promise<StartRunResult> {
-  const { plan, config, checkpointer, spawnFn, recursionLimit, onIdentity } = params
+  const { plan, config, checkpointer, spawnFn, control, recursionLimit, onIdentity } = params
   const identity = params.identity ?? createRunIdentity()
   assertDerivedIdentity(identity)
 
   onIdentity?.(identity)
 
-  const existing = await checkpointer.getTuple(runInvokeConfig(identity))
-  if (existing) {
-    throw new Error(
-      `Run '${identity.runId}' already has a checkpoint on thread '${identity.threadId}' — startRun always begins at the Plan's entry node, so continuing here would re-execute completed steps and blend two attempts into one run's state. Mint a new identity to start a new run, or read this one with readRunCheckpoint.`
-    )
-  }
+  await assertNoExistingCheckpoint(checkpointer, identity)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn)
+  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   try {
     const state = (await graph.invoke(
-      initialStateFor(identity),
+      initialRunState(identity),
       runInvokeConfig(identity, recursionLimit)
     )) as AgentSpawnGraphStateValue
+
+    // A run that reached a terminal node records why, on this path too. Skipped
+    // when the graph already recorded an exhausted ceiling — that is a terminal
+    // reason and `completed` must never overwrite it.
+    if (state.outcome?.reason !== 'exhausted') {
+      await persistCompletedRecord(graph, plan, identity, recursionLimit)
+    }
 
     return { identity, state }
   } catch (err) {
@@ -327,6 +407,86 @@ export async function startRun(params: StartRunParams): Promise<StartRunResult> 
     throw err
   }
 }
+
+/**
+ * Records `completed` on a thread that has just finished — the one outcome no
+ * node can write, and the only write this package makes from outside the graph.
+ *
+ * **Why no node can write it.** "This run is over" means `END` was reached with
+ * nothing left pending, which no node can observe about itself and only the caller
+ * of `invoke()` sees. An earlier revision recorded it in-graph, with one shared
+ * node every terminal step routed through, and that was wrong twice: it left a
+ * Plan whose only terminal step declares a decision uncompilable (nothing edged
+ * into the recorder, since both of a decision's targets may point backwards), and
+ * in a fan-out where one branch loops it was re-entered every pass, writing
+ * `completed` beside — and sometimes over — a recorded exhaustion.
+ *
+ * **Why it lives here and not beside the control operations.** Both start paths
+ * need it. `startControlledRun` calls it to report a typed outcome; `startRun`
+ * calls it because otherwise a run finished through the raw entry point would
+ * persist no outcome at all, and `readRunOutcome` would answer `undefined` —
+ * which it defines as "no outcome yet", so a finished run would be indistinguishable
+ * from one still executing. One writer, reachable from both, rather than a hole in
+ * one of them.
+ *
+ * **Safe here and nowhere else.** `updateState` is unusable on a thread that still
+ * has a pending continuation — which is what a paused or failed run leaves. With
+ * the writer node inferred, a second such update in a thread's lifetime fails
+ * outright (`Ambiguous update, specify "asNode"`), and naming `asNode` there is
+ * worse than failing: the update is applied as that node and the pending set is
+ * recomputed from its outgoing edges, so a run halted before node C, updated as
+ * node B, resumes with C already routed past and never executed. This function
+ * therefore refuses a thread with anything pending rather than trusting it is
+ * finished, and names `asNode` explicitly — a terminal Plan step, whose only
+ * outgoing edge is `END`, so the recomputed pending set stays empty. Inference
+ * alone is not enough: it fails once the thread's lineage includes a resumed leg.
+ *
+ * A store that will not take the record throws. An operation promising a persisted
+ * outcome that quietly failed to persist one is worse than a loud failure, because
+ * the next reader gets `undefined` for a run that finished and no way to tell.
+ */
+export async function persistCompletedRecord(
+  graph: { getState: CompiledGraphStateReader; updateState: CompiledGraphStateWriter },
+  plan: Plan,
+  identity: RunIdentity,
+  recursionLimit?: number
+): Promise<void> {
+  const snapshot = await graph.getState(runInvokeConfig(identity, recursionLimit))
+  const pending = [...snapshot.next]
+  if (pending.length > 0) {
+    throw new Error(
+      `Run '${identity.runId}' resolved while nodes ${pending.join(', ')} are still pending on thread '${identity.threadId}' — refusing to record it as completed, and refusing to write to a thread that still owes work.`
+    )
+  }
+
+  const [asNode] = terminalPlanNodeIds(plan)
+  if (asNode === undefined) {
+    throw new Error(
+      `Run '${identity.runId}' resolved with no exhaustion recorded, but its Plan has no terminal step — every path ends in a decision, so this run could only have ended on a ceiling. Refusing to record it as completed.`
+    )
+  }
+
+  try {
+    await graph.updateState(
+      runInvokeConfig(identity, recursionLimit),
+      { outcome: { reason: 'completed', at: new Date().toISOString() } },
+      asNode
+    )
+  } catch (error) {
+    throw new Error(
+      `Run '${identity.runId}' completed, but its checkpointer refused to record that outcome on thread '${identity.threadId}' — the reason the run stopped could not be persisted.`,
+      { cause: error }
+    )
+  }
+}
+
+/** The two compiled-graph methods `persistCompletedRecord` needs, named so it takes no whole graph type. */
+type CompiledGraphStateReader = (config: RunInvokeConfig) => Promise<{ next: readonly string[] }>
+type CompiledGraphStateWriter = (
+  config: RunInvokeConfig,
+  values: { outcome: RunOutcomeRecord },
+  asNode: string
+) => Promise<unknown>
 
 /** Whether a checkpointed value is one of this package's two recorded node results. */
 function isStepNodeResult(value: unknown): value is StepNodeResult {

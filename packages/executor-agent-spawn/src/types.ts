@@ -278,3 +278,202 @@ export interface RunCheckpointState {
   sessions: Record<string, string>
   revisionCounts: Record<string, number>
 }
+
+// ── Run control and typed run outcomes ──────────────────────────────────────
+//
+// Appended at the end of this file for the same reason the identity types above
+// were: more than one piece of work in flight adds types here, and two appends
+// at the tail merge cleanly where two in-place edits to an existing exported
+// interface would not.
+
+/**
+ * A caller's handle on a run that is already executing — the halt half of the
+ * start/halt/resume surface. Built by `createRunControl` in `run-halt.ts`,
+ * which is also where the reasoning behind the `AbortSignal` shape and the
+ * node-boundary semantics lives.
+ *
+ * Declared here rather than beside its factory so the graph builder can accept
+ * one as a parameter type without importing the factory's module, and so every
+ * type this package's public surface names stays findable in one file.
+ */
+export interface RunControl {
+  /**
+   * Cancellation signal for this run, in the shape a bounded agent runner's
+   * own cancellation input already takes. Aborted by `halt()`; also passable to
+   * any other abortable work the caller wants stopped alongside the run.
+   */
+  readonly signal: AbortSignal
+  /** Whether `halt()` (or a linked upstream signal) has fired. */
+  readonly halted: boolean
+  /** The reason the first `halt()` carried, when it carried one. */
+  readonly haltReason: string | undefined
+  /**
+   * Stops the run at its next node boundary. Idempotent, and first call wins:
+   * the recorded reason is the one that actually stopped the run.
+   */
+  halt(reason?: string): void
+}
+
+/**
+ * Why a run is not executing, in the vocabulary the normative sources use —
+ * never collapsed into a boolean success flag.
+ *
+ * `paused` and `resumed` are the two halves of a run that stopped and was
+ * continued; `completed`, `failed` and `exhausted` are the three ways a leg
+ * stops. `exhausted` is deliberately its own reason rather than a flavour of
+ * `completed`: a bounded runner that reaches its ceiling raises an explicit
+ * typed non-success (`MaxTurnsExceededError` once `maxTurns` is reached, in the
+ * OpenAI Agents SDK's own run loop), and a run that stopped because it ran out
+ * of revisions has not answered the question it was given. Reporting it as
+ * success is the single misreading this vocabulary exists to prevent.
+ */
+export type RunOutcomeReason = 'paused' | 'resumed' | 'completed' | 'failed' | 'exhausted'
+
+/** Shared by every leg outcome: whose run it was, and whether this leg was a continuation. */
+export interface RunOutcomeBase {
+  identity: RunIdentity
+  /**
+   * The checkpoint id this leg continued from — present only when the leg was
+   * started by `resumeControlledRun`, absent on a run's first leg. This is what
+   * makes `resumed` observable on an outcome without inventing a sixth terminal
+   * reason for it: a resume is a property of the leg, not of how it ended.
+   */
+  resumedFrom?: string
+}
+
+/**
+ * The run reached a terminal node of its own graph with every step it routed
+ * through recorded. The checkpoint is the run's state as its own store holds
+ * it — read through the checkpointer that wrote it, never from a second record
+ * this package keeps, because it keeps none.
+ */
+export interface RunCompletedOutcome extends RunOutcomeBase {
+  reason: 'completed'
+  checkpoint: RunCheckpointState
+}
+
+/**
+ * The run stopped at a node boundary because it was halted, and has a pending
+ * continuation. `pendingNodes` is where a resume starts — the nodes LangGraph
+ * still owes this thread, none of which has executed.
+ */
+export interface RunPausedOutcome extends RunOutcomeBase {
+  reason: 'paused'
+  /**
+   * Nodes the run is pending at. A resume executes exactly these first.
+   *
+   * Optional, and absent rather than empty when the pending set could not be
+   * read — that read goes through the same store the run stopped on, and a
+   * failure there must not replace the halt being reported with an unrelated
+   * error. An empty array would be an affirmative claim that nothing is pending,
+   * which is the opposite of what a paused run means; absence says "not known"
+   * and makes a caller handle it.
+   */
+  pendingNodes?: string[]
+  /** The reason the halt carried, when the caller gave one. */
+  haltReason?: string
+  /**
+   * The run's persisted state. Optional here, unlike on a completed outcome,
+   * because a halt fired before the first superstep committed leaves a thread
+   * with a pending node and nothing recorded yet — an honest `undefined`, not a
+   * failure to read.
+   */
+  checkpoint?: RunCheckpointState
+}
+
+/**
+ * A node threw for a reason that was not a halt, so the run stopped without
+ * reaching a terminal node. `error` is the thrown message verbatim — the node
+ * executors' own text, which is what a caller matches on.
+ */
+export interface RunFailedOutcome extends RunOutcomeBase {
+  reason: 'failed'
+  error: string
+  /**
+   * Nodes still pending on the thread, including the one that threw. Absent
+   * rather than empty when the pending set could not be read — see
+   * `RunPausedOutcome.pendingNodes` for why absence and empty must differ.
+   */
+  pendingNodes?: string[]
+  /**
+   * The run's persisted state, when it could be read. Absent when nothing was
+   * checkpointed yet, and also when the read itself failed — a checkpoint read
+   * that throws must never replace the failure being reported with its own.
+   */
+  checkpoint?: RunCheckpointState
+}
+
+/**
+ * Which decision ceiling stopped a run, recorded at the moment routing refused
+ * to loop again — the only moment it is known without guessing.
+ *
+ * Recorded rather than derived afterwards because the derivation is not sound:
+ * a target's revision count can exceed some *other* decision's ceiling long
+ * after that decision last evaluated, so reading the ceilings back off the final
+ * state would report exhaustion for a run that ended for an unrelated reason.
+ */
+export interface RunExhaustion {
+  /** The decision-bearing node whose ceiling was reached. */
+  nodeId: string
+  /** The route target the predicate resolved to, and which was refused. */
+  target: string
+  /** The ceiling, verbatim from that node's declared `decision.maxRevisions`. */
+  maxRevisions: number
+  /** The target's recorded execution count when routing refused to loop again. */
+  revisions: number
+}
+
+/**
+ * A run's outcome as its own checkpointer holds it — the persisted half of the
+ * vocabulary, readable in a fresh process with nothing but the `runId`.
+ *
+ * Kept in the run's own checkpointed state rather than in a table beside it, for
+ * the reason the identity contract already gives: a second store can disagree
+ * with the checkpoint, and then something has to decide which one is true. An
+ * outcome record written next to the state it describes cannot drift from it.
+ *
+ * `resumed` is a real record and not a terminal one: the first node a resumed
+ * leg runs records it, so a run mid-flight under a continuation reads as
+ * `resumed` for exactly as long as that is the true thing to say about it. The
+ * leg's own terminal record then replaces it.
+ *
+ * `paused` and `failed` are not written by this package at all — they are read
+ * back off the failed task LangGraph itself persists for the thread, which is
+ * why they carry the thrown message verbatim rather than a reconstruction of it.
+ * `readRunOutcome` is where the two sources are composed into one answer.
+ */
+export type RunOutcomeRecord =
+  /** Halted at a node boundary, with a pending continuation. `detail` is the halt's own message, verbatim. */
+  | { reason: 'paused'; at: string; detail: string }
+  /** A node threw for a reason that was not a halt. `error` is that message, verbatim. */
+  | { reason: 'failed'; at: string; error: string }
+  /** Continued from `fromCheckpointId`, and still running as far as the store knows. */
+  | { reason: 'resumed'; at: string; fromCheckpointId: string }
+  /** Reached a terminal node of its own graph with no ceiling refused. */
+  | { reason: 'completed'; at: string }
+  /** Terminated because a decision's revision ceiling refused to loop again. */
+  | { reason: 'exhausted'; at: string; exhaustion: RunExhaustion }
+
+/**
+ * The run stopped because a decision's revision ceiling refused to loop again.
+ *
+ * Its own reason, never folded into `completed`. A bounded runner that reaches
+ * its ceiling raises an explicit typed non-success rather than returning a final
+ * output, and the same holds here: the run's graph terminated, but the question
+ * the Plan was given has not been answered — the loop simply ran out of
+ * permitted revisions. A caller that wants to treat that as acceptable says so
+ * by naming this reason; nothing lets it happen by omission.
+ */
+export interface RunExhaustedOutcome extends RunOutcomeBase {
+  reason: 'exhausted'
+  checkpoint: RunCheckpointState
+  exhaustion: RunExhaustion
+}
+
+/**
+ * How a leg of a run ended, as a value rather than as a thrown/not-thrown
+ * distinction. Discriminated on `reason` so a caller cannot read an exhausted
+ * or failed run as a completed one without saying so: there is no field common
+ * to all four that means "it worked".
+ */
+export type RunOutcome = RunCompletedOutcome | RunPausedOutcome | RunFailedOutcome | RunExhaustedOutcome
