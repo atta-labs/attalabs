@@ -11,6 +11,7 @@ import { spawn } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { isAbsolute, sep } from 'node:path'
 import type { PlanAgentSpawnNode } from '@atta/engine'
+import { attachStreamReader, finalizeEvents } from './stream-reader'
 import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
 
 /** No `timeoutMs` means the caller never bounds a step's own runtime; the executor still must — a process that never exits must not hang the run forever. Shared with the mechanical executor so both node kinds are bounded identically. */
@@ -42,29 +43,6 @@ export type SpawnFn = (
 
 export const defaultSpawn: SpawnFn = (command, args, options) =>
   spawn(command, args, options) as unknown as SpawnedProcessLike
-
-/**
- * Parses the process's stdout as newline-delimited JSON. Throws naming the
- * offending line rather than falling back to prose-scraping — a candidate
- * agent with no structured output mode is a reporting concern, not
- * something this function silently works around.
- */
-function parseNdjson(raw: string, nodeId: string): unknown[] {
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-
-  return lines.map((line, index) => {
-    try {
-      return JSON.parse(line)
-    } catch {
-      throw new Error(
-        `Agent-spawn node '${nodeId}' produced non-JSON output on line ${index + 1} of its structured stream: ${line.slice(0, 200)}`
-      )
-    }
-  })
-}
 
 /**
  * Resolves and confines a node's declared `workingDirectory`: it must be an
@@ -192,10 +170,7 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
     env: buildChildEnv(binaryConfig, config.envAllowlist)
   })
 
-  const stdoutChunks: string[] = []
-  const stderrChunks: string[] = []
-  child.stdout?.on('data', (chunk) => stdoutChunks.push(chunk.toString()))
-  child.stderr?.on('data', (chunk) => stderrChunks.push(chunk.toString()))
+  const reader = attachStreamReader(child)
   child.stdin?.write(prompt)
   child.stdin?.end()
 
@@ -222,11 +197,11 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
     })
   })
 
-  const events = parseNdjson(stdoutChunks.join(''), node.id)
+  const events = finalizeEvents(reader, node.id)
 
   if (exitCode !== 0) {
     throw new Error(
-      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${stderrChunks.join('').slice(0, 2000) || '(empty)'}`
+      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${reader.stderrChunks.join('').slice(0, 2000) || '(empty)'}`
     )
   }
 
