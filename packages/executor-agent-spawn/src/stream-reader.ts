@@ -1,100 +1,217 @@
 /**
  * @file stream-reader.ts
- * @description Accumulates an agent-spawn node's stdout/stderr and parses
- * the buffered stdout as newline-delimited JSON. Split out of
+ * @description Frames an agent-spawn node's stdout into newline-delimited
+ * JSON records as the process emits them, reporting each record to the
+ * observer the moment its line completes rather than after the process
+ * closes. Also accumulates stderr verbatim. Split out of
  * `node-executor.ts` so this concern — capturing and interpreting the
  * spawned process's structured output — has no knowledge of how the
  * process itself was spawned, timed out, or killed (`process-lifecycle.ts`).
+ *
+ * One framer implements the framing, and both entry points go through it:
+ * `attachStreamReader` feeds it `data` chunk by `data` chunk, and
+ * `parseNdjson` feeds it a whole string at once. A second, string-at-once
+ * parser beside it could disagree with the incremental one about a chunk
+ * boundary, a blank line, or which line number a malformed record sits on,
+ * and only the incremental path is exercised by a real process.
  */
 
 import type { SpawnedProcessLike } from './process-lifecycle'
 
-/** The buffers one spawned process's stdout/stderr accumulate into, in order. */
-export interface StreamReaderHandle {
-  stdoutChunks: string[]
-  stderrChunks: string[]
-  /**
-   * Stored at attach time, not called incrementally today — see
-   * `attachStreamReader`. A future task makes event observation live by
-   * editing only this file: read this field from inside the `stdout`
-   * listener below instead of only at `finalizeEvents` time.
-   */
-  onParsedEvents?: (events: unknown[]) => void
+/** A complete line that was not JSON, with its position among the stream's non-empty lines (1-based). */
+interface MalformedLine {
+  line: string
+  lineNumber: number
 }
 
 /**
- * Calls `onParsedEvents`, if supplied, and swallows anything it throws. An
+ * Builds the error a non-JSON line raises. Naming the offending line and
+ * its position rather than falling back to prose-scraping is deliberate: a
+ * candidate agent with no structured output mode is a reporting concern,
+ * not something this file silently works around.
+ */
+function nonJsonError(nodeId: string, malformed: MalformedLine): Error {
+  return new Error(
+    `Agent-spawn node '${nodeId}' produced non-JSON output on line ${malformed.lineNumber} of its structured stream: ${malformed.line.slice(0, 200)}`
+  )
+}
+
+/**
+ * Calls `onRecord`, if supplied, and swallows anything it throws. An
  * observer's own bug must never corrupt the run it is merely watching —
  * mirrors `graph-builder.ts`'s `safeEmit` for the same reason, kept local
  * here since this package's two node-execution files intentionally share
- * no runtime import between them.
+ * no runtime import between them. It matters more now than it did when
+ * emission happened once after the process had already closed: the
+ * observer is called from inside a `data` listener, where a thrown error
+ * would surface as an unhandled exception on the stream rather than as a
+ * rejected `executeAgentSpawnNode`.
  */
-function safeEmitParsedEvents(onParsedEvents: ((events: unknown[]) => void) | undefined, events: unknown[]): void {
-  if (!onParsedEvents) return
+function safeEmitParsedEvents(onRecord: ((events: unknown[]) => void) | undefined, events: unknown[]): void {
+  if (!onRecord) return
   try {
-    onParsedEvents(events)
+    onRecord(events)
   } catch {
     // Deliberately swallowed — see the function doc above.
   }
 }
 
+/** Accumulates text, splits it into complete lines, and parses each one. */
+interface NdjsonFramer {
+  /** Records parsed so far, in arrival order. The same array the caller keeps a reference to. */
+  events: unknown[]
+  /** Feeds more text in. Only lines a newline has already terminated are parsed. */
+  push(text: string): void
+  /** Parses whatever is held back with no terminating newline, then reports the first malformed line seen. */
+  finish(): MalformedLine | undefined
+}
+
+/**
+ * The framer. Two properties are the whole point of it:
+ *
+ * - **A partial trailing line is held over, never parsed or dropped.** A
+ *   `data` chunk boundary falls wherever the OS pipe happens to flush, so
+ *   the tail of a chunk is routinely half a record. It is carried into the
+ *   next chunk and only parsed once a newline terminates it — or, at
+ *   `finish`, as the stream's last line, since a process is free to exit
+ *   without a trailing newline.
+ * - **Ordering is the order lines complete.** Records are appended to
+ *   `events` and reported in that order, one report per record, so an
+ *   observer sees the same sequence the process wrote.
+ *
+ * The first malformed line stops parsing but not counting: later lines
+ * still advance the line counter, so the reported line number is the
+ * offending line's real position in the stream, and no record after a
+ * malformed one is reported (the run is going to fail on it anyway).
+ */
+function createNdjsonFramer(onRecord: () => ((events: unknown[]) => void) | undefined): NdjsonFramer {
+  const events: unknown[] = []
+  let carryOver = ''
+  let nonEmptyLineCount = 0
+  let malformed: MalformedLine | undefined
+
+  const consumeLine = (raw: string): void => {
+    const line = raw.trim()
+    if (line.length === 0) return
+    nonEmptyLineCount += 1
+    if (malformed) return
+
+    let record: unknown
+    try {
+      record = JSON.parse(line)
+    } catch {
+      malformed = { line, lineNumber: nonEmptyLineCount }
+      return
+    }
+
+    events.push(record)
+    safeEmitParsedEvents(onRecord(), [record])
+  }
+
+  return {
+    events,
+    push: (text) => {
+      if (text.length === 0) return
+      carryOver += text
+      const segments = carryOver.split('\n')
+      // `split` always yields the text after the last newline as its final
+      // element — an empty string when the chunk ended on a newline. That
+      // element is the carry-over, and popping it is what keeps a partial
+      // record out of the parser.
+      carryOver = segments.pop() ?? ''
+      for (const segment of segments) consumeLine(segment)
+    },
+    finish: () => {
+      const trailing = carryOver
+      carryOver = ''
+      consumeLine(trailing)
+      return malformed
+    }
+  }
+}
+
+/** The state one spawned process's streams accumulate into. */
+export interface StreamReaderHandle {
+  /** The stdout text, in the order it arrived. Kept for reporting; framing reads the framer's own carry-over, not this. */
+  stdoutChunks: string[]
+  stderrChunks: string[]
+  /**
+   * Called once per parsed record, live, as each record's line completes —
+   * read from this field at call time, so a caller may replace it after
+   * attach. Stored here (rather than passed to `finalizeEvents`) because
+   * the process starts emitting the moment it is spawned, well before
+   * anything waits on its exit.
+   */
+  onParsedEvents?: (events: unknown[]) => void
+  /** Records parsed so far, in arrival order — complete only after `finalizeEvents`. */
+  events: unknown[]
+  /**
+   * Parses the trailing line held back with no terminating newline and
+   * reports the first malformed line seen, if any. Called by
+   * `finalizeEvents` once the process has closed.
+   */
+  finishStdout(): MalformedLine | undefined
+}
+
 /**
  * Attaches `data` listeners to the given process's stdout/stderr and
- * returns the buffers they accumulate into. Must be called before the
- * caller starts waiting on the process's exit, or early output could arrive
- * with no listener yet attached to catch it.
- *
- * `onParsedEvents` is accepted here — at attach time — rather than only at
- * `finalizeEvents` time, so a future task that makes emission live only
- * ever has to change what happens inside this function's `stdout` listener
- * (read `reader.onParsedEvents` there instead of waiting for
- * `finalizeEvents`), never the composer's call site.
+ * returns the handle they feed. Must be called before the caller starts
+ * waiting on the process's exit, or early output could arrive with no
+ * listener yet attached to catch it.
  */
 export function attachStreamReader(
   child: SpawnedProcessLike,
   onParsedEvents?: (events: unknown[]) => void
 ): StreamReaderHandle {
-  const stdoutChunks: string[] = []
-  const stderrChunks: string[] = []
-  child.stdout?.on('data', (chunk) => stdoutChunks.push(chunk.toString()))
-  child.stderr?.on('data', (chunk) => stderrChunks.push(chunk.toString()))
-  return { stdoutChunks, stderrChunks, onParsedEvents }
+  const framer = createNdjsonFramer(() => handle.onParsedEvents)
+
+  const handle: StreamReaderHandle = {
+    stdoutChunks: [],
+    stderrChunks: [],
+    onParsedEvents,
+    events: framer.events,
+    finishStdout: () => framer.finish()
+  }
+
+  child.stdout?.on('data', (chunk) => {
+    const text = chunk.toString()
+    if (text.length === 0) return
+    handle.stdoutChunks.push(text)
+    framer.push(text)
+  })
+  child.stderr?.on('data', (chunk) => handle.stderrChunks.push(chunk.toString()))
+
+  return handle
 }
 
 /**
- * Parses the process's stdout as newline-delimited JSON. Throws naming the
- * offending line rather than falling back to prose-scraping — a candidate
- * agent with no structured output mode is a reporting concern, not
- * something this function silently works around.
+ * Parses a complete newline-delimited JSON string in one call, through the
+ * same framer the incremental path uses. Throws naming the offending line
+ * when a line is not JSON.
  */
 export function parseNdjson(raw: string, nodeId: string): unknown[] {
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-
-  return lines.map((line, index) => {
-    try {
-      return JSON.parse(line)
-    } catch {
-      throw new Error(
-        `Agent-spawn node '${nodeId}' produced non-JSON output on line ${index + 1} of its structured stream: ${line.slice(0, 200)}`
-      )
-    }
-  })
+  const framer = createNdjsonFramer(() => undefined)
+  framer.push(raw)
+  const malformed = framer.finish()
+  if (malformed) throw nonJsonError(nodeId, malformed)
+  return framer.events
 }
 
 /**
- * Parses a reader's fully-buffered stdout into structured events and
- * reports them via the reader's stored `onParsedEvents`, called exactly
- * once with the whole array — matching today's behavior, where the caller
- * only ever sees events after the process has already closed. Inert seam:
- * a future task makes event observation live (called incrementally, as
- * each line arrives) by editing only this file — the composer that calls
- * this function never changes.
+ * Closes out a reader's stdout once its process has exited: parses the
+ * final unterminated line and returns every record the stream produced, in
+ * arrival order. Throws if any line was not JSON.
+ *
+ * The observer has already seen every newline-terminated record
+ * individually, as its line completed. Two things are left for this
+ * function: the stream's last line, when the process exited without a
+ * trailing newline — that record is reported to the observer here, and is
+ * the only one whose report is not live — and the failure, raised here
+ * rather than from inside a `data` listener so it surfaces as a rejected
+ * `executeAgentSpawnNode`.
  */
 export function finalizeEvents(reader: StreamReaderHandle, nodeId: string): unknown[] {
-  const events = parseNdjson(reader.stdoutChunks.join(''), nodeId)
-  safeEmitParsedEvents(reader.onParsedEvents, events)
-  return events
+  const malformed = reader.finishStdout()
+  if (malformed) throw nonJsonError(nodeId, malformed)
+  return reader.events
 }
