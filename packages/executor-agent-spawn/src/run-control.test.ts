@@ -9,6 +9,10 @@ import { resumeControlledRun, startControlledRun } from './run-control'
 import { createRunControl, runHaltOf, RunHaltedError } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runIdentityForRunId, startRun } from './run-identity'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl } from './types'
+// Imported from the package root deliberately: `AgentLifecycleLegOptions` is the
+// declared parameter type of an exported function, so a caller outside this
+// package has to be able to name it without reaching into a source file.
+import type { AgentLifecycleLegOptions } from './index'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-control-root-'))
 
@@ -105,6 +109,14 @@ function haltAfter(nodeId: string, control: RunControl, reason?: string): (event
   }
 }
 
+describe('the package root names every type its public surface requires', () => {
+  it('exports the leg-options type a caller must construct for the node executor', () => {
+    const options: AgentLifecycleLegOptions = { control: createRunControl(), resumedFrom: 'a-checkpoint-id' }
+    expect(options.control?.halted).toBe(false)
+    expect(options.resumedFrom).toBe('a-checkpoint-id')
+  })
+})
+
 describe('createRunControl — the halt handle', () => {
   it('starts un-halted and reports the reason the first halt carried', () => {
     const control = createRunControl()
@@ -160,6 +172,17 @@ describe('createRunControl — the halt handle', () => {
     const aggregate = new AggregateError([new RunHaltedError('commit'), new Error('exited with code 1')], 'Multiple')
     expect(runHaltOf(aggregate)).toBeUndefined()
     expect(runHaltOf(new AggregateError([], 'none'))).toBeUndefined()
+  })
+
+  it('reads an aggregate carrying the same halt reference twice as a halt', () => {
+    // A fan-out where two boundaries threw the same object. A cycle guard shared
+    // across siblings made the second sighting return undefined purely because a
+    // sibling had already visited it, so the all-errors-are-halts test failed and
+    // a fully halted run was reported as broken. A repeat along one path is a
+    // cycle; a repeat across siblings is not.
+    const halt = new RunHaltedError('commit', 'operator')
+    expect(runHaltOf(new AggregateError([halt, halt], 'Multiple errors'))).toBe(halt)
+    expect(runHaltOf(new AggregateError([halt, halt, halt], 'Multiple errors'))).toBe(halt)
   })
 
   it('does not spin on a self-containing aggregate', () => {
@@ -305,6 +328,42 @@ describe('startControlledRun — a typed outcome instead of resolve-or-throw', (
 
     expect(seen).toHaveLength(1)
     expect(outcome.identity.runId).toBe(seen[0])
+  })
+
+  it('still reports the halt when reading the run own state afterwards fails', async () => {
+    // The outcome path reads the pending-node list and the checkpoint to fill in a
+    // paused report. Neither read is the fact the caller needs, so a failure in
+    // one must not replace the halt with an unrelated error — the rule the
+    // checkpoint read already followed and the pending-node read did not.
+    class FailsAfterHalt extends MemorySaver {
+      failing = false
+      override async getTuple(config: Parameters<MemorySaver['getTuple']>[0]) {
+        if (this.failing) throw new Error('the checkpoint store went away')
+        return await super.getTuple(config)
+      }
+    }
+    const checkpointer = new FailsAfterHalt()
+    const control = createRunControl()
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig((event) => {
+        if (event.type === 'node:complete' && event.nodeId === 'implement') {
+          control.halt('store about to fail')
+          checkpointer.failing = true
+        }
+      }),
+      checkpointer,
+      identity: createRunIdentity('halt-with-broken-store'),
+      control,
+      spawnFn: recordingSpawn().spawnFn
+    })
+
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.haltReason).toBe('store about to fail')
+    expect(outcome.pendingNodes).toEqual([])
+    expect(outcome.checkpoint).toBeUndefined()
   })
 
   it('refuses a thread that already holds a checkpoint rather than restarting it', async () => {

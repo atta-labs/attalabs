@@ -95,6 +95,54 @@ function straightPlan(): Plan {
   }
 }
 
+/**
+ * `attempt` → `check`, where `check` is the ONLY terminal step and declares a
+ * decision whose BOTH targets point backwards. Legal: the engine validator
+ * requires `ifTrue` to be strictly prior and only requires `ifFalse` to exist.
+ * The run can therefore end in exactly one way — on the ceiling.
+ */
+function terminalDecisionPlan(): Plan {
+  const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'attempt', maxRevisions: 1 }
+  return {
+    ...loopPlan(decision),
+    graph: {
+      nodes: {
+        attempt: mechanicalNode('attempt', 'attempt-action'),
+        check: mechanicalNode('check', 'check-action', decision)
+      },
+      edges: [{ from: 'attempt', to: 'check', kind: 'flow' }],
+      conditionalEdges: [],
+      entryNode: 'attempt'
+    }
+  }
+}
+
+/**
+ * `attempt` fans out to `check` (which loops back to `attempt`) and to `finish`
+ * (which terminates). One branch reaches a terminal step while the other is still
+ * looping — the shape in which an in-graph completion recorder was re-entered and
+ * wrote `completed` beside, and sometimes over, the exhaustion record.
+ */
+function fanoutLoopPlan(maxRevisions: number): Plan {
+  const decision: PlanStepDecision = { examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions }
+  return {
+    ...loopPlan(decision),
+    graph: {
+      nodes: {
+        attempt: mechanicalNode('attempt', 'attempt-action'),
+        check: mechanicalNode('check', 'check-action', decision),
+        finish: mechanicalNode('finish', 'finish-action')
+      },
+      edges: [
+        { from: 'attempt', to: 'check', kind: 'flow' },
+        { from: 'attempt', to: 'finish', kind: 'flow' }
+      ],
+      conditionalEdges: [],
+      entryNode: 'attempt'
+    }
+  }
+}
+
 function config(
   overrides: Partial<AgentSpawnExecutorConfig> = {},
   onEvent?: (event: AgentLifecycleEvent) => void
@@ -166,6 +214,72 @@ describe('exhaustion is its own outcome, never a completed run', () => {
     expect(record?.reason).toBe('exhausted')
     if (record?.reason !== 'exhausted') throw new Error('narrowing guard')
     expect(record.exhaustion).toEqual({ nodeId: 'check', target: 'attempt', maxRevisions: 2, revisions: 3 })
+  })
+
+  it('compiles and runs a Plan whose only terminal step declares a decision', async () => {
+    // Both of that decision's targets point backwards, so nothing in the graph
+    // ends anywhere but the ceiling. An earlier revision added a shared
+    // completion-recorder node unconditionally and wired it only from plain
+    // terminal steps, leaving it unreachable for exactly this shape — LangGraph
+    // refused the graph, so such a Plan could no longer be started at all.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('terminal-decision')
+    const outcome = await startControlledRun({
+      plan: terminalDecisionPlan(),
+      config: config(alwaysRevise),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn().spawnFn
+    })
+
+    expect(outcome.reason).toBe('exhausted')
+    expect((await readRunOutcome(checkpointer, identity))?.reason).toBe('exhausted')
+  })
+
+  it('reports exhausted for a fan-out whose sibling branch reached a terminal step', async () => {
+    // `finish` terminates while `check` is still looping. With an in-graph
+    // completion recorder this reported `completed` — the run had exhausted its
+    // ceiling and said it succeeded.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('fanout-loop-exhausted')
+    const outcome = await startControlledRun({
+      plan: fanoutLoopPlan(1),
+      config: config(alwaysRevise),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn().spawnFn,
+      recursionLimit: 50
+    })
+
+    expect(outcome.reason).toBe('exhausted')
+    if (outcome.reason !== 'exhausted') throw new Error('narrowing guard')
+    expect(outcome.exhaustion.nodeId).toBe('check')
+    // And the store agrees — `completed` was never written anywhere.
+    expect((await readRunOutcome(checkpointer, identity))?.reason).toBe('exhausted')
+  })
+
+  it('never records completed while a fan-out run is still mid-flight', async () => {
+    // The same re-entry that overwrote the exhaustion also committed `completed`
+    // in a superstep while the looping branch was still executing, so a store
+    // read mid-run answered `completed` for a run with pending nodes. Halting the
+    // fan-out proves the store no longer claims that.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('fanout-loop-paused')
+    const control = createRunControl()
+    const outcome = await startControlledRun({
+      plan: fanoutLoopPlan(5),
+      config: config(alwaysRevise, haltAfter('finish', control)),
+      checkpointer,
+      identity,
+      control,
+      spawnFn: recordingSpawn().spawnFn,
+      recursionLimit: 50
+    })
+
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes.length).toBeGreaterThan(0)
+    expect((await readRunOutcome(checkpointer, identity))?.reason).toBe('paused')
   })
 
   it('refuses a Plan step whose id collides with the synthetic recorder names', () => {
@@ -350,6 +464,89 @@ describe('readRunOutcome — the vocabulary, read from the store alone', () => {
     expect(record?.reason).toBe('resumed')
     if (record?.reason !== 'resumed') throw new Error('narrowing guard')
     expect(record.fromCheckpointId).toBe('earlier-checkpoint')
+  })
+
+  it("refuses a checkpoint on this thread that records a different run's id", async () => {
+    // The colliding-key corruption `readRunCheckpoint` already refuses by name.
+    // Reading only the outcome channel skipped that cross-check, so an operator
+    // deciding whether to resume could be handed another run's terminal state.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('outcome-collision')
+    await startControlledRun({
+      plan: straightPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn().spawnFn
+    })
+
+    const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+    if (!tuple) throw new Error('expected a checkpoint')
+    tuple.checkpoint.channel_values.runId = 'someone-elses-run'
+    await checkpointer.put(runInvokeConfig(identity), tuple.checkpoint, tuple.metadata ?? {}, {})
+
+    await expect(readRunOutcome(checkpointer, identity)).rejects.toThrow(/records runId 'someone-elses-run'/)
+  })
+
+  it('refuses an exhausted record whose exhaustion payload is not a real one', async () => {
+    // `typeof x === 'object'` is true of null and of arrays, so all three of these
+    // were previously narrowed to a type with four required fields — and a
+    // consumer reading `.nodeId` off them threw or silently read undefined.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('outcome-bad-exhaustion')
+    await startControlledRun({
+      plan: straightPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn().spawnFn
+    })
+
+    // `outcomeFromResolution` refuses the same shapes through the same validator
+    // rather than falling through to `completed`. That branch is not reachable
+    // through the public operations — a resumed leg writes its own `resumed`
+    // record over any stored value before it could be read there — so the shared
+    // validator is exercised here, at the door that does reach it.
+    for (const exhaustion of [null, [], {}, { nodeId: 'check', target: 'attempt' }]) {
+      const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+      if (!tuple) throw new Error('expected a checkpoint')
+      tuple.checkpoint.channel_values.outcome = { reason: 'exhausted', at: new Date().toISOString(), exhaustion }
+      await checkpointer.put(runInvokeConfig(identity), tuple.checkpoint, tuple.metadata ?? {}, {})
+      await expect(readRunOutcome(checkpointer, identity)).rejects.toThrow(/could not have written/)
+    }
+  })
+
+  it('reports failed, not paused, when a superstep holds a halt AND a real failure', async () => {
+    // LangGraph writes one error entry per failed task, so a superstep can hold
+    // several. Reading only the first reported `paused` whenever the halt's write
+    // came first — which invites a resume straight back into the broken node.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('outcome-mixed-writes')
+    const control = createRunControl()
+    await startControlledRun({
+      plan: straightPlan(),
+      config: config({}, haltAfter('attempt', control)),
+      checkpointer,
+      identity,
+      control,
+      spawnFn: recordingSpawn().spawnFn
+    })
+    expect((await readRunOutcome(checkpointer, identity))?.reason).toBe('paused')
+
+    // Append a second, genuine failure beside the halt's own write, on the same
+    // checkpoint LangGraph already recorded the halt against.
+    const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+    if (!tuple) throw new Error('expected a checkpoint')
+    await checkpointer.putWrites(
+      { configurable: { thread_id: identity.threadId, checkpoint_ns: '', checkpoint_id: tuple.checkpoint.id } },
+      [['__error__', { name: 'Error', message: 'exited with code 1' }]],
+      'other-task'
+    )
+
+    const record = await readRunOutcome(checkpointer, identity)
+    expect(record?.reason).toBe('failed')
+    if (record?.reason !== 'failed') throw new Error('narrowing guard')
+    expect(record.error).toMatch(/exited with code 1/)
   })
 
   it('refuses an outcome value this executor could not have written', async () => {

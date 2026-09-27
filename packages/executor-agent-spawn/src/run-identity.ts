@@ -47,6 +47,19 @@
  * a spawned process printed can be in it — and choose its retention,
  * encryption and access accordingly.
  *
+ * **Three carriers, not one.** `results` is the largest but not the only place
+ * this content comes to rest. The `outcome` channel is checkpointed alongside it,
+ * and LangGraph separately persists a failed task's serialized error as a pending
+ * write on the thread — whose `message` is surfaced verbatim as
+ * `RunFailedOutcome.error` and as `readRunOutcome`'s `error`/`detail`. That
+ * message is not a summary: a failed mechanical node's error embeds the command's
+ * raw `stderr` (capped at two thousand characters by `mechanical-executor.ts`, not
+ * redacted), and a failed agent-spawn node's embeds its own. So a run that broke
+ * stores a slice of subprocess output in a second place, reachable by a caller
+ * that reads only the outcome and never the state — the retention, encryption and
+ * access choices above govern all three, and a consumer that logs or displays an
+ * outcome's `error` is displaying that output.
+ *
  * **What is not here.** The typed control surface itself — a halt handle, a
  * resume that continues from a checkpoint, and the typed outcome a leg of a run
  * resolves to — lives in `run-control.ts` and `run-halt.ts`, built on what this

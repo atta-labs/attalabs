@@ -61,7 +61,7 @@
 
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
-import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor, terminalPlanNodeIds } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
 import { RUN_HALTED_ERROR_NAME, runHaltOf } from './run-halt'
@@ -172,6 +172,28 @@ async function checkpointForNonSuccess(
 }
 
 /**
+ * The pending-node list for an outcome that is already reporting a halt or a
+ * failure, giving up rather than throwing if the snapshot read itself fails.
+ *
+ * Same rule as `checkpointForNonSuccess` above, and for the same reason: this
+ * runs while the caller is already being told something went wrong, so a second
+ * unrelated error must not replace the first. An empty list here means "could not
+ * be read", which the outcome's own reason already makes clear is not a claim the
+ * run had nothing pending.
+ */
+async function pendingNodesForNonSuccess(
+  graph: CompiledRunGraph,
+  identity: RunIdentity,
+  recursionLimit?: number
+): Promise<string[]> {
+  try {
+    return await pendingNodesOf(graph, identity, recursionLimit)
+  } catch {
+    return []
+  }
+}
+
+/**
  * LangGraph's own channel for a failed task's serialized error, kept on the
  * thread's pending writes. Hardcoded because the constant (`ERROR`) is not
  * re-exported from `@langchain/langgraph`'s package root; the same fact is
@@ -182,59 +204,119 @@ async function checkpointForNonSuccess(
 const LANGGRAPH_ERROR_CHANNEL = '__error__'
 
 /**
- * Why this package writes no outcome record from outside the graph.
+ * Where each outcome record is written, and why the two places differ.
  *
- * The obvious mechanism — `graph.updateState(config, { outcome })` after the leg
- * ends — is unusable on a thread that has a pending continuation, which is
- * exactly the thread a paused or failed run leaves behind. Measured on this
- * repo's pinned LangGraph: with the writer node inferred, a second such update
- * in a thread's lifetime fails outright (`Ambiguous update, specify "asNode"`);
- * and naming `asNode` explicitly is worse than failing, because the update is
- * then applied *as* that node and the pending set is recomputed from its
- * outgoing edges — a run halted before node C, updated as node B, resumes with C
- * already routed past and never executed. A mechanism that can silently skip a
- * step is not a mechanism for recording that the step is still owed.
+ * **Inside a node, for anything a node can know.** `resumed` is written by the
+ * node executor on a resumed leg's first node; `exhausted` by the per-branch
+ * recorder a refused ceiling routes to. Both are facts a node genuinely holds at
+ * the moment it runs, and writing them there makes them ordinary superstep
+ * commits — durable with the rest of the state, with no second store to reconcile.
  *
- * So every record this package writes is written from inside a graph node, where
- * the write is an ordinary superstep commit: `resumed` by the node executor on a
- * resumed leg's first node, `completed` by the completion recorder, `exhausted`
- * by a per-branch exhaustion recorder. The two remaining reasons are not written
- * at all — a halted or broken run already has its error persisted by LangGraph
- * as the failed task's own write, and `readRunOutcome` reads it from there
- * rather than duplicating it.
+ * **Outside the graph, for `completed`, because no node can know it.** "This run
+ * is over" is a property of `END` being reached with nothing left pending, which
+ * no node can observe about itself. An earlier revision of this surface tried
+ * anyway, with one shared recorder every terminal step routed through, and it was
+ * wrong twice: a legal Plan whose only terminal step declares a decision left
+ * that recorder with no incoming edge at all (both of a decision's targets may
+ * point backwards) so the graph would not compile; and in a fan-out where one
+ * branch loops through a decision while a sibling terminates, the recorder was
+ * re-entered every pass and its `completed` write landed beside the exhaustion
+ * record — under last-write-wins, sometimes after it, reporting an exhausted run
+ * as a successful one. So `completed` is written here, by
+ * `persistCompletedRecord`, after `invoke()` has resolved and only when no
+ * exhaustion was recorded.
+ *
+ * **That write is safe precisely because it happens on a finished thread.** The
+ * mechanism — `graph.updateState(config, { outcome })` — is unusable on a thread
+ * that still has a pending continuation, which is what a paused or failed run
+ * leaves behind. Measured on this repo's pinned LangGraph: with the writer node
+ * inferred, a second such update in a thread's lifetime fails outright
+ * (`Ambiguous update, specify "asNode"`), and naming `asNode` explicitly is worse
+ * than failing, because the update is applied *as* that node and the pending set
+ * is recomputed from its outgoing edges — a run halted before node C, updated as
+ * node B, resumes with C already routed past and never executed. On a thread with
+ * nothing pending none of that applies: the update is unambiguous and the pending
+ * set stays empty, verified across a halt-and-resume lineage.
+ *
+ * **And `paused`/`failed` are never written at all.** A halted or broken run
+ * already has its error persisted by LangGraph as the failed task's own write, so
+ * duplicating it would be the second disagreeing record the identity contract
+ * exists to rule out. `readRunOutcome` reads them from there.
  */
+
+/**
+ * A complete `RunExhaustion`, or `undefined` for a value that is not one.
+ *
+ * Every field is checked, and the container is checked for being a plain object
+ * rather than merely `typeof 'object'` — `null` and an array both satisfy that
+ * test, so an `exhaustion: null` or `exhaustion: []` from a store this package
+ * does not own would otherwise be narrowed to a type with four required fields
+ * and handed to a consumer that reads `.nodeId` off it.
+ */
+function validExhaustion(value: unknown): RunExhaustion | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const { nodeId, target, maxRevisions, revisions } = value as Record<string, unknown>
+  if (typeof nodeId !== 'string' || nodeId === '') return undefined
+  if (typeof target !== 'string' || target === '') return undefined
+  if (!Number.isInteger(maxRevisions) || (maxRevisions as number) < 0) return undefined
+  if (!Number.isInteger(revisions) || (revisions as number) < 0) return undefined
+  return { nodeId, target, maxRevisions: maxRevisions as number, revisions: revisions as number }
+}
 
 /**
  * The exhaustion an in-graph recorder wrote into this state, or `undefined` if
  * the run's graph terminated for any other reason.
  *
- * Validated rather than cast, on the same principle the checkpoint channel reads
- * follow: the value is deserialized from a store this package does not own, and
- * a fabricated record narrowed on faith would be reported as this run's reason
- * for stopping.
+ * **A malformed exhausted record throws rather than reading as "not exhausted".**
+ * Returning `undefined` for one would send `outcomeFromResolution` down its
+ * `completed` branch, so a corrupt or tampered record would be reported as a
+ * successful run — the silent success this vocabulary exists to prevent, arriving
+ * through the validation meant to protect it. The record says the run stopped on
+ * a ceiling; if its payload cannot be read, the honest answer is an error, never
+ * a success.
  */
 function exhaustionOf(state: AgentSpawnGraphStateValue): RunExhaustion | undefined {
   const record = state.outcome
   if (record?.reason !== 'exhausted') return undefined
-  const { nodeId, target, maxRevisions, revisions } = record.exhaustion
-  if (typeof nodeId !== 'string' || typeof target !== 'string') return undefined
-  if (typeof maxRevisions !== 'number' || typeof revisions !== 'number') return undefined
-  return { nodeId, target, maxRevisions, revisions }
+  const exhaustion = validExhaustion(record.exhaustion)
+  if (!exhaustion) {
+    throw new Error(
+      `This run's state records reason 'exhausted' with an unreadable exhaustion payload — refusing to report it, and refusing to fall through to 'completed', because a run stopped by a ceiling is not a successful one.`
+    )
+  }
+  return exhaustion
 }
 
 /**
- * The serialized error LangGraph kept for a task that failed on this thread, or
- * `undefined` when no task failed.
+ * The serialized error LangGraph kept for the tasks that failed on this thread,
+ * and whether every one of them was a halt.
+ *
+ * LangGraph writes one `__error__` entry per failed task, so a superstep can hold
+ * several. Reading only the first one would report a superstep that mixed a halt
+ * with a genuine break as `paused` whenever the halt's write came first — the same
+ * misclassification `runHaltOf` refuses for the in-memory aggregate, and harmful
+ * for the same reason: a pause invites a resume straight back into the broken
+ * node. So all of them are read, and the run counts as halted only if every one
+ * is a halt. When one is not, its message is the one reported: the failure is the
+ * fact the caller has to act on.
  */
-function failedTaskError(
+function failedTaskErrors(
   pendingWrites: ReadonlyArray<readonly [string, string, unknown]> | undefined
-): { name?: string; message?: string } | undefined {
+): { halted: boolean; message: string } | undefined {
+  const errors: Array<{ name?: string; message?: string }> = []
   for (const write of pendingWrites ?? []) {
     if (write[1] !== LANGGRAPH_ERROR_CHANNEL) continue
     const value = write[2]
-    if (typeof value === 'object' && value !== null) return value as { name?: string; message?: string }
+    if (typeof value === 'object' && value !== null) errors.push(value as { name?: string; message?: string })
   }
-  return undefined
+  if (errors.length === 0) return undefined
+
+  const messageOf = (error: { message?: string }) =>
+    typeof error.message === 'string' ? error.message : 'the error carried no message'
+  const notHalt = errors.find((error) => error.name !== RUN_HALTED_ERROR_NAME)
+  if (notHalt) return { halted: false, message: messageOf(notHalt) }
+  const [first] = errors
+  return { halted: true, message: first === undefined ? 'the error carried no message' : messageOf(first) }
 }
 
 /** Whether a checkpointed value is one of this package's own in-graph outcome records. */
@@ -248,7 +330,7 @@ function isRunOutcomeRecord(value: unknown): value is RunOutcomeRecord {
     case 'resumed':
       return typeof (value as { fromCheckpointId?: unknown }).fromCheckpointId === 'string'
     case 'exhausted':
-      return typeof (value as { exhaustion?: unknown }).exhaustion === 'object'
+      return validExhaustion((value as { exhaustion?: unknown }).exhaustion) !== undefined
     // `paused` and `failed` are derived from LangGraph's own failed-task write,
     // never written into this channel — one appearing here did not come from
     // this package.
@@ -282,6 +364,14 @@ function isRunOutcomeRecord(value: unknown): value is RunOutcomeRecord {
  * by name rather than returned, the same way a checkpointed channel entry this
  * package could not have written is — reporting a recorded run as unrecorded is
  * the same misreading inverted.
+ *
+ * **A checkpoint recording a different `runId` is refused, exactly as
+ * `readRunCheckpoint` refuses it.** The two functions read the same tuple, and a
+ * thread holding another run's state can only come from a colliding key — so
+ * reporting its outcome as this run's would hand an operator deciding whether to
+ * resume a terminal state belonging to someone else's run. The cross-check has to
+ * be here too and not only in the sibling read: this is the function a dashboard
+ * calls, and it is the cheaper of the two to call.
  */
 export async function readRunOutcome(
   checkpointer: BaseCheckpointSaver,
@@ -292,16 +382,23 @@ export async function readRunOutcome(
   const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
   if (!tuple) return undefined
 
-  const at = tuple.checkpoint.ts
-  const failure = failedTaskError(tuple.pendingWrites as ReadonlyArray<readonly [string, string, unknown]>)
-  if (failure) {
-    const message = typeof failure.message === 'string' ? failure.message : 'the error carried no message'
-    return failure.name === RUN_HALTED_ERROR_NAME
-      ? { reason: 'paused', at, detail: message }
-      : { reason: 'failed', at, error: message }
+  const values = tuple.checkpoint.channel_values as Record<string, unknown>
+  const checkpointedRunId = values.runId
+  if (typeof checkpointedRunId !== 'string' || checkpointedRunId !== identity.runId) {
+    throw new Error(
+      `Checkpoint on thread '${identity.threadId}' records runId '${String(checkpointedRunId)}', not '${identity.runId}' — refusing to read another run's outcome as this one's.`
+    )
   }
 
-  const recorded = (tuple.checkpoint.channel_values as Record<string, unknown>).outcome
+  const at = tuple.checkpoint.ts
+  const failure = failedTaskErrors(tuple.pendingWrites as ReadonlyArray<readonly [string, string, unknown]>)
+  if (failure) {
+    return failure.halted
+      ? { reason: 'paused', at, detail: failure.message }
+      : { reason: 'failed', at, error: failure.message }
+  }
+
+  const recorded = values.outcome
   if (recorded === undefined || recorded === null) return undefined
   if (!isRunOutcomeRecord(recorded)) {
     throw new Error(
@@ -327,7 +424,7 @@ async function outcomeFromRejection(
   resumedFrom: string | undefined,
   recursionLimit?: number
 ): Promise<RunOutcome> {
-  const pendingNodes = await pendingNodesOf(graph, identity, recursionLimit)
+  const pendingNodes = await pendingNodesForNonSuccess(graph, identity, recursionLimit)
   const checkpoint = await checkpointForNonSuccess(checkpointer, identity)
   const halt = runHaltOf(error)
 
@@ -372,35 +469,103 @@ async function outcomeFromRejection(
  */
 async function outcomeFromResolution(
   state: AgentSpawnGraphStateValue,
+  graph: CompiledRunGraph,
+  plan: Plan,
   identity: RunIdentity,
   checkpointer: BaseCheckpointSaver,
-  resumedFrom: string | undefined
+  resumedFrom: string | undefined,
+  recursionLimit?: number
 ): Promise<RunOutcome> {
+  const exhaustion = exhaustionOf(state)
+  if (exhaustion) {
+    // Already persisted by the recorder node, in the same superstep that knew
+    // it — nothing to write here, and nothing that could overwrite it: the
+    // `completed` write below is the only other writer, and it is skipped.
+    const exhausted = await readRunCheckpointOrThrow(checkpointer, identity)
+    return {
+      reason: 'exhausted',
+      identity,
+      checkpoint: exhausted,
+      exhaustion,
+      ...(resumedFrom === undefined ? {} : { resumedFrom })
+    }
+  }
+
+  await persistCompletedRecord(graph, plan, identity, recursionLimit)
+  const checkpoint = await readRunCheckpointOrThrow(checkpointer, identity)
+  return {
+    reason: 'completed',
+    identity,
+    checkpoint,
+    ...(resumedFrom === undefined ? {} : { resumedFrom })
+  }
+}
+
+/** The run's persisted state, or a named error — a terminated run always wrote one. */
+async function readRunCheckpointOrThrow(
+  checkpointer: BaseCheckpointSaver,
+  identity: RunIdentity
+): Promise<RunCheckpointState> {
   const checkpoint = await readRunCheckpoint(checkpointer, identity)
   if (!checkpoint) {
     throw new Error(
       `Run '${identity.runId}' resolved but its checkpointer holds no checkpoint on thread '${identity.threadId}' — a terminated run always wrote one, so the saver supplied did not persist what it was handed.`
     )
   }
+  return checkpoint
+}
 
-  const exhaustion = exhaustionOf(state)
-  if (exhaustion) {
-    // Already persisted by the recorder node, in the same superstep that knew
-    // it — nothing to write here, and nothing to overwrite it with.
-    return {
-      reason: 'exhausted',
-      identity,
-      checkpoint,
-      exhaustion,
-      ...(resumedFrom === undefined ? {} : { resumedFrom })
-    }
+/**
+ * Records `completed` on a thread that has just finished — the one outcome no
+ * node can write, and the only write this package makes from outside the graph.
+ *
+ * Safe here and nowhere else, for the reason this file's header gives: the thread
+ * has no pending task, so `updateState`'s inferred writer node is unambiguous and
+ * the pending set stays empty. It refuses to run otherwise rather than trusting
+ * that: a non-empty pending set would mean `invoke()` resolved with work still
+ * owed, which should not happen — and if it ever did, writing here is exactly the
+ * mechanism that silently routes a pending node past.
+ *
+ * A store that will not take the record throws. An operation promising a persisted
+ * outcome that quietly failed to persist one is worse than a loud failure, because
+ * the next reader gets `undefined` for a run that finished and has no way to know
+ * the difference.
+ */
+async function persistCompletedRecord(
+  graph: CompiledRunGraph,
+  plan: Plan,
+  identity: RunIdentity,
+  recursionLimit?: number
+): Promise<void> {
+  const pending = await pendingNodesOf(graph, identity, recursionLimit)
+  if (pending.length > 0) {
+    throw new Error(
+      `Run '${identity.runId}' resolved while nodes ${pending.join(', ')} are still pending on thread '${identity.threadId}' — refusing to record it as completed, and refusing to write to a thread that still owes work.`
+    )
   }
 
-  return {
-    reason: 'completed',
-    identity,
-    checkpoint,
-    ...(resumedFrom === undefined ? {} : { resumedFrom })
+  // Named rather than inferred: LangGraph cannot infer a writer node on a thread
+  // whose lineage includes a resumed leg, and a terminal step is the one
+  // candidate whose only outgoing edge is `END`, so the pending set recomputes
+  // empty. See `terminalPlanNodeIds`.
+  const [asNode] = terminalPlanNodeIds(plan)
+  if (asNode === undefined) {
+    throw new Error(
+      `Run '${identity.runId}' resolved with no exhaustion recorded, but its Plan has no terminal step — every path ends in a decision, so this run could only have ended on a ceiling. Refusing to record it as completed.`
+    )
+  }
+
+  try {
+    await graph.updateState(
+      runInvokeConfig(identity, recursionLimit),
+      { outcome: { reason: 'completed', at: new Date().toISOString() } },
+      asNode
+    )
+  } catch (error) {
+    throw new Error(
+      `Run '${identity.runId}' completed, but its checkpointer refused to record that outcome on thread '${identity.threadId}' — the reason the run stopped could not be persisted.`,
+      { cause: error }
+    )
   }
 }
 
@@ -433,7 +598,7 @@ export async function startControlledRun(params: StartControlledRunParams): Prom
     return await outcomeFromRejection(error, graph, identity, checkpointer, undefined, recursionLimit)
   }
 
-  return await outcomeFromResolution(state, identity, checkpointer, undefined)
+  return await outcomeFromResolution(state, graph, plan, identity, checkpointer, undefined, recursionLimit)
 }
 
 /**
@@ -501,5 +666,5 @@ export async function resumeControlledRun(params: ResumeControlledRunParams): Pr
     return await outcomeFromRejection(error, graph, identity, checkpointer, resumedFrom, recursionLimit)
   }
 
-  return await outcomeFromResolution(state, identity, checkpointer, resumedFrom)
+  return await outcomeFromResolution(state, graph, plan, identity, checkpointer, resumedFrom, recursionLimit)
 }

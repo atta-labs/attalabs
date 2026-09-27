@@ -156,23 +156,37 @@ function aggregatedErrors(value: unknown): unknown[] | undefined {
  * reporting it as a pause would invite a resume that re-enters a broken node.
  *
  * Depth-bounded and cycle-guarded, so a self-referential `cause` or a
- * self-containing aggregate cannot spin. Shaped after `runIdentityOf` in
- * `run-identity.ts`: both answer "what does this caught `unknown` tell me about
- * the run it came from", and both return `undefined` for an error that is not
- * ours, so a caller never has to widen what a `catch` handed it.
+ * self-containing aggregate cannot spin. The guard tracks the *current path*
+ * only, and each branch of an aggregate is walked with its own copy: a shared
+ * set would make the second sighting of one error return `undefined` purely
+ * because a sibling had already been visited, so an aggregate carrying the same
+ * halt reference twice — a fan-out where two boundaries threw the same object —
+ * would fail the all-errors-are-halts test and report a fully halted run as
+ * broken. A repeat along one path is a cycle; a repeat across siblings is not.
+ *
+ * Shaped after `runIdentityOf` in `run-identity.ts`: both answer "what does this
+ * caught `unknown` tell me about the run it came from", and both return
+ * `undefined` for an error that is not ours, so a caller never has to widen what
+ * a `catch` handed it.
  */
-export function runHaltOf(error: unknown, seen: Set<unknown> = new Set(), depth = 0): RunHaltedError | undefined {
-  if (depth > 8 || seen.has(error)) return undefined
-  if (typeof error === 'object' && error !== null) seen.add(error)
+export function runHaltOf(
+  error: unknown,
+  path: ReadonlySet<unknown> = new Set(),
+  depth = 0
+): RunHaltedError | undefined {
+  if (depth > 8 || path.has(error)) return undefined
 
   if (error instanceof RunHaltedError) return error
+
+  const descend = new Set(path)
+  if (typeof error === 'object' && error !== null) descend.add(error)
 
   const aggregated = aggregatedErrors(error)
   if (aggregated) {
     if (aggregated.length === 0) return undefined
     let first: RunHaltedError | undefined
     for (const inner of aggregated) {
-      const halt = runHaltOf(inner, seen, depth + 1)
+      const halt = runHaltOf(inner, new Set(descend), depth + 1)
       if (!halt) return undefined
       first ??= halt
     }
@@ -180,5 +194,5 @@ export function runHaltOf(error: unknown, seen: Set<unknown> = new Set(), depth 
   }
 
   if (!(error instanceof Error)) return undefined
-  return runHaltOf(error.cause, seen, depth + 1)
+  return runHaltOf(error.cause, descend, depth + 1)
 }
