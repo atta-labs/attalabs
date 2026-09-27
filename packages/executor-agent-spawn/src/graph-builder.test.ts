@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { Plan, PlanAgentSpawnNode, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
+import { MemorySaver } from '@langchain/langgraph'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
@@ -857,5 +858,98 @@ describe('buildAgentSpawnStateGraph — fan-out and join topology (engine-parall
     expect(branchBComplete).toBeDefined()
     const branchAFailed = events.find((e) => e.type === 'node:failed' && e.nodeId === 'branch-a')
     expect(branchAFailed).toBeDefined()
+  })
+})
+
+describe('buildAgentSpawnStateGraph — checkpointer injection (engine-halt-resume-v1 task 1)', () => {
+  /**
+   * A `MemorySaver` that records every `put` it is asked to perform, so a test
+   * can assert on *how many* checkpoints were written and under which
+   * `thread_id` — facts `MemorySaver` itself only exposes indirectly, through
+   * `list()`. Subclassing rather than hand-rolling a saver keeps the real
+   * serialization and the real `getTuple`/`list` semantics in the loop: what
+   * this asserts on is LangGraph's own writes, not a fake's approximation of
+   * them.
+   */
+  class RecordingSaver extends MemorySaver {
+    puts: Array<{ threadId: string | undefined; checkpointId: string }> = []
+
+    override async put(
+      config: Parameters<MemorySaver['put']>[0],
+      checkpoint: Parameters<MemorySaver['put']>[1],
+      metadata: Parameters<MemorySaver['put']>[2],
+      newVersions: Parameters<MemorySaver['put']>[3]
+    ) {
+      this.puts.push({
+        threadId: config.configurable?.thread_id as string | undefined,
+        checkpointId: checkpoint.id
+      })
+      return super.put(config, checkpoint, metadata, newVersions)
+    }
+  }
+
+  function twoStepSpawnFn(): SpawnFn {
+    let callCount = 0
+    return (...args) => {
+      callCount += 1
+      const lines =
+        callCount === 1 ? ['{"type":"result","session_id":"session-from-implement"}'] : ['{"type":"result"}']
+      return fakeSpawn(lines)(...args)
+    }
+  }
+
+  it('writes a checkpoint at every node boundary under the thread_id it was invoked with', async () => {
+    const checkpointer = new RecordingSaver()
+    const executor = createAgentLifecycleNodeExecutor(config, twoStepSpawnFn())
+    const graph = buildAgentSpawnStateGraph(twoStepPlan, executor, config, { checkpointer })
+
+    await graph.invoke(
+      { runId: 'run-checkpointed', results: {}, sessions: {}, revisionCounts: {} },
+      { configurable: { thread_id: 'thread-checkpointed' } }
+    )
+
+    // Every write went to the one thread this run was invoked under — the
+    // property the identity contract in `run-identity.ts` exists to guarantee
+    // for callers that never touch `configurable` by hand.
+    expect(checkpointer.puts.length).toBeGreaterThan(0)
+    expect(checkpointer.puts.every((p) => p.threadId === 'thread-checkpointed')).toBe(true)
+
+    // One checkpoint per superstep boundary, and this Plan's two nodes run in
+    // two separate supersteps (`implement` → `review`), so there are strictly
+    // more than two writes: the pre-entry checkpoint plus one per node
+    // boundary. Asserting a floor rather than an exact count deliberately —
+    // the exact number is LangGraph's bookkeeping, and pinning it would make
+    // this test fail on a patch release that adds a write without changing
+    // the property under test.
+    expect(checkpointer.puts.length).toBeGreaterThanOrEqual(3)
+
+    // The persisted state is the real annotated state, not a summary of it.
+    const tuple = await checkpointer.getTuple({ configurable: { thread_id: 'thread-checkpointed' } })
+    expect(tuple).toBeDefined()
+    const values = tuple?.checkpoint.channel_values as Partial<AgentSpawnGraphStateValue> | undefined
+    expect(values?.runId).toBe('run-checkpointed')
+    expect(values?.sessions?.implement).toBe('session-from-implement')
+    expect(values?.revisionCounts?.implement).toBe(1)
+    expect(values?.revisionCounts?.review).toBe(1)
+  })
+
+  it('compiles and runs with no checkpointer and no thread_id when the option is omitted', async () => {
+    const checkpointer = new RecordingSaver()
+    const executor = createAgentLifecycleNodeExecutor(config, twoStepSpawnFn())
+    const graph = buildAgentSpawnStateGraph(twoStepPlan, executor, config)
+
+    // No `configurable` at all — the pre-seam call shape. A graph compiled
+    // with a checkpointer would reject this, so this also proves the omitted
+    // option really compiled an uncheckpointed graph rather than quietly
+    // defaulting to one.
+    const finalState = (await graph.invoke({
+      runId: 'run-uncheckpointed',
+      results: {},
+      sessions: {},
+      revisionCounts: {}
+    })) as AgentSpawnGraphStateValue
+
+    expect(finalState.sessions.implement).toBe('session-from-implement')
+    expect(checkpointer.puts).toHaveLength(0)
   })
 })

@@ -11,7 +11,11 @@
 export { AgentSpawnGraphState } from './graph-state'
 export type { AgentSpawnGraphStateValue } from './graph-state'
 export { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
-export type { AgentLifecycleNodeExecutor, NodeExecutionContext } from './graph-builder'
+export type {
+  AgentLifecycleNodeExecutor,
+  AgentSpawnGraphCompileOptions,
+  NodeExecutionContext
+} from './graph-builder'
 export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
