@@ -18,7 +18,7 @@
  */
 
 import { StringDecoder } from 'node:string_decoder'
-import type { SpawnedProcessLike } from './process-lifecycle'
+import { isProcessAbandoned, type SpawnedProcessLike } from './process-lifecycle'
 
 /** A complete line that was not JSON, with its position among the stream's non-empty lines (1-based). */
 interface MalformedLine {
@@ -199,16 +199,23 @@ export interface StreamReaderHandle {
  * wrong line. `stdout`'s listener type permits either, so both go the same
  * way.
  *
- * Framing stops once the process has closed. A `data` event cannot
- * legitimately follow `close` — it fires only after stdio has flushed — but
- * a child that outlives a kill signal can keep writing to a pipe nothing is
- * waiting on any more, and reporting records for a node whose failure was
- * already emitted is worse than dropping them. Reading `close` here is not
- * owning the process's lifecycle: nothing in this file starts, signals or
- * waits on it. The residual case is a child killed on the
- * process-lifecycle timeout that never closes at all; stopping *that*
- * stream belongs to the cancellation seam in `process-lifecycle.ts`, which
- * owns the kill.
+ * Framing stops once the process has closed, and also once its lifecycle
+ * owner has abandoned it. A `data` event cannot legitimately follow `close`
+ * — it fires only after stdio has flushed — but a child that outlives a
+ * kill signal can keep writing to a pipe nothing is waiting on any more,
+ * and reporting records for a node whose failure was already emitted is
+ * worse than dropping them. Reading `close` here is not owning the
+ * process's lifecycle: nothing in this file starts, signals or waits on it.
+ *
+ * The residual case is that same child never closing at all — killed on the
+ * process-lifecycle timeout, or on a cancellation request, and still alive
+ * after the forced signal. `close` never arrives for it, so `close` alone
+ * cannot stop the stream. `process-lifecycle.ts` owns the kill and is
+ * therefore the only place that knows the wait is over; it says so by
+ * marking the child abandoned, which this file checks per chunk
+ * (`isProcessAbandoned`) rather than inferring. Checked per chunk and not
+ * once at attach time because abandonment happens mid-stream, which is the
+ * whole point of it.
  */
 export function attachStreamReader(
   child: SpawnedProcessLike,
@@ -232,7 +239,7 @@ export function attachStreamReader(
   }
 
   child.stdout?.on('data', (chunk) => {
-    if (closed) return
+    if (closed || isProcessAbandoned(child)) return
     const text = decoder.write(typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk)
     framer.push(text)
   })
