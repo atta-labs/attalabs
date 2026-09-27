@@ -186,9 +186,14 @@ export function runInvokeConfig(identity: RunIdentity, recursionLimit?: number):
   return config
 }
 
-/** The initial graph state for a run — every channel at its documented starting value. */
-function initialStateFor(identity: RunIdentity): AgentSpawnGraphStateValue {
-  return { runId: identity.runId, results: {}, sessions: {}, revisionCounts: {} }
+/**
+ * The initial graph state for a run — every channel at its documented starting
+ * value. Exported so every start path builds it identically: a channel omitted
+ * on one path and present on another is how two entry points to the same graph
+ * start diverging.
+ */
+export function initialRunState(identity: RunIdentity): AgentSpawnGraphStateValue {
+  return { runId: identity.runId, results: {}, sessions: {}, revisionCounts: {}, outcome: undefined }
 }
 
 export interface StartRunParams {
@@ -343,12 +348,12 @@ export async function startRun(params: StartRunParams): Promise<StartRunResult> 
 
   await assertNoExistingCheckpoint(checkpointer, identity)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, control)
+  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   try {
     const state = (await graph.invoke(
-      initialStateFor(identity),
+      initialRunState(identity),
       runInvokeConfig(identity, recursionLimit)
     )) as AgentSpawnGraphStateValue
 

@@ -9,7 +9,7 @@
  */
 
 import { Annotation } from '@langchain/langgraph'
-import type { StepNodeResult } from './types'
+import type { RunOutcomeRecord, StepNodeResult } from './types'
 
 /**
  * LangGraph state for executing a steps-shaped Plan.
@@ -28,6 +28,16 @@ import type { StepNodeResult } from './types'
  * - `revisionCounts`: merged, keyed by node id — how many times that node's
  *   position has executed (1 on first run; a later retry/resume increments
  *   it). Not a rounds-style audit-revision counter — this shape has none.
+ * - `outcome`: last-write-wins — why this run is not executing, in the typed
+ *   vocabulary `RunOutcomeRecord` names. A channel rather than a table beside
+ *   the checkpointer so the reason travels with the state it describes and
+ *   cannot drift from it. Last-write-wins because a run has exactly one current
+ *   outcome: a `resumed` record replaces the `paused` one it continued from, and
+ *   the resumed leg's own terminal record replaces that. The `?? current` guard
+ *   means a write that carries nothing leaves the recorded reason standing,
+ *   rather than erasing it — every node that is not an exhaustion recorder
+ *   returns no `outcome` key at all, and a plain last-write-wins reducer would
+ *   read those as a clearing write.
  */
 export const AgentSpawnGraphState = Annotation.Root({
   runId: Annotation<string>(),
@@ -42,6 +52,10 @@ export const AgentSpawnGraphState = Annotation.Root({
   revisionCounts: Annotation<Record<string, number>>({
     reducer: (current, update) => ({ ...current, ...update }),
     default: () => ({})
+  }),
+  outcome: Annotation<RunOutcomeRecord | undefined>({
+    reducer: (current, update) => update ?? current,
+    default: () => undefined
   })
 })
 

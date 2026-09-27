@@ -93,6 +93,16 @@ export function createRunControl(upstream?: AbortSignal): RunControl {
 }
 
 /**
+ * The `name` a halt error carries, and the only part of a halt that survives
+ * serialization into a checkpoint store: LangGraph persists a failed task's
+ * error as `{ name, message }`, and this is what `readRunOutcome` matches on to
+ * report a halted run as `paused` rather than `failed`. A constant rather than a
+ * repeated literal because the two sides must agree exactly, and a rename that
+ * only touched one of them would silently reclassify every halted run.
+ */
+export const RUN_HALTED_ERROR_NAME = 'RunHaltedError'
+
+/**
  * Thrown by a node boundary that refuses to start because the run was halted.
  *
  * Carries the node it stopped *before* — never a node it stopped in the middle
@@ -110,7 +120,7 @@ export class RunHaltedError extends Error {
     super(
       `Run halted before node '${nodeId}' started${haltReason ? `: ${haltReason}` : ''}. No completed node's work is lost — the last checkpoint holds it, and resuming continues from this node.`
     )
-    this.name = 'RunHaltedError'
+    this.name = RUN_HALTED_ERROR_NAME
     this.nodeId = nodeId
     this.haltReason = haltReason
   }

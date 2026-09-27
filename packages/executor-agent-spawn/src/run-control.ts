@@ -62,16 +62,29 @@
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import { runHaltOf } from './run-halt'
+import { RUN_HALTED_ERROR_NAME, runHaltOf } from './run-halt'
 import {
   assertDerivedIdentity,
   assertNoExistingCheckpoint,
   createRunIdentity,
+  initialRunState,
   readRunCheckpoint,
   runInvokeConfig
 } from './run-identity'
-import type { AgentSpawnExecutorConfig, RunCheckpointState, RunControl, RunIdentity, RunOutcome } from './types'
+import type {
+  AgentSpawnExecutorConfig,
+  RunCheckpointState,
+  RunControl,
+  RunExhaustion,
+  RunIdentity,
+  RunOutcome,
+  RunOutcomeRecord
+} from './types'
+
+/** Compiled shape this module drives — named once so the helpers below read plainly. */
+type CompiledRunGraph = ReturnType<typeof buildAgentSpawnStateGraph>
 
 /** What both control operations need in order to compile and drive the run's graph. */
 interface ControlledRunBase {
@@ -126,7 +139,7 @@ export interface ResumeControlledRunParams extends ControlledRunBase {
  * fact the checkpointer already holds.
  */
 async function pendingNodesOf(
-  graph: ReturnType<typeof buildAgentSpawnStateGraph>,
+  graph: CompiledRunGraph,
   identity: RunIdentity,
   recursionLimit?: number
 ): Promise<string[]> {
@@ -159,6 +172,146 @@ async function checkpointForNonSuccess(
 }
 
 /**
+ * LangGraph's own channel for a failed task's serialized error, kept on the
+ * thread's pending writes. Hardcoded because the constant (`ERROR`) is not
+ * re-exported from `@langchain/langgraph`'s package root; the same fact is
+ * reachable through the public `StateSnapshot.tasks[].error`, which needs a
+ * compiled graph — and therefore the Plan — where `readRunOutcome` deliberately
+ * needs nothing but the store and the run id.
+ */
+const LANGGRAPH_ERROR_CHANNEL = '__error__'
+
+/**
+ * Why this package writes no outcome record from outside the graph.
+ *
+ * The obvious mechanism — `graph.updateState(config, { outcome })` after the leg
+ * ends — is unusable on a thread that has a pending continuation, which is
+ * exactly the thread a paused or failed run leaves behind. Measured on this
+ * repo's pinned LangGraph: with the writer node inferred, a second such update
+ * in a thread's lifetime fails outright (`Ambiguous update, specify "asNode"`);
+ * and naming `asNode` explicitly is worse than failing, because the update is
+ * then applied *as* that node and the pending set is recomputed from its
+ * outgoing edges — a run halted before node C, updated as node B, resumes with C
+ * already routed past and never executed. A mechanism that can silently skip a
+ * step is not a mechanism for recording that the step is still owed.
+ *
+ * So every record this package writes is written from inside a graph node, where
+ * the write is an ordinary superstep commit: `resumed` by the node executor on a
+ * resumed leg's first node, `completed` by the completion recorder, `exhausted`
+ * by a per-branch exhaustion recorder. The two remaining reasons are not written
+ * at all — a halted or broken run already has its error persisted by LangGraph
+ * as the failed task's own write, and `readRunOutcome` reads it from there
+ * rather than duplicating it.
+ */
+
+/**
+ * The exhaustion an in-graph recorder wrote into this state, or `undefined` if
+ * the run's graph terminated for any other reason.
+ *
+ * Validated rather than cast, on the same principle the checkpoint channel reads
+ * follow: the value is deserialized from a store this package does not own, and
+ * a fabricated record narrowed on faith would be reported as this run's reason
+ * for stopping.
+ */
+function exhaustionOf(state: AgentSpawnGraphStateValue): RunExhaustion | undefined {
+  const record = state.outcome
+  if (record?.reason !== 'exhausted') return undefined
+  const { nodeId, target, maxRevisions, revisions } = record.exhaustion
+  if (typeof nodeId !== 'string' || typeof target !== 'string') return undefined
+  if (typeof maxRevisions !== 'number' || typeof revisions !== 'number') return undefined
+  return { nodeId, target, maxRevisions, revisions }
+}
+
+/**
+ * The serialized error LangGraph kept for a task that failed on this thread, or
+ * `undefined` when no task failed.
+ */
+function failedTaskError(
+  pendingWrites: ReadonlyArray<readonly [string, string, unknown]> | undefined
+): { name?: string; message?: string } | undefined {
+  for (const write of pendingWrites ?? []) {
+    if (write[1] !== LANGGRAPH_ERROR_CHANNEL) continue
+    const value = write[2]
+    if (typeof value === 'object' && value !== null) return value as { name?: string; message?: string }
+  }
+  return undefined
+}
+
+/** Whether a checkpointed value is one of this package's own in-graph outcome records. */
+function isRunOutcomeRecord(value: unknown): value is RunOutcomeRecord {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const candidate = value as { reason?: unknown; at?: unknown }
+  if (typeof candidate.at !== 'string') return false
+  switch (candidate.reason) {
+    case 'completed':
+      return true
+    case 'resumed':
+      return typeof (value as { fromCheckpointId?: unknown }).fromCheckpointId === 'string'
+    case 'exhausted':
+      return typeof (value as { exhaustion?: unknown }).exhaustion === 'object'
+    // `paused` and `failed` are derived from LangGraph's own failed-task write,
+    // never written into this channel — one appearing here did not come from
+    // this package.
+    default:
+      return false
+  }
+}
+
+/**
+ * The run's recorded outcome, read from the checkpointer and the identity alone —
+ * no Plan, no compiled graph, no replay, and nothing but the `runId` needed to
+ * get here after a process restart.
+ *
+ * This is the observable half of the vocabulary. A run's reason for not
+ * executing is a fact about the run, so it has to be answerable by whoever holds
+ * the store rather than only by whoever happened to call the operation that
+ * ended the leg — a dashboard, a later process, an operator deciding whether to
+ * resume.
+ *
+ * **Two sources, composed in one order that is not arbitrary.** A failed task
+ * LangGraph persisted for this thread is the most recent thing that happened to
+ * the run, so it wins: it means the run stopped mid-flight, `paused` if the
+ * error was this package's own halt and `failed` otherwise. Only when no task
+ * failed does the in-graph record speak, and then it is the whole answer —
+ * `completed`, `exhausted`, or `resumed` for a continuation still under way.
+ * Reading the record first would report a run as `resumed` or `completed` when a
+ * later leg had in fact broken on its very next node.
+ *
+ * `undefined` means the run has no outcome yet: an identity the store has never
+ * seen, or a first leg still running. An unrecognised `outcome` value is refused
+ * by name rather than returned, the same way a checkpointed channel entry this
+ * package could not have written is — reporting a recorded run as unrecorded is
+ * the same misreading inverted.
+ */
+export async function readRunOutcome(
+  checkpointer: BaseCheckpointSaver,
+  identity: RunIdentity
+): Promise<RunOutcomeRecord | undefined> {
+  assertDerivedIdentity(identity)
+
+  const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+  if (!tuple) return undefined
+
+  const at = tuple.checkpoint.ts
+  const failure = failedTaskError(tuple.pendingWrites as ReadonlyArray<readonly [string, string, unknown]>)
+  if (failure) {
+    const message = typeof failure.message === 'string' ? failure.message : 'the error carried no message'
+    return failure.name === RUN_HALTED_ERROR_NAME
+      ? { reason: 'paused', at, detail: message }
+      : { reason: 'failed', at, error: message }
+  }
+
+  const recorded = (tuple.checkpoint.channel_values as Record<string, unknown>).outcome
+  if (recorded === undefined || recorded === null) return undefined
+  if (!isRunOutcomeRecord(recorded)) {
+    throw new Error(
+      `Checkpoint on thread '${identity.threadId}' records an 'outcome' value this executor could not have written — refusing to read it as run '${identity.runId}' outcome.`
+    )
+  }
+  return recorded
+}
+
+/**
  * Turns a rejection from `invoke()` into the outcome it actually is: a halt is
  * `paused` with a pending continuation, anything else is `failed`.
  *
@@ -168,7 +321,7 @@ async function checkpointForNonSuccess(
  */
 async function outcomeFromRejection(
   error: unknown,
-  graph: ReturnType<typeof buildAgentSpawnStateGraph>,
+  graph: CompiledRunGraph,
   identity: RunIdentity,
   checkpointer: BaseCheckpointSaver,
   resumedFrom: string | undefined,
@@ -200,15 +353,25 @@ async function outcomeFromRejection(
 }
 
 /**
- * Turns a resolved `invoke()` into a terminal outcome.
+ * Turns a resolved `invoke()` into the terminal outcome it actually is:
+ * `exhausted` when the run's graph terminated on a refused revision ceiling,
+ * `completed` otherwise.
  *
- * A resolved invoke means the run reached a terminal node of its own graph, and
- * the state the checkpointer now holds is what it ended with — so the checkpoint
- * read here is deliberately *not* softened the way the non-success path's is: a
- * completed run whose recorded state cannot be read is an error worth surfacing,
- * not something to report as a successful run with no state.
+ * **A resolved invoke is not a successful run.** Both terminate the graph
+ * normally, so the resolution itself carries no information about which
+ * happened. The difference is the record an in-graph recorder wrote at the
+ * moment routing refused to loop — read here, never re-derived from the
+ * ceilings afterwards, because that derivation can report exhaustion for a run
+ * that ended for an unrelated reason. Only when no such record is present is
+ * `completed` written, which is what stops an exhausted run's reason being
+ * overwritten by a success it did not have.
+ *
+ * The checkpoint read is deliberately *not* softened the way the non-success
+ * path's is: a terminated run whose recorded state cannot be read is an error
+ * worth surfacing, not something to report as a run with no state.
  */
 async function outcomeFromResolution(
+  state: AgentSpawnGraphStateValue,
   identity: RunIdentity,
   checkpointer: BaseCheckpointSaver,
   resumedFrom: string | undefined
@@ -216,9 +379,23 @@ async function outcomeFromResolution(
   const checkpoint = await readRunCheckpoint(checkpointer, identity)
   if (!checkpoint) {
     throw new Error(
-      `Run '${identity.runId}' resolved but its checkpointer holds no checkpoint on thread '${identity.threadId}' — a completed run always wrote one, so the saver supplied did not persist what it was handed.`
+      `Run '${identity.runId}' resolved but its checkpointer holds no checkpoint on thread '${identity.threadId}' — a terminated run always wrote one, so the saver supplied did not persist what it was handed.`
     )
   }
+
+  const exhaustion = exhaustionOf(state)
+  if (exhaustion) {
+    // Already persisted by the recorder node, in the same superstep that knew
+    // it — nothing to write here, and nothing to overwrite it with.
+    return {
+      reason: 'exhausted',
+      identity,
+      checkpoint,
+      exhaustion,
+      ...(resumedFrom === undefined ? {} : { resumedFrom })
+    }
+  }
+
   return {
     reason: 'completed',
     identity,
@@ -243,19 +420,20 @@ export async function startControlledRun(params: StartControlledRunParams): Prom
   onIdentity?.(identity)
   await assertNoExistingCheckpoint(checkpointer, identity)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, control)
+  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
+  let state: AgentSpawnGraphStateValue
   try {
-    await graph.invoke(
-      { runId: identity.runId, results: {}, sessions: {}, revisionCounts: {} },
+    state = (await graph.invoke(
+      initialRunState(identity),
       runInvokeConfig(identity, recursionLimit)
-    )
+    )) as AgentSpawnGraphStateValue
   } catch (error) {
     return await outcomeFromRejection(error, graph, identity, checkpointer, undefined, recursionLimit)
   }
 
-  return await outcomeFromResolution(identity, checkpointer, undefined)
+  return await outcomeFromResolution(state, identity, checkpointer, undefined)
 }
 
 /**
@@ -305,7 +483,8 @@ export async function resumeControlledRun(params: ResumeControlledRunParams): Pr
   }
   assertPlanCoversRecordedResults(plan, checkpoint)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, control)
+  const resumedFrom = checkpoint.checkpointId
+  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control, resumedFrom })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   const pendingBefore = await pendingNodesOf(graph, identity, recursionLimit)
@@ -315,13 +494,12 @@ export async function resumeControlledRun(params: ResumeControlledRunParams): Pr
     )
   }
 
-  const resumedFrom = checkpoint.checkpointId
-
+  let state: AgentSpawnGraphStateValue
   try {
-    await graph.invoke(null, runInvokeConfig(identity, recursionLimit))
+    state = (await graph.invoke(null, runInvokeConfig(identity, recursionLimit))) as AgentSpawnGraphStateValue
   } catch (error) {
     return await outcomeFromRejection(error, graph, identity, checkpointer, resumedFrom, recursionLimit)
   }
 
-  return await outcomeFromResolution(identity, checkpointer, resumedFrom)
+  return await outcomeFromResolution(state, identity, checkpointer, resumedFrom)
 }

@@ -60,7 +60,13 @@ import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { RunHaltedError } from './run-halt'
 import { renderStepPrompt } from './template'
-import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl, StepNodeResult } from './types'
+import type {
+  AgentLifecycleEvent,
+  AgentSpawnExecutorConfig,
+  RunControl,
+  RunOutcomeRecord,
+  StepNodeResult
+} from './types'
 
 /**
  * Calls `onEvent`, if supplied, and swallows anything it throws. An
@@ -138,6 +144,23 @@ export interface AgentSpawnGraphCompileOptions {
 }
 
 /**
+ * Per-leg options for the node executor — what is true of *this* invocation of
+ * the run rather than of the run's configuration. Kept off
+ * `AgentSpawnExecutorConfig` for that reason: a role's binary is the same on
+ * every leg, a halt handle and a resumed-from checkpoint id are not.
+ */
+export interface AgentLifecycleLegOptions {
+  /** Halt handle for this leg. Omitted, the leg cannot be halted. */
+  control?: RunControl
+  /**
+   * The checkpoint id this leg is continuing from. Supplied, the first node the
+   * leg runs records a `resumed` outcome; omitted, the leg is a first run and
+   * records nothing.
+   */
+  resumedFrom?: string
+}
+
+/**
  * Builds the node executor wired into every node of the translated graph.
  * Dispatches on `node.kind` to this package's two node kinds: `agent-spawn`
  * (spawns an agent process and captures its event stream) and `mechanical`
@@ -169,8 +192,25 @@ export interface AgentSpawnGraphCompileOptions {
 export function createAgentLifecycleNodeExecutor(
   config: AgentSpawnExecutorConfig,
   spawnFn?: SpawnFn,
-  control?: RunControl
+  options?: AgentLifecycleLegOptions
 ): AgentLifecycleNodeExecutor {
+  const control = options?.control
+  const resumedFrom = options?.resumedFrom
+  let resumeRecorded = false
+
+  /**
+   * The `resumed` record, on the first node this leg actually runs and nowhere
+   * else. Written from inside a node because that is the only safe way to write
+   * a run's state while it still has pending tasks — see this file's header —
+   * and on the *first* node because that is the earliest moment a resumed leg is
+   * observably under way rather than merely requested.
+   */
+  const resumeRecord = (): Partial<AgentSpawnGraphStateValue> => {
+    if (resumedFrom === undefined || resumeRecorded) return {}
+    resumeRecorded = true
+    return { outcome: { reason: 'resumed', at: new Date().toISOString(), fromCheckpointId: resumedFrom } }
+  }
+
   return async (state, { node, plan }) => {
     const { onEvent } = config
     const { runId } = state
@@ -193,6 +233,7 @@ export function createAgentLifecycleNodeExecutor(
         // No `sessions` write: a mechanical node has no model turn and so no
         // session for a later step's `resume` to look up.
         return {
+          ...resumeRecord(),
           results: { [node.id]: result },
           revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
         }
@@ -220,6 +261,7 @@ export function createAgentLifecycleNodeExecutor(
       safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
 
       return {
+        ...resumeRecord(),
         results: { [node.id]: result },
         sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
         revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
@@ -232,8 +274,77 @@ export function createAgentLifecycleNodeExecutor(
   }
 }
 
-/** The three routes a decision's path function can resolve to — see `buildDecisionPathFn`. */
-type DecisionRoute = 'ifTrue' | 'ifFalse' | 'exhausted'
+/**
+ * The four routes a decision's path function can resolve to — see
+ * `buildDecisionPathFn`. The two `exhausted*` routes are the same terminal
+ * outcome told apart by which branch the predicate resolved to: a path function
+ * can only return a route name, so the branch has to be encoded in the route
+ * for the recording node to know which target's ceiling was refused. Collapsing
+ * them into one route would leave that node guessing between two ceilings, and
+ * with both branches able to point backwards the guess is sometimes ambiguous.
+ */
+type DecisionRoute = 'ifTrue' | 'ifFalse' | 'exhaustedIfTrue' | 'exhaustedIfFalse'
+
+/**
+ * Prefix for the synthetic nodes that record an exhausted revision ceiling.
+ * Contains no `:` or `|`, both of which LangGraph reserves in node names.
+ */
+const EXHAUSTION_NODE_PREFIX = 'agent-spawn.revisions-exhausted.'
+
+/** The synthetic recorder for one decision node's one branch. */
+function exhaustionNodeId(nodeId: string, branch: 'ifTrue' | 'ifFalse'): string {
+  return `${EXHAUSTION_NODE_PREFIX}${nodeId}.${branch}`
+}
+
+/**
+ * The single synthetic node every ordinary termination routes through, so that a
+ * completed run says so in its own persisted state instead of being inferred
+ * from the absence of everything else.
+ *
+ * Shared rather than one per terminal node because LangGraph joins natively: a
+ * Plan whose fan-out leaves several terminal steps routes all of them here, and
+ * this node runs exactly once, after the last of them.
+ */
+const COMPLETION_NODE_ID = `${EXHAUSTION_NODE_PREFIX}..completed`
+
+/** Writes the `completed` record. Adds no result and increments no revision count. */
+function recordCompletion(): Partial<AgentSpawnGraphStateValue> {
+  return { outcome: { reason: 'completed', at: new Date().toISOString() } }
+}
+
+/**
+ * Builds the synthetic node a refused route lands on: it records why the run
+ * stopped, into the run's own state, and then terminates.
+ *
+ * **Why a node and not a derivation after the fact.** Routing to `END` directly
+ * — which is what this graph did before — made an exhausted run byte-identical
+ * to one that ran to its last step, so the only way to tell them apart was to
+ * re-read the ceilings off the final state afterwards. That derivation is
+ * unsound: a target's revision count can exceed some *other* decision's ceiling
+ * long after that decision last evaluated, so it reports exhaustion for runs
+ * that ended for unrelated reasons. The path function is the one place the fact
+ * is known for certain, and a node is the only thing downstream of a path
+ * function that can write state — so the record is written here, one superstep
+ * later, and is durable with the rest of the state the checkpointer holds.
+ *
+ * It writes only `outcome`. It is not a Plan node, so it records no result and
+ * increments no revision count — a run's recorded `results` stays exactly the
+ * set of Plan steps that really executed.
+ */
+function buildExhaustionRecorder(
+  nodeId: string,
+  target: string,
+  maxRevisions: number
+): (state: AgentSpawnGraphStateValue) => Partial<AgentSpawnGraphStateValue> {
+  return (state) => {
+    const record: RunOutcomeRecord = {
+      reason: 'exhausted',
+      at: new Date().toISOString(),
+      exhaustion: { nodeId, target, maxRevisions, revisions: state.revisionCounts[target] ?? 0 }
+    }
+    return { outcome: record }
+  }
+}
 
 /**
  * Builds the `addConditionalEdges` path function for one decision-bearing
@@ -262,8 +373,12 @@ type DecisionRoute = 'ifTrue' | 'ifFalse' | 'exhausted'
  * `ifFalse` free to loop an agent-spawn node's real subprocess spawn
  * unboundedly, with no `recursionLimit` in this package to catch it. Once
  * that target's `revisionCounts` has *exceeded* `decision.maxRevisions`,
- * routing goes to `'exhausted'` (wired to `END` by the caller) rather than
- * looping again — never a reinterpretation of "predicate was false".
+ * routing goes to the `exhausted*` route for the branch it resolved to — wired
+ * by the caller to a synthetic node that records the refused ceiling and then
+ * terminates — rather than looping again. Never a reinterpretation of
+ * "predicate was false", and never a silent terminal either: the reason the run
+ * stopped is written into the run's own state, so a completed run and an
+ * exhausted one are distinguishable afterwards from the store alone.
  *
  * **Why `>`, not `>=`.** A target reached via `ifTrue` is validator-required
  * to be strictly prior, meaning it has already executed once *before* the
@@ -316,7 +431,7 @@ function buildDecisionPathFn(
 
     const target = isTrue ? decision.ifTrue : decision.ifFalse
     const targetRevisions = state.revisionCounts[target] ?? 0
-    if (targetRevisions > decision.maxRevisions) return 'exhausted'
+    if (targetRevisions > decision.maxRevisions) return isTrue ? 'exhaustedIfTrue' : 'exhaustedIfFalse'
     return isTrue ? 'ifTrue' : 'ifFalse'
   }
 }
@@ -329,10 +444,13 @@ function buildDecisionPathFn(
  *
  * - **Decision-bearing** (`node.decision` set): wired with
  *   `addConditionalEdges` per `buildDecisionPathFn` above — `ifTrue`,
- *   `ifFalse`, or `'exhausted'` → `END`. That node's entry in
+ *   `ifFalse`, or, when the resolved branch's revision ceiling is exceeded, a
+ *   synthetic per-branch recorder node that writes the refused ceiling into the
+ *   run's `outcome` channel and then goes to `END`. That node's entry in
  *   `plan.graph.edges` (`compileSteps` emits one regardless of `decision`)
  *   is deliberately not also wired as a plain edge; the decision is this
- *   node's only routing authority.
+ *   node's only routing authority. A Plan with no decisions gets no recorder
+ *   nodes at all, so its compiled topology is unchanged.
  * - **Plain** (no `decision`): `plan.graph.edges` reproduced as-is, and any
  *   node with no outgoing edge wired to `END` — unchanged from before this
  *   task.
@@ -352,6 +470,18 @@ export function buildAgentSpawnStateGraph(
   options?: AgentSpawnGraphCompileOptions
 ) {
   const graph = new StateGraph(AgentSpawnGraphState)
+
+  for (const nodeId of Object.keys(plan.graph.nodes)) {
+    // The synthetic exhaustion recorders below are named by prefixing a Plan
+    // node's own id, so a Plan node already carrying that prefix could collide
+    // with one of them — and a collision here would silently replace a real
+    // step with a terminal recorder. Refusing names the offending id instead.
+    if (nodeId.startsWith(EXHAUSTION_NODE_PREFIX)) {
+      throw new Error(
+        `Plan node '${nodeId}' starts with '${EXHAUSTION_NODE_PREFIX}', which this executor reserves for the synthetic nodes that record an exhausted revision ceiling — rename the step.`
+      )
+    }
+  }
 
   for (const [nodeId, node] of Object.entries(plan.graph.nodes)) {
     graph.addNode(nodeId, async (state: AgentSpawnGraphStateValue) => executor(state, { node, plan }))
@@ -378,6 +508,19 @@ export function buildAgentSpawnStateGraph(
         )
       }
     }
+    // One recorder per branch, each wired straight to END. Added here rather
+    // than up front because a Plan with no decisions gets none of them: the
+    // graph a decision-free Plan compiles to is exactly the graph it compiled
+    // to before exhaustion was recordable at all.
+    for (const [branch, target] of [
+      ['ifTrue', node.decision.ifTrue],
+      ['ifFalse', node.decision.ifFalse]
+    ] as const) {
+      const recorderId = exhaustionNodeId(nodeId, branch)
+      graph.addNode(recorderId, buildExhaustionRecorder(nodeId, target, node.decision.maxRevisions))
+      ;(graph as unknown as { addEdge: (from: string, to: typeof END) => void }).addEdge(recorderId, END)
+    }
+
     const pathFn = buildDecisionPathFn(nodeId, node.decision, config)
     // Same compile-time-string-literal typing gap as the addEdge casts
     // below: LangGraph's addConditionalEdges typings expect node names known
@@ -393,7 +536,8 @@ export function buildAgentSpawnStateGraph(
     ).addConditionalEdges(nodeId, pathFn, {
       ifTrue: node.decision.ifTrue,
       ifFalse: node.decision.ifFalse,
-      exhausted: END
+      exhaustedIfTrue: exhaustionNodeId(nodeId, 'ifTrue'),
+      exhaustedIfFalse: exhaustionNodeId(nodeId, 'ifFalse')
     })
   }
 
@@ -405,11 +549,20 @@ export function buildAgentSpawnStateGraph(
     ;(graph as unknown as { addEdge: (from: string, to: string) => void }).addEdge(edge.from, edge.to)
   }
 
+  // Every ordinary termination goes through the completion recorder rather than
+  // straight to `END`, so `completed` is a written fact rather than the default
+  // reading of a state with nothing else in it. The exhaustion recorders above
+  // deliberately bypass it, wiring to `END` directly — routing them through here
+  // would overwrite the ceiling they just recorded with a success they did not
+  // have, which is the one misreading this whole vocabulary exists to prevent.
+  graph.addNode(COMPLETION_NODE_ID, recordCompletion)
+  ;(graph as unknown as { addEdge: (from: string, to: typeof END) => void }).addEdge(COMPLETION_NODE_ID, END)
+
   const nodesWithOutgoingEdge = new Set(plan.graph.edges.map((edge) => edge.from))
   for (const nodeId of Object.keys(plan.graph.nodes)) {
     if (decisionNodeIds.has(nodeId)) continue
     if (!nodesWithOutgoingEdge.has(nodeId)) {
-      ;(graph as unknown as { addEdge: (from: string, to: typeof END) => void }).addEdge(nodeId, END)
+      ;(graph as unknown as { addEdge: (from: string, to: string) => void }).addEdge(nodeId, COMPLETION_NODE_ID)
     }
   }
 
