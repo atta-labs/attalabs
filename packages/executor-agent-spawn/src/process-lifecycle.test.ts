@@ -156,6 +156,53 @@ describe('spawnProcessLifecycle — cancellation propagation (O1)', () => {
     expect(bareError.cancellationReason).toBeUndefined()
   })
 
+  it('flattens control characters out of a caller-supplied abort reason (round 4 review)', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    // A reason is routinely a value the caller did not author, and it is
+    // persisted verbatim with the failed task — so a newline here would forge a
+    // second record in any consumer that reads one line as one event.
+    controller.abort('closed by client\nERROR fabricated log line\r\tand a tab')
+    child.emitClose(143)
+
+    const error = (await settled) as ProcessCancelledError
+    expect(error.cancellationReason).toBe('closed by client ERROR fabricated log line and a tab')
+    expect(error.message).not.toContain('\n')
+    expect(error.message).not.toContain('\r')
+  })
+
+  it('bounds an unbounded abort reason (round 4 review)', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    // Nothing upstream bounds this: `abort()` takes a string of any size, and
+    // it is re-serialized into every checkpoint write the thread then makes.
+    controller.abort('x'.repeat(5_000))
+    child.emitClose(143)
+
+    const error = (await settled) as ProcessCancelledError
+    expect(error.cancellationReason?.length).toBeLessThan(250)
+    expect(error.cancellationReason?.endsWith('…')).toBe(true)
+  })
+
+  it('reports no reason at all for one that is only control characters (round 4 review)', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    controller.abort('\n\r\t')
+    child.emitClose(143)
+
+    // Empty after flattening is the same as never given — not an empty
+    // parenthetical pasted into the message.
+    const error = (await settled) as ProcessCancelledError
+    expect(error.cancellationReason).toBeUndefined()
+    expect(error.message).not.toContain('()')
+  })
+
   it("reports a cancelled child's own exit as cancelled, never as a clean result", async () => {
     const controller = new AbortController()
     const { child, handle } = spawnFake({ signal: controller.signal })
