@@ -1,19 +1,19 @@
 'use client'
 
 import {
-  ChromeFrame,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider
+  SidebarMenuItem
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import type { Doc, DocNav } from '@attalabs/aeg-core/docs'
+import { usePathname } from 'next/navigation'
+import { DocsSidebarTitle } from './DocsShell'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 
@@ -28,23 +28,15 @@ const OVERVIEW_DOC: Doc = {
   filePath: ''
 }
 
-/** The fixed desktop rail. Hidden below `lg`, where the same nav body is
- * reached through the drawer in `DocSidebarHost` instead. */
-export function DocSidebar({ nav, pathname }: DocSidebarProps) {
-  return (
-    <SidebarProvider
-      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 text-sidebar-foreground lg:flex'
-    >
-      <ChromeFrame variant='rail'>
-        <DocSidebarNav nav={nav} pathname={pathname} />
-      </ChromeFrame>
-    </SidebarProvider>
-  )
+/** The doctrine tree as the sidebar's content — what the doc pages pass into
+ * `DocsShell`'s sidebar slot, which owns the outer shell and renders the same
+ * content in its drawer below `lg`. */
+export function DocSidebar({ nav }: { nav: DocNav }) {
+  return <DocSidebarNav nav={nav} pathname={usePathname() ?? ''} />
 }
 
-/** The nav body itself — rendered inside both the desktop rail above and the
- * mobile drawer in `DocSidebarHost`. Expects `SidebarProvider` context. */
+/** The nav body itself, for an explicit `pathname`. Expects `SidebarProvider`
+ * context, which both of `DocsShell`'s surfaces provide. */
 export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
   return (
     // The landmark rides on the existing scroll container as attributes rather
@@ -52,12 +44,11 @@ export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
     // makes the tree scroll, and an extra box between it and its parent breaks
     // that. `role='navigation'` is landmark-equivalent to <nav> for AT.
     <SidebarContent role='navigation' aria-label='The Harness' className='gap-0 overflow-y-auto px-2 py-4'>
-      <Text
-        as='span'
-        className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
-      >
-        The Harness
-      </Text>
+      <DocsSidebarTitle className='mb-2 px-2 text-sm'>
+        <Text as='span' className='block font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'>
+          The Harness
+        </Text>
+      </DocsSidebarTitle>
 
       <SidebarGroup className='py-1.5'>
         <SidebarGroupContent>

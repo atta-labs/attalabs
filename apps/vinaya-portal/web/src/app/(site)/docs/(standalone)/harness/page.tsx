@@ -42,15 +42,8 @@ export default async function HowItWorksPage() {
     readMoreHrefs[node.id] = href
   }
 
-  return (
-    // No Footer on this page — TopBar only. Fills exactly the viewport below
-    // it (h-14) on `lg`+, since the diagram is the page's dominant element
-    // and must be fully visible with zero scrolling there. Below `lg`,
-    // `DiagramExplorer` stacks its sidebar under the ring, which no longer
-    // fits a fixed viewport-height box — so the wrapper reverts to natural
-    // height and the page scrolls instead of clipping.
-    <div className='w-full lg:h-full lg:overflow-hidden'>
-      <DiagramExplorer groups={groups} findings={model.findings} readMoreHrefs={readMoreHrefs} />
-    </div>
-  )
+  // No Footer on this page, and no layout of its own: `DiagramExplorer` renders
+  // the docs shell, since its sidebar (the explanation) and its body (the
+  // diagram) share the drill state.
+  return <DiagramExplorer groups={groups} findings={model.findings} readMoreHrefs={readMoreHrefs} />
 }

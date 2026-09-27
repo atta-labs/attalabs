@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getPortalCms } from '@/lib/portal-cms'
+import { DocsChromeProvider } from './_components/DocsChrome'
 import { ElectricLabel } from './_components/ElectricLabel'
 import { FooterGate } from './_components/FooterGate'
 import { HeroLockup } from './_components/HeroLockup'
@@ -128,18 +129,51 @@ const links: TopBarNavItem[] = [
   flatLink('Roadmap', '/roadmap', <Rocket className='size-4' aria-hidden />)
 ]
 
+// Vinaya's own topbar chrome, all of it carried here so the shared ChromeFrame stays
+// untouched for every other consumer. Docked: glass, not a solid bar — `bg-background/35`
+// lets the fabric show through, `backdrop-blur-md` keeps nav text legible over it.
+// `border-transparent` is unconditional: Vinaya never wants a topbar border. Bare (landing
+// cold-open, `data-bare="true"` on the `TopBarChromeHost` ancestor): the background drops
+// to transparent so the canvas paints straight through the bar. The `[[data-bare=true]_&]:`
+// ancestor selector outranks the plain `bg-background/35` utility, so no order dependence.
+// The docs shell's in-body bar has no `data-bare` ancestor, so it always reads docked.
+const TOPBAR_CHROME_CLASS =
+  'border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none'
+
 export default async function SiteLayout({ children }: { children: ReactNode }) {
   const { branding } = await getPortalCms()
   const logoUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url ?? null
+
+  // The docs shell's chrome (see `DocsShell`), built here beside the site-wide bar it
+  // replaces on docs routes. The wordmark is the plain static `Logo` — the footer's
+  // lockup, not `HeroLockup`, whose nodes belong to the landing hero's FLIP loop and
+  // mean nothing in a static sidebar. The docs bar is the site's own nav with the logo
+  // slot visible below `lg` only: from `lg` the wordmark sits at the top of the docs
+  // sidebar instead, and below `lg`, where that sidebar is hidden, the bar keeps the
+  // brand the way every other page's bar does.
+  const docsWordmark = (
+    <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+      <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Development', 'Harness']} />
+    </NextLink>
+  )
+  const docsTopStrip = (
+    <TopBar
+      logo={<span className='lg:hidden'>{docsWordmark}</span>}
+      chromeClassName={TOPBAR_CHROME_CLASS}
+      links={links}
+      withAuth={false}
+    />
+  )
 
   // App-shell height: TopBarChromeHost is `fixed` (out of flow) so the hero section can
   // sit flush at the true page top and paint its canvas underneath the bar — that's what
   // lets `chromeClassName`'s transparency show fabric through it instead of blurring
   // nothing. `SiteContentPad` is the shell's one `h-dvh overflow-y-auto` scroll container
   // and also carries the `pt-14` that compensates for the bar on every route except
-  // landing. It wraps `{children}` directly (`FooterGate` renders no DOM node), so pages
-  // that fill the viewport (the docs shells, the harness rings page) resolve `h-full`
-  // against it — a definite height — and scroll their own panes inside it.
+  // landing and the docs-shell routes (which get no fixed bar at all — see
+  // `usesDocsShell`). It wraps `{children}` directly (`DocsChromeProvider` and
+  // `FooterGate` render no DOM node), so pages that fill the viewport (the docs shells)
+  // resolve `h-full` against it — a definite height — and scroll their own panes inside it.
   return (
     <HeroLockupProvider>
       {/* z-30 keeps the TopBar above the hero emblem's canvas (z-0). TopBarChromeHost
@@ -152,43 +186,37 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
               <HeroLockup logoUrl={logoUrl} />
             </NextLink>
           }
-          // Vinaya's own topbar chrome, all of it carried here so the shared ChromeFrame
-          // stays untouched for every other consumer. Docked: glass, not a solid bar —
-          // `bg-background/35` lets the fabric show through, `backdrop-blur-md` keeps nav
-          // text legible over it. `border-transparent` is unconditional: Vinaya never wants
-          // a topbar border. Bare (landing cold-open, `data-bare="true"` on the
-          // `TopBarChromeHost` ancestor): the background drops to transparent so the canvas
-          // paints straight through the bar. The `[[data-bare=true]_&]:` ancestor selector
-          // outranks the plain `bg-background/35` utility, so no order dependence.
-          chromeClassName='border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none'
+          chromeClassName={TOPBAR_CHROME_CLASS}
           links={links}
           withAuth={false}
         />
       </TopBarChromeHost>
       <SiteContentPad>
-        <FooterGate
-          footer={
-            <Footer
-              product='vinaya'
-              logo={
-                <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
-                  <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Git', 'Harness']} />
-                </NextLink>
-              }
-              links={[
-                { label: 'Start', href: '/start' },
-                { label: 'Docs', href: '/docs' },
-                { label: 'CLI', href: '/docs/cli' },
-                { label: 'Config', href: '/config' },
-                { label: 'Studio', href: '/the-studio' },
-                { label: 'Roadmap', href: '/roadmap' },
-                { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
-              ]}
-            />
-          }
-        >
-          {children}
-        </FooterGate>
+        <DocsChromeProvider wordmark={docsWordmark} topStrip={docsTopStrip}>
+          <FooterGate
+            footer={
+              <Footer
+                product='vinaya'
+                logo={
+                  <NextLink href='/' variant='unstyled' className='flex items-center gap-2'>
+                    <Logo dark={logoUrl ?? undefined} alt='Vinaya' size='h-10' text={['Git', 'Harness']} />
+                  </NextLink>
+                }
+                links={[
+                  { label: 'Start', href: '/start' },
+                  { label: 'Docs', href: '/docs' },
+                  { label: 'CLI', href: '/docs/cli' },
+                  { label: 'Config', href: '/config' },
+                  { label: 'Studio', href: '/the-studio' },
+                  { label: 'Roadmap', href: '/roadmap' },
+                  { label: 'npm', href: 'https://www.npmjs.com/package/@attalabs/vinaya', external: true }
+                ]}
+              />
+            }
+          >
+            {children}
+          </FooterGate>
+        </DocsChromeProvider>
       </SiteContentPad>
     </HeroLockupProvider>
   )
