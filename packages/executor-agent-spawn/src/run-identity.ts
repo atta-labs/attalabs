@@ -47,12 +47,14 @@
  * a spawned process printed can be in it — and choose its retention,
  * encryption and access accordingly.
  *
- * **What is not here.** Halting a run, resuming a halted one, and the typed
- * vocabulary for a run's persisted outcome are the next task's surface, not
- * this one's. `readRunCheckpoint` is a read, and nothing in this file
- * interrupts, cancels, or restarts anything — `startRun` refuses a thread that
- * already holds a checkpoint rather than restarting it, for the reason its own
- * doc gives.
+ * **What is not here.** The typed control surface itself — a halt handle, a
+ * resume that continues from a checkpoint, and the typed outcome a leg of a run
+ * resolves to — lives in `run-control.ts` and `run-halt.ts`, built on what this
+ * file provides. This file still interrupts, cancels and restarts nothing:
+ * `readRunCheckpoint` is a read, `startRun` refuses a thread that already holds
+ * a checkpoint rather than restarting it, and the one thing it now forwards
+ * towards a halt is the caller's `control` handle, which only a node boundary in
+ * `graph-builder.ts` ever acts on.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -61,7 +63,7 @@ import type { Plan } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import type { AgentSpawnExecutorConfig, RunCheckpointState, RunIdentity, StepNodeResult } from './types'
+import type { AgentSpawnExecutorConfig, RunCheckpointState, RunControl, RunIdentity, StepNodeResult } from './types'
 
 /**
  * Characters a run id may contain. Deliberately narrow: the id is interpolated
@@ -155,7 +157,7 @@ export function createRunIdentity(runId: string = randomUUID()): RunIdentity {
  * without this call the empty-id, length and charset refusals above would
  * apply only to identities built through this module's own constructors.
  */
-function assertDerivedIdentity(identity: RunIdentity): void {
+export function assertDerivedIdentity(identity: RunIdentity): void {
   const derived = threadIdForRun(identity.runId)
   if (identity.threadId !== derived) {
     throw new Error(
@@ -221,6 +223,18 @@ export interface StartRunParams {
    * "record this run id" step fails should not get an unrecorded run.
    */
   onIdentity?: (identity: RunIdentity) => void
+  /**
+   * A halt handle for this run, forwarded to the node executor. Supplied, the
+   * run stops at its next node boundary once `control.halt()` fires; omitted,
+   * nothing can stop it short of a node failing.
+   *
+   * `startRun` still *throws* on a halt, as it does on any node failure — it
+   * has one non-throwing shape and reporting a halt as a typed outcome is
+   * `startControlledRun`'s job (`run-control.ts`). What this parameter buys a
+   * direct `startRun` caller is that the halt is possible at all, and that its
+   * error is recognisable with `runHaltOf`.
+   */
+  control?: RunControl
   /** Test/injection seam, forwarded to `createAgentLifecycleNodeExecutor` unchanged. */
   spawnFn?: SpawnFn
   /**
@@ -265,6 +279,35 @@ export function runIdentityOf(error: unknown): RunIdentity | undefined {
 }
 
 /**
+ * Refuses to begin a run on a thread that already holds a checkpoint. Shared by
+ * every start path so the refusal, and the reason for it, are stated once.
+ *
+ * A start always begins at the Plan's entry node, so beginning a second time
+ * under one identity would re-execute completed steps — spawning their
+ * subprocesses again — while the keyed-merge reducers preserved the earlier
+ * attempt's entries for every node the second never reached. The checkpoint
+ * would then hold two attempts blended into one run's state with nothing
+ * marking the seam, and `revisionCounts` would be worse than stale: the
+ * executor increments from the checkpointed value, so a `decision`-bearing Plan
+ * could hit its `maxRevisions` ceiling on the retry's first step.
+ *
+ * Continuing an existing run is `resumeControlledRun`'s job, and it is a
+ * different operation precisely because it starts from the checkpoint rather
+ * than from the entry node.
+ */
+export async function assertNoExistingCheckpoint(
+  checkpointer: BaseCheckpointSaver,
+  identity: RunIdentity
+): Promise<void> {
+  const existing = await checkpointer.getTuple(runInvokeConfig(identity))
+  if (existing) {
+    throw new Error(
+      `Run '${identity.runId}' already has a checkpoint on thread '${identity.threadId}' — a start always begins at the Plan's entry node, so continuing here would re-execute completed steps and blend two attempts into one run's state. Mint a new identity to start a new run, resume this one with resumeControlledRun, or just read its state with readRunCheckpoint.`
+    )
+  }
+}
+
+/**
  * Begins a run: mints (or accepts) its identity, compiles the Plan's graph
  * against the caller's checkpointer, and invokes it bound to that identity's
  * thread.
@@ -278,35 +321,29 @@ export function runIdentityOf(error: unknown): RunIdentity | undefined {
  * been written, which is this task's named failure mode. Persisting the `runId`
  * remains the caller's job and the one thing a caller must not skip.
  *
- * **A thread that already holds a checkpoint is refused, not restarted.**
- * `startRun` always invokes from the Plan's entry node, so running twice under
- * one identity would re-execute completed steps — spawning their subprocesses
- * again — while the keyed-merge reducers preserved the previous attempt's
- * entries for every node the second attempt did not reach. The checkpoint would
- * then hold two attempts blended into one run's state with no marker
- * distinguishing them, and `revisionCounts` would be worse than stale: the
- * executor increments from the checkpointed value, so a `decision`-bearing Plan
- * could hit its `maxRevisions` ceiling on the retry's first step. Refusing is
- * not a resume implementation — resuming a checkpointed run is the next task's
- * surface — it is declining to corrupt state this task is responsible for. A
- * caller that wants a genuinely new run mints a new identity; one that wants
- * the old run's state calls `readRunCheckpoint`.
+ * **A thread that already holds a checkpoint is refused, not restarted** — see
+ * `assertNoExistingCheckpoint` for why that blend of two attempts is worse than
+ * an honest refusal. A caller that wants a genuinely new run mints a new
+ * identity; one that wants to continue the existing run calls
+ * `resumeControlledRun`; one that only wants its state calls
+ * `readRunCheckpoint`.
+ *
+ * **It throws rather than reporting an outcome.** A halt, a node failure and an
+ * exhausted revision ceiling all surface here as a rejection or an ordinary
+ * resolution, with nothing distinguishing them — telling them apart is
+ * `startControlledRun`'s job (`run-control.ts`), which is the entry point to
+ * prefer when the caller needs to know *why* a run stopped.
  */
 export async function startRun(params: StartRunParams): Promise<StartRunResult> {
-  const { plan, config, checkpointer, spawnFn, recursionLimit, onIdentity } = params
+  const { plan, config, checkpointer, spawnFn, control, recursionLimit, onIdentity } = params
   const identity = params.identity ?? createRunIdentity()
   assertDerivedIdentity(identity)
 
   onIdentity?.(identity)
 
-  const existing = await checkpointer.getTuple(runInvokeConfig(identity))
-  if (existing) {
-    throw new Error(
-      `Run '${identity.runId}' already has a checkpoint on thread '${identity.threadId}' — startRun always begins at the Plan's entry node, so continuing here would re-execute completed steps and blend two attempts into one run's state. Mint a new identity to start a new run, or read this one with readRunCheckpoint.`
-    )
-  }
+  await assertNoExistingCheckpoint(checkpointer, identity)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn)
+  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, control)
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   try {

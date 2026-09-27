@@ -20,6 +20,9 @@ export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
+export { resumeControlledRun, startControlledRun } from './run-control'
+export type { ResumeControlledRunParams, StartControlledRunParams } from './run-control'
+export { createRunControl, RunHaltedError, runHaltOf } from './run-halt'
 export {
   createRunIdentity,
   readRunCheckpoint,
@@ -41,6 +44,13 @@ export type {
   RoleBinaryArgsParams,
   RoleBinaryConfig,
   RunCheckpointState,
+  RunCompletedOutcome,
+  RunControl,
+  RunFailedOutcome,
   RunIdentity,
+  RunOutcome,
+  RunOutcomeBase,
+  RunOutcomeReason,
+  RunPausedOutcome,
   StepNodeResult
 } from './types'

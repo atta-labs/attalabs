@@ -39,6 +39,18 @@
  * topology'` suite for the real proof (concurrent branch execution via
  * interleaved events, the join running exactly once, and a branch failure
  * rejecting `invoke()` with the join never starting).
+ *
+ * **The halt boundary lives in the node wrapper, not in the topology.** A run
+ * held by a `RunControl` stops *between* nodes: the wrapper checks the handle
+ * before it emits `node:start` or reaches either executor, and throws
+ * `RunHaltedError` if the run was halted. Nothing about the compiled graph
+ * changes — no extra node, no extra edge, no conditional route — because the
+ * property a halt needs is already LangGraph's: one checkpoint per superstep, so
+ * the last completed node's result is durable and the node that threw is left
+ * pending on the thread, which is exactly where a resume continues from. Wiring
+ * the halt as topology instead would have to decide, at build time, where a run
+ * is allowed to stop; checking it at the wrapper lets the answer be "the next
+ * boundary, wherever the run happens to be".
  */
 
 import { END, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
@@ -46,8 +58,9 @@ import type { Plan, PlanNode, PlanStepDecision } from '@atta/engine'
 import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
+import { RunHaltedError } from './run-halt'
 import { renderStepPrompt } from './template'
-import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, StepNodeResult } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl, StepNodeResult } from './types'
 
 /**
  * Calls `onEvent`, if supplied, and swallows anything it throws. An
@@ -140,7 +153,14 @@ export interface AgentSpawnGraphCompileOptions {
  * `config.onEvent` (see `types.ts`) around whichever branch it dispatches
  * to, so `node:start` / `node:complete` / `node:failed` are ordered by this
  * function's own control flow rather than by two node-kind implementations
- * each deciding independently when to report themselves. An agent-spawn
+ * each deciding independently when to report themselves.
+ *
+ * An optional `control` makes the run haltable. The check is the first thing
+ * the returned executor does — ahead of `node:start`, ahead of either executor
+ * — so a halted run's next node produces no event, spawns no process, and
+ * records no result. A halt is not routed through the `catch` block below and
+ * so never emits `node:failed`: it is not a node failure, it is a node that
+ * never ran, and `run-control.ts` reports it as `paused` on that basis. An agent-spawn
  * node's captured event stream is additionally surfaced as `node:streaming`
  * — what the spawned process reported — between `node:start` and
  * `node:complete`; a mechanical node has no such stream, so it only ever
@@ -148,11 +168,22 @@ export interface AgentSpawnGraphCompileOptions {
  */
 export function createAgentLifecycleNodeExecutor(
   config: AgentSpawnExecutorConfig,
-  spawnFn?: SpawnFn
+  spawnFn?: SpawnFn,
+  control?: RunControl
 ): AgentLifecycleNodeExecutor {
   return async (state, { node, plan }) => {
     const { onEvent } = config
     const { runId } = state
+
+    // The halt boundary, and the only one there is. Checked here — before
+    // `node:start` is emitted and before either executor is reached — because a
+    // halted run's next node must not start at all: no event claiming it did, no
+    // subprocess spawned, nothing for a resume to have to reconcile. Throwing
+    // (rather than returning an empty partial state) is what leaves this node
+    // pending on the thread, which is where a resume continues from; returning
+    // would let LangGraph route onward as though the node had run.
+    if (control?.halted) throw new RunHaltedError(node.id, control.haltReason)
+
     safeEmit(onEvent, { type: 'node:start', nodeId: node.id, runId })
 
     try {
