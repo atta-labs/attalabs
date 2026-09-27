@@ -188,6 +188,34 @@ describe('spawnProcessLifecycle — cancellation propagation (O1)', () => {
     expect(error.cancellationReason?.endsWith('…')).toBe(true)
   })
 
+  it('truncates a bounded abort reason between code points, never mid-surrogate (round 5 review)', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    // 199 ASCII units, then an astral character whose high surrogate lands on
+    // the 200th — the exact position a code-unit slice would cut in half,
+    // leaving an unpaired surrogate in the stored reason and in every
+    // serialization of it downstream.
+    controller.abort(`${'x'.repeat(199)}😀 trailing text`)
+    child.emitClose(143)
+
+    const error = (await settled) as ProcessCancelledError
+    const reason = error.cancellationReason ?? ''
+    expect(reason).toBe(`${'x'.repeat(199)}…`)
+    // Well-formed: no lone surrogate survives, in the field or the message.
+    expect(reason).toBe(reason.toWellFormed())
+    expect(error.message).toBe(error.message.toWellFormed())
+    // A pair that fits whole is kept whole.
+    const fits = new AbortController()
+    const short = spawnFake({ signal: fits.signal })
+    const shortSettled = short.handle.waitForExit().catch((err: unknown) => err)
+    fits.abort(`${'x'.repeat(190)}😀${'y'.repeat(50)}`)
+    short.child.emitClose(143)
+    const shortError = (await shortSettled) as ProcessCancelledError
+    expect(shortError.cancellationReason).toContain('😀')
+  })
+
   it('reports no reason at all for one that is only control characters (round 4 review)', async () => {
     const controller = new AbortController()
     const { child, handle } = spawnFake({ signal: controller.signal })

@@ -91,6 +91,32 @@ function threeStepPlan(): Plan {
   }
 }
 
+/** One mechanical step: the other node kind a mid-flight halt has to reach. */
+function mechanicalStepPlan(): Plan {
+  return {
+    schemaVersion: '1.0',
+    question: 'Apply the patch',
+    model: 'n/a',
+    agents: {},
+    teamName: 'agent-lifecycle-control-test',
+    maxRevisions: 0,
+    graph: {
+      nodes: {
+        'apply-patch': {
+          id: 'apply-patch',
+          role: 'mechanical',
+          kind: 'mechanical',
+          action: 'git-apply',
+          metadata: {}
+        }
+      },
+      edges: [],
+      conditionalEdges: [],
+      entryNode: 'apply-patch'
+    }
+  }
+}
+
 function executorConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSpawnExecutorConfig {
   return {
     workingDirectoryRoot,
@@ -352,6 +378,60 @@ describe('startControlledRun — a typed outcome instead of resolve-or-throw', (
     // run cut a live child off, which a caller has to be able to tell.
     expect(halt?.terminatedProcess).toBe(true)
     expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+  })
+
+  it("terminates a mechanical node's already-running command too, not just a spawned agent's", async () => {
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: { 'git-apply': { command: 'git', args: ['apply', 'patch.diff'] } }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, live.spawnFn, { control })
+    const plan = mechanicalStepPlan()
+    const node = plan.graph.nodes['apply-patch']
+    if (!node) throw new Error('fixture must declare the apply-patch node')
+
+    const thrown = await executor(
+      { runId: 'halt-mechanical', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    // A `git`-shaped command holds the same working directory and permissions
+    // an agent's child does, so it is signalled rather than left running to
+    // its own ten-minute timeout (round 5 security review).
+    expect(live.signals).toEqual(['SIGTERM'])
+    const halt = runHaltOf(thrown)
+    expect(halt).toBeInstanceOf(RunHaltedError)
+    expect(halt?.terminatedProcess).toBe(true)
+    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+  })
+
+  it('reports a halt that spawned nothing as one no working tree needs inspecting for', async () => {
+    const control = createRunControl()
+    control.halt('halted before the spawn')
+    const live = killableSpawn()
+    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+    const plan = threeStepPlan()
+    const node = plan.graph.nodes.implement
+    if (!node) throw new Error('fixture must declare the implement node')
+
+    // The boundary check catches this one, so no process is spawned at all and
+    // the halt must not claim a child was terminated.
+    const thrown = await executor(
+      { runId: 'halt-before-spawn', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    expect(live.signals).toEqual([])
+    expect(runHaltOf(thrown)?.terminatedProcess).toBe(false)
   })
 
   it('never emits a lifecycle event for the node a halt stopped — it did not start', async () => {

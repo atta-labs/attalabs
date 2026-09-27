@@ -18,11 +18,16 @@
  * at its boundary: the wrapper throws `RunHaltedError` before it emits
  * `node:start` or reaches either executor, so nothing is spawned. A node whose
  * child process is *already running* is stopped by terminating that child —
- * `graph-builder.ts` forwards the handle's `signal` into
- * `executeAgentSpawnNode`, the process-lifecycle seam signals the child
- * gracefully and then forcibly on a bounded deadline, and the resulting
- * `ProcessCancelledError` is reported as a halt (`terminatedProcess: true`)
- * carrying that cancellation as its `cause`.
+ * `graph-builder.ts` forwards the handle's `signal` into both executors
+ * (`executeAgentSpawnNode` and `executeMechanicalNode`, since a mechanical
+ * node's command holds the same working directory and permissions an agent's
+ * child does), the process-lifecycle seam signals the child gracefully and then
+ * forcibly on a bounded deadline, and the resulting `ProcessCancelledError` is
+ * reported as a halt (`terminatedProcess: true`) carrying that cancellation as
+ * its `cause`. The one cancellation that reports `terminatedProcess: false` is
+ * the one that arrived before its process was spawned at all
+ * (`ProcessCancelledError.spawned` is `false`): nothing ran, so nothing on disk
+ * needs inspecting.
  *
  * **Why the mid-flight case kills rather than waits.** Leaving the child alive
  * was the earlier behaviour and it was wrong in a way a caller could not see: a

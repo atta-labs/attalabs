@@ -118,7 +118,11 @@ function haltOfTerminatedChild(
 ): RunHaltedError | undefined {
   if (!control?.halted) return undefined
   if (!(err instanceof ProcessCancelledError)) return undefined
-  return new RunHaltedError(nodeId, control.haltReason, { cause: err, terminatedProcess: true })
+  // `terminatedProcess` tracks whether a child was actually killed, not merely
+  // whether the cancellation reached this executor: a signal already aborted on
+  // entry spawns nothing, so reporting `true` there would send a caller to
+  // inspect a working tree no process of this node's ever touched.
+  return new RunHaltedError(nodeId, control.haltReason, { cause: err, terminatedProcess: err.spawned })
 }
 
 /**
@@ -288,7 +292,12 @@ export function createAgentLifecycleNodeExecutor(
 
     try {
       if (node.kind === 'mechanical') {
-        const result = await executeMechanicalNode({ node, config, spawnFn })
+        // The same signal the agent-spawn branch gets, for the same reason: a
+        // mechanical node's command holds this run's working directory and
+        // execution permissions, so a halt that left it running would keep it
+        // acting on the tree — for up to its own `timeoutMs` — after the
+        // caller believed the run was cancelled.
+        const result = await executeMechanicalNode({ node, config, spawnFn, signal: control?.signal })
         safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
         // No `sessions` write: a mechanical node has no model turn and so no
         // session for a later step's `resume` to look up.

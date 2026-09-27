@@ -145,9 +145,34 @@ export abstract class ProcessTerminatedError extends Error {
   }
 }
 
+/**
+ * How the messages this file produces name the node whose process it owns.
+ *
+ * Both node kinds this package runs share the lifecycle — the timeout, the
+ * escalation, the cancellation — but not their vocabulary: a mechanical node
+ * has no agent and no role, so a message calling it an "agent-spawn node
+ * (role 'mechanical')" would describe a node kind defined by not having
+ * either. The subject is therefore the caller's to supply, and defaults to
+ * the agent-spawn phrasing every message here already carried, so the
+ * agent-spawn path's own text is unchanged.
+ */
+export interface ProcessSubject {
+  /** The grammatical subject of a termination message — e.g. `Agent-spawn node 'x' (role 'reviewer')`. */
+  description: string
+  /** How a spawn failure names the caller's own binding — e.g. `role 'reviewer'`, or `mechanical action 'git-apply'`. */
+  binding: string
+}
+
+/** The agent-spawn phrasing, and the default for any caller that names no subject of its own. */
+function agentSpawnSubject(nodeId: string, agentRole: string): ProcessSubject {
+  return { description: `Agent-spawn node '${nodeId}' (role '${agentRole}')`, binding: `role '${agentRole}'` }
+}
+
 export interface ProcessCancelledErrorParams {
   nodeId: string
   agentRole: string
+  /** How this node is named in the message; defaults to the agent-spawn phrasing. */
+  description?: string
   /** Whether the forced signal had to be sent because the graceful one did not end the process in time. */
   forced: boolean
   /** Whether a process was spawned at all — `false` when the signal was already aborted on entry. */
@@ -173,14 +198,14 @@ export class ProcessCancelledError extends ProcessTerminatedError {
   readonly cancellationReason: string | undefined
 
   constructor(params: ProcessCancelledErrorParams) {
-    const { nodeId, agentRole, forced, spawned, cancellationReason } = params
+    const { nodeId, agentRole, forced, spawned, cancellationReason, description } = params
     const how = !spawned
       ? 'cancellation was already requested before its process was spawned'
       : forced
         ? `it was terminated with ${GRACEFUL_TERMINATION_SIGNAL} and then ${FORCED_TERMINATION_SIGNAL} after it did not exit in time`
         : `it exited on ${GRACEFUL_TERMINATION_SIGNAL}`
     super(
-      `Agent-spawn node '${nodeId}' (role '${agentRole}') was cancelled: ${how}${
+      `${description ?? agentSpawnSubject(nodeId, agentRole).description} was cancelled: ${how}${
         cancellationReason ? ` (${cancellationReason})` : ''
       }.`,
       nodeId,
@@ -205,10 +230,10 @@ export class ProcessTimedOutError extends ProcessTerminatedError {
   /** The bound that elapsed, verbatim from the caller's configuration. */
   readonly timeoutMs: number
 
-  constructor(params: { nodeId: string; agentRole: string; timeoutMs: number }) {
-    const { nodeId, agentRole, timeoutMs } = params
+  constructor(params: { nodeId: string; agentRole: string; timeoutMs: number; description?: string }) {
+    const { nodeId, agentRole, timeoutMs, description } = params
     super(
-      `Agent-spawn node '${nodeId}' (role '${agentRole}') exceeded its ${timeoutMs}ms timeout and was killed.`,
+      `${description ?? agentSpawnSubject(nodeId, agentRole).description} exceeded its ${timeoutMs}ms timeout and was killed.`,
       nodeId,
       agentRole
     )
@@ -271,6 +296,12 @@ export interface ProcessLifecycleParams {
    * process.
    */
   signal?: AbortSignal
+  /**
+   * How this node is named in the messages this file produces. Defaults to
+   * the agent-spawn phrasing; a mechanical node passes its own, because it
+   * has neither an agent nor a role to be named by. See `ProcessSubject`.
+   */
+  subject?: ProcessSubject
   /**
    * How long the graceful signal is given before the forced one follows.
    * Defaults to `DEFAULT_GRACEFUL_TERMINATION_MS`; injectable so a test
@@ -375,7 +406,18 @@ function sanitizeCancellationReason(raw: string): string {
   }
   const collapsed = out.trim()
   if (collapsed.length <= MAX_CANCELLATION_REASON_LENGTH) return collapsed
-  return `${collapsed.slice(0, MAX_CANCELLATION_REASON_LENGTH)}…`
+  // The bound is in UTF-16 code units, but the cut must fall between code
+  // points: a supplementary-plane character (an emoji, a CJK extension
+  // ideograph) whose high surrogate sits at the boundary would otherwise be
+  // sliced in half, leaving an unpaired surrogate in the stored reason and in
+  // the thrown message — which every consumer downstream re-serializes, and
+  // `JSON.stringify` and a UTF-8 checkpoint write both render as a replacement
+  // character or mangled bytes. Dropping the orphaned half keeps the bound
+  // (the result is never longer) and keeps the string well-formed.
+  const cut = collapsed.slice(0, MAX_CANCELLATION_REASON_LENGTH)
+  const lastUnit = cut.charCodeAt(cut.length - 1)
+  const wholeCodePoints = lastUnit >= 0xd800 && lastUnit <= 0xdbff ? cut.slice(0, -1) : cut
+  return `${wholeCodePoints}…`
 }
 
 /**
@@ -407,6 +449,7 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
     nodeId,
     agentRole,
     signal,
+    subject = agentSpawnSubject(nodeId, agentRole),
     gracefulTerminationMs = DEFAULT_GRACEFUL_TERMINATION_MS
   } = params
 
@@ -418,6 +461,7 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
     throw new ProcessCancelledError({
       nodeId,
       agentRole,
+      description: subject.description,
       forced: false,
       spawned: false,
       cancellationReason: abortReasonText(signal)
@@ -553,7 +597,7 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
             case 'spawn-failed':
               reject(
                 new Error(
-                  `Failed to spawn '${command}' for role '${agentRole}' (node '${nodeId}'): ${settlement.message}`
+                  `Failed to spawn '${command}' for ${subject.binding} (node '${nodeId}'): ${settlement.message}`
                 )
               )
               return
@@ -562,6 +606,7 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
                 new ProcessCancelledError({
                   nodeId,
                   agentRole,
+                  description: subject.description,
                   forced: settlement.forced,
                   spawned: true,
                   cancellationReason: settlement.cancellationReason
@@ -569,7 +614,7 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
               )
               return
             case 'timed-out':
-              reject(new ProcessTimedOutError({ nodeId, agentRole, timeoutMs }))
+              reject(new ProcessTimedOutError({ nodeId, agentRole, timeoutMs, description: subject.description }))
               return
           }
         }
