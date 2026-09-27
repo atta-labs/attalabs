@@ -105,14 +105,20 @@ export interface ExecuteAgentSpawnNodeParams {
   /** Injectable for tests; defaults to `node:child_process`'s `spawn`. */
   spawnFn?: SpawnFn
   /**
-   * Called once, with every event this node's process reported, right
-   * after its stdout is fully parsed — matching today's behavior exactly.
+   * Called once per event this node's process reports, live, while the
+   * process is still running — each call carries exactly that one event, in
+   * arrival order, the moment its line completes in the structured stream.
+   * Write the observer to append, never to replace: it is not a single
+   * batched call carrying the finished array, and the process has not
+   * exited when it fires. Only a final line the process left without a
+   * trailing newline arrives after exit. What it hands over is raw child
+   * output — redaction is a separate concern and is not applied here.
+   *
    * Named distinctly from `AgentSpawnExecutorConfig.onEvent` (`types.ts`),
    * an unrelated, incompatibly-shaped hook for a different lifecycle
    * (`node:start`/`node:streaming`/`node:complete`/`node:failed`) that is
-   * also in scope wherever this param is. Inert seam: a future task makes
-   * event observation live by editing only `stream-reader.ts`, never this
-   * composer.
+   * also in scope wherever this param is — and, unlike this one, replayed
+   * after the node has already returned.
    */
   onParsedEvents?: (events: unknown[]) => void
   /**

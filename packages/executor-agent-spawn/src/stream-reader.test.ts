@@ -248,6 +248,72 @@ describe('attachStreamReader — partial trailing line carry-over', () => {
 
     expect(() => finalizeEvents(reader, 'review')).toThrow(/non-JSON output on line 1/)
   })
+
+  it('routes a string chunk through the same decoder as a Buffer chunk', () => {
+    const observed: unknown[] = []
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child, (events) => observed.push(...events))
+
+    // A `Buffer` chunk cut mid-character, then a `string` chunk. A string
+    // that skipped the decoder would be framed ahead of the bytes still
+    // held for that character — those bytes would then surface at close as
+    // a line of their own, failing an otherwise clean run. Going through
+    // the decoder keeps the damage where it happened and in order: the
+    // truncated character becomes one replacement character inside the
+    // record it belongs to, and the record after it is untouched.
+    driver.emitStdout(Buffer.concat([Buffer.from('{"a":"', 'utf8'), Buffer.from('⚖', 'utf8').subarray(0, 2)]))
+    expect(observed).toEqual([])
+
+    driver.emitStdout('BB"}\n{"b":1}\n')
+
+    expect(observed).toEqual([{ a: '�BB' }, { b: 1 }])
+    expect(finalizeEvents(reader, 'review')).toEqual([{ a: '�BB' }, { b: 1 }])
+  })
+
+  it('frames a single record arriving as many small chunks', () => {
+    const observed: unknown[] = []
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child, (events) => observed.push(...events))
+
+    const filler = 'x'.repeat(4096)
+    const line = `{"note":"${filler}"}\n`
+    for (let offset = 0; offset < line.length; offset += 8) {
+      driver.emitStdout(line.slice(offset, offset + 8))
+    }
+
+    expect(observed).toEqual([{ note: filler }])
+    expect(finalizeEvents(reader, 'review')).toEqual([{ note: filler }])
+  })
+
+  it('stops framing once the process has closed', () => {
+    const observed: unknown[] = []
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child, (events) => observed.push(...events))
+
+    driver.emitStdout('{"i":1}\n')
+    driver.close(0)
+
+    // A child that outlived a kill signal can keep writing to a pipe
+    // nothing is waiting on: a node whose outcome is already settled must
+    // not keep reporting records.
+    driver.emitStdout('{"i":2}\n')
+
+    expect(observed).toEqual([{ i: 1 }])
+    expect(finalizeEvents(reader, 'review')).toEqual([{ i: 1 }])
+  })
+
+  it('hands back a copy, so a caller mutating it cannot corrupt the record', () => {
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child)
+
+    driver.emitStdout('{"i":1}\n')
+    const returned = finalizeEvents(reader, 'review')
+    returned.length = 0
+    returned.push({ redacted: true })
+
+    expect(reader.snapshotEvents()).toEqual([{ i: 1 }])
+    expect(reader.snapshotEvents()).not.toBe(reader.snapshotEvents())
+  })
 })
 
 describe('finalizeEvents / parseNdjson — malformed lines', () => {
