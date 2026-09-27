@@ -43,8 +43,8 @@ export default async function HowItWorksPage() {
   }
 
   return (
-    // No Footer on this page — TopBar only. Fills exactly the viewport below
-    // it (h-14) on `lg`+, since the diagram is the page's dominant element
+    // No Footer on this page. Fills exactly the docs shell's body below its
+    // nav strip (`layout.tsx`) on `lg`+, since the diagram is the page's dominant element
     // and must be fully visible with zero scrolling there. Below `lg`,
     // `DiagramExplorer` stacks its sidebar under the ring, which no longer
     // fits a fixed viewport-height box — so the wrapper reverts to natural

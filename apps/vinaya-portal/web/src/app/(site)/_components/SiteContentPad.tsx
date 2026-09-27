@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { usesDocsShell } from './docs-shell-route'
 
 /**
  * The (site) app shell's one scroll container, and the definite-height ancestor every
@@ -21,8 +22,12 @@ import type { ReactNode } from 'react'
  * the padding lands on the SAME element that scrolls: on the landing route it carries
  * none, so the hero's `sticky top-0` still pins at the true page top; on every other route
  * a `sticky top-0` pins just under the fixed bar rather than behind it.
+ *
+ * A docs-shell route (`usesDocsShell`) gets no `pt-14` either: `TopBarChromeHost` renders
+ * no fixed bar there, and `DocsShell` draws its own bar in flow at the top of its body.
  */
 export function SiteContentPad({ children }: { children: ReactNode }) {
-  const isLanding = (usePathname() ?? '') === '/'
-  return <div className={isLanding ? 'h-dvh overflow-y-auto' : 'h-dvh overflow-y-auto pt-14'}>{children}</div>
+  const pathname = usePathname() ?? ''
+  const noBarPad = pathname === '/' || usesDocsShell(pathname)
+  return <div className={noBarPad ? 'h-dvh overflow-y-auto' : 'h-dvh overflow-y-auto pt-14'}>{children}</div>
 }

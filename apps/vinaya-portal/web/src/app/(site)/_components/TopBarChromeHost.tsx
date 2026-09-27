@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { usesDocsShell } from './docs-shell-route'
 import { useHeroLockupRegister } from './hero-lockup-context'
 
 /**
@@ -21,10 +22,16 @@ import { useHeroLockupRegister } from './hero-lockup-context'
  * small resting logo for that gap — a visible flash. Matching the SSR value to the value
  * the loop converges to removes the flash instead of shortening it. No other route has JS
  * that ever un-sets `'false'`, so this is a no-op there.
+ *
+ * Renders nothing on a docs-shell route (`usesDocsShell`): there the bar lives inside the
+ * docs body, scoped to its width and without the logo, because the wordmark sits at the
+ * top of the docs sidebar instead. Every other route gets this exact element unchanged.
  */
 export function TopBarChromeHost({ children }: { children: ReactNode }) {
   const setNode = useHeroLockupRegister()
-  const isLanding = (usePathname() ?? '') === '/'
+  const pathname = usePathname() ?? ''
+  if (usesDocsShell(pathname)) return null
+  const isLanding = pathname === '/'
 
   return (
     <div

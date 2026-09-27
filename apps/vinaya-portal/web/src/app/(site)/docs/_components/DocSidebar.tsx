@@ -1,19 +1,18 @@
 'use client'
 
 import {
-  ChromeFrame,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider
+  SidebarMenuItem
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import type { Doc, DocNav } from '@attalabs/aeg-core/docs'
+import { usePathname } from 'next/navigation'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 
@@ -28,22 +27,15 @@ const OVERVIEW_DOC: Doc = {
   filePath: ''
 }
 
-/** The fixed desktop rail. Hidden below `lg`, where the same nav body is
- * reached through the drawer in `DocSidebarHost` instead. */
-export function DocSidebar({ nav, pathname }: DocSidebarProps) {
-  return (
-    <SidebarProvider
-      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 text-sidebar-foreground lg:flex'
-    >
-      <ChromeFrame variant='rail'>
-        <DocSidebarNav nav={nav} pathname={pathname} />
-      </ChromeFrame>
-    </SidebarProvider>
-  )
+/** The doctrine tree as the desktop sidebar's content — what the doc pages and
+ * `/docs/harness` pass into `DocsShell`'s sidebar slot, which owns the outer shell
+ * and hides it below `lg`. There the same nav body is reached through
+ * `DocSidebarHost` instead. */
+export function DocSidebar({ nav }: { nav: DocNav }) {
+  return <DocSidebarNav nav={nav} pathname={usePathname() ?? ''} />
 }
 
-/** The nav body itself — rendered inside both the desktop rail above and the
+/** The nav body itself — rendered inside both the desktop sidebar above and the
  * mobile drawer in `DocSidebarHost`. Expects `SidebarProvider` context. */
 export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
   return (

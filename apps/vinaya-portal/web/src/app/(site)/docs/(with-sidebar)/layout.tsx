@@ -1,28 +1,25 @@
-import { Flex } from '@atta/ui/shared'
 import type { ReactNode } from 'react'
 import { loadAegDocs } from '@/lib/docs/load-aeg-docs'
 import { FooterContentSlot } from '../../_components/FooterGate'
+import { DocSidebar } from '../_components/DocSidebar'
 import { DocSidebarHost } from '../_components/DocSidebarHost'
+import { DocsShell } from '../_components/DocsShell'
 
 export default async function DocsLayout({ children }: { children: ReactNode }) {
   const { nav } = await loadAegDocs()
 
   return (
-    // Fills the (site) app-shell's scroll region exactly. `h-full` resolves
-    // against `(site)/layout.tsx`'s `h-dvh` content area (a definite height,
-    // minus its own `pt-14` reserved for the fixed TopBar), so this no longer
-    // hardcodes the TopBar's pixel height — and no longer nests a second
-    // `calc(100dvh-56px)` box inside the shell's own `overflow-y-auto` region.
-    // `min-h-0` lets it shrink instead of forcing that outer region to scroll.
-    // Below `lg` this stacks: `DocSidebarHost`'s drawer bar on top, content
-    // below. At `lg`+ it is the same two-column row it has always been (the
-    // bar is `lg:hidden`, the rail `hidden lg:flex`).
-    <Flex className='h-full min-h-0 w-full flex-col overflow-hidden lg:flex-row'>
+    // The doctrine tree in `DocsShell`'s sidebar, sized to its own content. Below
+    // `lg` the sidebar is hidden and `DocSidebarHost`'s bar sits between the
+    // shell's nav strip and the content pane instead. The pane scrolls on its
+    // own (`min-h-0` lets it shrink rather than grow the shell) and carries
+    // the site footer at its end.
+    <DocsShell sidebar={<DocSidebar nav={nav} />}>
       <DocSidebarHost nav={nav} />
       <main className='flex-1 min-h-0 overflow-y-auto bg-background'>
         <div className='mx-auto max-w-4xl px-6 pt-10 pb-10 lg:px-12'>{children}</div>
         <FooterContentSlot />
       </main>
-    </Flex>
+    </DocsShell>
   )
 }

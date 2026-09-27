@@ -2,14 +2,12 @@
 
 import type { ConfigField } from '@attalabs/vinaya-sources'
 import {
-  ChromeFrame,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider
+  SidebarMenuItem
 } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
@@ -19,8 +17,9 @@ import { CONFIG_ACTIVE_OFFSET, configSections, owningSectionSlug } from './confi
 /**
  * `/docs/config`'s on-page rail — `CliSidebar`'s shape (the
  * cli.github.com/manual pattern: `/docs`' sidebar primitives, active state
- * driven by scroll position rather than the pathname, hidden below `lg`),
- * pointed at config sections instead of commands. Sections only: a nested
+ * driven by scroll position rather than the pathname, rendered in
+ * `DocsShell`'s sidebar slot, which owns the outer shell and hides it below
+ * `lg`), pointed at config sections instead of commands. Sections only: a nested
  * field (`checks.env.literal`) keeps its own anchor in the content flow but
  * never becomes a rail entry.
  *
@@ -99,54 +98,43 @@ export function ConfigSidebar({ fields }: { fields: readonly ConfigField[] }) {
   }
 
   return (
-    <SidebarProvider
-      style={{ '--sidebar-width': '16rem' } as React.CSSProperties}
-      className='hidden h-full min-h-0 w-(--sidebar-width) shrink-0 text-sidebar-foreground lg:block'
-    >
-      <ChromeFrame variant='rail'>
-        <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
-          <Text
-            as='span'
-            size='sm'
-            weight='bold'
-            className='mb-2 block px-2 font-sans uppercase tracking-widest text-sidebar-foreground'
-          >
-            Configuration
-          </Text>
+    <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
+      <Text
+        as='span'
+        size='sm'
+        weight='bold'
+        className='mb-2 block px-2 font-sans uppercase tracking-widest text-sidebar-foreground'
+      >
+        Configuration
+      </Text>
 
-          <SidebarGroup className='py-1.5'>
-            <SidebarGroupContent>
-              <SidebarMenu className='gap-0.5'>
-                {sections.map((section) => {
-                  const isActive = activeSlug === section.slug
-                  return (
-                    <SidebarMenuItem key={section.slug}>
-                      <SidebarMenuButton
-                        size='sm'
-                        isActive={isActive}
-                        render={
-                          <NextLink
-                            variant='unstyled'
-                            href={`#${section.slug}`}
-                            onClick={scrollToSection(section.slug)}
-                          />
-                        }
-                        // Active look is owned by the library's SidebarMenuButton
-                        // (driven by `isActive`). Consumer only dims inactive items.
-                        className={`h-auto min-h-7 py-1 font-mono text-sm tracking-tight [&>span:last-child]:whitespace-normal ${
-                          isActive ? '' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
-                        }`}
-                      >
-                        <span className='line-clamp-2'>{section.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </ChromeFrame>
-    </SidebarProvider>
+      <SidebarGroup className='py-1.5'>
+        <SidebarGroupContent>
+          <SidebarMenu className='gap-0.5'>
+            {sections.map((section) => {
+              const isActive = activeSlug === section.slug
+              return (
+                <SidebarMenuItem key={section.slug}>
+                  <SidebarMenuButton
+                    size='sm'
+                    isActive={isActive}
+                    render={
+                      <NextLink variant='unstyled' href={`#${section.slug}`} onClick={scrollToSection(section.slug)} />
+                    }
+                    // Active look is owned by the library's SidebarMenuButton
+                    // (driven by `isActive`). Consumer only dims inactive items.
+                    className={`h-auto min-h-7 py-1 font-mono text-sm tracking-tight [&>span:last-child]:whitespace-normal ${
+                      isActive ? '' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground'
+                    }`}
+                  >
+                    <span className='line-clamp-2'>{section.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
   )
 }
