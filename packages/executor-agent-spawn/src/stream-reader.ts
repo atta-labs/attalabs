@@ -7,7 +7,7 @@
  * process itself was spawned, timed out, or killed (`process-lifecycle.ts`).
  */
 
-import type { SpawnedProcessLike } from './node-executor'
+import type { SpawnedProcessLike } from './process-lifecycle'
 
 /** The buffers one spawned process's stdout/stderr accumulate into, in order. */
 export interface StreamReaderHandle {
