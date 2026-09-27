@@ -2,8 +2,8 @@
 
 import { Badge, Card, CardContent } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Heading, Text } from '@atta/ui/shared'
-import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, RotateCcw, User } from 'lucide-react'
+import { Heading } from '@atta/ui/shared'
+import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, User } from 'lucide-react'
 import {
   useEffect,
   useRef,
@@ -14,10 +14,9 @@ import {
   type RefAttributes,
   type RefObject
 } from 'react'
-import { siGithub } from 'simple-icons'
+import { siGit, siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
-import { LandingSection } from './LandingSection'
-import { SectionOverline, SectionTitle } from './SectionHeading'
+import { SectionTitle } from './SectionHeading'
 
 // Card's exported type has no `ref` (motion.div forwards it fine at runtime
 // under React 19, but the component itself isn't typed with RefAttributes) —
@@ -30,8 +29,7 @@ type StageIndex = 0 | 1 | 2
 const ISSUE_DELAYS = ['delay-[140ms]', 'delay-[260ms]', 'delay-[380ms]'] as const
 const LANE_DELAYS = [
   ['delay-0', 'delay-[160ms]', 'delay-[320ms]'],
-  ['delay-[100ms]', 'delay-[340ms]', 'delay-[580ms]'],
-  ['delay-[50ms]', 'delay-[240ms]', 'delay-[440ms]']
+  ['delay-[100ms]', 'delay-[340ms]', 'delay-[580ms]']
 ] as const
 const BACK_DELAYS = ['delay-0', 'delay-[100ms]', 'delay-[200ms]'] as const
 
@@ -39,6 +37,14 @@ function GitHubMark({ className }: { className?: string }) {
   return (
     <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
       <path d={siGithub.path} />
+    </svg>
+  )
+}
+
+function GitMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
+      <path d={siGit.path} />
     </svg>
   )
 }
@@ -68,19 +74,6 @@ function PhaseLabel({ active, children }: { active: boolean; children: React.Rea
         }`}
       />
     </span>
-  )
-}
-
-function BulletList({ items }: { items: readonly string[] }) {
-  return (
-    <ul className='mt-5 flex flex-col gap-2.5'>
-      {items.map((item) => (
-        <li key={item} className='flex items-baseline gap-3 font-sans text-lg leading-tight tracking-tight'>
-          <span className='size-1.5 shrink-0 -translate-y-0.5 rounded-full bg-foreground' />
-          {item}
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -117,7 +110,6 @@ function StageShell({
   index,
   title,
   headline,
-  bullets,
   badge,
   active,
   stageRef,
@@ -126,7 +118,6 @@ function StageShell({
   index: string
   title: string
   headline: React.ReactNode
-  bullets: readonly string[]
   badge: string
   active: boolean
   stageRef: RefObject<HTMLElement | null>
@@ -136,20 +127,23 @@ function StageShell({
     <RefCard
       ref={stageRef}
       data-active={active}
-      className='group/stage flex min-h-[42rem] flex-col px-7 py-8 shadow-none min-[700px]:min-h-0 min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6'
+      className='group/stage flex flex-col px-7 py-8 shadow-none min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-4'
     >
       <div className='flex flex-col'>
         <div className='flex items-baseline gap-3 font-mono uppercase'>
           <span className='text-xs tracking-[0.26em] text-muted-foreground'>{index}</span>
           <span className='text-2xl font-semibold tracking-[0.14em] md:text-3xl'>{title}</span>
         </div>
-        <Heading level={3} weight='normal' className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl'>
+        <Heading
+          level={3}
+          weight='normal'
+          className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl min-[700px]:[@media(max-height:760px)]:mt-3 min-[700px]:[@media(max-height:760px)]:text-3xl'
+        >
           {headline}
         </Heading>
-        <BulletList items={bullets} />
         <GitHubBadge>{badge}</GitHubBadge>
       </div>
-      <div className='mt-7 flex min-h-52 flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
+      <div className='mt-7 flex flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-h-52 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
         {children}
       </div>
     </RefCard>
@@ -168,7 +162,6 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
           Its issues
         </>
       }
-      bullets={['One milestone', 'One issue per task']}
       badge='milestone + issues'
       active={active}
       stageRef={stageRef}
@@ -200,7 +193,7 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
 }
 
 function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
-  const lanes = [471, 472, 473] as const
+  const lanes = [471, 472] as const
   return (
     <StageShell
       index='02'
@@ -212,7 +205,6 @@ function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject
           One pull request
         </>
       }
-      bullets={['One branch', 'One pull request']}
       badge='branch + pull request'
       active={active}
       stageRef={stageRef}
@@ -276,7 +268,6 @@ function ArchiveStage({
           Then the milestone
         </>
       }
-      bullets={['Nothing by hand', 'Closes when the last task lands']}
       badge='milestone closed'
       active={active}
       stageRef={stageRef}
@@ -309,9 +300,6 @@ function ArchiveStage({
             </div>
           ))}
         </div>
-        <Text className='mt-1 flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground'>
-          <RotateCcw className='size-3' /> the next one opens
-        </Text>
       </div>
     </StageShell>
   )
@@ -329,7 +317,6 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
 
 export function LifecycleSection() {
   const sectionRef = useRef<HTMLElement>(null)
-  const taglineRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const railFillRef = useRef<HTMLSpanElement>(null)
   const stageOneRef = useRef<HTMLElement>(null)
@@ -419,14 +406,10 @@ export function LifecycleSection() {
       }
 
       syncTrackOffset()
-      // Progress starts when the section's top — the tagline, not the pinned
-      // stage block below it — reaches the viewport top. The section is taller
-      // than the pinned runway by exactly the tagline's own height, so that
-      // height comes back out of `travel`: the tabs and rail advance over the
-      // same scroll distance as the runway itself, and hold their end state for
-      // the tagline's height at the bottom of the pin instead of stretching.
-      const taglineHeight = taglineRef.current?.offsetHeight ?? 0
-      const travel = Math.max(1, rect.height - taglineHeight - (viewportHeight - 64))
+      // Progress starts when the section's top reaches the viewport top, which
+      // is the moment the pin engages: the tagline is the first thing inside the
+      // pinned block, so there is no unpinned lead-in above it to subtract.
+      const travel = Math.max(1, rect.height - (viewportHeight - 64))
       const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
       trackAnimation.currentTime = progress * 1000
       railAnimation.currentTime = progress * 1000
@@ -470,55 +453,43 @@ export function LifecycleSection() {
   const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
 
   return (
-    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground'>
-      {/* The tagline scrolls normally at the top of this section, so the scroll
-          math above (keyed off the section's own rect) starts at the tagline.
-          Only the stage block below it pins. */}
-      <LandingSection
-        ref={taglineRef}
-        id='tagline'
-        background='bg-secondary text-secondary-foreground'
-        py='compact'
-        center
-      >
-        <Heading level={2} weight='normal' className='text-balance font-serif leading-snug tracking-tight'>
-          <span className='block text-2xl font-semibold sm:text-3xl md:text-4xl'>
-            <LetterReveal text='A harness for your software engineering process' />
-          </span>
-          <span className='mt-1 block text-base text-muted-foreground sm:text-lg md:text-xl'>
-            with GitHub as the only source of truth.
-          </span>
-        </Heading>
-      </LandingSection>
-      {/* The pinned runway keeps its own 300dvh, so the section grows by exactly
-          the tagline's rendered height and the pin still spans the same distance. */}
-      <div className='min-[700px]:h-[300dvh]'>
-        <div className='mx-auto flex max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:sticky min-[700px]:top-0 min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:overflow-hidden min-[700px]:px-10 min-[700px]:py-6'>
-          <div className='flex flex-wrap items-baseline justify-between gap-5'>
-            <SectionOverline className='text-muted-foreground'>the software lifecycle you already run</SectionOverline>
-            <NextLink
-              href='/life-cycle'
-              variant='unstyled'
-              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
+    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground min-[700px]:h-[300dvh]'>
+      {/* One pinned block for the whole runway: the tagline banner on top, then the
+          stage block under it, so the tagline stays fixed at the top of the viewport
+          for the entire tab scroll-through. `id='tagline'` stays on the banner as the
+          hero's scroll target. It pins at `top-14`, under the fixed TopBar (`3.5rem`),
+          not at `top-0`, where the bar would cover the tagline's first line; that is
+          also the `64` the progress math above starts from. Its height is the rest of
+          the viewport below the bar, so the stage track keeps every pixel it can. Below 700px nothing pins
+          and both render in flow. Because that height is fixed, the tagline's size is capped at
+          `4.2cqi` of its own container so it stays on one line at every pinned width, and the
+          `max-height:760px` classes tighten the vertical spacing so the stage cards and the See
+          lifecycle link still fit on a short desktop viewport. */}
+      <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
+        <div id='tagline' className='bg-secondary text-secondary-foreground'>
+          <div className='@container mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
+            <Heading
+              level={2}
+              weight='normal'
+              className='text-balance font-serif text-(length:--tagline-size) leading-snug tracking-tight [--tagline-size:1.875rem] sm:[--tagline-size:2.25rem] min-[700px]:text-[length:min(var(--tagline-size),4.2cqi)] xl:[--tagline-size:2.625rem] min-[87.5rem]:[--tagline-size:3.125rem]'
             >
-              See lifecycle <ArrowRight className='size-3.5' />
-            </NextLink>
+              <LetterReveal text='A harness for your software engineering process' />
+            </Heading>
           </div>
-          <div className='mt-4 flex items-center gap-4'>
-            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20'>
-              <GitHubMark className='size-9 md:size-12' />
+        </div>
+        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
+          <div className='flex items-center gap-4'>
+            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20 min-[700px]:[@media(max-height:760px)]:size-14'>
+              <GitMark className='size-9 md:size-12 min-[700px]:[@media(max-height:760px)]:size-8' />
             </Card>
             <div>
-              <SectionTitle className='max-w-5xl'>
+              <SectionTitle className='max-w-5xl lg:text-[3.375rem]'>
                 <LetterReveal text='Plan, solve, archive' />
               </SectionTitle>
-              <Text className='mt-2 max-w-xl text-xl leading-relaxed text-muted-foreground'>
-                The same three stages, every time you ship.
-              </Text>
             </div>
           </div>
 
-          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex'>
+          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex min-[700px]:[@media(max-height:760px)]:mt-3'>
             <div className='flex shrink-0 gap-7 font-mono text-[0.625rem] uppercase tracking-[0.18em]'>
               <PhaseLabel active={phase === 0}>01 plan a milestone</PhaseLabel>
               <PhaseLabel active={phase === 1}>02 solve its tasks</PhaseLabel>
@@ -538,6 +509,16 @@ export function LifecycleSection() {
               <SolveStage active={active[1]} stageRef={stageTwoRef} />
               <ArchiveStage active={active[2]} closed={closed} stageRef={stageThreeRef} />
             </div>
+          </div>
+
+          <div className='mt-6 flex justify-center min-[700px]:mt-5 min-[700px]:[@media(max-height:760px)]:mt-3'>
+            <NextLink
+              href='/life-cycle'
+              variant='unstyled'
+              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
+            >
+              See lifecycle <ArrowRight className='size-3.5' />
+            </NextLink>
           </div>
         </div>
       </div>
