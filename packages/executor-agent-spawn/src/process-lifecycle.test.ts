@@ -5,6 +5,7 @@ import {
   GRACEFUL_TERMINATION_SIGNAL,
   isProcessAbandoned,
   ProcessCancelledError,
+  ProcessTerminatedError,
   ProcessTimedOutError,
   spawnProcessLifecycle,
   type SpawnedProcessLike
@@ -270,5 +271,82 @@ describe('spawnProcessLifecycle — bounded termination escalation (O3)', () => 
   it('gives the graceful signal a bounded window by default', () => {
     expect(DEFAULT_GRACEFUL_TERMINATION_MS).toBeGreaterThan(0)
     expect(Number.isFinite(DEFAULT_GRACEFUL_TERMINATION_MS)).toBe(true)
+  })
+})
+
+describe('spawnProcessLifecycle — typed outcomes, three-way distinct (O2)', () => {
+  it('tells a cancellation, a timeout and an execution failure apart by type', async () => {
+    const controller = new AbortController()
+    const cancelledRun = spawnFake({ signal: controller.signal, gracefulTerminationMs: 5 })
+    const cancelledWait = cancelledRun.handle.waitForExit()
+    controller.abort()
+    const cancelled = await cancelledWait.catch((err: unknown) => err)
+
+    const timedOutRun = spawnFake({ timeoutMs: 5, gracefulTerminationMs: 5 })
+    const timedOut = await timedOutRun.handle.waitForExit().catch((err: unknown) => err)
+
+    const failedRun = spawnFake()
+    const failedWait = failedRun.handle.waitForExit()
+    failedRun.child.emitError(new Error('ENOENT'))
+    const failed = await failedWait.catch((err: unknown) => err)
+
+    expect(cancelled).toBeInstanceOf(ProcessCancelledError)
+    expect(timedOut).toBeInstanceOf(ProcessTimedOutError)
+    expect(failed).toBeInstanceOf(Error)
+
+    // Cancellation is not a timeout, a timeout is not a cancellation, and a
+    // failure to execute is neither — there is no shared "it did not finish".
+    expect(cancelled).not.toBeInstanceOf(ProcessTimedOutError)
+    expect(timedOut).not.toBeInstanceOf(ProcessCancelledError)
+    expect(failed).not.toBeInstanceOf(ProcessTerminatedError)
+
+    expect((cancelled as ProcessCancelledError).reason).toBe('cancelled')
+    expect((timedOut as ProcessTimedOutError).reason).toBe('timed-out')
+    expect((failed as Error).message).toContain("Failed to spawn 'fake-cli'")
+  })
+
+  it('names each typed outcome distinctly, which is all a checkpoint store keeps', async () => {
+    const controller = new AbortController()
+    const cancelledRun = spawnFake({ signal: controller.signal, gracefulTerminationMs: 5 })
+    const cancelledWait = cancelledRun.handle.waitForExit()
+    controller.abort()
+    const cancelled = (await cancelledWait.catch((err: unknown) => err)) as Error
+    const timedOut = (await spawnFake({ timeoutMs: 5, gracefulTerminationMs: 5 })
+      .handle.waitForExit()
+      .catch((err: unknown) => err)) as Error
+
+    expect(cancelled.name).toBe('ProcessCancelledError')
+    expect(timedOut.name).toBe('ProcessTimedOutError')
+  })
+
+  it('keeps the timeout message callers already match on', async () => {
+    const { handle } = spawnFake({ timeoutMs: 20, gracefulTerminationMs: 5 })
+    await expect(handle.waitForExit()).rejects.toThrow(/exceeded its 20ms timeout/)
+  })
+
+  it('reports a timeout that has already settled as a timeout when a cancellation follows', async () => {
+    const controller = new AbortController()
+    const { handle } = spawnFake({ signal: controller.signal, timeoutMs: 5, gracefulTerminationMs: 200 })
+    // Attached before the wait can settle: the timeout fires during the sleep
+    // below, and an unhandled rejection there would fail the run for the wrong
+    // reason.
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    await sleep(20)
+    controller.abort()
+
+    expect(await settled).toBeInstanceOf(ProcessTimedOutError)
+  })
+
+  it('reports a cancellation that has already settled as a cancellation when the timeout follows', async () => {
+    const controller = new AbortController()
+    const { handle } = spawnFake({ signal: controller.signal, timeoutMs: 40, gracefulTerminationMs: 5 })
+    const waiting = handle.waitForExit()
+
+    controller.abort()
+    const error = await waiting.catch((err: unknown) => err)
+    await sleep(60)
+
+    expect(error).toBeInstanceOf(ProcessCancelledError)
   })
 })

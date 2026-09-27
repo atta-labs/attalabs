@@ -21,6 +21,17 @@ export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
+export {
+  DEFAULT_GRACEFUL_TERMINATION_MS,
+  FORCED_TERMINATION_SIGNAL,
+  GRACEFUL_TERMINATION_SIGNAL,
+  PROCESS_CANCELLED_ERROR_NAME,
+  PROCESS_TIMED_OUT_ERROR_NAME,
+  ProcessCancelledError,
+  ProcessTerminatedError,
+  ProcessTimedOutError
+} from './process-lifecycle'
+export type { ProcessTerminationReason } from './process-lifecycle'
 export { readRunOutcome, resumeControlledRun, startControlledRun } from './run-control'
 export type { ResumeControlledRunParams, StartControlledRunParams } from './run-control'
 export { createRunControl, RunHaltedError, runHaltOf } from './run-halt'
