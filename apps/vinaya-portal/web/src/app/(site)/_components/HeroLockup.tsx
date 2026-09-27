@@ -49,6 +49,10 @@ function Letters({ text, delayStep }: { text: string; delayStep: number }) {
  *   (before paint), in the same pass as `attachLockupFlip`'s synchronous first frame, so
  *   opacity turns on only once a transform has been computed — never a frame earlier.
  *
+ * `data-hero-lockup` on the root marks the lockup for `TopBarChromeHost`'s control-reveal
+ * selector, which fades every other part of the bar in on landing while leaving this node
+ * (and everything inside it) at the opacity the FLIP loop gives it.
+ *
  * Sizing constraints the FLIP loop depends on:
  * - the mark's `2.75rem` must equal `lockup-flip.js`'s `MARK_MAX` (that file animates this
  *   same span's width toward it; a mismatch pops the mark's size on the loop's first
@@ -114,6 +118,7 @@ export function HeroLockup({ logoUrl, alt = 'Vinaya' }: { logoUrl?: string | nul
   return (
     <span
       ref={(el) => setNode('lockup', el)}
+      data-hero-lockup
       className='inline-flex origin-top-left items-center gap-[0.3rem] leading-none will-change-transform [[data-bare=true]_&]:opacity-0'
     >
       {logoUrl && (
