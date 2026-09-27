@@ -12,7 +12,7 @@ import {
 import { Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 import { useState } from 'react'
-import { DocsShell, DocsSidebarTitle } from '../../../_components/DocsShell'
+import { DocsShell, DocsSidebarTitle, useSidebarDrawer } from '../../../_components/DocsShell'
 import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
 import { DiagramCanvas } from './DiagramCanvas'
@@ -129,10 +129,15 @@ const BODY_TEXT = 'font-sans text-sidebar-foreground leading-relaxed'
  * intro, legend, drilled ring or selected leaf) is the shell's sidebar content;
  * the diagram, the page's dominant element, is the whole body and must be fully
  * visible without scrolling from `lg` up.
+ *
+ * Holds the shell's drawer state too (`useSidebarDrawer`): below `lg` the explanation
+ * lives in the closed drawer, so a tap on a ring or a leaf — which rewrites that
+ * explanation — also opens the drawer, or the reader would never see what it says.
  */
 export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   const [drilledKey, setDrilledKey] = useState<GroupKey | null>(null)
   const [selectedLeaf, setSelectedLeaf] = useState<DiagramNode | null>(null)
+  const drawer = useSidebarDrawer()
 
   const drilledGroup = groups.find((g) => g.key === drilledKey) ?? null
 
@@ -145,9 +150,18 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
     legend.filter((entry) => entry.groupKey).map((entry) => [entry.groupKey, entry.description])
   ) as Record<GroupKey, string>
 
+  // A ring or leaf tapped on the diagram opens the drawer below `lg` (`reveal` does
+  // nothing from `lg` up). Backing out to the overview does not: that is the reader
+  // leaving an explanation, not asking for one.
   const handleDrill = (key: GroupKey) => {
     setDrilledKey(key)
     setSelectedLeaf(null)
+    drawer.reveal()
+  }
+
+  const handleSelectLeaf = (node: DiagramNode) => {
+    setSelectedLeaf(node)
+    drawer.reveal()
   }
 
   const handleBack = () => {
@@ -275,7 +289,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   return (
     // 356px: the explanation is prose, not a list of short links, so it takes the
     // wider sidebar the other docs pages' nav does not need.
-    <DocsShell sidebar={explanation} sidebarLabel='The Harness' sidebarWidth='356px'>
+    <DocsShell sidebar={explanation} sidebarLabel='The Harness' sidebarWidth='356px' drawer={drawer}>
       {/* The body is the diagram alone, full width. From `lg` it fills exactly the
           height under the nav strip — the ring scales to its box via `viewBox` +
           `h-full`, so it renders smaller rather than scrolling. Below `lg` the pane
@@ -300,7 +314,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
               selectedLeafId={selectedLeaf?.id ?? null}
               onDrill={handleDrill}
               onBack={handleBack}
-              onSelectLeaf={setSelectedLeaf}
+              onSelectLeaf={handleSelectLeaf}
             />
           </div>
         </div>
