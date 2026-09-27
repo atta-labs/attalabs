@@ -216,6 +216,38 @@ describe('attachStreamReader — partial trailing line carry-over', () => {
     expect(finalizeEvents(reader, 'review')).toEqual([])
     expect(observed).toEqual([])
   })
+
+  it('holds incomplete multi-byte bytes back rather than decoding them to a replacement character', () => {
+    const observed: unknown[] = []
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child, (events) => observed.push(...events))
+
+    // A three-byte character split across two `data` chunks — a per-chunk
+    // `toString()` would corrupt it into `U+FFFD` in both halves, so the
+    // record would parse and be reported with the wrong content.
+    const line = Buffer.from('{"note":"⚖ balance"}\n', 'utf8')
+    const boundary = line.indexOf(Buffer.from('⚖', 'utf8')) + 1
+
+    driver.emitStdout(line.subarray(0, boundary))
+    expect(observed).toEqual([])
+
+    driver.emitStdout(line.subarray(boundary))
+    expect(observed).toEqual([{ note: '⚖ balance' }])
+    expect(finalizeEvents(reader, 'review')).toEqual([{ note: '⚖ balance' }])
+  })
+
+  it('flushes bytes the decoder still holds when the process dies mid-character', () => {
+    const driver = controllableChild()
+    const reader = attachStreamReader(driver.child)
+
+    // A process killed part-way through writing a character: the bytes the
+    // decoder is holding are the start of the stream's last line. Dropping
+    // them would leave a truncated line that happens to parse, reporting a
+    // cut-off record as a complete one instead of failing the run.
+    driver.emitStdout(Buffer.concat([Buffer.from('{"i":1}', 'utf8'), Buffer.from('⚖', 'utf8').subarray(0, 2)]))
+
+    expect(() => finalizeEvents(reader, 'review')).toThrow(/non-JSON output on line 1/)
+  })
 })
 
 describe('finalizeEvents / parseNdjson — malformed lines', () => {

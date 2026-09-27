@@ -16,6 +16,7 @@
  * and only the incremental path is exercised by a real process.
  */
 
+import { StringDecoder } from 'node:string_decoder'
 import type { SpawnedProcessLike } from './process-lifecycle'
 
 /** A complete line that was not JSON, with its position among the stream's non-empty lines (1-based). */
@@ -132,7 +133,7 @@ function createNdjsonFramer(onRecord: () => ((events: unknown[]) => void) | unde
 
 /** The state one spawned process's streams accumulate into. */
 export interface StreamReaderHandle {
-  /** The stdout text, in the order it arrived. Kept for reporting; framing reads the framer's own carry-over, not this. */
+  /** The decoded stdout text, in the order it arrived. Kept for reporting; framing reads the framer's own carry-over, not this. */
   stdoutChunks: string[]
   stderrChunks: string[]
   /**
@@ -158,11 +159,21 @@ export interface StreamReaderHandle {
  * returns the handle they feed. Must be called before the caller starts
  * waiting on the process's exit, or early output could arrive with no
  * listener yet attached to catch it.
+ *
+ * stdout bytes are decoded by a single `StringDecoder` spanning the whole
+ * stream rather than a per-chunk `toString()`. A chunk boundary can land
+ * inside a multi-byte character just as readily as inside a line, and
+ * decoding each chunk independently turns that character into `U+FFFD` in
+ * both halves — corrupting a record that was never malformed, which is the
+ * one framing failure a line-level carry-over cannot catch. The decoder
+ * holds the incomplete bytes back exactly as the framer holds an
+ * incomplete line back, and for the same reason.
  */
 export function attachStreamReader(
   child: SpawnedProcessLike,
   onParsedEvents?: (events: unknown[]) => void
 ): StreamReaderHandle {
+  const decoder = new StringDecoder('utf8')
   const framer = createNdjsonFramer(() => handle.onParsedEvents)
 
   const handle: StreamReaderHandle = {
@@ -170,11 +181,16 @@ export function attachStreamReader(
     stderrChunks: [],
     onParsedEvents,
     events: framer.events,
-    finishStdout: () => framer.finish()
+    finishStdout: () => {
+      // Bytes the decoder is still holding belong to the stream's last
+      // line; flush them through the framer before it closes that line out.
+      framer.push(decoder.end())
+      return framer.finish()
+    }
   }
 
   child.stdout?.on('data', (chunk) => {
-    const text = chunk.toString()
+    const text = typeof chunk === 'string' ? chunk : decoder.write(chunk)
     if (text.length === 0) return
     handle.stdoutChunks.push(text)
     framer.push(text)
