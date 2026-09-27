@@ -362,7 +362,10 @@ describe('startControlledRun — a typed outcome instead of resolve-or-throw', (
     expect(outcome.reason).toBe('paused')
     if (outcome.reason !== 'paused') throw new Error('narrowing guard')
     expect(outcome.haltReason).toBe('store about to fail')
-    expect(outcome.pendingNodes).toEqual([])
+    // Absent, never `[]`: the run genuinely has a node pending, so an empty array
+    // would be the outcome asserting the opposite of what `paused` means.
+    expect(outcome.pendingNodes).toBeUndefined()
+    expect('pendingNodes' in outcome).toBe(false)
     expect(outcome.checkpoint).toBeUndefined()
   })
 

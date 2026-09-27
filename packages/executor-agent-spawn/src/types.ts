@@ -359,8 +359,17 @@ export interface RunCompletedOutcome extends RunOutcomeBase {
  */
 export interface RunPausedOutcome extends RunOutcomeBase {
   reason: 'paused'
-  /** Nodes the run is pending at. A resume executes exactly these first. */
-  pendingNodes: string[]
+  /**
+   * Nodes the run is pending at. A resume executes exactly these first.
+   *
+   * Optional, and absent rather than empty when the pending set could not be
+   * read — that read goes through the same store the run stopped on, and a
+   * failure there must not replace the halt being reported with an unrelated
+   * error. An empty array would be an affirmative claim that nothing is pending,
+   * which is the opposite of what a paused run means; absence says "not known"
+   * and makes a caller handle it.
+   */
+  pendingNodes?: string[]
   /** The reason the halt carried, when the caller gave one. */
   haltReason?: string
   /**
@@ -380,8 +389,12 @@ export interface RunPausedOutcome extends RunOutcomeBase {
 export interface RunFailedOutcome extends RunOutcomeBase {
   reason: 'failed'
   error: string
-  /** Nodes still pending on the thread, including the one that threw. */
-  pendingNodes: string[]
+  /**
+   * Nodes still pending on the thread, including the one that threw. Absent
+   * rather than empty when the pending set could not be read — see
+   * `RunPausedOutcome.pendingNodes` for why absence and empty must differ.
+   */
+  pendingNodes?: string[]
   /**
    * The run's persisted state, when it could be read. Absent when nothing was
    * checkpointed yet, and also when the read itself failed — a checkpoint read

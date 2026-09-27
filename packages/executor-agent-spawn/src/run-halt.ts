@@ -103,6 +103,23 @@ export function createRunControl(upstream?: AbortSignal): RunControl {
 export const RUN_HALTED_ERROR_NAME = 'RunHaltedError'
 
 /**
+ * The fixed opening of every `RunHaltedError` message, and the second half of
+ * what a *serialized* halt has to look like.
+ *
+ * A checkpoint store keeps only a failed task's `name` and `message`, so the
+ * read-back path cannot use `instanceof` the way the in-memory path does. Matching
+ * the name alone was too weak: caller code runs inside this graph — a
+ * `decisionPredicate`, a `buildArgs`, a `spawnFn` — and any of it can throw an
+ * error it has named `RunHaltedError`, which would then read back as a deliberate
+ * pause and invite a resume into a node that actually broke. Requiring the message
+ * shape as well closes that accident. It does not close deliberate forgery by
+ * something with write access to the store, and cannot: at that point the store is
+ * lying about the run's state generally, which is the trust boundary
+ * `run-identity.ts` already documents.
+ */
+export const RUN_HALTED_MESSAGE_PREFIX = 'Run halted before node '
+
+/**
  * Thrown by a node boundary that refuses to start because the run was halted.
  *
  * Carries the node it stopped *before* — never a node it stopped in the middle
@@ -118,7 +135,7 @@ export class RunHaltedError extends Error {
 
   constructor(nodeId: string, haltReason?: string) {
     super(
-      `Run halted before node '${nodeId}' started${haltReason ? `: ${haltReason}` : ''}. No completed node's work is lost — the last checkpoint holds it, and resuming continues from this node.`
+      `${RUN_HALTED_MESSAGE_PREFIX}'${nodeId}' started${haltReason ? `: ${haltReason}` : ''}. No completed node's work is lost — the last checkpoint holds it, and resuming continues from this node.`
     )
     this.name = RUN_HALTED_ERROR_NAME
     this.nodeId = nodeId
@@ -195,4 +212,51 @@ export function runHaltOf(
 
   if (!(error instanceof Error)) return undefined
   return runHaltOf(error.cause, descend, depth + 1)
+}
+
+/**
+ * Whether a *serialized* error — all a checkpoint store keeps of one — describes
+ * a halt this package threw.
+ *
+ * The read-back counterpart to `runHaltOf`, and deliberately stricter than a name
+ * comparison: see `RUN_HALTED_MESSAGE_PREFIX` for what that strictness buys and
+ * what it cannot.
+ */
+export function describesRunHalt(error: { name?: unknown; message?: unknown }): boolean {
+  if (error.name !== RUN_HALTED_ERROR_NAME) return false
+  return typeof error.message === 'string' && error.message.startsWith(RUN_HALTED_MESSAGE_PREFIX)
+}
+
+/**
+ * The message worth reporting for a rejection that is not a halt — the failing
+ * node's own text, dug out of whatever LangGraph wrapped it in.
+ *
+ * Needed because a superstep with two or more failed tasks rejects with an
+ * `AggregateError` whose own message is only `Multiple errors occurred during
+ * superstep N. See the "errors" field of this exception for more details.` — it
+ * names no node and carries no cause, so a caller reading it learns nothing about
+ * what broke, while the same run's persisted error write holds the real message.
+ * The two must not disagree about the same fact.
+ *
+ * Inside an aggregate the first error that is *not* a halt is the one reported: a
+ * superstep mixing a halt with a genuine break is a failed run, and the break is
+ * the fact the caller has to act on. An aggregate of nothing but halts should not
+ * reach here at all (`runHaltOf` claims it first), so its own message is the
+ * honest fallback rather than a silently-picked halt.
+ */
+export function failureMessageOf(error: unknown, path: ReadonlySet<unknown> = new Set(), depth = 0): string {
+  if (depth > 8 || path.has(error)) return 'the error carried no readable message'
+  if (!(error instanceof Error)) return String(error)
+
+  const descend = new Set(path)
+  descend.add(error)
+
+  const aggregated = aggregatedErrors(error)
+  if (aggregated) {
+    for (const inner of aggregated) {
+      if (runHaltOf(inner) !== undefined) continue
+      return failureMessageOf(inner, new Set(descend), depth + 1)
+    }
+  }
+  return error.message
 }

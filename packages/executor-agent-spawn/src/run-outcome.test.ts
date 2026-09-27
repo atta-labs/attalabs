@@ -5,6 +5,7 @@ import { describe, expect, it } from 'bun:test'
 import type { Plan, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
 import { MemorySaver } from '@langchain/langgraph'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import { mergeOutcome } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import { readRunOutcome, resumeControlledRun, startControlledRun } from './run-control'
 import { createRunControl } from './run-halt'
@@ -131,6 +132,30 @@ function fanoutLoopPlan(maxRevisions: number): Plan {
       nodes: {
         attempt: mechanicalNode('attempt', 'attempt-action'),
         check: mechanicalNode('check', 'check-action', decision),
+        finish: mechanicalNode('finish', 'finish-action')
+      },
+      edges: [
+        { from: 'attempt', to: 'check', kind: 'flow' },
+        { from: 'attempt', to: 'finish', kind: 'flow' }
+      ],
+      conditionalEdges: [],
+      entryNode: 'attempt'
+    }
+  }
+}
+
+/**
+ * `attempt` fans out to `check` and `finish`, both terminal. Two tasks in one
+ * superstep, so making both fail rejects `invoke()` with an `AggregateError`
+ * whose own message names no node.
+ */
+function fanoutPlan(): Plan {
+  return {
+    ...loopPlan({ examine: 'attempt', ifTrue: 'attempt', ifFalse: 'finish', maxRevisions: 1 }),
+    graph: {
+      nodes: {
+        attempt: mechanicalNode('attempt', 'attempt-action'),
+        check: mechanicalNode('check', 'check-action'),
         finish: mechanicalNode('finish', 'finish-action')
       },
       edges: [
@@ -549,6 +574,61 @@ describe('readRunOutcome — the vocabulary, read from the store alone', () => {
     expect(record.error).toMatch(/exited with code 1/)
   })
 
+  it('reports the failing node own message when a superstep rejects with an aggregate', async () => {
+    // Two tasks fail in one superstep, so LangGraph rejects with an AggregateError
+    // whose message is only "Multiple errors occurred during superstep N..." —
+    // naming no node and carrying no cause. Taking the returned `error` from that
+    // message left the operation and the store disagreeing about the same fact,
+    // with the store holding the useful half.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('aggregate-failure-message')
+    const outcome = await startControlledRun({
+      plan: fanoutPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn((command) => (command === 'attempt-cmd' ? 0 : 1)).spawnFn
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('narrowing guard')
+    expect(outcome.error).not.toMatch(/Multiple errors occurred/)
+    expect(outcome.error).toMatch(/exited with code 1/)
+
+    // And the two sources now say the same thing about the same run.
+    const record = await readRunOutcome(checkpointer, identity)
+    if (record?.reason !== 'failed') throw new Error('expected a failed record')
+    expect(record.error).toBe(outcome.error)
+  })
+
+  it('reports failed for a forged error merely named like a halt', async () => {
+    // The read-back path cannot use `instanceof` — a store keeps only `name` and
+    // `message` — so it matched the name alone. Caller code runs inside this graph
+    // (a decision predicate, a buildArgs, a spawnFn) and can throw an error it has
+    // named RunHaltedError, which would then read back as a deliberate pause and
+    // invite a resume into a node that actually broke.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('forged-halt-name')
+    await startControlledRun({
+      plan: straightPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: recordingSpawn((command) => (command === 'check-cmd' ? 1 : 0)).spawnFn
+    })
+
+    const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+    if (!tuple) throw new Error('expected a checkpoint')
+    await checkpointer.putWrites(
+      { configurable: { thread_id: identity.threadId, checkpoint_ns: '', checkpoint_id: tuple.checkpoint.id } },
+      [['__error__', { name: 'RunHaltedError', message: 'a predicate threw this and named it badly' }]],
+      'forging-task'
+    )
+
+    const record = await readRunOutcome(checkpointer, identity)
+    expect(record?.reason).toBe('failed')
+  })
+
   it('refuses an outcome value this executor could not have written', async () => {
     const checkpointer = new MemorySaver()
     const identity = createRunIdentity('tampered-outcome')
@@ -566,5 +646,37 @@ describe('readRunOutcome — the vocabulary, read from the store alone', () => {
     await checkpointer.put(runInvokeConfig(identity), tuple.checkpoint, tuple.metadata ?? {}, {})
 
     await expect(readRunOutcome(checkpointer, identity)).rejects.toThrow(/could not have written/)
+  })
+})
+
+describe('the outcome channel reducer does not depend on task ordering', () => {
+  const at = '2026-09-27T00:00:00.000Z'
+  const exhausted = {
+    reason: 'exhausted' as const,
+    at,
+    exhaustion: { nodeId: 'check', target: 'attempt', maxRevisions: 1, revisions: 2 }
+  }
+
+  it('keeps a recorded exhaustion whatever lands beside it', () => {
+    // A resumed leg whose pending set holds an exhaustion recorder alongside a
+    // Plan node has both writing `outcome` in one superstep, and which survived
+    // used to depend on LangGraph's undocumented task-application order. If that
+    // order ever reversed, the ceiling would be erased and the run would read
+    // `resumed`, then `completed` once the leg finished.
+    expect(mergeOutcome(exhausted, { reason: 'resumed', at, fromCheckpointId: 'x' })).toBe(exhausted)
+    expect(mergeOutcome(exhausted, { reason: 'completed', at })).toBe(exhausted)
+  })
+
+  it('still records a first write, and treats a write carrying nothing as no write', () => {
+    expect(mergeOutcome(undefined, exhausted)).toBe(exhausted)
+    expect(mergeOutcome({ reason: 'resumed', at, fromCheckpointId: 'x' }, undefined)?.reason).toBe('resumed')
+    expect(mergeOutcome(undefined, undefined)).toBeUndefined()
+  })
+
+  it('lets an ordinary write replace a non-terminal record', () => {
+    expect(mergeOutcome({ reason: 'resumed', at, fromCheckpointId: 'x' }, exhausted)).toBe(exhausted)
+    expect(mergeOutcome({ reason: 'resumed', at, fromCheckpointId: 'x' }, { reason: 'completed', at })?.reason).toBe(
+      'completed'
+    )
   })
 })

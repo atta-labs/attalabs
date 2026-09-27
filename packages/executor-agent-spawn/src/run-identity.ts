@@ -63,20 +63,29 @@
  * **What is not here.** The typed control surface itself — a halt handle, a
  * resume that continues from a checkpoint, and the typed outcome a leg of a run
  * resolves to — lives in `run-control.ts` and `run-halt.ts`, built on what this
- * file provides. This file still interrupts, cancels and restarts nothing:
+ * file provides. This file interrupts, cancels and restarts nothing:
  * `readRunCheckpoint` is a read, `startRun` refuses a thread that already holds
- * a checkpoint rather than restarting it, and the one thing it now forwards
- * towards a halt is the caller's `control` handle, which only a node boundary in
- * `graph-builder.ts` ever acts on.
+ * a checkpoint rather than restarting it, and the one thing it forwards towards a
+ * halt is the caller's `control` handle, which only a node boundary in
+ * `graph-builder.ts` ever acts on. It does own one write the control surface also
+ * needs — `persistCompletedRecord` — because both start paths have to record a
+ * finished run and neither should be the one that forgets.
  */
 
 import { randomUUID } from 'node:crypto'
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
-import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor, terminalPlanNodeIds } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import type { AgentSpawnExecutorConfig, RunCheckpointState, RunControl, RunIdentity, StepNodeResult } from './types'
+import type {
+  AgentSpawnExecutorConfig,
+  RunCheckpointState,
+  RunControl,
+  RunIdentity,
+  RunOutcomeRecord,
+  StepNodeResult
+} from './types'
 
 /**
  * Characters a run id may contain. Deliberately narrow: the id is interpolated
@@ -351,6 +360,15 @@ export async function assertNoExistingCheckpoint(
  * resolution, with nothing distinguishing them — telling them apart is
  * `startControlledRun`'s job (`run-control.ts`), which is the entry point to
  * prefer when the caller needs to know *why* a run stopped.
+ *
+ * **It does still record the run's outcome, though it does not report it.** A run
+ * that reaches a terminal node here persists `completed` through
+ * `persistCompletedRecord`, exactly as the control operations do, so
+ * `readRunOutcome` answers the same way whichever entry point started the run.
+ * Without that, a finished `startRun` would read back as `undefined` — which that
+ * function defines as "no outcome yet" — leaving an operator unable to tell a
+ * finished run from one still executing. An exhausted ceiling was already recorded
+ * by the graph itself and is left alone.
  */
 export async function startRun(params: StartRunParams): Promise<StartRunResult> {
   const { plan, config, checkpointer, spawnFn, control, recursionLimit, onIdentity } = params
@@ -370,6 +388,13 @@ export async function startRun(params: StartRunParams): Promise<StartRunResult> 
       runInvokeConfig(identity, recursionLimit)
     )) as AgentSpawnGraphStateValue
 
+    // A run that reached a terminal node records why, on this path too. Skipped
+    // when the graph already recorded an exhausted ceiling — that is a terminal
+    // reason and `completed` must never overwrite it.
+    if (state.outcome?.reason !== 'exhausted') {
+      await persistCompletedRecord(graph, plan, identity, recursionLimit)
+    }
+
     return { identity, state }
   } catch (err) {
     // Attach rather than wrap: the node executors' own messages are what a
@@ -382,6 +407,86 @@ export async function startRun(params: StartRunParams): Promise<StartRunResult> 
     throw err
   }
 }
+
+/**
+ * Records `completed` on a thread that has just finished — the one outcome no
+ * node can write, and the only write this package makes from outside the graph.
+ *
+ * **Why no node can write it.** "This run is over" means `END` was reached with
+ * nothing left pending, which no node can observe about itself and only the caller
+ * of `invoke()` sees. An earlier revision recorded it in-graph, with one shared
+ * node every terminal step routed through, and that was wrong twice: it left a
+ * Plan whose only terminal step declares a decision uncompilable (nothing edged
+ * into the recorder, since both of a decision's targets may point backwards), and
+ * in a fan-out where one branch loops it was re-entered every pass, writing
+ * `completed` beside — and sometimes over — a recorded exhaustion.
+ *
+ * **Why it lives here and not beside the control operations.** Both start paths
+ * need it. `startControlledRun` calls it to report a typed outcome; `startRun`
+ * calls it because otherwise a run finished through the raw entry point would
+ * persist no outcome at all, and `readRunOutcome` would answer `undefined` —
+ * which it defines as "no outcome yet", so a finished run would be indistinguishable
+ * from one still executing. One writer, reachable from both, rather than a hole in
+ * one of them.
+ *
+ * **Safe here and nowhere else.** `updateState` is unusable on a thread that still
+ * has a pending continuation — which is what a paused or failed run leaves. With
+ * the writer node inferred, a second such update in a thread's lifetime fails
+ * outright (`Ambiguous update, specify "asNode"`), and naming `asNode` there is
+ * worse than failing: the update is applied as that node and the pending set is
+ * recomputed from its outgoing edges, so a run halted before node C, updated as
+ * node B, resumes with C already routed past and never executed. This function
+ * therefore refuses a thread with anything pending rather than trusting it is
+ * finished, and names `asNode` explicitly — a terminal Plan step, whose only
+ * outgoing edge is `END`, so the recomputed pending set stays empty. Inference
+ * alone is not enough: it fails once the thread's lineage includes a resumed leg.
+ *
+ * A store that will not take the record throws. An operation promising a persisted
+ * outcome that quietly failed to persist one is worse than a loud failure, because
+ * the next reader gets `undefined` for a run that finished and no way to tell.
+ */
+export async function persistCompletedRecord(
+  graph: { getState: CompiledGraphStateReader; updateState: CompiledGraphStateWriter },
+  plan: Plan,
+  identity: RunIdentity,
+  recursionLimit?: number
+): Promise<void> {
+  const snapshot = await graph.getState(runInvokeConfig(identity, recursionLimit))
+  const pending = [...snapshot.next]
+  if (pending.length > 0) {
+    throw new Error(
+      `Run '${identity.runId}' resolved while nodes ${pending.join(', ')} are still pending on thread '${identity.threadId}' — refusing to record it as completed, and refusing to write to a thread that still owes work.`
+    )
+  }
+
+  const [asNode] = terminalPlanNodeIds(plan)
+  if (asNode === undefined) {
+    throw new Error(
+      `Run '${identity.runId}' resolved with no exhaustion recorded, but its Plan has no terminal step — every path ends in a decision, so this run could only have ended on a ceiling. Refusing to record it as completed.`
+    )
+  }
+
+  try {
+    await graph.updateState(
+      runInvokeConfig(identity, recursionLimit),
+      { outcome: { reason: 'completed', at: new Date().toISOString() } },
+      asNode
+    )
+  } catch (error) {
+    throw new Error(
+      `Run '${identity.runId}' completed, but its checkpointer refused to record that outcome on thread '${identity.threadId}' — the reason the run stopped could not be persisted.`,
+      { cause: error }
+    )
+  }
+}
+
+/** The two compiled-graph methods `persistCompletedRecord` needs, named so it takes no whole graph type. */
+type CompiledGraphStateReader = (config: RunInvokeConfig) => Promise<{ next: readonly string[] }>
+type CompiledGraphStateWriter = (
+  config: RunInvokeConfig,
+  values: { outcome: RunOutcomeRecord },
+  asNode: string
+) => Promise<unknown>
 
 /** Whether a checkpointed value is one of this package's two recorded node results. */
 function isStepNodeResult(value: unknown): value is StepNodeResult {

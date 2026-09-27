@@ -49,6 +49,21 @@
  *   transcript-replay resume would re-perform completed side effects that no
  *   amount of prompt reconstruction can undo.
  *
+ * **One leg at a time is the caller's obligation, and nothing here can enforce
+ * it.** Both operations are read-then-act: `startControlledRun` checks that the
+ * thread holds no checkpoint, `resumeControlledRun` reads the checkpoint and the
+ * pending set, and each then invokes. Two concurrent resumes of one `runId`
+ * therefore both pass their preconditions and both execute the same pending node —
+ * running an agent CLI or a `git`-shaped command twice against one working
+ * directory. That is the same class of damage the no-replay property exists to
+ * prevent, arriving by a different route, and it is not fixable here: an atomic
+ * claim needs a lease primitive `BaseCheckpointSaver` does not have, and inventing
+ * one would be the second store beside the checkpointer this package refuses to
+ * keep. So it is a stated obligation, like the saver choice and the redaction
+ * exposure: **a caller must serialise legs of one run itself** — one process, one
+ * queue, or its own lock keyed by `runId`. A caller that cannot is choosing the
+ * duplicate execution, not being surprised by it.
+ *
  * **What a caller still owns.** Resuming requires the *same* Plan the run
  * started with — the checkpoint stores state, never the Plan — so
  * `resumeControlledRun` cannot verify the Plan is the original one. It does
@@ -61,15 +76,16 @@
 
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
-import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor, terminalPlanNodeIds } from './graph-builder'
+import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import { RUN_HALTED_ERROR_NAME, runHaltOf } from './run-halt'
+import { describesRunHalt, failureMessageOf, runHaltOf } from './run-halt'
 import {
   assertDerivedIdentity,
   assertNoExistingCheckpoint,
   createRunIdentity,
   initialRunState,
+  persistCompletedRecord,
   readRunCheckpoint,
   runInvokeConfig
 } from './run-identity'
@@ -177,19 +193,23 @@ async function checkpointForNonSuccess(
  *
  * Same rule as `checkpointForNonSuccess` above, and for the same reason: this
  * runs while the caller is already being told something went wrong, so a second
- * unrelated error must not replace the first. An empty list here means "could not
- * be read", which the outcome's own reason already makes clear is not a claim the
- * run had nothing pending.
+ * unrelated error must not replace the first.
+ *
+ * It returns `undefined`, never `[]`, when the read fails. An empty array is an
+ * affirmative statement that nothing is pending — the opposite of what a paused
+ * run means — so collapsing "could not be read" into it would have the outcome
+ * assert something false about the run. The field it fills is optional for exactly
+ * this distinction.
  */
 async function pendingNodesForNonSuccess(
   graph: CompiledRunGraph,
   identity: RunIdentity,
   recursionLimit?: number
-): Promise<string[]> {
+): Promise<string[] | undefined> {
   try {
     return await pendingNodesOf(graph, identity, recursionLimit)
   } catch {
-    return []
+    return undefined
   }
 }
 
@@ -313,7 +333,7 @@ function failedTaskErrors(
 
   const messageOf = (error: { message?: string }) =>
     typeof error.message === 'string' ? error.message : 'the error carried no message'
-  const notHalt = errors.find((error) => error.name !== RUN_HALTED_ERROR_NAME)
+  const notHalt = errors.find((error) => !describesRunHalt(error))
   if (notHalt) return { halted: false, message: messageOf(notHalt) }
   const [first] = errors
   return { halted: true, message: first === undefined ? 'the error carried no message' : messageOf(first) }
@@ -432,7 +452,7 @@ async function outcomeFromRejection(
     return {
       reason: 'paused',
       identity,
-      pendingNodes,
+      ...(pendingNodes === undefined ? {} : { pendingNodes }),
       ...(halt.haltReason === undefined ? {} : { haltReason: halt.haltReason }),
       ...(checkpoint === undefined ? {} : { checkpoint }),
       ...(resumedFrom === undefined ? {} : { resumedFrom })
@@ -442,8 +462,11 @@ async function outcomeFromRejection(
   return {
     reason: 'failed',
     identity,
-    error: error instanceof Error ? error.message : String(error),
-    pendingNodes,
+    // `failureMessageOf`, not `error.message`: a superstep with several failed
+    // tasks rejects with an `AggregateError` naming no node, while the store's own
+    // error write holds the real message — the two must not disagree.
+    error: failureMessageOf(error),
+    ...(pendingNodes === undefined ? {} : { pendingNodes }),
     ...(checkpoint === undefined ? {} : { checkpoint }),
     ...(resumedFrom === undefined ? {} : { resumedFrom })
   }
@@ -516,60 +539,6 @@ async function readRunCheckpointOrThrow(
 }
 
 /**
- * Records `completed` on a thread that has just finished — the one outcome no
- * node can write, and the only write this package makes from outside the graph.
- *
- * Safe here and nowhere else, for the reason this file's header gives: the thread
- * has no pending task, so `updateState`'s inferred writer node is unambiguous and
- * the pending set stays empty. It refuses to run otherwise rather than trusting
- * that: a non-empty pending set would mean `invoke()` resolved with work still
- * owed, which should not happen — and if it ever did, writing here is exactly the
- * mechanism that silently routes a pending node past.
- *
- * A store that will not take the record throws. An operation promising a persisted
- * outcome that quietly failed to persist one is worse than a loud failure, because
- * the next reader gets `undefined` for a run that finished and has no way to know
- * the difference.
- */
-async function persistCompletedRecord(
-  graph: CompiledRunGraph,
-  plan: Plan,
-  identity: RunIdentity,
-  recursionLimit?: number
-): Promise<void> {
-  const pending = await pendingNodesOf(graph, identity, recursionLimit)
-  if (pending.length > 0) {
-    throw new Error(
-      `Run '${identity.runId}' resolved while nodes ${pending.join(', ')} are still pending on thread '${identity.threadId}' — refusing to record it as completed, and refusing to write to a thread that still owes work.`
-    )
-  }
-
-  // Named rather than inferred: LangGraph cannot infer a writer node on a thread
-  // whose lineage includes a resumed leg, and a terminal step is the one
-  // candidate whose only outgoing edge is `END`, so the pending set recomputes
-  // empty. See `terminalPlanNodeIds`.
-  const [asNode] = terminalPlanNodeIds(plan)
-  if (asNode === undefined) {
-    throw new Error(
-      `Run '${identity.runId}' resolved with no exhaustion recorded, but its Plan has no terminal step — every path ends in a decision, so this run could only have ended on a ceiling. Refusing to record it as completed.`
-    )
-  }
-
-  try {
-    await graph.updateState(
-      runInvokeConfig(identity, recursionLimit),
-      { outcome: { reason: 'completed', at: new Date().toISOString() } },
-      asNode
-    )
-  } catch (error) {
-    throw new Error(
-      `Run '${identity.runId}' completed, but its checkpointer refused to record that outcome on thread '${identity.threadId}' — the reason the run stopped could not be persisted.`,
-      { cause: error }
-    )
-  }
-}
-
-/**
  * Begins a run and reports a typed reason for how the leg ended.
  *
  * Halting is the caller's to trigger: pass a `control` from `createRunControl`,
@@ -628,6 +597,11 @@ function assertPlanCoversRecordedResults(plan: Plan, checkpoint: RunCheckpointSt
  * thread's pending tasks rather than replaying it: every node that already
  * completed keeps its recorded result and is not called again, and execution
  * picks up at exactly the nodes the halted leg left pending.
+ *
+ * **This is not a claim on the run.** The checkpoint read, the pending-set check
+ * and the invoke are three steps with no lock between them, so a second concurrent
+ * resume of the same `runId` passes the same preconditions and runs the same
+ * pending node. Serialising legs is the caller's, per this file's header.
  *
  * Two shapes are refused rather than guessed at. A thread with no checkpoint
  * cannot be continued — there is no position to continue from — and a thread
