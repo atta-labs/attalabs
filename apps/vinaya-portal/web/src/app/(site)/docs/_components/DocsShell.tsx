@@ -19,10 +19,12 @@ import {
   createContext,
   type MouseEvent,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useDocsChrome } from '../../_components/DocsChrome'
 
 /** True inside `SidebarDrawer`'s drawer only — how `DocsSidebarTitle` knows to carry the close control. */
@@ -142,6 +144,23 @@ function SidebarDrawer({ label, children }: SidebarDrawerProps) {
     setOpen(false)
   }, [pathname])
 
+  // One element for the drawer's content for the life of the page, created after
+  // hydration (the server renders no drawer content). The content is portalled into it
+  // once; while the drawer is open `attachContent` moves it into the sheet, and when the
+  // sheet unmounts it is simply detached from the document, its React tree still mounted.
+  const [contentHost, setContentHost] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    const host = document.createElement('div')
+    host.className = 'flex h-full min-h-0 w-full flex-col'
+    setContentHost(host)
+  }, [])
+  const attachContent = useCallback(
+    (slot: HTMLElement | null) => {
+      if (slot && contentHost && contentHost.parentNode !== slot) slot.appendChild(contentHost)
+    },
+    [contentHost]
+  )
+
   const closeOnLink = (event: MouseEvent<HTMLElement>) => {
     if (event.target instanceof Element && event.target.closest('a[href]')) setOpen(false)
   }
@@ -168,20 +187,34 @@ function SidebarDrawer({ label, children }: SidebarDrawerProps) {
             side='left'
             showCloseButton={false}
             className='bg-sidebar p-0 text-sidebar-foreground data-[side=left]:border-r-0'
-            onClick={closeOnLink}
           >
             <SheetTitle className='sr-only'>{label}</SheetTitle>
             {/* No `--sidebar-width` here: `SheetContent`'s `w-3/4 sm:max-w-sm` sizes the
              * drawer — viewport-relative, so it holds on a 320px phone where a fixed
-             * width would not. `closeOnLink` only observes the click as it bubbles; it
-             * never stops it, so a link's own handler has already run. Keyboard
-             * activation of a link dispatches the same click. `pt-2` stands in for the
-             * wordmark row the desktop sidebar has above the same content, so a title
-             * set close to the top still leaves the close X (and its focus ring) room. */}
-            <InDrawerContext.Provider value={true}>
-              <SidebarProvider className='h-full min-h-0 w-full flex-col pt-2'>{children}</SidebarProvider>
-            </InDrawerContext.Provider>
+             * width would not. */}
+            <div ref={attachContent} className='contents' />
           </SheetContent>
+          {/* The content itself renders here, once, into `contentHost` — outside
+           * `SheetContent`, which unmounts on every close. Rendered inside it, each open
+           * would mount a fresh copy and re-run the content's mount effects (Config's
+           * jump to the URL's anchor scrolled the page back to it on every open).
+           * Inside `Sheet`, so `DocsSidebarTitle`'s `SheetClose` still reaches the
+           * dialog. `closeOnLink` sits on the portal's own root because React events
+           * bubble through the component tree, not the DOM the host is moved into; it
+           * only observes the click, never stops it, so a link's own handler has already
+           * run, and keyboard activation of a link dispatches the same click. `pt-2`
+           * stands in for the wordmark row the desktop sidebar has above the same
+           * content, so a title set close to the top leaves the close X (and its focus
+           * ring) room. */}
+          {contentHost &&
+            createPortal(
+              <InDrawerContext.Provider value={true}>
+                <div className='flex h-full min-h-0 w-full flex-col' onClick={closeOnLink}>
+                  <SidebarProvider className='h-full min-h-0 w-full flex-col pt-2'>{children}</SidebarProvider>
+                </div>
+              </InDrawerContext.Provider>,
+              contentHost
+            )}
         </Sheet>
 
         <Text as='span' className='font-sans text-sm font-bold uppercase tracking-widest text-foreground'>
