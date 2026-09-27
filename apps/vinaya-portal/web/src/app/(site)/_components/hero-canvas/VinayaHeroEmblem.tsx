@@ -12,6 +12,12 @@ import { attachLockupFlip, dockImmediately, resetLockup } from './lockup-flip'
    string literal inside the .js factory compiles to nothing. */
 const LETTER_CLASS = { word: 'inline-block whitespace-nowrap', letter: 'inline-block not-italic' }
 
+/* How far down (rem) the rendered scene sits in the hero, per live feedback that it read
+   too close to the wordmark above it. `hero-scene.js` applies it as a camera view offset,
+   so the harness's framing stays exactly as authored while the canvas still paints fabric
+   edge to edge — including the strip under the transparent top bar. */
+const FRAME_SHIFT_REM = 3
+
 function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
   const isLanding = landingActions !== undefined
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -31,7 +37,8 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
       scene = mountHeroScene({
         canvas: canvasRef.current,
         root: rootRef.current,
-        labelClass: LETTER_CLASS
+        labelClass: LETTER_CLASS,
+        frameShiftRem: FRAME_SHIFT_REM
       })
     })
     return () => {
@@ -116,12 +123,10 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
           data-hero-viewport
           className='sticky top-0 h-dvh w-full overflow-hidden bg-background'
         >
-          {/* translate-y is a pure post-render visual nudge — it doesn't touch hero-scene.js's
-              own resize/aspect math (still sized off this div's untranslated box), so the
-              harness's own camera framing stays exactly as authored; this just shifts the
-              already-rendered image down a bit within the (overflow-hidden) viewport, per
-              live feedback that it read too close to the wordmark above it. */}
-          <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full translate-y-12' />
+          {/* Covers the whole viewport box from y = 0, so the fabric runs under the
+              transparent top bar to the very top edge. The image's downward nudge is
+              `FRAME_SHIFT_REM`, applied inside the render, not a translate on this node. */}
+          <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full' />
 
           {/* title + sub: hidden at scroll 0, revealed a line at a time */}
           {isLanding ? (

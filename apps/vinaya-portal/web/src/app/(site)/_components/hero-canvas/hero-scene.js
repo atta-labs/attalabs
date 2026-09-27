@@ -130,7 +130,7 @@ export function mountHeroScene(opts) {
   }
 }
 
-function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palette) {
+function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady = () => {} }, palette) {
   const scope = root ?? document
   const track = scope.querySelector('[data-hero-track]')
   const hero = scope.querySelector('[data-hero-viewport]')
@@ -163,9 +163,20 @@ function startHeroScene({ canvas, root, labelClass, onReady = () => {} }, palett
   let cleanupBuild = () => {}
   let readyFired = false
 
+  /* `frameShiftRem` moves the rendered image down inside the canvas without moving the
+     canvas: a view offset that extends the frustum upward by that much, so the same
+     framing lands lower and the rows above it are rendered fabric, not a gap. The canvas
+     itself always covers the hero box edge to edge, from y = 0 — a CSS translate on it
+     instead left an unpainted strip under the transparent top bar. The raycaster reads
+     the same projection, so the pointer's hit on the fabric stays under the cursor. */
   const resize = () => {
-    renderer.setSize(hero.clientWidth, hero.clientHeight, false)
-    camera.aspect = hero.clientWidth / hero.clientHeight
+    const w = hero.clientWidth
+    const h = hero.clientHeight
+    renderer.setSize(w, h, false)
+    camera.aspect = w / h
+    const shift = frameShiftRem * Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
+    if (shift > 0 && h > 0) camera.setViewOffset(w, h, 0, -shift, w, h)
+    else camera.clearViewOffset()
     camera.updateProjectionMatrix()
   }
   /* THE ACTUAL FLICKER FIX. A live window drag fires the ResizeObserver far faster than
