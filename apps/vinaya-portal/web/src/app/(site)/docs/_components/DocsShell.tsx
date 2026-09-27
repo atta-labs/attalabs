@@ -108,9 +108,46 @@ export function SidebarShell({ wordmark, width, children }: SidebarShellProps) {
   )
 }
 
+/**
+ * Tailwind's `lg` breakpoint as a media query — the width from which `SidebarShell` shows
+ * and `SidebarDrawer` is hidden. Tailwind's default (`--breakpoint-lg: 64rem`); this app
+ * does not override it.
+ */
+const LG_UP = '(min-width: 64rem)'
+
+/** The drawer's open state, held by the page instead of the drawer — see `useSidebarDrawer`. */
+export type SidebarDrawerState = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  /**
+   * Shows the sidebar's content to a reader who cannot see it: opens the drawer below
+   * `lg`, and does nothing from `lg` up, where the sidebar is always on screen (and an
+   * open sheet would cover the page with a drawer that has no bar to close it from).
+   */
+  reveal: () => void
+}
+
+/**
+ * The drawer's open state for a page whose body changes what its sidebar says — the
+ * harness diagram, where a tap on a ring rewrites the sidebar's explanation. Below `lg`
+ * that explanation sits in the closed drawer, so the page calls `reveal` from the same
+ * handler that changed it and passes the state to `DocsShell` as `drawer`. Pages whose
+ * sidebar only changes when the reader works it leave `drawer` out, and the drawer keeps
+ * its own state.
+ */
+export function useSidebarDrawer(): SidebarDrawerState {
+  const [open, setOpen] = useState(false)
+  const reveal = useCallback(() => {
+    if (!window.matchMedia(LG_UP).matches) setOpen(true)
+  }, [])
+  return { open, onOpenChange: setOpen, reveal }
+}
+
 type SidebarDrawerProps = {
   /** Names the drawer: the bar's visible label and the dialog's accessible title. */
   label: string
+  /** The page's own hold on the open state; omitted, the drawer keeps its own. */
+  state?: SidebarDrawerState
   /** The same content the desktop sidebar shows. */
   children: ReactNode
 }
@@ -136,10 +173,14 @@ type SidebarDrawerProps = {
  * (a bottom rule, or retro's card border and shadow) taken off: neither the bar nor the
  * open drawer draws a border. The outer div owns placement and visibility.
  */
-function SidebarDrawer({ label, children }: SidebarDrawerProps) {
+function SidebarDrawer({ label, state, children }: SidebarDrawerProps) {
   const pathname = usePathname() ?? ''
-  const [open, setOpen] = useState(false)
+  const [ownOpen, setOwnOpen] = useState(false)
+  const open = state ? state.open : ownOpen
+  const setOpen = state ? state.onOpenChange : setOwnOpen
 
+  // Closes on a pathname change only — never re-run for the setter, which a page passing
+  // `state` may hand in fresh on a render.
   useEffect(() => {
     setOpen(false)
   }, [pathname])
@@ -232,6 +273,11 @@ type DocsShellProps = {
   sidebarLabel: string
   /** Passed through to `SidebarShell`; omit to size the sidebar to its content. */
   sidebarWidth?: string
+  /**
+   * The drawer's open state, from `useSidebarDrawer`, for a page that opens the drawer
+   * from its body. Omit it and the drawer opens only from its own bar.
+   */
+  drawer?: SidebarDrawerState
   /** The body below the nav strip — normally one scrolling `<main>` pane. */
   children: ReactNode
 }
@@ -251,7 +297,7 @@ type DocsShellProps = {
  * flow, not fixed; `relative z-30` keeps its Docs dropdown painting over the pane's own
  * sticky headers below it.
  */
-export function DocsShell({ sidebar, sidebarLabel, sidebarWidth, children }: DocsShellProps) {
+export function DocsShell({ sidebar, sidebarLabel, sidebarWidth, drawer, children }: DocsShellProps) {
   const { wordmark, topStrip } = useDocsChrome()
   return (
     <div className='flex h-full min-h-0 w-full overflow-hidden'>
@@ -260,7 +306,9 @@ export function DocsShell({ sidebar, sidebarLabel, sidebarWidth, children }: Doc
       </SidebarShell>
       <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
         <div className='relative z-30 shrink-0'>{topStrip}</div>
-        <SidebarDrawer label={sidebarLabel}>{sidebar}</SidebarDrawer>
+        <SidebarDrawer label={sidebarLabel} state={drawer}>
+          {sidebar}
+        </SidebarDrawer>
         {children}
       </div>
     </div>
