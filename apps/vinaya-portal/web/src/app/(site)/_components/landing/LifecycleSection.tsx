@@ -16,7 +16,6 @@ import {
 } from 'react'
 import { siGit, siGithub } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
-import { SectionTitle } from './SectionHeading'
 
 // Card's exported type has no `ref` (motion.div forwards it fine at runtime
 // under React 19, but the component itself isn't typed with RefAttributes) —
@@ -461,32 +460,40 @@ export function LifecycleSection() {
           not at `top-0`, where the bar would cover the tagline's first line; that is
           also the `64` the progress math above starts from. Its height is the rest of
           the viewport below the bar, so the stage track keeps every pixel it can. Below 700px nothing pins
-          and both render in flow. Because that height is fixed, the tagline's size is capped at
-          `4.2cqi` of its own container so it stays on one line at every pinned width, and the
-          `max-height:760px` classes tighten the vertical spacing so the stage cards and the See
-          lifecycle link still fit on a short desktop viewport. */}
+          and both render in flow. Because that height is fixed, the tagline row's size is capped
+          at `3.9cqi` of its own container so the tagline stays on one line at every pinned width;
+          the Git mark beside it is sized and spaced in `em`, so it scales with the tagline and
+          that one cap covers both. The `max-height:760px` classes tighten the vertical spacing so
+          the stage cards and the See lifecycle link still fit on a short desktop viewport. "Plan,
+          solve, archive" steps one size below the tagline at every breakpoint, and its `3.1cqi`
+          cap, measured against a container as wide as the tagline's, keeps it under the
+          tagline wherever the pinned tagline shrinks. */}
       <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
         <div id='tagline' className='bg-secondary text-secondary-foreground'>
           <div className='@container mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
-            <Heading
-              level={2}
-              weight='normal'
-              className='text-balance font-serif text-(length:--tagline-size) leading-snug tracking-tight [--tagline-size:1.875rem] sm:[--tagline-size:2.25rem] min-[700px]:text-[length:min(var(--tagline-size),4.2cqi)] xl:[--tagline-size:2.625rem] min-[87.5rem]:[--tagline-size:3.125rem]'
-            >
-              <LetterReveal text='A harness for your software engineering process' />
-            </Heading>
+            <div className='flex items-center justify-center gap-[0.35em] text-(length:--tagline-size) [--tagline-size:1.875rem] sm:[--tagline-size:2.25rem] min-[700px]:text-[length:min(var(--tagline-size),3.9cqi)] xl:[--tagline-size:2.625rem] min-[87.5rem]:[--tagline-size:3.125rem]'>
+              <Card className='flex size-[1.6em] shrink-0 items-center justify-center shadow-none'>
+                <GitMark className='size-[0.96em]' />
+              </Card>
+              <Heading
+                level={2}
+                weight='normal'
+                className='text-balance font-serif text-[1em] leading-snug tracking-tight'
+              >
+                <LetterReveal text='A harness for your software engineering process' />
+              </Heading>
+            </div>
           </div>
         </div>
         <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
-          <div className='flex items-center gap-4'>
-            <Card className='flex size-16 shrink-0 items-center justify-center shadow-none md:size-20 min-[700px]:[@media(max-height:760px)]:size-14'>
-              <GitMark className='size-9 md:size-12 min-[700px]:[@media(max-height:760px)]:size-8' />
-            </Card>
-            <div>
-              <SectionTitle className='max-w-5xl lg:text-[3.375rem]'>
-                <LetterReveal text='Plan, solve, archive' />
-              </SectionTitle>
-            </div>
+          <div className='@container'>
+            <Heading
+              level={2}
+              weight='normal'
+              className='max-w-5xl font-serif text-(length:--lifecycle-title-size) leading-none tracking-tight [--lifecycle-title-size:1.5rem] sm:[--lifecycle-title-size:1.875rem] min-[700px]:text-[length:min(var(--lifecycle-title-size),3.1cqi)] xl:[--lifecycle-title-size:2.25rem] min-[87.5rem]:[--lifecycle-title-size:2.625rem]'
+            >
+              <LetterReveal text='Plan, solve, archive' />
+            </Heading>
           </div>
 
           <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex min-[700px]:[@media(max-height:760px)]:mt-3'>
