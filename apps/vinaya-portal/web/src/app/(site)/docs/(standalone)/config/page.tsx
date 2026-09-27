@@ -20,7 +20,7 @@ export const metadata: Metadata = {
  * fails if one has no row here.
  *
  * Lives under `docs/(standalone)/` with its own `layout.tsx`: it keeps the
- * `/docs/config` URL and the Docs dropdown entry, but not `DocSidebarHost`'s
+ * `/docs/config` URL and the Docs dropdown entry, but not the doc pages'
  * doctrine tree — belonging under `/docs` is a navigation fact, not a layout
  * one. `ConfigFieldSection` stamps a stable `id="config-<key>"` anchor per
  * field (nested fields included), so `/docs/config#config-<key>` deep-links

@@ -9,7 +9,7 @@ import { CliSidebar } from './_components/CliSidebar'
  * `COMMANDS` is a static registry import. */
 export default function CliLayout({ children }: { children: ReactNode }) {
   return (
-    <DocsShell sidebar={<CliSidebar commands={COMMANDS} />} sidebarWidth='16rem'>
+    <DocsShell sidebar={<CliSidebar commands={COMMANDS} />} sidebarLabel='Commands' sidebarWidth='16rem'>
       <main className='flex-1 min-h-0 overflow-y-auto bg-background'>
         <div className='mx-auto max-w-4xl px-6 pt-10 pb-10 lg:px-12'>{children}</div>
         <FooterContentSlot />

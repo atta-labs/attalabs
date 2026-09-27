@@ -27,16 +27,15 @@ const OVERVIEW_DOC: Doc = {
   filePath: ''
 }
 
-/** The doctrine tree as the desktop sidebar's content — what the doc pages and
- * `/docs/harness` pass into `DocsShell`'s sidebar slot, which owns the outer shell
- * and hides it below `lg`. There the same nav body is reached through
- * `DocSidebarHost` instead. */
+/** The doctrine tree as the sidebar's content — what the doc pages pass into
+ * `DocsShell`'s sidebar slot, which owns the outer shell and renders the same
+ * content in its drawer below `lg`. */
 export function DocSidebar({ nav }: { nav: DocNav }) {
   return <DocSidebarNav nav={nav} pathname={usePathname() ?? ''} />
 }
 
-/** The nav body itself — rendered inside both the desktop sidebar above and the
- * mobile drawer in `DocSidebarHost`. Expects `SidebarProvider` context. */
+/** The nav body itself, for an explicit `pathname`. Expects `SidebarProvider`
+ * context, which both of `DocsShell`'s surfaces provide. */
 export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
   return (
     // The landmark rides on the existing scroll container as attributes rather

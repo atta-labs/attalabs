@@ -7,12 +7,12 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
-  ChromeFrame
+  BreadcrumbSeparator
 } from '@atta/ui/components'
 import { Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 import { useState } from 'react'
+import { DocsShell } from '../../../_components/DocsShell'
 import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
 import { DiagramCanvas } from './DiagramCanvas'
@@ -113,9 +113,9 @@ function buildHarnessLegend(groups: DiagramGroup[]): LegendEntry[] {
 }
 
 /** The one body-copy style, shared by the intro, every ring description, and
- * every list item — same font, colour and line-height everywhere, so no two
+ * every list item in the sidebar — same font, colour and line-height everywhere, so no two
  * paragraphs in this sidebar can drift apart. Paired with `size='sm'`. */
-const BODY_TEXT = 'font-sans text-card-foreground leading-relaxed'
+const BODY_TEXT = 'font-sans text-sidebar-foreground leading-relaxed'
 
 /**
  * Client-side orchestrator — receives already-derived `groups` as a plain
@@ -124,9 +124,11 @@ const BODY_TEXT = 'font-sans text-card-foreground leading-relaxed'
  * `node:child_process` usage, which Turbopack cannot bundle for the
  * browser. Derivation happens once, server-side, in `page.tsx`.
  *
- * Full-bleed layout: the diagram is the page's dominant element and must be
- * fully visible without scrolling. Title/description/legend live in a
- * fixed-width sidebar on the left; the diagram takes the rest of the row.
+ * Renders the page's `DocsShell` itself, because the sidebar and the body share
+ * one piece of state — the drill level. The explanation (breadcrumb, title,
+ * intro, legend, drilled ring or selected leaf) is the shell's sidebar content;
+ * the diagram, the page's dominant element, is the whole body and must be fully
+ * visible without scrolling from `lg` up.
  */
 export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   const [drilledKey, setDrilledKey] = useState<GroupKey | null>(null)
@@ -156,7 +158,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   // Dynamic drill breadcrumb — depth mirrors drill state. Every segment before
   // the last is a real back-navigation control: "The Harness" resets to the
   // overview, the ring segment (when a leaf is selected) drops back to that ring.
-  // Lives at the top of the sidebar panel now (was a full-width bar above it).
+  // Lives at the top of the sidebar content.
   // The trail wraps across up to two rows; a long leaf name line-clamps to two.
   const drillCrumb = (
     <Breadcrumb>
@@ -208,89 +210,78 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
     </Breadcrumb>
   )
 
-  return (
-    <div className='flex h-full w-full flex-col overflow-hidden'>
-      {/* Below `lg` there isn't room for a 340px sidebar next to a legible
-          ring — stack instead: `flex-col-reverse` puts the diagram (second
-          in DOM) on top and the sidebar (first in DOM) below it, matching
-          `lg:flex-row`'s left-sidebar order once there's room. */}
-      <div className='flex flex-col-reverse lg:min-h-0 lg:flex-1 lg:flex-row'>
-        <aside className='flex w-full shrink-0 flex-col text-card-foreground lg:w-[356px]'>
-          <ChromeFrame variant='panel' className='gap-5 p-6'>
-            <div className='border-border/50 border-b pb-4'>{drillCrumb}</div>
-            {selectedLeaf && drilledGroup ? (
-              <LeafPanel
-                node={selectedLeaf}
-                groupKey={drilledGroup.key}
-                readMoreHref={readMoreHrefs[selectedLeaf.id]}
-              />
-            ) : (
-              <div className='flex flex-col gap-3'>
-                {/* Sidebar title/tagline — page framing (round-2 wrongly
-                  dropped this thinking the top-strip breadcrumb replaced it;
-                  the breadcrumb is navigation, this is the page's own
-                  title/description, a different element). Switches to the
-                  drilled ring's own name once drilled, same as before. */}
-                <Heading level={2} className='font-serif text-card-foreground text-xl'>
-                  {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
-                </Heading>
-                <Text size='sm' className={BODY_TEXT}>
-                  {drilledGroup ? groupExplanation[drilledGroup.key] : HARNESS_INTRO}
-                </Text>
-                {/* Overview only: the ring legend, outer → center. Once a ring
-                  is drilled the heading/intro above switch to that ring's own
-                  name and framing, so the full legend gives way to the one. */}
-                {!drilledGroup && (
-                  <div className='mt-1 flex flex-col gap-3.5'>
-                    {legend.map((entry) => (
-                      <div key={entry.name} className='flex flex-col gap-1'>
-                        <Text as='span' size='sm' className='font-sans font-bold text-card-foreground'>
-                          {entry.name}
-                        </Text>
-                        <Text size='sm' className={BODY_TEXT}>
-                          {entry.description}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* Drilled ring only: the ring's own members, by full name (the
-                  wedges truncate; here they read whole). Derived from
-                  `drilledGroup.children` — the same model-derived nodes the
-                  diagram paints, never a hardcoded per-ring list, so a doctrine
-                  row added or removed shows up here with no page change. Names
-                  only, no per-node prose, per the drilled framing above. */}
-                {drilledGroup && (
-                  <div className='mt-1 flex flex-col gap-2'>
-                    <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
-                      In this ring — {drilledGroup.children.length}
+  // The page's own framing — breadcrumb, title, intro, ring legend, or the drilled
+  // ring / selected leaf — as `DocsShell`'s sidebar content: the sidebar from `lg`
+  // up, the shell's drawer below it. Scrolls on its own under the wordmark.
+  const explanation = (
+    <div className='flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 pt-2 pb-6 text-sidebar-foreground'>
+      <div className='border-border/50 border-b pb-4'>{drillCrumb}</div>
+      {selectedLeaf && drilledGroup ? (
+        <LeafPanel node={selectedLeaf} groupKey={drilledGroup.key} readMoreHref={readMoreHrefs[selectedLeaf.id]} />
+      ) : (
+        <div className='flex flex-col gap-3'>
+          {/* Title/tagline — page framing, distinct from the breadcrumb above
+            (navigation). Switches to the drilled ring's own name once drilled. */}
+          <Heading level={2} className='font-serif text-sidebar-foreground text-xl'>
+            {drilledGroup ? drilledGroup.label : HARNESS_TITLE}
+          </Heading>
+          <Text size='sm' className={BODY_TEXT}>
+            {drilledGroup ? groupExplanation[drilledGroup.key] : HARNESS_INTRO}
+          </Text>
+          {/* Overview only: the ring legend, outer → center. Once a ring
+            is drilled the heading/intro above switch to that ring's own
+            name and framing, so the full legend gives way to the one. */}
+          {!drilledGroup && (
+            <div className='mt-1 flex flex-col gap-3.5'>
+              {legend.map((entry) => (
+                <div key={entry.name} className='flex flex-col gap-1'>
+                  <Text as='span' size='sm' className='font-sans font-bold text-sidebar-foreground'>
+                    {entry.name}
+                  </Text>
+                  <Text size='sm' className={BODY_TEXT}>
+                    {entry.description}
+                  </Text>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Drilled ring only: the ring's own members, by full name (the
+            wedges truncate; here they read whole). Derived from
+            `drilledGroup.children` — the same model-derived nodes the
+            diagram paints, never a hardcoded per-ring list. */}
+          {drilledGroup && (
+            <div className='mt-1 flex flex-col gap-2'>
+              <Text as='span' className='font-mono text-muted-foreground text-xs uppercase tracking-[0.1em]'>
+                In this ring — {drilledGroup.children.length}
+              </Text>
+              <ol className='flex list-decimal flex-col gap-1 pl-5'>
+                {drilledGroup.children.map((node) => (
+                  <li key={node.id} className='pl-1 marker:text-muted-foreground'>
+                    <Text as='span' size='sm' className={BODY_TEXT}>
+                      {capitalizeFirst(humanLabel(node.label))}
                     </Text>
-                    <ol className='flex list-decimal flex-col gap-1 pl-5'>
-                      {drilledGroup.children.map((node) => (
-                        <li key={node.id} className='pl-1 marker:text-muted-foreground'>
-                          <Text as='span' size='sm' className={BODY_TEXT}>
-                            {capitalizeFirst(humanLabel(node.label))}
-                          </Text>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-              </div>
-            )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      )}
 
-            <FindingsBanner findings={findings} />
-          </ChromeFrame>
-        </aside>
+      <FindingsBanner findings={findings} />
+    </div>
+  )
 
-        {/* Diagram column: a title row on top, then the ring filling whatever
-            height is left. The page fills the app-shell's scroll region via
-            `h-full` (see `(site)/layout.tsx`), so the SVG — which scales to its
-            box via `viewBox` + `h-full` — just renders smaller to make room for
-            the title, rather than pushing the page taller. `min-h-0` lets the
-            canvas wrapper shrink below the ring's intrinsic size instead of
-            forcing a scroll. */}
-        <div className='flex min-h-[420px] w-full min-w-0 flex-col items-center gap-2 p-4 lg:min-h-0 lg:flex-1'>
+  return (
+    // 356px: the explanation is prose, not a list of short links, so it takes the
+    // wider sidebar the other docs pages' nav does not need.
+    <DocsShell sidebar={explanation} sidebarLabel='The Harness' sidebarWidth='356px'>
+      {/* The body is the diagram alone, full width. From `lg` it fills exactly the
+          height under the nav strip — the ring scales to its box via `viewBox` +
+          `h-full`, so it renders smaller rather than scrolling. Below `lg` the pane
+          scrolls, and `min-h-[420px]` keeps the ring legible. */}
+      <main className='min-h-0 flex-1 overflow-y-auto bg-background lg:overflow-hidden'>
+        <div className='flex h-full min-h-[420px] w-full min-w-0 flex-col items-center gap-2 p-4'>
           {/* Matches the ring's own hub-centre label (`DiagramCanvas`'s
               `font-mono text-muted-foreground` "The actors" title) — same
               typeface and colour, so the page title and the ring read as one
@@ -313,7 +304,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
             />
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </DocsShell>
   )
 }

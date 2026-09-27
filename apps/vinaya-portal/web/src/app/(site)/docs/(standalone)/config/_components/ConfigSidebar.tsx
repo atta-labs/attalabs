@@ -18,8 +18,8 @@ import { CONFIG_ACTIVE_OFFSET, configSections, owningSectionSlug } from './confi
  * `/docs/config`'s on-page rail — `CliSidebar`'s shape (the
  * cli.github.com/manual pattern: `/docs`' sidebar primitives, active state
  * driven by scroll position rather than the pathname, rendered in
- * `DocsShell`'s sidebar slot, which owns the outer shell and hides it below
- * `lg`), pointed at config sections instead of commands. Sections only: a nested
+ * `DocsShell`'s sidebar slot, which owns the outer shell and opens it in a
+ * drawer below `lg`), pointed at config sections instead of commands. Sections only: a nested
  * field (`checks.env.literal`) keeps its own anchor in the content flow but
  * never becomes a rail entry.
  *

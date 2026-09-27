@@ -17,7 +17,7 @@ import { commandSlug } from './command-slug'
 /**
  * `/docs/cli`'s sidebar content — the cli.github.com/manual shape — passed into
  * `DocsShell`'s sidebar slot, which owns the outer shell (and its
- * `SidebarProvider`) and hides it below `lg`. Reuses the `/docs` sidebar
+ * `SidebarProvider`) and opens it in a drawer below `lg`. Reuses the `/docs` sidebar
  * primitives (`SidebarMenu`), but drives active state from scroll position (an
  * on-page TOC) rather than the pathname, since every command lives on this one
  * page.

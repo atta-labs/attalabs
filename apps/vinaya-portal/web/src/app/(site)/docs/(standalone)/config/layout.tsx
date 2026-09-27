@@ -9,7 +9,7 @@ import { ConfigSidebar } from './_components/ConfigSidebar'
  * rather than the doctrine tree, which lists pages this page is not one of. */
 export default function ConfigLayout({ children }: { children: ReactNode }) {
   return (
-    <DocsShell sidebar={<ConfigSidebar fields={CONFIG_REFERENCE} />} sidebarWidth='16rem'>
+    <DocsShell sidebar={<ConfigSidebar fields={CONFIG_REFERENCE} />} sidebarLabel='Configuration' sidebarWidth='16rem'>
       <main className='flex-1 min-h-0 overflow-y-auto bg-background'>
         <div className='mx-auto max-w-4xl px-6 pt-10 pb-10 lg:px-12'>{children}</div>
         <FooterContentSlot />
