@@ -31,8 +31,10 @@ import { createContext, type ReactNode, useCallback, useContext, useRef } from '
  * writer; the chrome it gates is Vinaya's own `chromeClassName` string in
  * `(site)/layout.tsx`, not the shared `ChromeFrame`. `data-bar-hidden` and the inline
  * `--bar-reveal` on the same node carry the controls' reveal, with the same single writer.
- * Both flags are SSR'd per route so landing's first paint already matches the loop's first
- * frame. This context is the wiring that lets
+ * Both flags are SSR'd per route (`isLandingRoute`, which also matches Next's internal
+ * `/index` name for the root page) so landing's first paint already matches the loop's
+ * first frame. While bare that chrome also drops its backdrop blur, so the hero fabric
+ * reaches the top edge. This context is the wiring that lets
  * two DOM-owning components that don't render inside each other — `HeroLockup` inside the
  * topbar, `VinayaHeroEmblem` inside the page — reach the same real nodes.
  *
