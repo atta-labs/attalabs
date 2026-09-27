@@ -874,17 +874,21 @@ describe('buildAgentSpawnStateGraph — checkpointer injection (engine-halt-resu
   class RecordingSaver extends MemorySaver {
     puts: Array<{ threadId: string | undefined; checkpointId: string }> = []
 
+    // Three parameters, not four: `MemorySaver` narrows
+    // `BaseCheckpointSaver`'s abstract four-parameter `put` to three (it does
+    // not use `newVersions`), and an override must match the class it extends.
+    // A four-parameter override types its fourth as `undefined` and stops
+    // being assignable to `BaseCheckpointSaver` at all.
     override async put(
       config: Parameters<MemorySaver['put']>[0],
       checkpoint: Parameters<MemorySaver['put']>[1],
-      metadata: Parameters<MemorySaver['put']>[2],
-      newVersions: Parameters<MemorySaver['put']>[3]
+      metadata: Parameters<MemorySaver['put']>[2]
     ) {
       this.puts.push({
         threadId: config.configurable?.thread_id as string | undefined,
         checkpointId: checkpoint.id
       })
-      return super.put(config, checkpoint, metadata, newVersions)
+      return super.put(config, checkpoint, metadata)
     }
   }
 

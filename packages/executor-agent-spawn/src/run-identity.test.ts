@@ -102,14 +102,15 @@ function implementThenFailingReview(): SpawnFn {
 class RecordingSaver extends MemorySaver {
   puts: Array<string | undefined> = []
 
+  // Three parameters — see the same override in `graph-builder.test.ts` for
+  // why `MemorySaver`'s own narrowing makes a fourth one wrong here.
   override async put(
     config: Parameters<MemorySaver['put']>[0],
     checkpoint: Parameters<MemorySaver['put']>[1],
-    metadata: Parameters<MemorySaver['put']>[2],
-    newVersions: Parameters<MemorySaver['put']>[3]
+    metadata: Parameters<MemorySaver['put']>[2]
   ) {
     this.puts.push(config.configurable?.thread_id as string | undefined)
-    return super.put(config, checkpoint, metadata, newVersions)
+    return super.put(config, checkpoint, metadata)
   }
 }
 
