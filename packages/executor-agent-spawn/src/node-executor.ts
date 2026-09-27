@@ -107,10 +107,14 @@ export interface ExecuteAgentSpawnNodeParams {
   /**
    * Called once, with every event this node's process reported, right
    * after its stdout is fully parsed — matching today's behavior exactly.
-   * Inert seam: a future task makes event observation live by editing only
-   * `stream-reader.ts`, never this composer.
+   * Named distinctly from `AgentSpawnExecutorConfig.onEvent` (`types.ts`),
+   * an unrelated, incompatibly-shaped hook for a different lifecycle
+   * (`node:start`/`node:streaming`/`node:complete`/`node:failed`) that is
+   * also in scope wherever this param is. Inert seam: a future task makes
+   * event observation live by editing only `stream-reader.ts`, never this
+   * composer.
    */
-  onEvent?: (events: unknown[]) => void
+  onParsedEvents?: (events: unknown[]) => void
   /**
    * Accepted and forwarded to the process lifecycle handle; nothing in
    * this package acts on it yet. Inert seam: a future task makes
@@ -126,7 +130,7 @@ export interface ExecuteAgentSpawnNodeParams {
  * close, and captures its structured output stream into the result.
  */
 export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams): Promise<AgentSpawnNodeResult> {
-  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn, onEvent, signal } = params
+  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn, onParsedEvents, signal } = params
 
   // Own-property lookup, for the same reason the mechanical path uses one:
   // `agentRole` arrives from the Plan, and an inherited key resolves to a
@@ -170,13 +174,13 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
     signal
   })
 
-  const reader = attachStreamReader(lifecycle.child)
+  const reader = attachStreamReader(lifecycle.child, onParsedEvents)
   lifecycle.child.stdin?.write(prompt)
   lifecycle.child.stdin?.end()
 
   const exitCode = await lifecycle.waitForExit()
 
-  const events = finalizeEvents(reader, node.id, onEvent)
+  const events = finalizeEvents(reader, node.id)
 
   if (exitCode !== 0) {
     throw new Error(
