@@ -224,3 +224,33 @@ export interface MechanicalNodeResult {
  * from field presence.
  */
 export type StepNodeResult = AgentSpawnNodeResult | MechanicalNodeResult
+
+// ── Run identity and durable checkpoint state (engine-halt-resume-v1 task 1) ─
+//
+// Appended at the end of this file rather than folded into the interfaces
+// above, deliberately: a sibling task in this tranche appends here too, and
+// two appends at the tail merge cleanly where two in-place edits to an
+// existing exported interface would not.
+
+/**
+ * A run's whole identity: the id every event this run emits is correlated by,
+ * and the id every checkpoint this run writes is keyed by. One value, so the
+ * two can never be supplied independently and drift apart — which is the
+ * failure this type exists to make impossible, since a run whose events say
+ * one thing and whose checkpoints say another cannot be reassembled
+ * afterwards from either half.
+ *
+ * `threadId` is not independent data: it is `threadIdForRun(runId)`, a pure
+ * function of `runId`. That is what makes the identity survive a process
+ * restart without a second store — a caller that persisted only the `runId`
+ * (in its own records, in an Issue, in an argv) rebuilds the complete identity
+ * with `runIdentityForRunId`, and the checkpointer it hands that identity to
+ * resolves the same thread it wrote before the restart. Nothing else has to be
+ * remembered, and nothing else can be remembered wrongly.
+ */
+export interface RunIdentity {
+  /** Correlates every `AgentLifecycleEvent` this run emits; also `AgentSpawnGraphStateValue.runId`. */
+  runId: string
+  /** LangGraph's `configurable.thread_id` for this run — always `threadIdForRun(runId)`. */
+  threadId: string
+}

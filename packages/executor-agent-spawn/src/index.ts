@@ -20,6 +20,14 @@ export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
+export {
+  createRunIdentity,
+  runIdentityForRunId,
+  runInvokeConfig,
+  startRun,
+  threadIdForRun
+} from './run-identity'
+export type { RunInvokeConfig, StartRunParams, StartRunResult } from './run-identity'
 export { renderStepPrompt } from './template'
 export type { StepTemplateContext } from './template'
 export type {
@@ -30,5 +38,6 @@ export type {
   MechanicalNodeResult,
   RoleBinaryArgsParams,
   RoleBinaryConfig,
+  RunIdentity,
   StepNodeResult
 } from './types'
