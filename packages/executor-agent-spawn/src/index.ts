@@ -11,11 +11,25 @@
 export { AgentSpawnGraphState } from './graph-state'
 export type { AgentSpawnGraphStateValue } from './graph-state'
 export { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
-export type { AgentLifecycleNodeExecutor, NodeExecutionContext } from './graph-builder'
+export type {
+  AgentLifecycleNodeExecutor,
+  AgentSpawnGraphCompileOptions,
+  NodeExecutionContext
+} from './graph-builder'
 export { executeMechanicalNode } from './mechanical-executor'
 export type { ExecuteMechanicalNodeParams } from './mechanical-executor'
 export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
+export {
+  createRunIdentity,
+  readRunCheckpoint,
+  runIdentityForRunId,
+  runIdentityOf,
+  runInvokeConfig,
+  startRun,
+  threadIdForRun
+} from './run-identity'
+export type { RunFailure, RunInvokeConfig, StartRunParams, StartRunResult } from './run-identity'
 export { renderStepPrompt } from './template'
 export type { StepTemplateContext } from './template'
 export type {
@@ -26,5 +40,7 @@ export type {
   MechanicalNodeResult,
   RoleBinaryArgsParams,
   RoleBinaryConfig,
+  RunCheckpointState,
+  RunIdentity,
   StepNodeResult
 } from './types'

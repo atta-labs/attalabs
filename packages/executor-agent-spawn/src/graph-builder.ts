@@ -41,7 +41,7 @@
  * rejecting `invoke()` with the join never starting).
  */
 
-import { END, StateGraph } from '@langchain/langgraph'
+import { END, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan, PlanNode, PlanStepDecision } from '@atta/engine'
 import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
 import { executeMechanicalNode } from './mechanical-executor'
@@ -76,6 +76,53 @@ export type AgentLifecycleNodeExecutor = (
   state: AgentSpawnGraphStateValue,
   context: NodeExecutionContext
 ) => Promise<Partial<AgentSpawnGraphStateValue>>
+
+/**
+ * Compile-time options for `buildAgentSpawnStateGraph`. Separate from
+ * `AgentSpawnExecutorConfig`, which configures what the *nodes* do (which
+ * binary a role resolves to, which command an action resolves to, how a
+ * decision is evaluated); this configures how the *graph* is compiled.
+ *
+ * `checkpointer` is the only durable-state seam this package has, and it is
+ * always the caller's own: `MemorySaver` for a test, a SQLite/Postgres saver
+ * for a run that must survive the process. Passing one is what turns on
+ * LangGraph's per-superstep checkpoint write — one write per node boundary,
+ * carrying the whole annotated state (`runId`, `results`, `sessions`,
+ * `revisionCounts`) — and it is the *only* persistence this package performs.
+ * There is deliberately no second store beside it: a suspended run's state is
+ * read back through the same checkpointer that wrote it (see
+ * `readRunCheckpoint` in `run-identity.ts`), never from a parallel record this
+ * package maintains itself, which could disagree with the checkpoint and
+ * would then have to be reconciled against it.
+ *
+ * Omitting it compiles exactly the graph this function compiled before this
+ * seam existed — no checkpointer, no writes, `invoke()` needing no
+ * `thread_id`. Every pre-existing caller (the three `scripts/` proofs, the
+ * `graph-builder.test.ts` suites) therefore keeps working untouched; only a
+ * caller that wants durability pays for it.
+ *
+ * **What supplying one actually persists — read this before choosing a saver.**
+ * A checkpoint is the whole annotated state, which means the `results` channel
+ * goes to rest verbatim: `AgentSpawnNodeResult.events` is the spawned agent
+ * CLI's complete structured stream (its prompts, its tool results, whatever
+ * files it read and echoed), and `MechanicalNodeResult.stdout`/`stderr` are the
+ * raw output of `git`/`gh`-style commands, kept as text. Content that
+ * previously existed only in process memory for the run's duration is, with a
+ * checkpointer, durably stored — unredacted, with no size bound, and growing
+ * per write, since each superstep re-serializes everything accumulated so far.
+ * This package redacts none of it: narrowing what a checkpoint carries is the
+ * event-redaction work's own subject, and dropping state here would pre-empt it
+ * and could strip something a consumer needs. So the obligation is the
+ * caller's, and it is a real one: a store holding these checkpoints holds
+ * agent-transcript-grade material (a token printed inside a remote URL, an
+ * error body, a credential an agent read aloud), and its retention,
+ * encryption and access should be chosen on that basis. The package's
+ * `envAllowlist` keeps secrets from reaching a spawned process; it cannot keep
+ * a spawned process from printing one.
+ */
+export interface AgentSpawnGraphCompileOptions {
+  checkpointer?: BaseCheckpointSaver
+}
 
 /**
  * Builds the node executor wired into every node of the translated graph.
@@ -258,11 +305,20 @@ function buildDecisionPathFn(
  * - **Plain** (no `decision`): `plan.graph.edges` reproduced as-is, and any
  *   node with no outgoing edge wired to `END` — unchanged from before this
  *   task.
+ *
+ * `options.checkpointer`, when supplied, is handed straight to
+ * `graph.compile()` and is this package's entire durability story — see
+ * `AgentSpawnGraphCompileOptions`. It changes no topology: the same nodes and
+ * the same edges are wired either way, and the only difference is that
+ * LangGraph writes a checkpoint at each node boundary under the `thread_id`
+ * the caller passes at `invoke()` time (`startRun` in `run-identity.ts` is
+ * the entry point that guarantees that id is the run's own, every time).
  */
 export function buildAgentSpawnStateGraph(
   plan: Plan,
   executor: AgentLifecycleNodeExecutor,
-  config: AgentSpawnExecutorConfig
+  config: AgentSpawnExecutorConfig,
+  options?: AgentSpawnGraphCompileOptions
 ) {
   const graph = new StateGraph(AgentSpawnGraphState)
 
@@ -328,5 +384,11 @@ export function buildAgentSpawnStateGraph(
 
   ;(graph as unknown as { addEdge: (from: string, to: string) => void }).addEdge('__start__', plan.graph.entryNode)
 
-  return graph.compile()
+  // The no-checkpointer path calls `compile()` with no argument at all rather
+  // than `compile({ checkpointer: undefined })` — the two are equivalent under
+  // LangGraph's current destructuring signature, but the bare call is the
+  // literal pre-seam behavior, so a caller that passes no options cannot have
+  // been affected by this change even if that signature later stops treating
+  // an absent key and an undefined value alike.
+  return options?.checkpointer ? graph.compile({ checkpointer: options.checkpointer }) : graph.compile()
 }
