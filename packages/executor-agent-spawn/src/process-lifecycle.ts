@@ -436,6 +436,25 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
   signal?.addEventListener('abort', onAbort, { once: true })
 
   child.on('error', (err) => {
+    // An `error` arriving *after* termination has begun is a failed signal
+    // delivery, not a failed spawn — Node emits one when the process could
+    // not be killed. Two things must not happen there. It must not be
+    // reported as an execution failure, which would hand back a plain
+    // `Error` for a run that was cancelled or timed out and so erase the
+    // one distinction this file exists to keep; on the cancellation path
+    // nothing has settled yet when the kill fails, so without this branch
+    // that is exactly what a caller would receive. And it must not disarm
+    // the forced-signal escalation still owed: a graceful signal that
+    // could not be delivered is precisely the case the forced one exists
+    // for, so `forceTimer` is deliberately left running here.
+    // It is also not a settlement in its own right: a signal that failed to
+    // land says nothing about how the process ended, so the wait is left to
+    // the two events that do — the child's own `close`, or the forced
+    // deadline — which is what keeps `ProcessCancelledError.forced` honest
+    // (a failed graceful signal means the forced one *will* be needed) while
+    // still bounding the wait by that same deadline.
+    if (terminationStarted) return
+
     clearTimeout(forceTimer)
     settleWith({ kind: 'spawn-failed', message: err.message })
   })

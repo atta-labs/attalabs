@@ -338,6 +338,47 @@ describe('spawnProcessLifecycle — typed outcomes, three-way distinct (O2)', ()
     expect(await settled).toBeInstanceOf(ProcessTimedOutError)
   })
 
+  it('keeps a cancellation typed when the kill itself fails (round 2 review)', async () => {
+    const controller = new AbortController()
+    const { child, handle } = spawnFake({ signal: controller.signal, gracefulTerminationMs: 10 })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    controller.abort()
+    // Node emits `error` when the process could not be killed. Reporting that
+    // as a failed spawn would hand back a plain Error for a run the caller
+    // cancelled — the distinction this file exists to keep.
+    child.emitError(new Error('kill ESRCH'))
+
+    const error = await settled
+    expect(error).toBeInstanceOf(ProcessCancelledError)
+    expect((error as ProcessCancelledError).forced).toBe(true)
+    // A graceful signal that could not be delivered is exactly what the forced
+    // one is for, so the escalation must not have been disarmed.
+    expect(child.signals).toEqual([GRACEFUL_TERMINATION_SIGNAL, FORCED_TERMINATION_SIGNAL])
+  })
+
+  it('keeps a timeout typed when the kill itself fails (round 2 review)', async () => {
+    const { child, handle } = spawnFake({ timeoutMs: 5, gracefulTerminationMs: 10 })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    await sleep(20)
+    child.emitError(new Error('kill ESRCH'))
+
+    expect(await settled).toBeInstanceOf(ProcessTimedOutError)
+  })
+
+  it('still reports a genuine spawn failure as an execution failure', async () => {
+    const { child, handle } = spawnFake()
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    // No termination has begun, so this `error` is the child failing to start.
+    child.emitError(new Error('ENOENT'))
+
+    const error = await settled
+    expect(error).not.toBeInstanceOf(ProcessTerminatedError)
+    expect((error as Error).message).toContain("Failed to spawn 'fake-cli'")
+  })
+
   it('reports a cancellation that has already settled as a cancellation when the timeout follows', async () => {
     const controller = new AbortController()
     const { handle } = spawnFake({ signal: controller.signal, timeoutMs: 40, gracefulTerminationMs: 5 })

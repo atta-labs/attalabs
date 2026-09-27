@@ -17,9 +17,26 @@
  * next node to be scheduled throws `RunHaltedError` before it starts. It is
  * deliberately **not** process-level cancellation of a live spawned child —
  * killing a mid-flight agent CLI belongs to the process-lifecycle seam
- * (`process-lifecycle.ts`, which already accepts a `signal` for that purpose
- * and does not act on it yet), and doing it from here would terminate a
+ * (`process-lifecycle.ts`), and doing it from here would terminate a
  * subprocess whose partial effects on the working tree nothing has recorded.
+ *
+ * That seam is **implemented**: an `AbortSignal` handed to
+ * `spawnProcessLifecycle` now terminates the child, graceful signal first and
+ * forced signal on a bounded deadline, and rejects with a typed
+ * `ProcessCancelledError`. What is not wired is the path from *this* handle to
+ * that seam: `graph-builder.ts` reads `halted`/`haltReason` at the node
+ * boundary and passes no signal down to `executeAgentSpawnNode`, so a halt
+ * still never kills anything. Read the gap as unwired, not unbuilt — and as a
+ * live consequence rather than an oversight: a run halted while an agent-spawn
+ * node's child is mid-flight leaves that child running, with the filesystem
+ * and execution permissions it was granted, until its own `timeoutMs` elapses
+ * (`DEFAULT_TIMEOUT_MS`, ten minutes, when its role declares none). Closing
+ * that is not a one-line forward of `signal`: it decides what a halt that
+ * killed a live child then *reports*, and today's vocabulary has no reason for
+ * it — `RunOutcomeReason` names no `cancelled`, so such a run would read back
+ * as `failed`, and a resume would re-enter the node on top of the partial
+ * effects this boundary choice exists to avoid. It is therefore a change to
+ * the run-control contract itself, escalated rather than assumed.
  *
  * That boundary choice is what makes a halt resumable rather than merely
  * destructive. LangGraph commits one checkpoint per superstep, so the last
