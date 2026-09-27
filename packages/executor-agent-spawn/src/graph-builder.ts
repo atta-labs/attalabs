@@ -100,6 +100,25 @@ export type AgentLifecycleNodeExecutor = (
  * `thread_id`. Every pre-existing caller (the three `scripts/` proofs, the
  * `graph-builder.test.ts` suites) therefore keeps working untouched; only a
  * caller that wants durability pays for it.
+ *
+ * **What supplying one actually persists — read this before choosing a saver.**
+ * A checkpoint is the whole annotated state, which means the `results` channel
+ * goes to rest verbatim: `AgentSpawnNodeResult.events` is the spawned agent
+ * CLI's complete structured stream (its prompts, its tool results, whatever
+ * files it read and echoed), and `MechanicalNodeResult.stdout`/`stderr` are the
+ * raw output of `git`/`gh`-style commands, kept as text. Content that
+ * previously existed only in process memory for the run's duration is, with a
+ * checkpointer, durably stored — unredacted, with no size bound, and growing
+ * per write, since each superstep re-serializes everything accumulated so far.
+ * This package redacts none of it: narrowing what a checkpoint carries is the
+ * event-redaction work's own subject, and dropping state here would pre-empt it
+ * and could strip something a consumer needs. So the obligation is the
+ * caller's, and it is a real one: a store holding these checkpoints holds
+ * agent-transcript-grade material (a token printed inside a remote URL, an
+ * error body, a credential an agent read aloud), and its retention,
+ * encryption and access should be chosen on that basis. The package's
+ * `envAllowlist` keeps secrets from reaching a spawned process; it cannot keep
+ * a spawned process from printing one.
  */
 export interface AgentSpawnGraphCompileOptions {
   checkpointer?: BaseCheckpointSaver

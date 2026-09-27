@@ -8,12 +8,13 @@ import {
   createRunIdentity,
   readRunCheckpoint,
   runIdentityForRunId,
+  runIdentityOf,
   runInvokeConfig,
   startRun,
   threadIdForRun
 } from './run-identity'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
-import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunIdentity } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-identity-root-'))
 
@@ -258,21 +259,31 @@ describe('readRunCheckpoint (engine-halt-resume-v1 task 1, O3)', () => {
   })
 
   it('refuses a checkpoint on this thread that records a different run id', async () => {
-    const checkpointer = new MemorySaver()
-    const { identity } = await startRun({
+    // The identity handed in is properly derived — a mismatched pair is refused
+    // earlier, by the derivation assert. What this guards is the remaining
+    // case: a thread whose checkpoint was written by something else under a
+    // colliding key, so the stored runId is not the one being asked for.
+    // Simulated by rewriting the stored runId between write and read.
+    class ForeignRunIdSaver extends MemorySaver {
+      override async getTuple(config: Parameters<MemorySaver['getTuple']>[0]) {
+        const tuple = await super.getTuple(config)
+        if (tuple) (tuple.checkpoint.channel_values as Record<string, unknown>).runId = 'run-someone-else'
+        return tuple
+      }
+    }
+
+    const checkpointer = new ForeignRunIdSaver()
+    const identity = createRunIdentity('run-real')
+    await startRun({
       plan: twoStepPlan(),
       config: executorConfig(),
       checkpointer,
-      identity: createRunIdentity('run-real'),
+      identity,
       spawnFn: fakeSpawn(['{"type":"result"}'])
     })
 
-    // An identity claiming a different runId for the same thread is only
-    // reachable through a colliding key — reading the found state as this
-    // run's would be the silent misinterpretation this guard exists for.
-    const impostor = { runId: 'run-impostor', threadId: identity.threadId }
-    await expect(readRunCheckpoint(checkpointer, impostor)).rejects.toThrow(
-      /records runId 'run-real', not 'run-impostor'/
+    await expect(readRunCheckpoint(checkpointer, identity)).rejects.toThrow(
+      /records runId 'run-someone-else', not 'run-real'/
     )
   })
   it('keeps two concurrent runs on separate threads, with neither seeing the other state', async () => {
@@ -297,5 +308,194 @@ describe('readRunCheckpoint (engine-halt-resume-v1 task 1, O3)', () => {
     const secondState = await readRunCheckpoint(checkpointer, second.identity)
     expect(firstState?.sessions.implement).toBe('session-a')
     expect(secondState?.sessions.implement).toBe('session-b')
+  })
+})
+
+describe('run identity hardening (round 2 review)', () => {
+  it('refuses a run id whose characters or length could reshape the checkpoint key', () => {
+    expect(() => threadIdForRun('../escape')).toThrow(/only letters, digits/)
+    expect(() => threadIdForRun('with space')).toThrow(/only letters, digits/)
+    expect(() => threadIdForRun('has:colon')).toThrow(/only letters, digits/)
+    expect(() => threadIdForRun('line\nbreak')).toThrow(/only letters, digits/)
+    expect(() => threadIdForRun('a'.repeat(129))).toThrow(/at most/)
+    // The ids real callers use stay accepted.
+    expect(threadIdForRun('a'.repeat(128))).toBe(`agent-spawn-run:${'a'.repeat(128)}`)
+    expect(() => createRunIdentity('issue-1075')).not.toThrow()
+    expect(() => createRunIdentity('dispatch_42.3')).not.toThrow()
+  })
+
+  it('refuses a hand-assembled identity whose thread id is not derived from its run id', async () => {
+    const checkpointer = new MemorySaver()
+    const mismatched = { runId: 'run-a', threadId: threadIdForRun('run-b') }
+
+    await expect(
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity: mismatched,
+        spawnFn: fakeSpawn(['{"type":"result"}'])
+      })
+    ).rejects.toThrow(/identity is inconsistent/)
+    await expect(readRunCheckpoint(checkpointer, mismatched)).rejects.toThrow(/identity is inconsistent/)
+
+    // Nothing was written: a mismatched identity never reaches a thread at all,
+    // so the run whose thread it named is untouched.
+    expect(await readRunCheckpoint(checkpointer, runIdentityForRunId('run-b'))).toBeUndefined()
+  })
+
+  it('re-derivation also closes the bypass of the run-id guards themselves', async () => {
+    const checkpointer = new MemorySaver()
+    // Never passed through threadIdForRun, so the empty-id refusal would not
+    // otherwise apply to it.
+    const smuggled = { runId: '', threadId: 'agent-spawn-run:' }
+    await expect(readRunCheckpoint(checkpointer, smuggled)).rejects.toThrow(/non-empty/)
+  })
+})
+
+describe('startRun identity recovery and re-entry (round 2 review)', () => {
+  it('reports the minted identity before invoking, so a failing run is still reachable', async () => {
+    const checkpointer = new MemorySaver()
+    const reported: RunIdentity[] = []
+
+    await expect(
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        onIdentity: (identity) => reported.push(identity),
+        spawnFn: implementThenFailingReview()
+      })
+    ).rejects.toThrow(/exited with code 1/)
+
+    // The identity was never returned — the call rejected — but the callback
+    // holds it, and the checkpoints written before the failure are readable.
+    expect(reported).toHaveLength(1)
+    const identity = reported[0]
+    if (!identity) throw new Error('unreachable')
+    const read = await readRunCheckpoint(checkpointer, identity)
+    expect(read?.sessions.implement).toBe('session-from-implement')
+  })
+
+  it('attaches the identity to the thrown error, recoverable with runIdentityOf', async () => {
+    const checkpointer = new MemorySaver()
+    let caught: unknown
+    try {
+      await startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        spawnFn: implementThenFailingReview()
+      })
+    } catch (err) {
+      caught = err
+    }
+
+    const identity = runIdentityOf(caught)
+    expect(identity).toBeDefined()
+    if (!identity) throw new Error('unreachable')
+    expect(identity.threadId).toBe(threadIdForRun(identity.runId))
+    const read = await readRunCheckpoint(checkpointer, identity)
+    expect(read?.results.implement?.kind).toBe('agent-spawn')
+    expect(runIdentityOf(new Error('not ours'))).toBeUndefined()
+    expect(runIdentityOf('not even an error')).toBeUndefined()
+  })
+
+  it('refuses a second run on a thread that already holds a checkpoint, spawning nothing', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('run-reused')
+    const first = await startRun({
+      plan: twoStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity,
+      spawnFn: fakeSpawn(['{"type":"result","session_id":"session-first"}'])
+    })
+
+    let secondAttemptSpawns = 0
+    const countingSpawn: SpawnFn = (command, args, options) => {
+      secondAttemptSpawns += 1
+      return fakeSpawn(['{"type":"result","session_id":"session-second"}'])(command, args, options)
+    }
+
+    await expect(
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: countingSpawn
+      })
+    ).rejects.toThrow(/already has a checkpoint/)
+
+    // No subprocess was launched, and the first attempt's state is intact —
+    // not blended with a partial second one.
+    expect(secondAttemptSpawns).toBe(0)
+    const read = await readRunCheckpoint(checkpointer, identity)
+    expect(read?.sessions.implement).toBe('session-first')
+    expect(read?.revisionCounts.implement).toBe(1)
+    expect(read?.revisionCounts).toEqual(first.state.revisionCounts)
+  })
+})
+
+describe('readRunCheckpoint entry validation (round 2 review)', () => {
+  /** A saver whose stored channel values can be corrupted between write and read. */
+  class TamperableSaver extends MemorySaver {
+    tamper?: (values: Record<string, unknown>) => void
+
+    override async getTuple(config: Parameters<MemorySaver['getTuple']>[0]) {
+      const tuple = await super.getTuple(config)
+      if (tuple && this.tamper) this.tamper(tuple.checkpoint.channel_values as Record<string, unknown>)
+      return tuple
+    }
+  }
+
+  async function checkpointedRun(checkpointer: TamperableSaver): Promise<RunIdentity> {
+    const { identity } = await startRun({
+      plan: twoStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity: createRunIdentity('run-tamper'),
+      spawnFn: fakeSpawn(['{"type":"result","session_id":"session-from-implement"}'])
+    })
+    return identity
+  }
+
+  it('refuses a fabricated results entry rather than narrowing it into this run state', async () => {
+    const checkpointer = new TamperableSaver()
+    const identity = await checkpointedRun(checkpointer)
+
+    checkpointer.tamper = (values) => {
+      const results = values.results as Record<string, unknown>
+      results.injected = { kind: 'agent-spawn', exitCode: 0 }
+    }
+    await expect(readRunCheckpoint(checkpointer, identity)).rejects.toThrow(
+      /Checkpointed 'results' entry 'injected' is not a valid results value/
+    )
+  })
+
+  it('refuses a non-string session id and a non-integer revision count', async () => {
+    const checkpointer = new TamperableSaver()
+    const identity = await checkpointedRun(checkpointer)
+
+    checkpointer.tamper = (values) => {
+      const sessions = values.sessions as Record<string, unknown>
+      sessions.implement = { notASessionId: true }
+    }
+    await expect(readRunCheckpoint(checkpointer, identity)).rejects.toThrow(/'sessions' entry 'implement'/)
+
+    checkpointer.tamper = (values) => {
+      const counts = values.revisionCounts as Record<string, unknown>
+      counts.implement = -1
+    }
+    await expect(readRunCheckpoint(checkpointer, identity)).rejects.toThrow(/'revisionCounts' entry 'implement'/)
+  })
+
+  it('still reads an untampered checkpoint, so validation is not refusing real state', async () => {
+    const checkpointer = new TamperableSaver()
+    const identity = await checkpointedRun(checkpointer)
+    const read = await readRunCheckpoint(checkpointer, identity)
+    expect(read?.sessions.implement).toBe('session-from-implement')
+    expect(read?.results.implement?.kind).toBe('agent-spawn')
   })
 })

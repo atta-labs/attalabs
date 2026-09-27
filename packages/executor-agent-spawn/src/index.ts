@@ -24,11 +24,12 @@ export {
   createRunIdentity,
   readRunCheckpoint,
   runIdentityForRunId,
+  runIdentityOf,
   runInvokeConfig,
   startRun,
   threadIdForRun
 } from './run-identity'
-export type { RunInvokeConfig, StartRunParams, StartRunResult } from './run-identity'
+export type { RunFailure, RunInvokeConfig, StartRunParams, StartRunResult } from './run-identity'
 export { renderStepPrompt } from './template'
 export type { StepTemplateContext } from './template'
 export type {
