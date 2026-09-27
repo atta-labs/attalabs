@@ -379,6 +379,23 @@ describe('spawnProcessLifecycle — typed outcomes, three-way distinct (O2)', ()
     expect((error as Error).message).toContain("Failed to spawn 'fake-cli'")
   })
 
+  it('settles a cancellation as cancelled even when the step bound elapses first (round 3 review)', async () => {
+    const controller = new AbortController()
+    // The step's own deadline is nearer than the graceful window, so the two
+    // timers race — and cancellation was requested first, chronologically.
+    const { child, handle } = spawnFake({ signal: controller.signal, timeoutMs: 5, gracefulTerminationMs: 60 })
+    const settled = handle.waitForExit().catch((err: unknown) => err)
+
+    controller.abort()
+    await sleep(30)
+    // The step bound has long since passed; nothing may have settled on it.
+    child.emitClose(143)
+
+    const error = await settled
+    expect(error).toBeInstanceOf(ProcessCancelledError)
+    expect(error).not.toBeInstanceOf(ProcessTimedOutError)
+  })
+
   it('reports a cancellation that has already settled as a cancellation when the timeout follows', async () => {
     const controller = new AbortController()
     const { handle } = spawnFake({ signal: controller.signal, timeoutMs: 40, gracefulTerminationMs: 5 })

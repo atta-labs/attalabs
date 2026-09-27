@@ -422,6 +422,17 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
     if (cancellationRequested) return
     cancellationRequested = true
     cancellationReason = abortReasonText(signal)
+    // The step's own bound is disarmed the moment cancellation takes over,
+    // and that is load-bearing rather than tidiness. Both timers settle, and
+    // the first settlement wins — so a cancellation landing within
+    // `gracefulTerminationMs` of an already-armed `timeoutMs` deadline would
+    // otherwise let that deadline fire first and lock in `timed-out` for a
+    // run that was cancelled, chronologically first, and was already being
+    // terminated for that reason. With the real defaults that is every
+    // cancellation in the last few seconds of a ten-minute step (round 3
+    // review). Disarming loses no bound: termination is now owned by
+    // `forceTimer`, which settles on its own deadline whatever the child does.
+    clearTimeout(idleTimer)
     beginTermination()
   }
 

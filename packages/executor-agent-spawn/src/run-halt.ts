@@ -1,7 +1,8 @@
 /**
  * @file run-halt.ts
  * @description The halt primitive — a caller-held handle that stops a run at
- * its next node boundary — and the distinguished error that boundary throws.
+ * the earliest point it can, refusing the next node and terminating a child
+ * already running — and the distinguished error it throws.
  *
  * **Why an `AbortSignal` and not a bespoke flag.** The normative bounded-runner
  * contract this package's control surface is modelled on takes cancellation as
@@ -12,39 +13,47 @@
  * bridging two cancellation vocabularies, and a caller with no upstream signal
  * still gets one it can pass to its own abortable work.
  *
- * **What a halt is here, exactly.** It stops the run *between* nodes: the node
- * currently executing is left alone to finish and record its result, and the
- * next node to be scheduled throws `RunHaltedError` before it starts. It is
- * deliberately **not** process-level cancellation of a live spawned child —
- * killing a mid-flight agent CLI belongs to the process-lifecycle seam
- * (`process-lifecycle.ts`), and doing it from here would terminate a
- * subprocess whose partial effects on the working tree nothing has recorded.
+ * **What a halt is here, exactly.** It stops the run at the earliest place it
+ * can, and there are two of those. A node that has not started yet is refused
+ * at its boundary: the wrapper throws `RunHaltedError` before it emits
+ * `node:start` or reaches either executor, so nothing is spawned. A node whose
+ * child process is *already running* is stopped by terminating that child —
+ * `graph-builder.ts` forwards the handle's `signal` into
+ * `executeAgentSpawnNode`, the process-lifecycle seam signals the child
+ * gracefully and then forcibly on a bounded deadline, and the resulting
+ * `ProcessCancelledError` is reported as a halt (`terminatedProcess: true`)
+ * carrying that cancellation as its `cause`.
  *
- * That seam is **implemented**: an `AbortSignal` handed to
- * `spawnProcessLifecycle` now terminates the child, graceful signal first and
- * forced signal on a bounded deadline, and rejects with a typed
- * `ProcessCancelledError`. What is not wired is the path from *this* handle to
- * that seam: `graph-builder.ts` reads `halted`/`haltReason` at the node
- * boundary and passes no signal down to `executeAgentSpawnNode`, so a halt
- * still never kills anything. Read the gap as unwired, not unbuilt — and as a
- * live consequence rather than an oversight: a run halted while an agent-spawn
- * node's child is mid-flight leaves that child running, with the filesystem
- * and execution permissions it was granted, until its own `timeoutMs` elapses
- * (`DEFAULT_TIMEOUT_MS`, ten minutes, when its role declares none). Closing
- * that is not a one-line forward of `signal`: it decides what a halt that
- * killed a live child then *reports*, and today's vocabulary has no reason for
- * it — `RunOutcomeReason` names no `cancelled`, so such a run would read back
- * as `failed`, and a resume would re-enter the node on top of the partial
- * effects this boundary choice exists to avoid. It is therefore a change to
- * the run-control contract itself, escalated rather than assumed.
+ * **Why the mid-flight case kills rather than waits.** Leaving the child alive
+ * was the earlier behaviour and it was wrong in a way a caller could not see: a
+ * run the caller believed cancelled kept an agent process running, with the
+ * filesystem and execution permissions it was granted, until the node's own
+ * `timeoutMs` elapsed — ten minutes (`DEFAULT_TIMEOUT_MS`) when its role
+ * declares none. The objection to killing it is real but smaller: a child cut
+ * off mid-write leaves partial effects on disk that the run's recorded state
+ * does not describe, so a resume re-enters that node on top of them. That is
+ * already true of the timeout path, which has always killed mid-write, so the
+ * halt path was not protecting an invariant the package actually held — it was
+ * the only path that let an unwanted agent keep working. Both costs are the
+ * caller's to weigh, and `RunHaltedError.terminatedProcess` is what lets it:
+ * `false` means nothing was running and a resume is blind-safe, `true` means
+ * inspect first.
  *
- * That boundary choice is what makes a halt resumable rather than merely
- * destructive. LangGraph commits one checkpoint per superstep, so the last
- * completed node's result is durable and the node that threw is left pending on
- * the thread — which is exactly the position a resume continues from, with no
- * completed node re-executed. A halt that killed a child mid-write would leave
- * no such clean seam: the run's recorded state would say the node never
- * completed while its side effects on disk said otherwise.
+ * **It needs no new outcome reason.** A halt that terminated a child is still a
+ * halt, so it reports `paused` exactly as a boundary halt does, and `runHaltOf`
+ * recognises it by the same `instanceof`. Introducing a sixth `cancelled`
+ * reason for it would have said the run stopped for some *other* cause than the
+ * caller's own `halt()`, which is not true, and would have made every existing
+ * consumer of the five-reason vocabulary handle a case that is not new.
+ *
+ * **Either way the halt is resumable, and for the same reason.** LangGraph
+ * commits one checkpoint per superstep, so the last completed node's result is
+ * durable and the node that threw — refused at its boundary or cut off
+ * mid-flight — is left pending on the thread, which is exactly the position a
+ * resume continues from, with no completed node re-executed. Throwing is what
+ * produces that; returning would let LangGraph route onward as though the node
+ * had run. What differs between the two is not resumability but what the node
+ * leaves behind on disk, which is what `terminatedProcess` reports.
  *
  * **A halt is not a failure and is never reported as one.** `runHaltOf` is how
  * the control operations tell the two apart when `invoke()` rejects, so a
@@ -137,26 +146,48 @@ export const RUN_HALTED_ERROR_NAME = 'RunHaltedError'
 export const RUN_HALTED_MESSAGE_PREFIX = 'Run halted before node '
 
 /**
- * Thrown by a node boundary that refuses to start because the run was halted.
+ * Thrown when a halted run stops at a node — either a boundary refusing to
+ * start one, or a started one whose live child process was terminated.
  *
- * Carries the node it stopped *before* — never a node it stopped in the middle
- * of, since a halt never interrupts a node already running. That id is the node
- * a resume will execute first, so it is the useful half of the report rather
- * than a decoration.
+ * Carries the node it stopped, which in both cases is the node a resume will
+ * execute first, so it is the useful half of the report rather than a
+ * decoration. `terminatedProcess` says which of the two happened.
  */
 export class RunHaltedError extends Error {
-  /** The node that was about to start, and which a resume will run first. */
+  /** The node the halt stopped, and which a resume will run first. */
   readonly nodeId: string
   /** The reason passed to `halt()`, when the caller gave one. */
   readonly haltReason: string | undefined
+  /**
+   * Whether this halt stopped a node that had *already started* by
+   * terminating its live child process, rather than refusing one that had
+   * not started yet.
+   *
+   * `false` is the boundary case above, and the common one. `true` is the
+   * mid-flight case: the halt reached `process-lifecycle.ts` through the
+   * node's own cancellation signal, the child was signalled and is dead, and
+   * the `ProcessCancelledError` that reports how it died is this error's
+   * `cause`. Both leave the node pending and both are honestly a halt, but
+   * only one of them leaves whatever that child was writing half-written —
+   * so a caller deciding whether to resume blind or inspect the working tree
+   * first needs to be able to tell them apart, and a single boolean on the
+   * error it already catches is where it can.
+   */
+  readonly terminatedProcess: boolean
 
-  constructor(nodeId: string, haltReason?: string) {
+  constructor(nodeId: string, haltReason?: string, options?: { cause?: unknown; terminatedProcess?: boolean }) {
+    const terminatedProcess = options?.terminatedProcess === true
+    // The fixed prefix is what `describesRunHalt` matches a serialized halt
+    // on, so it opens both messages; only what follows the node id differs.
+    const what = terminatedProcess ? 'completed: its live child process was terminated' : 'started'
     super(
-      `${RUN_HALTED_MESSAGE_PREFIX}'${nodeId}' started${haltReason ? `: ${haltReason}` : ''}. No completed node's work is lost — the last checkpoint holds it, and resuming continues from this node.`
+      `${RUN_HALTED_MESSAGE_PREFIX}'${nodeId}' ${what}${haltReason ? `: ${haltReason}` : ''}. No completed node's work is lost — the last checkpoint holds it, and resuming continues from this node.`,
+      options && 'cause' in options ? { cause: options.cause } : undefined
     )
     this.name = RUN_HALTED_ERROR_NAME
     this.nodeId = nodeId
     this.haltReason = haltReason
+    this.terminatedProcess = terminatedProcess
   }
 }
 

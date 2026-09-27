@@ -59,10 +59,14 @@
  * only the caller of `invoke()` sees. So `completed` is written there, once, after
  * the run has no pending task left — see `run-control.ts`.
  *
- * **The halt boundary lives in the node wrapper, not in the topology.** A run
- * held by a `RunControl` stops *between* nodes: the wrapper checks the handle
- * before it emits `node:start` or reaches either executor, and throws
- * `RunHaltedError` if the run was halted. Nothing about the compiled graph
+ * **The halt lives in the node wrapper, not in the topology.** A run held by a
+ * `RunControl` stops at whichever of two points it can reach first. A node that
+ * has not started is refused: the wrapper checks the handle before it emits
+ * `node:start` or reaches either executor, and throws `RunHaltedError`. A node
+ * already running is stopped by its child being terminated — the wrapper
+ * forwards `control.signal` into `executeAgentSpawnNode`, and the
+ * `ProcessCancelledError` that comes back is re-reported as the halt it is (see
+ * `haltOfTerminatedChild`). Nothing about the compiled graph
  * changes — no extra node, no extra edge, no conditional route — because the
  * property a halt needs is already LangGraph's: one checkpoint per superstep, so
  * the last completed node's result is durable and the node that threw is left
@@ -77,6 +81,7 @@ import type { Plan, PlanNode, PlanStepDecision } from '@atta/engine'
 import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-state'
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
+import { ProcessCancelledError } from './process-lifecycle'
 import { RunHaltedError } from './run-halt'
 import { renderStepPrompt } from './template'
 import type {
@@ -86,6 +91,35 @@ import type {
   RunOutcomeRecord,
   StepNodeResult
 } from './types'
+
+/**
+ * The halt that a mid-flight child's termination actually was, or `undefined`
+ * for any other failure.
+ *
+ * A node already running when `halt()` fires is stopped by killing its child,
+ * which surfaces here as a `ProcessCancelledError` — a value `runHaltOf` does
+ * not recognise, so left alone it would report a deliberately halted run as
+ * `failed`. That is not a classification detail: `failed` invites a caller to
+ * treat the run as broken, and the run is paused. So the cancellation is
+ * re-reported as the halt it is, keeping the original as `cause` because it is
+ * the only thing that records *how* the child died — on the graceful signal, or
+ * on the forced one, which is the difference between a child that got to finish
+ * writing and one that did not.
+ *
+ * Guarded on `control.halted` rather than on the error type alone: a
+ * `ProcessCancelledError` from a run nobody halted came from some other signal
+ * the caller wired into the node itself, and calling that a halt of *this* run
+ * would be a guess.
+ */
+function haltOfTerminatedChild(
+  err: unknown,
+  nodeId: string,
+  control: RunControl | undefined
+): RunHaltedError | undefined {
+  if (!control?.halted) return undefined
+  if (!(err instanceof ProcessCancelledError)) return undefined
+  return new RunHaltedError(nodeId, control.haltReason, { cause: err, terminatedProcess: true })
+}
 
 /**
  * Calls `onEvent`, if supplied, and swallows anything it throws. An
@@ -197,12 +231,17 @@ export interface AgentLifecycleLegOptions {
  * function's own control flow rather than by two node-kind implementations
  * each deciding independently when to report themselves.
  *
- * An optional `control` makes the run haltable. The check is the first thing
- * the returned executor does — ahead of `node:start`, ahead of either executor
- * — so a halted run's next node produces no event, spawns no process, and
- * records no result. A halt is not routed through the `catch` block below and
- * so never emits `node:failed`: it is not a node failure, it is a node that
- * never ran, and `run-control.ts` reports it as `paused` on that basis. An agent-spawn
+ * An optional `control` makes the run haltable, in the two ways this file's
+ * header describes. The boundary check is the first thing the returned executor
+ * does — ahead of `node:start`, ahead of either executor — so a halted run's
+ * next node produces no event, spawns no process, and records no result; that
+ * halt bypasses the `catch` block below and so emits no `node:failed`, because
+ * it is not a node failure, it is a node that never ran. A node already running
+ * when the halt fires is the other case, and it *does* go through that `catch`
+ * and does emit `node:failed`: that node genuinely started and genuinely did
+ * not complete, so claiming otherwise would hide a real event from an observer.
+ * Both are reported as `paused` by `run-control.ts`, on the same basis — the
+ * node is pending and the run is resumable. An agent-spawn
  * node's captured event stream is additionally surfaced as `node:streaming`
  * — what the spawned process reported — between `node:start` and
  * `node:complete`; a mechanical node has no such stream, so it only ever
@@ -234,13 +273,15 @@ export function createAgentLifecycleNodeExecutor(
     const { onEvent } = config
     const { runId } = state
 
-    // The halt boundary, and the only one there is. Checked here — before
+    // The halt boundary for a node that has not started. Checked here — before
     // `node:start` is emitted and before either executor is reached — because a
     // halted run's next node must not start at all: no event claiming it did, no
     // subprocess spawned, nothing for a resume to have to reconcile. Throwing
     // (rather than returning an empty partial state) is what leaves this node
     // pending on the thread, which is where a resume continues from; returning
-    // would let LangGraph route onward as though the node had run.
+    // would let LangGraph route onward as though the node had run. A node
+    // already running when the halt fires cannot be caught here — it is stopped
+    // by `control.signal` reaching its child, below.
     if (control?.halted) throw new RunHaltedError(node.id, control.haltReason)
 
     safeEmit(onEvent, { type: 'node:start', nodeId: node.id, runId })
@@ -271,7 +312,14 @@ export function createAgentLifecycleNodeExecutor(
       }
 
       const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
-      const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn })
+      const result = await executeAgentSpawnNode({
+        node,
+        prompt,
+        resumeSessionId,
+        config,
+        spawnFn,
+        signal: control?.signal
+      })
 
       for (const reported of result.events) {
         const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
@@ -286,9 +334,10 @@ export function createAgentLifecycleNodeExecutor(
         revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
       }
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err)
+      const reported = haltOfTerminatedChild(err, node.id, control) ?? err
+      const error = reported instanceof Error ? reported.message : String(reported)
       safeEmit(onEvent, { type: 'node:failed', nodeId: node.id, runId, error })
-      throw err
+      throw reported
     }
   }
 }

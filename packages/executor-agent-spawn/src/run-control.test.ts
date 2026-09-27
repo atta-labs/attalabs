@@ -6,13 +6,14 @@ import type { Plan } from '@atta/engine'
 import { MemorySaver } from '@langchain/langgraph'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import { resumeControlledRun, startControlledRun } from './run-control'
+import { ProcessCancelledError } from './process-lifecycle'
 import { createRunControl, runHaltOf, RunHaltedError } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runIdentityForRunId, startRun } from './run-identity'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl } from './types'
 // Imported from the package root deliberately: `AgentLifecycleLegOptions` is the
 // declared parameter type of an exported function, so a caller outside this
 // package has to be able to name it without reaching into a source file.
-import type { AgentLifecycleLegOptions } from './index'
+import { type AgentLifecycleLegOptions, createAgentLifecycleNodeExecutor } from './index'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-control-root-'))
 
@@ -100,6 +101,37 @@ function executorConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSp
       lander: { command: 'fake-lander', allowedPermissions: ['default'], buildArgs: () => ['-p'] }
     }
   }
+}
+
+/**
+ * A fake spawn whose child never exits on its own — it closes only once it is
+ * signalled. The shape a *mid-flight* halt has to stop: `recordingSpawn` above
+ * closes on its own microtask, so a halt can only ever land between its nodes.
+ *
+ * `afterSpawn` fires once the child exists and before anything waits on it,
+ * which is the window a halt has to arrive in for the child to be live when it
+ * does.
+ */
+function killableSpawn(afterSpawn?: () => void): { readonly signals: NodeJS.Signals[]; readonly spawnFn: SpawnFn } {
+  const signals: NodeJS.Signals[] = []
+  const spawnFn: SpawnFn = () => {
+    const closeListeners: Array<(code: number | null) => void> = []
+    const spawned: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: () => {} },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: (signal) => {
+        signals.push(signal ?? 'SIGTERM')
+        for (const listener of closeListeners) listener(143)
+      }
+    }
+    if (afterSpawn) queueMicrotask(afterSpawn)
+    return spawned
+  }
+  return { signals, spawnFn }
 }
 
 /** Halts the run the moment the named node reports completion — a deterministic mid-run halt. */
@@ -269,6 +301,57 @@ describe('startControlledRun — a typed outcome instead of resolve-or-throw', (
     expect(log.commands).toEqual(['fake-coder'])
     expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
     expect(outcome.checkpoint?.sessions.implement).toBe('session-from-fake-coder')
+  })
+
+  it("terminates a node's already-running child when the halt fires, and still reports paused", async () => {
+    const checkpointer = new MemorySaver()
+    // Halting from inside the spawn means the child is alive when the abort
+    // lands — the case the node-boundary check structurally cannot catch.
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity: createRunIdentity('halted-mid-node'),
+      control,
+      spawnFn: live.spawnFn
+    })
+
+    // The child was signalled rather than left running to its own timeout.
+    expect(live.signals).toEqual(['SIGTERM'])
+    // And a halt that killed a child is still a halt, not a failure.
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['implement'])
+    expect(outcome.haltReason).toBe('operator cancelled mid-node')
+    // Nothing completed, so nothing is recorded — and the node is resumable.
+    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual([])
+  })
+
+  it('reports a terminated child as a halt that says so, carrying the cancellation as its cause', async () => {
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+    const plan = threeStepPlan()
+    const node = plan.graph.nodes.implement
+    if (!node) throw new Error('fixture must declare the implement node')
+
+    const thrown = await executor(
+      { runId: 'halt-cause', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    const halt = runHaltOf(thrown)
+    expect(halt).toBeInstanceOf(RunHaltedError)
+    // `false` would mean nothing was running and a resume is blind-safe; this
+    // run cut a live child off, which a caller has to be able to tell.
+    expect(halt?.terminatedProcess).toBe(true)
+    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
   })
 
   it('never emits a lifecycle event for the node a halt stopped — it did not start', async () => {
