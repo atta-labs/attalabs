@@ -1,7 +1,8 @@
 /**
  * @file run-identity.ts
- * @description A run's identity, and what that identity is for: starting a run
- * under it (`startRun`), so that every checkpoint the run writes is keyed by it.
+ * @description A run's identity, and the two things that identity is for:
+ * starting a run under it (`startRun`) and reading a suspended run's durable
+ * state back out under it (`readRunCheckpoint`).
  *
  * **Why this is one module and not three.** A run id, a LangGraph
  * `thread_id`, and a checkpoint read are the same fact seen from three sides.
@@ -16,8 +17,8 @@
  * **There is no second persistence store here, by construction.** This module
  * owns no storage of its own: it holds no map, writes no file, and keeps no
  * registry of live runs. `startRun` hands the caller's checkpointer to
- * `buildAgentSpawnStateGraph`, and nothing else. Everything durable is
- * LangGraph's own, under the
+ * `buildAgentSpawnStateGraph`, and `readRunCheckpoint` asks that same
+ * checkpointer for a tuple. Everything durable is LangGraph's, under the
  * caller's own saver — which is also why durability is exactly as good as the
  * saver passed in: `MemorySaver` does not survive the process, and a
  * SQLite/Postgres saver does. That choice is the caller's, and this package
@@ -25,7 +26,8 @@
  *
  * **What is not here.** Halting a run, resuming a halted one, and the typed
  * vocabulary for a run's persisted outcome are the next task's surface, not
- * this one's — nothing in this file interrupts, cancels, or restarts anything.
+ * this one's. `readRunCheckpoint` is a read, and nothing in this file
+ * interrupts, cancels, or restarts anything.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -34,7 +36,7 @@ import type { Plan } from '@atta/engine'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
-import type { AgentSpawnExecutorConfig, RunIdentity } from './types'
+import type { AgentSpawnExecutorConfig, RunCheckpointState, RunIdentity, StepNodeResult } from './types'
 
 /**
  * The `thread_id` a given run's checkpoints are keyed by. Prefixed rather than
@@ -128,7 +130,7 @@ export interface StartRunParams {
 }
 
 export interface StartRunResult {
-  /** The identity every checkpoint this run wrote is keyed by. */
+  /** The identity every checkpoint this run wrote is keyed by — hand it to `readRunCheckpoint`. */
   identity: RunIdentity
   /** The run's final in-memory state, exactly as `invoke()` resolved it. */
   state: AgentSpawnGraphStateValue
@@ -162,4 +164,59 @@ export async function startRun(params: StartRunParams): Promise<StartRunResult> 
   )) as AgentSpawnGraphStateValue
 
   return { identity, state }
+}
+
+/**
+ * Narrows one checkpointed channel to a keyed record without `any` and
+ * without trusting the checkpoint's shape. `channel_values` is
+ * `Record<string, unknown>` — LangGraph does not type it against this
+ * package's annotation — so a channel that is absent (never written) or not an
+ * object reads as the empty record rather than throwing: a run suspended
+ * before any node completed has legitimately empty `results`, and that is not
+ * a corruption.
+ */
+function keyedChannel<T>(values: Record<string, unknown>, channel: string): Record<string, T> {
+  const value = values[channel]
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  return value as Record<string, T>
+}
+
+/**
+ * Reads a run's checkpointed state back using only the checkpointer and the
+ * run's identity — no second store, and no replay of the run.
+ *
+ * Returns `undefined` when this identity has no checkpoint: an unknown run, or
+ * one whose saver did not outlive the process that wrote it. That is an
+ * ordinary answer, not an error — the caller asked whether state exists.
+ *
+ * Throws only on the one case that is genuinely a corrupted identity: a
+ * checkpoint exists under this thread but records a *different* `runId`.
+ * Because `threadIdForRun` is injective, that can only mean the checkpointer
+ * was written by something else under a colliding key, and returning its
+ * channels as if they were this run's is precisely the misinterpretation of
+ * durable state this function refuses to perform silently.
+ */
+export async function readRunCheckpoint(
+  checkpointer: BaseCheckpointSaver,
+  identity: RunIdentity
+): Promise<RunCheckpointState | undefined> {
+  const tuple = await checkpointer.getTuple(runInvokeConfig(identity))
+  if (!tuple) return undefined
+
+  const values = tuple.checkpoint.channel_values as Record<string, unknown>
+  const checkpointedRunId = values.runId
+  if (typeof checkpointedRunId !== 'string' || checkpointedRunId !== identity.runId) {
+    throw new Error(
+      `Checkpoint on thread '${identity.threadId}' records runId '${String(checkpointedRunId)}', not '${identity.runId}' — refusing to read another run's state as this one's.`
+    )
+  }
+
+  return {
+    identity,
+    checkpointId: tuple.checkpoint.id,
+    checkpointedAt: tuple.checkpoint.ts,
+    results: keyedChannel<StepNodeResult>(values, 'results'),
+    sessions: keyedChannel<string>(values, 'sessions'),
+    revisionCounts: keyedChannel<number>(values, 'revisionCounts')
+  }
 }

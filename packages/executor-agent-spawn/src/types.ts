@@ -254,3 +254,27 @@ export interface RunIdentity {
   /** LangGraph's `configurable.thread_id` for this run — always `threadIdForRun(runId)`. */
   threadId: string
 }
+
+/**
+ * A suspended (or completed) run's state, as read back out of the
+ * checkpointer that wrote it — never out of a second store this package
+ * maintains, because there is none.
+ *
+ * Carries the run's identity, the checkpoint's own compact identifiers, and
+ * the three keyed channels the graph actually accumulates. `results` is
+ * returned exactly as the graph recorded it, captured subprocess output
+ * included: this task neither adds to nor narrows that channel's contents —
+ * narrowing it would mean editing an existing exported result interface (which
+ * this tranche's append-only convention forbids) and would pre-empt the
+ * redaction task that owns precisely that question.
+ */
+export interface RunCheckpointState {
+  identity: RunIdentity
+  /** The checkpoint's own id — LangGraph's, not this package's. */
+  checkpointId: string
+  /** The checkpoint's ISO timestamp, verbatim from LangGraph. */
+  checkpointedAt: string
+  results: Record<string, StepNodeResult>
+  sessions: Record<string, string>
+  revisionCounts: Record<string, number>
+}

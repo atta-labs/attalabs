@@ -4,7 +4,14 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { Plan } from '@atta/engine'
 import { MemorySaver } from '@langchain/langgraph'
-import { createRunIdentity, runIdentityForRunId, runInvokeConfig, startRun, threadIdForRun } from './run-identity'
+import {
+  createRunIdentity,
+  readRunCheckpoint,
+  runIdentityForRunId,
+  runInvokeConfig,
+  startRun,
+  threadIdForRun
+} from './run-identity'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
 
@@ -80,6 +87,14 @@ function executorConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSp
       coder: { command: 'fake-coder', allowedPermissions: ['default'], buildArgs: () => ['-p'] },
       reviewer: { command: 'fake-reviewer', allowedPermissions: ['default'], buildArgs: () => ['-p'] }
     }
+  }
+}
+
+/** `implement` records a session and succeeds; `review` exits non-zero. */
+function implementThenFailingReview(): SpawnFn {
+  return (command, args, options) => {
+    if (command === 'fake-reviewer') return fakeSpawn([], 1)(command, args, options)
+    return fakeSpawn(['{"type":"result","session_id":"session-from-implement"}'])(command, args, options)
   }
 }
 
@@ -183,5 +198,103 @@ describe('startRun (engine-halt-resume-v1 task 1, O2)', () => {
     expect(events.length).toBeGreaterThan(0)
     expect(events.every((event) => event.runId === 'run-supplied')).toBe(true)
     expect(checkpointer.puts.every((threadId) => threadId === 'agent-spawn-run:run-supplied')).toBe(true)
+  })
+})
+
+describe('readRunCheckpoint (engine-halt-resume-v1 task 1, O3)', () => {
+  it('reads a completed run state back from the checkpointer and the identity alone', async () => {
+    const checkpointer = new MemorySaver()
+    const { identity, state } = await startRun({
+      plan: twoStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      spawnFn: fakeSpawn(['{"type":"result","session_id":"session-from-implement"}'])
+    })
+
+    const read = await readRunCheckpoint(checkpointer, identity)
+    expect(read).toBeDefined()
+    expect(read?.identity).toEqual(identity)
+    expect(read?.checkpointId).not.toBe('')
+    expect(read?.checkpointedAt).not.toBe('')
+    expect(read?.sessions).toEqual(state.sessions)
+    expect(read?.revisionCounts).toEqual(state.revisionCounts)
+    expect(Object.keys(read?.results ?? {}).sort()).toEqual(['implement', 'review'])
+  })
+
+  it('reads a suspended run state — the run never completed, and no replay is needed', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('run-suspended')
+
+    // `implement` completes and checkpoints; `review` then fails, so the run
+    // stops partway through. Its persisted state is what a caller has to be
+    // able to inspect afterwards.
+    await expect(
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: implementThenFailingReview()
+      })
+    ).rejects.toThrow(/exited with code 1/)
+
+    // Only the checkpointer and the run id survive the failure — the identity
+    // is rebuilt from the id, exactly as a separate process would have to.
+    const read = await readRunCheckpoint(checkpointer, runIdentityForRunId('run-suspended'))
+    expect(read).toBeDefined()
+    expect(read?.sessions.implement).toBe('session-from-implement')
+    expect(read?.revisionCounts.implement).toBe(1)
+    expect(read?.results.implement?.kind).toBe('agent-spawn')
+    // The node that never succeeded recorded nothing — a missing result, never
+    // a result that could read as a pass.
+    expect(read?.results.review).toBeUndefined()
+    expect(read?.revisionCounts.review).toBeUndefined()
+  })
+
+  it('returns undefined for an identity the checkpointer has never seen', async () => {
+    const checkpointer = new MemorySaver()
+    expect(await readRunCheckpoint(checkpointer, createRunIdentity('never-run'))).toBeUndefined()
+  })
+
+  it('refuses a checkpoint on this thread that records a different run id', async () => {
+    const checkpointer = new MemorySaver()
+    const { identity } = await startRun({
+      plan: twoStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity: createRunIdentity('run-real'),
+      spawnFn: fakeSpawn(['{"type":"result"}'])
+    })
+
+    // An identity claiming a different runId for the same thread is only
+    // reachable through a colliding key — reading the found state as this
+    // run's would be the silent misinterpretation this guard exists for.
+    const impostor = { runId: 'run-impostor', threadId: identity.threadId }
+    await expect(readRunCheckpoint(checkpointer, impostor)).rejects.toThrow(
+      /records runId 'run-real', not 'run-impostor'/
+    )
+  })
+  it('keeps two concurrent runs on separate threads, with neither seeing the other state', async () => {
+    const checkpointer = new MemorySaver()
+    const [first, second] = await Promise.all([
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        spawnFn: fakeSpawn(['{"type":"result","session_id":"session-a"}'])
+      }),
+      startRun({
+        plan: twoStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        spawnFn: fakeSpawn(['{"type":"result","session_id":"session-b"}'])
+      })
+    ])
+
+    expect(first.identity.runId).not.toBe(second.identity.runId)
+    const firstState = await readRunCheckpoint(checkpointer, first.identity)
+    const secondState = await readRunCheckpoint(checkpointer, second.identity)
+    expect(firstState?.sessions.implement).toBe('session-a')
+    expect(secondState?.sessions.implement).toBe('session-b')
   })
 })

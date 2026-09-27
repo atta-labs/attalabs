@@ -22,6 +22,7 @@ export { executeAgentSpawnNode } from './node-executor'
 export type { ExecuteAgentSpawnNodeParams, SpawnedProcessLike, SpawnFn } from './node-executor'
 export {
   createRunIdentity,
+  readRunCheckpoint,
   runIdentityForRunId,
   runInvokeConfig,
   startRun,
@@ -38,6 +39,7 @@ export type {
   MechanicalNodeResult,
   RoleBinaryArgsParams,
   RoleBinaryConfig,
+  RunCheckpointState,
   RunIdentity,
   StepNodeResult
 } from './types'

@@ -47,6 +47,10 @@ Because the derivation is pure, identity survives a process restart with nothing
 
 `startRun` is the entry point that makes the contract unskippable: it mints or accepts the identity, compiles the Plan against the caller's checkpointer, invokes the graph bound to that identity's thread, and returns the identity alongside the final state. Its `checkpointer` is required where the graph builder's is optional — a run routed through this function is by definition one whose state is meant to outlive the call. It also forwards an optional `recursionLimit`, because it now owns the invocation config that a direct `buildAgentSpawnStateGraph` caller used to construct itself, and a `decision`-bearing Plan that loops legally can exceed LangGraph's default ceiling.
 
+**Reading a suspended run back.** `readRunCheckpoint(checkpointer, identity)` returns the run's persisted state — the checkpoint's own id and timestamp plus the three keyed channels — using nothing but the checkpointer and the identity, with no replay of the run. An identity the checkpointer has never seen returns `undefined`, which is an answer and not an error: the caller asked whether state exists. Absent or non-object channels read as the empty record, because a run suspended before any node completed legitimately has empty `results`. The one case it refuses is a checkpoint found on this thread that records a *different* `runId` — only reachable through a colliding key, and returning those channels as this run's would be precisely the silent misinterpretation of durable state the function exists to prevent. `results` comes back exactly as the graph recorded it, captured subprocess output included; narrowing that belongs to the event-redaction work, not here.
+
+A structured external halt, a typed resume, and the persisted vocabulary for a run's outcome are **not** in this file and not in this package yet — `readRunCheckpoint` is a read, and nothing in `run-identity.ts` interrupts, cancels or restarts anything. The control-operation half of this contract is a separate piece of work that builds on the identity above.
+
 ---
 
 ## Architecture
