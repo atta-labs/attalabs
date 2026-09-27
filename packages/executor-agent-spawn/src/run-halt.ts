@@ -126,28 +126,59 @@ export class RunHaltedError extends Error {
   }
 }
 
+/** Anything carrying an `errors` array — `AggregateError` without naming its class. */
+function aggregatedErrors(value: unknown): unknown[] | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const errors = (value as { errors?: unknown }).errors
+  return Array.isArray(errors) ? errors : undefined
+}
+
 /**
- * The `RunHaltedError` a caught error is, or carries as a `cause`, or
- * `undefined` for an error that is not a halt at all.
+ * The `RunHaltedError` a caught error is, carries as a `cause`, or aggregates —
+ * and `undefined` for anything that is not, or is not *only*, a halt.
  *
- * Walks the `cause` chain rather than testing `instanceof` once, because the
- * error surfaces through `graph.invoke()`'s rejection: this package throws the
- * halt from inside a graph node, and an intervening layer that wrapped it
- * would otherwise turn a halt into a reported failure — the single
- * misclassification this whole distinction exists to prevent. The walk is
- * depth-bounded so a self-referential `cause` cannot spin.
+ * Three shapes, because a halt reaches a caller through `graph.invoke()`'s
+ * rejection and LangGraph decides what that rejection looks like:
  *
- * Shaped after `runIdentityOf` in `run-identity.ts` deliberately: both answer
- * "what does this caught `unknown` tell me about the run it came from" and
- * both return `undefined` for an error that is not ours, so a caller never has
- * to widen what a `catch` handed it.
+ * - The halt itself, when one node's boundary refused.
+ * - A wrapper carrying it as `cause`. Walked rather than tested once, because a
+ *   layer that wrapped the halt would otherwise turn it into a reported failure
+ *   — the single misclassification this distinction exists to prevent.
+ * - An `AggregateError`, which is what LangGraph raises when several tasks in one
+ *   superstep fail at once ("Multiple errors occurred during superstep N"). A
+ *   fan-out halted mid-flight produces exactly this: every parallel branch's
+ *   boundary refuses in the same superstep, so a detector that only looked at the
+ *   top-level error would report a deliberately halted fan-out as broken.
+ *
+ * An aggregate counts as a halt **only if every error inside it is one.** A
+ * superstep where one branch was halted and another genuinely broke is a failed
+ * run, not a paused one: the failure is the fact the caller has to act on, and
+ * reporting it as a pause would invite a resume that re-enters a broken node.
+ *
+ * Depth-bounded and cycle-guarded, so a self-referential `cause` or a
+ * self-containing aggregate cannot spin. Shaped after `runIdentityOf` in
+ * `run-identity.ts`: both answer "what does this caught `unknown` tell me about
+ * the run it came from", and both return `undefined` for an error that is not
+ * ours, so a caller never has to widen what a `catch` handed it.
  */
-export function runHaltOf(error: unknown): RunHaltedError | undefined {
-  let current: unknown = error
-  for (let depth = 0; depth < 8; depth += 1) {
-    if (current instanceof RunHaltedError) return current
-    if (!(current instanceof Error)) return undefined
-    current = current.cause
+export function runHaltOf(error: unknown, seen: Set<unknown> = new Set(), depth = 0): RunHaltedError | undefined {
+  if (depth > 8 || seen.has(error)) return undefined
+  if (typeof error === 'object' && error !== null) seen.add(error)
+
+  if (error instanceof RunHaltedError) return error
+
+  const aggregated = aggregatedErrors(error)
+  if (aggregated) {
+    if (aggregated.length === 0) return undefined
+    let first: RunHaltedError | undefined
+    for (const inner of aggregated) {
+      const halt = runHaltOf(inner, seen, depth + 1)
+      if (!halt) return undefined
+      first ??= halt
+    }
+    return first
   }
-  return undefined
+
+  if (!(error instanceof Error)) return undefined
+  return runHaltOf(error.cause, seen, depth + 1)
 }

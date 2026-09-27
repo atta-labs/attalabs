@@ -148,6 +148,26 @@ describe('createRunControl — the halt handle', () => {
     expect(control.halted).toBe(true)
   })
 
+  it('reads an aggregate of halts as a halt — the shape a fan-out halt arrives in', () => {
+    const first = new RunHaltedError('commit', 'operator')
+    const second = new RunHaltedError('push', 'operator')
+    expect(runHaltOf(new AggregateError([first, second], 'Multiple errors'))).toBe(first)
+  })
+
+  it('reads an aggregate mixing a halt with a real failure as NOT a halt', () => {
+    // The failure is the fact the caller has to act on, and calling this a pause
+    // would invite a resume straight back into a broken node.
+    const aggregate = new AggregateError([new RunHaltedError('commit'), new Error('exited with code 1')], 'Multiple')
+    expect(runHaltOf(aggregate)).toBeUndefined()
+    expect(runHaltOf(new AggregateError([], 'none'))).toBeUndefined()
+  })
+
+  it('does not spin on a self-containing aggregate', () => {
+    const aggregate = new AggregateError([], 'loop') as AggregateError & { errors: unknown[] }
+    aggregate.errors = [aggregate]
+    expect(runHaltOf(aggregate)).toBeUndefined()
+  })
+
   it('recognises its own halt error through a wrapping cause chain, and nothing else', () => {
     const halt = new RunHaltedError('review', 'operator')
     expect(runHaltOf(halt)).toBe(halt)
