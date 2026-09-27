@@ -12,7 +12,7 @@ import {
 import { Heading, Text } from '@atta/ui/shared'
 import Link from 'next/link'
 import { useState } from 'react'
-import { DocsShell } from '../../../_components/DocsShell'
+import { DocsShell, DocsSidebarTitle } from '../../../_components/DocsShell'
 import { humanLabel, shortLabel } from '../_lib/display-label'
 import type { DiagramGroup, GroupKey } from '../_lib/groupings'
 import { DiagramCanvas } from './DiagramCanvas'
@@ -215,7 +215,7 @@ export function DiagramExplorer({ groups, findings, readMoreHrefs }: Props) {
   // up, the shell's drawer below it. Scrolls on its own under the wordmark.
   const explanation = (
     <div className='flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 pt-2 pb-6 text-sidebar-foreground'>
-      <div className='border-border/50 border-b pb-4'>{drillCrumb}</div>
+      <DocsSidebarTitle className='border-border/50 border-b pb-4 text-[11px]'>{drillCrumb}</DocsSidebarTitle>
       {selectedLeaf && drilledGroup ? (
         <LeafPanel node={selectedLeaf} groupKey={drilledGroup.key} readMoreHref={readMoreHrefs[selectedLeaf.id]} />
       ) : (

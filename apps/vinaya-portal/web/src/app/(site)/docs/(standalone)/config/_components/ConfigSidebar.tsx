@@ -12,6 +12,7 @@ import {
 import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import { useEffect, useMemo, useState } from 'react'
+import { DocsSidebarTitle } from '../../../_components/DocsShell'
 import { CONFIG_ACTIVE_OFFSET, configSections, owningSectionSlug } from './config-navigation'
 
 /**
@@ -99,14 +100,16 @@ export function ConfigSidebar({ fields }: { fields: readonly ConfigField[] }) {
 
   return (
     <SidebarContent className='gap-0 overflow-y-auto px-2 py-4'>
-      <Text
-        as='span'
-        size='sm'
-        weight='bold'
-        className='mb-2 block px-2 font-sans uppercase tracking-widest text-sidebar-foreground'
-      >
-        Configuration
-      </Text>
+      <DocsSidebarTitle className='mb-2 px-2 text-sm'>
+        <Text
+          as='span'
+          size='sm'
+          weight='bold'
+          className='block font-sans uppercase tracking-widest text-sidebar-foreground'
+        >
+          Configuration
+        </Text>
+      </DocsSidebarTitle>
 
       <SidebarGroup className='py-1.5'>
         <SidebarGroupContent>

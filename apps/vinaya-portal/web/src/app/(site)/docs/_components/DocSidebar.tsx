@@ -13,6 +13,7 @@ import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
 import type { Doc, DocNav } from '@attalabs/aeg-core/docs'
 import { usePathname } from 'next/navigation'
+import { DocsSidebarTitle } from './DocsShell'
 
 export type DocSidebarProps = { nav: DocNav; pathname: string }
 
@@ -43,12 +44,11 @@ export function DocSidebarNav({ nav, pathname }: DocSidebarProps) {
     // makes the tree scroll, and an extra box between it and its parent breaks
     // that. `role='navigation'` is landmark-equivalent to <nav> for AT.
     <SidebarContent role='navigation' aria-label='The Harness' className='gap-0 overflow-y-auto px-2 py-4'>
-      <Text
-        as='span'
-        className='mb-2 block px-2 font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'
-      >
-        The Harness
-      </Text>
+      <DocsSidebarTitle className='mb-2 px-2 text-sm'>
+        <Text as='span' className='block font-sans text-sm font-bold uppercase tracking-widest text-sidebar-foreground'>
+          The Harness
+        </Text>
+      </DocsSidebarTitle>
 
       <SidebarGroup className='py-1.5'>
         <SidebarGroupContent>
