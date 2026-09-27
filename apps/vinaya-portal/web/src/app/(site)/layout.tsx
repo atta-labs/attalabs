@@ -133,12 +133,14 @@ const links: TopBarNavItem[] = [
 // untouched for every other consumer. Docked: glass, not a solid bar — `bg-background/35`
 // lets the fabric show through, `backdrop-blur-md` keeps nav text legible over it.
 // `border-transparent` is unconditional: Vinaya never wants a topbar border. Bare (landing
-// cold-open, `data-bare="true"` on the `TopBarChromeHost` ancestor): the background drops
-// to transparent so the canvas paints straight through the bar. The `[[data-bare=true]_&]:`
-// ancestor selector outranks the plain `bg-background/35` utility, so no order dependence.
-// The docs shell's in-body bar has no `data-bare` ancestor, so it always reads docked.
+// cold-open, `data-bare="true"` on the `TopBarChromeHost` ancestor): no surface at all —
+// background, shadow AND the backdrop blur all drop, so the canvas paints straight through
+// the bar. The blur has to go too: over a transparent background it still smears the
+// fabric's fine grid lines into a flat, bar-shaped band. The `[[data-bare=true]_&]:`
+// ancestor selector outranks the plain utilities, so no order dependence. The docs shell's
+// in-body bar has no `data-bare` ancestor, so it always reads docked.
 const TOPBAR_CHROME_CLASS =
-  'border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none'
+  'border-transparent bg-background/35 backdrop-blur-md [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none [[data-bare=true]_&]:backdrop-blur-none'
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
   const { branding } = await getPortalCms()

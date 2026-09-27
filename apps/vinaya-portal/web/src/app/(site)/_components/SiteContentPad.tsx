@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { usesDocsShell } from './docs-shell-route'
+import { isLandingRoute } from './landing-route'
 
 /**
  * The (site) app shell's one scroll container, and the definite-height ancestor every
@@ -13,7 +14,8 @@ import { usesDocsShell } from './docs-shell-route'
  * and its sidebar and content pane each scroll inside it while this box itself never does.
  *
  * It also compensates for the fixed `TopBarChromeHost` reserving no space in flow: every
- * route gets `pt-14` (3.5rem, the bar's own `h-14`) except the landing route, whose hero
+ * route gets `pt-14` (3.5rem, the bar's own `h-14`) except the landing route (`isLandingRoute`,
+ * which also matches Next's internal `/index` name for it), whose hero
  * section deliberately sits flush at the true page top so its canvas paints under the
  * transparent bar (see `TopBarChromeHost`). This is the only place that height is asserted
  * for the content region; nothing else repeats it as a `calc(100dvh-…)`.
@@ -28,6 +30,6 @@ import { usesDocsShell } from './docs-shell-route'
  */
 export function SiteContentPad({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? ''
-  const noBarPad = pathname === '/' || usesDocsShell(pathname)
+  const noBarPad = isLandingRoute(pathname) || usesDocsShell(pathname)
   return <div className={noBarPad ? 'h-dvh overflow-y-auto' : 'h-dvh overflow-y-auto pt-14'}>{children}</div>
 }
