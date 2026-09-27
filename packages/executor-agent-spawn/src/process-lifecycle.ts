@@ -46,10 +46,18 @@ export interface ProcessLifecycleParams {
   timeoutMs: number
   nodeId: string
   agentRole: string
+  /**
+   * Accepted and stored on the returned handle; nothing in this package
+   * ever reads it yet. A future task makes cancellation real (aborting the
+   * spawned process when this signal fires) by editing only this file.
+   */
+  signal?: AbortSignal
 }
 
 export interface ProcessLifecycleHandle {
   child: SpawnedProcessLike
+  /** Inert — see `ProcessLifecycleParams.signal`. */
+  signal?: AbortSignal
   /**
    * Waits on the process's `close` event, not `exit` — `exit` can fire
    * before stdio streams finish flushing, which would silently truncate a
@@ -65,11 +73,12 @@ export interface ProcessLifecycleHandle {
  * process is awaited) plus the promise that settles on its exit.
  */
 export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLifecycleHandle {
-  const { spawnFn, command, args, cwd, env, timeoutMs, nodeId, agentRole } = params
+  const { spawnFn, command, args, cwd, env, timeoutMs, nodeId, agentRole, signal } = params
   const child = spawnFn(command, args, { cwd, env })
 
   return {
     child,
+    signal,
     waitForExit: () =>
       new Promise<number>((resolve, reject) => {
         const timer = setTimeout(() => {

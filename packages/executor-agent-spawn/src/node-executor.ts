@@ -104,6 +104,20 @@ export interface ExecuteAgentSpawnNodeParams {
   config: AgentSpawnExecutorConfig
   /** Injectable for tests; defaults to `node:child_process`'s `spawn`. */
   spawnFn?: SpawnFn
+  /**
+   * Called once, with every event this node's process reported, right
+   * after its stdout is fully parsed — matching today's behavior exactly.
+   * Inert seam: a future task makes event observation live by editing only
+   * `stream-reader.ts`, never this composer.
+   */
+  onEvent?: (events: unknown[]) => void
+  /**
+   * Accepted and forwarded to the process lifecycle handle; nothing in
+   * this package acts on it yet. Inert seam: a future task makes
+   * cancellation real by editing only `process-lifecycle.ts`, never this
+   * composer.
+   */
+  signal?: AbortSignal
 }
 
 /**
@@ -112,7 +126,7 @@ export interface ExecuteAgentSpawnNodeParams {
  * close, and captures its structured output stream into the result.
  */
 export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams): Promise<AgentSpawnNodeResult> {
-  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn } = params
+  const { node, prompt, resumeSessionId, config, spawnFn = defaultSpawn, onEvent, signal } = params
 
   // Own-property lookup, for the same reason the mechanical path uses one:
   // `agentRole` arrives from the Plan, and an inherited key resolves to a
@@ -152,7 +166,8 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
     env: buildChildEnv(binaryConfig, config.envAllowlist),
     timeoutMs,
     nodeId: node.id,
-    agentRole: node.agentRole
+    agentRole: node.agentRole,
+    signal
   })
 
   const reader = attachStreamReader(lifecycle.child)
@@ -161,7 +176,7 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
 
   const exitCode = await lifecycle.waitForExit()
 
-  const events = finalizeEvents(reader, node.id)
+  const events = finalizeEvents(reader, node.id, onEvent)
 
   if (exitCode !== 0) {
     throw new Error(
