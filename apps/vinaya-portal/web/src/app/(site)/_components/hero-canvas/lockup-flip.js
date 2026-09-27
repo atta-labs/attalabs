@@ -3,8 +3,17 @@
  *
  * Ported from the Principal-supplied topbar-lockup handoff (a design document handed over at
  * dispatch and never committed — the task's standing rule for design handoffs). Its rule is
- * restated in `../hero-lockup-context.tsx`; the maths is inlined below, final and complete —
- * this file adds only the surrounding rAF plumbing (bind, guard, cleanup). No third source.
+ * restated in `../hero-lockup-context.tsx`; the maths is inlined below, final and complete. No
+ * third source. On top of the handoff's own maths (the scroll-driven scale, translate, and
+ * descriptor counter-scale) and the rAF plumbing (bind, guard, cleanup), this file adds three
+ * fits the handoff's shorter copy never needed, each named where it is computed:
+ * - `heroScale` caps the hero-state scale so the widest bare line stays FLIP.HERO_GUTTER_PX
+ *   inside both viewport edges;
+ * - the edge clamp keeps every in-between frame inside those same edges;
+ * - `fitBareDesc` shrinks the bare descriptor as it lands so it never reaches the bar's own
+ *   controls (FLIP.CONTROL_GAP_PX).
+ * The bare text is measured from its content (`scrollWidth`), because HeroLockup.tsx gives
+ * the hidden-or-crossfading text zero layout width so it can never size the topbar.
  *
  * Call once from the hero's LAYOUT effect, after the topbar has registered its lockup node.
  *
@@ -42,6 +51,17 @@ export const FLIP = {
   // one, since the harness rides up as the box gets shorter. Below ~667px tall, expect it
   // to close further; a viewport-aware scale would be the fix if that ever matters.
   HERO_SCALE: 3.6,
+  // px — the hero-state lockup's minimum margin from each side of the viewport. HERO_SCALE
+  // is a ceiling, not a fixed value: on a viewport too narrow for the wider of the two
+  // visible lines (the word at `s`, or the descriptor at `s × DESC_HERO`) to fit inside
+  // this margin at HERO_SCALE, the hero scale drops to the largest value that does fit —
+  // see `heroScale` below. Desktop widths are unaffected; phones get a smaller giant state
+  // instead of a descriptor running off both edges.
+  HERO_GUTTER_PX: 16,
+  // px — the smallest horizontal gap kept between the bare descriptor and the bar's own
+  // controls (the centred nav's first link on desktop, the theme toggle / menu button on
+  // phones) once the descriptor has risen level with them. See `fitBareDesc` below.
+  CONTROL_GAP_PX: 12,
   // Hero anchor as a fraction of viewport height. Deliberately small so the
   // TOPBAR_CLEARANCE_PX floor below governs on every realistic viewport: a floor read from
   // the topbar's live height does not drift with aspect ratio, a proportional fraction does.
@@ -69,8 +89,18 @@ export const FLIP = {
   // or the reverse — so the two states must flip in the same frame.
 }
 
+/* The bare (hero-state) text span inside a ref'd `word`/`desc` node. HeroLockup.tsx gives it
+   zero layout width at all times, so its width is read from its overflowing content
+   (`scrollWidth`), never from the node's layout box. */
+const bareSpan = (node) => (node ? node.querySelector('[data-lockup-bare]') : null)
+const textWidth = (node) => {
+  const bare = bareSpan(node)
+  return bare ? bare.scrollWidth : node ? node.offsetWidth : 0
+}
+
 export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
   let raf = 0
+  const bareDesc = bareSpan(desc)
 
   const step = () => {
     if (!hero || !lockup || !hero.isConnected) return
@@ -88,15 +118,57 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
     const restX = rest.left - hr.left
     const restY = rest.top - hr.top
 
-    const s = 1 + (FLIP.HERO_SCALE - 1) * (1 - q)
-    const wordW = word.offsetWidth
+    /* The bare text's rest-state widths, read from its content because its own box is zero
+       wide (HeroLockup.tsx: a hidden or crossfading span never sizes the topbar's layout). */
+    const wordW = textWidth(word)
+    const descW = textWidth(desc)
+    /* The widest line at hero size, in rest-state px: the word rides the lockup's scale alone,
+       the descriptor rides it times its own DESC_HERO counter-scale (TRAP 3 below). Both
+       widths are live measurements of the bare text, so the fit tracks the copy rather than
+       a width assumed here. */
+    const widest = Math.max(wordW, descW * FLIP.DESC_HERO)
+    const heroScale =
+      widest > 0
+        ? Math.max(1, Math.min(FLIP.HERO_SCALE, (hr.width - 2 * FLIP.HERO_GUTTER_PX) / widest))
+        : FLIP.HERO_SCALE
+    const s = 1 + (heroScale - 1) * (1 - q)
 
     /* TRAP 2 — centre on the WORD, not the lockup. The mark's slot collapses to width 0 over
        the hero but the lockup's flex gap survives, and the gap is multiplied by the scale
        (0.3rem × 4.8 ≈ 26px of drift). Deriving from the word's own untransformed left is
        robust to any mark width or fade window. */
-    const wordLead = word.getBoundingClientRect().left - hr.left - restX
-    const tx = (hr.width / 2 - (wordW * s) / 2 - restX - wordLead * s) * (1 - q)
+    const wordRest = word.getBoundingClientRect()
+    const wordLead = wordRest.left - hr.left - restX
+    let tx = (hr.width / 2 - (wordW * s) / 2 - restX - wordLead * s) * (1 - q)
+
+    /* TRAP 3's counter-scale, computed here (written below) because the edge clamp needs it.
+       Capped so the descriptor's on-screen scale (`c × s`) never exceeds its hero-state value:
+       `c` rises linearly while `s` falls linearly, so their product bulges mid-flight above
+       both endpoints (≈3% over the hero size at HERO_SCALE, ≈7% at a phone's fitted scale) —
+       the descriptor would grow before shrinking into the bar, and outgrow the width
+       `heroScale` fitted it to. The cap is exact at both endpoints (`c` = DESC_HERO at q=0,
+       1 at q=1), so neither the hero nor the docked state moves. */
+    const descPeak = Math.max(FLIP.DESC_HERO * heroScale, 1)
+    const c = Math.min(FLIP.DESC_HERO + (1 - FLIP.DESC_HERO) * q, descPeak / s)
+    const off = ((wordW - descW * c) / 2) * (1 - q)
+
+    /* Edge clamp. The two endpoints both fit — the hero state by `heroScale`, the rest state by
+       the topbar's own layout — but the path between them does not have to: the descriptor's
+       visible width (`descW × c × s`) and its offset move at different rates, so on a narrow
+       viewport a mid-flight frame can reach past the edge neither endpoint touches. Measure the
+       lockup's visible horizontal extent for this frame (the word and descriptor share one
+       left edge, `items-start`; the mark and gap sit left of it, so the lockup's own left is
+       the leftmost point) and slide `tx` back inside. Each allowed edge is the gutter, or the
+       rest state's own edge where that already sits beyond the gutter, so the clamp is 0 at
+       both endpoints and continuous between them — it never moves the docked position. */
+    const lineL = s * Math.min(0, wordLead + off)
+    const lineR = s * Math.max(wordLead + wordW, wordLead + off + descW * c)
+    const allowL = Math.min(FLIP.HERO_GUTTER_PX, restX)
+    const allowR = Math.max(hr.width - FLIP.HERO_GUTTER_PX, restX + wordLead + Math.max(wordW, descW))
+    const overR = restX + tx + lineR - allowR
+    const underL = allowL - (restX + tx + lineL)
+    if (overR > 0) tx -= overR
+    else if (underL > 0) tx += underL
 
     /* Floor against the topbar's OWN live height, not the fraction below — see FLIP.HERO_Y's
        comment for why a viewport-height fraction alone can't be trusted to clear a
@@ -108,11 +180,23 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
     const ty = Math.max(tyProportional, tyFloor) * (1 - q)
     lockup.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})`
 
+    /* Control fit. The bare descriptor lands in the bar at its full rest width (`c` and `s`
+       both reach 1), which on phones and narrow desktops is wider than the room left of the
+       bar's controls — it would draw across the menu button or the nav through the last of
+       the dock and the 500ms crossfade after it. So its own span (not `desc`, which also
+       carries the docked text) is scaled down to end CONTROL_GAP_PX short of the leftmost
+       control, phased in over the descriptor's last line-height of rise toward the controls
+       (see `fitBareDesc`): the hero state, far below the bar, never changes. The phase-in and
+       the room both move continuously with scroll, so the fit has no step, and it keeps
+       running after the dock so the fading text never snaps back to full width. */
+    if (bareDesc) {
+      const f = fitBareDesc({ bar, lockup, rest, wordRest, word, desc, wordLead, descW, s, c, tx, ty, off })
+      bareDesc.style.transform = f < 1 ? `scale(${f.toFixed(4)})` : ''
+    }
+
     /* TRAP 3 — the descriptor cannot ride a uniform scale: the bar's word:descriptor ratio is
        ~2.3 and the hero wants ~7. It carries its own counter-scale, which also lands at 1. */
     if (desc) {
-      const c = FLIP.DESC_HERO + (1 - FLIP.DESC_HERO) * q
-      const off = ((wordW - desc.offsetWidth * c) / 2) * (1 - q)
       desc.style.transform = `translateX(${off.toFixed(2)}px) scale(${c.toFixed(4)})`
       /* Grows from 0 (giant hero) toward FLIP.BARE_GAP_MAX (tail of the dock transition) as
          q→1 — see FLIP.BARE_GAP_MAX's own comment. Cleared to 0 once docked so it never
@@ -150,6 +234,52 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
 }
 
 /**
+ * The bare descriptor span's extra scale for this frame (1 = none) — see the control-fit
+ * comment in `attachLockupFlip`. Screen geometry is derived from the frame's own `s`/`tx`/`ty`
+ * and the rest-state measurements taken with the transform cleared (TRAP 1), the same way
+ * the edge clamp derives it, so nothing here reads a transformed lockup rect.
+ */
+function fitBareDesc({ bar, lockup, rest, wordRest, word, desc, wordLead, descW, s, c, tx, ty, off }) {
+  if (!bar || descW <= 0) return 1
+  /* The bar's own controls: every link and button in it outside the lockup's own link, read
+     fresh each frame (the theme toggle mounts client-side, replacing its SSR'd node). Hidden
+     ones (the desktop nav on phones, the menu button on desktop) measure zero and are
+     skipped, so one query serves every breakpoint. Only controls in the lockup's own row
+     count — those whose box overlaps the lockup's resting box vertically. An open dropdown
+     (the nav's "Docs" group) renders its links inside `bar` too, but below the row; counting
+     them would set `left`/`bottom` from a panel that is not in the descriptor's path and
+     shrink it to nothing while the panel is open. */
+  let left = Number.POSITIVE_INFINITY
+  let bottom = Number.NEGATIVE_INFINITY
+  for (const el of bar.querySelectorAll('a, button')) {
+    if (el.contains(lockup)) continue
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0 || r.left <= rest.left) continue
+    if (r.top >= rest.bottom || r.bottom <= rest.top) continue
+    left = Math.min(left, r.left)
+    bottom = Math.max(bottom, r.bottom)
+  }
+  if (left === Number.POSITIVE_INFINITY) return 1
+
+  // The descriptor's on-screen box: the lockup scales about its top-left, `desc` about its
+  // own left-centre (`origin-left`) by `c`, after its `translateX(off)`.
+  const descTop = rest.top + ty + s * (wordRest.top - rest.top + desc.offsetTop - word.offsetTop)
+  const h = desc.offsetHeight * s
+  const visTop = descTop + (h * (1 - c)) / 2
+  /* 0 while the descriptor sits a full line-height or more below the controls' lowest edge,
+     1 by the time its top reaches that edge — so it is already fitted in the first frame it
+     is level with any control, and the ramp is as long as the descriptor is tall. */
+  const visH = h * c
+  const level = clamp01((bottom + visH - visTop) / Math.max(1, visH))
+  if (level === 0) return 1
+
+  const descLeft = rest.left + tx + s * (wordLead + off)
+  const room = left - FLIP.CONTROL_GAP_PX - descLeft
+  const fit = clamp01(room / (descW * c * s))
+  return 1 - level * (1 - fit)
+}
+
+/**
  * Undo every inline write this module (and the hero's reveal) made on the shared nodes.
  *
  * The lockup lives in the persisted `(site)/layout.tsx` topbar, so it outlives the hero:
@@ -163,7 +293,8 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
  *
  * `word` is only ever measured here, never written; it's accepted so the call site passes
  * the same node set it attached with. The letters (`[data-letter]`, written by the hero's
- * reveal) are cleared too, for the same stale-opacity reason.
+ * reveal) are cleared too, for the same stale-opacity reason, and so is the bare
+ * descriptor's control-fit scale (`[data-lockup-bare]`).
  *
  * `bar.dataset.bare` is React-owned (`TopBarChromeHost` renders it from the pathname) but
  * React only writes it when that prop CHANGES, so a value this loop wrote survives any
@@ -175,7 +306,7 @@ export function resetLockup({ lockup, word, desc, mark, bar }) {
   if (lockup) {
     lockup.style.transform = ''
     lockup.style.opacity = ''
-    for (const el of lockup.querySelectorAll('[data-letter]')) {
+    for (const el of lockup.querySelectorAll('[data-letter], [data-lockup-bare]')) {
       el.style.opacity = ''
       el.style.transform = ''
     }

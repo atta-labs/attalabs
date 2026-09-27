@@ -131,12 +131,15 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
                 weight='normal'
                 className='m-0 text-balance font-serif text-[clamp(1.875rem,5.4vw,4rem)] leading-none tracking-tight text-foreground'
               >
-                <span data-hero-h1a data-text='Agents write code' />
+                <span data-hero-h1a data-text='Agents write code.' />
                 <br />
-                <span data-hero-h1b data-text='Vinaya ships software' />
+                <span data-hero-h1b data-text='Vinaya ships software.' />
               </Heading>
               <Text className='m-0 mt-3.5 text-balance font-sans text-[clamp(0.9375rem,1.7vw,1.375rem)] leading-normal text-muted-foreground'>
-                <span data-hero-sub data-text='Your agent moves fast. Vinaya holds the line.' />
+                <span
+                  data-hero-sub
+                  data-text='From brief to merged PR, every review and gate runs as code on your forge.'
+                />
               </Text>
             </div>
           ) : (
