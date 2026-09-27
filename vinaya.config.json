@@ -1,4 +1,14 @@
 {
+  "dispatch": {
+    "agent": "claude",
+    "requireWorkerIsolation": false
+  },
+  "logs": {
+    "url": "https://vinaya-log-server.estevez-dani.workers.dev/v1/repos/atta-labs/attalabs/events",
+    "headers": {
+      "authorization": "Bearer ${VINAYA_LOG_TOKEN}"
+    }
+  },
   "checks": {
     "attalabs/vocabulary-citation": {
       "run": "./scripts/vinaya-checks/vocabulary-citation.ts",
@@ -25,10 +35,26 @@
       "scope": "full"
     }
   },
+  "proseGates": {
+    "specGrandfather": [
+      "apps/herald-ai/specs/herald-app-architecture.md",
+      "apps/herald-ai/specs/herald-backlog.md",
+      "apps/vada-ai/specs/generic-flow-refactor.md",
+      "apps/vada-ai/specs/legacy/vada-v2-experiment-plan.md",
+      "apps/vada-ai/specs/legacy/vada-v2-specification.md",
+      "apps/vada-ai/specs/tools-capability-spike.md",
+      "apps/vada-ai/specs/vada-rethink-v1-decision.md",
+      "apps/vada-ai/specs/vada-reviewers-spec.md",
+      "apps/vada-ai/specs/vada-reviewers-tech-deep-dive.md",
+      "apps/vada-ai/specs/vada-state.md",
+      "apps/vada-ai/specs/vada-teams-catalog/06-outside-read.md",
+      "apps/vada-ai/specs/vada-yaml-immutability-principle.md",
+      "apps/vada-ai/specs/yaml-schema-reference.md"
+    ]
+  },
   "reviewPolicy": {
     "codeReviewThreshold": "MAJOR",
-    "securityThreshold": "HIGH",
-    "maxRounds": 7
+    "securityThreshold": "HIGH"
   },
   "principals": [
     "daniboomerang"
