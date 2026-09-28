@@ -119,6 +119,26 @@ function fakeMechanicalSpawn(stdout: string, stderr: string, exitCode = 0): Spaw
   }
 }
 
+/** A fake child that never starts: emits `error`, the shape a missing binary takes, and never closes. */
+function failingToSpawn(message: string): SpawnFn {
+  return () => {
+    const errorListeners: Array<(err: Error) => void> = []
+    const spawned: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: () => {} },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'error') errorListeners.push(listener as (err: Error) => void)
+      },
+      kill: () => {}
+    }
+    queueMicrotask(() => {
+      for (const listener of errorListeners) listener(new Error(message))
+    })
+    return spawned
+  }
+}
+
 /**
  * Dispatches per spawned command, so one graph can hold an agent-spawn step and
  * a mechanical step whose fake children print different things.
@@ -473,6 +493,120 @@ describe('a checkpoint carries a bounded, redacted form of a node result', () =>
     expect(outcome.error).not.toContain(SECRET_PATH)
     expect(outcome.error).toContain('[redacted:path]')
     expect(await serializedCheckpointRecord(checkpointer, identity)).not.toContain(SECRET_PATH)
+  })
+
+  it('redacts the resolved command in a failed mechanical node message, not only its stderr', async () => {
+    // The combination that matters and that the stderr-only fix missed: an
+    // action resolved to an absolute path AND that same node exiting non-zero.
+    // On the success path `narrowPersistedResult` redacts
+    // `MechanicalNodeResult.command`; a guarantee that held only when the
+    // command succeeded would be no guarantee, because the failure path is the
+    // one that writes a second, separately-built record to the same store.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-failed-command-path')
+    const commandPath = '/opt/local/bin/fail-cmd'
+    const failingPlan: Plan = {
+      ...twoKindPlan(),
+      graph: {
+        nodes: { boom: mechanicalNode('boom', 'fail-action') },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'boom'
+      }
+    }
+
+    const outcome = await startControlledRun({
+      plan: failingPlan,
+      config: config(undefined, {
+        mechanicalActions: { ...mechanicalActions, 'fail-action': { command: commandPath } }
+      }),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({ [commandPath]: fakeMechanicalSpawn('', 'nothing sensitive here\n', 1) })
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('unreachable')
+    expect(outcome.error).not.toContain(commandPath)
+    // The declared action name is the caller's own and survives, so the message
+    // still says which action failed once the command is a placeholder.
+    expect(outcome.error).toContain("action 'fail-action'")
+    expect(outcome.error).toContain('[redacted:path]')
+    expect(await serializedCheckpointRecord(checkpointer, identity)).not.toContain(commandPath)
+  })
+
+  it('redacts the resolved command when the child cannot be spawned at all', async () => {
+    // A different failure path with the same carrier: nothing ran, so there is
+    // no stderr to redact and the command is the whole of what the message
+    // carries — plus Node's own `spawn /abs/path ENOENT`, which repeats it.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-spawn-failure-path')
+    const commandPath = '/opt/local/bin/missing-cmd'
+    const failingPlan: Plan = {
+      ...twoKindPlan(),
+      graph: {
+        nodes: { boom: mechanicalNode('boom', 'fail-action') },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'boom'
+      }
+    }
+
+    const outcome = await startControlledRun({
+      plan: failingPlan,
+      config: config(undefined, {
+        mechanicalActions: { ...mechanicalActions, 'fail-action': { command: commandPath } }
+      }),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({ [commandPath]: failingToSpawn(`spawn ${commandPath} ENOENT`) })
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('unreachable')
+    expect(outcome.error).not.toContain(commandPath)
+    expect(outcome.error).toContain('[redacted:path]')
+    // The node id survives, so an operator still knows which step could not start.
+    expect(outcome.error).toContain("node 'boom'")
+    expect(await serializedCheckpointRecord(checkpointer, identity)).not.toContain(commandPath)
+  })
+
+  it('redacts the real paths in a working-directory confinement refusal', async () => {
+    // The refusal fires before anything is spawned, and it is the message that
+    // carries the most layout of any in the package: the declared directory, its
+    // resolved realpath, and the configured root. All three are redacted; the
+    // node id and the three positions stay, and the caller already holds the
+    // declared directory and the root in its own Plan and config.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-confinement-refusal')
+    const outsideRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-narrowing-outside-'))
+    const escapingPlan: Plan = {
+      ...twoKindPlan(),
+      graph: {
+        nodes: { stray: agentNode('stray', { workingDirectory: outsideRoot }) },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'stray'
+      }
+    }
+
+    const outcome = await startControlledRun({
+      plan: escapingPlan,
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({ 'coder-cmd': fakeAgentSpawn(agentStreamLines()) })
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('unreachable')
+    expect(outcome.error).not.toContain(outsideRoot)
+    expect(outcome.error).not.toContain(workingDirectoryRoot)
+    expect(outcome.error).toContain("Agent-spawn node 'stray'")
+    expect(outcome.error).toContain('escapes the configured root')
+    const record = await serializedCheckpointRecord(checkpointer, identity)
+    expect(record).not.toContain(outsideRoot)
+    expect(record).not.toContain(workingDirectoryRoot)
   })
 
   it('leaves the executor own capture verbatim, so a caller wanting the real stream still has one', async () => {

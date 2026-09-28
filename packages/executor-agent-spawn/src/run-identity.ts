@@ -62,15 +62,21 @@
  * and LangGraph separately persists a failed task's serialized error as a pending
  * write on the thread — whose `message` is surfaced verbatim as
  * `RunFailedOutcome.error` and as `readRunOutcome`'s `error`/`detail`. That
- * message embeds the failing child's own `stderr`: a failed mechanical node's
- * does, and a failed agent-spawn node's does. Being a second durable carrier of
- * the same material, that embedded slice goes through `redactSensitiveText` where
- * each message is built (`mechanical-executor.ts`, `node-executor.ts`,
- * `stream-reader.ts`'s malformed-line error), which bounds it as well as redacts
- * it — capping alone, which is what those sites did before, left the machine's
- * paths and an echoed credential at rest for a caller that reads only the outcome
- * and never the state. The node name and exit code stay in the message, so the
- * diagnosis survives the redaction.
+ * message is a second durable carrier, and the rule for it is the whole message
+ * rather than the child-output half of it. Every value an executor interpolates
+ * into a message it throws from inside a node goes through `redactSensitiveText`
+ * where that message is built: the child's own `stderr` and the malformed line it
+ * printed, and equally the caller-supplied values — a resolved command that may be
+ * an absolute binary path, a declared `workingDirectory` and its realpath, the
+ * configured confinement root, and Node's own `ENOENT`/`spawn` text repeating any
+ * of them. Redacting only the child's half leaves the failure path weaker than the
+ * success path, where `narrowPersistedResult` already redacts
+ * `MechanicalNodeResult.command`; capping alone, which these sites did before,
+ * bounds the size and leaves the path at rest. What survives is what identifies
+ * the fault — the node id, the declared action or role, the exit code, and the
+ * position each redacted value occupied — so the diagnosis survives the
+ * redaction, and the Plan and the caller's own config still hold the unredacted
+ * inputs.
  *
  * **What is not here.** The typed control surface itself — a halt handle, a
  * resume that continues from a checkpoint, and the typed outcome a leg of a run

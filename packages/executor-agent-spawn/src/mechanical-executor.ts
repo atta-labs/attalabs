@@ -109,7 +109,11 @@ export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(
-      `Mechanical node '${node.id}' cannot run: the configured workingDirectoryRoot '${config.workingDirectoryRoot}' could not be resolved: ${message}`
+      // Both halves carry the root: the interpolation directly, and Node's own
+      // `ENOENT: … , lstat '/abs/path'` message a second time. Redacted for the
+      // reason the exit-code message below is — a message thrown from inside a
+      // node is persisted on the thread as its failed-task record.
+      `Mechanical node '${node.id}' cannot run: the configured workingDirectoryRoot '${redactSensitiveText(config.workingDirectoryRoot)}' could not be resolved: ${redactSensitiveText(message)}`
     )
   }
 
@@ -147,14 +151,23 @@ export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams)
   const successExitCodes = actionConfig.successExitCodes ?? DEFAULT_SUCCESS_EXIT_CODES
   if (!successExitCodes.includes(exitCode)) {
     throw new Error(
-      // The stderr slice is redacted, not merely capped. This message does not
-      // stay in memory: LangGraph persists a failed task's `{ name, message }`
-      // on the thread, so it is a second durable carrier of the same child
-      // output the node's own recorded result now narrows — capping it alone
-      // would leave the machine's absolute paths and a credential the command
-      // echoed at rest in the store, reachable by a caller that reads only the
-      // outcome. `redactSensitiveText` bounds it too, so the cap is not lost.
-      `Mechanical node '${node.id}' (action '${node.action}', command '${actionConfig.command}') exited with code ${exitCode}, which it does not declare as success (declared: ${successExitCodes.join(', ')}). stderr: ${redactSensitiveText(stderr) || '(empty)'}`
+      // Both the resolved command and the stderr slice are redacted, not merely
+      // capped. This message does not stay in memory: LangGraph persists a
+      // failed task's `{ name, message }` on the thread, so it is a second
+      // durable carrier of the same material the node's own recorded result now
+      // narrows — capping it alone would leave the machine's absolute paths and
+      // a credential the command echoed at rest in the store, reachable by a
+      // caller that reads only the outcome. `redactSensitiveText` bounds the
+      // stderr too, so the cap is not lost.
+      //
+      // The command gets the same treatment `narrowPersistedResult` gives
+      // `MechanicalNodeResult.command` on the success path, and for the same
+      // reason: a caller may resolve an action to an absolute path, and a
+      // guarantee that held only when the command succeeded would be no
+      // guarantee at all. A bare command name matches no rule and survives; the
+      // declared `action` is kept verbatim either way, so the message still
+      // names which action failed.
+      `Mechanical node '${node.id}' (action '${node.action}', command '${redactSensitiveText(actionConfig.command)}') exited with code ${exitCode}, which it does not declare as success (declared: ${successExitCodes.join(', ')}). stderr: ${redactSensitiveText(stderr) || '(empty)'}`
     )
   }
 

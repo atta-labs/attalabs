@@ -67,7 +67,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { sanitizeReasonText } from './reason-text'
+import { redactSensitiveText, sanitizeReasonText } from './reason-text'
 
 /**
  * The subset of Node's `ChildProcess` this package depends on. Narrowed to
@@ -551,8 +551,18 @@ export function spawnProcessLifecycle(params: ProcessLifecycleParams): ProcessLi
               return
             case 'spawn-failed':
               reject(
+                // Both the command and the underlying failure message are
+                // redacted. The command is the caller's resolved binary, which
+                // may be an absolute path, and the message is Node's own
+                // (`spawn /abs/path/foo ENOENT`), which repeats it. This
+                // rejection propagates out of the node executor, so LangGraph
+                // persists it on the thread as that task's failed-task record —
+                // the same durable carrier the node's own recorded result is
+                // narrowed for. `subject.binding` and the node id are the
+                // caller's own vocabulary and are kept, so the message still
+                // names which role or action could not start.
                 new Error(
-                  `Failed to spawn '${command}' for ${subject.binding} (node '${nodeId}'): ${settlement.message}`
+                  `Failed to spawn '${redactSensitiveText(command)}' for ${subject.binding} (node '${nodeId}'): ${redactSensitiveText(settlement.message)}`
                 )
               )
               return
