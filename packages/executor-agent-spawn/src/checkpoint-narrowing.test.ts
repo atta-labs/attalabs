@@ -1,0 +1,484 @@
+/**
+ * @file checkpoint-narrowing.test.ts
+ * @description What a checkpoint is allowed to hold.
+ *
+ * **Why it reads the raw checkpoint tuple and not `readRunCheckpoint`.** A
+ * `StateSnapshot`'s channel values are not the only thing a checkpoint record
+ * holds: its `metadata` carries `writes`, the node outputs of that super-step,
+ * and LangGraph persists each finished node's own writes as task entries too. A
+ * narrowing applied in the state annotation's reducer would satisfy a
+ * channel-values assertion while both of those still held the verbatim value —
+ * which is exactly the false-but-passing guarantee this file exists to rule out.
+ * So the assertions scan the whole serialized tuple, not the read-back state.
+ */
+
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it } from 'bun:test'
+import type { Plan, PlanAgentSpawnNode, PlanMechanicalNode, PlanStepDecision } from '@atta/engine'
+import { MemorySaver } from '@langchain/langgraph'
+import { executeMechanicalNode } from './mechanical-executor'
+import { executeAgentSpawnNode, type SpawnedProcessLike, type SpawnFn } from './node-executor'
+import { MAX_PERSISTED_EVENT_RECORDS, MAX_PERSISTED_TEXT_LENGTH } from './reason-text'
+import { startControlledRun } from './run-control'
+import { createRunIdentity, readRunCheckpoint, runInvokeConfig, startRun } from './run-identity'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, StepNodeResult } from './types'
+
+const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-narrowing-root-'))
+
+// ── The sensitive literals every assertion below hunts for ──────────────────
+//
+// Each is a shape the redaction rules recognise, planted in the one place a
+// spawned process actually controls: what it prints. A literal rather than a
+// generated value so an assertion that it is absent cannot pass by accident.
+
+/** A machine-local absolute path, the machine's own filesystem layout. */
+const SECRET_PATH = '/Users/someone/Work/secret-checkout/src/app.ts'
+/** The resumable session id the agent reports — load-bearing, so it must survive in exactly one place. */
+const REAL_SESSION_ID = '3f2b1c9a-4d5e-6f70-8192-a3b4c5d6e7f8'
+/**
+ * A credential an agent read aloud, planted under a sensitive *key* rather than
+ * as a bare key-shaped token. Deliberately low-entropy and obviously fake: a
+ * realistic-looking literal here is indistinguishable from a real leak to a
+ * history-wide secret scanner, and a test fixture must not be the thing that
+ * makes one fire. The keyed rule is the one that matters anyway — it is what
+ * catches a credential printed under `authorization`/`token`/`api_key`,
+ * whatever shape the value itself happens to have.
+ */
+const SECRET_TOKEN = 'placeholder-not-a-real-secret'
+
+/** The NDJSON an agent-spawn node's fake child prints — one record per line. */
+function agentStreamLines(extraRecords = 0): string[] {
+  const lines = [
+    JSON.stringify({ type: 'system', cwd: SECRET_PATH }),
+    JSON.stringify({ type: 'assistant', text: `reading ${SECRET_PATH}` }),
+    JSON.stringify({ type: 'tool_result', authorization: SECRET_TOKEN }),
+    JSON.stringify({ type: 'result', session_id: REAL_SESSION_ID })
+  ]
+  // Filler ahead of the four above, so the record bound has something to drop
+  // and the four that carry the planted literals stay in the retained tail.
+  const filler = Array.from({ length: extraRecords }, (_unused, index) =>
+    JSON.stringify({ type: 'assistant', text: `step ${index}` })
+  )
+  return [...filler, ...lines]
+}
+
+function fakeAgentSpawn(stdoutLines: string[]): SpawnFn {
+  return () => {
+    const stdoutListeners: Array<(chunk: string) => void> = []
+    const closeListeners: Array<(code: number | null) => void> = []
+    const spawned: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: (_event, listener) => stdoutListeners.push(listener) },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: () => {}
+    }
+    queueMicrotask(() => {
+      for (const line of stdoutLines) for (const listener of stdoutListeners) listener(`${line}\n`)
+      for (const listener of closeListeners) listener(0)
+    })
+    return spawned
+  }
+}
+
+/** A mechanical command's fake child: prints on stdout and stderr, then exits with `exitCode`. */
+function fakeMechanicalSpawn(stdout: string, stderr: string, exitCode = 0): SpawnFn {
+  return () => {
+    const stdoutListeners: Array<(chunk: string) => void> = []
+    const stderrListeners: Array<(chunk: string) => void> = []
+    const closeListeners: Array<(code: number | null) => void> = []
+    const spawned: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: (_event, listener) => stdoutListeners.push(listener) },
+      stderr: { on: (_event, listener) => stderrListeners.push(listener) },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: () => {}
+    }
+    queueMicrotask(() => {
+      for (const listener of stdoutListeners) listener(stdout)
+      for (const listener of stderrListeners) listener(stderr)
+      for (const listener of closeListeners) listener(exitCode)
+    })
+    return spawned
+  }
+}
+
+/**
+ * Dispatches per spawned command, so one graph can hold an agent-spawn step and
+ * a mechanical step whose fake children print different things.
+ */
+function spawnByCommand(byCommand: Record<string, SpawnFn>, log?: string[]): SpawnFn {
+  return (command, args, options) => {
+    log?.push(command)
+    const chosen = byCommand[command]
+    if (!chosen) throw new Error(`test spawn has no fake for command '${command}'`)
+    return chosen(command, args, options)
+  }
+}
+
+function agentNode(id: string, overrides: Partial<PlanAgentSpawnNode> = {}): PlanAgentSpawnNode {
+  return {
+    id,
+    role: 'agent-spawn',
+    kind: 'agent-spawn',
+    promptTemplate: 'Do: {{question}}',
+    agentRole: 'coder',
+    permission: 'default',
+    workingDirectory: workingDirectoryRoot,
+    maxTurns: 5,
+    metadata: {},
+    ...overrides
+  }
+}
+
+function mechanicalNode(id: string, action: string, decision?: PlanStepDecision): PlanMechanicalNode {
+  return { id, role: 'mechanical', kind: 'mechanical', action, ...(decision ? { decision } : {}), metadata: {} }
+}
+
+const mechanicalActions = {
+  'verify-action': { command: 'verify-cmd' },
+  'report-action': { command: 'report-cmd' },
+  'fail-action': { command: 'fail-cmd' }
+}
+
+function config(
+  onEvent?: (event: AgentLifecycleEvent) => void,
+  overrides: Partial<AgentSpawnExecutorConfig> = {}
+): AgentSpawnExecutorConfig {
+  return {
+    workingDirectoryRoot,
+    roleBinaries: {
+      coder: { command: 'coder-cmd', buildArgs: () => [], allowedPermissions: ['default'] }
+    },
+    mechanicalActions,
+    ...(onEvent ? { onEvent } : {}),
+    ...overrides
+  }
+}
+
+/**
+ * An agent-spawn step, then a mechanical step whose output a later step could
+ * read. Two kinds in one Plan because the narrowing has a branch per kind and
+ * one checkpoint has to be clean of both kinds' raw output.
+ */
+function twoKindPlan(): Plan {
+  return {
+    schemaVersion: '1.0',
+    question: 'Ship it',
+    model: 'n/a',
+    agents: {},
+    teamName: 'agent-lifecycle-narrowing-test',
+    maxRevisions: 0,
+    graph: {
+      nodes: { implement: agentNode('implement'), verify: mechanicalNode('verify', 'verify-action') },
+      edges: [{ from: 'implement', to: 'verify', kind: 'flow' }],
+      conditionalEdges: [],
+      entryNode: 'implement'
+    }
+  }
+}
+
+/**
+ * The same value with every `sessions` channel removed, at any depth.
+ *
+ * `sessions` is the one channel that legitimately holds the verbatim session id
+ * — a later step's `resume` passes it to the agent CLI — and it appears in the
+ * checkpoint twice over, as a channel value and inside that super-step's
+ * recorded `writes`. Stripping it by key is what lets the assertions below make
+ * the strong claim instead of a weak one: not "the id appears somewhere it is
+ * allowed to", but "the id appears nowhere else in the whole record".
+ */
+function withoutSessionsChannel(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutSessionsChannel)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== 'sessions')
+      .map(([key, entry]) => [key, withoutSessionsChannel(entry)])
+  )
+}
+
+/**
+ * Every byte of every checkpoint this thread holds — channel values, metadata
+ * writes and pending writes, across the whole history rather than the latest
+ * tuple alone.
+ *
+ * The history matters: a super-step's `writes` are recorded on the checkpoint
+ * that super-step produced, so a node's own returned value is only visible on
+ * that one, and later checkpoints (including the out-of-graph `completed`
+ * record) carry different `writes` entirely. Scanning only the newest tuple
+ * would let a verbatim value sit in an earlier checkpoint of the same thread —
+ * still durable, still readable, still a leak.
+ */
+async function serializedCheckpointRecord(
+  checkpointer: MemorySaver,
+  identity: { runId: string; threadId: string }
+): Promise<string> {
+  const records: unknown[] = []
+  for await (const tuple of checkpointer.list(runInvokeConfig(identity))) {
+    records.push({
+      values: tuple.checkpoint.channel_values,
+      metadata: tuple.metadata,
+      // A pending write is a `[taskId, channel, value]` triple, so its channel
+      // is a positional string rather than an object key — `sessions` has to be
+      // dropped by position here, not by `withoutSessionsChannel`. Everything
+      // else stays, which is how the `results` task write gets scanned too.
+      pendingWrites: (tuple.pendingWrites ?? []).filter(([, channel]) => channel !== 'sessions')
+    })
+  }
+  if (records.length === 0) throw new Error('expected at least one checkpoint tuple')
+  return JSON.stringify(withoutSessionsChannel(records))
+}
+
+/**
+ * The narrowed result the super-step that ran `nodeId` recorded in its own
+ * `writes` — the value the node *returned*, which is the copy a reducer-only
+ * narrowing would have left verbatim.
+ */
+async function recordedWriteFor(
+  checkpointer: MemorySaver,
+  identity: { runId: string; threadId: string },
+  nodeId: string
+): Promise<StepNodeResult> {
+  for await (const tuple of checkpointer.list(runInvokeConfig(identity))) {
+    const writes = (tuple.metadata as { writes?: Record<string, unknown> } | undefined)?.writes ?? {}
+    const own = writes[nodeId] as { results?: Record<string, StepNodeResult> } | undefined
+    const result = own?.results?.[nodeId]
+    if (result) return result
+  }
+  throw new Error(`expected a recorded write for node '${nodeId}' somewhere in the thread's checkpoints`)
+}
+
+describe('a checkpoint carries a bounded, redacted form of a node result', () => {
+  it('redacts an agent node structured stream and says which fields it narrowed', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-agent-stream')
+
+    await startRun({
+      plan: twoKindPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({
+        'coder-cmd': fakeAgentSpawn(agentStreamLines()),
+        'verify-cmd': fakeMechanicalSpawn('ok\n', '')
+      })
+    })
+
+    const state = await readRunCheckpoint(checkpointer, identity)
+    const result = state?.results.implement
+    expect(result?.kind).toBe('agent-spawn')
+    if (result?.kind !== 'agent-spawn') throw new Error('unreachable')
+
+    // Every record is a redacted string now, not the parsed object the reader
+    // framed — and each planted literal is gone, replaced by the placeholder
+    // naming what was taken rather than vanishing.
+    const persisted = result.events.join(' ')
+    expect(persisted).not.toContain(SECRET_PATH)
+    expect(persisted).not.toContain(SECRET_TOKEN)
+    expect(persisted).not.toContain(REAL_SESSION_ID)
+    expect(persisted).toContain('[redacted:path]')
+    expect(persisted).toContain('[redacted:credential]')
+    expect(persisted).toContain('[redacted:session]')
+
+    // Structure survives: the kind, the node id, the exit code and the duration
+    // are what make the record readable as a result at all.
+    expect(result.nodeId).toBe('implement')
+    expect(result.exitCode).toBe(0)
+    expect(typeof result.durationMs).toBe('number')
+
+    // The narrowing says so, so a consumer can tell this from a quiet agent.
+    expect(result.narrowing?.redactedFields).toEqual(['events', 'sessionId'])
+    expect(result.narrowing?.originalEventCount).toBe(4)
+    expect(result.narrowing?.originalLengths.events).toBeGreaterThan(0)
+  })
+
+  it('redacts a mechanical node raw stdout, stderr and resolved command', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-mechanical-output')
+
+    await startRun({
+      plan: twoKindPlan(),
+      config: config(undefined, {
+        // An action resolved to an absolute path — the caller's own choice, and
+        // the machine's filesystem layout all the same.
+        mechanicalActions: { ...mechanicalActions, 'verify-action': { command: '/opt/local/bin/verify-cmd' } }
+      }),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({
+        'coder-cmd': fakeAgentSpawn(agentStreamLines()),
+        '/opt/local/bin/verify-cmd': fakeMechanicalSpawn(`wrote ${SECRET_PATH}\n`, `token=${SECRET_TOKEN}\n`)
+      })
+    })
+
+    const state = await readRunCheckpoint(checkpointer, identity)
+    const result = state?.results.verify
+    expect(result?.kind).toBe('mechanical')
+    if (result?.kind !== 'mechanical') throw new Error('unreachable')
+
+    expect(result.stdout).not.toContain(SECRET_PATH)
+    expect(result.stdout).toContain('[redacted:path]')
+    expect(result.stderr).not.toContain(SECRET_TOKEN)
+    expect(result.stderr).toContain('[redacted:credential]')
+    expect(result.command).toBe('[redacted:path]')
+
+    // The declared action name is the caller's own and is kept verbatim — it is
+    // what still identifies the action once `command` has been redacted.
+    expect(result.action).toBe('verify-action')
+    expect(result.exitCode).toBe(0)
+    expect(result.narrowing?.redactedFields).toEqual(['command', 'stdout', 'stderr'])
+    expect(result.narrowing?.originalEventCount).toBe(0)
+    expect(result.narrowing?.originalLengths.stdout).toBe(`wrote ${SECRET_PATH}\n`.length)
+  })
+
+  it('bounds an oversized field and an oversized stream rather than storing either whole', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-bounds')
+    const oversizedRecords = MAX_PERSISTED_EVENT_RECORDS + 20
+    const oversizedStdout = 'x'.repeat(MAX_PERSISTED_TEXT_LENGTH * 3)
+
+    await startRun({
+      plan: twoKindPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({
+        'coder-cmd': fakeAgentSpawn(agentStreamLines(oversizedRecords)),
+        'verify-cmd': fakeMechanicalSpawn(oversizedStdout, '')
+      })
+    })
+
+    const state = await readRunCheckpoint(checkpointer, identity)
+    const agent = state?.results.implement
+    if (agent?.kind !== 'agent-spawn') throw new Error('unreachable')
+    const mechanical = state?.results.verify
+    if (mechanical?.kind !== 'mechanical') throw new Error('unreachable')
+
+    // The record count is a ceiling, and the count that was dropped is
+    // recoverable — absence is reported, never silent.
+    expect(agent.events).toHaveLength(MAX_PERSISTED_EVENT_RECORDS)
+    expect(agent.narrowing?.originalEventCount).toBe(oversizedRecords + 4)
+
+    // The tail is what is kept: the records carrying the run's own result are in
+    // the persisted slice, the setup filler at the head is what went.
+    expect(agent.events.join(' ')).toContain('[redacted:session]')
+
+    // A single field is capped with an explicit marker, so a reader never
+    // mistakes the excerpt for the whole.
+    expect(mechanical.stdout.length).toBeLessThanOrEqual(MAX_PERSISTED_TEXT_LENGTH + '…[truncated]'.length)
+    expect(mechanical.stdout.endsWith('…[truncated]')).toBe(true)
+    expect(mechanical.narrowing?.originalLengths.stdout).toBe(oversizedStdout.length)
+  })
+
+  it('narrows the super-step recorded writes too, not only the channel values', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-recorded-writes')
+
+    await startRun({
+      plan: twoKindPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({
+        'coder-cmd': fakeAgentSpawn(agentStreamLines()),
+        'verify-cmd': fakeMechanicalSpawn(`wrote ${SECRET_PATH}\n`, '')
+      })
+    })
+
+    // This is the assertion a reducer-only narrowing would fail: the value here
+    // is the one the node *returned*, recorded as that super-step's own write.
+    const recorded = await recordedWriteFor(checkpointer, identity, 'verify')
+    expect(recorded.kind).toBe('mechanical')
+    if (recorded.kind !== 'mechanical') throw new Error('unreachable')
+    expect(recorded.stdout).not.toContain(SECRET_PATH)
+    expect(recorded.narrowing?.redactedFields).toContain('stdout')
+  })
+
+  it('leaves no planted path or credential anywhere in the checkpoint record', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-whole-record')
+
+    await startRun({
+      plan: twoKindPlan(),
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({
+        'coder-cmd': fakeAgentSpawn(agentStreamLines()),
+        'verify-cmd': fakeMechanicalSpawn(`wrote ${SECRET_PATH}\n`, `token=${SECRET_TOKEN}\n`)
+      })
+    })
+
+    const record = await serializedCheckpointRecord(checkpointer, identity)
+    expect(record).not.toContain(SECRET_PATH)
+    expect(record).not.toContain(SECRET_TOKEN)
+
+    // And the session id appears nowhere outside the one channel a resume reads
+    // it from — which is why the scan strips that channel by name rather than
+    // exempting the value.
+    expect(record).not.toContain(REAL_SESSION_ID)
+    const state = await readRunCheckpoint(checkpointer, identity)
+    expect(state?.sessions.implement).toBe(REAL_SESSION_ID)
+  })
+
+  it('redacts the failed-task error a checkpointer persists beside the state', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-failed-task-error')
+    const failingPlan: Plan = {
+      ...twoKindPlan(),
+      graph: {
+        nodes: { boom: mechanicalNode('boom', 'fail-action') },
+        edges: [],
+        conditionalEdges: [],
+        entryNode: 'boom'
+      }
+    }
+
+    const outcome = await startControlledRun({
+      plan: failingPlan,
+      config: config(),
+      checkpointer,
+      identity,
+      spawnFn: spawnByCommand({ 'fail-cmd': fakeMechanicalSpawn('', `failed at ${SECRET_PATH}\n`, 1) })
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('unreachable')
+    // The message names the node and its exit code — the diagnosis survives —
+    // while the child's own stderr is a redacted excerpt rather than a raw one.
+    expect(outcome.error).toContain("Mechanical node 'boom'")
+    expect(outcome.error).not.toContain(SECRET_PATH)
+    expect(outcome.error).toContain('[redacted:path]')
+    expect(await serializedCheckpointRecord(checkpointer, identity)).not.toContain(SECRET_PATH)
+  })
+
+  it('leaves the executor own capture verbatim, so a caller wanting the real stream still has one', async () => {
+    // The narrowing belongs to what goes to rest, not to the capture: a caller
+    // that needs the verbatim stream — to diff a file the agent wrote, to replay
+    // a tool call — reads it here, and takes on the exposure knowingly.
+    const captured = await executeAgentSpawnNode({
+      node: agentNode('implement'),
+      prompt: 'Do it',
+      config: config(),
+      spawnFn: fakeAgentSpawn(agentStreamLines())
+    })
+    expect(captured.narrowing).toBeUndefined()
+    expect(captured.sessionId).toBe(REAL_SESSION_ID)
+    expect(JSON.stringify(captured.events)).toContain(SECRET_PATH)
+
+    const mechanical = await executeMechanicalNode({
+      node: mechanicalNode('verify', 'verify-action'),
+      config: config(),
+      spawnFn: fakeMechanicalSpawn(`wrote ${SECRET_PATH}\n`, '')
+    })
+    expect(mechanical.narrowing).toBeUndefined()
+    expect(mechanical.stdout).toContain(SECRET_PATH)
+  })
+})

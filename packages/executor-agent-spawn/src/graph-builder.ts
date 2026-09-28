@@ -89,10 +89,14 @@
  * and which run it belongs to. What it removes is what previously reached an
  * observer verbatim: the machine's absolute paths, the agent session and
  * account identifiers, the account's rate-limit metadata, and a child's
- * unbounded stderr, now a bounded excerpt. Two seams are deliberately *not*
+ * unbounded stderr, now a bounded excerpt. One seam is deliberately *not*
  * covered by it and must not be confused with it — `stream-reader.ts`'s
- * `onParsedEvents`, which is a different hook handing over raw records one
- * level down, and what a checkpoint persists, which is its own channel.
+ * `onParsedEvents`, a different hook handing over raw records one level down,
+ * which exists precisely so a caller that wants the real stream has one place
+ * to get it. What a checkpoint persists is a separate channel with its own
+ * mapper (`narrowPersistedResult`, applied at each `results:` write below) over
+ * the same `redactSensitiveText`, so the two channels share one definition of
+ * sensitive and differ only in their bounds and their fields.
  */
 
 import { END, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
@@ -101,7 +105,7 @@ import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-st
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { ProcessCancelledError } from './process-lifecycle'
-import { redactLifecycleEvent } from './reason-text'
+import { narrowPersistedResult, redactLifecycleEvent } from './reason-text'
 import { RunHaltedError } from './run-halt'
 import { renderStepPrompt } from './template'
 import type {
@@ -217,23 +221,38 @@ export type AgentLifecycleNodeExecutor = (
  * caller that wants durability pays for it.
  *
  * **What supplying one actually persists — read this before choosing a saver.**
- * A checkpoint is the whole annotated state, which means the `results` channel
- * goes to rest verbatim: `AgentSpawnNodeResult.events` is the spawned agent
- * CLI's complete structured stream (its prompts, its tool results, whatever
- * files it read and echoed), and `MechanicalNodeResult.stdout`/`stderr` are the
- * raw output of `git`/`gh`-style commands, kept as text. Content that
- * previously existed only in process memory for the run's duration is, with a
- * checkpointer, durably stored — unredacted, with no size bound, and growing
- * per write, since each superstep re-serializes everything accumulated so far.
- * This package redacts none of it: narrowing what a checkpoint carries is the
- * event-redaction work's own subject, and dropping state here would pre-empt it
- * and could strip something a consumer needs. So the obligation is the
- * caller's, and it is a real one: a store holding these checkpoints holds
- * agent-transcript-grade material (a token printed inside a remote URL, an
- * error body, a credential an agent read aloud), and its retention,
- * encryption and access should be chosen on that basis. The package's
+ * A checkpoint is the whole annotated state, so the `results` channel goes to
+ * rest with it. What goes to rest is the *narrowed* form of each result, not the
+ * capture: every field a spawned process authored —
+ * `AgentSpawnNodeResult.events`, its duplicate of the session id, and
+ * `MechanicalNodeResult.stdout`/`stderr`/`command` — is replaced by a bounded,
+ * redacted form before the node's result is written back (see
+ * `narrowPersistedResult` at each `results:` write below, and
+ * `reason-text.ts` for what it removes). Recognised machine paths, session and
+ * account identifiers, rate-limit metadata and credential shapes become named
+ * placeholders; each field is capped; an agent's stream is capped in record
+ * count as well as per record; and every narrowed result carries a `narrowing`
+ * naming the fields that happened to, so a consumer can tell a redacted value
+ * from a node that simply printed little. The narrowing is applied to what the
+ * node *returns* rather than in the state annotation's reducer, because a
+ * checkpoint also records that super-step's node writes in its metadata and each
+ * finished node's own writes as task entries — all three are the returned value,
+ * and a reducer would narrow only one of them.
+ *
+ * Three things this does not make the saver choice unimportant. The guarantee is
+ * a floor: the rules recognise the shapes this package has evidence for, and a
+ * spawned process can print a credential in a shape nothing matches — the bound
+ * is what keeps an unrecognised one from being stored in full, not a proof there
+ * is none. The retained content is still agent-derived: a bounded excerpt of a
+ * tool result is smaller than the transcript, not categorically different from
+ * it. And `results` is not the only carrier — see `run-identity.ts`'s header for
+ * the `outcome` channel and the failed-task error LangGraph persists beside it.
+ * So retention, encryption and access are still worth choosing deliberately;
+ * what changed is that the choice is no longer the *only* thing standing between
+ * a spawned agent's raw output and a durable store. The package's
  * `envAllowlist` keeps secrets from reaching a spawned process; it cannot keep
- * a spawned process from printing one.
+ * a spawned process from printing one, which is why the stored form is narrowed
+ * rather than trusted.
  */
 export interface AgentSpawnGraphCompileOptions {
   checkpointer?: BaseCheckpointSaver
@@ -342,7 +361,7 @@ export function createAgentLifecycleNodeExecutor(
         // session for a later step's `resume` to look up.
         return {
           ...resumeRecord(),
-          results: { [node.id]: result },
+          results: { [node.id]: narrowPersistedResult(result) },
           revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
         }
       }
@@ -375,9 +394,12 @@ export function createAgentLifecycleNodeExecutor(
       }
       safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
 
+      // `sessions` takes the real id off the capture, deliberately before the
+      // result is narrowed: that channel is what a later step's `resume` reads,
+      // and it is the one place the verbatim id has to survive.
       return {
         ...resumeRecord(),
-        results: { [node.id]: result },
+        results: { [node.id]: narrowPersistedResult(result) },
         sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
         revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
       }

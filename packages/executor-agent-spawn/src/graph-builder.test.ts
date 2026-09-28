@@ -241,7 +241,13 @@ describe('buildAgentSpawnStateGraph', () => {
     expect(result?.kind).toBe('mechanical')
     if (result?.kind !== 'mechanical') throw new Error('unreachable')
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toBe('patch applied\n')
+    // The recorded copy is the narrowed one, so the trailing newline the command
+    // printed is collapsed — control characters go first in every treatment this
+    // package applies to text it did not author. The content is otherwise intact:
+    // nothing in this output matches a redaction rule.
+    expect(result.stdout).toBe('patch applied')
+    expect(result.narrowing?.redactedFields).toEqual(['command', 'stdout', 'stderr'])
+    expect(result.narrowing?.originalLengths.stdout).toBe('patch applied\n'.length)
     expect(result.action).toBe('apply-patch')
     expect(finalState.sessions).toEqual({})
     expect(spawnedCommands).toEqual(['git'])
@@ -1106,7 +1112,14 @@ describe('createAgentLifecycleNodeExecutor — every observer-facing event is re
     expect(events.every((e) => e.nodeId === 'implement' && e.runId === emptyState.runId)).toBe(true)
   })
 
-  it("redacts the observer's copy only — the node's own recorded result keeps the raw stream verbatim", async () => {
+  it("redacts the node's own recorded result too, and says on the result which fields it narrowed", async () => {
+    // This once asserted the opposite — that the recorded result kept the raw
+    // stream while only the observer's copy was rewritten. That split left the
+    // whole stream going to rest verbatim the moment a checkpointer was supplied,
+    // with the exposure assigned to whoever chose the saver. The state a
+    // checkpoint persists is redacted now; the verbatim stream is still reachable,
+    // but only from the capture itself (`executeAgentSpawnNode`'s return value and
+    // the stream reader's `onParsedEvents`), where a caller asks for it by name.
     const events: AgentLifecycleEvent[] = []
     const executor = createAgentLifecycleNodeExecutor(
       { ...config, onEvent: (e) => events.push(e) },
@@ -1117,7 +1130,14 @@ describe('createAgentLifecycleNodeExecutor — every observer-facing event is re
 
     const result = update.results?.implement
     if (result?.kind !== 'agent-spawn') throw new Error('expected an agent-spawn result')
-    expect(JSON.stringify(result.events)).toContain('/Users/someone/Work/Repositories/secret-project')
-    expect(result.sessionId).toBe('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+    const recorded = JSON.stringify(result.events)
+    expect(recorded).not.toContain('/Users/someone/Work/Repositories/secret-project')
+    expect(recorded).toContain('[redacted:path]')
+    expect(result.sessionId).toBe('[redacted:session]')
+    expect(result.narrowing?.redactedFields).toEqual(['events', 'sessionId'])
+
+    // The session a later step resumes is still the real one — it travels in the
+    // `sessions` channel, which this pass deliberately never touches.
+    expect(update.sessions).toEqual({ implement: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' })
   })
 })

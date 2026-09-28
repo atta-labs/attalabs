@@ -31,6 +31,7 @@ import { realpathSync } from 'node:fs'
 import type { PlanMechanicalNode } from '@atta/engine'
 import { buildChildEnv, defaultSpawn, DEFAULT_TIMEOUT_MS, type SpawnFn } from './node-executor'
 import { type ProcessSubject, spawnProcessLifecycle } from './process-lifecycle'
+import { redactSensitiveText } from './reason-text'
 import type { AgentSpawnExecutorConfig, MechanicalNodeResult } from './types'
 
 /** Exit codes an action is treated as succeeding on when it declares none. */
@@ -146,7 +147,14 @@ export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams)
   const successExitCodes = actionConfig.successExitCodes ?? DEFAULT_SUCCESS_EXIT_CODES
   if (!successExitCodes.includes(exitCode)) {
     throw new Error(
-      `Mechanical node '${node.id}' (action '${node.action}', command '${actionConfig.command}') exited with code ${exitCode}, which it does not declare as success (declared: ${successExitCodes.join(', ')}). stderr: ${stderr.slice(0, 2000) || '(empty)'}`
+      // The stderr slice is redacted, not merely capped. This message does not
+      // stay in memory: LangGraph persists a failed task's `{ name, message }`
+      // on the thread, so it is a second durable carrier of the same child
+      // output the node's own recorded result now narrows — capping it alone
+      // would leave the machine's absolute paths and a credential the command
+      // echoed at rest in the store, reachable by a caller that reads only the
+      // outcome. `redactSensitiveText` bounds it too, so the cap is not lost.
+      `Mechanical node '${node.id}' (action '${node.action}', command '${actionConfig.command}') exited with code ${exitCode}, which it does not declare as success (declared: ${successExitCodes.join(', ')}). stderr: ${redactSensitiveText(stderr) || '(empty)'}`
     )
   }
 

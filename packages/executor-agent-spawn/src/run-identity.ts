@@ -35,30 +35,42 @@
  *
  * **What the caller's saver ends up holding, stated plainly.** A checkpoint is
  * the whole annotated state, so it includes the `results` channel — and that
- * channel already carries `AgentSpawnNodeResult.events` (the spawned agent's
- * full structured event stream) and `MechanicalNodeResult.stdout`/`stderr`
- * (raw subprocess output, verbatim). Turning a checkpointer on therefore moves
- * that content from process memory to rest, unredacted and unbounded, in
- * whatever store the caller chose. Nothing here redacts it and nothing here
- * caps it: narrowing what is persisted is the event-redaction work's own
- * subject, and this module must not pre-empt it by quietly dropping state a
- * consumer may need. Until then, treat a checkpoint store for these runs as
- * holding the same sensitivity as the agent transcripts themselves — anything
- * a spawned process printed can be in it — and choose its retention,
- * encryption and access accordingly.
+ * channel carries what a spawned process authored: `AgentSpawnNodeResult.events`
+ * (its structured event stream) and `MechanicalNodeResult.stdout`/`stderr`
+ * (subprocess output). What goes to rest there is the **narrowed** form of each
+ * result, not the capture: the graph's node wrapper runs every result through
+ * `narrowPersistedResult` (`reason-text.ts`) before writing it back, so
+ * recognised machine paths, session and account identifiers, rate-limit metadata
+ * and credential shapes are replaced by named placeholders, every free-text
+ * field is capped, an agent's stream is capped in record count too, and each
+ * stored result carries a `narrowing` naming the fields that applied to.
+ * `sessions` and `revisionCounts` are deliberately verbatim — the first is the id
+ * a later step's `resume` hands to the agent CLI, the second the counter a
+ * decision's ceiling is compared against, so narrowing either would change what
+ * the run does rather than what it stores.
+ *
+ * That is a floor, not a proof: the rules recognise the shapes this package has
+ * evidence for, and a spawned process can print a credential in a shape nothing
+ * matches — the cap is what keeps an unrecognised one from being stored whole. So
+ * a checkpoint store for these runs still holds agent-derived material and still
+ * deserves a deliberate retention, encryption and access choice; what changed is
+ * that the choice is no longer the only thing between a raw transcript and the
+ * store.
  *
  * **Three carriers, not one.** `results` is the largest but not the only place
  * this content comes to rest. The `outcome` channel is checkpointed alongside it,
  * and LangGraph separately persists a failed task's serialized error as a pending
  * write on the thread — whose `message` is surfaced verbatim as
  * `RunFailedOutcome.error` and as `readRunOutcome`'s `error`/`detail`. That
- * message is not a summary: a failed mechanical node's error embeds the command's
- * raw `stderr` (capped at two thousand characters by `mechanical-executor.ts`, not
- * redacted), and a failed agent-spawn node's embeds its own. So a run that broke
- * stores a slice of subprocess output in a second place, reachable by a caller
- * that reads only the outcome and never the state — the retention, encryption and
- * access choices above govern all three, and a consumer that logs or displays an
- * outcome's `error` is displaying that output.
+ * message embeds the failing child's own `stderr`: a failed mechanical node's
+ * does, and a failed agent-spawn node's does. Being a second durable carrier of
+ * the same material, that embedded slice goes through `redactSensitiveText` where
+ * each message is built (`mechanical-executor.ts`, `node-executor.ts`,
+ * `stream-reader.ts`'s malformed-line error), which bounds it as well as redacts
+ * it — capping alone, which is what those sites did before, left the machine's
+ * paths and an echoed credential at rest for a caller that reads only the outcome
+ * and never the state. The node name and exit code stay in the message, so the
+ * diagnosis survives the redaction.
  *
  * **What is not here.** The typed control surface itself — a halt handle, a
  * resume that continues from a checkpoint, and the typed outcome a leg of a run
@@ -556,9 +568,11 @@ function keyedChannel<T>(
  * is not a value this package could have written is refused the same way — see
  * `keyedChannel`.
  *
- * `results` comes back exactly as the graph recorded it, captured subprocess
- * output and agent event streams included — see this file's header for what
- * that means for the store holding it.
+ * `results` comes back exactly as the graph recorded it — which is the narrowed
+ * form, every entry redacted and bounded and carrying a `narrowing` saying which
+ * of its fields that applied to. `sessions` and `revisionCounts` come back
+ * verbatim, because a resume and a decision ceiling read them. See this file's
+ * header for what that means for the store holding it.
  */
 export async function readRunCheckpoint(
   checkpointer: BaseCheckpointSaver,

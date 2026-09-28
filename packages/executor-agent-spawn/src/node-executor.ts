@@ -19,6 +19,7 @@ import {
   type SpawnedProcessLike,
   type SpawnFn
 } from './process-lifecycle'
+import { redactSensitiveText } from './reason-text'
 import { attachStreamReader, finalizeEvents } from './stream-reader'
 import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
 
@@ -195,7 +196,11 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
 
   if (exitCode !== 0) {
     throw new Error(
-      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${reader.stderrChunks.join('').slice(0, 2000) || '(empty)'}`
+      // Redacted, not merely capped, for the reason `executeMechanicalNode`'s
+      // own failure message is: a failed task's message is persisted on the
+      // thread, so it carries this stderr into the same store the narrowed
+      // result goes to, and a caller reading only the outcome sees it there.
+      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${redactSensitiveText(reader.stderrChunks.join('')) || '(empty)'}`
     )
   }
 

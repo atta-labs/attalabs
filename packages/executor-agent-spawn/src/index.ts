@@ -53,6 +53,7 @@ export type {
   AgentSpawnNodeResult,
   MechanicalActionConfig,
   MechanicalNodeResult,
+  ResultNarrowing,
   RoleBinaryArgsParams,
   RoleBinaryConfig,
   RunCheckpointState,

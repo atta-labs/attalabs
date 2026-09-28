@@ -7,7 +7,10 @@
  * `sanitizeReasonText`, for a reason string a *caller* handed in, and
  * `redactSensitiveText`, for text this package did not author at all — a
  * spawned agent's own structured output, a child process's stderr, an error
- * message that embeds either.
+ * message that embeds either. Two thin mappers sit on the second of those, one
+ * per channel that has to carry such text: `redactLifecycleEvent` for an event
+ * an observer receives, `narrowPersistedResult` for the node result a
+ * checkpointer writes.
  *
  * **Why they live in one file.** Several seams take a string from outside
  * this package, and none of them is another's caller: `process-lifecycle.ts`
@@ -25,8 +28,12 @@
  *
  * **What `redactSensitiveText` is, and is not.** It is a definition of
  * sensitive text that any channel can apply — it takes a string and returns a
- * string, so a caller redacting what a checkpoint persists reuses it without
- * touching the event channel at all. It is not, and cannot be, a guarantee
+ * string, so the pass that narrows what a checkpoint persists
+ * (`narrowPersistedResult`, below) reuses it without touching the event channel
+ * at all. Two channels, one answer to what "sensitive" means: the event
+ * channel's own mapper (`redactLifecycleEvent`) and the persisted-state mapper
+ * both sit on this one function, and each owns only its own bound and its own
+ * field-by-field decision. It is not, and cannot be, a guarantee
  * that no secret survives: the rules below recognise the shapes this package
  * has evidence for, and a spawned process can print a credential in a shape
  * nothing here matches. Treat it as the floor it is — it removes what is
@@ -34,7 +41,7 @@
  * secret is at least not reproduced in full.
  */
 
-import type { AgentLifecycleEvent } from './types'
+import type { AgentLifecycleEvent, ResultNarrowing, StepNodeResult } from './types'
 
 /**
  * The longest caller-supplied reason carried into a message. Generous enough
@@ -59,6 +66,46 @@ export const MAX_REASON_TEXT_LENGTH = 200
  * too tight would cut the diagnosis before the excerpt it exists to carry.
  */
 export const MAX_REDACTED_EXCERPT_LENGTH = 500
+
+/**
+ * The longest any one free-text field of a *persisted* node result carries.
+ *
+ * Larger than `MAX_REDACTED_EXCERPT_LENGTH` on purpose, and the difference is
+ * not a loosened rule — it is a different consumer. An event's excerpt is read
+ * by an observer, for whom high-signal is the whole requirement. A persisted
+ * result is read by the run itself: a later agent-spawn step's
+ * `promptTemplate` renders `results` as its Handlebars context, and a caller's
+ * `decisionPredicate` is handed the examined step's recorded result. Bounding
+ * those at an observer's excerpt length would not merely shorten a log line, it
+ * would change what a downstream step is told — a `git diff` a review step
+ * reads, cut to a few hundred characters, is a different prompt. So the bound
+ * is set where a real command's output stays usable while still being a bound:
+ * nothing a child prints can make one field of one checkpoint arbitrarily
+ * large, which is the property the stored form has to have.
+ *
+ * Deliberately not a caller-configurable option. What a checkpoint may hold is
+ * the package's own guarantee, and a knob would let it be turned back off.
+ */
+export const MAX_PERSISTED_TEXT_LENGTH = 4000
+
+/**
+ * The most records of an agent's structured stream any one persisted result
+ * keeps.
+ *
+ * A per-record bound alone does not bound the result: a spawned agent working
+ * for minutes emits thousands of records, and LangGraph re-serializes
+ * everything accumulated so far at every superstep, so an unbounded array makes
+ * each later write larger than the last. The count is what turns that growth
+ * into a ceiling.
+ *
+ * The *last* records are the ones kept, not the first. A stream's tail is where
+ * the step's answer and its final tool results are; its head is the prompt and
+ * the setup, which the Plan already describes. Nothing load-bearing is lost by
+ * dropping from the front — the session id a resume needs was extracted by
+ * `executeAgentSpawnNode` before this ran and lives in the `sessions` channel,
+ * not in this array.
+ */
+export const MAX_PERSISTED_EVENT_RECORDS = 50
 
 /** Appended when an excerpt was cut, so a reader never mistakes it for the whole. */
 const TRUNCATION_MARKER = '…[truncated]'
@@ -242,13 +289,120 @@ export function sanitizeReasonText(raw: string): string {
  * anything else this package hands out — notably what a checkpoint persists,
  * which is a separate channel with the same exposure and must not grow a
  * second, drifting answer of its own.
+ *
+ * `maxLength` is how far that independence goes: the *rules* are one
+ * definition shared by every channel, while the bound belongs to the channel,
+ * because how much text is useful depends on who reads it (see
+ * `MAX_PERSISTED_TEXT_LENGTH`). A caller choosing its own bound is choosing how
+ * much of an already-redacted string to keep, never which shapes count as
+ * sensitive — that question has exactly one answer and it is `REDACTION_RULES`.
  */
-export function redactSensitiveText(raw: string): string {
+export function redactSensitiveText(raw: string, maxLength: number = MAX_REDACTED_EXCERPT_LENGTH): string {
   let text = collapseControlCharacters(raw)
   for (const { pattern, replacement } of REDACTION_RULES) {
     text = text.replace(pattern, replacement)
   }
-  return boundText(text, MAX_REDACTED_EXCERPT_LENGTH, TRUNCATION_MARKER)
+  return boundText(text, maxLength, TRUNCATION_MARKER)
+}
+
+/** One record of a spawned agent's stream, as text — the same reduction the event channel's own emission does. */
+function recordAsText(record: unknown): string {
+  return typeof record === 'string' ? record : JSON.stringify(record)
+}
+
+/**
+ * The form of a node's result that goes to rest — bounded and redacted, and
+ * saying which of its own fields that happened to.
+ *
+ * **Why this is applied where a node's result is written back, not in the state
+ * annotation's reducer.** A checkpoint is more than its channel values: a
+ * `StateSnapshot`'s `metadata` carries `writes`, the node outputs of that
+ * super-step, and LangGraph additionally persists each finished node's own
+ * writes as task entries against the in-progress checkpoint so a sibling's
+ * failure does not force a re-run. All three are the value the node *returned*.
+ * A reducer therefore narrows only one of the three: the raw return would still
+ * be stored verbatim as that super-step's recorded write and as that task's
+ * pending write, and the guarantee would be false while looking true from
+ * `getState()`. Narrowing what the node returns is the only placement that
+ * reaches every copy.
+ *
+ * **What it keeps, and why that split and not another.** Every structural field
+ * survives untouched — `kind`, `nodeId`, `exitCode`, `durationMs`, and a
+ * mechanical node's declared `action`. Those are what make a stored result
+ * readable as a result at all, and they are values this package or its caller
+ * produced, never text a child printed. Only what a spawned process authored is
+ * rewritten. That is the same line the normative tracing guidance draws when it
+ * excludes a span's sensitive inputs and outputs (`RunConfig`'s
+ * `traceIncludeSensitiveData`) while the span itself stays fully observable —
+ * and it is the line the event channel already draws through
+ * `redactLifecycleEvent`, applied here to state instead of to an event so the
+ * two cannot answer differently.
+ *
+ * **What it deliberately does not touch.** Not the `sessions` channel and not
+ * `revisionCounts`: the first is the id a later step's `resume` hands to the
+ * agent CLI, the second the counter a decision's ceiling is compared against, so
+ * narrowing either would change what the run *does*, not what it stores. The
+ * duplicate of that session id carried on an agent-spawn *result* is redacted,
+ * because nothing reads it there and a session identifier is one of the shapes
+ * the rules exist to remove.
+ *
+ * Returns a new object every time. The caller's own value is left alone, which
+ * is what lets the node wrapper read the real `sessionId` off it and emit the
+ * real stream to an observer after this has run.
+ */
+export function narrowPersistedResult(result: StepNodeResult): StepNodeResult {
+  switch (result.kind) {
+    case 'agent-spawn': {
+      const asText = result.events.map(recordAsText)
+      const dropped = Math.max(0, asText.length - MAX_PERSISTED_EVENT_RECORDS)
+      const events = asText.slice(dropped).map((text) => redactSensitiveText(text, MAX_PERSISTED_TEXT_LENGTH))
+      const originalLengths: Record<string, number> = {
+        events: asText.reduce((total, text) => total + text.length, 0)
+      }
+      const redactedFields = ['events']
+      if (result.sessionId !== undefined) {
+        originalLengths.sessionId = result.sessionId.length
+        redactedFields.push('sessionId')
+      }
+      const narrowing: ResultNarrowing = {
+        redactedFields,
+        originalLengths,
+        originalEventCount: asText.length
+      }
+      return {
+        ...result,
+        events,
+        ...(result.sessionId === undefined ? {} : { sessionId: PLACEHOLDER_SESSION }),
+        narrowing
+      }
+    }
+    case 'mechanical': {
+      const narrowing: ResultNarrowing = {
+        redactedFields: ['command', 'stdout', 'stderr'],
+        originalLengths: {
+          command: result.command.length,
+          stdout: result.stdout.length,
+          stderr: result.stderr.length
+        },
+        originalEventCount: 0
+      }
+      return {
+        ...result,
+        command: redactSensitiveText(result.command, MAX_PERSISTED_TEXT_LENGTH),
+        stdout: redactSensitiveText(result.stdout, MAX_PERSISTED_TEXT_LENGTH),
+        stderr: redactSensitiveText(result.stderr, MAX_PERSISTED_TEXT_LENGTH),
+        narrowing
+      }
+    }
+    default: {
+      // Exhaustive against the result union, for the reason
+      // `redactLifecycleEvent`'s switch is: a third node kind carrying a third
+      // captured-output field must not reach a checkpoint through a `default`
+      // branch that quietly passed it along verbatim.
+      const exhaustive: never = result
+      return exhaustive
+    }
+  }
 }
 
 /**
