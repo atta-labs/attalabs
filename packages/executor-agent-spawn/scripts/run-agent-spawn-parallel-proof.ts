@@ -257,7 +257,11 @@ function assertFinalState(state: AgentSpawnGraphStateValue) {
   assert.equal(finishResult.kind, 'mechanical')
   if (finishResult.kind !== 'mechanical') throw new Error('unreachable')
   assert.equal(finishResult.exitCode, 0, 'finish step must exit 0')
-  assert.equal(finishResult.stdout, 'record-completion:no-side-effects\n')
+  // No trailing newline: what the graph records is the narrowed form of the
+  // result, and collapsing control characters is the first thing every text
+  // treatment in this package does. The content is otherwise the command's own —
+  // it matches no redaction rule.
+  assert.equal(finishResult.stdout, 'record-completion:no-side-effects')
   assert.equal(state.sessions[FINISH_STEP_ID], undefined, 'a mechanical step must never record a session')
 }
 

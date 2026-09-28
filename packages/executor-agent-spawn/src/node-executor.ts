@@ -19,6 +19,7 @@ import {
   type SpawnedProcessLike,
   type SpawnFn
 } from './process-lifecycle'
+import { redactSensitiveText } from './reason-text'
 import { attachStreamReader, finalizeEvents } from './stream-reader'
 import type { AgentSpawnExecutorConfig, AgentSpawnNodeResult } from './types'
 
@@ -37,9 +38,23 @@ export const DEFAULT_ENV_ALLOWLIST = ['PATH', 'HOME']
  * silently followed at spawn time.
  */
 function resolveConfinedWorkingDirectory(node: PlanAgentSpawnNode, allowedRoot: string): string {
+  // Every path interpolated into a message below is redacted. These messages
+  // are thrown from inside a node, which means LangGraph persists them on the
+  // thread as that task's failed-task record — the same durable carrier the
+  // node's own recorded result is narrowed for. An absolute path is the
+  // machine's own filesystem layout whoever it came from, so a Plan-declared
+  // `workingDirectory` and a caller-configured root leak it exactly as a
+  // child's stderr would.
+  //
+  // What survives is what identifies the fault: the node id, and which of the
+  // three positions each redacted path occupied. Nothing diagnosable is lost
+  // to whoever has to act on it — the declared directory is in the Plan and the
+  // root is in the caller's own config, both already in hand. Only the resolved
+  // realpath is unrecoverable from those, and that is precisely the deployment
+  // layout being kept out of the store.
   if (!node.workingDirectory || !isAbsolute(node.workingDirectory)) {
     throw new Error(
-      `Agent-spawn node '${node.id}' has a non-absolute or empty workingDirectory ('${node.workingDirectory}') — refusing to spawn with an unbounded cwd. Declare an absolute path.`
+      `Agent-spawn node '${node.id}' has a non-absolute or empty workingDirectory ('${redactSensitiveText(node.workingDirectory ?? '')}') — refusing to spawn with an unbounded cwd. Declare an absolute path.`
     )
   }
 
@@ -47,16 +62,18 @@ function resolveConfinedWorkingDirectory(node: PlanAgentSpawnNode, allowedRoot: 
   try {
     real = realpathSync(node.workingDirectory)
   } catch (err) {
+    // The thrown `message` is Node's own (`ENOENT: … , lstat '/abs/path'`), so
+    // it embeds the path a second time and is redacted with it.
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(
-      `Agent-spawn node '${node.id}' declares workingDirectory '${node.workingDirectory}', which could not be resolved: ${message}`
+      `Agent-spawn node '${node.id}' declares workingDirectory '${redactSensitiveText(node.workingDirectory)}', which could not be resolved: ${redactSensitiveText(message)}`
     )
   }
 
   const realRoot = realpathSync(allowedRoot)
   if (real !== realRoot && !real.startsWith(realRoot + sep)) {
     throw new Error(
-      `Agent-spawn node '${node.id}''s workingDirectory ('${node.workingDirectory}', resolved to '${real}') escapes the configured root '${allowedRoot}' — refusing to spawn outside it.`
+      `Agent-spawn node '${node.id}''s workingDirectory ('${redactSensitiveText(node.workingDirectory)}', resolved to '${redactSensitiveText(real)}') escapes the configured root '${redactSensitiveText(allowedRoot)}' — refusing to spawn outside it.`
     )
   }
 
@@ -195,7 +212,11 @@ export async function executeAgentSpawnNode(params: ExecuteAgentSpawnNodeParams)
 
   if (exitCode !== 0) {
     throw new Error(
-      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${reader.stderrChunks.join('').slice(0, 2000) || '(empty)'}`
+      // Redacted, not merely capped, for the reason `executeMechanicalNode`'s
+      // own failure message is: a failed task's message is persisted on the
+      // thread, so it carries this stderr into the same store the narrowed
+      // result goes to, and a caller reading only the outcome sees it there.
+      `Agent-spawn node '${node.id}' (role '${node.agentRole}') exited with code ${exitCode}. stderr: ${redactSensitiveText(reader.stderrChunks.join('')) || '(empty)'}`
     )
   }
 

@@ -16,32 +16,44 @@
  * number a malformed record sits on, and only the incremental path is
  * exercised by a real process.
  *
- * **Nothing here redacts, deliberately.** The records this file frames and
- * the stderr it accumulates are the spawned agent's own output, kept
- * verbatim — that is what makes them usable as a result. Redaction happens
- * once, at the single point every observer-facing event passes through
- * (`graph-builder.ts`'s `safeEmit`), so the events an observer receives carry
- * bounded, redacted excerpts of this text while the recorded result keeps the
- * real thing. Adding a second redaction pass here would recreate exactly the
- * condition that produced the original leak: redaction spread across the
- * emission paths, with no one place answering for what "sensitive" means.
+ * **This file's captured output is verbatim, and every channel out of it
+ * redacts.** The records framed here and the stderr accumulated here are the
+ * spawned agent's own output, kept exactly as printed — that is what makes this
+ * the capture, the one place a caller can still reach the real stream. Nothing
+ * downstream of it hands that text out unchanged: an observer-facing event is
+ * redacted at the single point every event passes through (`graph-builder.ts`'s
+ * `safeEmit`), and the result a checkpoint persists is redacted and bounded at
+ * the single point the node's result is written back (`narrowPersistedResult`).
+ * Both sit on one definition of sensitive (`reason-text.ts`). A redaction pass
+ * added *here* instead would recreate the condition that produced the original
+ * leak — the decision spread across paths, with no one place answering for what
+ * "sensitive" means — and would also destroy the capture the two channels are
+ * derived from.
  *
- * Two consequences follow, and both are the caller's to weigh. The
- * `onRecord` hook below is **not** the redacted channel — it is a distinct,
- * lower-level seam that hands over raw records as they arrive, so an observer
- * of it is an observer of an unredacted agent transcript. And the verbatim
- * text kept here is what a checkpoint persists, which is its own channel with
- * its own exposure.
+ * One consequence is the caller's to weigh: the `onRecord` hook below is **not**
+ * a redacted channel. It is a distinct, lower-level seam handing over raw records
+ * as they arrive, so an observer of it is an observer of an unredacted agent
+ * transcript, by its own design. The one string this file builds that outlives
+ * the capture — the malformed-line error, which LangGraph persists as a failed
+ * task's message — is redacted where it is built, for that reason.
  */
 
 import { StringDecoder } from 'node:string_decoder'
 import { isProcessAbandoned, type SpawnedProcessLike } from './process-lifecycle'
+import { redactSensitiveText } from './reason-text'
 
 /** A complete line that was not JSON, with its position among the stream's non-empty lines (1-based). */
 interface MalformedLine {
   line: string
   lineNumber: number
 }
+
+/**
+ * How much of a malformed line the error quotes. Shorter than an excerpt of a
+ * whole tool result because the point is to identify the line, not to carry it:
+ * a reader needs enough to recognise what the child printed instead of JSON.
+ */
+const MAX_MALFORMED_LINE_LENGTH = 200
 
 /**
  * Builds the error a non-JSON line raises. Naming the offending line and
@@ -51,7 +63,10 @@ interface MalformedLine {
  */
 function nonJsonError(nodeId: string, malformed: MalformedLine): Error {
   return new Error(
-    `Agent-spawn node '${nodeId}' produced non-JSON output on line ${malformed.lineNumber} of its structured stream: ${malformed.line.slice(0, 200)}`
+    // The quoted line is the child's own output and this message is persisted
+    // as a failed task's on the thread, so it is redacted rather than only
+    // sliced — the same treatment the two exit-code failures give their stderr.
+    `Agent-spawn node '${nodeId}' produced non-JSON output on line ${malformed.lineNumber} of its structured stream: ${redactSensitiveText(malformed.line, MAX_MALFORMED_LINE_LENGTH)}`
   )
 }
 

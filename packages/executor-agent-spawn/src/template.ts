@@ -14,7 +14,19 @@ import type { StepNodeResult } from './types'
 export interface StepTemplateContext {
   /** The question the Plan was compiled for. */
   question: string
-  /** Prior nodes' results in this run, keyed by node id — agent-spawn and mechanical alike. */
+  /**
+   * Prior nodes' results in this run, keyed by node id — agent-spawn and
+   * mechanical alike.
+   *
+   * These are the *narrowed* results the graph recorded, not an executor's
+   * verbatim capture: a template interpolating a prior node's `stdout` or
+   * `events` renders a redacted, bounded form of it. That is deliberate and is
+   * what makes a rendered prompt identical across a halt and resume — the state
+   * a resumed leg reads is the state the uninterrupted run read. It does not
+   * make the text trusted: it is still an external process's output rendered
+   * with `noEscape`, so the prompt-injection caution on interpolating a prior
+   * result stands unchanged.
+   */
   results: Record<string, StepNodeResult>
 }
 

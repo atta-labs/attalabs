@@ -181,15 +181,25 @@ function assertFinalState(state: AgentSpawnGraphStateValue) {
   if (spawnResult.kind !== 'agent-spawn') throw new Error('unreachable')
   assert.equal(spawnResult.exitCode, 0, 'agent-spawn step must exit 0')
   assert.ok(spawnResult.events.length > 0, 'agent-spawn step must produce a parsed NDJSON event stream')
-  assert.ok(typeof spawnResult.sessionId === 'string', 'a real claude run must report a session id')
-  assert.ok(state.sessions[AGENT_SPAWN_STEP_ID], 'the run must record the resumable session id')
+  // The recorded stream is the narrowed form, so every record is a redacted
+  // excerpt and the duplicate session id on the result is a placeholder. The
+  // `sessions` channel below is where the real, resumable id has to be — this
+  // pair is what proves the split rather than assuming it.
+  assert.ok(spawnResult.narrowing, 'the recorded result must say it was narrowed')
+  assert.equal(spawnResult.sessionId, '[redacted:session]', "a result's session id must not go to rest raw")
+  assert.ok(
+    typeof state.sessions[AGENT_SPAWN_STEP_ID] === 'string' &&
+      state.sessions[AGENT_SPAWN_STEP_ID] !== '[redacted:session]',
+    'the run must record the real resumable session id in the sessions channel'
+  )
 
   const mechanicalResult = state.results[MECHANICAL_STEP_ID]
   assert.ok(mechanicalResult, 'missing mechanical result')
   assert.equal(mechanicalResult.kind, 'mechanical')
   if (mechanicalResult.kind !== 'mechanical') throw new Error('unreachable')
   assert.equal(mechanicalResult.exitCode, 0, 'mechanical step must exit 0')
-  assert.equal(mechanicalResult.stdout, 'record-completion:no-side-effects\n')
+  // Narrowed, so the trailing newline is collapsed — see the narrowing note above.
+  assert.equal(mechanicalResult.stdout, 'record-completion:no-side-effects')
   assert.equal(state.sessions[MECHANICAL_STEP_ID], undefined, 'a mechanical step must never record a session')
 }
 

@@ -104,9 +104,12 @@ export interface AgentSpawnExecutorConfig {
    * machine paths, session and account identifiers and rate-limit metadata
    * replaced by named placeholders, and is cut to a bounded excerpt. So
    * `content` and `error` are excerpts for an observer to read, never a
-   * faithful copy of what the child printed: a caller needing the verbatim
-   * stream reads the node's own recorded result instead, and owns the
-   * exposure that carries.
+   * faithful copy of what the child printed. A caller that needs the verbatim
+   * stream reads it from the capture — `executeAgentSpawnNode`'s own return
+   * value, or the stream reader's `onParsedEvents` hook — and owns the exposure
+   * that carries. Not from the recorded result: what the graph records and a
+   * checkpointer persists is narrowed too, by its own pass over the same
+   * redaction rules.
    */
   onEvent?: (event: AgentLifecycleEvent) => void
   /**
@@ -140,7 +143,11 @@ export interface AgentSpawnExecutorConfig {
    * resolution `roleBinaries`/`mechanicalActions` already use. Each function
    * receives the examined step's own recorded result
    * (`state.results[decision.examine]`) and returns whether the positive
-   * (`ifTrue`) outcome applies. Optional: a Plan with no `decision`-bearing
+   * (`ifTrue`) outcome applies. That recorded result is the *narrowed* one — a
+   * predicate keying on captured output keys on a redacted, bounded form of it,
+   * which is what the run itself will read again after a resume. A predicate
+   * that needs the verbatim output cannot get it from graph state at all and
+   * must not be written as though it could. Optional: a Plan with no `decision`-bearing
    * nodes needs none. A node that declares a `decision` but has no entry
    * here — or whose predicate throws — is refused the same way an
    * unconfigured `roleBinaries`/`mechanicalActions` key is: a clear, named
@@ -151,20 +158,81 @@ export interface AgentSpawnExecutorConfig {
 }
 
 /**
+ * What a result's persisted form replaced, so a consumer can tell a value that
+ * was narrowed from one the node never produced.
+ *
+ * Present on every result the graph records, absent on one an executor returned
+ * directly — which is exactly the distinction it exists to carry. A node
+ * executor (`executeAgentSpawnNode`, `executeMechanicalNode`) returns the
+ * verbatim capture and no `narrowing`; the graph's node wrapper narrows that
+ * value before writing it into state, and the narrowed copy says so. So
+ * `narrowing === undefined` means "this is the capture itself", never "nothing
+ * was removed from a state read".
+ *
+ * Reported rather than left implicit because the alternative — a shorter string
+ * and a smaller array with nothing saying why — is indistinguishable from a
+ * node that simply printed less, and a consumer diagnosing a run would have no
+ * way to tell a quiet command from a redacted one.
+ */
+export interface ResultNarrowing {
+  /**
+   * Every field on this result whose value is a bounded, redacted form of what
+   * the node produced — never the original. A field absent from this list is
+   * verbatim.
+   */
+  redactedFields: string[]
+  /**
+   * Characters the node's own value held, keyed by field name, before
+   * redaction and bounding. For `events` this is the total across every record
+   * the stream held, the dropped ones included.
+   */
+  originalLengths: Record<string, number>
+  /**
+   * Records the node's own event stream held. Compare against the persisted
+   * `events` array's own length to see how many the bound dropped. `0` on a
+   * mechanical result, which has no stream at all.
+   */
+  originalEventCount: number
+}
+
+/**
  * The structured result of executing one agent-spawn node. `events` is the
  * spawned process's own structured (NDJSON) output stream, parsed and kept
  * verbatim — this package never scrapes prose with a regex to derive it.
+ *
+ * "Verbatim" is true of what `executeAgentSpawnNode` returns and of what the
+ * event channel's caller can still reach through `onParsedEvents`. It is not
+ * true of the copy the graph records in `results` and a checkpointer persists:
+ * that one is narrowed, and carries `narrowing` saying so. See
+ * `narrowPersistedResult` in `reason-text.ts`.
  */
 export interface AgentSpawnNodeResult {
   nodeId: string
   /** Discriminant — which node kind produced this result. */
   kind: 'agent-spawn'
-  /** Every structured event the process emitted on stdout, in order. */
+  /**
+   * Every structured event the process emitted on stdout, in order.
+   *
+   * `unknown[]` because the records are whatever the spawned CLI printed: the
+   * capture holds parsed JSON values, while the persisted form holds one
+   * bounded, redacted string per record. A consumer reading this off graph
+   * state or off a checkpoint gets the second shape.
+   */
   events: unknown[]
-  /** Resumable session id, extracted from the event stream when present. */
+  /**
+   * Resumable session id, extracted from the event stream when present.
+   *
+   * Verbatim on the capture; redacted on the persisted copy, because a session
+   * identifier is one of the values the redaction rules exist to remove and
+   * this is not the field a resume reads. The load-bearing copy is the
+   * `sessions` channel (`RunCheckpointState.sessions`), which a later step's
+   * `resume` looks up and which is deliberately never narrowed.
+   */
   sessionId?: string
   exitCode: number
   durationMs: number
+  /** What the persisted form replaced. Absent on the executor's own capture. */
+  narrowing?: ResultNarrowing
 }
 
 // ── Mechanical steps ────────────────────────────────────────────────────────
@@ -215,19 +283,36 @@ export interface MechanicalActionConfig {
  * agent-spawn result there are no `events` and no `sessionId`: a mechanical
  * command emits ordinary output, not a structured agent event stream, so its
  * stdout and stderr are kept verbatim as text rather than parsed.
+ *
+ * "Verbatim" is true of what `executeMechanicalNode` returns. It is not true of
+ * the copy the graph records in `results` and a checkpointer persists: that one
+ * is narrowed, and carries `narrowing` saying so. See `narrowPersistedResult`
+ * in `reason-text.ts`.
  */
 export interface MechanicalNodeResult {
   nodeId: string
   /** Discriminant — which node kind produced this result. */
   kind: 'mechanical'
-  /** The Plan node's declared action name, verbatim. */
+  /**
+   * The Plan node's declared action name, verbatim — on the capture and on the
+   * persisted copy alike. It is the caller's own declaration, not text a child
+   * printed, and it is what identifies the action after the fact once
+   * `command` has been through redaction.
+   */
   action: string
-  /** The command the action name resolved to, for after-the-fact attribution. */
+  /**
+   * The command the action name resolved to, for after-the-fact attribution.
+   * Redacted on the persisted copy: the caller may resolve an action to an
+   * absolute path, which is the machine's own filesystem layout and must not go
+   * to rest. A bare command name (`git`) matches no rule and survives intact.
+   */
   command: string
   exitCode: number
   stdout: string
   stderr: string
   durationMs: number
+  /** What the persisted form replaced. Absent on the executor's own capture. */
+  narrowing?: ResultNarrowing
 }
 
 /**
@@ -273,12 +358,17 @@ export interface RunIdentity {
  * maintains, because there is none.
  *
  * Carries the run's identity, the checkpoint's own compact identifiers, and
- * the three keyed channels the graph actually accumulates. `results` is
- * returned exactly as the graph recorded it, captured subprocess output
- * included: this task neither adds to nor narrows that channel's contents —
- * narrowing it would mean editing an existing exported result interface (which
- * this tranche's append-only convention forbids) and would pre-empt the
- * redaction task that owns precisely that question.
+ * the three keyed channels the graph actually accumulates.
+ *
+ * `results` is returned exactly as the graph recorded it — which is now the
+ * narrowed form, not the capture. Every entry's free text has been through
+ * `redactSensitiveText` and bounded, and every entry carries a `narrowing`
+ * saying which fields that applied to, so this read never hands back an
+ * unredacted agent transcript or an unbounded command output. `sessions` and
+ * `revisionCounts` are verbatim and deliberately so: the first is the id a
+ * later step's `resume` passes to the agent CLI, the second the counter a
+ * decision's ceiling is compared against, and narrowing either would change
+ * what the run does rather than what it stores.
  */
 export interface RunCheckpointState {
   identity: RunIdentity
