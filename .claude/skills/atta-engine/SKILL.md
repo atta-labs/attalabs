@@ -107,8 +107,39 @@ import type {
 | `OnFailureSpec` | `{ action: 'abort' | 'continue' | 'revise', target?, max_revisions?, signal }` |
 | `Plan` family | Compiled output types (consumed by adapter) |
 | `Agent` | Re-exported from `@atta/agents`; the engine never owns Agent types |
+| `loadStepsFlow(yaml: string)` | Parse + validate YAML string → `StepsFlow`. Throws if the YAML declares `rounds` instead. |
+| `validateStepsFlow(flow)` | The steps-shape rules (step ids, role refs, resume refs, `decision` targets, `dependsOn` cycles). Called internally by `loadStepsFlow`. |
+| `resolveStepDependsOn(steps, index)` | A step's effective dependencies — an explicit `dependsOn` verbatim, otherwise the preceding step. The single source of truth the validator and compiler share. |
+| `StepsFlow` / `AnyFlow` / `Step` family | The steps-shape types, so a caller can name what `compileFlow` already accepted |
 
 The old `loadSpec`, `compileSpec`, `specToTeam`, `DeliberationSpec`, `SpecAgent`, `FlowSpec`, `ReviewerSpec`, `Team`, `Workflow`, `BrokeredWorkflow`, `RoundsWorkflow`, `SoloWorkflow`, `CustomWorkflow` exports are **gone**. No backwards-compat shim. The generic flow refactor migrated all 29 consumer files to the new surface atomically.
+
+---
+
+## Distribution — the artifact contract
+
+Three packages ship as installable artifacts: `@atta/agents` (`packages/atta-agents`), `@atta/engine`, and `@atta/executor-agent-spawn`. They are one set, not three independent ones — `@atta/engine`'s public declarations re-export `Agent` from `@atta/agents`, so an artifact set missing the agents package has declarations naming a package its consumer cannot install. `@atta/adapter-langgraph` is deliberately not in the set: it runs the rounds shape and no external consumer of the agent-lifecycle runtime needs it.
+
+**`dist/` is the contract; `src/` is not.** Each manifest's `main`, `types` and `exports` point at `./dist/…`, and `files` is `["dist"]`, so a packed tarball contains built output and nothing else. Pointing them at `./src/index.ts`, which is what they did before, made the distribution contract "have this repository's TypeScript and a transpiler that agrees with it" — true for a workspace sibling and for nobody else.
+
+**Two emitters, one `dist/`, for two different reasons:**
+
+| Script | Tool | Produces | Why that tool |
+|--------|------|----------|---------------|
+| `build:types` | `tsc -p tsconfig.build.json` | `dist/*.d.ts` (`emitDeclarationOnly`, no declaration maps) | Only the compiler can emit declarations. Maps are off so nothing in the artifact names a path on the machine that built it. |
+| `build:js` | `bun build … --format esm --packages external` | `dist/index.js`, one bundled module | A multi-file `tsc` ESM emit keeps extensionless relative specifiers (`./types`), which Node's ESM resolver rejects. Bundling removes every relative specifier instead of rewriting them. `--packages external` leaves real dependencies (`zod`, `js-yaml`, `@langchain/langgraph`) to the consumer's own install. |
+
+The emitted declarations are still multi-file and still carry extensionless relative specifiers, so a consumer resolves them with `bundler`- or `node10`-style module resolution — which is what every consumer in this repo already uses (`@atta/typescript-config/base.json` sets `"moduleResolution": "bundler"`). A consumer on `node16`/`nodenext` would need a declaration bundler; none ships today.
+
+**`typecheck` emits declarations on purpose.** Each package's `typecheck` script is `bun run build:types && tsc --noEmit`. The emit is what makes a source-free `exports` entry work under `turbo typecheck`, whose task graph orders `^typecheck` but knows nothing about `^build`: a downstream package's `tsc` resolves `@atta/engine` to `dist/index.d.ts`, and that file has to exist by then. Putting the emit inside `typecheck` gets the ordering from a task the graph already runs, with no change to the repo-wide task definitions. Removing it breaks every consumer's typecheck on a clean checkout.
+
+**Packing resolves `workspace:*`, and that is the whole mechanism.** `bun pm pack` rewrites each `workspace:*` range in the packed manifest to the version the workspace member actually declares (`@atta/agents` → `0.1.0`). `npm pack` does not — it leaves `workspace:` in place, and `publishConfig` overrides with it — so `bun pm pack` is the packing tool, not an interchangeable choice. `prepack` runs `build` first, so a hand-run pack cannot ship a stale or missing `dist/`.
+
+**Every package keeps `private: true`.** Nothing here is published to a registry; the contract is proven by packing and installing a tarball. The flag is what keeps an accidental `npm publish` from being the way anyone finds that out.
+
+**The proof is a run, not an assertion.** `packages/executor-agent-spawn/scripts/verify-external-consumer.ts` builds and packs all three, re-reads every packed manifest (refusing a workspace range, a source-pointing entry, an entry naming a file the tarball lacks, or any non-declaration `.ts` file), installs the tarballs into a fresh project in the OS temp directory — asserted to be outside this checkout — and there type-checks and runs a consumer that compiles a steps-shaped Flow and drives the full lifecycle. See `.claude/skills/atta-adapter-langgraph/SKILL.md`'s source-to-public-contract matrix for what that lifecycle proves and why each part of it is normative.
+
+That consumer's `overrides` block pins the two transitive `@atta/*` ranges to the same tarballs. It stands in for the registry this task deliberately does not use: a package manager reading `"@atta/engine": "0.0.1"` out of a packed manifest looks it up publicly and gets a 404. Nothing else is pinned, so every other dependency resolves the way it would for any consumer.
 
 ---
 
@@ -257,7 +288,7 @@ A step's optional `decision` names *which* step's result is examined and *where*
 
 A step's optional `dependsOn` names the ids of the steps it must wait on, forming a real fan-out/join dependency graph rather than a strictly linear chain. `resolveStepDependsOn(steps, index)` (`validate-flow.ts`) is the single source of truth for a step's effective dependencies, imported by both the compiler and the validator so they can never drift apart: an explicit `dependsOn` (including an explicit empty array) is used verbatim; an omitted one defaults to `[steps[index - 1].id]` for every step but the first, and to `[]` for the first. `validateStepsFlow` rejects a `dependsOn` entry naming a nonexistent step id and rejects a cycle in the resolved graph — general cycle detection, not a forward-reference restriction, since a dependency may legitimately point at a step declared later in the array. This is entirely independent of `decision`: `decision` is node-level routing metadata consumed only by the executor at run time, never represented as a `PlanEdge`, so the two features cannot interact and `dependsOn`'s acyclicity check never inspects `decision` fields.
 
-`loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Neither is re-exported through `index.ts` yet — no task in this tranche consumes them from outside the engine package.
+`loadStepsFlow(yaml)` and `validateStepsFlow(flow)` (in `flow-loader.ts` / `validate-flow.ts`) are the steps-shape counterparts of `loadFlow` / `validateFlow`. Both are re-exported through `index.ts`, alongside `resolveStepDependsOn`, the `StepsFlow`/`AnyFlow`/`Step`/`AgentStep`/`MechanicalStep`/`AgentRole`/`StepDecision` types, and the Zod schemas behind them. They became public when a consumer outside this workspace first had to produce a steps-shaped Plan: `compileFlow` already accepted `AnyFlow`, so the compiler was reachable, but without the loader and the types a caller could neither parse a steps-shaped YAML nor give an object literal a type — the shape was compilable and unspeakable at the same time.
 
 `compileFlow` compiles a `StepsFlow` into the `agent-lifecycle` shape (see Shape Detection and Node ID Scheme below) — one `PlanAgentSpawnNode`/`PlanMechanicalNode` per step, validated by `validateStepsFlow` rather than `validateFlow`'s rounds-only rules. `Plan.agents` is left empty for this shape: `AgentRole` (`{role: string}`) carries no `systemPrompt`, so there is no real `Agent` record to build, and the agent-spawn executor resolves a step's declared role to a binary from its own caller-supplied configuration, never from `Plan.agents`.
 
@@ -449,6 +480,10 @@ This is engine internals — the YAML author never touches it.
 - ❌ Calling internal helpers (`buildRevisionCondition`, `detectShape`, `buildPlan`) from outside the engine — use `compileFlow`
 - ❌ Importing from `@vada/teams` — that package was deleted long before the generic flow refactor
 - ❌ Setting `signal.type` to `'equals'` or `'matches'` in a YAML — engine throws explicitly. The schema reserves them; the compiler doesn't ship them yet.
+- ❌ Pointing `main`/`types`/`exports` back at `src/` in any of the three packable manifests — that makes the distribution contract "have this repository"
+- ❌ Dropping the declaration emit out of `typecheck` — every consumer's typecheck then fails on a clean checkout, because nothing else in the task graph builds `dist/` first
+- ❌ `npm pack` for these packages — it leaves `workspace:` ranges in the packed manifest, and the artifact is uninstallable
+- ❌ Adding a fourth package to the artifact set without a consumer that needs it, or dropping `@atta/agents` from it — the engine's declarations name it
 
 ---
 
