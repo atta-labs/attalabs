@@ -103,7 +103,7 @@ jobs:
           # "no PR yet — local dev" and falls through to the ordinary
           # bare-digit scan.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx --yes @attalabs/vinaya@0.34.0 check body-bare-digits
+        run: npx --yes @attalabs/vinaya@0.35.0 check body-bare-digits
 
   vinaya-principal-test-plan-wait:
     name: vinaya check principal-test-plan-wait
@@ -157,4 +157,4 @@ jobs:
           printf '%s\n' "$BODY" >> "$GITHUB_ENV"
           echo "$DELIM" >> "$GITHUB_ENV"
       - name: Principal Test Plan wait
-        run: npx --yes @attalabs/vinaya@0.34.0 check principal-test-plan-wait
+        run: npx --yes @attalabs/vinaya@0.35.0 check principal-test-plan-wait
