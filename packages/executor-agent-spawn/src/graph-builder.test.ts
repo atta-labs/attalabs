@@ -7,6 +7,8 @@ import { MemorySaver } from '@langchain/langgraph'
 import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
+import { MAX_REDACTED_EXCERPT_LENGTH } from './reason-text'
+import { createRunControl, RunHaltedError } from './run-halt'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-graph-root-'))
@@ -955,5 +957,167 @@ describe('buildAgentSpawnStateGraph — checkpointer injection (engine-halt-resu
 
     expect(finalState.sessions.implement).toBe('session-from-implement')
     expect(checkpointer.puts).toHaveLength(0)
+  })
+})
+
+/**
+ * The regression fixture for the leak this redaction pass closes: a spawned
+ * agent's raw output — its machine paths, its session id, its account's
+ * rate-limit metadata, its unbounded stderr — reaching an observer's
+ * `onEvent` hook verbatim, because no single place decided what "sensitive"
+ * meant.
+ *
+ * Every case here asserts against `onEvent`'s own values, never against the
+ * redaction function directly: the guarantee is a property of the emission
+ * boundary, so a future change that redacts correctly but bypasses that
+ * boundary must still fail. The two origins the leak had are both covered —
+ * the streaming path's live records and the failure/cancellation path's error
+ * text — and both are asserted the same way, because one redaction pass now
+ * serves both.
+ */
+describe('createAgentLifecycleNodeExecutor — every observer-facing event is redacted', () => {
+  const emptyState: AgentSpawnGraphStateValue = {
+    runId: 'b3f6a21c-5d47-4e88-9a10-7c2f4e5d6b01',
+    results: {},
+    sessions: {},
+    revisionCounts: {}
+  }
+
+  /** A record shaped like the ones a real agent CLI prints: a path, a session, an account's limits. */
+  const leakyRecord = JSON.stringify({
+    type: 'result',
+    session_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    cwd: '/Users/someone/Work/Repositories/secret-project',
+    rate_limit: { requests_remaining: 3, resets_at: '2026-01-01T00:00:00Z' },
+    result: 'read /Users/someone/.config/gh/hosts.yml'
+  })
+
+  /** Fires stderr before closing with `exitCode`, so the failure message embeds it. */
+  function fakeSpawnWithStderr(stderr: string, exitCode: number): SpawnFn {
+    return () => {
+      const stderrListeners: Array<(chunk: string) => void> = []
+      const closeListeners: Array<(code: number | null) => void> = []
+      const process: SpawnedProcessLike = {
+        stdin: { write: () => {}, end: () => {} },
+        stdout: { on: () => {} },
+        stderr: { on: (_event, listener) => stderrListeners.push(listener) },
+        on: (event, listener) => {
+          if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+        },
+        kill: () => {}
+      }
+      queueMicrotask(() => {
+        for (const listener of stderrListeners) listener(stderr)
+        for (const listener of closeListeners) listener(exitCode)
+      })
+      return process
+    }
+  }
+
+  function failedEventOf(events: AgentLifecycleEvent[]): string {
+    const failed = events.find((e) => e.type === 'node:failed')
+    if (failed?.type !== 'node:failed') throw new Error('expected a node:failed event')
+    return failed.error
+  }
+
+  it("redacts the streaming path: a record's paths, session id and rate-limit metadata never reach an observer", async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, onEvent: (e) => events.push(e) },
+      fakeSpawn([leakyRecord])
+    )
+
+    await executor(emptyState, { node: twoStepPlan.graph.nodes.implement!, plan: twoStepPlan })
+
+    const streaming = events.find((e) => e.type === 'node:streaming')
+    if (streaming?.type !== 'node:streaming') throw new Error('expected a node:streaming event')
+    expect(streaming.content).not.toContain('/Users/someone')
+    expect(streaming.content).not.toContain('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+    expect(streaming.content).not.toContain('requests_remaining')
+    expect(streaming.content).toContain('[redacted:path]')
+    expect(streaming.content).toContain('[redacted:session]')
+    expect(streaming.content).toContain('[redacted:rate-limit]')
+  })
+
+  it("redacts the failure path: a child's stderr reaches an observer as a bounded, redacted excerpt", async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, onEvent: (e) => events.push(e) },
+      fakeSpawnWithStderr(
+        `fatal: cannot read /Users/someone/.ssh/id_ed25519 (session f47ac10b-58cc-4372-a567-0e02b2c3d479)\n${'noise '.repeat(400)}`,
+        1
+      )
+    )
+
+    await expect(executor(emptyState, { node: twoStepPlan.graph.nodes.implement!, plan: twoStepPlan })).rejects.toThrow(
+      /exited with code 1/
+    )
+
+    const error = failedEventOf(events)
+    expect(error).not.toContain('/Users/someone')
+    expect(error).not.toContain('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+    expect(error).toContain('[redacted:path]')
+    expect(error).toContain('[redacted:session]')
+    // Bounded: the raw message is thousands of characters, the excerpt is not.
+    expect(error.length).toBeLessThanOrEqual(MAX_REDACTED_EXCERPT_LENGTH + 12)
+    expect(error).toContain('[truncated]')
+  })
+
+  it('redacts the cancellation path: a halt reason carrying a machine path is redacted like any other text', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const control = createRunControl()
+    const executor = createAgentLifecycleNodeExecutor(
+      {
+        ...config,
+        onEvent: (e) => {
+          events.push(e)
+          if (e.type === 'node:start') control.halt('operator stopped the run at /Users/someone/Work/attalabs')
+        }
+      },
+      fakeSpawn([]),
+      { control }
+    )
+
+    await expect(
+      executor(emptyState, { node: twoStepPlan.graph.nodes.implement!, plan: twoStepPlan })
+    ).rejects.toBeInstanceOf(RunHaltedError)
+
+    const error = failedEventOf(events)
+    expect(error).not.toContain('/Users/someone')
+    expect(error).toContain('[redacted:path]')
+    // Lifecycle structure survives: an observer can still read this as a halt
+    // of this node, not as an anonymous failure.
+    expect(error).toContain("'implement'")
+  })
+
+  it("keeps every event's lifecycle structure — type, nodeId and runId are never redacted", async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, onEvent: (e) => events.push(e) },
+      fakeSpawn([leakyRecord])
+    )
+
+    await executor(emptyState, { node: twoStepPlan.graph.nodes.implement!, plan: twoStepPlan })
+
+    expect(events.map((e) => e.type)).toEqual(['node:start', 'node:streaming', 'node:complete'])
+    // The runId is itself UUID-shaped — the bare-identifier rule would eat it
+    // if it were treated as redactable text. It is the correlation handle, not
+    // text, and an observer that lost it could no longer place the event.
+    expect(events.every((e) => e.nodeId === 'implement' && e.runId === emptyState.runId)).toBe(true)
+  })
+
+  it("redacts the observer's copy only — the node's own recorded result keeps the raw stream verbatim", async () => {
+    const events: AgentLifecycleEvent[] = []
+    const executor = createAgentLifecycleNodeExecutor(
+      { ...config, onEvent: (e) => events.push(e) },
+      fakeSpawn([leakyRecord])
+    )
+
+    const update = await executor(emptyState, { node: twoStepPlan.graph.nodes.implement!, plan: twoStepPlan })
+
+    const result = update.results?.implement
+    if (result?.kind !== 'agent-spawn') throw new Error('expected an agent-spawn result')
+    expect(JSON.stringify(result.events)).toContain('/Users/someone/Work/Repositories/secret-project')
+    expect(result.sessionId).toBe('f47ac10b-58cc-4372-a567-0e02b2c3d479')
   })
 })

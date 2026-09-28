@@ -95,6 +95,18 @@ export interface AgentSpawnExecutorConfig {
    * function's control flow, never of which node kind happened to run when.
    * Optional: a caller with no observer (a batch run, a test) supplies
    * nothing and pays no cost.
+   *
+   * **What arrives here is redacted.** Every event passes through one
+   * redaction pass at that single emission point (`graph-builder.ts`'s
+   * `safeEmit`) before reaching this callback, whichever path produced it.
+   * Structure survives it intact — `type`, `nodeId` and `runId` are always
+   * the real values — while free text a spawned process authored has its
+   * machine paths, session and account identifiers and rate-limit metadata
+   * replaced by named placeholders, and is cut to a bounded excerpt. So
+   * `content` and `error` are excerpts for an observer to read, never a
+   * faithful copy of what the child printed: a caller needing the verbatim
+   * stream reads the node's own recorded result instead, and owns the
+   * exposure that carries.
    */
   onEvent?: (event: AgentLifecycleEvent) => void
   /**

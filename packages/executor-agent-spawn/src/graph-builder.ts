@@ -74,6 +74,25 @@
  * the halt as topology instead would have to decide, at build time, where a run
  * is allowed to stop; checking it at the wrapper lets the answer be "the next
  * boundary, wherever the run happens to be".
+ *
+ * **Every observer-facing event is redacted here, and only here.** `safeEmit`
+ * is the one function every `AgentLifecycleEvent` passes through — the
+ * streaming path's per-record events, the failure and cancellation path's
+ * error text, and the lifecycle transitions around both — so it is where the
+ * redaction pass is applied. That placement is the whole guarantee: a new
+ * emission site added anywhere in this file inherits it without knowing it
+ * exists, where a rule each site had to remember would eventually meet a site
+ * that did not. The pass itself (`redactSensitiveText` /
+ * `redactLifecycleEvent`, in `reason-text.ts`) keeps every structural field —
+ * the event's kind, its node id, its run id — and replaces only free text a
+ * spawned process authored, so an observer can still tell what it received
+ * and which run it belongs to. What it removes is what previously reached an
+ * observer verbatim: the machine's absolute paths, the agent session and
+ * account identifiers, the account's rate-limit metadata, and a child's
+ * unbounded stderr, now a bounded excerpt. Two seams are deliberately *not*
+ * covered by it and must not be confused with it — `stream-reader.ts`'s
+ * `onParsedEvents`, which is a different hook handing over raw records one
+ * level down, and what a checkpoint persists, which is its own channel.
  */
 
 import { END, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
@@ -82,6 +101,7 @@ import { AgentSpawnGraphState, type AgentSpawnGraphStateValue } from './graph-st
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnFn } from './node-executor'
 import { ProcessCancelledError } from './process-lifecycle'
+import { redactLifecycleEvent } from './reason-text'
 import { RunHaltedError } from './run-halt'
 import { renderStepPrompt } from './template'
 import type {
@@ -126,17 +146,36 @@ function haltOfTerminatedChild(
 }
 
 /**
- * Calls `onEvent`, if supplied, and swallows anything it throws. An
- * observer's own bug must never corrupt the run it is merely watching — an
- * unguarded call site would let a throwing callback masquerade the node's
- * real success as a failure (caught by the wrapper's own `try`/`catch`,
- * discarding the real result) or replace the real error a `catch` block is
- * already reporting.
+ * Redacts the event, calls `onEvent` with the result if one is supplied, and
+ * swallows anything it throws.
+ *
+ * **This is the redaction boundary for the whole package.** Every
+ * observer-facing event — the streaming path's live records, the
+ * failure/cancellation path's error text, the lifecycle transitions around
+ * both — reaches an observer through this one function, so redacting here
+ * covers every event kind by construction rather than by each emission site
+ * remembering to. Redacting at the emission sites instead is what produced
+ * the original leak this closes: there was no single enforced point, so a
+ * spawned agent's raw output reached `onEvent` with its machine paths,
+ * session id and rate-limit metadata intact. A second redaction site added
+ * anywhere below would be that same defect, re-introduced.
+ *
+ * The redaction happens inside the `try` deliberately. It is pure string
+ * work and is not expected to throw, but if it ever did, the alternatives are
+ * both worse: outside the guard it would break the run an observer is merely
+ * watching, and skipping it to emit anyway would hand over exactly the
+ * unredacted event this call site exists to prevent.
+ *
+ * An observer's own bug must never corrupt that run either — an unguarded
+ * call site would let a throwing callback masquerade the node's real success
+ * as a failure (caught by the wrapper's own `try`/`catch`, discarding the
+ * real result) or replace the real error a `catch` block is already
+ * reporting.
  */
 function safeEmit(onEvent: ((event: AgentLifecycleEvent) => void) | undefined, event: AgentLifecycleEvent): void {
   if (!onEvent) return
   try {
-    onEvent(event)
+    onEvent(redactLifecycleEvent(event))
   } catch {
     // Deliberately swallowed — see the function doc above.
   }
