@@ -1,6 +1,15 @@
 /**
  * @file checkpoint-narrowing.test.ts
- * @description What a checkpoint is allowed to hold.
+ * @description What a checkpoint is allowed to hold, and the proof that
+ * narrowing it left a resume able to reach the same outcome.
+ *
+ * **Why the two live in one suite.** The second is the constraint on the first.
+ * Any narrowing passes an "is it smaller" assertion; only a resume can say
+ * whether what was taken out was load-bearing. So every field the first half
+ * asserts is narrowed is exercised again by the second, against every consumer
+ * the `results` channel actually has — a prompt template, a caller's decision
+ * predicate, the session lookup a later step's `resume` performs, and the
+ * outcome reader.
  *
  * **Why it reads the raw checkpoint tuple and not `readRunCheckpoint`.** A
  * `StateSnapshot`'s channel values are not the only thing a checkpoint record
@@ -21,9 +30,10 @@ import { MemorySaver } from '@langchain/langgraph'
 import { executeMechanicalNode } from './mechanical-executor'
 import { executeAgentSpawnNode, type SpawnedProcessLike, type SpawnFn } from './node-executor'
 import { MAX_PERSISTED_EVENT_RECORDS, MAX_PERSISTED_TEXT_LENGTH } from './reason-text'
-import { startControlledRun } from './run-control'
+import { resumeControlledRun, startControlledRun } from './run-control'
+import { createRunControl } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runInvokeConfig, startRun } from './run-identity'
-import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, StepNodeResult } from './types'
+import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl, StepNodeResult } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-narrowing-root-'))
 
@@ -241,6 +251,12 @@ async function serializedCheckpointRecord(
  * `writes` — the value the node *returned*, which is the copy a reducer-only
  * narrowing would have left verbatim.
  */
+function haltAfter(nodeId: string, control: RunControl): (event: AgentLifecycleEvent) => void {
+  return (event) => {
+    if (event.type === 'node:complete' && event.nodeId === nodeId) control.halt()
+  }
+}
+
 async function recordedWriteFor(
   checkpointer: MemorySaver,
   identity: { runId: string; threadId: string },
@@ -480,5 +496,264 @@ describe('a checkpoint carries a bounded, redacted form of a node result', () =>
     })
     expect(mechanical.narrowing).toBeUndefined()
     expect(mechanical.stdout).toContain(SECRET_PATH)
+  })
+})
+
+describe('resuming from a narrowed checkpoint reaches the same outcome', () => {
+  /**
+   * The Plan the resume half runs, in both the interrupted and uninterrupted
+   * cases: an agent step, a second agent step that `resume`s its session, a
+   * mechanical step whose output a decision examines, and a final step the
+   * decision routes to. Every consumer of the `results` channel is therefore
+   * exercised — a prompt template reading a prior result, a caller's predicate
+   * reading the examined result, a session lookup, and the outcome reader.
+   */
+  function fourStepPlan(): Plan {
+    return {
+      schemaVersion: '1.0',
+      question: 'Ship it',
+      model: 'n/a',
+      agents: {},
+      teamName: 'agent-lifecycle-narrowing-resume-test',
+      maxRevisions: 0,
+      graph: {
+        nodes: {
+          implement: agentNode('implement'),
+          // Reads a prior node's recorded result through the Handlebars context,
+          // which is the narrowed form after this change — so the rendered
+          // prompt is part of what "the same outcome" has to cover.
+          review: agentNode('review', {
+            promptTemplate: 'Review exit {{results.implement.exitCode}}',
+            agentRole: 'coder',
+            resume: 'implement'
+          }),
+          verify: mechanicalNode('verify', 'verify-action', {
+            examine: 'verify',
+            ifTrue: 'report',
+            ifFalse: 'report',
+            maxRevisions: 1
+          }),
+          report: mechanicalNode('report', 'report-action')
+        },
+        edges: [
+          { from: 'implement', to: 'review', kind: 'flow' },
+          { from: 'review', to: 'verify', kind: 'flow' },
+          { from: 'verify', to: 'report', kind: 'flow' }
+        ],
+        conditionalEdges: [],
+        entryNode: 'implement'
+      }
+    }
+  }
+
+  /**
+   * The predicate a caller supplies, reading the examined step's *narrowed*
+   * result. Deliberately reads captured output and not only the exit code: a
+   * predicate that only ever looked at `exitCode` would prove nothing about
+   * whether narrowing changed what routing sees.
+   */
+  const decisionPredicates = {
+    verify: (result: StepNodeResult) => result.kind === 'mechanical' && result.stdout.includes('verified')
+  }
+
+  function resumeConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSpawnExecutorConfig {
+    return config(onEvent, { decisionPredicates })
+  }
+
+  function resumeSpawns(log?: string[]): SpawnFn {
+    return spawnByCommand(
+      {
+        'coder-cmd': fakeAgentSpawn(agentStreamLines()),
+        'verify-cmd': fakeMechanicalSpawn(`verified ${SECRET_PATH}\n`, ''),
+        'report-cmd': fakeMechanicalSpawn('reported\n', '')
+      },
+      log
+    )
+  }
+
+  /** A comparable summary of everything a later node or the outcome reader depends on. */
+  function comparable(results: Record<string, StepNodeResult>): unknown {
+    return Object.fromEntries(
+      Object.entries(results)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([nodeId, result]) => [
+          nodeId,
+          result.kind === 'agent-spawn'
+            ? { kind: result.kind, exitCode: result.exitCode, events: result.events, narrowing: result.narrowing }
+            : {
+                kind: result.kind,
+                action: result.action,
+                command: result.command,
+                exitCode: result.exitCode,
+                stdout: result.stdout,
+                stderr: result.stderr,
+                narrowing: result.narrowing
+              }
+        ])
+    )
+  }
+
+  it('reaches the same outcome, node results, sessions and counts as an uninterrupted run', async () => {
+    const straightThrough = new MemorySaver()
+    const straightIdentity = createRunIdentity('narrow-resume-straight')
+    const straightOutcome = await startControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(),
+      checkpointer: straightThrough,
+      identity: straightIdentity,
+      spawnFn: resumeSpawns()
+    })
+    expect(straightOutcome.reason).toBe('completed')
+
+    const interrupted = new MemorySaver()
+    const interruptedIdentity = createRunIdentity('narrow-resume-halted')
+    const control = createRunControl()
+    const paused = await startControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(haltAfter('review', control)),
+      checkpointer: interrupted,
+      identity: interruptedIdentity,
+      control,
+      spawnFn: resumeSpawns()
+    })
+    expect(paused.reason).toBe('paused')
+
+    // Everything the second leg reads about the first is already narrowed — the
+    // checkpoint it continues from holds no verbatim capture at all.
+    expect(await serializedCheckpointRecord(interrupted, interruptedIdentity)).not.toContain(SECRET_PATH)
+
+    const resumed = await resumeControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(),
+      checkpointer: interrupted,
+      identity: interruptedIdentity,
+      spawnFn: resumeSpawns()
+    })
+    expect(resumed.reason).toBe('completed')
+
+    const straightState = await readRunCheckpoint(straightThrough, straightIdentity)
+    const resumedState = await readRunCheckpoint(interrupted, interruptedIdentity)
+
+    // The same node results, field for field, including every narrowed field —
+    // the halt/resume seam changed nothing a later node or a reader depends on.
+    expect(comparable(resumedState?.results ?? {})).toEqual(comparable(straightState?.results ?? {}))
+    expect(resumedState?.sessions).toEqual(straightState?.sessions ?? {})
+    expect(resumedState?.revisionCounts).toEqual(straightState?.revisionCounts ?? {})
+    expect(Object.keys(resumedState?.results ?? {}).sort()).toEqual(['implement', 'report', 'review', 'verify'])
+  })
+
+  it('routes the decision the same way on a narrowed result as on an unnarrowed one', async () => {
+    // The predicate above reads `stdout`, which narrowing rewrote. The planted
+    // path is gone from what it sees, and the content it actually keys on is
+    // still there — so routing reaches `report` rather than the refused ceiling.
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-resume-routing')
+    const control = createRunControl()
+
+    await startControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(haltAfter('verify', control)),
+      checkpointer,
+      identity,
+      control,
+      spawnFn: resumeSpawns()
+    })
+    const examined = (await readRunCheckpoint(checkpointer, identity))?.results.verify
+    if (examined?.kind !== 'mechanical') throw new Error('unreachable')
+    expect(examined.stdout).not.toContain(SECRET_PATH)
+    expect(decisionPredicates.verify(examined)).toBe(true)
+
+    const resumed = await resumeControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(),
+      checkpointer,
+      identity,
+      spawnFn: resumeSpawns()
+    })
+    expect(resumed.reason).toBe('completed')
+    expect((await readRunCheckpoint(checkpointer, identity))?.results.report).toBeDefined()
+  })
+
+  it('still resumes a session across the seam, because that channel is never narrowed', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-resume-session')
+    const control = createRunControl()
+    const resumeSessionIds: Array<string | undefined> = []
+
+    await startControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(haltAfter('implement', control)),
+      checkpointer,
+      identity,
+      control,
+      spawnFn: resumeSpawns()
+    })
+
+    // The halted leg recorded the session id in `sessions`, verbatim, even though
+    // the copy on the node's own result is redacted.
+    const paused = await readRunCheckpoint(checkpointer, identity)
+    expect(paused?.sessions.implement).toBe(REAL_SESSION_ID)
+    const pausedResult = paused?.results.implement
+    if (pausedResult?.kind !== 'agent-spawn') throw new Error('unreachable')
+    expect(pausedResult.sessionId).toBe('[redacted:session]')
+
+    // The resumed leg's `review` step declares `resume: 'implement'`, so its
+    // `buildArgs` receives whatever the lookup found. It must be the real id —
+    // a redacted one would be handed to the agent CLI as a session to continue.
+    const resumed = await resumeControlledRun({
+      plan: fourStepPlan(),
+      config: config(undefined, {
+        decisionPredicates,
+        roleBinaries: {
+          coder: {
+            command: 'coder-cmd',
+            buildArgs: ({ resumeSessionId }) => {
+              resumeSessionIds.push(resumeSessionId)
+              return []
+            },
+            allowedPermissions: ['default']
+          }
+        }
+      }),
+      checkpointer,
+      identity,
+      spawnFn: resumeSpawns()
+    })
+
+    expect(resumed.reason).toBe('completed')
+    expect(resumeSessionIds).toEqual([REAL_SESSION_ID])
+  })
+
+  it('re-executes no completed node, with the narrowed checkpoint as the position it continues from', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('narrow-resume-no-replay')
+    const control = createRunControl()
+    const firstLeg: string[] = []
+    const secondLeg: string[] = []
+
+    await startControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(haltAfter('review', control)),
+      checkpointer,
+      identity,
+      control,
+      spawnFn: resumeSpawns(firstLeg)
+    })
+    await resumeControlledRun({
+      plan: fourStepPlan(),
+      config: resumeConfig(),
+      checkpointer,
+      identity,
+      spawnFn: resumeSpawns(secondLeg)
+    })
+
+    expect(firstLeg).toEqual(['coder-cmd', 'coder-cmd'])
+    expect(secondLeg).toEqual(['verify-cmd', 'report-cmd'])
+    expect((await readRunCheckpoint(checkpointer, identity))?.revisionCounts).toEqual({
+      implement: 1,
+      review: 1,
+      verify: 1,
+      report: 1
+    })
   })
 })
