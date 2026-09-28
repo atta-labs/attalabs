@@ -131,7 +131,9 @@ Three packages ship as installable artifacts: `@atta/agents` (`packages/atta-age
 
 The emitted declarations are still multi-file and still carry extensionless relative specifiers, so a consumer resolves them with `bundler`- or `node10`-style module resolution — which is what every consumer in this repo already uses (`@atta/typescript-config/base.json` sets `"moduleResolution": "bundler"`). A consumer on `node16`/`nodenext` would need a declaration bundler; none ships today.
 
-**`typecheck` emits declarations on purpose.** Each package's `typecheck` script is `bun run build:types && tsc --noEmit`. The emit is what makes a source-free `exports` entry work under `turbo typecheck`, whose task graph orders `^typecheck` but knows nothing about `^build`: a downstream package's `tsc` resolves `@atta/engine` to `dist/index.d.ts`, and that file has to exist by then. Putting the emit inside `typecheck` gets the ordering from a task the graph already runs, with no change to the repo-wide task definitions. Removing it breaks every consumer's typecheck on a clean checkout.
+**`turbo`'s `typecheck` task depends on `^build`, and that dependency is load-bearing.** A source-free `exports` entry means a consumer resolves `@atta/engine` to files that only a build produces — `dist/index.d.ts` for its `tsc`, `dist/index.js` for its `vitest`, whose `vite` resolver reads the same `exports` map and fails outright when the entry is missing. Neither `^typecheck` nor the package's own scripts can supply that: `build` is the only task declaring `dist/**` as its `outputs`, so it is the only one `turbo` restores from cache on a hit.
+
+That last clause is the whole reason the dependency lives in `turbo.json` rather than in a package script. An earlier revision had each `typecheck` script emit declarations itself (`build:types && tsc --noEmit`), which ordered correctly and passed on any machine that had already built once — and failed in CI, where `@atta/ui`'s `vitest` run found no `dist/index.js` to resolve. A task with no declared `outputs` replays its logs on a cache hit and restores no files, so an emit hidden inside one is a side effect the cache is entitled to skip. Put the build where the cache can see it.
 
 **Packing resolves `workspace:*`, and that is the whole mechanism.** `bun pm pack` rewrites each `workspace:*` range in the packed manifest to the version the workspace member actually declares (`@atta/agents` → `0.1.0`). `npm pack` does not — it leaves `workspace:` in place, and `publishConfig` overrides with it — so `bun pm pack` is the packing tool, not an interchangeable choice. `prepack` runs `build` first, so a hand-run pack cannot ship a stale or missing `dist/`.
 
@@ -481,7 +483,8 @@ This is engine internals — the YAML author never touches it.
 - ❌ Importing from `@vada/teams` — that package was deleted long before the generic flow refactor
 - ❌ Setting `signal.type` to `'equals'` or `'matches'` in a YAML — engine throws explicitly. The schema reserves them; the compiler doesn't ship them yet.
 - ❌ Pointing `main`/`types`/`exports` back at `src/` in any of the three packable manifests — that makes the distribution contract "have this repository"
-- ❌ Dropping the declaration emit out of `typecheck` — every consumer's typecheck then fails on a clean checkout, because nothing else in the task graph builds `dist/` first
+- ❌ Dropping `^build` from `turbo`'s `typecheck` task — every consumer's typecheck and every consumer's `vitest` run then fail on a clean checkout, because nothing else in the task graph builds `dist/` first
+- ❌ Replacing that dependency with an emit inside a package's `typecheck` script — a task declaring no `outputs` restores no files on a cache hit, so the emit silently stops happening and the failure surfaces in CI rather than locally
 - ❌ `npm pack` for these packages — it leaves `workspace:` ranges in the packed manifest, and the artifact is uninstallable
 - ❌ Adding a fourth package to the artifact set without a consumer that needs it, or dropping `@atta/agents` from it — the engine's declarations name it
 

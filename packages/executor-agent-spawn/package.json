@@ -21,7 +21,7 @@
     "build:types": "tsc -p tsconfig.build.json",
     "build:js": "bun build ./src/index.ts --outdir dist --target node --format esm --packages external --sourcemap=none",
     "prepack": "bun run build",
-    "typecheck": "bun run build:types && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
     "verify:external-consumer": "bun run scripts/verify-external-consumer.ts",
     "clean": "rm -rf dist .turbo"
