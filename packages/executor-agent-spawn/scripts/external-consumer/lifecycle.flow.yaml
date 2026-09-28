@@ -1,0 +1,45 @@
+# The steps-shaped Flow the external consumer compiles and runs.
+#
+# Copied verbatim into a project installed from packed tarballs, outside this
+# workspace, by `scripts/verify-external-consumer.ts`. Nothing here is specific
+# to this repository: it is an ordinary v2 `steps`-shaped Flow, the only shape
+# `@atta/executor-agent-spawn` runs.
+#
+# `__WORKING_DIRECTORY__` is substituted by the consumer with the confinement
+# root it created for the run, because a step's `working_directory` must be an
+# absolute path on the machine executing it and no checked-in file can know one.
+schema_version: "2.0"
+id: external-consumer-lifecycle
+display_name: External consumer lifecycle
+description: Three steps in a line — two spawned agents and one mechanical action.
+experimental: false
+benchmarked: false
+
+defaults:
+  model: not-used-by-this-shape
+
+agents:
+  - role: coder
+  - role: reviewer
+
+steps:
+  - id: implement
+    type: agent
+    role: coder
+    prompt_template: "Implement: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 2
+
+  - id: review
+    type: agent
+    role: reviewer
+    prompt_template: "Review what implement produced for: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 3
+    resume: implement
+
+  - id: record
+    type: mechanical
+    action: record-outcome
