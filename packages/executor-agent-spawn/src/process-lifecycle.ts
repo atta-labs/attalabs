@@ -45,6 +45,25 @@
  * seam is a deliberate separate decision, not something to smuggle in
  * behind a kill call: the seam exists so tests never spawn anything real,
  * and a signature carrying a pid would make a fake process claim one.
+ *
+ * **The errors this file throws are redacted downstream, not here.** A
+ * cancellation, a timeout and a failed spawn each name the node, the reason
+ * and — further up the call chain — a confined working directory and a slice
+ * of the child's stderr, and every one of those messages becomes the `error`
+ * field of an observer-facing failure event. That text is redacted once, at
+ * the single point every event passes through (`graph-builder.ts`'s
+ * `safeEmit`), which is what makes the guarantee hold for the failure and
+ * cancellation path as well as the streaming one. Redacting here instead
+ * would be a second site deciding for itself what "sensitive" means, which
+ * is the condition that produced the original leak — and it would also strip
+ * the message this package's own callers see when they catch the error
+ * directly, which is not an observer channel and needs the real detail.
+ *
+ * `sanitizeReasonText` below is not that redaction and must not be mistaken
+ * for it: it makes a *caller-supplied* abort reason safe to embed — control
+ * characters collapsed, length bounded — and deliberately leaves the
+ * caller's own content alone. Both treatments live in `reason-text.ts`, one
+ * file, so the two definitions cannot drift apart.
  */
 
 import { spawn } from 'node:child_process'

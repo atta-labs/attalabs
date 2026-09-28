@@ -15,6 +15,23 @@
  * incremental one about a chunk boundary, a blank line, or which line
  * number a malformed record sits on, and only the incremental path is
  * exercised by a real process.
+ *
+ * **Nothing here redacts, deliberately.** The records this file frames and
+ * the stderr it accumulates are the spawned agent's own output, kept
+ * verbatim — that is what makes them usable as a result. Redaction happens
+ * once, at the single point every observer-facing event passes through
+ * (`graph-builder.ts`'s `safeEmit`), so the events an observer receives carry
+ * bounded, redacted excerpts of this text while the recorded result keeps the
+ * real thing. Adding a second redaction pass here would recreate exactly the
+ * condition that produced the original leak: redaction spread across the
+ * emission paths, with no one place answering for what "sensitive" means.
+ *
+ * Two consequences follow, and both are the caller's to weigh. The
+ * `onRecord` hook below is **not** the redacted channel — it is a distinct,
+ * lower-level seam that hands over raw records as they arrive, so an observer
+ * of it is an observer of an unredacted agent transcript. And the verbatim
+ * text kept here is what a checkpoint persists, which is its own channel with
+ * its own exposure.
  */
 
 import { StringDecoder } from 'node:string_decoder'
