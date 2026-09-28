@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 import type { PlanAgentSpawnNode } from '@atta/engine'
 import { executeAgentSpawnNode, type SpawnedProcessLike, type SpawnFn } from './node-executor'
+import { ProcessCancelledError } from './process-lifecycle'
 import type { AgentSpawnExecutorConfig } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-root-'))
@@ -214,6 +215,44 @@ describe('executeAgentSpawnNode', () => {
 
     expect(capturedEnv?.AGENT_SPAWN_TEST_SECRET).toBeUndefined()
     expect(capturedEnv?.ROLE_FLAG).toBe('on')
+  })
+
+  it('forwards its signal to the process lifecycle, so an abort terminates the child', async () => {
+    // The composer's own cancellation seam, tested at the composer rather than
+    // one layer below: a regression that dropped `signal` from the
+    // `spawnProcessLifecycle` call would leave every process-lifecycle test
+    // passing and this one failing (round 3 review).
+    const controller = new AbortController()
+    const signals: NodeJS.Signals[] = []
+    const killableSpawn: SpawnFn = () => {
+      const closeListeners: Array<(code: number | null) => void> = []
+      const spawned: SpawnedProcessLike = {
+        stdin: { write: () => {}, end: () => {} },
+        stdout: { on: () => {} },
+        stderr: { on: () => {} },
+        on: (event, listener) => {
+          if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+        },
+        kill: (signal) => {
+          signals.push(signal ?? 'SIGTERM')
+          for (const listener of closeListeners) listener(143)
+        }
+      }
+      // Abort once the child exists and before anything waits on it.
+      queueMicrotask(() => controller.abort())
+      return spawned
+    }
+
+    const failure = await executeAgentSpawnNode({
+      node: testNode,
+      prompt: 'x',
+      config: baseConfig,
+      spawnFn: killableSpawn,
+      signal: controller.signal
+    }).catch((err: unknown) => err)
+
+    expect(signals).toEqual(['SIGTERM'])
+    expect(failure).toBeInstanceOf(ProcessCancelledError)
   })
 
   it('kills and rejects a process that never closes, using the default timeout', async () => {

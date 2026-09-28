@@ -122,10 +122,15 @@ export interface ExecuteAgentSpawnNodeParams {
    */
   onParsedEvents?: (events: unknown[]) => void
   /**
-   * Accepted and forwarded to the process lifecycle handle; nothing in
-   * this package acts on it yet. Inert seam: a future task makes
-   * cancellation real by editing only `process-lifecycle.ts`, never this
-   * composer.
+   * Cancellation input for this node's process, forwarded to the process
+   * lifecycle, which is where it acts: aborting it terminates the spawned
+   * child — graceful signal first, forced signal on a bounded deadline —
+   * and this call rejects with a `ProcessCancelledError`, a typed outcome
+   * distinct from both a timeout and an execution failure. A signal already
+   * aborted when this runs spawns nothing at all.
+   *
+   * The composer itself does nothing with it beyond passing it on, which is
+   * how it absorbed cancellation going live without changing.
    */
   signal?: AbortSignal
 }

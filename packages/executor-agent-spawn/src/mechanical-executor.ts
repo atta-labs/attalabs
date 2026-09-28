@@ -13,11 +13,24 @@
  * with an argv array — never through a shell, and never with Plan or graph
  * state interpolated into it. An action name with no entry in that map is
  * refused rather than guessed at.
+ *
+ * The process itself is owned by `process-lifecycle.ts`, the same state
+ * machine the agent-spawn path uses, rather than by a second timeout/kill
+ * loop of this file's own. A mechanical action is a real `git`/`gh`-shaped
+ * command holding this run's working-directory and execution permissions, so
+ * a halt has to reach it exactly as it reaches a spawned agent: leaving it
+ * running until its own `timeoutMs` elapsed (ten minutes by default) would
+ * keep it acting on the working directory after the caller believed the run
+ * was cancelled. Sharing the lifecycle is also what gives this kind the
+ * graceful-then-forced escalation and the first-settlement-wins
+ * timeout-versus-cancellation race for free, instead of a second
+ * implementation of both that can disagree with the first.
  */
 
 import { realpathSync } from 'node:fs'
 import type { PlanMechanicalNode } from '@atta/engine'
 import { buildChildEnv, defaultSpawn, DEFAULT_TIMEOUT_MS, type SpawnFn } from './node-executor'
+import { type ProcessSubject, spawnProcessLifecycle } from './process-lifecycle'
 import type { AgentSpawnExecutorConfig, MechanicalNodeResult } from './types'
 
 /** Exit codes an action is treated as succeeding on when it declares none. */
@@ -28,6 +41,26 @@ export interface ExecuteMechanicalNodeParams {
   config: AgentSpawnExecutorConfig
   /** Injectable for tests; defaults to `node:child_process`'s `spawn`. */
   spawnFn?: SpawnFn
+  /**
+   * Cancellation input for this node's command, forwarded to the process
+   * lifecycle, which is where it acts: aborting it terminates the spawned
+   * command — graceful signal first, forced signal on a bounded deadline —
+   * and this call rejects with a `ProcessCancelledError`, the same typed
+   * outcome an agent-spawn node's cancellation produces, so a halt reaching a
+   * running mechanical node is reported as the halt it is rather than as a
+   * failure. A signal already aborted when this runs spawns nothing at all.
+   */
+  signal?: AbortSignal
+  /** How long the graceful signal is given before the forced one follows; injectable for the same reason `spawnFn` is. */
+  gracefulTerminationMs?: number
+}
+
+/** How this node kind is named in a termination or spawn-failure message — it has no agent and no role to be named by. */
+function mechanicalSubject(node: PlanMechanicalNode): ProcessSubject {
+  return {
+    description: `Mechanical node '${node.id}' (action '${node.action}')`,
+    binding: `mechanical action '${node.action}'`
+  }
 }
 
 /**
@@ -44,10 +77,14 @@ export interface ExecuteMechanicalNodeParams {
  * failure this node kind is most likely to produce silently.
  *
  * Waits on `close`, not `exit`, so stdio finishes flushing before the output
- * is read; a process that never closes is killed at `timeoutMs`.
+ * is read; a process that never closes is killed at `timeoutMs`, and one the
+ * caller no longer wants is killed the moment `signal` aborts — both through
+ * the shared process lifecycle, which rejects with the typed
+ * `ProcessTimedOutError` / `ProcessCancelledError` rather than a plain `Error`,
+ * so a halted run reads as paused and not as broken.
  */
 export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams): Promise<MechanicalNodeResult> {
-  const { node, config, spawnFn = defaultSpawn } = params
+  const { node, config, spawnFn = defaultSpawn, signal, gracefulTerminationMs } = params
 
   // Own-property lookup, not a bare index: `action` arrives from the Plan, and
   // a bare `actions[name]` resolves inherited keys (`__proto__`, `constructor`)
@@ -78,10 +115,20 @@ export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams)
   const args = actionConfig.args ?? []
   const timeoutMs = actionConfig.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const startedAt = Date.now()
-  const child = spawnFn(actionConfig.command, args, {
+  const lifecycle = spawnProcessLifecycle({
+    spawnFn,
+    command: actionConfig.command,
+    args,
     cwd,
-    env: buildChildEnv(actionConfig, config.envAllowlist)
+    env: buildChildEnv(actionConfig, config.envAllowlist),
+    timeoutMs,
+    nodeId: node.id,
+    agentRole: node.role,
+    subject: mechanicalSubject(node),
+    signal,
+    gracefulTerminationMs
   })
+  const child = lifecycle.child
 
   const stdoutChunks: string[] = []
   const stderrChunks: string[] = []
@@ -91,28 +138,7 @@ export async function executeMechanicalNode(params: ExecuteMechanicalNodeParams)
   // it sees EOF instead of hanging until the timeout kills it.
   child.stdin?.end()
 
-  const exitCode = await new Promise<number>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      child.kill('SIGTERM')
-      reject(
-        new Error(
-          `Mechanical node '${node.id}' (action '${node.action}') exceeded its ${timeoutMs}ms timeout and was killed.`
-        )
-      )
-    }, timeoutMs)
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      reject(
-        new Error(
-          `Failed to spawn '${actionConfig.command}' for mechanical action '${node.action}' (node '${node.id}'): ${err.message}`
-        )
-      )
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve(code ?? 0)
-    })
-  })
+  const exitCode = await lifecycle.waitForExit()
 
   const stdout = stdoutChunks.join('')
   const stderr = stderrChunks.join('')

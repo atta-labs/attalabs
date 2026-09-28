@@ -6,13 +6,14 @@ import type { Plan } from '@atta/engine'
 import { MemorySaver } from '@langchain/langgraph'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import { resumeControlledRun, startControlledRun } from './run-control'
+import { ProcessCancelledError } from './process-lifecycle'
 import { createRunControl, runHaltOf, RunHaltedError } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runIdentityForRunId, startRun } from './run-identity'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl } from './types'
 // Imported from the package root deliberately: `AgentLifecycleLegOptions` is the
 // declared parameter type of an exported function, so a caller outside this
 // package has to be able to name it without reaching into a source file.
-import type { AgentLifecycleLegOptions } from './index'
+import { type AgentLifecycleLegOptions, createAgentLifecycleNodeExecutor } from './index'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'agent-spawn-control-root-'))
 
@@ -90,6 +91,32 @@ function threeStepPlan(): Plan {
   }
 }
 
+/** One mechanical step: the other node kind a mid-flight halt has to reach. */
+function mechanicalStepPlan(): Plan {
+  return {
+    schemaVersion: '1.0',
+    question: 'Apply the patch',
+    model: 'n/a',
+    agents: {},
+    teamName: 'agent-lifecycle-control-test',
+    maxRevisions: 0,
+    graph: {
+      nodes: {
+        'apply-patch': {
+          id: 'apply-patch',
+          role: 'mechanical',
+          kind: 'mechanical',
+          action: 'git-apply',
+          metadata: {}
+        }
+      },
+      edges: [],
+      conditionalEdges: [],
+      entryNode: 'apply-patch'
+    }
+  }
+}
+
 function executorConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSpawnExecutorConfig {
   return {
     workingDirectoryRoot,
@@ -100,6 +127,37 @@ function executorConfig(onEvent?: (event: AgentLifecycleEvent) => void): AgentSp
       lander: { command: 'fake-lander', allowedPermissions: ['default'], buildArgs: () => ['-p'] }
     }
   }
+}
+
+/**
+ * A fake spawn whose child never exits on its own — it closes only once it is
+ * signalled. The shape a *mid-flight* halt has to stop: `recordingSpawn` above
+ * closes on its own microtask, so a halt can only ever land between its nodes.
+ *
+ * `afterSpawn` fires once the child exists and before anything waits on it,
+ * which is the window a halt has to arrive in for the child to be live when it
+ * does.
+ */
+function killableSpawn(afterSpawn?: () => void): { readonly signals: NodeJS.Signals[]; readonly spawnFn: SpawnFn } {
+  const signals: NodeJS.Signals[] = []
+  const spawnFn: SpawnFn = () => {
+    const closeListeners: Array<(code: number | null) => void> = []
+    const spawned: SpawnedProcessLike = {
+      stdin: { write: () => {}, end: () => {} },
+      stdout: { on: () => {} },
+      stderr: { on: () => {} },
+      on: (event, listener) => {
+        if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+      },
+      kill: (signal) => {
+        signals.push(signal ?? 'SIGTERM')
+        for (const listener of closeListeners) listener(143)
+      }
+    }
+    if (afterSpawn) queueMicrotask(afterSpawn)
+    return spawned
+  }
+  return { signals, spawnFn }
 }
 
 /** Halts the run the moment the named node reports completion — a deterministic mid-run halt. */
@@ -136,6 +194,45 @@ describe('createRunControl — the halt handle', () => {
     control.halt('first')
     control.halt('second')
     expect(control.haltReason).toBe('first')
+  })
+
+  it('flattens control characters out of a caller-supplied halt reason (round 5 review)', () => {
+    // A halt reason is routinely a value the caller did not author — an
+    // operator's free-text note, a cancellation header, an upstream service's
+    // text — and it is interpolated into a `RunHaltedError` message LangGraph
+    // persists on the thread. A reason carrying a newline could forge a second
+    // log record in any consumer that treats one line as one event.
+    const control = createRunControl()
+    control.halt('paused\nERROR service down\r\tby operator')
+
+    expect(control.haltReason).toBe('paused ERROR service down by operator')
+    const message = new RunHaltedError('commit', control.haltReason).message
+    expect(message).not.toContain('\n')
+    expect(message).not.toContain('\r')
+  })
+
+  it('bounds an unbounded halt reason, cutting between code points (round 5 review)', () => {
+    // Nothing upstream bounds it: `halt()` accepts a string of any size, and
+    // the reason is re-serialized into every checkpoint write the thread makes
+    // afterwards. The cut also has to fall between code points, or a
+    // supplementary-plane character at the boundary is left as an unpaired
+    // surrogate in the stored reason and in the thrown message.
+    const control = createRunControl()
+    control.halt(`${'x'.repeat(199)}${'\u{1F600}'.repeat(50)}`)
+
+    const reason = control.haltReason ?? ''
+    expect(reason).toBe(`${'x'.repeat(199)}…`)
+    expect(reason).toBe(reason.toWellFormed())
+  })
+
+  it('records no reason at all for one that is only control characters (round 5 review)', () => {
+    const control = createRunControl()
+    control.halt('\n\n\t')
+
+    expect(control.halted).toBe(true)
+    expect(control.haltReason).toBeUndefined()
+    // The message reads exactly as a halt given no reason does.
+    expect(new RunHaltedError('commit', control.haltReason).message).toBe(new RunHaltedError('commit').message)
   })
 
   it("links an upstream AbortSignal one way: aborting it halts the run, halting the run doesn't abort it", () => {
@@ -269,6 +366,111 @@ describe('startControlledRun — a typed outcome instead of resolve-or-throw', (
     expect(log.commands).toEqual(['fake-coder'])
     expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
     expect(outcome.checkpoint?.sessions.implement).toBe('session-from-fake-coder')
+  })
+
+  it("terminates a node's already-running child when the halt fires, and still reports paused", async () => {
+    const checkpointer = new MemorySaver()
+    // Halting from inside the spawn means the child is alive when the abort
+    // lands — the case the node-boundary check structurally cannot catch.
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity: createRunIdentity('halted-mid-node'),
+      control,
+      spawnFn: live.spawnFn
+    })
+
+    // The child was signalled rather than left running to its own timeout.
+    expect(live.signals).toEqual(['SIGTERM'])
+    // And a halt that killed a child is still a halt, not a failure.
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['implement'])
+    expect(outcome.haltReason).toBe('operator cancelled mid-node')
+    // Nothing completed, so nothing is recorded — and the node is resumable.
+    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual([])
+  })
+
+  it('reports a terminated child as a halt that says so, carrying the cancellation as its cause', async () => {
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+    const plan = threeStepPlan()
+    const node = plan.graph.nodes.implement
+    if (!node) throw new Error('fixture must declare the implement node')
+
+    const thrown = await executor(
+      { runId: 'halt-cause', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    const halt = runHaltOf(thrown)
+    expect(halt).toBeInstanceOf(RunHaltedError)
+    // `false` would mean nothing was running and a resume is blind-safe; this
+    // run cut a live child off, which a caller has to be able to tell.
+    expect(halt?.terminatedProcess).toBe(true)
+    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+  })
+
+  it("terminates a mechanical node's already-running command too, not just a spawned agent's", async () => {
+    const control = createRunControl()
+    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+    const config: AgentSpawnExecutorConfig = {
+      workingDirectoryRoot,
+      roleBinaries: {},
+      mechanicalActions: { 'git-apply': { command: 'git', args: ['apply', 'patch.diff'] } }
+    }
+    const executor = createAgentLifecycleNodeExecutor(config, live.spawnFn, { control })
+    const plan = mechanicalStepPlan()
+    const node = plan.graph.nodes['apply-patch']
+    if (!node) throw new Error('fixture must declare the apply-patch node')
+
+    const thrown = await executor(
+      { runId: 'halt-mechanical', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    // A `git`-shaped command holds the same working directory and permissions
+    // an agent's child does, so it is signalled rather than left running to
+    // its own ten-minute timeout (round 5 security review).
+    expect(live.signals).toEqual(['SIGTERM'])
+    const halt = runHaltOf(thrown)
+    expect(halt).toBeInstanceOf(RunHaltedError)
+    expect(halt?.terminatedProcess).toBe(true)
+    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+  })
+
+  it('reports a halt that spawned nothing as one no working tree needs inspecting for', async () => {
+    const control = createRunControl()
+    control.halt('halted before the spawn')
+    const live = killableSpawn()
+    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+    const plan = threeStepPlan()
+    const node = plan.graph.nodes.implement
+    if (!node) throw new Error('fixture must declare the implement node')
+
+    // The boundary check catches this one, so no process is spawned at all and
+    // the halt must not claim a child was terminated.
+    const thrown = await executor(
+      { runId: 'halt-before-spawn', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+      { node, plan }
+    ).then(
+      () => undefined,
+      (err: unknown) => err
+    )
+
+    expect(live.signals).toEqual([])
+    expect(runHaltOf(thrown)?.terminatedProcess).toBe(false)
   })
 
   it('never emits a lifecycle event for the node a halt stopped — it did not start', async () => {

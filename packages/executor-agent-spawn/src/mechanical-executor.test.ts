@@ -5,6 +5,7 @@ import { describe, expect, it } from 'bun:test'
 import type { PlanMechanicalNode } from '@atta/engine'
 import { executeMechanicalNode } from './mechanical-executor'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
+import { FORCED_TERMINATION_SIGNAL, GRACEFUL_TERMINATION_SIGNAL, ProcessCancelledError } from './process-lifecycle'
 import type { AgentSpawnExecutorConfig } from './types'
 
 const workingDirectoryRoot = mkdtempSync(join(tmpdir(), 'mechanical-root-'))
@@ -60,6 +61,34 @@ function fakeSpawn(
 
     return child
   }
+}
+
+/** A child that never closes on its own, recording every signal delivered to it, so a test can drive termination itself. */
+function controllableSpawn(): {
+  spawnFn: SpawnFn
+  child(): { signals: NodeJS.Signals[]; emitClose(code: number | null): void }
+} {
+  const closeListeners: Array<(code: number | null) => void> = []
+  const signals: NodeJS.Signals[] = []
+  const handle = {
+    signals,
+    emitClose: (code: number | null) => {
+      for (const listener of closeListeners) listener(code)
+    }
+  }
+  const child: SpawnedProcessLike = {
+    stdin: { write: () => {}, end: () => {} },
+    stdout: { on: () => {} },
+    stderr: { on: () => {} },
+    on: (event, listener) => {
+      if (event === 'close') closeListeners.push(listener as (code: number | null) => void)
+    },
+    kill: (signal) => {
+      signals.push(signal ?? GRACEFUL_TERMINATION_SIGNAL)
+    }
+  }
+
+  return { spawnFn: () => child, child: () => handle }
 }
 
 function configWith(action: AgentSpawnExecutorConfig['mechanicalActions']): AgentSpawnExecutorConfig {
@@ -191,17 +220,78 @@ describe('executeMechanicalNode', () => {
   })
 
   it('kills the process and rejects when it exceeds its timeout', async () => {
-    const neverCloses: SpawnFn = () => ({
-      stdin: { write: () => {}, end: () => {} },
-      stdout: { on: () => {} },
-      stderr: { on: () => {} },
-      on: () => {},
-      kill: () => {}
-    })
     const config = configWith({ 'git-apply': { command: 'git', timeoutMs: 5 } })
+    const { spawnFn } = controllableSpawn()
 
-    await expect(executeMechanicalNode({ node: applyPatch, config, spawnFn: neverCloses })).rejects.toThrow(
+    await expect(executeMechanicalNode({ node: applyPatch, config, spawnFn })).rejects.toThrow(
       /exceeded its 5ms timeout/
     )
+  })
+
+  // A mechanical action is a real command holding the run's working directory
+  // and execution permissions, so a halt has to reach it exactly as it reaches
+  // a spawned agent — round 5 security review found it did not.
+  describe('cancellation propagation', () => {
+    it('terminates a running command when its signal aborts, as a typed cancellation', async () => {
+      const controller = new AbortController()
+      const config = configWith({ 'git-apply': { command: 'git' } })
+      const spawned = controllableSpawn()
+
+      const running = executeMechanicalNode({
+        node: applyPatch,
+        config,
+        spawnFn: spawned.spawnFn,
+        signal: controller.signal
+      }).catch((err: unknown) => err)
+
+      controller.abort('the enclosing run was halted')
+      spawned.child().emitClose(143)
+
+      const error = (await running) as ProcessCancelledError
+      expect(error).toBeInstanceOf(ProcessCancelledError)
+      expect(error.reason).toBe('cancelled')
+      expect(error.spawned).toBe(true)
+      expect(spawned.child().signals).toEqual([GRACEFUL_TERMINATION_SIGNAL])
+      // Named as the node kind it is: a mechanical node has no agent and no
+      // role to be described by.
+      expect(error.message).toContain("Mechanical node 'apply-patch' (action 'git-apply')")
+    })
+
+    it('escalates to the forced signal when the graceful one does not end the command', async () => {
+      const controller = new AbortController()
+      const config = configWith({ 'git-apply': { command: 'git' } })
+      const spawned = controllableSpawn()
+
+      const running = executeMechanicalNode({
+        node: applyPatch,
+        config,
+        spawnFn: spawned.spawnFn,
+        signal: controller.signal,
+        gracefulTerminationMs: 5
+      }).catch((err: unknown) => err)
+
+      controller.abort()
+
+      const error = (await running) as ProcessCancelledError
+      expect(error.forced).toBe(true)
+      expect(spawned.child().signals).toEqual([GRACEFUL_TERMINATION_SIGNAL, FORCED_TERMINATION_SIGNAL])
+    })
+
+    it('spawns nothing at all when the signal is already aborted', async () => {
+      const calls: SpawnCall[] = []
+      const spawnFn = fakeSpawn({}, calls)
+      const config = configWith({ 'git-apply': { command: 'git' } })
+
+      const error = (await executeMechanicalNode({
+        node: applyPatch,
+        config,
+        spawnFn,
+        signal: AbortSignal.abort()
+      }).catch((err: unknown) => err)) as ProcessCancelledError
+
+      expect(error).toBeInstanceOf(ProcessCancelledError)
+      expect(error.spawned).toBe(false)
+      expect(calls).toHaveLength(0)
+    })
   })
 })
