@@ -66,6 +66,7 @@
  * `failed` — see `run-control.ts`.
  */
 
+import { sanitizeReasonText } from './reason-text'
 import type { RunControl } from './types'
 
 /**
@@ -99,10 +100,20 @@ export function createRunControl(upstream?: AbortSignal): RunControl {
    * First halt wins. A second call is a no-op rather than an overwrite,
    * because the reason worth recording is the one that actually stopped the
    * run — a later call's reason describes a halt that changed nothing.
+   *
+   * The reason is sanitized here, at the one point a caller's own text enters
+   * this handle, for the reason `reason-text.ts` states: `haltReason` is read
+   * back into a `RunHaltedError`'s message, which LangGraph persists on the
+   * thread and a consumer renders — so an unbounded or newline-carrying reason
+   * forges log records and bloats every later checkpoint write. A reason left
+   * empty by that treatment (one that was nothing but control characters) is
+   * recorded as no reason at all rather than as a blank one, so a halt message
+   * reads the same as a halt given no reason.
    */
   const halt = (reason?: string): void => {
     if (controller.signal.aborted) return
-    haltReason = reason
+    const safe = reason === undefined ? undefined : sanitizeReasonText(reason)
+    haltReason = safe !== undefined && safe.length > 0 ? safe : undefined
     controller.abort()
   }
 

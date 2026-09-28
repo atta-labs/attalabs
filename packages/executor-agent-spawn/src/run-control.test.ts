@@ -196,6 +196,45 @@ describe('createRunControl — the halt handle', () => {
     expect(control.haltReason).toBe('first')
   })
 
+  it('flattens control characters out of a caller-supplied halt reason (round 5 review)', () => {
+    // A halt reason is routinely a value the caller did not author — an
+    // operator's free-text note, a cancellation header, an upstream service's
+    // text — and it is interpolated into a `RunHaltedError` message LangGraph
+    // persists on the thread. A reason carrying a newline could forge a second
+    // log record in any consumer that treats one line as one event.
+    const control = createRunControl()
+    control.halt('paused\nERROR service down\r\tby operator')
+
+    expect(control.haltReason).toBe('paused ERROR service down by operator')
+    const message = new RunHaltedError('commit', control.haltReason).message
+    expect(message).not.toContain('\n')
+    expect(message).not.toContain('\r')
+  })
+
+  it('bounds an unbounded halt reason, cutting between code points (round 5 review)', () => {
+    // Nothing upstream bounds it: `halt()` accepts a string of any size, and
+    // the reason is re-serialized into every checkpoint write the thread makes
+    // afterwards. The cut also has to fall between code points, or a
+    // supplementary-plane character at the boundary is left as an unpaired
+    // surrogate in the stored reason and in the thrown message.
+    const control = createRunControl()
+    control.halt(`${'x'.repeat(199)}${'\u{1F600}'.repeat(50)}`)
+
+    const reason = control.haltReason ?? ''
+    expect(reason).toBe(`${'x'.repeat(199)}…`)
+    expect(reason).toBe(reason.toWellFormed())
+  })
+
+  it('records no reason at all for one that is only control characters (round 5 review)', () => {
+    const control = createRunControl()
+    control.halt('\n\n\t')
+
+    expect(control.halted).toBe(true)
+    expect(control.haltReason).toBeUndefined()
+    // The message reads exactly as a halt given no reason does.
+    expect(new RunHaltedError('commit', control.haltReason).message).toBe(new RunHaltedError('commit').message)
+  })
+
   it("links an upstream AbortSignal one way: aborting it halts the run, halting the run doesn't abort it", () => {
     const upstream = new AbortController()
     const control = createRunControl(upstream.signal)

@@ -48,6 +48,7 @@
  */
 
 import { spawn } from 'node:child_process'
+import { sanitizeReasonText } from './reason-text'
 
 /**
  * The subset of Node's `ChildProcess` this package depends on. Narrowed to
@@ -351,73 +352,8 @@ type ExitSettlement =
 function abortReasonText(signal: AbortSignal | undefined): string | undefined {
   const reason = signal?.reason
   if (typeof reason !== 'string' || reason.length === 0) return undefined
-  const safe = sanitizeCancellationReason(reason)
+  const safe = sanitizeReasonText(reason)
   return safe.length > 0 ? safe : undefined
-}
-
-/**
- * The longest caller-supplied reason carried into a cancellation's message.
- * Generous enough for a real sentence, short enough that no single reason can
- * dominate a log line or a stored error.
- */
-const MAX_CANCELLATION_REASON_LENGTH = 200
-
-/**
- * A caller-supplied abort reason, made safe to embed in a message.
- *
- * The reason reaches here from whatever the caller passed to `abort()`, which
- * on a server is routinely a value it did not author — a cancellation header,
- * a client-supplied field, an upstream service's text. It is then interpolated
- * into a thrown `Error`'s message, and that message does not stay in memory:
- * LangGraph persists a failed task's `{ name, message }` on the thread, so it
- * lands in the checkpoint store and in whatever later renders an outcome's
- * `error` — a log line, an operator console, a dashboard.
- *
- * Two treatments, each closing a distinct abuse of that path. Control
- * characters — newlines above all — are collapsed to single spaces, because a
- * reason carrying `\n` can forge additional log records or terminate a line
- * early in any consumer that treats one line as one event, and a `\r` can
- * overwrite what was already written to a terminal. And the whole thing is
- * length-bounded, because nothing upstream bounds it: `abort()` accepts a
- * string of any size, and this one is re-serialized into every checkpoint
- * write the thread makes afterwards.
- *
- * Sanitizing here rather than only at the interpolation site is deliberate:
- * this is the single point where an abort's reason enters the package, so the
- * value stored on `ProcessCancelledError.cancellationReason` is the safe one
- * too, and a consumer that renders the field instead of the message is covered
- * without having to know it needed to be.
- */
-function sanitizeCancellationReason(raw: string): string {
-  let out = ''
-  let lastWasSpace = false
-  for (const char of raw) {
-    const code = char.codePointAt(0) ?? 0
-    // C0 (includes newline, carriage return, tab), DEL, and C1.
-    if (code <= 0x1f || (code >= 0x7f && code <= 0x9f)) {
-      if (out.length > 0 && !lastWasSpace) {
-        out += ' '
-        lastWasSpace = true
-      }
-      continue
-    }
-    out += char
-    lastWasSpace = char === ' '
-  }
-  const collapsed = out.trim()
-  if (collapsed.length <= MAX_CANCELLATION_REASON_LENGTH) return collapsed
-  // The bound is in UTF-16 code units, but the cut must fall between code
-  // points: a supplementary-plane character (an emoji, a CJK extension
-  // ideograph) whose high surrogate sits at the boundary would otherwise be
-  // sliced in half, leaving an unpaired surrogate in the stored reason and in
-  // the thrown message — which every consumer downstream re-serializes, and
-  // `JSON.stringify` and a UTF-8 checkpoint write both render as a replacement
-  // character or mangled bytes. Dropping the orphaned half keeps the bound
-  // (the result is never longer) and keeps the string well-formed.
-  const cut = collapsed.slice(0, MAX_CANCELLATION_REASON_LENGTH)
-  const lastUnit = cut.charCodeAt(cut.length - 1)
-  const wholeCodePoints = lastUnit >= 0xd800 && lastUnit <= 0xdbff ? cut.slice(0, -1) : cut
-  return `${wholeCodePoints}…`
 }
 
 /**
