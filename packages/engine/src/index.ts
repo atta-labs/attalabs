@@ -29,3 +29,28 @@ export {
   FlowAgentSchema
 } from './flow-schema'
 export { validateFlow, resolveAgentFailure, InvalidFlowConfigError } from './validate-flow'
+// The steps-shaped (agent-lifecycle) half of the same v2 schema. Exported
+// because a Plan for that shape is the only thing `@atta/executor-agent-spawn`
+// runs, and a consumer outside this workspace has no other way to produce one:
+// `compileFlow` already accepts `AnyFlow`, but without these a caller can
+// neither load a steps-shaped YAML nor give an object literal a type.
+export { loadStepsFlow } from './flow-loader'
+export { validateStepsFlow, resolveStepDependsOn } from './validate-flow'
+export type {
+  AnyFlow,
+  StepsFlow,
+  Step,
+  AgentStep,
+  MechanicalStep,
+  AgentRole,
+  StepDecision,
+  FlowCustomToolSpec
+} from './flow-types'
+export {
+  AgentRoleSchema,
+  AgentStepSchema,
+  MechanicalStepSchema,
+  StepDecisionSchema,
+  StepSchema,
+  CustomToolSpecSchema
+} from './flow-schema'

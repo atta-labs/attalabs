@@ -37,6 +37,11 @@ export type { ResumeControlledRunParams, StartControlledRunParams } from './run-
 export { createRunControl, RunHaltedError, runHaltOf } from './run-halt'
 export {
   createRunIdentity,
+  // The starting value of every graph channel. Exported for the same reason
+  // `buildAgentSpawnStateGraph` takes an injected executor: a caller driving
+  // the compiled graph itself, rather than through `startRun`, has no other
+  // supported way to build the state that graph expects.
+  initialRunState,
   readRunCheckpoint,
   runIdentityForRunId,
   runIdentityOf,

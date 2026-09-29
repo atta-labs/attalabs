@@ -31,7 +31,7 @@
       "dependsOn": []
     },
     "typecheck": {
-      "dependsOn": ["generate", "^typecheck"]
+      "dependsOn": ["generate", "^typecheck", "^build"]
     },
     "test": {
       "dependsOn": ["typecheck"],

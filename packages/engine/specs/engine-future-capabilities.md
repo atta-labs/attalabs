@@ -6,7 +6,7 @@
 
 ---
 
-> **Version note (added 2026-08-25).** The body below was written in April 2026, when the shipped schema was `1.0` and `2.0` was an unclaimed version number this document speculatively assigned to memory, sub-graphs, and interrupts. That is no longer what happened: `2.0` shipped in May 2026 as the universal round-based schema (`generic-flow-refactor.md`), and none of the capabilities sketched below landed in it. Read every "Schema 2.0 introduces …" heading below as "a future schema version introduces …" — the capability analysis and the runtime-support findings remain accurate; only the version numbers were overtaken. Capability 7 at the end of this document is the first of these capabilities to acquire a real, committed consumer.
+> **Version note (added 2026-08-25).** The body below was written in April 2026, when the shipped schema was `1.0` and `2.0` was an unclaimed version number this document speculatively assigned to memory, sub-graphs, and interrupts. That is no longer what happened: `2.0` shipped in May 2026 as the universal round-based schema (`generic-flow-refactor.md`), and none of the capabilities sketched below landed in it. Read every "Schema 2.0 introduces …" heading below as "a future schema version introduces …" — the capability analysis and the runtime-support findings remain accurate; only the version numbers were overtaken. Capability 7 at the end of this document is the one that left this document's speculative register entirely: it shipped, and that section now opens with what is real versus what remains a sketch.
 
 ## Why this document exists
 
@@ -321,13 +321,30 @@ agents:
 
 ---
 
-## Capability 7: Lifecycle execution — tool-use steps and an event surface (in flight)
+## Capability 7: Lifecycle execution — steps, an event surface, and a packable runtime (shipped, with a named remainder)
+
+### What shipped, and what of this section is still speculative
+
+Every other capability in this document is a sketch. This one is not, and reading its schema sketch below as a proposal is the mistake this subsection exists to prevent. What is real, today, in code:
+
+| Shipped | Where it lives | Not what the sketch below says |
+|---------|----------------|--------------------------------|
+| A `steps`-shaped Flow, XOR with `rounds` | `flow-schema.ts`, `flow-types.ts`, `flow-loader.ts`, `validate-flow.ts` | Under `schema_version: "2.0"`, not the `"3.0"` sketched below |
+| `AgentStep` (role, prompt template, permission, working directory, turn ceiling, optional `resume`) and `MechanicalStep` (an `action` name) | same | A step names a *role* and an *action name*; there is no `tools:` binding table and no `agent:`-by-name reference |
+| `decision` (`examine`/`ifTrue`/`ifFalse`/`maxRevisions`) and `dependsOn` | same | Bare step-id routing and a flat dependency list — not a `gate:` expression and not a nested `type: parallel` wrapper |
+| The `agent-lifecycle` compile shape, `PlanAgentSpawnNode` / `PlanMechanicalNode` | `compile-flow.ts`, `types.ts` | — |
+| A runtime that executes it: durable checkpointing, run identity, halt, typed resume, cancellation, live events, redaction, typed run outcomes | `packages/executor-agent-spawn` | A separate package, sibling to `packages/adapter-langgraph`, not an extension of it |
+| That runtime as an installable artifact, proven from outside this workspace | the three packable manifests and `packages/executor-agent-spawn/scripts/verify-external-consumer.ts` | — |
+
+Still speculative, and only sketched: `inputs`, a `tools:` binding table with real shell/function implementations, `type: halt` as a declared step action, `type: subflow`, and a structured-field gate expression. Each is called out again inline below.
+
+The "external consumers" this document's opening names are no longer hypothetical for this capability: `@atta/engine`, `@atta/executor-agent-spawn` and `@atta/agents` produce installable artifacts whose public entry points are built output with no workspace-only dependency, and a consumer outside this repository compiles a steps-shaped Flow and drives the whole lifecycle through them. Distribution *transport* — a registry, release automation — is deliberately still absent; what exists is the artifact contract, proven by packing and installing, never by publishing. See `.claude/skills/atta-engine/SKILL.md`'s "Distribution — the artifact contract".
 
 ### What it is
 
 Every node the engine compiles today calls a model with a rendered prompt and returns text. That is the only node shape. A consumer that wants the engine to *run an engineering lifecycle* — provision a worktree, edit files, commit, open a PR, merge — cannot express any of it.
 
-This is the first capability in this document with a committed consumer rather than a speculative one. Vinaya's roles (Brief Author, Coder, Reviewer, Archivist) are prose that separate CLI sessions interpret one turn at a time; the target is that they become a YAML flow the engine runs. A task flow file *is* the Developer role. A tranche flow embeds task flows; a milestone flow embeds tranche flows — one mechanism, three altitudes. Mission Control is the second consumer, and it needs the event half specifically.
+This was the first capability in this document to acquire a committed consumer rather than a speculative one. Vinaya's roles (Brief Author, Coder, Reviewer, Archivist) are prose that separate CLI sessions interpret one turn at a time; the target is that they become a YAML flow the engine runs. A task flow file *is* the Developer role. A tranche flow embeds task flows; a milestone flow embeds tranche flows — one mechanism, three altitudes. Mission Control is the second consumer, and it needs the event half specifically.
 
 ### Runtime support
 
@@ -377,7 +394,7 @@ Six schema changes are forced by that file:
 2. **`inputs`** — a flow is parameterized by what it operates on, and those keys are what correlate its events.
 3. **`tools` with real bindings** — shell, `gh`, or an exported function, closing the `CustomToolSpecSchema` gap above.
 4. **`type: step`** — a mechanical node with no LLM turn. Merge, tag, and `npm publish` are `gh`/shell calls with no model in them, and today every node requires an agent with a `system_prompt`. **Shipped as `MechanicalStep` (`type: 'mechanical'`, an `action` string)** alongside the `steps[]` cut above — narrower than the tool-binding vision in point 3: an action name, not yet a real shell/function binding.
-5. **`type: halt`** — a fourth action beside `abort | continue | revise`, so an escalation can queue for a human instead of ending the run.
+5. **`type: halt`** — a fourth action beside `abort | continue | revise`, so an escalation can queue for a human instead of ending the run. **The runtime half shipped; the declaration half did not.** `packages/executor-agent-spawn` can suspend a run between node boundaries and resume it later from its own checkpoint, so a caller holding the run handle stops it from outside and continues after a human decides. What no Flow can still say is *where* a run should stop and wait: there is no step action and no node field for it, so a gate before an irreversible action is the caller's to place, never the Plan's to declare.
 6. **Deterministic gates and durable step state** — `on_failure.signal` today is `contains | equals | matches` against an agent's own prose, and `buildRevisionCondition` ships only `contains`. A review verdict should branch on a structured field, not a substring. Separately, the revision loop re-enters its target cold, so a Coder loses everything it learned in the prior round. **A first, narrower cut of the gate half shipped in `engine-conditional-edges-v1` task 1**: a `decision` field on `AgentStep`/`MechanicalStep` (`examine`/`ifTrue`/`ifFalse`/`maxRevisions`) — bare step-id references only, resolved by the executor's caller at run time, not a `when:` expression evaluated inside the flow. It deliberately does not reuse the rounds shape's substring-match `RevisionCondition`/`contains | equals | matches`, and it is not a `gate:`/`PlanConditionalEdge`: the decision is carried directly on the compiled `PlanAgentSpawnNode`/`PlanMechanicalNode` (`PlanStepDecision`), not pushed into `graph.conditionalEdges`, which stays `[]` for this shape. The re-entry-cold half of this point (durable step state across a revision) remains fully open — this cut only makes a Plan describe *where* to route; no executor reads or acts on it yet.
 
 Composition is the same file shape one altitude up: a tranche flow whose `steps` include `{ type: subflow, flow: vinaya-task, for_each: "{{ready_tasks}}" }`, and a milestone flow that does the same over tranche flows.

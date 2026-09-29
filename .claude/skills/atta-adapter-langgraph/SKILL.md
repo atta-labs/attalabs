@@ -154,6 +154,28 @@ Sources: [OpenAI Agents SDK — running agents](https://openai.github.io/openai-
 | A halt lands on a node boundary and is resumable from it | building effective agents | "Agents can then pause for human feedback at checkpoints or when encountering blockers" | The paused node emits no event and starts no process; the completed node's result is durable; the paused node is what a resume runs first | pauses at a checkpoint rather than mid-action |
 | Every reason is readable from the store and the run id alone | building effective agents | "Prioritize **transparency** by explicitly showing the agent's planning steps" | `completed`, `paused`, `failed` and `exhausted` are each observable through `readRunOutcome` without the operation's return value; `resumed` completes the vocabulary so a run someone came back to is distinguishable from one nobody did | makes each reason observable rather than internal |
 
+**The source-to-public-contract matrix.** The conformance matrix above binds *behaviour* to a source. This one binds the **exported surface** to a source, and then to the place an external consumer exercises it — the answer to "does the package expose the official agent-loop semantics, or a private Atta orchestration model dressed in them". The right-hand column names a numbered section of `packages/executor-agent-spawn/scripts/external-consumer/consumer.ts`, which runs against installed tarballs and no workspace resolution at all, so every row is a claim something outside this repository can make.
+
+Sources are the three the conformance matrix already names, plus LangGraph itself for the execution mechanism.
+
+| Public export | Source | The official semantics it carries | Proven outside the workspace by |
+|---|---|---|---|
+| `loadStepsFlow` / `validateStepsFlow` / `compileFlow` (`@atta/engine`) | building effective agents — transparency, "explicitly showing the agent's planning steps" | The plan is a declarative artifact a caller can read before anything runs, not a trace recovered afterwards | §1 — a YAML Flow compiles to a Plan whose nodes and entry the consumer asserts on |
+| `buildAgentSpawnStateGraph(plan, executor, config)` | building effective agents — "reducing abstraction layers and build with basic components" | The node executor is a declared parameter, so a consumer can substitute its own and still get this package's topology, routing and ordering | §2 — the consumer's own `AgentLifecycleNodeExecutor` runs every node, in the compiled order |
+| `startControlledRun` / `resumeControlledRun` → `RunOutcome` | running agents — the run signature (agent + input + options) and `errorHandlers` returning a final output "instead of throwing" | A run takes a plan plus options and returns a typed terminal *or* non-terminal result the caller branches on | §3, §5, §7 — `paused`, `completed` and `failed` each arrive as a value, never as an `unknown` in a `catch` |
+| `createRunControl().signal` (an `AbortSignal`) | running agents — "`signal` – AbortSignal for cancellation" | Cancellation takes the runner's own option shape, so an upstream controller drives it with no bridging | §6 — a halt terminates a live child, and `runHaltOf` recovers the typed halt |
+| `AgentSpawnExecutorConfig.onEvent` | running agents — streaming, "emits events as they arrive from the model" | Progress is observable while the run is under way, not only at its end | §3 — `node:start`, `node:streaming` and `node:complete` arrive in order, each carrying the run id |
+| `checkpointer` on every start/resume path | sessions — the `Session` interface, "implement the `Session` interface to back memory with Redis, DynamoDB, SQLite, or another datastore" | Persistence is the caller's store behind a declared interface; the package keeps no second one | §3, §4 — a caller-supplied saver is the only place the run's state exists |
+| `resumeControlledRun({ identity })` + `readRunCheckpoint` | sessions — "keep passing the same `session`", and "the resumed turn is added to memory without re-preparing the input" | Continuation reads the persisted thread; nothing rebuilds a history and re-drives the run | §4, §5 — the resumed leg reaches `completed`, and the completed node's process is never spawned a second time |
+| `readRunOutcome` | building effective agents — transparency | Why a run is not executing is answerable from the store and the run id alone | §4, §5 — `paused` then `completed`, read without the operation's return value |
+| `roleBinaries` / `mechanicalActions` / `decisionPredicates` | writing tools for agents — "clearly describing (and enforcing with strict data models) expected inputs and outputs"; namespacing capabilities | The Plan names a capability; only the caller binds it to something runnable, and an unbound name is refused rather than guessed | §7 — an undeclared action fails the run, names itself in the error, and spawns nothing |
+| `RoleBinaryArgsParams.maxTurns`, `timeoutMs`, `decision.maxRevisions` | building effective agents — "stopping conditions (such as a maximum number of iterations) to maintain control" | Every loop and every process has an explicit ceiling the run cannot talk its way past | §3 — the Plan step's declared turn ceiling reaches the binary the caller chose |
+| Redaction and bounding on `onEvent` and on persisted results | writing tools for agents — return "only high signal information", with "truncation with sensible default parameter values" | What an observer and a store receive is bounded and has its removals named | §8 — the child's absolute path never reaches the observer, and the stored result says which fields it narrowed |
+
+**No parallel model.** Every concept the public surface names comes from one of those sources (run, session/thread continuation, cancellation signal, streaming events, stopping conditions, tool/executor binding) or from LangGraph's own documented mechanism (checkpointer, thread, per-superstep checkpoint, conditional edges). The package adds no orchestration vocabulary of its own: `RunOutcome`'s five reasons are the observable states those mechanisms already produce, given names, and `AgentLifecycleEvent` is shape-matched to this repo's existing flow-diagram event union rather than a second one. A new export that cannot be placed in this table is the signal to stop rather than to add a row.
+
+**Packaging.** `@atta/executor-agent-spawn` ships as an installable artifact alongside `@atta/engine` and `@atta/agents` — `dist/` only, no workspace range in the packed manifest, `private: true`, packed with `bun pm pack`. The mechanism and its reasons live in `.claude/skills/atta-engine/SKILL.md`'s "Distribution — the artifact contract"; `scripts/verify-external-consumer.ts` is the runnable proof for all three, and the matrix above is what it proves.
+
 ---
 
 ## Architecture
@@ -413,6 +435,9 @@ Mitigations:
 - ❌ Stripping tools from round-Synthesizer (empirical degradation, Task 4.5 — use `always_tools` in YAML)
 - ❌ Writing transcript entries outside `node-executor.ts` (breaks trace ordering)
 - ❌ Extracting `cognitive-router/` to separate package (Round 23 rejected)
+- ❌ Adding a public export to `packages/executor-agent-spawn` that cannot be placed in the source-to-public-contract matrix — an unplaceable export is a parallel orchestration model starting
+- ❌ Calling the executor installable on the strength of an in-workspace example — only a packed tarball installed outside this checkout proves it, which is what `scripts/verify-external-consumer.ts` runs
+- ❌ Importing `@atta/adapter-langgraph` from the external proof, or from `packages/executor-agent-spawn` at all — the two packages share the `Plan` type and nothing else
 
 ---
 
