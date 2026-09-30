@@ -24,3 +24,35 @@ export const UI_LIBRARY_PINS = {
 } as const satisfies Record<string, UILibrary>
 
 export type PinnedApp = keyof typeof UI_LIBRARY_PINS
+
+/** Every library id a pin or an override may name. */
+export const UI_LIBRARIES = ['basic', 'animate', 'retro', 'brutal'] as const satisfies readonly UILibrary[]
+
+/**
+ * Env var that replaces an app's pin for one generator run. CI's matrix-typecheck
+ * job sets it to typecheck each app under all four libraries, not only its pinned
+ * one. Unset (or empty) means the pin wins and output is unchanged.
+ */
+export const UI_LIBRARY_OVERRIDE_ENV = 'UI_LIBRARY_OVERRIDE'
+
+function isUILibrary(value: string): value is UILibrary {
+  return (UI_LIBRARIES as readonly string[]).includes(value)
+}
+
+/**
+ * The library `generate-ui.ts` writes for `app`: the override when set, else the
+ * pin. An override naming no known library throws — a typo must fail the run, not
+ * silently fall back to the pin and report a green that was never checked.
+ */
+export function resolveUILibrary(
+  app: PinnedApp,
+  override: string | undefined = process.env[UI_LIBRARY_OVERRIDE_ENV]
+): { library: UILibrary; overridden: boolean } {
+  if (override === undefined || override === '') return { library: UI_LIBRARY_PINS[app], overridden: false }
+  if (!isUILibrary(override)) {
+    throw new Error(
+      `generate-ui: ${UI_LIBRARY_OVERRIDE_ENV}="${override}" is not a UI library (expected one of: ${UI_LIBRARIES.join(', ')})`
+    )
+  }
+  return { library: override, overridden: true }
+}

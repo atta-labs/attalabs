@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { UI_LIBRARY_PINS, type PinnedApp } from './ui-library-pins'
+import { type PinnedApp, resolveUILibrary, UI_LIBRARY_OVERRIDE_ENV, UI_LIBRARY_PINS } from './ui-library-pins'
 
 const _cache = new Map<string, UILibrary>()
 
@@ -37,9 +37,10 @@ export async function generateUIIndex(app: App): Promise<UILibrary> {
   console.log(`│  UI GENERATION — ${appLabel}│`)
   console.log('└──────────────────────────────────────────────┘')
 
-  const library = UI_LIBRARY_PINS[app]
+  const { library, overridden } = resolveUILibrary(app)
 
-  console.log(`\n📌 Pin: packages/ui/scripts/ui-library-pins.ts → ${library}`)
+  console.log(`\n📌 Pin: packages/ui/scripts/ui-library-pins.ts → ${UI_LIBRARY_PINS[app]}`)
+  if (overridden) console.log(`⚠️  Override: ${UI_LIBRARY_OVERRIDE_ENV}=${library} replaces the pin for this run`)
 
   const dir = path.join(getGeneratedDir(), app)
   fs.mkdirSync(dir, { recursive: true })
