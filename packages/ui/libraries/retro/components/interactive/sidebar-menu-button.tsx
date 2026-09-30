@@ -1,5 +1,5 @@
 // retro's installed SidebarMenuButton composes via Radix `asChild` (Slot). The
-// other three libraries (basic + animate/brutal falling back to basic) are Base
+// other two libraries (basic + animate falling back to basic) are Base
 // UI and compose via the `render` prop. App code written against those libraries
 // passes `render={<NextLink/>}` (e.g. Vinaya's DocSidebar/InstallSidebar), which
 // retro's native signature rejects — a cross-library contract gap.

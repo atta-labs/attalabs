@@ -11,7 +11,6 @@
     "./basic/components": "./libraries/basic/components/index.ts",
     "./retro/components": "./libraries/retro/components/index.ts",
     "./animate/components": "./libraries/animate/components/index.ts",
-    "./brutal/components": "./libraries/brutal/components/index.ts",
     "./shared": "./libraries/shared/index.ts",
     "./lib/assistant-wave": "./canvas/assistant-wave.tsx",
     "./lib/next-web-shell": "./lib/next-web-shell.tsx",

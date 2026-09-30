@@ -25,7 +25,7 @@ function getGeneratedDir(): string {
   return path.join(findRepoRoot(process.cwd()), 'packages/ui/generated')
 }
 
-type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
+type UILibrary = 'basic' | 'animate' | 'retro'
 type App = PinnedApp
 
 export async function generateUIIndex(app: App): Promise<UILibrary> {

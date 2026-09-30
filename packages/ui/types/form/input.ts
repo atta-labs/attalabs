@@ -4,7 +4,7 @@ import type * as React from 'react'
 /**
  * Input variant options available across all templates.
  */
-export type InputVariant = 'default' | 'underlined' | 'filled' | 'ghost' | 'neubrutalism' | 'error'
+export type InputVariant = 'default' | 'underlined' | 'filled' | 'ghost' | 'error'
 
 /**
  * Input size options available across all templates.

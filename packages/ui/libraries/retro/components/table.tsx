@@ -38,7 +38,7 @@ export type { ScrollableTableProps as TableProps } from '../../../lib/scrollable
 
 // retro's installed TableCell forces `whitespace-nowrap` (its neobrutalist grid
 // look) — the only library that does. That silently truncates long cell content
-// instead of wrapping it, unlike basic/animate/brutal. Default retro cells to
+// instead of wrapping it, unlike basic/animate. Default retro cells to
 // `whitespace-normal` so cell text wraps to multiple lines by default in EVERY
 // library (`installed/` stays verbatim; a caller can still pass `whitespace-nowrap`
 // to opt a specific cell back out). TableHead keeps its nowrap — header LABELS

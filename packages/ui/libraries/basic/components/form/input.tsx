@@ -15,8 +15,6 @@ const variantClass: Record<string, string> = {
   underlined: 'rounded-none border-0 border-b px-0 focus-visible:ring-0 focus-visible:border-b-2',
   filled: 'bg-muted/50 focus-visible:bg-muted/60',
   ghost: 'border-transparent bg-transparent focus-visible:ring-0 focus-visible:border-transparent',
-  neubrutalism:
-    'border-2 border-foreground rounded-sm shadow-[2px_2px_0px] shadow-muted-foreground focus-visible:ring-0',
   error: ''
 }
 

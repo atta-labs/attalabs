@@ -44,13 +44,13 @@ export type ScrollableTableProps = ComponentProps<'table'> & {
  * `stickyHeader` (opt-in) is why this is a factory: sticky `<th>` cells detach from
  * the row border (a `border-collapse` quirk), so the pinned header must carry its
  * own bottom rule as a box-shadow — and that rule must match each library's REAL
- * row border, which differs by both width AND color: retro/brutal rows are
- * `border-b-2`, basic/animate `border-b`; retro/animate rows use `currentColor`
- * (no color class), basic uses `border-border/60`, brutal uses `border-border`. So
- * each library passes its own literal, Tailwind-scannable sticky-header class as
- * the second arg (retro/animate → `currentColor`, basic → `--border`/60, brutal →
- * `--border`), and `stickyHeader` renders per-library-correct in all four with
- * zero sticky/border classes at the call site.
+ * row border, which differs by both width AND color: retro rows are
+ * `border-b-2`, basic/animate `border-b`; retro/animate rows resolve to
+ * `--border` (no color class — the base `border-border` rule applies), basic uses
+ * `border-border/60`. So each library passes its own literal, Tailwind-scannable
+ * sticky-header class as the second arg (retro/animate → `--border`, basic →
+ * `--border`/60), and `stickyHeader` renders per-library-correct in all three
+ * with zero sticky/border classes at the call site.
  */
 export function makeScrollableTable(InstalledTable: ComponentType<ComponentProps<'table'>>, stickyHeaderClass: string) {
   function Table({ className, containerClassName, stickyHeader = false, ...props }: ScrollableTableProps) {

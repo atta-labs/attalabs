@@ -330,4 +330,4 @@ export const REQUIRED_TYPES = [
   'TextRevealProps',
 ]
 
-export const TEMPLATES = ['basic', 'retro', 'animate', 'brutal']
+export const TEMPLATES = ['basic', 'retro', 'animate']
