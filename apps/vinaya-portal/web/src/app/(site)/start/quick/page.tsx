@@ -47,16 +47,18 @@ const STEPS: {
       },
       {
         kind: 'prose',
-        text: 'The wizard runs `init`, offers to bind doc-owners pairs and register tracked projects (`init product`), commits the install, proves the gates actually work with `demo break`, runs `doctor`, and pushes. Declining a prompt skips only that step. `init` itself writes exactly five things:'
+        text: 'The wizard runs `init`, offers to bind doc-owners pairs and register tracked projects (`init product`), commits the install, proves the gates actually work with `demo break`, runs `doctor`, and pushes. Declining a prompt skips only that step. `init` generates:'
       },
       {
         kind: 'list',
         items: [
-          '`vinaya.config.json` — a starter ruleset, with `checks` empty',
-          "Git hook stubs — `.husky/` if it's present, else raw `.git/hooks`",
-          'Two GitHub Actions workflows',
-          'A root `VINAYA.md` doctrine pointer',
-          'A handful of labels — created only if they do not already exist'
+          '`vinaya.config.json` — the managed config skeleton, with `checks` empty and ownership marked',
+          'Git hooks — managed block in `.vinaya/hooks/` (tracked, carries to every clone)',
+          'GitHub Actions workflows — the required check plus comment-triggered re-evaluation',
+          'Agent command pointers — `.claude/commands/vinaya.md`, `.agents/skills/vinaya-*/SKILL.md`, `.gemini/commands/vinaya.toml`, controlled by `--agents`',
+          'Two placeholder directories — `vinaya/checks/` and `vinaya/roles/`, held open for later',
+          'A root `VINAYA.md` doctrine pointer — so `cat "$(vinaya doctrine)"` works anywhere',
+          'GitHub labels — one per category in the vocabulary, created only if they do not already exist'
         ]
       },
       {
