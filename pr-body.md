@@ -37,17 +37,18 @@ bun run typecheck --filter=@atta/vada-ai-web → exits 0
 ## Evidence
 
 <!-- AEG:EVIDENCE:START -->
-Head: 4295023ab91b89cb4a0e36234194ea43245ed105
-Summary: `3 files changed, 0 insertions(+), 3 deletions(-)`
+Head: 03f613897ec9920dedafa6c85d5165a6a62a1bb1
+Summary: `4 files changed, 188 insertions(+), 3 deletions(-)`
 
 ### Group A — recomputable
 
-`git diff f9cd62e436b5977126c51222c7d6d9d7da908e13...4295023ab91b89cb4a0e36234194ea43245ed105 --numstat`
+`git diff f9cd62e436b5977126c51222c7d6d9d7da908e13...03f613897ec9920dedafa6c85d5165a6a62a1bb1 --numstat`
 
 ```
 0	1	packages/atta-agents/package.json
 0	1	packages/engine/package.json
 0	1	packages/executor-agent-spawn/package.json
+188	0	pr-body.md
 ```
 
 ### Group B — attested
@@ -136,7 +137,7 @@ bash: -c: line 0: `npx bun@1.3.14 build ./src/index.ts --outdir dist --target no
 
  Tasks:    17 successful, 17 total
 Cached:    16 cached, 17 total
-  Time:    117ms 
+  Time:    116ms 
 
 $ turbo typecheck "--filter=@atta/vada-ai-web"
 • turbo 2.10.10
@@ -158,6 +159,7 @@ Three packages ship as bundled artifacts: `@atta/agents`, `@atta/engine`, `@atta
 |---|---|---|---|---|---|---|
 | issue-1118: develop | Developer | Haiku 4.5 | [pending] | [pending] | [pending] | 2026-09-30 |
 | task/issue-1118: develop | Developer | claude-haiku-4-5-20251001 | 3308693 | 64 | — | 2026-09-30 |
+| task/issue-1118: develop | Developer | claude-haiku-4-5-20251001 | 1091468 | 13 | — | 2026-09-30 |
 <!-- AEG:TOKENS:END -->
 
 ---
