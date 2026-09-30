@@ -26,11 +26,11 @@ export const UI_LIBRARY_PINS = {
 export type PinnedApp = keyof typeof UI_LIBRARY_PINS
 
 /** Every library id a pin or an override may name. */
-export const UI_LIBRARIES = ['basic', 'animate', 'retro', 'brutal'] as const satisfies readonly UILibrary[]
+export const UI_LIBRARIES = ['basic', 'animate', 'retro'] as const satisfies readonly UILibrary[]
 
 /**
  * Env var that replaces an app's pin for one generator run. CI's matrix-typecheck
- * job sets it to typecheck each app under all four libraries, not only its pinned
+ * job sets it to typecheck each app under all three libraries, not only its pinned
  * one. Unset (or empty) means the pin wins and output is unchanged.
  */
 export const UI_LIBRARY_OVERRIDE_ENV = 'UI_LIBRARY_OVERRIDE'
