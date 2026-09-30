@@ -7,7 +7,7 @@ description: The complete and ONLY list of CSS color/radius/font tokens allowed 
 
 ## Context
 
-Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Colors, fonts, and radius come from a Sanity CMS document, are injected into CSS variables by `NextWebShell`, and are exposed to Tailwind via `@theme inline` mappings in `packages/ui/styles/globals.css`. There are also two color schemes (light / dark) and multiple component libraries (basic / retro / animate / brutal).
+Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Colors, fonts, and radius come from a Sanity CMS document, are injected into CSS variables by `NextWebShell`, and are exposed to Tailwind via `@theme inline` mappings in `packages/ui/styles/globals.css`. There are also two color schemes (light / dark) and multiple component libraries (basic / retro / animate).
 
 **If you write `text-green-500` or `bg-[#1A1610]` or `text-white`, the CMS theme cannot reach it** — wrong in the other scheme, wrong per-product, wrong under a future theme (detailed under "Why This Matters" below). Semantic tokens are the only way the theme system works.
 
@@ -19,7 +19,7 @@ Every Atta AI product (Herald, Vāda, Atta, Vitakka) is themed at runtime. Color
 
 If the color you want is not in the list, it does not exist. Pick the closest semantic token by **role** (see doctrine below), or add a new one to `globals.css` and to the CMS theme schema — do **not** reach for the Tailwind palette as an escape hatch.
 
-**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui / neobrutalism) — the colors there are upstream's, not ours. Those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
+**One scoped exemption.** `packages/ui/libraries/*/installed/**` is verbatim upstream CLI paste (shadcn / animate-ui / retroui) — the colors there are upstream's, not ours. Those files are exempt from both the Biome ignore and the `check-forbidden-colors` CI gate. The exemption does NOT apply to the `components/interactive/*` wrappers next to them — those are our code, and the rule applies in full.
 
 ---
 
@@ -68,7 +68,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 | Token | Role | Use for |
 |---|---|---|
 | `primary` | **Action / Selected** | Primary CTAs, the active item in a nav, the selected item in a list, in-progress informational state that needs visual weight. The "this is where the user is / what the user does next" color. |
-| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro/brutal it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent`. |
+| `accent` | **Hover FILL (a surface)** | The background a component paints on hover — `bg-accent`, `hover:bg-accent`. It is a *surface*, not an ink: under retro it is the fill behind a row, a ghost button, a menu item. Never `text-accent` / `hover:text-accent` / `border-accent`. |
 
 > ### THE FILL/HIGHLIGHT SPLIT — stated once, here
 >
@@ -81,7 +81,7 @@ Each text token is calibrated against a specific surface. Using the wrong pairin
 > | **text** emphasis or a link hover | `text-primary` / `hover:text-primary` |
 > | a **border** highlight | `hover:border-primary` / `group-hover:border-primary` |
 >
-> **Why it cannot be one token.** The neobrutalist libraries paint `bg-accent` at full
+> **Why it cannot be one token.** The neobrutalist retro library paints `bg-accent` at full
 > opacity (retro's `installed/table.tsx` row hover, Button `ghost`, dropdown items);
 > retroui's own `--accent` is `#38342b`, a dark surface one step above its card. On a dark
 > background a fill must be *dark* and an ink must be *light* — measured, there is no
@@ -130,7 +130,7 @@ Status tokens describe **outcome semantics**, not aesthetic mood. Don't use `suc
 | `ring` | **Focus** | Keyboard focus rings (`focus-visible:ring-ring`). Never used decoratively. |
 | `primary` | **Emphasized border** | Hover/selected borders — see Brand / Interactive above. |
 | status tokens | **State borders** | `border-success/40`, `border-destructive/40` for status-tagged containers. |
-| `shadow-color` | **Shadow colour** | The colour of the theme's offset/drop shadows, **deliberately separate from `border`**. The neobrutalist libraries draw a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow cannot express that if its shadow strings reference `var(--border)` — the shadow goes black and disappears. CMS shadow strings MUST use `var(--shadow-color)`. |
+| `shadow-color` | **Shadow colour** | The colour of the theme's offset/drop shadows, **deliberately separate from `border`**. The neobrutalist retro library draws a hard offset shadow next to a hard border; a theme wanting a black border but a visible mid-tone shadow cannot express that if its shadow strings reference `var(--border)` — the shadow goes black and disappears. CMS shadow strings MUST use `var(--shadow-color)`. |
 | `primary-hover` | **Fill hover** | Hover fill for `primary`-filled controls. retro's vendored `installed/button.tsx` ships `hover:bg-primary-hover`; without the token *and* a `--color-primary-hover` mapping in `globals.css` that class emits **no CSS at all** and the hover silently never fires. |
 | `secondary-hover` | **Fill hover** | Same, for `secondary`-filled controls (`hover:bg-secondary-hover`). |
 
@@ -340,7 +340,7 @@ When unsure, walk this tree top-down. The first match wins.
 1. **Dual color schemes.** A hardcoded `text-green-500` does not flip in dark mode the way `text-success` does — the token resolves differently per scheme via CSS variables set by `NextWebShell`. `text-white` and `bg-black` break in light themes; the *idea* of "white text" only makes sense in a dark context.
 2. **Per-product branding.** Each product's CMS theme rewrites `--primary`, `--accent`, etc. Hardcoded palette classes ignore the theme entirely.
 3. **Future themes are unknown.** A theme that doesn't exist yet will rewrite every token. Code that picks colors *by role* migrates for free; code that picks colors *by appearance* breaks silently.
-4. **Component library swap.** The `basic` / `retro` / `animate` / `brutal` libraries all consume the same tokens. Hardcoded colors break this indirection.
+4. **Component library swap.** The `basic` / `retro` / `animate` libraries all consume the same tokens. Hardcoded colors break this indirection.
 5. **Contrast is calibrated per pair.** `secondary-foreground` is contrast-tested against `secondary`, not `background`. Mixing pairs produces accessibility failures that pass in one theme and fail in the next.
 6. **Single source of truth.** `packages/ui/styles/globals.css` defines every color that exists. If a reviewer sees `text-blue-400`, that's a bug — full stop.
 

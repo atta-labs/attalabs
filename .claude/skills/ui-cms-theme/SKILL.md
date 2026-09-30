@@ -19,7 +19,7 @@ Sanity CMS
 │   └── userInterface
 │       ├── theme → CMSTheme     # Colors + typography + spacing + shadows
 │       ├── colorScheme          # 'dark' | 'light'
-│       └── library → CMSLibrary # 'basic' | 'retro' | 'animate' | 'brutal'
+│       └── library → CMSLibrary # 'basic' | 'retro' | 'animate'
 │
 └── Theme document (CMSTheme)
     ├── light: Record<string, color>   # Light scheme color tokens
@@ -59,18 +59,19 @@ previously could not express them:
 
 ### Theme ↔ library compatibility (`neobrutalist`)
 
-`retro` and `brutal` draw a hard border AND a hard offset shadow on every surface.
+`retro` draws a hard border AND a hard offset shadow on every surface.
 A theme tuned for the soft libraries typically ships a border at 0.14–0.20 alpha —
 fine under `basic`/`animate`, effectively **frameless** under a neobrutalist one,
 where the border IS the design. This used to be masked: `globals.css` forced
-`--border: var(--foreground)` for those two libraries, overriding whatever border a
+`--border: var(--foreground)` for the neobrutalist libraries, overriding whatever border a
 theme defined.
 
 `uiTheme.neobrutalist` (boolean) records that a theme has a solid border plus a
 `shadowColor`, i.e. that it survives that pairing. Both theme pickers — Herald's
 `/[username]/ui` editor and `tools/admin`'s themes page — filter on it via
 `themesForLibrary()` / `isThemeCompatible()` from `@atta/cms`
-(`utils/theme-compatibility.ts`), so selecting a neobrutalist library offers only
+(`utils/theme-compatibility.ts`), so selecting `retro` — the one neobrutalist library
+(`NEOBRUTALIST_LIBRARIES`) — offers only
 tuned themes, and switching library re-selects a compatible theme rather than
 leaving a broken pairing in place.
 
@@ -82,7 +83,7 @@ In the `uiTheme` schema, `neobrutalist` lives in the Studio form's `info` group 
 would let a theme drift into the neobrutalist list because someone set an unrelated
 field, and the real requirement — a border solid enough to contrast with that
 theme's own surfaces — is a judgement call that a boolean records honestly.
-The filter is a strict **partition**, both directions: neobrutalist libraries offer
+The filter is a strict **partition**, both directions: `retro` offers
 only flagged themes, and `basic`/`animate` offer only the unflagged ones. A
 neobrutalist theme is legible under a soft library but is tuned for a hard border
 and offset shadow that those libraries never draw, so it reads as a washed-out
@@ -461,7 +462,7 @@ Per Cross-Product Theme Centralization under Attalabs (2026-06-25), theme and li
 |--------------|--------------------|---------|
 | `{product}Config` | Per-product studio (Vāda, Vinaya, Herald, Attā) | Config singleton — the *selection*: which theme/library ID the product points to, plus color scheme. Still per-product. |
 | `uiTheme` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Theme documents — color tokens (light/dark), typography, spacing, shadows |
-| `library` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
+| `library` | Central Attalabs studio only (`attalabs.sanity.studio`, project `l5n0n8nn`) | Library documents — maps `id` to `basic` / `retro` / `animate` |
 
 At read time, `getProductUiConfig` (`packages/cms/src/queries/product-ui-config.ts`) resolves this across the two projects: it fetches the `{product}Config` singleton from the product's own project, then resolves the referenced `uiTheme`/`library` IDs against the central `attalabs` project client (`createProductClient('attalabs', ...)`).
 

@@ -8,7 +8,7 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > # ⛔ URGENT — DO NOT EDIT `packages/ui/libraries/*/installed/*`
 >
 > **Each library's `installed/` holds the vendored canonical from THAT library's design-system
-> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** Each of the four
+> source — installed via shadcn CLI, pasted verbatim, NEVER hand-edited.** Each of the three
 > libraries comes from a different upstream:
 >
 > | Library | Upstream source | CLI install command |
@@ -16,7 +16,6 @@ description: Rules for building UI across ALL Atta AI apps — component usage, 
 > | `basic` | shadcn (`ui.shadcn.com`) | `npx shadcn@latest add <component>` |
 > | `animate` | animate-ui (`animate-ui.com`) | `npx shadcn@latest add @animate-ui/...` |
 > | `retro` | retroui (`retroui.dev`, Radix flavor) | `npx shadcn@latest add https://retroui.dev/r/radix/<component>.json` |
-> | `brutal` | neobrutalism (`neobrutalism.dev`) | shadcn-compatible registry |
 >
 > **Even a one-character change in `installed/` is a hard rule violation.** Never hand-roll
 > an implementation there — always pull from upstream.
@@ -122,7 +121,6 @@ This includes "simple" cases like tab bars, toggle groups, segmented controls, o
    - `basic` → `bunx shadcn@latest add <component>` (shadcn/ui registry)
    - `animate` → `bunx shadcn@latest add @animate-ui/<component>`
    - `retro` → `bunx shadcn@latest add https://retroui.dev/r/radix/<component>.json` (Radix flavor)
-   - `brutal` → `bunx shadcn@latest add @neobrutalism/<component>`
 
    Copy the CLI output verbatim to `packages/ui/libraries/{name}/installed/{component}.tsx`. Adjust ONLY the import paths (e.g. `@/lib/utils` → `../../../lib/utils`). Helper directory trees (e.g. animate-ui's `installed/animate-ui/primitives/...`) are preserved as-is. `installed/*` is Biome-ignored — never reformat.
 2. **Install the canonical in every other library too** (matching its own upstream). If a non-`basic` library has no design-system equivalent, fall back to basic with `export { Tabs } from '../../basic/installed/tabs'` in `components/index.ts`.
@@ -254,14 +252,14 @@ Font values (which Google Font is used for each role) are set by the active them
 
 ## The UI Library System
 
-`@atta/ui` ships four component libraries (`basic`, `animate`, `retro`, `brutal`). Each consumer uses exactly one, resolved either at build time or at runtime.
+`@atta/ui` ships three component libraries (`basic`, `animate`, `retro`). Each consumer uses exactly one, resolved either at build time or at runtime.
 
 ```tsx
 // ✅ Always import from the default alias — resolves to the active library
 import { Button, Card, Badge, Input } from '@atta/ui'
 
 // ❌ Don't hard-switch libraries in component code
-import { Button } from '@atta/ui/brutal/components'   // unless specifically required
+import { Button } from '@atta/ui/retro/components'   // unless specifically required
 ```
 
 Shared cross-library primitives (`Heading`, `Text`, `Flex`, `AgentThinkingText`) live in `@atta/ui/shared` and are always available regardless of active library.
@@ -330,7 +328,7 @@ When a button has both icon and label (Sign out, Settings, Theme): always render
 
 These icon+label buttons (Sign out, Settings, Sign in) need no per-call-site className for vertical alignment — `Button` itself defaults to `leading-none` in every library (see `.claude/skills/ui-library-system/SKILL.md`'s wrapper-pattern examples). Never re-add `leading-none` at a call site; if a button's label still looks vertically off against its icon, the fix belongs in the shared `Button` wrapper, not in the consumer.
 
-**The nav frame is library-resolved via `ChromeFrame`.** The shared TopBar renders its content through `useComponents().ChromeFrame` with `variant='topbar'` (falling back to basic's flush frame during the runtime library-import window), so the *edge treatment* is each library's own: the flush libraries (basic/animate/brutal) render a full-width `border-b` bar; **retro** wraps it in its own Card with a small `px-2 pt-2` margin — the "floating card" look — so its offset shadow has room to breathe. This is why the same TopBar reads as flush chrome on animate and a detached card on retro **without a `library === '…'` branch** and without leaking retro's spacing onto other products: the float lives only in `retro/components/chrome/chrome-frame.tsx`. The earlier `bg-secondary`-token approach (this note's prior wording) is superseded — the token gave every library the same frame band, which is precisely the per-library difference `ChromeFrame` restores. The same component (`variant: 'topbar' | 'bar' | 'rail' | 'panel'`) skins the sidebar rails (`variant='rail'`), content panels (`variant='panel'`), and generic horizontal chrome bars (`variant='bar'` — the `/docs` sticky breadcrumb). Full architecture: `.claude/skills/ui-library-system/SKILL.md`.
+**The nav frame is library-resolved via `ChromeFrame`.** The shared TopBar renders its content through `useComponents().ChromeFrame` with `variant='topbar'` (falling back to basic's flush frame during the runtime library-import window), so the *edge treatment* is each library's own: the flush libraries (basic/animate) render a full-width `border-b` bar; **retro** wraps it in its own Card with a small `px-2 pt-2` margin — the "floating card" look — so its offset shadow has room to breathe. This is why the same TopBar reads as flush chrome on animate and a detached card on retro **without a `library === '…'` branch** and without leaking retro's spacing onto other products: the float lives only in `retro/components/chrome/chrome-frame.tsx`. The earlier `bg-secondary`-token approach (this note's prior wording) is superseded — the token gave every library the same frame band, which is precisely the per-library difference `ChromeFrame` restores. The same component (`variant: 'topbar' | 'bar' | 'rail' | 'panel'`) skins the sidebar rails (`variant='rail'`), content panels (`variant='panel'`), and generic horizontal chrome bars (`variant='bar'` — the `/docs` sticky breadcrumb). Full architecture: `.claude/skills/ui-library-system/SKILL.md`.
 
 The contract lives at `packages/ui/topbar/index.tsx` (single source of truth). Adding a new slot (or changing where `extraActions` renders) requires updating every consumer's mental model — touch with care.
 
