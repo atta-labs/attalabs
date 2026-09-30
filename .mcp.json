@@ -5,7 +5,7 @@
       "command": "npx",
       "args": [
         "--yes",
-        "@attalabs/vinaya@0.35.0",
+        "@attalabs/vinaya@0.36.0",
         "task-tools",
         "serve"
       ]
