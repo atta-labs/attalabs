@@ -109,12 +109,18 @@ that basic is Radix was wrong — basic is the current Base UI holdout:
 | Dialog | base-ui | →basic | radix |
 | Tooltip | base-ui | →basic | radix |
 | Toggle | radix | own | radix |
+| SidebarMenuSubButton | **base-ui** (adapter) | →basic (wrapper) | radix |
 
 Adapters exist where an app actually passes `asChild` AND the resolved primitive is Base UI:
-`SheetTrigger`/`SheetClose`/`CollapsibleTrigger` in basic.
+`SheetTrigger`/`SheetClose`/`CollapsibleTrigger`/`SidebarMenuSubButton` in basic.
 `Dialog`/`Tooltip` are Base UI in basic too but no app uses them with `asChild` yet — add the
-same adapter if that changes. animate falls back to basic's Sheet, so it re-exports the
-basic **wrapper** (`../../basic/components/overlay/sheet`), not `installed/sheet`.
+same adapter if that changes. animate falls back to basic's Sheet and sidebar, so it re-exports
+the basic **wrappers** (`../../basic/components/overlay/sheet`,
+`../../basic/components/interactive/sidebar-menu-sub-button`), not `installed/*`. The rest of
+the sidebar still re-exports `installed/sidebar` directly: `SidebarMenuButton` needs no
+forward adapter in basic because its callers write Base UI `render`; only retro carries the
+reverse (`render`→`asChild`) wrapper for it. Vinaya Studio's per-project sidebar link
+(`SidebarMenuSubButton asChild`) therefore typechecks under every library.
 
 The same wrapper rule applies to equivalent behavior props with different upstream names.
 `TabsContent.forceMount` is the cross-library "stay mounted, hide when inactive" contract.
