@@ -1,6 +1,6 @@
 # Vinaya Studio
 
-The local governance dashboard for Vinaya — `/studio` (home), `/studio/projects`, `/studio/tranches`, and `/studio/backlog`, plus the `GET /api/coherence` route they read from. Part of the [AttaLabs](../../../README.md) ecosystem.
+The local governance dashboard for Vinaya — `/studio` (home), `/studio/projects`, `/studio/tranches`, and `/studio/backlog`. Part of the [AttaLabs](../../../README.md) ecosystem.
 
 "Vinaya" means "discipline" or "the rules of conduct" in Pali.
 
@@ -28,6 +28,6 @@ The `vinayaStudioConfig` and `branding-vinayaStudio` documents live in the same 
 
 ## Repo-root resolution
 
-`src/lib/repo-state/read-root.ts`'s `findAegRoot()` walks up from `process.env.VINAYA_REPO_ROOT ?? process.cwd()` looking for `.vinaya/projects.md`, then returns that directory itself — the repo root, not a legacy `aeg-root/` (attalabs carries no repo-local `aeg-root/`; the doctrine ships inside the installed `@attalabs/vinaya` package instead). `src/app/api/coherence/route.ts` calls the same function directly. This app sits at `apps/vinaya-studio/web`, three hops up from the repo root (`web/<product>/apps/<root>`) — so the walk resolves for the ordinary `next dev` case with no `VINAYA_REPO_ROOT` override needed; that override exists for the standalone-bundled Studio case in the separate `atta-labs/vinaya` CLI repo, where Next's generated `server.js` calls `process.chdir(__dirname)` before any request runs.
+`src/lib/repo-state/read-root.ts`'s `findAegRoot()` walks up from `process.env.VINAYA_REPO_ROOT ?? process.cwd()` looking for `.vinaya/projects.md`, then returns that directory itself — the repo root, not a legacy `aeg-root/` (attalabs carries no repo-local `aeg-root/`; the doctrine ships inside the installed `@attalabs/vinaya` package instead). This app sits at `apps/vinaya-studio/web`, three hops up from the repo root (`web/<product>/apps/<root>`) — so the walk resolves for the ordinary `next dev` case with no `VINAYA_REPO_ROOT` override needed; that override exists for the standalone-bundled Studio case in the separate `atta-labs/vinaya` CLI repo, where Next's generated `server.js` calls `process.chdir(__dirname)` before any request runs.
 
-Unlike `apps/vinaya-portal/web`, this app declares no `outputFileTracingIncludes` in `next.config.ts` and carries no `tracing-markers.test.ts` guard — that mechanism exists solely to keep a Vercel serverless bundle from silently dropping a computed-path read a `force-dynamic` route needs at request time, and this app is never deployed to Vercel, so there is no serverless bundle for a marker to go missing from.
+This app declares no `outputFileTracingIncludes` in `next.config.ts` and carries no `tracing-markers.test.ts` guard — unlike `apps/vinaya-portal/web`, which needs them for serverless routes. This app is never deployed to Vercel, so there is no serverless bundle to worry about.
