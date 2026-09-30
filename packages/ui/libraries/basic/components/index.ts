@@ -132,7 +132,6 @@ export {
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
@@ -140,6 +139,7 @@ export {
   SidebarTrigger,
   useSidebar
 } from '../installed/sidebar'
+export { SidebarMenuSubButton } from './interactive/sidebar-menu-sub-button'
 // Sheet
 export {
   Sheet,
