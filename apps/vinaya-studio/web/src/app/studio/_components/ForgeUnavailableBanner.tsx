@@ -10,8 +10,7 @@ import type { ForgeStatus } from '@/lib/repo-state/forge-status'
  * apparent total outage. The underlying `Error.message` stays in
  * `console.warn` — never surfaced here (graceful-errors rule); only a
  * human-readable failure category + the failed slug names reach the UI.
- * Renders nothing for `ok`. Mirrors Studio's existing warning banner
- * convention (see CoherencePanel).
+ * Renders nothing for `ok`.
  */
 export function ForgeUnavailableBanner({
   scope,

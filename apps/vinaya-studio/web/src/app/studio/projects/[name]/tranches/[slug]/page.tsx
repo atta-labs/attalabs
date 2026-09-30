@@ -19,7 +19,6 @@ import { bucketTaskStatuses } from '@/lib/forge/task-buckets'
 import { timeCall } from '@/lib/forge/timing'
 import { loadTranchePageData } from '@/lib/forge/tranche-page-snapshot'
 import { deriveTrancheStatus } from '@/app/studio/_lib/tranche-status'
-import { CoherencePanel } from './_components/CoherencePanel'
 import { TrancheTabs } from './_components/TrancheTabs'
 import { statusVisual, todoDispatchVisual } from './_lib/status-display'
 import { TaskTitleCell } from './_components/TaskTitleCell'
@@ -313,11 +312,6 @@ export default async function TranchePage({ params }: { params: Promise<Params> 
                 </ul>
               </section>
             )}
-
-            <section className='space-y-3'>
-              <h2 className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>Coherence</h2>
-              <CoherencePanel />
-            </section>
           </>
         }
         ledger={
