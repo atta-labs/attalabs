@@ -10,7 +10,7 @@ const mockThemes: Record<string, any> = {
 
 const mockLibraries: Record<string, any> = {
   basic: { _id: 'basic', id: 'basic', name: 'Basic Library' },
-  brutal: { _id: 'brutal', id: 'brutal', name: 'Brutal Library' }
+  retro: { _id: 'retro', id: 'retro', name: 'Retro Library' }
 }
 
 // Mock client implementation for central database (attalabs)
@@ -89,7 +89,7 @@ describe('getProductUiConfig', () => {
       userInterface: {
         theme: { _ref: 'theme-cyberpunk', _type: 'reference' },
         colorScheme: 'light',
-        library: { _ref: 'brutal', _type: 'reference' }
+        library: { _ref: 'retro', _type: 'reference' }
       }
     })
 
@@ -101,9 +101,9 @@ describe('getProductUiConfig', () => {
 
     const result = await getProductUiConfig(mockClient, 'heraldConfig', 'heraldConfig')
 
-    // Check that attalabs was queried for theme-cyberpunk and brutal
+    // Check that attalabs was queried for theme-cyberpunk and retro
     expect(mockAttalabsFetch).toHaveBeenCalledWith(expect.stringContaining('uiTheme'), { id: 'theme-cyberpunk' })
-    expect(mockAttalabsFetch).toHaveBeenCalledWith(expect.stringContaining('library'), { id: 'brutal' })
+    expect(mockAttalabsFetch).toHaveBeenCalledWith(expect.stringContaining('library'), { id: 'retro' })
 
     // Verify reconstruction
     expect(result).toEqual({
@@ -111,7 +111,7 @@ describe('getProductUiConfig', () => {
       userInterface: {
         theme: mockThemes['theme-cyberpunk'],
         colorScheme: 'light',
-        library: mockLibraries.brutal
+        library: mockLibraries.retro
       }
     })
   })

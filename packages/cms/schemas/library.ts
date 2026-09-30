@@ -12,7 +12,7 @@ export const library = defineType({
       title: 'ID',
       type: 'string',
       validation: (Rule) => Rule.required(),
-      description: 'Unique identifier: basic, retro, animate, brutal'
+      description: 'Unique identifier: basic, retro, animate'
     }),
     defineField({
       name: 'name',

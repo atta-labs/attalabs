@@ -8,13 +8,13 @@ interface LibraryPreviewProps {
  * Custom preview media for library documents.
  * Renders a style-specific border treatment:
  * - basic: rounded border with soft shadow
- * - retro/brutal: double nested borders (white outer, black inner)
+ * - retro: double nested borders (white outer, black inner)
  * - animate: rotating gradient border animation
  */
 export function LibraryPreview({ libraryId }: LibraryPreviewProps) {
   const [phase, setPhase] = useState(0)
   const isAnimate = libraryId === 'animate'
-  const isRetro = libraryId === 'retro' || libraryId === 'brutal'
+  const isRetro = libraryId === 'retro'
 
   useEffect(() => {
     if (!isAnimate) return

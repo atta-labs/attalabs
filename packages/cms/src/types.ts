@@ -27,7 +27,7 @@ export interface CMSTheme {
   typography?: ThemeTypography
   spacing?: ThemeSpacing
   shadows?: Record<string, string>
-  /** Tuned for the retro/brutal libraries — solid border + shadowColor. Drives picker filtering. */
+  /** Tuned for the retro library — solid border + shadowColor. Drives picker filtering. */
   neobrutalist?: boolean
 }
 
