@@ -139,6 +139,8 @@ That last clause is the whole reason the dependency lives in `turbo.json` rather
 
 **Every package keeps `private: true`.** Nothing here is published to a registry; the contract is proven by packing and installing a tarball. The flag is what keeps an accidental `npm publish` from being the way anyone finds that out.
 
+**`"sideEffects": false` is forbidden in all three manifests.** Under `bun 1.3.14`, `build:js`'s bundler treats that flag as license to tree-shake re-exports it judges unused from the bundle's own entry point — `listPublicSpecs` and other re-exported names vanish from `dist/index.js` even though the bundle is the package's only public surface and every export is reachable from outside the package. The flag is a lie for a package whose entire `src/` is the export list: there is no internal-only code for it to protect. `grep -rn sideEffects packages/atta-agents/package.json packages/engine/package.json packages/executor-agent-spawn/package.json` must return no output; `grep -c listPublicSpecs packages/engine/dist/index.js` after a build must be `2` (declaration + implementation), not `0`.
+
 **The proof is a run, not an assertion.** `packages/executor-agent-spawn/scripts/verify-external-consumer.ts` builds and packs all three, re-reads every packed manifest (refusing a workspace range, a source-pointing entry, an entry naming a file the tarball lacks, or any non-declaration `.ts` file), installs the tarballs into a fresh project in the OS temp directory — asserted to be outside this checkout — and there type-checks and runs a consumer that compiles a steps-shaped Flow and drives the full lifecycle. See `.claude/skills/atta-adapter-langgraph/SKILL.md`'s source-to-public-contract matrix for what that lifecycle proves and why each part of it is normative.
 
 That consumer's `overrides` block pins the two transitive `@atta/*` ranges to the same tarballs. It stands in for the registry this task deliberately does not use: a package manager reading `"@atta/engine": "0.0.1"` out of a packed manifest looks it up publicly and gets a 404. Nothing else is pinned, so every other dependency resolves the way it would for any consumer.
@@ -486,6 +488,7 @@ This is engine internals — the YAML author never touches it.
 - ❌ Dropping `^build` from `turbo`'s `typecheck` task — every consumer's typecheck and every consumer's `vitest` run then fail on a clean checkout, because nothing else in the task graph builds `dist/` first
 - ❌ Replacing that dependency with an emit inside a package's `typecheck` script — a task declaring no `outputs` restores no files on a cache hit, so the emit silently stops happening and the failure surfaces in CI rather than locally
 - ❌ `npm pack` for these packages — it leaves `workspace:` ranges in the packed manifest, and the artifact is uninstallable
+- ❌ Adding `"sideEffects": false` to any of the three packable manifests — bun 1.3.14's bundler tree-shakes re-exports like `listPublicSpecs` straight out of `dist/index.js`
 - ❌ Adding a fourth package to the artifact set without a consumer that needs it, or dropping `@atta/agents` from it — the engine's declarations name it
 
 ---
