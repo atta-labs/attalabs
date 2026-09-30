@@ -1,3 +1,4 @@
+// Rebuild trigger: forces the Vada preview build on the Vinaya bump PR.
 export * from './types'
 export * from './errors'
 export { deriveTemplateState } from './derive'
