@@ -6,7 +6,7 @@ import { Switch as InstalledSwitch, type SwitchProps as InstalledSwitchProps } f
 // Two jobs:
 //
 // 1. cursor-pointer default. animate is the ONE library whose installed Switch
-//    omits it (basic/retro/brutal carry it in their own base strings). Merged
+//    omits it (basic/retro carry it in their own base strings). Merged
 //    LAST so a caller's own cursor-* still wins tailwind-merge.
 //
 // 2. Work around an upstream animate-ui defect WITHOUT touching installed/.

@@ -1,7 +1,7 @@
 import { cn } from '../../../../lib/utils'
 import type { ChromeFrameProps } from '../../../../types'
 
-// Flush chrome frame — the default for basic (and re-exported by animate/brutal).
+// Flush chrome frame — the default for basic (and re-exported by animate).
 // Renders the chrome edge-to-edge with no float: a full-width topbar bar with a
 // bottom rule, or a full-height rail with a right rule + sidebar surface. retro
 // overrides this with a floating Card frame; because the float lives ONLY in

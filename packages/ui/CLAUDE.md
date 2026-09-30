@@ -14,7 +14,6 @@ packages/ui/
 │   │   └── installed/       # Raw shadcn installed files
 │   ├── retro/               # Retro/vintage aesthetic
 │   ├── animate/             # Motion-rich
-│   ├── brutal/              # Neo-brutalist
 │   └── shared/              # Cross-library primitives: Heading, Text, Flex, AgentThinkingText
 ├── lib/
 │   ├── next-web-shell.tsx   # Root async Server Component — theme + fonts + providers
@@ -96,7 +95,6 @@ import { Heading, Text, Flex, AgentThinkingText } from '@atta/ui/shared'
 import { Button } from '@atta/ui/basic/components'
 import { Button } from '@atta/ui/retro/components'
 import { Button } from '@atta/ui/animate/components'
-import { Button } from '@atta/ui/brutal/components'
 
 // Root layout integration
 import { NextWebShell } from '@atta/ui/lib/next-web-shell'
@@ -113,14 +111,13 @@ import { cn } from '@atta/ui/lib/utils'
 
 ## The Library System
 
-Four component libraries, one active per product. A build-time app's active library is a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`), not a live CMS read. A runtime-switching app (Herald's public profile) resolves it per-user from the database instead.
+Three component libraries, one active per product. A build-time app's active library is a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`), not a live CMS read. A runtime-switching app (Herald's public profile) resolves it per-user from the database instead.
 
 | Library | Style |
 |---------|-------|
 | `basic` | Default — clean, minimal |
 | `retro` | Retro/vintage |
 | `animate` | Motion-rich |
-| `brutal` | Neo-brutalist |
 
 **Runtime switching** is handled by `LibraryProvider` (inside `NextWebShell`). It dynamically imports the active library via `useLibraryLoader`, which guards against race conditions — a slower import won't overwrite a later one.
 
@@ -234,7 +231,7 @@ Every library must export the same set of components and types. This is enforced
 🔍 Validating UI Component Contract
 
    Contract : 37 components, 43 types
-   Libraries: basic, retro, animate, brutal
+   Libraries: basic, retro, animate
 
 📦 Checking retro...
    ❌ Missing components (2):

@@ -7,7 +7,7 @@
  * reproducible record.
  *
  * Both carry `neobrutalist: true`, which is what the theme pickers partition on: a
- * neobrutalist library (retro/brutal) offers only these, and the soft libraries offer
+ * neobrutalist library (retro) offers only these, and the soft libraries offer
  * only the rest. Both therefore satisfy what the flag records — a SOLID border that
  * contrasts with the theme's own surfaces, plus a `shadowColor` that is deliberately
  * NOT the border, so a black border can still cast a visible offset shadow.

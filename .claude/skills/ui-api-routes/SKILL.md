@@ -32,6 +32,8 @@ export async function POST(request: Request) {
 }
 ```
 
+An enum-valued field validates against an allowlist, and that allowlist is a mirror of the union it guards — not an independent list. Herald's `api/admin/publish/route.ts` checks `library` against `VALID_LIBRARIES`, which must stay equal to `@atta/ui`'s `UILibrary` (`basic` / `animate` / `retro`). Adding or removing a library means changing both; a stale entry lets a request persist a library id no loader can import.
+
 ### Env Var Check
 ```ts
 const apiKey = process.env.ANTHROPIC_API_KEY

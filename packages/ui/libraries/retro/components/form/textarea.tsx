@@ -19,7 +19,6 @@ const variantClass: Record<string, string> = {
   underlined: 'rounded-none border-0 border-b-2 px-0 shadow-none focus-visible:outline-none focus-visible:border-b-4',
   filled: 'bg-muted/50 focus-visible:bg-muted/60',
   ghost: 'border-transparent bg-transparent shadow-none focus-visible:outline-none',
-  neubrutalism: '',
   // Bare: zero chrome — for nesting inside a styled container (e.g. SmartPromptInput's InputGroup).
   bare: 'min-h-0 border-0 rounded-none bg-transparent shadow-none focus-visible:outline-none resize-none',
   error: ''

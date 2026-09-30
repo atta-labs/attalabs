@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { updateUserUI } from '@/db/queries'
 
-const VALID_LIBRARIES = ['basic', 'retro', 'animate', 'brutal']
+const VALID_LIBRARIES = ['basic', 'retro', 'animate']
 const VALID_SCHEMES = ['dark', 'light']
 
 export async function POST(request: Request) {

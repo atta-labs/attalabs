@@ -190,7 +190,7 @@ own Sanity project (same `PROJECT_IDS` entry). Both `vinaya-portal-web` and
 | `{product}Config` | Per-product UI config singleton — sets active theme + library + color scheme |
 | `branding` | Per-product branding singleton — logos (SVG), favicons, identity text, usage rules |
 | `uiTheme` | Theme documents — color tokens (light/dark), typography, spacing, shadows |
-| `library` | Library documents — maps `id` to `basic` / `retro` / `animate` / `brutal` |
+| `library` | Library documents — maps `id` to `basic` / `retro` / `animate` |
 | `roadmapMilestone` | Roadmap release milestones for `/roadmap` on vinaya-portal — title, version, description, `truth` line, status, image, order |
 
 ---
@@ -210,7 +210,7 @@ interface CMSTheme {
   }
   spacing?: { radius?: string; spacing?: string }
   shadows?: Record<string, string>   // RAMP only — colour comes from the per-scheme shadowColor
-  neobrutalist?: boolean             // tuned for retro/brutal: solid border + shadowColor
+  neobrutalist?: boolean             // tuned for retro: solid border + shadowColor
 }
 ```
 
@@ -224,7 +224,7 @@ separate from `border` so a black border can still cast a visible shadow), and
 `--color-*` mapping in `globals.css`).
 
 `neobrutalist` is not a colour — it records that a theme has been tuned for the
-`retro`/`brutal` libraries. Both theme pickers partition on it via `themesForLibrary()`
+`retro` library. Both theme pickers partition on it via `themesForLibrary()`
 / `isThemeCompatible()` (`utils/theme-compatibility.ts`), in both directions. See
 `.claude/skills/ui-cms-theme/SKILL.md`.
 

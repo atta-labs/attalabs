@@ -51,7 +51,7 @@ function addSpacingVars(vars: Map<string, string>, spacing: CMSTheme['spacing'])
  * in the light/dark colour groups, surfaced as `--shadow-color`. A theme's shadow
  * strings must therefore reference `var(--shadow-color)` and never `var(--border)`
  * — binding them to the border makes a black border produce a black (invisible)
- * shadow, which is what the neobrutalist libraries need to keep separate.
+ * shadow, which is what the neobrutalist retro library needs to keep separate.
  */
 function addShadowVars(vars: Map<string, string>, shadows: CMSTheme['shadows']): void {
   if (!shadows) return

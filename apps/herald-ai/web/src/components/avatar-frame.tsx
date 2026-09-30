@@ -27,7 +27,7 @@ export function AvatarFrame({
   className
 }: AvatarFrameProps) {
   const library = useLibraryName()
-  const isAngular = library === 'retro' || library === 'brutal'
+  const isAngular = library === 'retro'
 
   const initials = alt
     .split(' ')

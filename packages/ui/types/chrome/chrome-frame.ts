@@ -10,7 +10,7 @@ export type ChromeFrameVariant = 'topbar' | 'bar' | 'rail' | 'panel'
 
 /**
  * Library-resolved chrome frame contract. Every library exports a `ChromeFrame`;
- * the flush libraries (basic/animate/brutal) render the chrome edge-to-edge
+ * the flush libraries (basic/animate) render the chrome edge-to-edge
  * (a `border-b` bar or a `border-r` rail), while retro wraps it in its own Card
  * with a small margin so its offset shadow reads — the "floating" look. This is
  * how retro's spacing stays retro's and never leaks onto other products, with no

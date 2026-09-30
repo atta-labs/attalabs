@@ -3,15 +3,14 @@
 import type { ComponentType } from 'react'
 import { useCallback, useRef, useState } from 'react'
 
-export type UILibrary = 'basic' | 'animate' | 'retro' | 'brutal'
+export type UILibrary = 'basic' | 'animate' | 'retro'
 
 export type ComponentMap = Record<string, ComponentType<any>>
 
 const LIBRARY_IMPORTERS: Record<UILibrary, () => Promise<Record<string, unknown>>> = {
   basic: () => import('../libraries/basic/components'),
   animate: () => import('../libraries/animate/components'),
-  retro: () => import('../libraries/retro/components'),
-  brutal: () => import('../libraries/brutal/components')
+  retro: () => import('../libraries/retro/components')
 }
 
 /**
