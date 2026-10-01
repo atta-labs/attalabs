@@ -10,6 +10,13 @@
  * authoring time) is well within a single page; re-evaluate if it grows into
  * the hundreds.
  *
+ * In-flight state rides the same single request (#1126): one repo-level
+ * `refs(refPrefix: "refs/heads/task/", query: "issue-")` listing for
+ * `task/issue-<n>` branches, and per Issue its open closing pull requests —
+ * never a request per Issue. `refPrefix` must end in `/`, and `query` is what
+ * narrows to `issue-` (an unfiltered `task/` prefix holds hundreds of refs and
+ * would silently truncate at 100), so a `totalCount` past the page is logged.
+ *
  * Also excludes `vinaya/state-object` (task 2 addendum, PR #499 review) —
  * The pinned per-project/root-ecosystem state, ratification queue, and
  * lessons-log Issues (#447-#453) are permanent forge-native storage objects,
@@ -27,7 +34,17 @@ import type { ForgeStatus } from '@/lib/repo-state/forge-status'
  * and `@attalabs/aeg-forge-state`'s `projectsFromBody` is the same parser the task
  * surfaces use, so the backlog and the boards agree by construction.
  */
-export type BacklogIssue = { number: number; title: string; url: string; labels: string[]; projects: string[] }
+export type BacklogIssue = {
+  number: number
+  title: string
+  url: string
+  labels: string[]
+  projects: string[]
+  inFlight: InFlight
+}
+
+/** Whether an Issue is being worked on GitHub: a `task/issue-<n>` branch exists, or an open PR closes it. */
+export type InFlight = { branch: boolean; pullRequest: { number: number; url: string } | null }
 
 /**
  * The backlog fetch result carries a `ForgeStatus` alongside the issues —
@@ -45,6 +62,7 @@ export type BacklogResult = { issues: BacklogIssue[]; forge: ForgeStatus }
 
 type OpenIssuesResponse = {
   repository: {
+    refs: { totalCount: number; nodes: Array<{ name: string }> } | null
     issues: {
       nodes: Array<{
         number: number
@@ -52,6 +70,7 @@ type OpenIssuesResponse = {
         url: string
         body: string | null
         labels: { nodes: Array<{ name: string }> }
+        closedByPullRequestsReferences: { nodes: Array<{ number: number; state: string; url: string }> } | null
       }>
     }
   } | null
@@ -66,8 +85,13 @@ export async function fetchOpenIssuesWithoutTrancheLabel(
 
   const query = `query OpenIssues($owner: String!, $repo: String!) {
   repository(owner: $owner, name: $repo) {
+    refs(refPrefix: "refs/heads/task/", query: "issue-", first: 100) { totalCount nodes { name } }
     issues(states: [OPEN], first: 100) {
-      nodes { number title url body labels(first: 20) { nodes { name } } }
+      nodes {
+        number title url body
+        labels(first: 20) { nodes { name } }
+        closedByPullRequestsReferences(first: 5, includeClosedPrs: false) { nodes { number state url } }
+      }
     }
   }
 }`
@@ -82,14 +106,30 @@ export async function fetchOpenIssuesWithoutTrancheLabel(
   }
 
   const nodes = response.repository?.issues.nodes ?? []
+  const refs = response.repository?.refs
+  if (refs && refs.totalCount > refs.nodes.length) {
+    console.warn(`[fetch-open-issues] ${refs.totalCount} task/issue- branches, only ${refs.nodes.length} listed`)
+  }
+  const branchNames = new Set(refs?.nodes.map((r) => r.name.replace(/^task\//, '')))
   const issues = nodes
     .map((n) => ({
       number: n.number,
       title: n.title,
       url: n.url,
       labels: n.labels?.nodes?.map((l) => l.name) ?? [],
-      projects: projectsFromBody(n.body ?? '')
+      projects: projectsFromBody(n.body ?? ''),
+      inFlight: {
+        // Exact match on the Issue's own number — `issue-7` must never match Issue 70.
+        branch: branchNames.has(`issue-${n.number}`),
+        pullRequest: openPullRequest(n.closedByPullRequestsReferences?.nodes ?? [])
+      }
     }))
     .filter((issue) => !hasLabel('tranche', issue.labels) && !hasLabel('state-object', issue.labels))
   return { issues, forge: { kind: 'ok' } }
+}
+
+/** The newest open pull request among an Issue's closing references, or `null` when none is open. */
+function openPullRequest(prs: Array<{ number: number; state: string; url: string }>): InFlight['pullRequest'] {
+  const open = prs.filter((pr) => pr.state === 'OPEN').sort((a, b) => b.number - a.number)[0]
+  return open ? { number: open.number, url: open.url } : null
 }
