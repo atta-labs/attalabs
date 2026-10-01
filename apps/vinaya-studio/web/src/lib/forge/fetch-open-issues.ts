@@ -26,6 +26,7 @@
 
 import { hasLabel, projectsFromBody } from '@attalabs/aeg-forge-state'
 import { graphql } from '@octokit/graphql'
+import { tierFromBody, typeFromBody } from '@/lib/forge/body-fields'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 
 /**
@@ -40,6 +41,9 @@ export type BacklogIssue = {
   url: string
   labels: string[]
   projects: string[]
+  /** Tier / Type read from the body's `**Tier:**` / `**Type:**` lines — the fallback when no label carries them. */
+  bodyTier: string | null
+  bodyType: string | null
   inFlight: InFlight
 }
 
@@ -118,6 +122,8 @@ export async function fetchOpenIssuesWithoutTrancheLabel(
       url: n.url,
       labels: n.labels?.nodes?.map((l) => l.name) ?? [],
       projects: projectsFromBody(n.body ?? ''),
+      bodyTier: tierFromBody(n.body ?? ''),
+      bodyType: typeFromBody(n.body ?? ''),
       inFlight: {
         // Exact match on the Issue's own number — `issue-7` must never match Issue 70.
         branch: branchNames.has(`issue-${n.number}`),

@@ -7,12 +7,12 @@ const { fetchOpenIssuesWithoutTrancheLabel } = await import('./fetch-open-issues
 
 type PrNode = { number: number; state: string; url: string }
 
-function issueNode(number: number, prs: PrNode[] = [], labels: string[] = []) {
+function issueNode(number: number, prs: PrNode[] = [], labels: string[] = [], body: string | null = null) {
   return {
     number,
     title: `Issue ${number}`,
     url: `https://github.com/o/r/issues/${number}`,
-    body: null,
+    body,
     labels: { nodes: labels.map((name) => ({ name })) },
     closedByPullRequestsReferences: { nodes: prs }
   }
@@ -63,6 +63,16 @@ describe('fetchOpenIssuesWithoutTrancheLabel — in-flight state', () => {
     respond([issueNode(9, [pr(1, 'MERGED')])], ['issue-10'])
     const { issues } = await fetchOpenIssuesWithoutTrancheLabel('o', 'r', 't')
     expect(issues[0]?.inFlight).toEqual({ branch: false, pullRequest: null })
+  })
+
+  it('carries the body Tier/Type as full labels, independent of the Issue labels', async () => {
+    respond(
+      [issueNode(3, [], ['vinaya/tier:1'], '**Tier:** 3\n**Type:** fix\n'), issueNode(4, [], [], 'no fields')],
+      []
+    )
+    const { issues } = await fetchOpenIssuesWithoutTrancheLabel('o', 'r', 't')
+    expect(issues[0]).toMatchObject({ bodyTier: 'vinaya/tier:3', bodyType: 'vinaya/type:fix' })
+    expect(issues[1]).toMatchObject({ bodyTier: null, bodyType: null })
   })
 
   it('still excludes tranche-labelled Issues', async () => {

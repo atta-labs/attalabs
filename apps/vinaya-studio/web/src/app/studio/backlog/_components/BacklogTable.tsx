@@ -11,6 +11,7 @@ import { label, LABEL_NAMESPACE } from '@attalabs/aeg-forge-state/labels'
 import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { withBodyFallback } from '@/lib/forge/body-fields'
 import type { BacklogIssue, InFlight } from '@/lib/forge/fetch-open-issues'
 import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
 
@@ -44,6 +45,11 @@ import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/
  * already fully allocated (6/32/20/10/32), so this column's 10% is unchanged;
  * `LABEL_CELL` already wraps a cell's badges, so a second badge just grows
  * row height instead of breaking the layout.
+ *
+ * Tier and Type fall back to the Issue body's `**Tier:**` / `**Type:**` lines
+ * (`body-fields.ts`, resolved to the full label form) when no label carries
+ * them. The filter memo, the row render and `page.tsx`'s chip options all go
+ * through the same `withBodyFallback`, so they cannot disagree.
  *
  * The "In flight" column (#1126) shows whether GitHub already has work on the
  * Issue — an open pull request that closes it (linked, with its number), else a
@@ -193,7 +199,7 @@ export function BacklogTable({
   const filtered = useMemo(
     () =>
       issues.filter((issue) => {
-        const { tier, type, flags } = splitLabels(issue.labels)
+        const { tier, type, flags } = withBodyFallback(splitLabels(issue.labels), issue)
         const projectOk = selectedProjects.size === 0 || issue.projects.some((p) => selectedProjects.has(p))
         const tierOk = selectedTiers.size === 0 || (tier !== null && selectedTiers.has(tier))
         const typeOk = selectedTypes.size === 0 || (type !== null && selectedTypes.has(type))
@@ -297,7 +303,7 @@ export function BacklogTable({
               </TableRow>
             ) : (
               filtered.map((issue) => {
-                const { tier, type, flags } = splitLabels(issue.labels)
+                const { tier, type, flags } = withBodyFallback(splitLabels(issue.labels), issue)
                 return (
                   <TableRow key={issue.number}>
                     <TableCell className='px-2 align-top'>

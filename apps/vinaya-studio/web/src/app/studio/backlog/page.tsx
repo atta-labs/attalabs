@@ -26,11 +26,12 @@
 import type { Registry } from '@attalabs/aeg-core'
 import { resolveGithubToken, resolveRepo } from '@attalabs/aeg-forge-state'
 import type { Metadata } from 'next'
+import { withBodyFallback } from '@/lib/forge/body-fields'
 import { readRegistry } from '@/lib/repo-state'
 import type { ForgeStatus } from '@/lib/repo-state/forge-status'
 import { fetchOpenIssuesWithoutTrancheLabel, type BacklogIssue } from '@/lib/forge/fetch-open-issues'
 import { ForgeUnavailableBanner } from '@/app/studio/_components/ForgeUnavailableBanner'
-import { labelKind } from '@/app/studio/_components/LabelBadge'
+import { labelKind, splitLabels } from '@/app/studio/_components/LabelBadge'
 import { BacklogTable } from './_components/BacklogTable'
 
 // Forge reads derive live Issue state from GitHub — never serve from cache.
@@ -50,20 +51,22 @@ function projectOptions(issues: BacklogIssue[], registry: Registry): string[] {
   return ordered
 }
 
-/** Distinct tier labels present, lowest tier first. */
+/** Distinct tier labels present (label, else the body's `**Tier:**`), lowest tier first. */
 function tierOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
-    for (const name of issue.labels) if (labelKind(name) === 'tier') present.add(name)
+    const { tier } = withBodyFallback(splitLabels(issue.labels), issue)
+    if (tier) present.add(tier)
   }
   return [...present].sort((a, b) => a.localeCompare(b))
 }
 
-/** Distinct type labels present. */
+/** Distinct type labels present (label, else the body's `**Type:**`). */
 function typeOptions(issues: BacklogIssue[]): string[] {
   const present = new Set<string>()
   for (const issue of issues) {
-    for (const name of issue.labels) if (labelKind(name) === 'type') present.add(name)
+    const { type } = withBodyFallback(splitLabels(issue.labels), issue)
+    if (type) present.add(type)
   }
   return [...present].sort((a, b) => a.localeCompare(b))
 }
