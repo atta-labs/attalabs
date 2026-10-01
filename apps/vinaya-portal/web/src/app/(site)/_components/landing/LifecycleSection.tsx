@@ -21,7 +21,9 @@ import { LetterReveal } from '../LetterReveal'
 // under React 19, but the component itself isn't typed with RefAttributes) —
 // this local cast lets StageShell keep the scroll-tracking ref the mobile
 // visibility heuristic depends on.
-const RefCard = Card as unknown as ForwardRefExoticComponent<ComponentProps<typeof Card> & RefAttributes<HTMLElement>>
+const RefCard = Card as unknown as ForwardRefExoticComponent<
+  ComponentProps<typeof Card> & RefAttributes<HTMLDivElement>
+>
 
 type StageIndex = 0 | 1 | 2
 
@@ -119,7 +121,7 @@ function StageShell({
   headline: React.ReactNode
   badge: string
   active: boolean
-  stageRef: RefObject<HTMLElement | null>
+  stageRef: RefObject<HTMLDivElement | null>
   children: React.ReactNode
 }) {
   return (
@@ -149,7 +151,7 @@ function StageShell({
   )
 }
 
-function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
+function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
   return (
     <StageShell
       index='01'
@@ -191,7 +193,7 @@ function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<
   )
 }
 
-function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLElement | null> }) {
+function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
   const lanes = [471, 472] as const
   return (
     <StageShell
@@ -254,7 +256,7 @@ function ArchiveStage({
 }: {
   active: boolean
   closed: boolean
-  stageRef: RefObject<HTMLElement | null>
+  stageRef: RefObject<HTMLDivElement | null>
 }) {
   return (
     <StageShell
@@ -318,9 +320,9 @@ export function LifecycleSection() {
   const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const railFillRef = useRef<HTMLSpanElement>(null)
-  const stageOneRef = useRef<HTMLElement>(null)
-  const stageTwoRef = useRef<HTMLElement>(null)
-  const stageThreeRef = useRef<HTMLElement>(null)
+  const stageOneRef = useRef<HTMLDivElement>(null)
+  const stageTwoRef = useRef<HTMLDivElement>(null)
+  const stageThreeRef = useRef<HTMLDivElement>(null)
   const [armed, setArmed] = useState(false)
   const [phase, setPhase] = useState<StageIndex>(0)
   const [run, setRun] = useState<[boolean, boolean, boolean]>([false, false, false])
