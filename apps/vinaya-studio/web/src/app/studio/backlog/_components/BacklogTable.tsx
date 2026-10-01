@@ -8,10 +8,11 @@
 // `DiagramExplorer.tsx` already document; `bun run check` does not catch it
 // because it never runs `next build`.
 import { label, LABEL_NAMESPACE } from '@attalabs/aeg-forge-state/labels'
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
+import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@atta/ui/components'
 import { Filter, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import type { BacklogIssue } from '@/lib/forge/fetch-open-issues'
+import { withBodyFallback } from '@/lib/forge/body-fields'
+import type { BacklogIssue, InFlight } from '@/lib/forge/fetch-open-issues'
 import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/LabelBadge'
 
 /**
@@ -45,6 +46,18 @@ import { LabelBadge, ProjectBadge, splitLabels } from '@/app/studio/_components/
  * `LABEL_CELL` already wraps a cell's badges, so a second badge just grows
  * row height instead of breaking the layout.
  *
+ * Tier and Type fall back to the Issue body's `**Tier:**` / `**Type:**` lines
+ * (`body-fields.ts`, resolved to the full label form) when no label carries
+ * them. The filter memo, the row render and `page.tsx`'s chip options all go
+ * through the same `withBodyFallback`, so they cannot disagree.
+ *
+ * The "In flight" column (#1126) shows whether GitHub already has work on the
+ * Issue — an open pull request that closes it (linked, with its number), else a
+ * `task/issue-<n>` branch — so a started task no longer looks like one nobody
+ * touched. Both facts arrive on the same single backlog query
+ * (`fetch-open-issues.ts`). Widths stay one 100% budget: Title, Project(s) and
+ * Flags each give up a little to pay for it (6/30/18/10/10/26).
+ *
  * Label styling is keyed to a label's CATEGORY (read from the code-owned
  * vocabulary), never its value — one flat semantic-token variant per family
  * (the doctrine forbids a per-value palette). `needs:*` reads `warning`; there
@@ -76,6 +89,28 @@ const TIER_STRIP = label('tier-0').replace(/0$/, '')
 
 /** Type chips drop the whole family prefix, not just the product one — `vinaya/type:feat` reads `feat`. */
 const TYPE_STRIP = label('type-build').replace(/build$/, '')
+
+/** The In flight cell: the open PR's number (linked) beats the bare branch. */
+function InFlightCell({ inFlight }: { inFlight: InFlight }) {
+  const { pullRequest, branch } = inFlight
+  if (pullRequest) {
+    return (
+      <a href={pullRequest.url} target='_blank' rel='noreferrer' className='hover:underline'>
+        <Badge variant='outline' className='font-mono text-xs text-primary border-primary/40'>
+          PR #{pullRequest.number}
+        </Badge>
+      </a>
+    )
+  }
+  if (branch) {
+    return (
+      <Badge variant='outline' className='font-mono text-xs text-primary border-primary/40'>
+        branch
+      </Badge>
+    )
+  }
+  return <Dash />
+}
 
 /** One toggle chip in a filter row — filled when active, outline when not. */
 function FilterChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
@@ -164,7 +199,7 @@ export function BacklogTable({
   const filtered = useMemo(
     () =>
       issues.filter((issue) => {
-        const { tier, type, flags } = splitLabels(issue.labels)
+        const { tier, type, flags } = withBodyFallback(splitLabels(issue.labels), issue)
         const projectOk = selectedProjects.size === 0 || issue.projects.some((p) => selectedProjects.has(p))
         const tierOk = selectedTiers.size === 0 || (tier !== null && selectedTiers.has(tier))
         const typeOk = selectedTypes.size === 0 || (type !== null && selectedTypes.has(type))
@@ -252,22 +287,23 @@ export function BacklogTable({
                   are the longest, and they must wrap in-column) is paid for out
                   of Title, which already wraps freely. Sums to 100%. */}
               <TableHead className='w-[6%] px-2 font-semibold text-foreground'>#</TableHead>
-              <TableHead className='w-[32%] font-semibold text-foreground'>Title</TableHead>
-              <TableHead className='w-[20%] font-semibold text-foreground'>Project(s)</TableHead>
+              <TableHead className='w-[30%] font-semibold text-foreground'>Title</TableHead>
+              <TableHead className='w-[18%] font-semibold text-foreground'>Project(s)</TableHead>
               <TableHead className='w-[10%] font-semibold text-foreground'>Tier / Type</TableHead>
-              <TableHead className='w-[32%] font-semibold text-foreground'>Flags</TableHead>
+              <TableHead className='w-[10%] font-semibold text-foreground'>In flight</TableHead>
+              <TableHead className='w-[26%] font-semibold text-foreground'>Flags</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className='py-8 text-center font-sans text-sm text-muted-foreground/70'>
+                <TableCell colSpan={6} className='py-8 text-center font-sans text-sm text-muted-foreground/70'>
                   No issues match these filters.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((issue) => {
-                const { tier, type, flags } = splitLabels(issue.labels)
+                const { tier, type, flags } = withBodyFallback(splitLabels(issue.labels), issue)
                 return (
                   <TableRow key={issue.number}>
                     <TableCell className='px-2 align-top'>
@@ -304,6 +340,11 @@ export function BacklogTable({
                         {tier ? <LabelBadge label={tier} /> : null}
                         {type ? <LabelBadge label={type} /> : null}
                         {!tier && !type ? <Dash /> : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className='align-top'>
+                      <div className={LABEL_CELL}>
+                        <InFlightCell inFlight={issue.inFlight} />
                       </div>
                     </TableCell>
                     <TableCell className='align-top'>
