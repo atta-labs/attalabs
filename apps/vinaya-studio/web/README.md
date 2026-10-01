@@ -12,6 +12,8 @@ Consequently there is no Portal↔Studio toggle either — with two apps there i
 
 This app does not depend on `@atta/vinaya-sources` — verified against the moved surface (`app/studio/**`, `lib/forge`, `lib/repo-state`): zero imports. Adding it back for symmetry with Portal would be an unnecessary dependency here becoming an unnecessary registry dependency in a future adoption tranche.
 
+The Backlog page's **In flight** column shows whether GitHub already has work on an Issue — an open pull request that closes it (with its number) or a `task/issue-<n>` branch; its Tier and Type fall back to the Issue body's `**Tier:**` / `**Type:**` lines when no label carries them.
+
 ## Running it
 
 ```
