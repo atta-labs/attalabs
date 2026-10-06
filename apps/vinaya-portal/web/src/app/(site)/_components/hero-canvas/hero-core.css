@@ -21,3 +21,10 @@
   --hero-core-deep: color-mix(in oklch, var(--card), var(--primary) 40%);
   --hero-fabric-alpha: 0.12;
 }
+
+/* The menu sheet's color scheme toggle is portalled outside the topbar, so `TopBarChromeHost`'s
+   own selector can't reach it. Same rule: hidden while the lockup is undocked (`data-bare` on
+   the bar is `true` only on landing before the dock). */
+body:has([data-bare='true']) [role='dialog'] [title^='Switch'][title$='mode'] {
+  visibility: hidden;
+}

@@ -22,6 +22,17 @@ const CONTROLS_REVEAL_CLASS =
   '[&_:has([data-hero-lockup])>:not([data-hero-lockup]):not(:has([data-hero-lockup]))]:opacity-[var(--bar-reveal,1)] [&[data-bar-hidden=true]_:has([data-hero-lockup])>:not([data-hero-lockup]):not(:has([data-hero-lockup]))]:invisible'
 
 /**
+ * The color scheme toggle, which on landing stays hidden past the controls' ramp until the
+ * lockup has docked (`data-bare` is `false`). `ColorSchemeToggle` (shared, untouched) carries
+ * no data attribute, but its `title` is always `Switch to light mode` / `Switch to dark mode`
+ * on both of its render paths, so `[title^=Switch][title$=mode]` finds it in the desktop
+ * group and the mobile bar row. `invisible` also removes it from hit-testing and the tab
+ * order. The menu sheet's copy is portalled outside the bar and is covered in
+ * `hero-canvas/hero-core.css`.
+ */
+const TOGGLE_DOCK_CLASS = '[&[data-bare=true]_[title^=Switch][title$=mode]]:invisible'
+
+/**
  * Replaces the plain `<div className='relative z-30'>` wrapper around the topbar. Fixed
  * to the viewport top (not in normal flow) so the hero section can sit flush at the true
  * page top and paint its canvas underneath — that's what makes `chromeClassName`'s
@@ -46,6 +57,10 @@ const CONTROLS_REVEAL_CLASS =
  * Every other route SSRs `'false'` and never sets `--bar-reveal`, so its controls are fully
  * visible from first paint.
  *
+ * The color scheme toggle follows `data-bare` itself (`TOGGLE_DOCK_CLASS`), so on landing it
+ * is SSR'd hidden and appears in the same frame the lockup docks; elsewhere `data-bare` is
+ * `'false'` and it is visible from first paint.
+ *
  * Both SSR'd values hang on `isLandingRoute`, not a bare `pathname === '/'`: a background
  * regeneration of the prerendered landing page can render it under Next's internal
  * `/index` name, and a `'/'`-only test caches that HTML with the controls visible.
@@ -65,7 +80,7 @@ export function TopBarChromeHost({ children }: { children: ReactNode }) {
       ref={(el) => setNode('bar', el)}
       data-bare={isLanding ? 'true' : 'false'}
       data-bar-hidden={isLanding ? 'true' : 'false'}
-      className={`fixed inset-x-0 top-0 z-30 ${CONTROLS_REVEAL_CLASS}`}
+      className={`fixed inset-x-0 top-0 z-30 ${CONTROLS_REVEAL_CLASS} ${TOGGLE_DOCK_CLASS}`}
     >
       {children}
     </div>

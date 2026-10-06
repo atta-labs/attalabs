@@ -24,7 +24,9 @@ import { createContext, type ReactNode, useCallback, useContext, useRef } from '
  * hidden and not interactive, and they fade in continuously from the first pixel of scroll,
  * the same instant the lockup starts its flight, reaching full opacity early in it
  * (`lockup-flip.js`'s `barReveal` / `FLIP.BAR_REVEAL_END`). The lockup itself is never
- * faded by this: the reveal targets the bar's other groups only (`TopBarChromeHost`'s
+ * faded by this. The color scheme toggle is the exception to the ramp: it stays hidden until
+ * the lockup docks (`data-bare` flips to `false`) and appears then (`TopBarChromeHost`'s
+ * `TOGGLE_DOCK_CLASS`). The reveal targets the bar's other groups only (`TopBarChromeHost`'s
  * `CONTROLS_REVEAL_CLASS`). The background and border still follow `data-bare` alone.
  *
  * `data-bare` on `TopBarChromeHost` is that bare flag, and `lockup-flip.js` is its only
