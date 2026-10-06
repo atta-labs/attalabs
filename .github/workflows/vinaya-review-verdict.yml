@@ -54,14 +54,14 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: npx --yes @attalabs/vinaya@0.36.0 check review-gate
+        run: npx --yes @attalabs/vinaya@0.37.0 check review-gate
 
   # Executes nothing; consumes only the evaluator's outputs.
   #
