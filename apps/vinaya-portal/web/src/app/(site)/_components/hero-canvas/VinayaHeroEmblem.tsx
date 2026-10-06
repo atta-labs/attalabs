@@ -138,7 +138,7 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
               >
                 <span data-hero-h1a data-text='Engineers deploy features' />
                 <br />
-                <span data-hero-h1b data-text='Agents write the code' />
+                <span data-hero-h1b data-text='Vinaya runs the loop' />
               </Heading>
               <Text className='m-0 mt-3.5 text-balance font-sans text-[clamp(0.9375rem,1.7vw,1.375rem)] leading-normal text-muted-foreground'>
                 <span data-hero-sub data-text='Plan the feature. Control what reaches main.' />
