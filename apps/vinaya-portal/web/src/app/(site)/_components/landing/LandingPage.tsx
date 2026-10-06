@@ -1,17 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
-import { NextLink } from '@atta/ui/lib/next-link'
 import { Text } from '@atta/ui/shared'
-import { ArrowRight } from 'lucide-react'
 import { VinayaHeroEmblem } from '../hero-canvas/VinayaHeroEmblem'
 import { LetterReveal } from '../LetterReveal'
 import { ButtonLink } from './ButtonLink'
 import { ConfigBoardSection } from './ConfigBoardSection'
 import { HarnessDiagramSection } from './HarnessDiagramSection'
-import { CommandCopy, LabeledCommandCopy, RevealGrid, RingProgress, ScrollToSectionButton } from './LandingInteractions'
+import { CommandCopy, LabeledCommandCopy, RevealGrid, ScrollToSectionButton } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
 import { SectionOverline, SectionTitle } from './SectionHeading'
+import { UnderlineLink } from './UnderlineLink'
 
 const QUICKSTART_COMMAND = 'npx @attalabs/vinaya quickstart'
 
@@ -37,69 +36,9 @@ function ActionLink({
   )
 }
 
-function UnderlineLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <NextLink
-      href={href}
-      variant='unstyled'
-      className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
-    >
-      {children}
-      <ArrowRight className='size-3.5' />
-    </NextLink>
-  )
-}
-
 function HeroSection() {
   return (
     <VinayaHeroEmblem landingActions={<ScrollToSectionButton targetId='tagline'>View more</ScrollToSectionButton>} />
-  )
-}
-
-function RingsSection() {
-  const rings = [
-    ['ring 0', 'your machine', "Clean, or it doesn't push", false],
-    ['ring 1', 'the forge', 'Clean, or it doesn’t merge', false],
-    ['ring 2', 'audits', 'Drift gets caught later', true]
-  ] as const
-
-  return (
-    <LandingSection background='bg-secondary text-secondary-foreground'>
-      <SectionTitle className='mx-auto max-w-5xl text-center'>
-        Three rings. The first two run identical code
-      </SectionTitle>
-      <div className='mt-14 grid gap-4 md:grid-cols-3'>
-        {rings.map(([ring, place, title, delayed]) => (
-          <Card key={ring}>
-            <CardHeader className='px-8'>
-              <Text
-                className={`font-mono text-4xl font-semibold leading-none tracking-tight sm:text-5xl ${delayed ? 'text-secondary-foreground/65' : ''}`}
-              >
-                {ring}
-              </Text>
-              <Text className='mt-3 font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-secondary-foreground/65'>
-                {place}
-              </Text>
-              <CardTitle className='mt-5 font-serif text-2xl font-normal leading-tight tracking-tight'>
-                {title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='px-8'>
-              <RingProgress delayed={delayed} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Text className='mx-auto mt-12 max-w-4xl text-center font-serif text-2xl leading-snug tracking-tight sm:text-3xl'>
-        The hook on your laptop and the required check in CI
-        <br />
-        are the same code.
-      </Text>
-      <div className='mt-7 flex flex-wrap justify-center gap-x-6 gap-y-3'>
-        <UnderlineLink href='/docs/rings'>See more</UnderlineLink>
-        <UnderlineLink href='/compare'>Why this beats a rules file</UnderlineLink>
-      </div>
-    </LandingSection>
   )
 }
 
@@ -201,7 +140,6 @@ export function LandingPage(_props: { releaseMetrics: ReleaseMetrics }) {
       <LifecycleSection />
       <OwnershipSection />
       <HarnessDiagramSection />
-      <RingsSection />
       <AudienceSection />
       <ConfigBoardSection />
       <ZeroLockInSection />
