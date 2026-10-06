@@ -140,8 +140,8 @@ function EmblemInner({ landingActions }: { landingActions?: ReactNode }) {
                 <br />
                 <span data-hero-h1b data-text='Vinaya runs the loop' />
               </Heading>
-              <Text className='m-0 mt-3.5 text-balance font-sans text-[clamp(0.9375rem,1.7vw,1.375rem)] leading-normal text-muted-foreground'>
-                <span data-hero-sub data-text='Plan the feature. Control what reaches main.' />
+              <Text className='m-0 mt-3.5 text-balance font-sans text-2xl leading-snug tracking-tight text-muted-foreground sm:text-[1.75rem]'>
+                <span data-hero-sub data-text='Plan the feature. Control what reaches main' />
               </Text>
             </div>
           ) : (

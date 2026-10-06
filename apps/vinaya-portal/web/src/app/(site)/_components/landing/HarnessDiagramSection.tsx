@@ -31,7 +31,7 @@ export function HarnessDiagramSection() {
             className='inline-flex items-center gap-[0.6em] font-mono text-[clamp(1.1rem,1.9vw,1.6rem)] leading-tight tracking-[-0.01em] text-muted-foreground [clip-path:inset(-0.2em_100%_-0.2em_0)]'
           >
             <span className='text-success'>›</span>
-            <span>Your process, completely logged.</span>
+            <span>Your process, completely logged</span>
             <span aria-hidden='true' className='inline-block h-[1.05em] w-[0.55em] bg-current opacity-70' />
           </p>
         </div>

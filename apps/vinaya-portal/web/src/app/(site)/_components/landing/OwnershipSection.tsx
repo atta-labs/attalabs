@@ -95,7 +95,7 @@ export function OwnershipSection() {
             <SectionTitle size='compact'>Control what actually merges</SectionTitle>
             <Text className='text-2xl leading-snug sm:text-[1.75rem]'>
               Your checks, from local work to merge.{' '}
-              <span className='text-muted-foreground'>Yours sit beside ours.</span>
+              <span className='text-muted-foreground'>Yours sit beside ours</span>
             </Text>
             <div className={pinned ? 'self-start' : 'self-center'}>
               <UnderlineLink href='/docs/rings'>How the rings work</UnderlineLink>

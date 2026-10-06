@@ -179,8 +179,8 @@ export function LifecycleSection() {
           )}
         >
           <SectionHeader className='gap-2'>
-            <SectionTitle size='compact'>Define. Plan. Dispatch.</SectionTitle>
-            <SectionSubtitle>Milestones, tasks, then the loop.</SectionSubtitle>
+            <SectionTitle size='compact'>Define. Plan. Dispatch</SectionTitle>
+            <SectionSubtitle>Milestones, tasks, then the loop</SectionSubtitle>
           </SectionHeader>
           <div className='flex flex-wrap items-stretch gap-3'>
             {STEPS.map((step, index) => (

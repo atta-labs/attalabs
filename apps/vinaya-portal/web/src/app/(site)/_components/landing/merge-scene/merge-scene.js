@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { readToken } from '../../hero-canvas/harness-model'
+import { buildFloaters } from '../../canvas/floaters'
 
 // "Your GitHub, perfectly structured" — in the life-cycle scene's vocabulary:
 // flat unlit lines, thin tubes, commit dots with rings, small mono labels, fog.
@@ -240,6 +241,20 @@ function build(canvas, C, isStill, onLog) {
   const LX1 = 3.2
   const MY = -1.7
   const LEG = 1.25
+
+  // The drifting squares, filling the frontal frame from the very first shot (the sphere above only comes
+  // into view once the camera swings round). They sit behind and around the lane, never in front of its labels.
+  const floaters = buildFloaters(THREE, {
+    count: 67,
+    color: C.mu,
+    opacity: fabricAlpha() * 1.05,
+    size: 0.18,
+    maxSize: 10,
+    center: [0, -0.4, -1.8],
+    extent: [LX1 - LX0 + 11, 8.5, 5.5],
+    seed: 20261006
+  })
+  scene.add(floaters.points)
   const lane = tube([V(LX0, 0), V(0, 0), V(LX1, 0)], 0.016, M.lane, 160)
   const BR = 5
   const spurs = []
@@ -563,6 +578,7 @@ function build(canvas, C, isStill, onLog) {
     scene.fog.far = dist * 3.2
     fabricMat.uniforms.uFade.value.set(dist * 0.8, dist * 3.2)
     fabricMat.uniforms.uTime.value = reduced ? 0 : t
+    floaters.update(reduced ? 0 : t)
 
     renderer.render(scene, camera)
     updateLog()
@@ -591,6 +607,7 @@ function build(canvas, C, isStill, onLog) {
     renderer.setClearColor(C.bg, 1)
     scene.fog.color.setHex(C.bg)
     sphere.material.color.setHex(C.mu)
+    floaters.retheme(C.mu, fabricAlpha() * 1.05)
     M.lane.color.setHex(C.fg)
     M.base.color.setHex(C.mu)
     M.main.color.setHex(C.fg)
