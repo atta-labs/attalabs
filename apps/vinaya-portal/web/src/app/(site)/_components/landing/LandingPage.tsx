@@ -2,10 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
 import { VinayaHeroEmblem } from '../hero-canvas/VinayaHeroEmblem'
 import { LetterReveal } from '../LetterReveal'
-import { ButtonLink } from './ButtonLink'
 import { ConfigBoardSection } from './ConfigBoardSection'
 import { HarnessDiagramSection } from './HarnessDiagramSection'
-import { CommandCopy, LabeledCommandCopy, RevealGrid, ScrollToSectionButton } from './LandingInteractions'
+import { LabeledCommandCopy, RevealGrid, ScrollToSectionButton } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
@@ -21,22 +20,6 @@ interface ReleaseMetrics {
   doctrineLines: number
 }
 
-function ActionLink({
-  href,
-  children,
-  variant = 'default'
-}: {
-  href: string
-  children: React.ReactNode
-  variant?: 'default' | 'secondary' | 'outline'
-}) {
-  return (
-    <ButtonLink href={href} variant={variant} className='font-mono text-xs uppercase tracking-[0.16em]'>
-      {children}
-    </ButtonLink>
-  )
-}
-
 function HeroSection() {
   return (
     <VinayaHeroEmblem landingActions={<ScrollToSectionButton targetId='tagline'>View more</ScrollToSectionButton>} />
@@ -46,43 +29,39 @@ function HeroSection() {
 function AudienceSection() {
   const audiences = [
     [
-      'for the founder / cto',
-      'Your team uses AI. Your repo stays sane',
-      'However the code gets written, it lands through one process into one clean history. Brief, checks, and approval live on every task’s PR, so three years from now you can still answer why.'
-    ],
-    [
-      'for the tech lead',
-      'Your standards, enforced without you',
-      'Team conventions become checks every PR must pass. You stop policing merges by hand — the gates hold the line while you build.'
-    ],
-    [
       'for the engineer',
-      'Bring your own agent',
-      'Cursor, Claude Code, Codex — keep the one you already use. Vinaya checks the merge, not the model, and every task starts from a written brief, so you know what done means before you start.'
-    ]
+      'You ship the feature',
+      'You define the milestone and ground it in tasks. Agents write and review. You control the merge.'
+    ],
+    ['for the tech lead', 'Your standards, enforced', 'Your standards become checks every pull request must pass.'],
+    ['for the founder', 'One process', 'The feature lands through one process, so you can still answer why it shipped.']
   ] as const
 
   return (
-    <LandingSection background='bg-background text-foreground'>
-      <SectionTitle className='text-center'>
+    <LandingSection background='bg-secondary text-secondary-foreground' py='spacious'>
+      <SectionTitle size='compact' className='text-center'>
         <LetterReveal text='Who it’s for' />
       </SectionTitle>
       <RevealGrid className='mt-12 grid gap-4 md:grid-cols-3'>
         {audiences.map(([overline, title, body], index) => (
           <Card
             key={overline}
-            className={`translate-y-3.5 opacity-0 transition-all duration-500 group-data-[visible=true]/reveal:translate-y-0 group-data-[visible=true]/reveal:opacity-100 ${index % 3 === 1 ? 'delay-[90ms]' : index % 3 === 2 ? 'delay-[180ms]' : ''}`}
+            className={`translate-y-12 scale-[0.96] opacity-0 transition-[opacity,transform] duration-700 ease-out group-data-[visible=true]/reveal:translate-y-0 group-data-[visible=true]/reveal:scale-100 group-data-[visible=true]/reveal:opacity-100 motion-reduce:transition-none ${index === 0 ? 'border-2 border-foreground' : 'border border-border'} ${index === 1 ? 'delay-[140ms]' : index === 2 ? 'delay-[280ms]' : ''}`}
           >
             <CardHeader className='px-8'>
-              <Text className='font-mono text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground'>
+              <Text className='font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
                 {overline}
               </Text>
-              <CardTitle className='mt-4 min-h-24 font-serif text-3xl font-normal leading-none tracking-tight'>
+              <CardTitle className='mt-4 min-h-[2.3em] font-serif text-[1.375rem] font-normal leading-[1.15] tracking-[-0.02em]'>
                 {title}
               </CardTitle>
+              <span
+                aria-hidden='true'
+                className={`mt-4 block h-0.5 origin-left scale-x-0 bg-current opacity-25 transition-transform duration-700 ease-out group-data-[visible=true]/reveal:scale-x-100 motion-reduce:transition-none ${index === 1 ? 'delay-[440ms]' : index === 2 ? 'delay-[580ms]' : 'delay-300'}`}
+              />
             </CardHeader>
             <CardContent className='px-8'>
-              <Text className='leading-relaxed text-muted-foreground'>{body}</Text>
+              <Text className='leading-[1.65] text-muted-foreground'>{body}</Text>
             </CardContent>
           </Card>
         ))}
@@ -93,41 +72,31 @@ function AudienceSection() {
 
 function ZeroLockInSection() {
   return (
-    <LandingSection background='bg-background text-foreground' center>
-      <SectionOverline className='text-base text-muted-foreground'>zero lock-in</SectionOverline>
-      <SectionTitle className='mx-auto mt-5 max-w-2xl'>
+    <LandingSection
+      background='bg-secondary text-secondary-foreground'
+      py='compact'
+      center
+      className='flex min-h-screen flex-col items-center justify-center gap-5 py-[clamp(2.5rem,7vh,6rem)]'
+    >
+      <SectionOverline className='text-sm text-muted-foreground'>zero lock-in</SectionOverline>
+      <SectionTitle size='compact'>
         <LetterReveal text='In with one command' />
         <br />
         <LetterReveal text='Out with one command' startIndex={20} />
       </SectionTitle>
 
-      <div className='mx-auto mt-11 flex max-w-md flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:items-end lg:justify-center lg:gap-7'>
-        <LabeledCommandCopy href='/docs/quickstart' label='plug in' command={QUICKSTART_COMMAND} />
-        <Text className='rotate-90 font-mono text-4xl text-muted-foreground lg:rotate-0'>⇄</Text>
-        <LabeledCommandCopy href='/docs/cli/eject' label='unplug' command='vinaya eject' />
+      <div className='mt-[clamp(1rem,3vh,2rem)] flex flex-col items-center justify-center gap-[clamp(0.75rem,2.5vh,1.75rem)] min-[820px]:flex-row'>
+        <LabeledCommandCopy href='/docs/cli#command-quickstart' label='plug in' command={QUICKSTART_COMMAND} />
+        <Text className='font-mono text-[2rem] leading-none text-muted-foreground min-[820px]:pt-[1.6rem]'>
+          <span className='min-[820px]:hidden'>⇅</span>
+          <span className='hidden min-[820px]:inline'>⇄</span>
+        </Text>
+        <LabeledCommandCopy href='/docs/cli#command-eject' label='unplug' command='vinaya eject' />
       </div>
-      <Text className='mx-auto mt-9 max-w-xl text-balance font-serif text-xl leading-relaxed text-muted-foreground'>
+      <Text className='mt-6 max-w-xl text-balance text-xl leading-relaxed text-muted-foreground'>
         Eject removes exactly what quickstart installed. Nothing else.
       </Text>
-
-      <div className='mt-14 flex justify-center gap-6'>
-        <UnderlineLink href='/docs/cli'>See more</UnderlineLink>
-        <UnderlineLink href='/config'>Config</UnderlineLink>
-      </div>
-    </LandingSection>
-  )
-}
-
-function FinalSection() {
-  return (
-    <LandingSection background='bg-secondary text-secondary-foreground' py='spacious' center>
-      <SectionTitle>
-        <LetterReveal text='Start in your repo' />
-      </SectionTitle>
-      <div className='mt-11 flex flex-wrap justify-center gap-4'>
-        <CommandCopy command={QUICKSTART_COMMAND} />
-        <ActionLink href='/docs/cli'>Quick Start</ActionLink>
-      </div>
+      <UnderlineLink href='/docs/cli'>See the CLI</UnderlineLink>
     </LandingSection>
   )
 }
@@ -145,7 +114,6 @@ export function LandingPage(_props: { releaseMetrics: ReleaseMetrics }) {
       <AudienceSection />
       <ConfigBoardSection />
       <ZeroLockInSection />
-      <FinalSection />
     </main>
   )
 }

@@ -161,7 +161,12 @@ export function LifecycleSection() {
   return (
     <section id='tagline' ref={ref} className={cn('relative bg-background text-foreground', pinned && 'h-[230vh]')}>
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
-        <div className='mx-auto flex w-full max-w-[73.75rem] flex-col gap-8 px-6 py-14 sm:px-10 lg:py-10'>
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-[73.75rem] flex-col gap-8 px-6 sm:px-10',
+            pinned ? 'pb-10 pt-24' : 'py-14'
+          )}
+        >
           <SectionHeader>
             <SectionTitle size='compact'>
               <LetterReveal text='Define. Plan. Dispatch.' />

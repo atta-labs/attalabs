@@ -190,31 +190,6 @@ export function ScrollToSectionButton({ targetId, children }: { targetId: string
   )
 }
 
-export function CommandCopy({ command }: { command: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(command)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
-  }
-
-  return (
-    <Button
-      type='button'
-      variant='outline'
-      onClick={copy}
-      className='h-auto max-w-full gap-4 rounded-lg py-2.5 pl-5 pr-3 font-mono text-sm shadow-none sm:text-base'
-    >
-      <span className='min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]'>{command}</span>
-      <span className='flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground'>
-        {copied ? <Check className='size-4' /> : <Copy className='size-4' />}
-        {copied ? 'copied' : 'copy'}
-      </span>
-    </Button>
-  )
-}
-
 // A terminal-styled, click-to-copy command: `$ <command>` in an inverted (foreground-on-background)
 // box so it reads as a terminal in both colour schemes without a literal colour.
 export function TerminalCommand({ command }: { command: string }) {

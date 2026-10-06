@@ -1,170 +1,206 @@
 'use client'
 
-import { Code } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
-import { Text } from '@atta/ui/shared'
-import { ArrowRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { cn } from '@atta/ui/lib/utils'
+import { Bot, Clock, FileText, MessageSquare, Plus, Shield } from 'lucide-react'
+import { type ReactNode, useRef } from 'react'
+import { siAnthropic, siGit, siGithub, siGithubactions, siOpenai } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
+import { useEnterProgress } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
-import { SectionOverline, SectionTitle } from './SectionHeading'
+import { SectionTitle } from './SectionHeading'
+import { UnderlineLink } from './UnderlineLink'
+import { ArrowUpRight } from 'lucide-react'
 
-type Row = {
+// 07 · One file. The config board: four slots (agents, checks, roles, gates), each a row of
+// what ships with Vinaya (solid bars) and what is yours (dashed bars and dashed chips). Slots
+// fill in sequence as the section scrolls into view (`q = floor(progress * 5)`).
+
+// The dashed bars spring in one after another rather than all at once.
+const BAR_DELAYS = ['delay-100', 'delay-[160ms]', 'delay-[220ms]'] as const
+const CHIP_DELAYS = ['delay-200', 'delay-[310ms]', 'delay-[420ms]', 'delay-[530ms]'] as const
+
+function BrandIcon({ path }: { path: string }) {
+  return (
+    <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className='size-[15px]'>
+      <path d={path} />
+    </svg>
+  )
+}
+
+type Slot = {
   label: string
   solid: number
   dashed: number
+  chips: readonly { title: string; icon: ReactNode; yours?: boolean }[]
 }
 
-// Bar counts match the reference design 1:1 — not arbitrary, this is the
-// actual "ours becomes yours" shape per row.
-const ROWS: readonly Row[] = [
-  { label: 'AGENTS', solid: 4, dashed: 2 },
-  { label: 'CHECKS', solid: 3, dashed: 3 },
-  { label: 'ROLES', solid: 5, dashed: 1 },
-  { label: 'GATES', solid: 7, dashed: 2 }
+const SLOTS: readonly Slot[] = [
+  {
+    label: 'AGENTS',
+    solid: 4,
+    dashed: 2,
+    chips: [
+      { title: 'Claude Code', icon: <BrandIcon path={siAnthropic.path} /> },
+      { title: 'Codex', icon: <BrandIcon path={siOpenai.path} /> },
+      { title: 'Grok', icon: <Bot className='size-[15px]' /> }
+    ]
+  },
+  {
+    label: 'CHECKS',
+    solid: 3,
+    dashed: 3,
+    chips: [
+      { title: 'brief-shape', icon: <FileText className='size-[15px]' /> },
+      { title: 'review-gate', icon: <MessageSquare className='size-[15px]' /> },
+      { title: 'secret-scan', icon: <Shield className='size-[15px]' /> },
+      { title: 'yours', icon: <Plus className='size-[15px]' />, yours: true }
+    ]
+  },
+  {
+    label: 'ROLES',
+    solid: 5,
+    dashed: 1,
+    chips: [
+      { title: 'architect.md', icon: <FileBadge>MD</FileBadge> },
+      { title: 'reviewer.md', icon: <FileBadge>MD</FileBadge> },
+      { title: 'planner.md', icon: <FileBadge>MD</FileBadge> },
+      { title: 'your-flow.js', icon: <FileBadge yours>JS</FileBadge>, yours: true }
+    ]
+  },
+  {
+    label: 'GATES',
+    solid: 7,
+    dashed: 2,
+    chips: [
+      { title: 'husky', icon: <BrandIcon path={siGit.path} /> },
+      { title: 'Actions', icon: <BrandIcon path={siGithubactions.path} /> },
+      { title: 'required', icon: <BrandIcon path={siGithub.path} /> },
+      { title: 'audits', icon: <Clock className='size-[15px]' /> }
+    ]
+  }
 ]
 
-// Per-dashed-bar transition delay, staggered so they spring in one after
-// another rather than all at once — matches the reference exactly.
-const BAR_DELAYS = ['delay-[100ms]', 'delay-[160ms]', 'delay-[220ms]'] as const
+function FileBadge({ children, yours }: { children: string; yours?: boolean }) {
+  return (
+    <b
+      className={cn(
+        'rounded-sm px-1 py-0.5 font-mono text-[0.5625rem] font-semibold',
+        yours ? 'bg-foreground text-background' : 'bg-accent text-accent-foreground'
+      )}
+    >
+      {children}
+    </b>
+  )
+}
 
-// Steps 0–4 walk the four rows on in sequence, 5–6 hold the resolved state,
-// then it resets to 0 and repeats. The resting markup (step 6, everything
-// on) is what renders pre-JS and under reduced motion — the section is
-// correct with the loop never having run.
-const STEP_MS = 700
-
-function scrollParent(element: HTMLElement): HTMLElement | Window {
-  let parent = element.parentElement
-  while (parent) {
-    const overflow = window.getComputedStyle(parent).overflowY
-    if (overflow === 'auto' || overflow === 'scroll') return parent
-    parent = parent.parentElement
-  }
-  return window
+function SlotRow({ slot, on, last }: { slot: Slot; on: boolean; last: boolean }) {
+  return (
+    <div
+      className={cn(
+        'flex flex-nowrap items-center gap-[clamp(0.5rem,1.2vw,1rem)] border-t border-border py-6',
+        last && 'border-b'
+      )}
+    >
+      <div className='flex min-w-0 flex-[1_1_auto] items-baseline whitespace-nowrap font-mono text-[clamp(1rem,1.7vw,1.5rem)] font-medium leading-none'>
+        <span
+          className={cn(
+            'inline-block overflow-hidden whitespace-pre transition-[max-width,opacity] duration-500 motion-reduce:transition-none',
+            on ? 'max-w-[6ch] opacity-100' : 'max-w-0 opacity-0'
+          )}
+        >
+          {'YOUR '}
+        </span>
+        <span>{slot.label}</span>
+      </div>
+      <div
+        className={cn(
+          'flex flex-none gap-[0.3rem] overflow-hidden transition-[max-width] duration-500 ease-out motion-reduce:transition-none',
+          on ? 'max-w-48' : 'max-w-0'
+        )}
+      >
+        {slot.chips.map((chip, index) => (
+          <span
+            key={chip.title}
+            title={chip.title}
+            className={cn(
+              'grid size-[1.9rem] flex-none place-items-center rounded-lg border bg-card transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none',
+              CHIP_DELAYS[index],
+              chip.yours ? 'border-dashed border-foreground' : 'border-border',
+              on ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-[6px] scale-[0.8] opacity-0'
+            )}
+          >
+            {chip.icon}
+          </span>
+        ))}
+      </div>
+      <div className='flex flex-none items-center gap-[0.35rem]'>
+        {Array.from({ length: slot.solid }, (_, index) => (
+          <i key={`solid-${index}`} className='block h-6 w-2 rounded-sm bg-foreground' />
+        ))}
+        {Array.from({ length: slot.dashed }, (_, index) => (
+          <i
+            key={`dashed-${index}`}
+            className={cn(
+              'box-border block h-6 w-2 rounded-sm border-2 border-dashed border-foreground transition-[opacity,transform] duration-500 motion-reduce:transition-none',
+              BAR_DELAYS[index],
+              on ? 'translate-x-0 opacity-100' : '-translate-x-[10px] opacity-0'
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function ConfigBoardSection() {
-  const boardRef = useRef<HTMLDivElement>(null)
-  const [step, setStep] = useState(6)
-
-  useEffect(() => {
-    const board = boardRef.current
-    if (!board || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const target = scrollParent(board)
-    let interval = 0
-
-    const evaluate = () => {
-      const rect = board.getBoundingClientRect()
-      const visible = rect.top < window.innerHeight * 0.9 && rect.bottom > window.innerHeight * 0.1
-      if (visible && !interval) {
-        interval = window.setInterval(() => setStep((s) => (s >= 6 ? 0 : s + 1)), STEP_MS)
-      } else if (!visible && interval) {
-        window.clearInterval(interval)
-        interval = 0
-      }
-    }
-    // Scroll/resize listeners alone can miss the first crossing when the
-    // scroll happens on a nested container this effect attaches to after
-    // that scroll already settled — the poll is what actually catches it.
-    const observer = new IntersectionObserver(evaluate, {
-      root: target instanceof Window ? null : target,
-      threshold: [0, 0.1, 0.9]
-    })
-    observer.observe(board)
-    target.addEventListener('scroll', evaluate, { passive: true })
-    window.addEventListener('resize', evaluate)
-    const poll = window.setInterval(evaluate, 250)
-    evaluate()
-    return () => {
-      observer.disconnect()
-      target.removeEventListener('scroll', evaluate)
-      window.removeEventListener('resize', evaluate)
-      window.clearInterval(poll)
-      if (interval) window.clearInterval(interval)
-    }
-  }, [])
+  const ref = useRef<HTMLElement>(null)
+  const progress = useEnterProgress(ref, 0.85, 0.5)
+  const filled = Math.min(4, Math.floor(progress * 5))
 
   return (
-    <LandingSection background='bg-secondary text-secondary-foreground'>
-      <div className='grid gap-12 text-center md:grid-cols-2 md:items-center md:gap-16 md:text-left'>
-        <div>
-          <NextLink href='/config' variant='unstyled'>
-            <Code className='bg-foreground/10 px-3 py-1.5 text-lg font-bold text-foreground transition-colors hover:bg-foreground/15 sm:text-xl'>
-              vinaya.config.json
-            </Code>
-          </NextLink>
-          <SectionOverline className='mt-6 text-muted-foreground'>configure your process</SectionOverline>
-          <SectionTitle className='mt-3'>
-            <LetterReveal text='One file' />
+    <LandingSection
+      ref={ref}
+      background='bg-background text-foreground'
+      py='spacious'
+      className='flex flex-wrap items-center gap-16'
+    >
+      <div className='flex min-w-0 flex-[1_1_20rem] flex-col gap-2.5 text-center lg:gap-6 lg:text-left'>
+        <SectionTitle size='compact'>
+          <LetterReveal text='Bring your own.' />
+          <br />
+          <span className='text-muted-foreground'>
+            <LetterReveal text='Agents, checks, gates.' startIndex={16} />
             <br />
-            <span className='text-muted-foreground'>
-              <LetterReveal text='Your whole harness' startIndex={9} />
-            </span>
-          </SectionTitle>
-          <Text className='mt-7 max-w-md text-xl leading-relaxed text-muted-foreground'>
-            Define your gates. Your checks. Extend the agents you already use. Ours ships as the default — nothing you
-            add or replace ever touches a second file.
-          </Text>
-          <Text className='mt-4 max-w-md font-serif text-xl leading-relaxed text-foreground'>
-            Your tracker, your method, your agent — same gates.
-          </Text>
+            <LetterReveal text='One file.' startIndex={39} />
+          </span>
+        </SectionTitle>
+        <div className='mt-2 flex flex-col items-center gap-4 lg:items-start'>
           <NextLink
-            href='/config'
+            href='/docs/config'
             variant='unstyled'
-            className='mt-6 inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
+            className='rounded-lg bg-accent px-[0.65rem] py-[0.35rem] font-mono text-[0.9375rem] font-bold text-accent-foreground'
           >
-            Configuration <ArrowRight className='size-3.5' />
+            vinaya.config.json
           </NextLink>
+          <UnderlineLink href='/docs/config' icon={<ArrowUpRight className='size-3.5' />}>
+            Configuration
+          </UnderlineLink>
         </div>
-
-        <div ref={boardRef}>
-          <div className='flex flex-col'>
-            {ROWS.map((row, index) => {
-              const on = step > index
-              return (
-                <div
-                  key={row.label}
-                  className='flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-t border-border py-6 text-left last:border-b'
-                >
-                  <div className='flex items-baseline font-mono text-2xl font-medium sm:text-3xl md:text-2xl lg:text-4xl'>
-                    <span
-                      className={`inline-block overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-500 ${
-                        on ? 'max-w-[6ch] opacity-100' : 'max-w-0 opacity-0'
-                      }`}
-                    >
-                      YOUR{' '}
-                    </span>
-                    <span>{row.label}</span>
-                  </div>
-                  <div className='flex flex-none items-center gap-1.5'>
-                    {Array.from({ length: row.solid }, (_, i) => (
-                      <span key={`solid-${i}`} className='h-6 w-2 shrink-0 rounded-sm bg-foreground' />
-                    ))}
-                    {Array.from({ length: row.dashed }, (_, i) => (
-                      <span
-                        key={`dashed-${i}`}
-                        className={`h-6 w-2 shrink-0 rounded-sm border-2 border-dashed border-foreground transition-[opacity,transform] duration-500 ${
-                          BAR_DELAYS[i] ?? ''
-                        } ${on ? 'translate-x-0 opacity-100' : '-translate-x-2.5 opacity-0'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className='mt-6 flex justify-center gap-7 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground md:justify-end'>
-            <span className='flex items-center gap-2'>
-              <span className='h-2.5 w-5 rounded-sm bg-foreground' />
-              ships with vinaya
-            </span>
-            <span className='flex items-center gap-2'>
-              <span className='h-2.5 w-5 rounded-sm border-2 border-dashed border-foreground' />
-              yours
-            </span>
-          </div>
+      </div>
+      <div className='flex min-w-0 flex-[1.2_1_24rem] flex-col'>
+        {SLOTS.map((slot, index) => (
+          <SlotRow key={slot.label} slot={slot} on={filled > index} last={index === SLOTS.length - 1} />
+        ))}
+        <div className='mt-5 flex justify-end gap-7 font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
+          <span className='flex items-center gap-2'>
+            <i className='block h-[0.6rem] w-5 rounded-sm bg-foreground' />
+            ships with vinaya
+          </span>
+          <span className='flex items-center gap-2'>
+            <i className='box-border block h-[0.6rem] w-5 rounded-sm border-2 border-dashed border-foreground' />
+            yours
+          </span>
         </div>
       </div>
     </LandingSection>

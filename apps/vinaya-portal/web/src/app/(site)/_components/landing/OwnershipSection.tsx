@@ -65,7 +65,12 @@ export function OwnershipSection() {
   return (
     <section ref={ref} className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[200vh]')}>
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
-        <div className='mx-auto flex w-full max-w-[73.75rem] flex-row-reverse flex-wrap items-center gap-12 px-6 py-14 sm:px-10'>
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-[73.75rem] flex-row-reverse flex-wrap items-center gap-12 px-6 sm:px-10',
+            pinned ? 'pb-14 pt-28' : 'py-14'
+          )}
+        >
           <div
             className={cn(
               'flex min-w-0 flex-[1_1_22rem] flex-col',
