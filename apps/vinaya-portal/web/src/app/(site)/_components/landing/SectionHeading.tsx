@@ -19,17 +19,21 @@ export function SectionTitle({
   children,
   leading = 'none',
   size = 'default',
+  letterReveal = false,
   className = ''
 }: {
   children: ReactNode
   leading?: 'none' | 'tight'
   size?: 'default' | 'compact'
+  /** Marks the heading as the one a scene drives letter by letter (`merge-scene.js` looks for it). */
+  letterReveal?: boolean
   className?: string
 }) {
   return (
     <Heading
       level={2}
       weight='normal'
+      data-letter-reveal={letterReveal ? '1' : undefined}
       className={cn(
         'font-serif',
         size === 'compact'
