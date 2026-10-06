@@ -1,9 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
-import { LetterReveal } from '../LetterReveal'
 import { RevealGrid } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
-import { SectionTitle } from './SectionHeading'
+import { HEADER_MARGIN, SectionTitle } from './SectionHeading'
 
 // 06 · Who it's for.
 export function AudienceSection() {
@@ -20,19 +19,17 @@ export function AudienceSection() {
   return (
     <LandingSection background='bg-secondary text-secondary-foreground' py='spacious'>
       <SectionTitle size='compact' className='text-center'>
-        <LetterReveal text='Who it’s for' />
+        Who it’s for
       </SectionTitle>
-      <RevealGrid className='mt-12 grid gap-4 md:grid-cols-3'>
+      <RevealGrid className={`${HEADER_MARGIN} grid gap-4 md:grid-cols-3`}>
         {audiences.map(([overline, title, body], index) => (
           <Card
             key={overline}
             className={`translate-y-12 scale-[0.96] opacity-0 transition-[opacity,transform] duration-700 ease-out group-data-[visible=true]/reveal:translate-y-0 group-data-[visible=true]/reveal:scale-100 group-data-[visible=true]/reveal:opacity-100 motion-reduce:transition-none ${index === 0 ? 'border-2 border-foreground' : 'border border-border'} ${index === 1 ? 'delay-[140ms]' : index === 2 ? 'delay-[280ms]' : ''}`}
           >
             <CardHeader className='px-8'>
-              <Text className='font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
-                {overline}
-              </Text>
-              <CardTitle className='mt-4 min-h-[2.3em] font-serif text-[1.375rem] font-normal leading-[1.15] tracking-[-0.02em]'>
+              <Text className='font-mono text-base uppercase tracking-[0.06em] opacity-80'>{overline}</Text>
+              <CardTitle className='mt-4 min-h-[2.3em] font-sans text-[1.875rem] font-normal leading-[1.15] tracking-[-0.02em]'>
                 {title}
               </CardTitle>
               <span
@@ -41,7 +38,7 @@ export function AudienceSection() {
               />
             </CardHeader>
             <CardContent className='px-8'>
-              <Text className='leading-[1.65] text-muted-foreground'>{body}</Text>
+              <Text className='text-lg leading-[1.65] opacity-80'>{body}</Text>
             </CardContent>
           </Card>
         ))}

@@ -4,19 +4,19 @@ import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
 import { GitMerge } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
-import { LetterReveal } from '../LetterReveal'
 import { useEnterProgress, usePinEnabled, usePinProgress } from './LandingInteractions'
 import { SectionTitle } from './SectionHeading'
 import { UnderlineLink } from './UnderlineLink'
 
 // 03 · The checks. A vertical pipeline from the agent's work to the merge: a fill line grows
 // with scroll and each row lights as it reaches it. Pinned (200vh) on a roomy viewport, a
-// flowing centered section otherwise.
+// flowing centered section otherwise. There is no merge badge and no cards: the last row's purple
+// chip is the merge.
 
 type CheckRow = { label: string; title: string; chip: ReactNode; chipClass: string }
 
 const CHIP_BASE =
-  'inline-flex items-center gap-[0.35rem] justify-self-start whitespace-nowrap rounded-sm border px-[0.55rem] py-[0.3rem] font-mono text-[0.625rem] transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none'
+  'inline-flex items-center gap-[0.35rem] justify-self-start whitespace-nowrap rounded-sm border px-[0.7rem] py-[0.4rem] font-mono text-sm transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none'
 
 const ROWS: readonly CheckRow[] = [
   {
@@ -50,9 +50,24 @@ const ROWS: readonly CheckRow[] = [
         merged · audited
       </>
     ),
-    chipClass: 'border-primary text-primary'
+    // A merged pull request is purple on GitHub; the nearest existing theme token is the third chart colour.
+    chipClass: 'border-chart-3 text-chart-3'
   }
 ]
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
+
+// One piece of the line between two circles, centred in the circle column; `fill` of it is lit.
+function Segment({ hidden, fill, className }: { hidden: boolean; fill: number; className: string }) {
+  return (
+    <span
+      aria-hidden='true'
+      className={cn('col-start-1 mx-auto block h-full w-0.5 bg-border', hidden && 'invisible', className)}
+    >
+      <span className='block w-full bg-foreground' style={{ height: `${fill * 100}%` }} />
+    </span>
+  )
+}
 
 export function OwnershipSection() {
   const ref = useRef<HTMLElement>(null)
@@ -68,7 +83,7 @@ export function OwnershipSection() {
         <div
           className={cn(
             'mx-auto flex w-full max-w-[73.75rem] flex-row-reverse flex-wrap items-center gap-12 px-6 sm:px-10',
-            pinned ? 'pb-14 pt-28' : 'py-14'
+            pinned ? 'pb-6 pt-20' : 'py-14'
           )}
         >
           <div
@@ -77,10 +92,8 @@ export function OwnershipSection() {
               pinned ? 'gap-6 text-left' : 'items-center gap-2.5 text-center'
             )}
           >
-            <SectionTitle size='compact'>
-              <LetterReveal text='Control what actually merges' />
-            </SectionTitle>
-            <Text className='text-xl leading-snug'>
+            <SectionTitle size='compact'>Control what actually merges</SectionTitle>
+            <Text className='text-2xl leading-snug sm:text-[1.75rem]'>
               Your checks, from local work to merge.{' '}
               <span className='text-muted-foreground'>Yours sit beside ours.</span>
             </Text>
@@ -88,44 +101,52 @@ export function OwnershipSection() {
               <UnderlineLink href='/docs/rings'>How the rings work</UnderlineLink>
             </div>
           </div>
-          <div className='flex min-w-0 flex-[1_1_22rem] flex-col gap-5'>
-            <div className='relative grid auto-rows-fr gap-4'>
-              <div
-                aria-hidden='true'
-                className='absolute left-[calc(1.25rem_-_1px)] top-[calc((100%_-_3rem)_/_8_+_0.6rem)] bottom-[calc((100%_-_3rem)_/_8_-_0.6rem)] w-0.5 bg-border'
-              >
-                <div className='w-full bg-foreground' style={{ height: `${fill * 100}%` }} />
-              </div>
-              {ROWS.map((row, index) => {
-                const on = progress >= 0.06 && fill >= index / 3 - 0.001
-                return (
-                  <div
-                    key={row.label}
-                    className='grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-[1.1rem] gap-y-2'
+          <div className='flex min-w-0 flex-[1_1_22rem] flex-col'>
+            {ROWS.map((row, index) => {
+              const on = progress >= 0.06 && fill >= index / 3 - 0.001
+              const last = index === ROWS.length - 1
+              // The line between two circles is drawn in two pieces, one in each row (the bottom of
+              // the upper row, the top of the lower one), and the fill runs through the first and
+              // then the second as scroll carries it from one circle to the next.
+              const toThis = clamp01(3 * fill - (index - 1))
+              const fromThis = clamp01(3 * fill - index)
+              return (
+                <div
+                  key={row.label}
+                  className='grid grid-cols-[3rem_minmax(0,1fr)] grid-rows-[auto_auto_auto] gap-x-[1.1rem]'
+                >
+                  <Segment hidden={index === 0} fill={clamp01(2 * toThis - 1)} className='row-start-1' />
+                  <span
+                    className={cn(
+                      'col-start-1 row-start-2 grid size-12 place-items-center rounded-full border-2 border-foreground font-mono text-base transition-[background-color,color] duration-300 motion-reduce:transition-none',
+                      on ? 'bg-foreground text-secondary' : 'bg-secondary text-foreground'
+                    )}
                   >
-                    <span
-                      className={cn(
-                        'relative z-10 -mb-[0.6rem] grid size-10 place-items-center self-end rounded-full border-2 border-foreground font-mono text-[0.85rem] transition-[background-color,color] duration-300 motion-reduce:transition-none',
-                        on ? 'bg-foreground text-secondary' : 'bg-secondary text-foreground'
-                      )}
-                    >
-                      {on ? '✓' : index + 1}
+                    {on ? '✓' : index + 1}
+                  </span>
+                  <Segment hidden={last} fill={clamp01(2 * fromThis)} className='row-start-3' />
+                  <div
+                    className={cn(
+                      'col-start-2 row-start-1 flex items-end pb-1 transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      on ? 'opacity-100' : 'opacity-40'
+                    )}
+                  >
+                    <span className='font-mono text-sm uppercase tracking-[0.02em] text-muted-foreground'>
+                      {row.label}
                     </span>
-                    <div
-                      className={cn(
-                        'flex min-w-0 flex-col gap-[0.3rem] transition-opacity duration-[400ms] motion-reduce:transition-none',
-                        on ? 'opacity-100' : 'opacity-40'
-                      )}
-                    >
-                      <span className='font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
-                        {row.label}
-                      </span>
-                      <span className='text-lg leading-tight tracking-[-0.02em]'>{row.title}</span>
-                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      'col-start-2 row-start-2 self-center text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em] transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      on ? 'opacity-100' : 'opacity-40'
+                    )}
+                  >
+                    {row.title}
+                  </span>
+                  <div className={cn('col-start-2 row-start-3 flex items-start pt-2', !last && 'pb-6')}>
                     <span
                       className={cn(
                         CHIP_BASE,
-                        'col-start-2',
                         row.chipClass,
                         on ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0'
                       )}
@@ -133,18 +154,9 @@ export function OwnershipSection() {
                       {row.chip}
                     </span>
                   </div>
-                )
-              })}
-            </div>
-            <div
-              className={cn(
-                'inline-flex items-center gap-2 self-start rounded-lg border border-primary px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.02em] text-primary transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none',
-                progress >= 0.86 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-              )}
-            >
-              <GitMerge className='size-3.5' />
-              merged
-            </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

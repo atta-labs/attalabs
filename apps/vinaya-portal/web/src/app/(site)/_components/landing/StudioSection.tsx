@@ -2,16 +2,17 @@
 
 import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
-import { Flag, Terminal } from 'lucide-react'
 import { useRef } from 'react'
-import { useEnterProgress, useNarrow, usePinEnabled, usePinProgress, useViewportHeight } from './LandingInteractions'
-import { SectionTitle } from './SectionHeading'
+import { useEnterProgress, useNarrow, usePinProgress, useReducedMotion } from './LandingInteractions'
+import { HEADER_GAP, SectionHeader, SectionSubtitle, SectionTitle } from './SectionHeading'
+import { LOOP_EVENT_COUNT, LoopMonitor } from './LoopMonitor'
 import { UnderlineLink } from './UnderlineLink'
 
 // 05 · Studio. 420vh runway, one sticky stage: scroll walks three views of the Studio window
 // (milestones, tasks, the dev-review loop monitor) while the left column names the active one.
-// Below the pin gate it flows instead, the three views playing as the section scrolls into view;
-// under reduced motion the final view (the loop monitor, complete) shows.
+// It pins at every width, phones included: the views play as the reader scrolls and the stage holds
+// still long enough to read each one. Under reduced motion it flows instead and the final view (the
+// loop monitor, complete) shows.
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
 
@@ -35,56 +36,9 @@ const TASKS = [
   { id: '#897', title: 'Custom events CLI' }
 ] as const
 
-type LogMark = '›' | '✓' | '✕' | '☞'
-const LOG: readonly { time: string; mark: LogMark; text: string }[] = [
-  { time: '11:02', mark: '›', text: 'Developer: round 1 done' },
-  { time: '11:02', mark: '›', text: 'Reviewers dispatched in parallel' },
-  { time: '11:03', mark: '✓', text: 'Security: pass' },
-  { time: '11:03', mark: '✕', text: 'Code review: changes requested' },
-  { time: '11:04', mark: '›', text: 'Round 2: developer addressing the findings' },
-  { time: '11:06', mark: '✓', text: 'Code review: approved' },
-  { time: '11:06', mark: '✓', text: 'Security: pass' },
-  { time: '11:06', mark: '✓', text: 'Both approved, PR #893 up' },
-  { time: '11:06', mark: '☞', text: 'Waiting for you to merge' }
-]
-
-const MARK_CLASS: Record<LogMark, string> = {
-  '›': 'text-muted-foreground',
-  '✓': 'text-success',
-  '✕': 'text-destructive',
-  '☞': 'text-background dark:text-card-foreground'
-}
-
-// Review-round boxes: `need` is the log line count at which each one resolves.
-const ROUND_ONE = [
-  { need: 1, mark: '✓', tone: 'bg-primary text-primary-foreground' },
-  { need: 4, mark: '✕', tone: 'bg-secondary text-secondary-foreground shadow-[inset_0_0_0_1px_var(--border)]' },
-  { need: 3, mark: '✓', tone: 'bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_var(--border)]' }
-] as const
-const ROUND_TWO = [
-  { need: 5, mark: '✓', tone: 'bg-primary text-primary-foreground' },
-  { need: 6, mark: '✓', tone: 'bg-secondary text-secondary-foreground shadow-[inset_0_0_0_1px_var(--border)]' },
-  { need: 7, mark: '✓', tone: 'bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_var(--border)]' }
-] as const
-
-const MONO_LABEL = 'font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground'
-const PANEL_PAD = 'p-[clamp(0.9rem,2.5vh,1.4rem)]'
-
-function CommandChip({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        'items-center gap-[0.55rem] self-start rounded-lg border border-border bg-foreground px-[0.85rem] py-[0.55rem] font-mono text-[0.8125rem] text-background dark:bg-card dark:text-card-foreground',
-        className
-      )}
-    >
-      <Terminal className='size-[15px] shrink-0 text-success' />
-      <span>
-        <span className='text-background/60 dark:text-muted-foreground'>$</span> vinaya studio
-      </span>
-    </span>
-  )
-}
+const MONO_LABEL = 'font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground'
+// Side padding is the window header's (1.1rem), so everything inside the window lines up with it.
+const PANEL_PAD = 'px-[1.1rem] py-[clamp(0.9rem,2.5vh,1.4rem)]'
 
 function panelState(stage: number, index: number) {
   return cn(
@@ -95,76 +49,30 @@ function panelState(stage: number, index: number) {
   )
 }
 
-function RoundBoxes({ boxes, n }: { boxes: typeof ROUND_ONE | typeof ROUND_TWO; n: number }) {
-  const [lead, top, bottom] = boxes
-  const box = (item: (typeof boxes)[number]) => {
-    const done = n >= item.need
-    const next = n === item.need - 1
-    return (
-      <span
-        key={item.need}
-        className={cn(
-          'grid size-[1.4rem] place-items-center rounded-[3px] text-[0.72rem] transition-[opacity,transform] duration-300 motion-reduce:transition-none',
-          item.tone,
-          done ? 'scale-100 opacity-100' : cn('scale-90', next ? 'opacity-45' : 'opacity-[0.12]')
-        )}
-      >
-        {done ? item.mark : next ? '…' : ''}
-      </span>
-    )
-  }
-  return (
-    <div className='flex items-center justify-center gap-1'>
-      {box(lead)}
-      <div className='flex flex-col gap-0.5'>
-        {box(top)}
-        {box(bottom)}
-      </div>
-    </div>
-  )
-}
-
-function LaneHeading({ children }: { children?: string }) {
-  return <div className='flex justify-center'>{children ? <span className={MONO_LABEL}>{children}</span> : null}</div>
-}
-
-function RoundLabels() {
-  return (
-    <div className='flex justify-center'>
-      <div className='flex gap-1'>
-        {['dev', 'review'].map((label) => (
-          <span
-            key={label}
-            className='flex w-[1.4rem] justify-center whitespace-nowrap font-mono text-[0.5rem] uppercase tracking-[0.06em] text-muted-foreground'
-          >
-            {label}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number; viewport: number; pinned: boolean }) {
+function StudioMock({ sp, stage, pinned, narrow }: { sp: number; stage: number; pinned: boolean; narrow: boolean }) {
   const milestoneFill = clamp01((sp - 0.04) / 0.2)
   const taskFill = clamp01((sp - 0.3) / 0.18)
-  const lines = Math.floor(clamp01((sp - 0.53) / 0.42) * 9.99)
-  const cap = Math.max(3, Math.min(7, Math.floor((viewport - 430) / 19)))
-  const status = lines >= 8 ? 'PUBLISHED · PR #893 · needs your merge' : lines >= 5 ? 'RUNNING · R2' : 'RUNNING · R1'
-
+  const lines = Math.floor(clamp01((sp - 0.53) / 0.42) * (LOOP_EVENT_COUNT + 0.99))
   return (
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background text-card-foreground shadow-lg'>
-      <div className='flex items-center gap-4 border-b border-border px-[1.1rem] py-3 font-mono text-[0.6875rem]'>
-        <span className='font-semibold tracking-[0.2em]'>VINAYA STUDIO</span>
+      <div className='flex items-center gap-4 border-b border-border px-[1.1rem] py-3 font-mono text-[0.8125rem]'>
+        <span className='whitespace-nowrap font-semibold tracking-[0.2em] max-[820px]:tracking-[0.1em]'>
+          VINAYA STUDIO
+        </span>
         <span className='flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground'>
           atta-labs/attalabs · main
         </span>
-        <span className='inline-flex items-center gap-[0.4rem] text-muted-foreground'>
+        <span className='inline-flex items-center gap-[0.4rem] whitespace-nowrap text-muted-foreground'>
           <i className='inline-block size-[7px] rounded-full bg-success' />
           live · 11:06
         </span>
       </div>
-      <div className={cn('relative flex-1', pinned ? 'min-h-[17rem]' : 'min-h-[24rem]')}>
+      <div
+        className={cn(
+          'relative flex-1',
+          pinned ? (narrow ? 'min-h-[clamp(17rem,38vh,26rem)]' : 'min-h-[clamp(17rem,48vh,26rem)]') : 'min-h-[24rem]'
+        )}
+      >
         <div
           aria-hidden={stage !== 0}
           className={cn(panelState(stage, 0), PANEL_PAD, 'flex flex-col gap-[clamp(0.4rem,1.4vh,0.8rem)]')}
@@ -176,10 +84,10 @@ function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number
               className='flex min-h-0 flex-col justify-center gap-[clamp(0.15rem,0.6vh,0.35rem)] overflow-hidden rounded-lg border border-border bg-background px-[0.95rem] py-[clamp(0.35rem,1.2vh,0.65rem)]'
             >
               <div className='flex items-baseline justify-between gap-4'>
-                <span className='text-[0.95rem]'>{milestone.name}</span>
-                <span className='font-mono text-[0.625rem] text-muted-foreground'>milestone</span>
+                <span className='text-lg'>{milestone.name}</span>
+                <span className='font-mono text-xs text-muted-foreground'>milestone</span>
               </div>
-              <span className='font-mono text-[0.6875rem] text-muted-foreground'>{milestone.facts}</span>
+              <span className='font-mono text-[0.8125rem] text-muted-foreground'>{milestone.facts}</span>
               <div className='h-[6px] overflow-hidden rounded-[3px] bg-border'>
                 <div
                   className='h-full bg-success transition-[width] duration-500 ease-out motion-reduce:transition-none'
@@ -196,9 +104,9 @@ function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number
         >
           <div className='flex items-baseline justify-between gap-4 px-[clamp(0.9rem,2.5vh,1.4rem)] pb-[clamp(0.5rem,1.4vh,0.8rem)]'>
             <span className={MONO_LABEL}>tranche · log-portable-v1</span>
-            <span className='font-mono text-[0.625rem] uppercase tracking-[0.14em] text-success'>active</span>
+            <span className='font-mono text-xs uppercase tracking-[0.14em] text-success'>active</span>
           </div>
-          <div className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border bg-card px-[clamp(0.9rem,2.5vh,1.4rem)] py-[0.45rem] font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground'>
+          <div className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border bg-card px-[clamp(0.9rem,2.5vh,1.4rem)] py-[0.45rem] font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground'>
             <span>#</span>
             <span>task</span>
             <span>status</span>
@@ -210,13 +118,13 @@ function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number
             return (
               <div
                 key={task.id}
-                className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-[clamp(0.9rem,2.5vh,1.4rem)] py-[clamp(0.4rem,1.2vh,0.6rem)] text-[0.95rem]'
+                className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-[clamp(0.9rem,2.5vh,1.4rem)] py-[clamp(0.4rem,1.2vh,0.6rem)] text-lg'
               >
-                <span className='font-mono text-[0.6875rem] text-muted-foreground'>{task.id}</span>
+                <span className='font-mono text-[0.8125rem] text-muted-foreground'>{task.id}</span>
                 <span className='overflow-hidden text-ellipsis whitespace-nowrap'>{task.title}</span>
                 <span
                   className={cn(
-                    'justify-self-end rounded-full border border-current px-2 py-[0.15rem] font-mono text-[0.625rem] transition-colors duration-300 motion-reduce:transition-none',
+                    'justify-self-end rounded-full border border-current px-2 py-[0.15rem] font-mono text-xs transition-colors duration-300 motion-reduce:transition-none',
                     state === 'merged'
                       ? 'text-success'
                       : state === 'in flight'
@@ -231,63 +139,8 @@ function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number
           })}
         </div>
 
-        <div
-          aria-hidden={stage !== 2}
-          className={cn(panelState(stage, 2), PANEL_PAD, 'flex flex-col gap-[clamp(0.6rem,1.8vh,1rem)]')}
-        >
-          <div className='grid grid-cols-[minmax(0,max-content)_repeat(3,max-content)] items-center justify-start gap-x-[clamp(1rem,2.5vw,1.75rem)] gap-y-[0.35rem]'>
-            <span className={MONO_LABEL}>dev review loop monitor</span>
-            <LaneHeading>r1</LaneHeading>
-            <LaneHeading>r2</LaneHeading>
-            <LaneHeading>pr</LaneHeading>
-            <div className='row-span-2 flex min-w-0 flex-col gap-[0.2rem] self-center'>
-              <span className='overflow-hidden text-ellipsis whitespace-nowrap text-[0.95rem]'>Custom events</span>
-              <span className='font-mono text-[0.6875rem] text-muted-foreground'>#893 · Mac · opus</span>
-            </div>
-            <RoundLabels />
-            <RoundLabels />
-            <span />
-            <RoundBoxes boxes={ROUND_ONE} n={lines} />
-            <RoundBoxes boxes={ROUND_TWO} n={lines} />
-            <div className='flex justify-center'>
-              <span
-                className={cn(
-                  'grid size-[1.4rem] place-items-center rounded-[3px] border border-dashed border-success text-success transition-opacity duration-300 motion-reduce:transition-none',
-                  lines >= 8 ? 'opacity-100' : lines === 7 ? 'opacity-45' : 'opacity-[0.12]'
-                )}
-              >
-                <Flag className='size-[11px]' />
-              </span>
-            </div>
-          </div>
-          <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-foreground text-background dark:bg-card dark:text-card-foreground'>
-            <div
-              className={cn(
-                'border-b border-border bg-background px-[0.9rem] py-[0.55rem] font-mono text-[0.6875rem] tracking-[0.08em] transition-colors duration-300 motion-reduce:transition-none',
-                lines >= 8 ? 'text-success' : 'text-foreground'
-              )}
-            >
-              {status}
-            </div>
-            <div className='flex min-h-0 flex-1 flex-col justify-end overflow-hidden px-[0.9rem] py-[0.6rem] font-mono text-[0.6875rem] leading-[1.7]'>
-              {LOG.map((line, index) => {
-                const on = lines > index && index >= lines - cap
-                return (
-                  <div
-                    key={`${line.time}-${line.text}`}
-                    className={cn(
-                      'grid-cols-[3.2em_1.3em_minmax(0,1fr)] transition-opacity duration-300 motion-reduce:transition-none',
-                      on ? 'grid opacity-100' : 'hidden opacity-0'
-                    )}
-                  >
-                    <span className='text-background/60 dark:text-muted-foreground'>{line.time}</span>
-                    <span className={MARK_CLASS[line.mark]}>{line.mark}</span>
-                    <span className={line.mark === '☞' ? 'font-semibold' : undefined}>{line.text}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+        <div aria-hidden={stage !== 2} className={cn(panelState(stage, 2), PANEL_PAD, narrow && 'py-2', '@container')}>
+          <LoopMonitor k={lines} />
         </div>
       </div>
     </div>
@@ -296,12 +149,11 @@ function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number
 
 export function StudioSection() {
   const ref = useRef<HTMLElement>(null)
-  const pinned = usePinEnabled()
+  const pinned = !useReducedMotion()
   const pinProgress = usePinProgress(ref)
   const enterProgress = useEnterProgress(ref, 0.9, 0.9)
   const sp = pinned ? pinProgress : enterProgress
   const narrow = useNarrow()
-  const viewport = useViewportHeight()
   const stage = sp < 0.28 ? 0 : sp < 0.5 ? 1 : 2
 
   return (
@@ -309,23 +161,28 @@ export function StudioSection() {
       <div
         className={cn(
           'box-border flex items-center',
-          pinned ? 'sticky top-0 h-screen overflow-hidden' : 'relative min-h-screen'
+          pinned ? 'sticky top-0 h-dvh overflow-hidden' : 'relative min-h-screen'
         )}
       >
         <div
           className={cn(
-            'mx-auto flex w-full max-w-[73.75rem] flex-wrap items-stretch gap-[clamp(1.5rem,3.5vw,3.5rem)] px-6 sm:px-10',
-            pinned ? 'pb-[clamp(1rem,4vh,4rem)] pt-[calc(3.5rem+clamp(0.5rem,2vh,2rem))]' : 'py-14'
+            'mx-auto flex w-full max-w-[73.75rem] flex-col px-6 sm:px-10',
+            HEADER_GAP,
+            pinned
+              ? 'pb-[clamp(0.75rem,2vh,4rem)] pt-[calc(3.5rem+0.25rem)] min-[820px]:pt-[calc(3.5rem+clamp(0.5rem,2vh,2rem))]'
+              : 'py-14'
           )}
         >
-          <div className='flex min-w-0 flex-[1_1_14rem] flex-col gap-[clamp(0.6rem,2vh,1.25rem)]'>
-            <SectionTitle size='compact'>Your whole process, in one view</SectionTitle>
+          <SectionHeader className='gap-2'>
+            <SectionTitle size='compact'>Vinaya studio</SectionTitle>
+            <SectionSubtitle>Your whole process, in one view</SectionSubtitle>
+          </SectionHeader>
+          <div className='flex flex-wrap items-stretch gap-x-[clamp(1.5rem,3.5vw,3.5rem)] gap-y-3'>
             {narrow ? null : (
-              <>
-                <CommandChip className='inline-flex' />
-                <div className='flex flex-col gap-[clamp(0.5rem,1.6vh,1.1rem)]'>
+              <div className='flex min-w-0 flex-[1_1_16rem] flex-col justify-between gap-6'>
+                <div className='flex flex-1 flex-col justify-evenly gap-6'>
                   {STEPS.map((step, index) => (
-                    <div key={step.title} className='grid grid-cols-[2px_minmax(0,1fr)] gap-[0.9rem]'>
+                    <div key={step.title} className='grid grid-cols-[3px_minmax(0,1fr)] gap-[1.1rem]'>
                       <span
                         className={cn(
                           'bg-foreground transition-opacity duration-300 motion-reduce:transition-none',
@@ -334,14 +191,16 @@ export function StudioSection() {
                       />
                       <div
                         className={cn(
-                          'flex flex-col gap-[0.2rem] transition-opacity duration-300 motion-reduce:transition-none',
+                          'flex flex-col gap-2 py-1 transition-opacity duration-300 motion-reduce:transition-none',
                           stage === index ? 'opacity-100' : 'opacity-40'
                         )}
                       >
-                        <span className='font-mono text-[0.625rem] uppercase tracking-[0.12em]'>
+                        <span className='font-mono text-sm uppercase tracking-[0.06em] lg:text-base lg:tracking-[0.06em]'>
                           {`0${index + 1} · ${step.title}`}
                         </span>
-                        <Text className='text-[0.95rem] leading-[1.45] text-muted-foreground'>{step.detail}</Text>
+                        <Text className='text-xl leading-[1.25] text-muted-foreground lg:text-2xl xl:[@media(min-height:840px)]:text-[1.75rem]'>
+                          {step.detail}
+                        </Text>
                       </div>
                     </div>
                   ))}
@@ -349,31 +208,14 @@ export function StudioSection() {
                 <div className='self-start'>
                   <UnderlineLink href='/the-studio'>Learn more about Studio</UnderlineLink>
                 </div>
-              </>
+              </div>
             )}
-          </div>
-          <div className='flex min-w-0 flex-[2_1_22rem] flex-col gap-[clamp(0.6rem,1.6vh,1rem)]'>
-            <div className='grid'>
-              {STEPS.map((step, index) => (
-                <span
-                  key={step.title}
-                  className={cn(
-                    '[grid-area:1/1] flex items-baseline gap-3 transition-[opacity,transform] duration-500 motion-reduce:transition-none',
-                    stage === index
-                      ? 'translate-y-0 opacity-100'
-                      : cn('opacity-0', stage > index ? '-translate-y-[14px]' : 'translate-y-[14px]')
-                  )}
-                >
-                  <span className='font-mono text-xs text-muted-foreground'>{`0${index + 1}`}</span>
-                  <span className='text-[clamp(1.25rem,1.9vw,1.6rem)] tracking-[-0.02em]'>{step.title}</span>
-                </span>
-              ))}
+            <div className='flex min-w-0 flex-[2_1_22rem] flex-col gap-[clamp(0.6rem,1.6vh,1rem)]'>
+              <StudioMock sp={sp} stage={stage} pinned={pinned} narrow={narrow} />
             </div>
-            <StudioMock sp={sp} stage={stage} viewport={viewport} pinned={pinned} />
           </div>
           {narrow ? (
-            <div className='flex flex-none basis-full flex-row flex-wrap items-center gap-x-6 gap-y-4'>
-              <CommandChip className='inline-flex' />
+            <div className='flex justify-center'>
               <UnderlineLink href='/the-studio'>Learn more about Studio</UnderlineLink>
             </div>
           ) : null}

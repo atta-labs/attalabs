@@ -30,7 +30,12 @@ const readColors = () => {
   return out
 }
 
-export function mountMerge(canvas, isStill = () => false) {
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {() => boolean} [isStill]
+ * @param {(log: { fits: boolean, lines: { time: string, mark: '›' | '✓' | '✕' | '☞', text: string }[] }) => void} [onLog]
+ */
+export function mountMerge(canvas, isStill = () => false, onLog = () => {}) {
   let live = null
   let waiter = null
   let disposed = false
@@ -38,7 +43,7 @@ export function mountMerge(canvas, isStill = () => false) {
     if (disposed || live) return true
     const colors = readColors()
     if (!colors) return false
-    live = build(canvas, colors, isStill)
+    live = build(canvas, colors, isStill, onLog)
     return true
   }
   if (!tryStart()) {
@@ -58,7 +63,7 @@ export function mountMerge(canvas, isStill = () => false) {
   }
 }
 
-function build(canvas, C, isStill) {
+function build(canvas, C, isStill, onLog) {
   let renderer
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
@@ -111,13 +116,67 @@ function build(canvas, C, isStill) {
   sphere.position.set(1, 0, -3)
   scene.add(sphere)
 
-  const grid = new THREE.GridHelper(120, 120, 0xffffff, 0xffffff)
-  grid.material.color.setHex(C.bd)
-  grid.rotation.x = Math.PI / 2
-  grid.position.z = -0.03
-  grid.material.transparent = true
-  grid.material.opacity = 0.85
-  grid.material.depthWrite = false
+  // The fabric: the same family as the landing hero's — one even layer of hairlines that rolls
+  // like soft water. The plane is XY, displaced along z entirely BEHIND the branch lines (z < 0),
+  // so a swell never rises through them. Displacement and the crest light run in the vertex
+  // shader on a time uniform; nothing is rebuilt per frame. The lines fade with depth rather
+  // than ending, and the fog range is fed in each frame (a ShaderMaterial has no fog of its own).
+  // Hairlines, not rules: the hero draws its fabric in --foreground at 0.08 (light) / 0.12 (dark), so
+  // this does too, and the swell's crest only lifts them a little.
+  const fabricAlpha = () => (document.documentElement.dataset.theme === 'dark' ? 0.12 : 0.08)
+  const FABRIC_HALF = 40
+  const FABRIC_STEP = 0.5
+  const FABRIC_N = Math.round(FABRIC_HALF / FABRIC_STEP)
+  const fabricPos = []
+  for (let a = -FABRIC_N; a <= FABRIC_N; a++) {
+    for (let b = -FABRIC_N; b < FABRIC_N; b++) {
+      const i = a * FABRIC_STEP
+      const j = b * FABRIC_STEP
+      fabricPos.push(i, j, 0, i, j + FABRIC_STEP, 0, j, i, 0, j + FABRIC_STEP, i, 0)
+    }
+  }
+  const fabricGeo = new THREE.BufferGeometry()
+  fabricGeo.setAttribute('position', new THREE.Float32BufferAttribute(fabricPos, 3))
+  const fabricMat = new THREE.ShaderMaterial({
+    name: 'merge-fabric',
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uColor: { value: new THREE.Color().setHex(C.fg, THREE.LinearSRGBColorSpace) },
+      uOpacity: { value: fabricAlpha() },
+      uTime: { value: 0 },
+      uAmp: { value: 0.45 },
+      uCrest: { value: 1.2 },
+      uFade: { value: new THREE.Vector2(9, 30) }
+    },
+    vertexShader: `
+      uniform float uTime; uniform float uAmp;
+      varying float vCrest; varying float vDepth;
+      void main() {
+        vec3 p = position;
+        float a = sin(p.x * 0.33 + uTime * 0.55);
+        float b = sin(p.y * 0.27 - uTime * 0.42 + p.x * 0.11);
+        float c = sin((p.x + p.y) * 0.17 + uTime * 0.23);
+        float h = (a * 0.42 + b * 0.36 + c * 0.22);
+        p.z = -0.55 + h * uAmp;
+        vCrest = pow(max(h, 0.0), 2.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform vec3 uColor; uniform float uOpacity; uniform float uCrest; uniform vec2 uFade;
+      varying float vCrest; varying float vDepth;
+      void main() {
+        float far = 1.0 - smoothstep(uFade.x, uFade.y, vDepth);
+        float a = uOpacity * (0.7 + vCrest * uCrest) * far;
+        if (a <= 0.002) discard;
+        gl_FragColor = vec4(uColor, min(a, 1.0));
+      }`
+  })
+  const grid = new THREE.LineSegments(fabricGeo, fabricMat)
+  grid.frustumCulled = false
+  grid.renderOrder = -1
   scene.add(grid)
 
   const tube = (pts, r, mat, segs = 200) => {
@@ -346,41 +405,9 @@ function build(canvas, C, isStill) {
     })
   }
 
-  // ---- the event log, bottom-left: what the agents did, as it happens.
-  // The box never changes height: a fixed header plus a lines area of exactly four rows
-  // (6.8em at the 1.7 line height), lines anchored to the bottom.
-  // The log stays a dark terminal in both schemes with tokens only: the foreground ink as a
-  // fill in light, the card surface in dark.
-  let DIM = ''
-  const term = document.createElement('div')
-  term.setAttribute('aria-hidden', 'true')
-  Object.assign(term.style, {
-    position: 'absolute',
-    left: '1.5rem',
-    bottom: '1.25rem',
-    width: 'min(23rem, 38%)',
-    boxSizing: 'border-box',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius, 0.5rem)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '0.6875rem',
-    lineHeight: '1.7',
-    overflow: 'hidden',
-    pointerEvents: 'none',
-    opacity: '0',
-    transition: 'opacity 300ms'
-  })
-  const styleTerm = () => {
-    const dark = document.documentElement.dataset.theme === 'dark'
-    term.style.background = dark ? 'var(--card)' : 'var(--foreground)'
-    term.style.color = dark ? 'var(--card-foreground)' : 'var(--background)'
-    DIM = dark ? 'var(--muted-foreground)' : 'color-mix(in oklab, var(--background) 60%, transparent)'
-    shown = -1
-  }
-  term.innerHTML =
-    '<div style="display:flex;justify-content:space-between;gap:1rem;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);background:var(--background);color:var(--muted-foreground)"><span style="display:inline-flex;align-items:center;gap:0.45rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"></path><path d="M11 13h4"></path><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg>$ vinaya log --follow</span><span style="display:inline-flex;align-items:center;gap:0.35rem"><i style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></i>live</span></div><div data-lines style="box-sizing:content-box;padding:0.55rem 0.85rem;height:6.8em;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end"></div>'
-  host.appendChild(term)
-  const linesEl = term.querySelector('[data-lines]')
+  // ---- the event log: what the agents did, as it happens. The scene only decides WHICH events are
+  // on and whether there is room for the box under the diagram; the box itself is the page's
+  // `Terminal` component, fed through `onLog`.
   const SP = (i) => 0.16 + i * 0.12
   const EV = [
     [() => qv >= 0.1, '›', 'milestone checkout-v2 opened'],
@@ -398,8 +425,7 @@ function build(canvas, C, isStill) {
   ]
   let qv = 0
   let pv = 0
-  let shown = -1
-  styleTerm()
+  let shown = ''
   const updateLog = () => {
     const on = EV.filter((e) => e[0]())
     // fit under the diagram: only as many lines as the free space below the lower labels allows
@@ -407,23 +433,16 @@ function build(canvas, C, isStill) {
     const free = vh - (-v.y * 0.5 + 0.5) * vh - 20
     const rowH = 18.6
     const headH = 44
-    const maxLines = 4
     const fits = free - headH - 16 >= rowH * 2
-    const narrow = vw < 720
-    term.style.width = narrow ? 'min(21rem, calc(100% - 2rem))' : 'min(23rem, 38%)'
-    term.style.left = narrow ? '1rem' : '1.5rem'
-    term.style.opacity = on.length && fits ? '1' : '0'
-    const key = on.length
+    const key = `${on.length}:${fits ? 1 : 0}`
     if (key === shown) return
     shown = key
-    linesEl.innerHTML = on
-      .slice(-maxLines)
-      .map((e) => {
-        const t = `11:${String(2 + EV.indexOf(e)).padStart(2, '0')}`
-        const ok = e[1] === '✓'
-        return `<div style="flex:none;display:grid;grid-template-columns:3.2em 1.2em minmax(0,1fr);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:${DIM}">${t}</span><span style="color:${ok ? 'var(--success)' : DIM}">${e[1]}</span><span style="overflow:hidden;text-overflow:ellipsis">${e[2]}</span></div>`
-      })
-      .join('')
+    onLog({
+      fits: on.length > 0 && fits,
+      lines: on
+        .slice(-4)
+        .map((e) => ({ time: `11:${String(2 + EV.indexOf(e)).padStart(2, '0')}`, mark: e[1], text: e[2] }))
+    })
   }
 
   // ---- frame
@@ -542,6 +561,8 @@ function build(canvas, C, isStill) {
     const dist = camera.position.distanceTo(cTgt)
     scene.fog.near = dist * 0.8
     scene.fog.far = dist * 3.2
+    fabricMat.uniforms.uFade.value.set(dist * 0.8, dist * 3.2)
+    fabricMat.uniforms.uTime.value = reduced ? 0 : t
 
     renderer.render(scene, camera)
     updateLog()
@@ -564,7 +585,6 @@ function build(canvas, C, isStill) {
 
   // theme change: re-read the tokens and repaint every material that holds one
   const applyTheme = () => {
-    styleTerm()
     const next = readColors()
     if (!next || Object.keys(next).every((k) => next[k] === C[k])) return
     Object.assign(C, next)
@@ -579,7 +599,8 @@ function build(canvas, C, isStill) {
     M.dotLine.color.setHex(C.fg)
     M.okDot.color.setHex(C.ok)
     M.okLine.color.setHex(C.ok)
-    grid.material.color.setHex(C.bd)
+    fabricMat.uniforms.uColor.value.setHex(C.fg, THREE.LinearSRGBColorSpace)
+    fabricMat.uniforms.uOpacity.value = fabricAlpha()
     drawMain()
     spurs.forEach((s) => {
       s.md.children[0].material.color.setHex(C.ok)
@@ -599,7 +620,7 @@ function build(canvas, C, isStill) {
     removeEventListener('pointermove', onMove)
     clearInterval(blink)
     layer.remove()
-    term.remove()
+    onLog({ fits: false, lines: [] })
     scene.traverse((o) => {
       o.geometry?.dispose()
       const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []

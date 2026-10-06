@@ -206,6 +206,8 @@ export function ScrollToSectionButton({ targetId, children }: { targetId: string
 
 // A terminal-styled, click-to-copy command: `$ <command>` in a box that stays dark in both colour
 // schemes without a literal colour (the foreground ink as a fill in light, the card surface in dark).
+// A plain <button>, not `@atta/ui`'s: the `animate` library's Button scales on hover and on tap, and this
+// box has to stay perfectly still, with no hover treatment of any kind.
 export function TerminalCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -216,22 +218,21 @@ export function TerminalCommand({ command }: { command: string }) {
   }
 
   return (
-    <Button
+    <button
       type='button'
-      variant='outline'
       onClick={copy}
       aria-label={`Copy ${command}`}
-      className='h-auto max-w-full gap-3 rounded-lg border-border bg-foreground px-5 py-4 font-mono text-[0.8125rem] text-background shadow-none hover:bg-foreground hover:text-background dark:bg-card dark:text-card-foreground dark:hover:bg-card dark:hover:text-card-foreground'
+      className='flex max-w-full cursor-pointer items-center gap-4 rounded-lg border border-border bg-foreground px-7 py-5 text-left font-mono text-[length:clamp(1rem,1.9vw,1.375rem)] leading-none text-background outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-card dark:text-card-foreground'
     >
-      <Terminal className='size-4 shrink-0 text-success' />
+      <Terminal className='size-[1.1em] shrink-0 text-success' />
       <span className='text-background/60 dark:text-muted-foreground'>$</span>
-      <span className='min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]'>{command}</span>
+      <span className='min-w-0 whitespace-normal [overflow-wrap:anywhere]'>{command}</span>
       {copied ? (
-        <Check className='size-4 shrink-0' />
+        <Check className='size-[1.1em] shrink-0' />
       ) : (
-        <Copy className='size-4 shrink-0 text-background/60 dark:text-muted-foreground' />
+        <Copy className='size-[1.1em] shrink-0 text-background/60 dark:text-muted-foreground' />
       )}
-    </Button>
+    </button>
   )
 }
 
@@ -243,10 +244,10 @@ export function LabeledCommandCopy({ href, label, command }: { href: string; lab
       <NextLink
         href={href}
         variant='unstyled'
-        className='inline-flex items-center gap-1 font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground transition-colors hover:text-foreground'
+        className='inline-flex items-center gap-1.5 font-mono text-base uppercase tracking-[0.04em] text-muted-foreground'
       >
         {label}
-        <ArrowUpRight className='size-3 shrink-0' />
+        <ArrowUpRight className='size-4 shrink-0' />
       </NextLink>
       <TerminalCommand command={command} />
     </div>

@@ -15,7 +15,7 @@ export function UnderlineLink({
     <NextLink
       href={href}
       variant='unstyled'
-      className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.02em]'
+      className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-sm uppercase tracking-[0.02em]'
     >
       {children}
       {icon}

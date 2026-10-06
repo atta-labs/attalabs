@@ -5,7 +5,6 @@ import { cn } from '@atta/ui/lib/utils'
 import { ArrowUpRight, Bot, Clock, FileText, MessageSquare, Plus, Shield } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
 import { siAnthropic, siGit, siGithub, siGithubactions, siOpenai } from 'simple-icons'
-import { LetterReveal } from '../LetterReveal'
 import { useEnterProgress } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { SectionTitle } from './SectionHeading'
@@ -85,7 +84,7 @@ function FileBadge({ children, yours }: { children: string; yours?: boolean }) {
   return (
     <b
       className={cn(
-        'rounded-sm px-1 py-0.5 font-mono text-[0.5625rem] font-semibold',
+        'rounded-sm px-1 py-0.5 font-mono text-[0.6875rem] font-semibold',
         yours ? 'bg-foreground text-background' : 'bg-accent text-accent-foreground'
       )}
     >
@@ -102,7 +101,7 @@ function SlotRow({ slot, on, last }: { slot: Slot; on: boolean; last: boolean })
         last && 'border-b'
       )}
     >
-      <div className='flex min-w-0 flex-[1_1_auto] items-baseline whitespace-nowrap font-mono text-[clamp(1rem,1.7vw,1.5rem)] font-medium leading-none'>
+      <div className='flex min-w-0 flex-[1_1_auto] items-baseline whitespace-nowrap font-mono text-[clamp(1.125rem,1.7vw,1.5rem)] font-medium leading-none'>
         <span
           className={cn(
             'inline-block overflow-hidden whitespace-pre transition-[max-width,opacity] duration-500 motion-reduce:transition-none',
@@ -167,19 +166,19 @@ export function ConfigBoardSection() {
     >
       <div className='flex min-w-0 flex-[1_1_20rem] flex-col gap-2.5 text-center lg:gap-6 lg:text-left'>
         <SectionTitle size='compact'>
-          <LetterReveal text='Bring your own.' />
+          Bring your own.
           <br />
           <span className='text-muted-foreground'>
-            <LetterReveal text='Agents, checks, gates.' startIndex={16} />
+            Agents, checks, gates.
             <br />
-            <LetterReveal text='One file.' startIndex={39} />
+            One file.
           </span>
         </SectionTitle>
         <div className='mt-2 flex flex-col items-center gap-4 lg:items-start'>
           <NextLink
             href='/docs/config'
             variant='unstyled'
-            className='rounded-lg bg-accent px-[0.65rem] py-[0.35rem] font-mono text-[0.9375rem] font-bold text-accent-foreground'
+            className='rounded-lg bg-accent px-[0.65rem] py-[0.35rem] font-mono text-base font-bold text-accent-foreground'
           >
             vinaya.config.json
           </NextLink>
@@ -192,7 +191,7 @@ export function ConfigBoardSection() {
         {SLOTS.map((slot, index) => (
           <SlotRow key={slot.label} slot={slot} on={filled > index} last={index === SLOTS.length - 1} />
         ))}
-        <div className='mt-5 flex justify-end gap-7 font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
+        <div className='mt-5 flex justify-end gap-7 font-mono text-sm uppercase tracking-[0.02em] text-muted-foreground'>
           <span className='flex items-center gap-2'>
             <i className='block h-[0.6rem] w-5 rounded-sm bg-foreground' />
             ships with vinaya
