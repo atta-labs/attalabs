@@ -3,13 +3,13 @@
 import { Card, CardTitle } from '@atta/ui/components'
 import { cn } from '@atta/ui/lib/utils'
 import { Text } from '@atta/ui/shared'
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { usePinEnabled, usePinProgress, useSeen } from './LandingInteractions'
 import { HEADER_GAP, SectionHeader, SectionSubtitle, SectionTitle } from './SectionHeading'
 import { UnderlineLink } from './UnderlineLink'
 
 // 02 · The path. A centred title over three equal cards side by side; every card always shows its
-// full text and visual. Pinned on a roomy viewport (230vh runway, sticky 100vh stage): scroll walks
+// full text and visual. Pinned on a roomy viewport (300vh runway, sticky 100vh stage): scroll walks
 // the active card Define → Plan → Dispatch, upcoming cards dimmed and each card's visual building in
 // once it is active. Anywhere else (narrow, short, reduced motion) nothing pins and each card slides
 // up as it enters.
@@ -26,7 +26,7 @@ type Step = {
   tag: string
   role: string
   body: string
-  Visual: (props: { on: boolean }) => ReactNode
+  Visual: (props: { on: boolean; sub: number }) => ReactNode
 }
 
 const MILESTONE_DELAYS = ['delay-0', 'delay-[180ms]', 'delay-[360ms]'] as const
@@ -76,13 +76,51 @@ function PlanVisual({ on }: { on: boolean }) {
   )
 }
 
-function DispatchVisual({ on }: { on: boolean }) {
-  const chip = cn(CHIP, 'rounded-sm duration-[400ms]', on ? SHOWN : HIDDEN)
+// Dev and review as two outlined chips close together on one continuous loop. Scroll drives one lap:
+// the ball rides the whole ring, out along the top to review and back along the bottom to dev, as `sub`
+// (the card's own share of the pinned scroll, 0 to 1) advances; once it is home the pull request lands. The ball runs under the chips, so a label is never covered. The ring is drawn in a 184 x 50 box that is exactly 11.5rem wide, well taller
+// than the chips so its top and bottom lines run clear of them, with the two fixed-width chips (4.5rem
+// and 6rem, 1rem apart) centred on its two ends so the line connects them. Chips are outlined, not
+// filled: the muted fill is nearly the card colour in dark mode.
+const LAP_END = 0.85
+const RING_PATH = 'M36 25V4H136V46H36Z'
+
+function DispatchVisual({ on, sub }: { on: boolean; sub: number }) {
+  const ring = useRef<SVGPathElement>(null)
+  const [length, setLength] = useState(0)
+  useEffect(() => setLength(ring.current?.getTotalLength() ?? 0), [])
+  const lap = Math.min(1, sub / LAP_END)
+  const done = on && sub >= LAP_END
+  const ball = length > 0 && ring.current ? ring.current.getPointAtLength(lap * length) : { x: 36, y: 25 }
+  const outlined = 'rounded-sm border border-border bg-card text-card-foreground'
+  const chip = cn(CHIP, outlined, 'duration-[400ms]')
+  const node = cn(CHIP, outlined, 'absolute top-1/2 -translate-y-1/2 justify-center')
   return (
-    <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col justify-between'>
-      <span className={cn(chip, 'bg-muted delay-0')}>task #401</span>
-      <span className={cn(chip, 'border border-dashed border-foreground delay-500')}>dev ⇄ review</span>
-      <span className={cn(chip, 'bg-success text-background delay-[1100ms]')}>✓ pull request</span>
+    <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col items-start justify-between'>
+      <span className={cn(chip, on ? SHOWN : HIDDEN)}>task #401</span>
+      <div
+        className={cn(
+          'relative w-[11.5rem] transition-opacity duration-500 motion-reduce:transition-none',
+          on ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        <svg viewBox='0 0 184 50' aria-hidden='true' className='block w-full overflow-visible'>
+          <path ref={ring} d={RING_PATH} fill='none' strokeWidth='1.5' className='stroke-border' />
+          <circle
+            cx={ball.x}
+            cy={ball.y}
+            r='4.5'
+            className={cn('transition-colors duration-500', done ? 'fill-success' : 'fill-foreground')}
+          />
+        </svg>
+        <span className={cn(node, 'left-0 w-[4.5rem]')}>dev</span>
+        <span className={cn(node, 'right-0 w-[6rem]')}>review</span>
+      </div>
+      <span
+        className={cn(CHIP, 'rounded-sm border border-success text-success duration-[400ms]', done ? SHOWN : HIDDEN)}
+      >
+        ✓ pull request
+      </span>
     </div>
   )
 }
@@ -114,7 +152,19 @@ const STEPS: readonly Step[] = [
   }
 ]
 
-function StepCard({ index, step, pinned, active }: { index: number; step: Step; pinned: boolean; active: number }) {
+function StepCard({
+  index,
+  step,
+  pinned,
+  active,
+  sub
+}: {
+  index: number
+  step: Step
+  pinned: boolean
+  active: number
+  sub: number
+}) {
   const slot = useRef<HTMLDivElement>(null)
   // Flowing layout: each card slides up the first time its top crosses 80% of the viewport.
   const entered = useSeen(slot, 0.8)
@@ -154,7 +204,7 @@ function StepCard({ index, step, pinned, active }: { index: number; step: Step; 
           </div>
           {/* The visual sits at the bottom of every card, so the three line up whatever the copy above runs to. */}
           <div className='mt-auto min-w-0 pt-2 font-mono text-[0.8125rem] @[560px]:col-start-2 @[560px]:row-span-2 @[560px]:row-start-1 @[560px]:mt-0 @[560px]:self-center @[560px]:pt-0'>
-            <Visual on={visible} />
+            <Visual on={visible} sub={pinned ? sub : 1} />
           </div>
         </div>
       </Card>
@@ -167,12 +217,14 @@ export function LifecycleSection() {
   const pinned = usePinEnabled()
   const progress = usePinProgress(ref)
   const active = Math.min(2, Math.floor(progress * 3))
+  // the last card's own share of the scroll, so its loop turns once as the reader scrolls through it
+  const sub = Math.max(0, Math.min(1, progress * 3 - 2))
 
   return (
     <section
       id='tagline'
       ref={ref}
-      className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[230vh]')}
+      className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[300vh]')}
     >
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
         <div
@@ -188,7 +240,7 @@ export function LifecycleSection() {
           </SectionHeader>
           <div className='flex flex-wrap items-stretch gap-3'>
             {STEPS.map((step, index) => (
-              <StepCard key={step.number} index={index} step={step} pinned={pinned} active={active} />
+              <StepCard key={step.number} index={index} step={step} pinned={pinned} active={active} sub={sub} />
             ))}
           </div>
           <div className='flex justify-center'>
