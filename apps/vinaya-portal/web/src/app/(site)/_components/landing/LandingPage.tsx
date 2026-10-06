@@ -10,6 +10,7 @@ import { LandingSection } from './LandingSection'
 import { LifecycleSection } from './LifecycleSection'
 import { OwnershipSection } from './OwnershipSection'
 import { SectionOverline, SectionTitle } from './SectionHeading'
+import { StudioSection } from './StudioSection'
 import { UnderlineLink } from './UnderlineLink'
 
 const QUICKSTART_COMMAND = 'npx @attalabs/vinaya quickstart'
@@ -140,6 +141,7 @@ export function LandingPage(_props: { releaseMetrics: ReleaseMetrics }) {
       <LifecycleSection />
       <OwnershipSection />
       <HarnessDiagramSection />
+      <StudioSection />
       <AudienceSection />
       <ConfigBoardSection />
       <ZeroLockInSection />

@@ -120,6 +120,12 @@ export function useSeen(ref: RefObject<HTMLElement | null>, threshold = 0.8): bo
 /** Below this width the stacked variants kick in (`⇅` instead of `⇄`, Studio's step list collapses). */
 export const NARROW_WIDTH = 820
 
+export function useViewportHeight(): number {
+  const [height, setHeight] = useState(800)
+  useScrollMeasure(null, () => setHeight(window.innerHeight || 800))
+  return height
+}
+
 export function useNarrow(): boolean {
   const [narrow, setNarrow] = useState(false)
   useScrollMeasure(null, () => setNarrow(window.innerWidth < NARROW_WIDTH))
