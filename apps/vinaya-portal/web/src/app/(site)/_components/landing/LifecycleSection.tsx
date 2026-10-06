@@ -1,533 +1,194 @@
 'use client'
 
-import { Badge, Card, CardContent } from '@atta/ui/components'
-import { NextLink } from '@atta/ui/lib/next-link'
-import { Heading } from '@atta/ui/shared'
-import { ArrowRight, CircleDot, GitBranch, GitMerge, Milestone, User } from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ComponentType,
-  type ForwardRefExoticComponent,
-  type RefAttributes,
-  type RefObject
-} from 'react'
-import { siGit, siGithub } from 'simple-icons'
-import { LetterReveal } from '../LetterReveal'
+import { Card, CardTitle } from '@atta/ui/components'
+import { cn } from '@atta/ui/lib/utils'
+import { Text } from '@atta/ui/shared'
+import { type ReactNode, useRef } from 'react'
+import { usePinEnabled, usePinProgress, useSeen } from './LandingInteractions'
+import { HEADER_GAP, SectionHeader, SectionSubtitle, SectionTitle } from './SectionHeading'
+import { UnderlineLink } from './UnderlineLink'
 
-// Card's exported type has no `ref` (motion.div forwards it fine at runtime
-// under React 19, but the component itself isn't typed with RefAttributes) —
-// this local cast lets StageShell keep the scroll-tracking ref the mobile
-// visibility heuristic depends on.
-const RefCard = Card as unknown as ForwardRefExoticComponent<
-  ComponentProps<typeof Card> & RefAttributes<HTMLDivElement>
->
+// 02 · The path. A centred title over three equal cards side by side; every card always shows its
+// full text and visual. Pinned on a roomy viewport (230vh runway, sticky 100vh stage): scroll walks
+// the active card Define → Plan → Dispatch, upcoming cards dimmed and each card's visual building in
+// once it is active. Anywhere else (narrow, short, reduced motion) nothing pins and each card slides
+// up as it enters.
 
-type StageIndex = 0 | 1 | 2
+const CHIP =
+  'flex h-[1.9rem] items-center self-start whitespace-nowrap px-[0.7rem] font-mono text-[0.8125rem] uppercase tracking-[0.02em] transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none'
+const ARROW_CHIP = `${CHIP} pr-[1.2rem] [clip-path:polygon(0_0,100%_0,88%_50%,100%_100%,0_100%)]`
+const HIDDEN = 'translate-x-[-10px] opacity-0'
+const SHOWN = 'translate-x-0 opacity-100'
 
-const ISSUE_DELAYS = ['delay-[140ms]', 'delay-[260ms]', 'delay-[380ms]'] as const
-const LANE_DELAYS = [
-  ['delay-0', 'delay-[160ms]', 'delay-[320ms]'],
-  ['delay-[100ms]', 'delay-[340ms]', 'delay-[580ms]']
-] as const
-const BACK_DELAYS = ['delay-0', 'delay-[100ms]', 'delay-[200ms]'] as const
-
-function GitHubMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
-      <path d={siGithub.path} />
-    </svg>
-  )
-}
-
-function GitMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className={className}>
-      <path d={siGit.path} />
-    </svg>
-  )
-}
-
-function GitHubBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <Badge className='mt-4 gap-2 self-start rounded-full px-3 py-1.5 font-mono text-[0.59375rem] uppercase tracking-[0.16em]'>
-      <GitHubMark className='size-3' />
-      {children}
-    </Badge>
-  )
-}
-
-function PhaseLabel({ active, children }: { active: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      aria-current={active ? 'step' : undefined}
-      className={`relative inline-flex transition-[color,opacity,translate] duration-300 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-        active ? '-translate-y-0.5 text-foreground opacity-100' : 'translate-y-0 text-muted-foreground opacity-50'
-      }`}
-    >
-      {children}
-      <span
-        aria-hidden='true'
-        className={`absolute -bottom-1 left-0 h-0.5 bg-foreground transition-[width,opacity] duration-300 ease-out motion-reduce:transition-none ${
-          active ? 'w-full opacity-100' : 'w-0 opacity-0'
-        }`}
-      />
-    </span>
-  )
-}
-
-function ObjectCard({
-  icon: Icon,
-  children,
-  primary = false,
-  compact = false,
-  dense = false,
-  className = ''
-}: {
-  icon: ComponentType<{ className?: string }>
-  children: React.ReactNode
-  primary?: boolean
-  compact?: boolean
-  dense?: boolean
-  className?: string
-}) {
-  return (
-    <Card
-      className={`gap-0 shadow-none ${compact ? (dense ? 'py-1' : 'py-2') : 'py-2.5'} ${primary ? 'border-primary bg-primary text-primary-foreground' : 'bg-background'} ${className}`}
-    >
-      <CardContent
-        className={`flex items-center font-mono tracking-wide ${compact ? 'gap-1.5 px-2.5 text-[0.6875rem]' : 'gap-2.5 px-3.5 text-[0.78125rem]'}`}
-      >
-        <Icon className={compact ? 'size-3 shrink-0' : 'size-4 shrink-0'} />
-        {children}
-      </CardContent>
-    </Card>
-  )
-}
-
-function StageShell({
-  index,
-  title,
-  headline,
-  badge,
-  active,
-  stageRef,
-  children
-}: {
-  index: string
+type Step = {
+  number: string
   title: string
-  headline: React.ReactNode
-  badge: string
-  active: boolean
-  stageRef: RefObject<HTMLDivElement | null>
-  children: React.ReactNode
-}) {
+  tag: string
+  role: string
+  body: string
+  Visual: (props: { on: boolean }) => ReactNode
+}
+
+const MILESTONE_DELAYS = ['delay-0', 'delay-[180ms]', 'delay-[360ms]'] as const
+const TASK_DELAYS = ['delay-0', 'delay-[220ms]', 'delay-[440ms]'] as const
+const CARD_DELAYS = ['delay-0', 'delay-[140ms]', 'delay-[280ms]'] as const
+
+function DefineVisual({ on }: { on: boolean }) {
   return (
-    <RefCard
-      ref={stageRef}
-      data-active={active}
-      className='group/stage flex flex-col px-7 py-8 shadow-none min-[700px]:flex-row min-[700px]:items-start min-[700px]:gap-x-8 min-[700px]:px-9 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-4'
-    >
-      <div className='flex flex-col'>
-        <div className='flex items-baseline gap-3 font-mono uppercase'>
-          <span className='text-xs tracking-[0.26em] text-muted-foreground'>{index}</span>
-          <span className='text-2xl font-semibold tracking-[0.14em] md:text-3xl'>{title}</span>
-        </div>
-        <Heading
-          level={3}
-          weight='normal'
-          className='mt-4 font-serif text-3xl leading-none tracking-tight md:text-4xl min-[700px]:[@media(max-height:760px)]:mt-3 min-[700px]:[@media(max-height:760px)]:text-3xl'
+    <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col justify-between'>
+      {['milestone 1', 'milestone 2', 'milestone 3'].map((label, index) => (
+        <span
+          key={label}
+          className={cn(
+            ARROW_CHIP,
+            MILESTONE_DELAYS[index],
+            index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+            on ? SHOWN : HIDDEN
+          )}
         >
-          {headline}
-        </Heading>
-        <GitHubBadge>{badge}</GitHubBadge>
-      </div>
-      <div className='mt-7 flex flex-1 flex-col justify-center border-t border-border pt-6 min-[700px]:mt-0 min-[700px]:min-h-52 min-[700px]:min-w-48 min-[700px]:border-t-0 min-[700px]:pt-0'>
-        {children}
-      </div>
-    </RefCard>
+          {label}
+        </span>
+      ))}
+    </div>
   )
 }
 
-function PlanStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
+function PlanVisual({ on }: { on: boolean }) {
   return (
-    <StageShell
-      index='01'
-      title='plan a milestone'
-      headline={
-        <>
-          A milestone.
-          <br />
-          Its issues
-        </>
-      }
-      badge='milestone + issues'
-      active={active}
-      stageRef={stageRef}
-    >
-      <div className='flex flex-col gap-2'>
-        <ObjectCard icon={Milestone} primary>
-          <span>Milestone</span>
-          <span className='ml-auto flex items-center gap-1.5 text-[0.625rem] font-bold uppercase tracking-[0.16em]'>
-            <User className='size-3' /> you
-          </span>
-        </ObjectCard>
-        <div className='grid grid-cols-3 gap-1.5'>
-          {[471, 472, 473].map((issue, index) => (
-            <div
-              key={issue}
-              className={`transition-all duration-500 ease-out ${ISSUE_DELAYS[index]} ${
-                active ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
-              }`}
-            >
-              <ObjectCard icon={CircleDot} compact>
-                #{issue}
-              </ObjectCard>
-            </div>
-          ))}
+    <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col border border-border font-mono text-[0.8125rem]'>
+      <div className='border-b border-border px-[0.7rem] py-[0.4rem] uppercase tracking-[0.02em] text-muted-foreground'>
+        milestone 1
+      </div>
+      {['#401', '#402', '#403'].map((task, index) => (
+        <div
+          key={task}
+          className={cn(
+            'flex flex-1 items-center gap-[0.7rem] px-[0.7rem] transition-[opacity,transform] duration-[400ms] ease-out motion-reduce:transition-none',
+            TASK_DELAYS[index],
+            on ? SHOWN : HIDDEN
+          )}
+        >
+          <span>{task}</span>
+          <span className='h-[3px] flex-1 bg-muted' />
         </div>
-      </div>
-    </StageShell>
+      ))}
+    </div>
   )
 }
 
-function SolveStage({ active, stageRef }: { active: boolean; stageRef: RefObject<HTMLDivElement | null> }) {
-  const lanes = [471, 472] as const
+function DispatchVisual({ on }: { on: boolean }) {
+  const chip = cn(CHIP, 'rounded-sm duration-[400ms]', on ? SHOWN : HIDDEN)
   return (
-    <StageShell
-      index='02'
-      title='solve its tasks'
-      headline={
-        <>
-          One issue.
-          <br />
-          One pull request
-        </>
-      }
-      badge='branch + pull request'
-      active={active}
-      stageRef={stageRef}
-    >
-      <div className='flex flex-col gap-1.5'>
-        {lanes.map((issue, lane) => (
-          <div
-            key={issue}
-            className='grid grid-cols-3 gap-1.5 min-[700px]:grid-cols-[max-content_max-content_max-content]'
-          >
-            <div
-              className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[0] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
-            >
-              <ObjectCard icon={CircleDot} compact dense>
-                #{issue}
-              </ObjectCard>
-            </div>
-            <div
-              className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[1] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
-            >
-              <ObjectCard icon={GitBranch} compact dense>
-                branch
-              </ObjectCard>
-            </div>
-            <div
-              className={`transition-all duration-500 ${LANE_DELAYS[lane]?.[2] ?? ''} ${active ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'}`}
-            >
-              <ObjectCard icon={GitMerge} primary compact dense>
-                merged
-                {lane === 0 && (
-                  <span className='ml-auto flex items-center gap-1 text-[0.55rem] font-bold uppercase tracking-widest'>
-                    <User className='size-2.5' /> you
-                  </span>
-                )}
-              </ObjectCard>
-            </div>
-          </div>
-        ))}
-      </div>
-    </StageShell>
+    <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col justify-between'>
+      <span className={cn(chip, 'bg-muted delay-0')}>task #401</span>
+      <span className={cn(chip, 'border border-dashed border-foreground delay-500')}>dev ⇄ review</span>
+      <span className={cn(chip, 'bg-success text-background delay-[1100ms]')}>✓ pull request</span>
+    </div>
   )
 }
 
-function ArchiveStage({
-  active,
-  closed,
-  stageRef
-}: {
-  active: boolean
-  closed: boolean
-  stageRef: RefObject<HTMLDivElement | null>
-}) {
-  return (
-    <StageShell
-      index='03'
-      title='archive a milestone'
-      headline={
-        <>
-          Every issue closed.
-          <br />
-          Then the milestone
-        </>
-      }
-      badge='milestone closed'
-      active={active}
-      stageRef={stageRef}
-    >
-      <div className='flex flex-col gap-2'>
-        <ObjectCard icon={Milestone} primary>
-          <span className='grid'>
-            <span className={`col-start-1 row-start-1 transition-opacity ${closed ? 'opacity-0' : 'opacity-100'}`}>
-              Milestone
-            </span>
-            <span className={`col-start-1 row-start-1 transition-opacity ${closed ? 'opacity-100' : 'opacity-0'}`}>
-              Closed
-            </span>
-          </span>
-          <span className='ml-auto flex items-center gap-1.5 text-[0.625rem] font-bold uppercase tracking-[0.16em]'>
-            <User className='size-3' /> you
-          </span>
-        </ObjectCard>
-        <div className='grid grid-cols-3 gap-1.5'>
-          {[0, 1, 2].map((item) => (
-            <div
-              key={item}
-              className={`transition-all duration-500 ${BACK_DELAYS[item]} ${
-                active ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
-              }`}
-            >
-              <ObjectCard icon={GitMerge} compact>
-                Merged
-              </ObjectCard>
-            </div>
-          ))}
-        </div>
-      </div>
-    </StageShell>
-  )
-}
-
-function scrollParent(element: HTMLElement): HTMLElement | Window {
-  let parent = element.parentElement
-  while (parent) {
-    const overflow = window.getComputedStyle(parent).overflowY
-    if (overflow === 'auto' || overflow === 'scroll') return parent
-    parent = parent.parentElement
+const STEPS: readonly Step[] = [
+  {
+    number: '01',
+    title: 'Define',
+    tag: 'milestones',
+    role: 'you + architect',
+    body: 'Define your features as milestones. As deep as you want.',
+    Visual: DefineVisual
+  },
+  {
+    number: '02',
+    title: 'Plan',
+    tag: 'tasks',
+    role: 'you + planner',
+    body: 'Plan the tasks. Push back until the plan is yours.',
+    Visual: PlanVisual
+  },
+  {
+    number: '03',
+    title: 'Dispatch',
+    tag: 'the loop',
+    role: 'dev review driver',
+    body: 'Agents write and review the code. Each task ends in a pull request, ready for your approval.',
+    Visual: DispatchVisual
   }
-  return window
+]
+
+function StepCard({ index, step, pinned, active }: { index: number; step: Step; pinned: boolean; active: number }) {
+  const slot = useRef<HTMLDivElement>(null)
+  // Flowing layout: each card slides up the first time its top crosses 80% of the viewport.
+  const entered = useSeen(slot, 0.8)
+  const current = pinned && index === active
+  // Pinned: the active and already-passed cards are lit and have drawn their visual; upcoming ones wait dimmed.
+  const visible = pinned ? index <= active : entered
+  const { Visual } = step
+
+  return (
+    <div ref={slot} className='flex min-w-0 flex-1 basis-[calc((36rem_-_100%)_*_999)]'>
+      <Card
+        className={cn(
+          '@container flex w-full min-w-0 flex-col gap-0 rounded-lg border bg-card px-6 py-6 text-card-foreground shadow-none',
+          'transition-[border-color,opacity,transform] duration-700 ease-out motion-reduce:transition-none',
+          CARD_DELAYS[index],
+          current ? 'border-foreground' : 'border-border',
+          pinned
+            ? visible
+              ? 'opacity-100'
+              : 'opacity-35'
+            : entered
+              ? 'translate-y-0 scale-100 opacity-100'
+              : 'translate-y-12 scale-[0.96] opacity-0'
+        )}
+      >
+        <div className='flex flex-1 flex-col gap-4 @[560px]:grid @[560px]:grid-cols-2 @[560px]:items-start @[560px]:gap-x-8 @[560px]:gap-y-3'>
+          <div className='flex flex-wrap items-baseline gap-x-[0.9rem] gap-y-1 @[560px]:col-start-1 @[560px]:row-start-1'>
+            <span className='font-mono text-sm tracking-[0.02em] text-muted-foreground'>{step.number}</span>
+            <CardTitle className='font-sans text-3xl font-normal leading-[1.1] tracking-[-0.02em]'>
+              {step.title}
+            </CardTitle>
+            <span className='font-mono text-lg uppercase tracking-[0.1em] text-muted-foreground'>{step.tag}</span>
+          </div>
+          <div className='flex min-w-0 flex-col gap-[0.6rem] @[560px]:col-start-1 @[560px]:row-start-2'>
+            <span className='font-mono text-sm uppercase tracking-[0.04em] text-muted-foreground'>{step.role}</span>
+            <Text className='text-lg leading-[1.45] text-pretty'>{step.body}</Text>
+          </div>
+          {/* The visual sits at the bottom of every card, so the three line up whatever the copy above runs to. */}
+          <div className='mt-auto min-w-0 pt-2 font-mono text-[0.8125rem] @[560px]:col-start-2 @[560px]:row-span-2 @[560px]:row-start-1 @[560px]:mt-0 @[560px]:self-center @[560px]:pt-0'>
+            <Visual on={visible} />
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
 }
 
 export function LifecycleSection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const railFillRef = useRef<HTMLSpanElement>(null)
-  const stageOneRef = useRef<HTMLDivElement>(null)
-  const stageTwoRef = useRef<HTMLDivElement>(null)
-  const stageThreeRef = useRef<HTMLDivElement>(null)
-  const [armed, setArmed] = useState(false)
-  const [phase, setPhase] = useState<StageIndex>(0)
-  const [run, setRun] = useState<[boolean, boolean, boolean]>([false, false, false])
-  const [closed, setClosed] = useState(false)
-
-  useEffect(() => {
-    const section = sectionRef.current
-    const track = trackRef.current
-    const railFill = railFillRef.current
-    if (!section || !track || !railFill) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduced) {
-      // Same resting state the fully-scrubbed animation ends on — every
-      // object visible, rail/track at their final position — so a
-      // reduced-motion reader sees the design's readable static state
-      // instead of everything permanently stuck at its initial opacity-0.
-      setArmed(true)
-      setRun([true, true, true])
-      setClosed(true)
-      setPhase(2)
-      return
-    }
-
-    setArmed(true)
-    const target = scrollParent(section)
-    const frame = track.parentElement
-    if (!frame) return
-    let animationFrame = 0
-    let closeTimer = 0
-    let trackOffset = Math.max(0, track.scrollWidth - frame.clientWidth)
-    const trackAnimation = track.animate(
-      [{ transform: 'translateX(0)' }, { transform: `translateX(-${trackOffset}px)` }],
-      {
-        duration: 1000,
-        fill: 'both'
-      }
-    )
-    const railAnimation = railFill.animate([{ width: '0%' }, { width: '100%' }], {
-      duration: 1000,
-      fill: 'both'
-    })
-    trackAnimation.pause()
-    railAnimation.pause()
-
-    const syncTrackOffset = () => {
-      const nextOffset = Math.max(0, track.scrollWidth - frame.clientWidth)
-      if (Math.abs(nextOffset - trackOffset) < 0.5) return
-      trackOffset = nextOffset
-      const effect = trackAnimation.effect
-      if (effect instanceof KeyframeEffect) {
-        effect.setKeyframes([{ transform: 'translateX(0)' }, { transform: `translateX(-${trackOffset}px)` }])
-      }
-    }
-
-    const scheduleClose = (entering: boolean) => {
-      window.clearTimeout(closeTimer)
-      if (entering) closeTimer = window.setTimeout(() => setClosed(true), 800)
-      else setClosed(false)
-    }
-
-    const evaluate = () => {
-      animationFrame = 0
-      const rect = section.getBoundingClientRect()
-      const viewportHeight = window.innerHeight || 800
-      if (window.innerWidth < 700) {
-        // The column layout never slides: rewind the desktop scrub so a track left
-        // mid-slide by a wide viewport (a window narrowed or a phone rotated) sits
-        // back at its origin instead of hanging off the left edge, out of view.
-        trackAnimation.currentTime = 0
-        railAnimation.currentTime = 0
-        const nextRun = [stageOneRef, stageTwoRef, stageThreeRef].map((ref) => {
-          const node = ref.current
-          if (!node) return false
-          const bounds = node.getBoundingClientRect()
-          return bounds.top < viewportHeight * 0.82 && bounds.bottom > viewportHeight * 0.08
-        }) as [boolean, boolean, boolean]
-        setRun((current) => {
-          if (nextRun[2] !== current[2]) scheduleClose(nextRun[2])
-          return nextRun.some((value, index) => value !== current[index]) ? nextRun : current
-        })
-        return
-      }
-
-      syncTrackOffset()
-      // Progress starts when the section's top reaches the viewport top, which
-      // is the moment the pin engages: the tagline is the first thing inside the
-      // pinned block, so there is no unpinned lead-in above it to subtract.
-      const travel = Math.max(1, rect.height - (viewportHeight - 64))
-      const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
-      trackAnimation.currentTime = progress * 1000
-      railAnimation.currentTime = progress * 1000
-      const segment = progress * 3
-      const nextRun = [0, 1, 2].map((index) => segment >= index + 0.1 && segment < index + 1.35) as [
-        boolean,
-        boolean,
-        boolean
-      ]
-      const nextPhase = Math.min(2, Math.floor(segment)) as StageIndex
-      setPhase(nextPhase)
-      setRun((current) => {
-        if (nextRun[2] !== current[2]) scheduleClose(nextRun[2])
-        return nextRun.some((value, index) => value !== current[index]) ? nextRun : current
-      })
-    }
-    const queue = () => {
-      if (!animationFrame) animationFrame = requestAnimationFrame(evaluate)
-    }
-
-    target.addEventListener('scroll', queue, { passive: true })
-    window.addEventListener('resize', queue)
-    const poll = window.setInterval(queue, 250)
-    const resizeObserver = new ResizeObserver(queue)
-    resizeObserver.observe(section)
-    evaluate()
-    return () => {
-      target.removeEventListener('scroll', queue)
-      window.removeEventListener('resize', queue)
-      window.clearInterval(poll)
-      resizeObserver.disconnect()
-      cancelAnimationFrame(animationFrame)
-      window.clearTimeout(closeTimer)
-      trackAnimation.cancel()
-      railAnimation.cancel()
-    }
-  }, [])
-
-  // Before the motion controller arms (including reduced-motion), every object rests
-  // in the design's readable static state. Once armed, the active phase drives it.
-  const active = run.map((isRunning) => armed && isRunning) as [boolean, boolean, boolean]
+  const ref = useRef<HTMLElement>(null)
+  const pinned = usePinEnabled()
+  const progress = usePinProgress(ref)
+  const active = Math.min(2, Math.floor(progress * 3))
 
   return (
-    <section ref={sectionRef} id='what-it-is' className='bg-background text-foreground min-[700px]:h-[300dvh]'>
-      {/* One pinned block for the whole runway: the tagline banner on top, then the
-          stage block under it, so the tagline stays fixed at the top of the viewport
-          for the entire tab scroll-through. `id='tagline'` stays on the banner as the
-          hero's scroll target. It pins at `top-14`, under the fixed TopBar (`3.5rem`),
-          not at `top-0`, where the bar would cover the tagline's first line; that is
-          also the `64` the progress math above starts from. Its height is the rest of
-          the viewport below the bar, so the stage track keeps every pixel it can. Below 700px nothing pins
-          and both render in flow. Because that height is fixed, the tagline row's size is capped
-          at `3.9cqi` of its own container so the tagline stays on one line at every pinned width;
-          the Git mark beside it is sized and spaced in `em`, so it scales with the tagline and
-          that one cap covers both. The `max-height:760px` classes tighten the vertical spacing so
-          the stage cards and the See lifecycle link still fit on a short desktop viewport. "Plan,
-          solve, archive" steps one size below the tagline at every breakpoint, and its `3.1cqi`
-          cap, measured against a container as wide as the tagline's, keeps it under the
-          tagline wherever the pinned tagline shrinks. */}
-      <div className='min-[700px]:sticky min-[700px]:top-14 min-[700px]:flex min-[700px]:h-[calc(100dvh-3.5rem)] min-[700px]:flex-col min-[700px]:overflow-hidden'>
-        <div id='tagline' className='bg-secondary text-secondary-foreground'>
-          <div className='@container mx-auto max-w-[82.5rem] px-6 py-8 text-center sm:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
-            <div className='flex items-center justify-center gap-[0.35em] text-(length:--tagline-size) [--tagline-size:1.875rem] sm:[--tagline-size:2.25rem] min-[700px]:text-[length:min(var(--tagline-size),3.9cqi)] xl:[--tagline-size:2.625rem] min-[87.5rem]:[--tagline-size:3.125rem]'>
-              <Card className='flex size-[1.6em] shrink-0 items-center justify-center shadow-none'>
-                <GitMark className='size-[0.96em]' />
-              </Card>
-              <Heading
-                level={2}
-                weight='normal'
-                className='text-balance font-serif text-[1em] leading-snug tracking-tight'
-              >
-                <LetterReveal text='A harness for your software engineering process' />
-              </Heading>
-            </div>
+    <section id='tagline' ref={ref} className={cn('relative bg-background text-foreground', pinned && 'h-[230vh]')}>
+      <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-[73.75rem] flex-col px-6 sm:px-10',
+            HEADER_GAP,
+            pinned ? 'pb-6 pt-[4.75rem]' : 'py-14'
+          )}
+        >
+          <SectionHeader className='gap-2'>
+            <SectionTitle size='compact'>Define. Plan. Dispatch.</SectionTitle>
+            <SectionSubtitle>Milestones, tasks, then the loop.</SectionSubtitle>
+          </SectionHeader>
+          <div className='flex flex-wrap items-stretch gap-3'>
+            {STEPS.map((step, index) => (
+              <StepCard key={step.number} index={index} step={step} pinned={pinned} active={active} />
+            ))}
           </div>
-        </div>
-        <div className='mx-auto flex w-full max-w-[82.5rem] flex-col px-6 py-20 min-[700px]:min-h-0 min-[700px]:flex-1 min-[700px]:justify-center-safe min-[700px]:px-10 min-[700px]:py-6 min-[700px]:[@media(max-height:760px)]:py-3'>
-          <div className='@container'>
-            <Heading
-              level={2}
-              weight='normal'
-              className='max-w-5xl font-serif text-(length:--lifecycle-title-size) leading-none tracking-tight [--lifecycle-title-size:1.5rem] sm:[--lifecycle-title-size:1.875rem] min-[700px]:text-[length:min(var(--lifecycle-title-size),3.1cqi)] xl:[--lifecycle-title-size:2.25rem] min-[87.5rem]:[--lifecycle-title-size:2.625rem]'
-            >
-              <LetterReveal text='Plan, solve, archive' />
-            </Heading>
-          </div>
-
-          <div className='mt-5 hidden items-center gap-7 border-t border-border pt-3 min-[700px]:flex min-[700px]:[@media(max-height:760px)]:mt-3'>
-            <div className='flex shrink-0 gap-7 font-mono text-[0.625rem] uppercase tracking-[0.18em]'>
-              <PhaseLabel active={phase === 0}>01 plan a milestone</PhaseLabel>
-              <PhaseLabel active={phase === 1}>02 solve its tasks</PhaseLabel>
-              <PhaseLabel active={phase === 2}>03 archive a milestone</PhaseLabel>
-            </div>
-            <div className='relative h-0.5 flex-1 overflow-hidden rounded-full bg-border'>
-              <span ref={railFillRef} className='absolute inset-y-0 left-0 w-0 bg-foreground' />
-            </div>
-          </div>
-
-          <div className='mt-7 overflow-hidden min-[700px]:mt-3 min-[700px]:min-h-0 min-[700px]:flex-none'>
-            <div
-              ref={trackRef}
-              className='grid h-full gap-4 min-[700px]:w-max min-[700px]:grid-cols-[repeat(3,max-content)] min-[700px]:items-start'
-            >
-              <PlanStage active={active[0]} stageRef={stageOneRef} />
-              <SolveStage active={active[1]} stageRef={stageTwoRef} />
-              <ArchiveStage active={active[2]} closed={closed} stageRef={stageThreeRef} />
-            </div>
-          </div>
-
-          <div className='mt-6 flex justify-center min-[700px]:mt-5 min-[700px]:[@media(max-height:760px)]:mt-3'>
-            <NextLink
-              href='/life-cycle'
-              variant='unstyled'
-              className='inline-flex items-center gap-2 border-b border-current pb-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em]'
-            >
-              See lifecycle <ArrowRight className='size-3.5' />
-            </NextLink>
+          <div className='flex justify-center'>
+            <UnderlineLink href='/life-cycle'>See more at Vinaya’s life cycle</UnderlineLink>
           </div>
         </div>
       </div>

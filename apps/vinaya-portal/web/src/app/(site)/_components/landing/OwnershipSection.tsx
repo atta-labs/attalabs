@@ -1,276 +1,162 @@
 'use client'
 
-import { Badge, Card, CardContent, CardHeader, CodeBlock } from '@atta/ui/components'
 import { Text } from '@atta/ui/shared'
-import { Check, Circle, GitPullRequest, List, Milestone } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { LetterReveal } from '../LetterReveal'
-import { SectionOverline, SectionTitle } from './SectionHeading'
+import { cn } from '@atta/ui/lib/utils'
+import { GitMerge } from 'lucide-react'
+import { type ReactNode, useRef } from 'react'
+import { useEnterProgress, usePinEnabled, usePinProgress } from './LandingInteractions'
+import { SectionTitle } from './SectionHeading'
+import { UnderlineLink } from './UnderlineLink'
 
-function DocCardHeader({
-  icon: Icon,
-  title,
-  subtitle,
-  badge
-}: {
-  icon: typeof Milestone
-  title: string
-  subtitle?: string
-  badge: string
-}) {
+// 03 · The checks. A vertical pipeline from the agent's work to the merge: a fill line grows
+// with scroll and each row lights as it reaches it. Pinned (200vh) on a roomy viewport, a
+// flowing centered section otherwise. There is no merge badge and no cards: the last row's purple
+// chip is the merge.
+
+type CheckRow = { label: string; title: string; chip: ReactNode; chipClass: string }
+
+const CHIP_BASE =
+  'inline-flex items-center gap-[0.35rem] justify-self-start whitespace-nowrap rounded-sm border px-[0.7rem] py-[0.4rem] font-mono text-sm transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none'
+
+const ROWS: readonly CheckRow[] = [
+  {
+    label: 'the agent',
+    title: 'The agent writes',
+    chip: (
+      <>
+        code <b className='text-success'>+203</b> <b className='text-destructive'>−67</b>
+      </>
+    ),
+    chipClass: 'border-foreground bg-card'
+  },
+  {
+    label: 'ring 0 · hooks · your machine',
+    title: 'Catch problems before you push or open a PR',
+    chip: '✓ commit · push · PR opens',
+    chipClass: 'border-foreground bg-card'
+  },
+  {
+    label: 'ring 1 · branch rules · ci',
+    title: 'Hold the merge until the PR passes',
+    chip: '✓ PR #473 · ready for your approval',
+    chipClass: 'border-success text-success'
+  },
+  {
+    label: 'ring 2 · audits · after merge',
+    title: 'Surface drift after merge',
+    chip: (
+      <>
+        <GitMerge className='size-3 shrink-0' />
+        merged · audited
+      </>
+    ),
+    // A merged pull request is purple on GitHub; the nearest existing theme token is the third chart colour.
+    chipClass: 'border-chart-3 text-chart-3'
+  }
+]
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
+
+// One piece of the line between two circles, centred in the circle column; `fill` of it is lit.
+function Segment({ hidden, fill, className }: { hidden: boolean; fill: number; className: string }) {
   return (
-    <CardHeader className='flex-row flex-wrap items-center gap-2.5 border-b border-border px-4 py-3'>
-      <Icon className='size-4 shrink-0 text-muted-foreground' />
-      <span className='font-mono text-sm'>
-        {title} {subtitle && <span className='text-muted-foreground'>{subtitle}</span>}
-      </span>
-      <Badge variant='outline' className='ml-auto shrink-0 font-mono text-[0.625rem] text-muted-foreground'>
-        {badge}
-      </Badge>
-    </CardHeader>
-  )
-}
-
-const MILESTONE_TASKS = [
-  { id: '#471', label: 'cart line-items', done: true },
-  { id: '#472', label: 'tax rules', done: true },
-  { id: '#473', label: 'payment retry', done: false }
-] as const
-
-function MilestoneDoc() {
-  return (
-    <Card className='mx-auto w-full max-w-sm shadow-none'>
-      <DocCardHeader icon={Milestone} title='Checkout rework' badge='3 tasks' />
-      <CardContent className='px-4 py-4'>
-        <Text className='text-[0.8125rem] leading-relaxed text-muted-foreground'>
-          Scoped before a line of code — issues you can read and argue with while changing them is still cheap.
-        </Text>
-        <div className='mt-3.5 flex gap-4 font-mono text-[0.6875rem] text-muted-foreground'>
-          <span>
-            opened <span className='font-semibold text-foreground'>Aug 2</span>
-          </span>
-          <span>
-            due <span className='font-semibold text-foreground'>Aug 16</span>
-          </span>
-        </div>
-        <div className='mt-3.5 flex flex-col gap-1.5'>
-          {MILESTONE_TASKS.map((task) => (
-            <div key={task.id} className='flex items-center gap-2 font-mono text-xs'>
-              {task.done ? (
-                <Check className='size-3.5 shrink-0 text-success' />
-              ) : (
-                <Circle className='size-3.5 shrink-0 text-muted-foreground' />
-              )}
-              {task.id} <span className='text-muted-foreground'>{task.label}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-const PR_FILES = [
-  { name: 'payment/retry.ts', add: 3, rem: 1 },
-  { name: 'payment/retry.test.ts', add: 2, rem: 0 },
-  { name: 'webhook/handler.ts', add: 1, rem: 2 },
-  { name: 'webhook/handler.test.ts', add: 1, rem: 0 },
-  { name: 'CHANGELOG.md', add: 1, rem: 0 }
-] as const
-
-function DiffBar({ add, rem }: { add: number; rem: number }) {
-  return (
-    <span className='ml-auto flex shrink-0 gap-0.5'>
-      {Array.from({ length: add }, (_, i) => (
-        <span key={`add-${i}`} className='h-2.5 w-1 rounded-sm bg-success' />
-      ))}
-      {Array.from({ length: rem }, (_, i) => (
-        <span key={`rem-${i}`} className='h-2.5 w-1 rounded-sm bg-destructive' />
-      ))}
+    <span
+      aria-hidden='true'
+      className={cn('col-start-1 mx-auto block h-full w-0.5 bg-border', hidden && 'invisible', className)}
+    >
+      <span className='block w-full bg-foreground' style={{ height: `${fill * 100}%` }} />
     </span>
   )
 }
 
-function PullRequestDoc() {
-  return (
-    <Card className='mx-auto w-full max-w-sm shadow-none'>
-      <DocCardHeader icon={GitPullRequest} title='#473' subtitle='payment retry' badge='merged' />
-      <CardContent className='px-4 py-4'>
-        <Text className='font-mono text-xs text-muted-foreground'>
-          5 files changed <span className='font-semibold text-success'>+203</span>{' '}
-          <span className='font-semibold text-destructive'>−67</span>
-        </Text>
-        <div className='mt-3 flex flex-col'>
-          {PR_FILES.map((file) => (
-            <div
-              key={file.name}
-              className='flex items-center gap-2.5 border-b border-border py-1.5 font-mono text-[0.6875rem] last:border-b-0'
-            >
-              <span>{file.name}</span>
-              <DiffBar add={file.add} rem={file.rem} />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function CiDoc() {
-  return (
-    <Card className='mx-auto w-full max-w-sm shadow-none'>
-      <DocCardHeader icon={List} title='.github/workflows/' badge='4 files · vinaya-owned' />
-      <CardContent className='px-4 py-4'>
-        <Text className='font-mono text-xs text-muted-foreground'>vinaya-checks.yml</Text>
-        <CodeBlock className='mt-2.5 bg-transparent p-0 text-[0.6875rem] leading-loose text-muted-foreground'>
-          <span className='text-foreground'>checks:</span>
-          {'\n  - brief-shape\n  - review-gate\n  - '}
-          <span className='text-success'>acme/licence-header</span>
-          {'   '}
-          <span className='opacity-60'># yours</span>
-        </CodeBlock>
-        <Text className='mt-3 font-mono text-[0.625rem] leading-relaxed text-muted-foreground'>
-          runs alongside <span className='text-foreground'>review.yml · review-verdict.yml · archivist.yml</span> —
-          generated once, yours to edit after
-        </Text>
-      </CardContent>
-    </Card>
-  )
-}
-
-type StageIndex = 0 | 1 | 2
-
-const STAGES = [
-  { label: 'Readable issues', dim: 'before any code', Doc: MilestoneDoc },
-  { label: 'Small PRs', dim: 'you can actually review', Doc: PullRequestDoc },
-  { label: 'Your CI', dim: 'your checks beside ours', Doc: CiDoc }
-] as const
-
-function scrollParent(element: HTMLElement): HTMLElement | Window {
-  let parent = element.parentElement
-  while (parent) {
-    const overflow = window.getComputedStyle(parent).overflowY
-    if (overflow === 'auto' || overflow === 'scroll') return parent
-    parent = parent.parentElement
-  }
-  return window
-}
-
 export function OwnershipSection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const railFillRef = useRef<HTMLDivElement>(null)
-  // phase mirrors the current scroll position, live in both directions —
-  // the card track steps back scrolling up, same as it steps forward
-  // scrolling down.
-  const [phase, setPhase] = useState<StageIndex>(0)
-
-  useEffect(() => {
-    const section = sectionRef.current
-    if (!section) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduced) {
-      setPhase(2)
-      return
-    }
-
-    const target = scrollParent(section)
-    let animationFrame = 0
-
-    const evaluate = () => {
-      animationFrame = 0
-      const rect = section.getBoundingClientRect()
-      const viewportHeight = window.innerHeight || 800
-      // innerWidth reads 0 for a frame before first paint — treat that as
-      // "not measured yet" rather than "narrow."
-      if (window.innerWidth === 0) return
-      if (window.innerWidth < 700) {
-        // No pinned runway below 700px — the stack is just plain scroll, so
-        // the whole list is legible without the scrub machinery.
-        setPhase(2)
-        return
-      }
-      // The section is styled min-[700px]:h-[300dvh] — a real, laid-out
-      // measurement is always at least ~2x the viewport. Anything shorter
-      // means the 300dvh class hasn't taken effect yet (a pre-layout read).
-      if (rect.height < viewportHeight * 2) return
-      const travel = Math.max(1, rect.height - (viewportHeight - 64))
-      const progress = Math.max(0, Math.min(1, (64 - rect.top) / travel))
-      if (railFillRef.current) railFillRef.current.style.width = `${progress * 100}%`
-      setPhase(Math.min(2, Math.floor(progress * 3)) as StageIndex)
-    }
-    // Scroll/resize listeners alone can miss the first crossing when the
-    // scroll happens on a nested container this effect attaches to after
-    // that scroll already settled — the poll is what actually catches it.
-    const queue = () => {
-      if (!animationFrame) animationFrame = requestAnimationFrame(evaluate)
-    }
-    target.addEventListener('scroll', queue, { passive: true })
-    window.addEventListener('resize', queue)
-    const poll = window.setInterval(queue, 250)
-    const resizeObserver = new ResizeObserver(queue)
-    resizeObserver.observe(section)
-    // Deferred, not called directly: a synchronous first read can land
-    // before the browser has applied the 300dvh layout at all, and the
-    // height guard above would just discard it anyway.
-    queue()
-    return () => {
-      target.removeEventListener('scroll', queue)
-      window.removeEventListener('resize', queue)
-      window.clearInterval(poll)
-      resizeObserver.disconnect()
-      cancelAnimationFrame(animationFrame)
-    }
-  }, [])
+  const ref = useRef<HTMLElement>(null)
+  const pinned = usePinEnabled()
+  const pinProgress = usePinProgress(ref)
+  const enterProgress = useEnterProgress(ref, 0.7, 0.6)
+  const progress = pinned ? pinProgress : enterProgress
+  const fill = Math.max(0, Math.min(1, (progress - 0.06) / 0.8))
 
   return (
-    <section
-      ref={sectionRef}
-      id='own-your-code'
-      className='bg-secondary/70 text-secondary-foreground min-[700px]:h-[300dvh]'
-    >
-      <div className='mx-auto max-w-[73.75rem] px-6 py-14 sm:px-10 sm:py-20 lg:py-24 min-[700px]:sticky min-[700px]:top-0 min-[700px]:flex min-[700px]:h-[calc(100dvh-4.5rem)] min-[700px]:items-center min-[700px]:overflow-hidden'>
-        <div className='grid w-full gap-12 text-center md:grid-cols-2 md:items-center md:gap-16 md:text-left'>
-          <div>
-            <SectionOverline className='text-secondary-foreground/65'>what you get back</SectionOverline>
-            <SectionTitle className='mt-5'>
-              <LetterReveal text='Own your code again' />
-            </SectionTitle>
+    <section ref={ref} className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[200vh]')}>
+      <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-[73.75rem] flex-row-reverse flex-wrap items-center gap-12 px-6 sm:px-10',
+            pinned ? 'pb-6 pt-20' : 'py-14'
+          )}
+        >
+          <div
+            className={cn(
+              'flex min-w-0 flex-[1_1_22rem] flex-col',
+              pinned ? 'gap-6 text-left' : 'items-center gap-2.5 text-center'
+            )}
+          >
+            <SectionTitle size='compact'>Control what actually merges</SectionTitle>
+            <Text className='text-2xl leading-snug sm:text-[1.75rem]'>
+              Your checks, from local work to merge.{' '}
+              <span className='text-muted-foreground'>Yours sit beside ours.</span>
+            </Text>
+            <div className={pinned ? 'self-start' : 'self-center'}>
+              <UnderlineLink href='/docs/rings'>How the rings work</UnderlineLink>
+            </div>
           </div>
-
-          <div className='min-w-0'>
-            {/* Below 700px this is a plain stacked list — one card per stage,
-                no overlap. At 700px+ every card occupies the same grid cell
-                and only the current stage's card is at full scale/opacity;
-                its neighbors sit scaled down and faded, peeking at the edge
-                instead of ever showing two cards at full strength. */}
-            <div className='mt-8 flex flex-col gap-6 min-[700px]:grid min-[700px]:overflow-hidden'>
-              {STAGES.map(({ label, dim, Doc }, index) => {
-                const offset = index - phase
-                const position =
-                  offset === 0
-                    ? 'min-[700px]:z-20 min-[700px]:translate-x-0 min-[700px]:scale-100 min-[700px]:opacity-100'
-                    : offset < 0
-                      ? 'min-[700px]:z-10 min-[700px]:-translate-x-16 min-[700px]:scale-90 min-[700px]:opacity-30'
-                      : 'min-[700px]:z-10 min-[700px]:translate-x-16 min-[700px]:scale-90 min-[700px]:opacity-30'
-                return (
-                  <div
-                    key={label}
-                    className={`min-[700px]:col-start-1 min-[700px]:row-start-1 min-[700px]:transition-all min-[700px]:duration-500 min-[700px]:ease-out ${position} ${offset === 0 ? '' : 'min-[700px]:pointer-events-none'}`}
+          <div className='flex min-w-0 flex-[1_1_22rem] flex-col'>
+            {ROWS.map((row, index) => {
+              const on = progress >= 0.06 && fill >= index / 3 - 0.001
+              const last = index === ROWS.length - 1
+              // The line between two circles is drawn in two pieces, one in each row (the bottom of
+              // the upper row, the top of the lower one), and the fill runs through the first and
+              // then the second as scroll carries it from one circle to the next.
+              const toThis = clamp01(3 * fill - (index - 1))
+              const fromThis = clamp01(3 * fill - index)
+              return (
+                <div
+                  key={row.label}
+                  className='grid grid-cols-[3rem_minmax(0,1fr)] grid-rows-[auto_auto_auto] gap-x-[1.1rem]'
+                >
+                  <Segment hidden={index === 0} fill={clamp01(2 * toThis - 1)} className='row-start-1' />
+                  <span
+                    className={cn(
+                      'col-start-1 row-start-2 grid size-12 place-items-center rounded-full border-2 border-foreground font-mono text-base transition-[background-color,color] duration-300 motion-reduce:transition-none',
+                      on ? 'bg-foreground text-secondary' : 'bg-secondary text-foreground'
+                    )}
                   >
-                    <Text
-                      className={`mx-auto mb-3 max-w-sm text-center font-serif text-xl leading-snug tracking-tight transition-opacity duration-300 sm:text-2xl ${offset === 0 ? 'min-[700px]:opacity-100' : 'min-[700px]:opacity-0'}`}
-                    >
-                      {label} <span className='text-secondary-foreground/65'>{dim}</span>
-                    </Text>
-                    <Doc />
+                    {on ? '✓' : index + 1}
+                  </span>
+                  <Segment hidden={last} fill={clamp01(2 * fromThis)} className='row-start-3' />
+                  <div
+                    className={cn(
+                      'col-start-2 row-start-1 flex items-end pb-1 transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      on ? 'opacity-100' : 'opacity-40'
+                    )}
+                  >
+                    <span className='font-mono text-sm uppercase tracking-[0.02em] text-muted-foreground'>
+                      {row.label}
+                    </span>
                   </div>
-                )
-              })}
-            </div>
-
-            <div className='mt-6 h-1 overflow-hidden rounded-full bg-secondary-foreground/15'>
-              <div ref={railFillRef} className='h-full rounded-full bg-secondary-foreground/65' />
-            </div>
+                  <span
+                    className={cn(
+                      'col-start-2 row-start-2 self-center text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em] transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      on ? 'opacity-100' : 'opacity-40'
+                    )}
+                  >
+                    {row.title}
+                  </span>
+                  <div className={cn('col-start-2 row-start-3 flex items-start pt-2', !last && 'pb-6')}>
+                    <span
+                      className={cn(
+                        CHIP_BASE,
+                        row.chipClass,
+                        on ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0'
+                      )}
+                    >
+                      {row.chip}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
