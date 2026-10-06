@@ -67,7 +67,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       # Adopter-declared CI setup (vinaya.config.json `ci.setup`), emitted
       # verbatim. It prepares this repository's OWN custom checks — scripts
       # committed here that may import this repository's code — which the
@@ -153,7 +153,7 @@ jobs:
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.36.0 check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes @attalabs/vinaya@0.37.0 check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,
