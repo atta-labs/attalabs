@@ -190,8 +190,8 @@ export function ScrollToSectionButton({ targetId, children }: { targetId: string
   )
 }
 
-// A terminal-styled, click-to-copy command: `$ <command>` in an inverted (foreground-on-background)
-// box so it reads as a terminal in both colour schemes without a literal colour.
+// A terminal-styled, click-to-copy command: `$ <command>` in a box that stays dark in both colour
+// schemes without a literal colour (the foreground ink as a fill in light, the card surface in dark).
 export function TerminalCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -207,12 +207,16 @@ export function TerminalCommand({ command }: { command: string }) {
       variant='outline'
       onClick={copy}
       aria-label={`Copy ${command}`}
-      className='h-auto max-w-full gap-3 rounded-lg border-border bg-foreground px-5 py-4 font-mono text-[0.8125rem] text-background shadow-none hover:bg-foreground hover:text-background'
+      className='h-auto max-w-full gap-3 rounded-lg border-border bg-foreground px-5 py-4 font-mono text-[0.8125rem] text-background shadow-none hover:bg-foreground hover:text-background dark:bg-card dark:text-card-foreground dark:hover:bg-card dark:hover:text-card-foreground'
     >
       <Terminal className='size-4 shrink-0 text-success' />
-      <span className='text-background/60'>$</span>
+      <span className='text-background/60 dark:text-muted-foreground'>$</span>
       <span className='min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]'>{command}</span>
-      {copied ? <Check className='size-4 shrink-0' /> : <Copy className='size-4 shrink-0 text-background/60' />}
+      {copied ? (
+        <Check className='size-4 shrink-0' />
+      ) : (
+        <Copy className='size-4 shrink-0 text-background/60 dark:text-muted-foreground' />
+      )}
     </Button>
   )
 }

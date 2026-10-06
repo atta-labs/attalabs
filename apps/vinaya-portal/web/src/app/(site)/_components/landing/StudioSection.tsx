@@ -51,7 +51,7 @@ const MARK_CLASS: Record<LogMark, string> = {
   '›': 'text-muted-foreground',
   '✓': 'text-success',
   '✕': 'text-destructive',
-  '☞': 'text-background'
+  '☞': 'text-background dark:text-card-foreground'
 }
 
 // Review-round boxes: `need` is the log line count at which each one resolves.
@@ -73,13 +73,13 @@ function CommandChip({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'items-center gap-[0.55rem] self-start rounded-lg border border-border bg-foreground px-[0.85rem] py-[0.55rem] font-mono text-[0.8125rem] text-background',
+        'items-center gap-[0.55rem] self-start rounded-lg border border-border bg-foreground px-[0.85rem] py-[0.55rem] font-mono text-[0.8125rem] text-background dark:bg-card dark:text-card-foreground',
         className
       )}
     >
       <Terminal className='size-[15px] shrink-0 text-success' />
       <span>
-        <span className='text-background/60'>$</span> vinaya studio
+        <span className='text-background/60 dark:text-muted-foreground'>$</span> vinaya studio
       </span>
     </span>
   )
@@ -259,7 +259,7 @@ function StudioMock({ sp, stage, viewport }: { sp: number; stage: number; viewpo
               </span>
             </div>
           </div>
-          <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-foreground text-background'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-foreground text-background dark:bg-card dark:text-card-foreground'>
             <div
               className={cn(
                 'border-b border-border bg-background px-[0.9rem] py-[0.55rem] font-mono text-[0.6875rem] tracking-[0.08em] transition-colors duration-300 motion-reduce:transition-none',
@@ -279,7 +279,7 @@ function StudioMock({ sp, stage, viewport }: { sp: number; stage: number; viewpo
                       on ? 'grid opacity-100' : 'hidden opacity-0'
                     )}
                   >
-                    <span className='text-background/60'>{line.time}</span>
+                    <span className='text-background/60 dark:text-muted-foreground'>{line.time}</span>
                     <span className={MARK_CLASS[line.mark]}>{line.mark}</span>
                     <span className={line.mark === '☞' ? 'font-semibold' : undefined}>{line.text}</span>
                   </div>
@@ -305,9 +305,7 @@ export function StudioSection() {
       <div className='sticky top-0 box-border flex h-screen items-center overflow-hidden motion-reduce:h-auto motion-reduce:min-h-screen'>
         <div className='mx-auto flex w-full max-w-[73.75rem] flex-wrap items-stretch gap-[clamp(1.5rem,3.5vw,3.5rem)] px-6 pb-[clamp(1rem,4vh,4rem)] pt-[calc(3.5rem+clamp(0.5rem,2vh,2rem))] sm:px-10'>
           <div className='flex min-w-0 flex-[1_1_14rem] flex-col gap-[clamp(0.6rem,2vh,1.25rem)]'>
-            <SectionTitle size='compact' className='text-[clamp(2rem,3.2vw,2.75rem)]'>
-              Your whole process, in one view
-            </SectionTitle>
+            <SectionTitle size='compact'>Your whole process, in one view</SectionTitle>
             {narrow ? null : (
               <>
                 <CommandChip className='inline-flex' />

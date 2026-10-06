@@ -348,7 +348,9 @@ function build(canvas, C) {
   // ---- the event log, bottom-left: what the agents did, as it happens.
   // The box never changes height: a fixed header plus a lines area of exactly four rows
   // (6.8em at the 1.7 line height), lines anchored to the bottom.
-  const DIM = 'color-mix(in oklab, var(--background) 60%, transparent)'
+  // The log stays a dark terminal in both schemes with tokens only: the foreground ink as a
+  // fill in light, the card surface in dark.
+  let DIM = ''
   const term = document.createElement('div')
   term.setAttribute('aria-hidden', 'true')
   Object.assign(term.style, {
@@ -359,8 +361,6 @@ function build(canvas, C) {
     boxSizing: 'border-box',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius, 0.5rem)',
-    background: 'var(--foreground)',
-    color: 'var(--background)',
     fontFamily: 'var(--font-mono)',
     fontSize: '0.6875rem',
     lineHeight: '1.7',
@@ -369,8 +369,15 @@ function build(canvas, C) {
     opacity: '0',
     transition: 'opacity 300ms'
   })
+  const styleTerm = () => {
+    const dark = document.documentElement.dataset.theme === 'dark'
+    term.style.background = dark ? 'var(--card)' : 'var(--foreground)'
+    term.style.color = dark ? 'var(--card-foreground)' : 'var(--background)'
+    DIM = dark ? 'var(--muted-foreground)' : 'color-mix(in oklab, var(--background) 60%, transparent)'
+    shown = -1
+  }
   term.innerHTML =
-    '<div style="display:flex;justify-content:space-between;gap:1rem;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);background:var(--background);color:var(--muted-foreground)"><span style="display:inline-flex;align-items:center;gap:0.45rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"></path><path d="M11 13h4"></path><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg>$ vinaya log --follow</span><span style="display:inline-flex;align-items:center;gap:0.35rem"><i style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></i>live</span></div><div data-lines style="padding:0.55rem 0.85rem;height:6.8em;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end"></div>'
+    '<div style="display:flex;justify-content:space-between;gap:1rem;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);background:var(--background);color:var(--muted-foreground)"><span style="display:inline-flex;align-items:center;gap:0.45rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"></path><path d="M11 13h4"></path><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg>$ vinaya log --follow</span><span style="display:inline-flex;align-items:center;gap:0.35rem"><i style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></i>live</span></div><div data-lines style="box-sizing:content-box;padding:0.55rem 0.85rem;height:6.8em;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end"></div>'
   host.appendChild(term)
   const linesEl = term.querySelector('[data-lines]')
   const SP = (i) => 0.16 + i * 0.12
@@ -391,6 +398,7 @@ function build(canvas, C) {
   let qv = 0
   let pv = 0
   let shown = -1
+  styleTerm()
   const updateLog = () => {
     const on = EV.filter((e) => e[0]())
     // fit under the diagram: only as many lines as the free space below the lower labels allows
@@ -412,7 +420,7 @@ function build(canvas, C) {
       .map((e) => {
         const t = `11:${String(2 + EV.indexOf(e)).padStart(2, '0')}`
         const ok = e[1] === '✓'
-        return `<div style="display:grid;grid-template-columns:3.2em 1.2em minmax(0,1fr);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:${DIM}">${t}</span><span style="color:${ok ? 'var(--success)' : DIM}">${e[1]}</span><span style="overflow:hidden;text-overflow:ellipsis">${e[2]}</span></div>`
+        return `<div style="flex:none;display:grid;grid-template-columns:3.2em 1.2em minmax(0,1fr);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:${DIM}">${t}</span><span style="color:${ok ? 'var(--success)' : DIM}">${e[1]}</span><span style="overflow:hidden;text-overflow:ellipsis">${e[2]}</span></div>`
       })
       .join('')
   }
@@ -554,6 +562,7 @@ function build(canvas, C) {
 
   // theme change: re-read the tokens and repaint every material that holds one
   const applyTheme = () => {
+    styleTerm()
     const next = readColors()
     if (!next || Object.keys(next).every((k) => next[k] === C[k])) return
     Object.assign(C, next)
