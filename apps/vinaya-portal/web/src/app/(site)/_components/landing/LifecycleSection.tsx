@@ -33,22 +33,47 @@ const MILESTONE_DELAYS = ['delay-0', 'delay-[180ms]', 'delay-[360ms]'] as const
 const TASK_DELAYS = ['delay-0', 'delay-[220ms]', 'delay-[440ms]'] as const
 const CARD_DELAYS = ['delay-0', 'delay-[140ms]', 'delay-[280ms]'] as const
 
+// The arrow notch is a clip-path, which a CSS border cannot follow, so an outlined milestone is two clipped
+// layers: a border-coloured shape with the card-coloured shape inset by 1px inside it.
+const ARROW_CLIP = '[clip-path:polygon(0_0,100%_0,88%_50%,100%_100%,0_100%)]'
+
 function DefineVisual({ on }: { on: boolean }) {
   return (
     <div className='flex h-[clamp(5.5rem,15vh,7.5rem)] flex-col justify-between'>
-      {['milestone 1', 'milestone 2', 'milestone 3'].map((label, index) => (
-        <span
-          key={label}
-          className={cn(
-            ARROW_CHIP,
-            MILESTONE_DELAYS[index],
-            index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
-            on ? SHOWN : HIDDEN
-          )}
-        >
-          {label}
-        </span>
-      ))}
+      {['milestone 1', 'milestone 2', 'milestone 3'].map((label, index) =>
+        index === 0 ? (
+          <span
+            key={label}
+            className={cn(
+              ARROW_CHIP,
+              MILESTONE_DELAYS[index],
+              'bg-primary text-primary-foreground',
+              on ? SHOWN : HIDDEN
+            )}
+          >
+            {label}
+          </span>
+        ) : (
+          <span
+            key={label}
+            className={cn(
+              'flex self-start bg-border p-px transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none',
+              ARROW_CLIP,
+              MILESTONE_DELAYS[index],
+              on ? SHOWN : HIDDEN
+            )}
+          >
+            <span
+              className={cn(
+                'flex h-[calc(1.9rem-2px)] items-center whitespace-nowrap bg-card px-[0.7rem] pr-[1.2rem] font-mono text-[0.8125rem] uppercase tracking-[0.02em] text-card-foreground',
+                ARROW_CLIP
+              )}
+            >
+              {label}
+            </span>
+          </span>
+        )
+      )}
     </div>
   )
 }
