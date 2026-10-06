@@ -78,7 +78,7 @@ export function OwnershipSection() {
   const fill = Math.max(0, Math.min(1, (progress - 0.06) / 0.8))
 
   return (
-    <section ref={ref} className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[200vh]')}>
+    <section ref={ref} className={cn('relative bg-secondary/40 text-foreground', pinned && 'h-[200vh]')}>
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
         <div
           className={cn(
@@ -124,7 +124,7 @@ export function OwnershipSection() {
                     <span
                       className={cn(
                         'grid size-12 shrink-0 place-items-center rounded-full border-2 border-foreground font-mono text-base transition-[background-color,color] duration-300 motion-reduce:transition-none',
-                        on ? 'bg-foreground text-secondary' : 'bg-secondary text-foreground'
+                        on ? 'bg-foreground text-background' : 'bg-background text-foreground'
                       )}
                     >
                       {on ? '✓' : index + 1}
@@ -134,23 +134,23 @@ export function OwnershipSection() {
                   <Segment hidden={last} fill={piece(next, 1)} className='row-start-3' />
                   <div
                     className={cn(
-                      'col-start-2 row-start-1 flex items-end pb-1 transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      'col-start-2 row-start-1 flex items-end transition-opacity duration-[400ms] motion-reduce:transition-none',
                       on ? 'opacity-100' : 'opacity-40'
                     )}
                   >
-                    <span className='font-mono text-sm uppercase tracking-[0.02em] text-muted-foreground'>
+                    <span className='text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em]'>
                       {row.label}
                     </span>
                   </div>
-                  <span
-                    className={cn(
-                      'col-start-2 row-start-2 self-center text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em] transition-opacity duration-[400ms] motion-reduce:transition-none',
-                      on ? 'opacity-100' : 'opacity-40'
-                    )}
-                  >
-                    {row.title}
-                  </span>
-                  <div className={cn('col-start-2 row-start-3 flex items-start pt-2', !last && 'pb-6')}>
+                  <div className='col-start-2 row-start-2 flex flex-col items-start gap-2 self-center'>
+                    <span
+                      className={cn(
+                        'font-mono text-sm leading-snug text-muted-foreground transition-opacity duration-[400ms] motion-reduce:transition-none',
+                        on ? 'opacity-100' : 'opacity-40'
+                      )}
+                    >
+                      {row.title}
+                    </span>
                     <span
                       className={cn(
                         CHIP_BASE,
@@ -161,6 +161,7 @@ export function OwnershipSection() {
                       {row.chip}
                     </span>
                   </div>
+                  <div className={cn('col-start-2 row-start-3', !last && 'pb-6')} />
                 </div>
               )
             })}

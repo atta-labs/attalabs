@@ -54,7 +54,7 @@ function StudioMock({ sp, stage, pinned, narrow }: { sp: number; stage: number; 
   const taskFill = clamp01((sp - 0.3) / 0.18)
   const lines = Math.floor(clamp01((sp - 0.53) / 0.42) * (LOOP_EVENT_COUNT + 0.99))
   return (
-    <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background text-card-foreground shadow-lg'>
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg'>
       <div className='flex items-center gap-4 border-b border-border px-[1.1rem] py-3 font-mono text-[0.8125rem]'>
         <span className='whitespace-nowrap font-semibold tracking-[0.2em] max-[820px]:tracking-[0.1em]'>
           VINAYA STUDIO
@@ -106,7 +106,7 @@ function StudioMock({ sp, stage, pinned, narrow }: { sp: number; stage: number; 
             <span className={MONO_LABEL}>tranche · log-portable-v1</span>
             <span className='font-mono text-xs uppercase tracking-[0.14em] text-success'>active</span>
           </div>
-          <div className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border bg-card px-[clamp(0.9rem,2.5vh,1.4rem)] py-[0.45rem] font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground'>
+          <div className='grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border bg-secondary px-[clamp(0.9rem,2.5vh,1.4rem)] py-[0.45rem] font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground'>
             <span>#</span>
             <span>task</span>
             <span>status</span>
@@ -157,7 +157,7 @@ export function StudioSection() {
   const stage = sp < 0.28 ? 0 : sp < 0.5 ? 1 : 2
 
   return (
-    <section ref={ref} className={cn('relative bg-card text-card-foreground', pinned && 'h-[420vh]')}>
+    <section ref={ref} className={cn('relative bg-secondary/40 text-foreground', pinned && 'h-[420vh]')}>
       <div
         className={cn(
           'box-border flex items-center',

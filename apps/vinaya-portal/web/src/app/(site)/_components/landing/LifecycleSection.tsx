@@ -169,7 +169,11 @@ export function LifecycleSection() {
   const active = Math.min(2, Math.floor(progress * 3))
 
   return (
-    <section id='tagline' ref={ref} className={cn('relative bg-background text-foreground', pinned && 'h-[230vh]')}>
+    <section
+      id='tagline'
+      ref={ref}
+      className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[230vh]')}
+    >
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
         <div
           className={cn(
