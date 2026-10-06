@@ -52,9 +52,9 @@ export function HarnessDiagramSection() {
             }
             headerClassName='text-muted-foreground'
             lines={log.lines}
-            rows={4}
+            rows={6}
             className={cn(
-              'pointer-events-none absolute bottom-5 left-6 w-[min(23rem,38%)] transition-opacity duration-300 motion-reduce:transition-none max-[720px]:left-4 max-[720px]:w-[min(21rem,calc(100%-2rem))]',
+              'pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] transition-opacity max-[720px]:text-[0.8125rem] duration-300 motion-reduce:transition-none max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))]',
               log.fits ? 'opacity-100' : 'opacity-0'
             )}
           />

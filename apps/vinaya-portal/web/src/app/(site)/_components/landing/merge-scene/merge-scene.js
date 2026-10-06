@@ -446,16 +446,17 @@ function build(canvas, C, isStill, onLog) {
     // fit under the diagram: only as many lines as the free space below the lower labels allows
     v.set(0, -1.5, 0).project(camera)
     const free = vh - (-v.y * 0.5 + 0.5) * vh - 20
-    const rowH = 18.6
+    const rowH = vw <= 720 ? 18.6 : 24.5 // the log's text at its 1.7 line height (0.8125rem on a phone, 0.9rem above)
     const headH = 44
-    const fits = free - headH - 16 >= rowH * 2
+    // the box is a fixed six rows tall, so it fits only when all six do
+    const fits = free - headH - 16 >= rowH * 6
     const key = `${on.length}:${fits ? 1 : 0}`
     if (key === shown) return
     shown = key
     onLog({
       fits: on.length > 0 && fits,
       lines: on
-        .slice(-4)
+        .slice(-6)
         .map((e) => ({ time: `11:${String(2 + EV.indexOf(e)).padStart(2, '0')}`, mark: e[1], text: e[2] }))
     })
   }
@@ -465,6 +466,7 @@ function build(canvas, C, isStill, onLog) {
   const cPos = V(0, 0, 0)
   const cTgt = V(0, 0, 0)
   const v = V(0, 0, 0)
+  const up = V(0, 1, 0)
   const pos1 = V(0, 0, 0)
   const tgt1 = V(0, 0, 0)
   const pos2 = V(0, 0, 0)
@@ -562,6 +564,16 @@ function build(canvas, C, isStill, onLog) {
     pos2.copy(V(0.16, -0.75, 1).normalize().multiplyScalar(d2)).add(tgt2)
     cPos.lerpVectors(pos1, pos2, z)
     cTgt.lerpVectors(tgt1, tgt2, z)
+    // a tall, narrow stage (a phone) would park the branch in the middle of a lot of empty canvas:
+    // slide the whole frame so the lane rides up toward the title, by up to a third of the stage
+    const portrait = clamp((1 - camera.aspect) / 0.5)
+    if (portrait > 0) {
+      const dd = cPos.distanceTo(cTgt)
+      const lift = portrait * 0.32 * 2 * dd * TAN
+      up.set(0, 1 - z, z).normalize()
+      cPos.addScaledVector(up, -lift)
+      cTgt.addScaledVector(up, -lift)
+    }
     mx += (px - mx) * 0.05
     const ang = reduced ? 0 : Math.sin(t * 0.07) * 0.04 * z + mx * 0.03
     const ox = cPos.x - cTgt.x
@@ -583,13 +595,27 @@ function build(canvas, C, isStill, onLog) {
     renderer.render(scene, camera)
     updateLog()
 
-    const fade1 = 1 - win(p, 0.72, 0.8)
+    // The chips lie in the lane's own plane (world x along the branch, world y up), so as the camera
+    // swings round they turn with it instead of facing the screen. Three projected points give the
+    // affine that carries the chip's own x and y axes onto the plane; `ppw` (px per world unit at the
+    // frontal distance) keeps a chip at its natural size head-on and lets perspective shrink it after.
+    const ppw = vh / (2 * d1 * TAN)
+    const E = 0.05
     L.forEach((l) => {
-      v.copy(l.at()).project(camera)
-      const on = l.gate * (v.z < 1 ? 1 : 0) * fade1
-      l.el.style.opacity = String(on)
+      const at = l.at()
+      v.copy(at).project(camera)
+      const x0 = (v.x * 0.5 + 0.5) * vw
+      const y0 = (-v.y * 0.5 + 0.5) * vh
+      const front = v.z < 1
+      v.set(at.x + E, at.y, at.z).project(camera)
+      const ax = ((v.x * 0.5 + 0.5) * vw - x0) / (E * ppw)
+      const ay = ((-v.y * 0.5 + 0.5) * vh - y0) / (E * ppw)
+      v.set(at.x, at.y + E, at.z).project(camera)
+      const bx = -((v.x * 0.5 + 0.5) * vw - x0) / (E * ppw)
+      const by = -((-v.y * 0.5 + 0.5) * vh - y0) / (E * ppw)
+      l.el.style.opacity = String(l.gate * (front ? 1 : 0) * (1 - 0.25 * z))
       l.el.style.color = l.ok > 0.5 ? 'var(--success)' : 'var(--muted-foreground)'
-      l.el.style.transform = `translate(${(v.x * 0.5 + 0.5) * vw}px, ${(-v.y * 0.5 + 0.5) * vh}px) translate(-50%, -50%)`
+      l.el.style.transform = `translate(${x0}px, ${y0}px) matrix(${ax}, ${ay}, ${bx}, ${by}, 0, 0) translate(-50%, -50%)`
     })
   }
 
