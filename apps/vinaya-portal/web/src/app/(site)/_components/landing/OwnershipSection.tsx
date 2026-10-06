@@ -62,7 +62,7 @@ function Segment({ hidden, fill, className }: { hidden: boolean; fill: number; c
   return (
     <span
       aria-hidden='true'
-      className={cn('col-start-1 mx-auto block h-full w-0.5 bg-border', hidden && 'invisible', className)}
+      className={cn('col-start-1 mx-auto block h-full w-0.5 shrink-0 bg-border', hidden && 'invisible', className)}
     >
       <span className='block w-full bg-foreground' style={{ height: `${fill * 100}%` }} />
     </span>
@@ -78,7 +78,7 @@ export function OwnershipSection() {
   const fill = Math.max(0, Math.min(1, (progress - 0.06) / 0.8))
 
   return (
-    <section ref={ref} className={cn('relative bg-secondary text-secondary-foreground', pinned && 'h-[200vh]')}>
+    <section ref={ref} className={cn('relative bg-secondary/40 text-foreground', pinned && 'h-[200vh]')}>
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
         <div
           className={cn(
@@ -95,7 +95,7 @@ export function OwnershipSection() {
             <SectionTitle size='compact'>Control what actually merges</SectionTitle>
             <Text className='text-2xl leading-snug sm:text-[1.75rem]'>
               Your checks, from local work to merge.{' '}
-              <span className='text-muted-foreground'>Yours sit beside ours.</span>
+              <span className='text-muted-foreground'>Yours sit beside ours</span>
             </Text>
             <div className={pinned ? 'self-start' : 'self-center'}>
               <UnderlineLink href='/docs/rings'>How the rings work</UnderlineLink>
@@ -105,45 +105,52 @@ export function OwnershipSection() {
             {ROWS.map((row, index) => {
               const on = progress >= 0.06 && fill >= index / 3 - 0.001
               const last = index === ROWS.length - 1
-              // The line between two circles is drawn in two pieces, one in each row (the bottom of
-              // the upper row, the top of the lower one), and the fill runs through the first and
-              // then the second as scroll carries it from one circle to the next.
-              const toThis = clamp01(3 * fill - (index - 1))
-              const fromThis = clamp01(3 * fill - index)
+              // The line between two circles runs through four stacked pieces: the lower half of the
+              // upper circle's own row, the foot of that row, the head of the next row, and the
+              // upper half of its circle's row. The circle cell is a column that stretches whatever the
+              // title's height, so the line always meets the circles. One fill per gap (`past` for the
+              // gap above this circle, `next` for the gap below) is split across the four pieces.
+              const past = clamp01(3 * fill - (index - 1))
+              const next = clamp01(3 * fill - index)
+              const piece = (t: number, n: number) => clamp01(4 * t - n)
               return (
                 <div
                   key={row.label}
                   className='grid grid-cols-[3rem_minmax(0,1fr)] grid-rows-[auto_auto_auto] gap-x-[1.1rem]'
                 >
-                  <Segment hidden={index === 0} fill={clamp01(2 * toThis - 1)} className='row-start-1' />
-                  <span
-                    className={cn(
-                      'col-start-1 row-start-2 grid size-12 place-items-center rounded-full border-2 border-foreground font-mono text-base transition-[background-color,color] duration-300 motion-reduce:transition-none',
-                      on ? 'bg-foreground text-secondary' : 'bg-secondary text-foreground'
-                    )}
-                  >
-                    {on ? '✓' : index + 1}
-                  </span>
-                  <Segment hidden={last} fill={clamp01(2 * fromThis)} className='row-start-3' />
+                  <Segment hidden={index === 0} fill={piece(past, 2)} className='row-start-1' />
+                  <div className='col-start-1 row-start-2 flex flex-col items-center'>
+                    <Segment hidden={index === 0} fill={piece(past, 3)} className='min-h-0 flex-1' />
+                    <span
+                      className={cn(
+                        'grid size-12 shrink-0 place-items-center rounded-full border-2 border-foreground font-mono text-base transition-[background-color,color] duration-300 motion-reduce:transition-none',
+                        on ? 'bg-foreground text-background' : 'bg-background text-foreground'
+                      )}
+                    >
+                      {on ? '✓' : index + 1}
+                    </span>
+                    <Segment hidden={last} fill={piece(next, 0)} className='min-h-0 flex-1' />
+                  </div>
+                  <Segment hidden={last} fill={piece(next, 1)} className='row-start-3' />
                   <div
                     className={cn(
-                      'col-start-2 row-start-1 flex items-end pb-1 transition-opacity duration-[400ms] motion-reduce:transition-none',
+                      'col-start-2 row-start-1 flex items-end transition-opacity duration-[400ms] motion-reduce:transition-none',
                       on ? 'opacity-100' : 'opacity-40'
                     )}
                   >
-                    <span className='font-mono text-sm uppercase tracking-[0.02em] text-muted-foreground'>
+                    <span className='text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em]'>
                       {row.label}
                     </span>
                   </div>
-                  <span
-                    className={cn(
-                      'col-start-2 row-start-2 self-center text-[clamp(1.25rem,1.9vw,1.625rem)] leading-tight tracking-[-0.02em] transition-opacity duration-[400ms] motion-reduce:transition-none',
-                      on ? 'opacity-100' : 'opacity-40'
-                    )}
-                  >
-                    {row.title}
-                  </span>
-                  <div className={cn('col-start-2 row-start-3 flex items-start pt-2', !last && 'pb-6')}>
+                  <div className='col-start-2 row-start-2 flex flex-col items-start gap-2 self-center'>
+                    <span
+                      className={cn(
+                        'font-mono text-sm leading-snug text-muted-foreground transition-opacity duration-[400ms] motion-reduce:transition-none',
+                        on ? 'opacity-100' : 'opacity-40'
+                      )}
+                    >
+                      {row.title}
+                    </span>
                     <span
                       className={cn(
                         CHIP_BASE,
@@ -154,6 +161,7 @@ export function OwnershipSection() {
                       {row.chip}
                     </span>
                   </div>
+                  <div className={cn('col-start-2 row-start-3', !last && 'pb-6')} />
                 </div>
               )
             })}

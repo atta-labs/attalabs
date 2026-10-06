@@ -31,7 +31,7 @@ export function HarnessDiagramSection() {
             className='inline-flex items-center gap-[0.6em] font-mono text-[clamp(1.1rem,1.9vw,1.6rem)] leading-tight tracking-[-0.01em] text-muted-foreground [clip-path:inset(-0.2em_100%_-0.2em_0)]'
           >
             <span className='text-success'>›</span>
-            <span>Your process, completely logged.</span>
+            <span>Your process, completely logged</span>
             <span aria-hidden='true' className='inline-block h-[1.05em] w-[0.55em] bg-current opacity-70' />
           </p>
         </div>
@@ -52,9 +52,9 @@ export function HarnessDiagramSection() {
             }
             headerClassName='text-muted-foreground'
             lines={log.lines}
-            rows={4}
+            rows={6}
             className={cn(
-              'pointer-events-none absolute bottom-5 left-6 w-[min(23rem,38%)] transition-opacity duration-300 motion-reduce:transition-none max-[720px]:left-4 max-[720px]:w-[min(21rem,calc(100%-2rem))]',
+              'pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] transition-opacity max-[720px]:text-[0.8125rem] duration-300 motion-reduce:transition-none max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))]',
               log.fits ? 'opacity-100' : 'opacity-0'
             )}
           />

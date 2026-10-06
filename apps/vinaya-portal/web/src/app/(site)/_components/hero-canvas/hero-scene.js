@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { buildFloaters } from '../canvas/floaters'
 import { buildHarness, cssColor, cssNumber, readToken } from './harness-model'
 import { buildField } from './field-3d'
 import { buildBeam } from './underworld-beam'
@@ -128,6 +129,27 @@ export function mountHeroScene(opts) {
       scene = null
     }
   }
+}
+
+/* The drifting squares share the fabric's ink and its per-scheme strength (hero-core.css), a touch
+   stronger because they are filled where the fabric is a hairline: so they sit in the same quiet
+   register as the fabric in light and in dark. */
+const FLOATER_ALPHA = 1
+
+/* One candidate position for a drifting square, in world space so they parallax as the camera
+   tips from top-down to the horizon. Two populations share the sky: one hangs over the fabric
+   around the harness (what the top-down opening frame sees, and what swings past as the camera
+   tips), the other spreads from just in front of the tipped camera out to the far horizon and up
+   the frame. A few land in the central column, never many. */
+function heroFloaterPlace(rnd) {
+  const spread = (half) => {
+    const u = rnd() * 2 - 1
+    return (Math.abs(u) < 0.3 && rnd() < 0.8 ? Math.sign(u || 1) * (0.3 + rnd() * 0.7) : u) * half
+  }
+  if (rnd() < 0.45) return [spread(9), 0.2 + rnd() * 7, (rnd() * 2 - 1) * 6]
+  const z = 8 - 38 * rnd() ** 1.4
+  const distance = Math.max(2.5, 10 - z)
+  return [spread(distance * 0.55), -0.3 + rnd() * 5, z]
 }
 
 function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady = () => {} }, palette) {
@@ -279,7 +301,23 @@ function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady =
       scene.add(harness.group, field.mesh)
       const beam = buildBeam(THREE, { ink, sand, card, topY: seatY + harness.dims.coreLift, depth: 34, rimRadius: 9 })
       scene.add(beam.group)
-      live = { harness, field, beam }
+      /* the drifting squares: floating above the fabric all round the harness, from the first frame */
+      const floaters = buildFloaters(THREE, {
+        count: 208,
+        color: fabricInk,
+        opacity: fabricAlpha * FLOATER_ALPHA,
+        size: 0.2,
+        maxSize: 9,
+        place: heroFloaterPlace,
+        // the fabric bows up around the dish and would hide every square behind it once the camera tips
+        depthTest: false,
+        center: [0, 0, 0],
+        extent: [0, 0, 0],
+        seed: 20261006
+      })
+      floaters.points.renderOrder = 10 // after the fabric sheet, which would otherwise paint over them
+      scene.add(floaters.points)
+      live = { harness, field, beam, floaters }
       applyTheme() // a theme flip during the async build lands on the tokens read now, not at kickoff
       resize()
       place(88, 13.5, seatY, 0)
@@ -403,6 +441,7 @@ function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady =
           if (rayc.ray.intersectPlane(groundPlane, hit)) field.setCursor(hit)
         }
         beam.update(t, camera)
+        floaters.update(reduced ? 0 : t)
         setCopy(p, buildDone)
 
         px += (mx - px) * 0.05
@@ -421,7 +460,7 @@ function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady =
         hero.removeEventListener('pointerleave', onLeave)
         if (scrollHost) scrollHost.classList.remove('overflow-hidden')
         live = null
-        scene.remove(harness.group, field.mesh, beam.group)
+        scene.remove(harness.group, field.mesh, beam.group, floaters.points)
         scene.traverse((o) => {
           o.geometry?.dispose?.()
           if (o.material) {
@@ -462,6 +501,7 @@ function startHeroScene({ canvas, root, labelClass, frameShiftRem = 0, onReady =
     live.harness.retheme()
     live.field.retheme({ ink: fabricInk, surface: bg, opacity: fabricAlpha })
     live.beam.retheme({ ink, sand, card })
+    live.floaters.retheme(fabricInk, fabricAlpha * FLOATER_ALPHA)
   }
   const themeObserver = new MutationObserver(applyTheme)
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })

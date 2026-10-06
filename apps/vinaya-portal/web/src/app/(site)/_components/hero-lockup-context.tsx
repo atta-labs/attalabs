@@ -18,22 +18,18 @@ import { createContext, type ReactNode, useCallback, useContext, useRef } from '
  *   opacity: 0`. Docked: border and background back, mark slot open. Nothing is unmounted,
  *   `display: none`d, or swapped.
  *
- * One rule departs from that handoff, by a later Principal decision: the handoff kept the
- * nav and theme toggle visible and clickable throughout the bare phase. Now, at rest on
- * landing (scroll progress 0), the bar's controls — nav, theme toggle, menu button — are
- * hidden and not interactive, and they fade in continuously from the first pixel of scroll,
- * the same instant the lockup starts its flight, reaching full opacity early in it
- * (`lockup-flip.js`'s `barReveal` / `FLIP.BAR_REVEAL_END`). The lockup itself is never
- * faded by this: the reveal targets the bar's other groups only (`TopBarChromeHost`'s
- * `CONTROLS_REVEAL_CLASS`). The background and border still follow `data-bare` alone.
+ * One rule departs from that handoff, by a later Principal decision: the color scheme toggle is
+ * hidden until the lockup docks (`data-bare` flips to `false`) and appears then
+ * (`TopBarChromeHost`'s `TOGGLE_DOCK_CLASS`, which hides the toggle's whole button so no empty
+ * box is left behind). The nav and the menu button stay visible and clickable from the first
+ * render, over the transparent bare bar, as the handoff had it. The background and border
+ * still follow `data-bare` alone.
  *
  * `data-bare` on `TopBarChromeHost` is that bare flag, and `lockup-flip.js` is its only
  * writer; the chrome it gates is Vinaya's own `chromeClassName` string in
- * `(site)/layout.tsx`, not the shared `ChromeFrame`. `data-bar-hidden` and the inline
- * `--bar-reveal` on the same node carry the controls' reveal, with the same single writer.
- * Both flags are SSR'd per route (`isLandingRoute`, which also matches Next's internal
- * `/index` name for the root page) so landing's first paint already matches the loop's
- * first frame. While bare that chrome also drops its backdrop blur, so the hero fabric
+ * `(site)/layout.tsx`, not the shared `ChromeFrame`. The flag is SSR'd per route
+ * (`isLandingRoute`, which also matches Next's internal `/index` name for the root page) so
+ * landing's first paint already matches the loop's first frame. While bare that chrome also drops its backdrop blur, so the hero fabric
  * reaches the top edge. This context is the wiring that lets
  * two DOM-owning components that don't render inside each other — `HeroLockup` inside the
  * topbar, `VinayaHeroEmblem` inside the page — reach the same real nodes.

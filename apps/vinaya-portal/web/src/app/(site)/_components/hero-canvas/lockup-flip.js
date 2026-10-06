@@ -82,41 +82,11 @@ export const FLIP = {
   // rem — must equal HeroLockup.tsx's `w-[2.75rem]`/`h-[2.75rem]` rest-state classes: this
   // loop drives that same span's width toward MARK_MAX, so a mismatch pops the mark's size on
   // the loop's first frame.
-  MARK_MAX: 2.75,
-  // Scroll progress by which the bar's controls (nav, theme toggle, menu button) are fully
-  // shown. They are hidden at `p = 0` and ramp in continuously from the first pixel of
-  // scroll — the same instant the lockup leaves its hero state — with an ease-out, so the
-  // change is visible straight away and settles well before the lockup docks (at 0.12 the
-  // controls are fully in while the lockup is roughly a quarter of its way to TRAVEL_END).
-  // This is not a second threshold on the bare/docked chrome: it has no step anywhere, and
-  // it never touches `data-bare`.
-  BAR_REVEAL_END: 0.12
+  MARK_MAX: 2.75
   // No separate chrome-fade window: `docked` (below) is `p >= TRAVEL_END`, the same condition
   // that settles `s` to 1. Any independently-tuned window disagrees with TRAVEL_END for some
   // scroll range by construction — either the docked layout turns on while `s` is still > 1,
   // or the reverse — so the two states must flip in the same frame.
-}
-
-/**
- * The bar controls' opacity for scroll progress `p`: 0 at rest, 1 from FLIP.BAR_REVEAL_END on,
- * an ease-out quad between. Its slope is steepest at `p = 0`, so the first scroll movement
- * already shows the controls arriving, rather than a slow start that reads as a delay.
- */
-export const barReveal = (p) => {
-  const t = clamp01(p / FLIP.BAR_REVEAL_END)
-  return t * (2 - t)
-}
-
-/* The bar's control reveal, as `TopBarChromeHost` reads it: `--bar-reveal` is the controls'
-   opacity, `data-bar-hidden` takes them out of hit-testing and the tab order while that
-   opacity is 0 (an invisible button must not still be clickable or focusable). */
-const writeBarReveal = (bar, reveal) => {
-  bar.style.setProperty('--bar-reveal', reveal.toFixed(3))
-  bar.dataset.barHidden = reveal > 0 ? 'false' : 'true'
-}
-const clearBarReveal = (bar) => {
-  bar.style.removeProperty('--bar-reveal')
-  bar.dataset.barHidden = 'false'
 }
 
 /* The bare (hero-state) text span inside a ref'd `word`/`desc` node. HeroLockup.tsx gives it
@@ -245,13 +215,10 @@ export function attachLockupFlip({ hero, lockup, word, desc, mark, bar }) {
 
     /* the bar's own chrome — the ONLY two properties that change on the shared component.
        Tied to the exact same condition that makes `s` settle to 1, not a separately-tuned
-       threshold — see FLIP's own comment for why that separation was the actual bug.
-       The controls' reveal is written alongside it but is a continuous ramp on `p`, not a
-       threshold (see FLIP.BAR_REVEAL_END). */
+       threshold — see FLIP's own comment for why that separation was the actual bug. */
     if (bar) {
       const docked = p >= FLIP.TRAVEL_END
       bar.dataset.bare = docked ? 'false' : 'true'
-      writeBarReveal(bar, barReveal(p))
     }
   }
 
@@ -334,8 +301,6 @@ function fitBareDesc({ bar, lockup, rest, wordRest, word, desc, wordLead, descW,
  * render that doesn't. It's reset to `'false'` — the value every non-landing route renders
  * — because the hero unmounts only when leaving landing (or under StrictMode's simulated
  * remount, where the re-attached loop's synchronous first frame rewrites it before paint).
- * `bar.dataset.barHidden` is React-owned the same way and reset for the same reason; the
- * inline `--bar-reveal` is removed, so the bar's controls fall back to full opacity.
  */
 export function resetLockup({ lockup, word, desc, mark, bar }) {
   if (lockup) {
@@ -357,11 +322,10 @@ export function resetLockup({ lockup, word, desc, mark, bar }) {
   }
   if (bar) {
     bar.dataset.bare = 'false'
-    clearBarReveal(bar)
   }
 }
 
-/** prefers-reduced-motion: jump straight to docked, controls shown, and never start the loop. */
+/** prefers-reduced-motion: jump straight to docked, toggle shown, and never start the loop. */
 export function dockImmediately({ lockup, desc, mark, bar }) {
   lockup.style.transform = 'none'
   if (desc) desc.style.transform = 'none'
@@ -371,6 +335,5 @@ export function dockImmediately({ lockup, desc, mark, bar }) {
   }
   if (bar) {
     bar.dataset.bare = 'false'
-    clearBarReveal(bar)
   }
 }
