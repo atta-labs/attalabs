@@ -2,7 +2,7 @@
 
 import { NextLink } from '@atta/ui/lib/next-link'
 import { cn } from '@atta/ui/lib/utils'
-import { Bot, Clock, FileText, MessageSquare, Plus, Shield } from 'lucide-react'
+import { ArrowUpRight, Bot, Clock, FileText, MessageSquare, Plus, Shield } from 'lucide-react'
 import { type ReactNode, useRef } from 'react'
 import { siAnthropic, siGit, siGithub, siGithubactions, siOpenai } from 'simple-icons'
 import { LetterReveal } from '../LetterReveal'
@@ -10,7 +10,6 @@ import { useEnterProgress } from './LandingInteractions'
 import { LandingSection } from './LandingSection'
 import { SectionTitle } from './SectionHeading'
 import { UnderlineLink } from './UnderlineLink'
-import { ArrowUpRight } from 'lucide-react'
 
 // 07 · One file. The config board: four slots (agents, checks, roles, gates), each a row of
 // what ships with Vinaya (solid bars) and what is yours (dashed bars and dashed chips). Slots
@@ -20,6 +19,7 @@ import { ArrowUpRight } from 'lucide-react'
 const BAR_DELAYS = ['delay-100', 'delay-[160ms]', 'delay-[220ms]'] as const
 const CHIP_DELAYS = ['delay-200', 'delay-[310ms]', 'delay-[420ms]', 'delay-[530ms]'] as const
 
+// Brand marks (Anthropic, OpenAI, Git, GitHub) have no lucide equivalent, so they come from simple-icons.
 function BrandIcon({ path }: { path: string }) {
   return (
     <svg viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' className='size-[15px]'>

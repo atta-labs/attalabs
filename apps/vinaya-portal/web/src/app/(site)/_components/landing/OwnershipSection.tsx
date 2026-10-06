@@ -136,6 +136,15 @@ export function OwnershipSection() {
                 )
               })}
             </div>
+            <div
+              className={cn(
+                'inline-flex items-center gap-2 self-start rounded-lg border border-primary px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.02em] text-primary transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none',
+                progress >= 0.86 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+              )}
+            >
+              <GitMerge className='size-3.5' />
+              merged
+            </div>
           </div>
         </div>
       </div>

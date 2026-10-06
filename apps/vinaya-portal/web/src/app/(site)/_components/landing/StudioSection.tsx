@@ -4,13 +4,14 @@ import { Text } from '@atta/ui/shared'
 import { cn } from '@atta/ui/lib/utils'
 import { Flag, Terminal } from 'lucide-react'
 import { useRef } from 'react'
-import { useNarrow, usePinProgress, useViewportHeight } from './LandingInteractions'
+import { useEnterProgress, useNarrow, usePinEnabled, usePinProgress, useViewportHeight } from './LandingInteractions'
 import { SectionTitle } from './SectionHeading'
 import { UnderlineLink } from './UnderlineLink'
 
 // 05 · Studio. 420vh runway, one sticky stage: scroll walks three views of the Studio window
 // (milestones, tasks, the dev-review loop monitor) while the left column names the active one.
-// Under reduced motion the runway collapses and the final view (the loop monitor, complete) shows.
+// Below the pin gate it flows instead, the three views playing as the section scrolls into view;
+// under reduced motion the final view (the loop monitor, complete) shows.
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
 
@@ -144,7 +145,7 @@ function RoundLabels() {
   )
 }
 
-function StudioMock({ sp, stage, viewport }: { sp: number; stage: number; viewport: number }) {
+function StudioMock({ sp, stage, viewport, pinned }: { sp: number; stage: number; viewport: number; pinned: boolean }) {
   const milestoneFill = clamp01((sp - 0.04) / 0.2)
   const taskFill = clamp01((sp - 0.3) / 0.18)
   const lines = Math.floor(clamp01((sp - 0.53) / 0.42) * 9.99)
@@ -163,7 +164,7 @@ function StudioMock({ sp, stage, viewport }: { sp: number; stage: number; viewpo
           live · 11:06
         </span>
       </div>
-      <div className='relative min-h-[17rem] flex-1'>
+      <div className={cn('relative flex-1', pinned ? 'min-h-[17rem]' : 'min-h-[24rem]')}>
         <div
           aria-hidden={stage !== 0}
           className={cn(panelState(stage, 0), PANEL_PAD, 'flex flex-col gap-[clamp(0.4rem,1.4vh,0.8rem)]')}
@@ -295,15 +296,28 @@ function StudioMock({ sp, stage, viewport }: { sp: number; stage: number; viewpo
 
 export function StudioSection() {
   const ref = useRef<HTMLElement>(null)
-  const sp = usePinProgress(ref)
+  const pinned = usePinEnabled()
+  const pinProgress = usePinProgress(ref)
+  const enterProgress = useEnterProgress(ref, 0.9, 0.9)
+  const sp = pinned ? pinProgress : enterProgress
   const narrow = useNarrow()
   const viewport = useViewportHeight()
   const stage = sp < 0.28 ? 0 : sp < 0.5 ? 1 : 2
 
   return (
-    <section ref={ref} className='relative h-[420vh] bg-card text-card-foreground motion-reduce:h-auto'>
-      <div className='sticky top-0 box-border flex h-screen items-center overflow-hidden motion-reduce:h-auto motion-reduce:min-h-screen'>
-        <div className='mx-auto flex w-full max-w-[73.75rem] flex-wrap items-stretch gap-[clamp(1.5rem,3.5vw,3.5rem)] px-6 pb-[clamp(1rem,4vh,4rem)] pt-[calc(3.5rem+clamp(0.5rem,2vh,2rem))] sm:px-10'>
+    <section ref={ref} className={cn('relative bg-card text-card-foreground', pinned && 'h-[420vh]')}>
+      <div
+        className={cn(
+          'box-border flex items-center',
+          pinned ? 'sticky top-0 h-screen overflow-hidden' : 'relative min-h-screen'
+        )}
+      >
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-[73.75rem] flex-wrap items-stretch gap-[clamp(1.5rem,3.5vw,3.5rem)] px-6 sm:px-10',
+            pinned ? 'pb-[clamp(1rem,4vh,4rem)] pt-[calc(3.5rem+clamp(0.5rem,2vh,2rem))]' : 'py-14'
+          )}
+        >
           <div className='flex min-w-0 flex-[1_1_14rem] flex-col gap-[clamp(0.6rem,2vh,1.25rem)]'>
             <SectionTitle size='compact'>Your whole process, in one view</SectionTitle>
             {narrow ? null : (
@@ -355,7 +369,7 @@ export function StudioSection() {
                 </span>
               ))}
             </div>
-            <StudioMock sp={sp} stage={stage} viewport={viewport} />
+            <StudioMock sp={sp} stage={stage} viewport={viewport} pinned={pinned} />
           </div>
           {narrow ? (
             <div className='flex flex-none basis-full flex-row flex-wrap items-center gap-x-6 gap-y-4'>

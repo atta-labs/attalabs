@@ -107,18 +107,20 @@ function StepCard({ index, step, pinned, active }: { index: number; step: Step; 
   const slot = useRef<HTMLDivElement>(null)
   // Flowing layout: each card slides up the first time its top crosses 80% of the viewport.
   const entered = useSeen(slot, 0.8)
-  const open = !pinned || index === active
+  const current = pinned && index === active
+  // Pinned: only the active card is expanded (`max-h-[40rem]`); finished and upcoming ones collapse to their header.
+  const collapsed = pinned && !current
   const visible = pinned ? index <= active : entered
   const { Visual } = step
 
   return (
-    <div ref={slot} className='flex min-w-0 flex-1 basis-[calc((36rem_-_100%)_*_999)]'>
+    <div ref={slot} className={cn('flex min-w-0', pinned ? 'w-full' : 'flex-1 basis-[calc((36rem_-_100%)_*_999)]')}>
       <Card
         className={cn(
           'w-full min-w-0 gap-0 rounded-lg border bg-card px-6 py-5 text-card-foreground shadow-none',
           'transition-[border-color,opacity,transform] duration-700 ease-out motion-reduce:transition-none',
           CARD_DELAYS[index],
-          open ? 'border-foreground' : 'border-border',
+          !pinned || current ? 'border-foreground' : 'border-border',
           pinned
             ? visible
               ? 'opacity-100'
@@ -128,21 +130,26 @@ function StepCard({ index, step, pinned, active }: { index: number; step: Step; 
               : 'translate-y-12 scale-[0.96] opacity-0'
         )}
       >
-        <div className='@container'>
-          <div className='grid items-start gap-x-8 gap-y-3 @[560px]:grid-cols-2'>
-            <div className='flex items-baseline gap-[0.9rem]'>
-              <span className='font-mono text-[0.6875rem] tracking-[0.02em] text-muted-foreground'>{step.number}</span>
-              <CardTitle className='font-serif text-2xl font-normal leading-[1.1] tracking-[-0.02em]'>
-                {step.title}
-              </CardTitle>
-            </div>
+        <div className='flex items-baseline gap-[0.9rem]'>
+          <span className='font-mono text-[0.6875rem] tracking-[0.02em] text-muted-foreground'>{step.number}</span>
+          <CardTitle className='font-serif text-2xl font-normal leading-[1.1] tracking-[-0.02em]'>
+            {step.title}
+          </CardTitle>
+        </div>
+        <div
+          className={cn(
+            '@container overflow-hidden transition-[max-height,opacity] duration-[400ms] ease-out motion-reduce:transition-none',
+            collapsed ? 'max-h-0 opacity-0' : 'max-h-[40rem] opacity-100'
+          )}
+        >
+          <div className='grid items-start gap-x-8 gap-y-3 pt-3 @[560px]:grid-cols-2'>
             <div className='flex min-w-0 flex-col gap-[0.6rem]'>
               <span className='font-mono text-[0.625rem] uppercase tracking-[0.02em] text-muted-foreground'>
                 {step.role}
               </span>
               <Text className='text-base leading-[1.45] text-pretty'>{step.body}</Text>
             </div>
-            <div className='min-w-0 self-center font-mono text-[0.6875rem] @[560px]:col-start-2 @[560px]:row-span-2 @[560px]:row-start-1'>
+            <div className='min-w-0 self-center font-mono text-[0.6875rem]'>
               <Visual on={visible} />
             </div>
           </div>
@@ -157,31 +164,45 @@ export function LifecycleSection() {
   const pinned = usePinEnabled()
   const progress = usePinProgress(ref)
   const active = Math.min(2, Math.floor(progress * 3))
+  const cards = STEPS.map((step, index) => (
+    <StepCard key={step.number} index={index} step={step} pinned={pinned} active={active} />
+  ))
 
   return (
     <section id='tagline' ref={ref} className={cn('relative bg-background text-foreground', pinned && 'h-[230vh]')}>
       <div className={cn('flex items-center', pinned ? 'sticky top-0 min-h-screen' : 'relative')}>
-        <div
-          className={cn(
-            'mx-auto flex w-full max-w-[73.75rem] flex-col gap-8 px-6 sm:px-10',
-            pinned ? 'pb-10 pt-24' : 'py-14'
-          )}
-        >
-          <SectionHeader>
-            <SectionTitle size='compact'>
-              <LetterReveal text='Define. Plan. Dispatch.' />
-            </SectionTitle>
-            <SectionSubtitle>Milestones, tasks, then the loop.</SectionSubtitle>
-          </SectionHeader>
-          <div className='flex flex-wrap items-stretch gap-3'>
-            {STEPS.map((step, index) => (
-              <StepCard key={step.number} index={index} step={step} pinned={pinned} active={active} />
-            ))}
+        {pinned ? (
+          <div className='mx-auto flex w-full max-w-[73.75rem] items-center gap-12 px-10 pb-10 pt-24'>
+            <div className='flex min-w-0 flex-[1_1_22rem] flex-col gap-6'>
+              <SectionHeader centered={false}>
+                <SectionTitle size='compact'>
+                  <LetterReveal text='Define. Plan. Dispatch.' />
+                </SectionTitle>
+                <SectionSubtitle>Milestones, tasks, then the loop.</SectionSubtitle>
+              </SectionHeader>
+              <div className='h-24 w-0.5 bg-border' aria-hidden='true'>
+                <div className='w-full bg-foreground' style={{ height: `${progress * 100}%` }} />
+              </div>
+              <div>
+                <UnderlineLink href='/life-cycle'>See more at Vinaya’s life cycle</UnderlineLink>
+              </div>
+            </div>
+            <div className='flex min-w-0 flex-[1.4_1_30rem] flex-col gap-3'>{cards}</div>
           </div>
-          <div className='flex justify-center'>
-            <UnderlineLink href='/life-cycle'>See more at Vinaya’s life cycle</UnderlineLink>
+        ) : (
+          <div className='mx-auto flex w-full max-w-[73.75rem] flex-col gap-8 px-6 py-14 sm:px-10'>
+            <SectionHeader>
+              <SectionTitle size='compact'>
+                <LetterReveal text='Define. Plan. Dispatch.' />
+              </SectionTitle>
+              <SectionSubtitle>Milestones, tasks, then the loop.</SectionSubtitle>
+            </SectionHeader>
+            <div className='flex flex-wrap items-stretch gap-3'>{cards}</div>
+            <div className='flex justify-center'>
+              <UnderlineLink href='/life-cycle'>See more at Vinaya’s life cycle</UnderlineLink>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )

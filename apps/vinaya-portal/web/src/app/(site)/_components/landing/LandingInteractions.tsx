@@ -4,6 +4,7 @@ import { Button } from '@atta/ui/components'
 import { NextLink } from '@atta/ui/lib/next-link'
 import { ArrowDown, ArrowUpRight, Check, Copy, Terminal } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { enterProgress, pinFits, pinProgress } from './pin-math'
 
 function scrollParent(element: HTMLElement): HTMLElement | Window {
   let parent = element.parentElement
@@ -15,42 +16,55 @@ function scrollParent(element: HTMLElement): HTMLElement | Window {
   return window
 }
 
-const clamp01 = (value: number) => (value < 0 ? 0 : value > 1 ? 1 : value)
+// One shared ticker for every measuring hook on the page: a single capture-phase scroll listener
+// (the scroll parent is not `window` here — `SiteContentPad` is the `h-dvh overflow-y-auto`
+// container — and a capture listener on `document` sees scrolls from any element), one resize
+// listener and one 250ms poll for layout shifts neither event reports. Subscribers run together in
+// one rAF, so adding a section adds no timer.
+const subscribers = new Set<() => void>()
+let stopTicker: (() => void) | undefined
 
-/** Pinned (sticky, scroll-scrubbed) layouts only run on a roomy viewport; below it every section flows. */
-export const PIN_MIN_WIDTH = 1000
-export const PIN_MIN_HEIGHT = 620
+function startTicker() {
+  let animationFrame = 0
+  const run = () => {
+    animationFrame = 0
+    for (const subscriber of subscribers) subscriber()
+  }
+  const queue = () => {
+    if (!animationFrame) animationFrame = requestAnimationFrame(run)
+  }
+  document.addEventListener('scroll', queue, { passive: true, capture: true })
+  window.addEventListener('resize', queue)
+  const poll = window.setInterval(queue, 250)
+  return () => {
+    document.removeEventListener('scroll', queue, { capture: true })
+    window.removeEventListener('resize', queue)
+    window.clearInterval(poll)
+    cancelAnimationFrame(animationFrame)
+  }
+}
 
-/**
- * Calls `measure` on every scroll (rAF-throttled), resize and a 250ms poll. The scroll parent is
- * not `window` here (`SiteContentPad` is the `h-dvh overflow-y-auto` container), so the listener
- * goes on the nearest scrolling ancestor; the poll catches layout shifts neither event reports.
- */
+function subscribe(subscriber: () => void) {
+  subscribers.add(subscriber)
+  if (subscribers.size === 1) stopTicker = startTicker()
+  return () => {
+    subscribers.delete(subscriber)
+    if (subscribers.size === 0) {
+      stopTicker?.()
+      stopTicker = undefined
+    }
+  }
+}
+
 function useScrollMeasure(ref: RefObject<HTMLElement | null> | null, measure: (element: HTMLElement | null) => void) {
   const latest = useRef(measure)
   latest.current = measure
 
   useEffect(() => {
     const element = ref?.current ?? null
-    const target = element ? scrollParent(element) : window
-    let animationFrame = 0
-    const run = () => {
-      animationFrame = 0
-      latest.current(element)
-    }
-    const queue = () => {
-      if (!animationFrame) animationFrame = requestAnimationFrame(run)
-    }
-    target.addEventListener('scroll', queue, { passive: true })
-    window.addEventListener('resize', queue)
-    const poll = window.setInterval(queue, 250)
+    const run = () => latest.current(element)
     run()
-    return () => {
-      target.removeEventListener('scroll', queue)
-      window.removeEventListener('resize', queue)
-      window.clearInterval(poll)
-      cancelAnimationFrame(animationFrame)
-    }
+    return subscribe(run)
   }, [ref])
 }
 
@@ -75,7 +89,7 @@ export function usePinEnabled(): boolean {
   const [enabled, setEnabled] = useState(false)
   const reduced = useReducedMotion()
   useScrollMeasure(null, () => {
-    setEnabled(window.innerWidth >= PIN_MIN_WIDTH && window.innerHeight >= PIN_MIN_HEIGHT)
+    setEnabled(pinFits(window.innerWidth, window.innerHeight))
   })
   return enabled && !reduced
 }
@@ -85,7 +99,7 @@ function useProgress(ref: RefObject<HTMLElement | null>, compute: (bounds: DOMRe
   const reduced = useReducedMotion()
   useScrollMeasure(ref, (element) => {
     if (!element) return
-    const next = clamp01(compute(element.getBoundingClientRect(), window.innerHeight || 800))
+    const next = compute(element.getBoundingClientRect(), window.innerHeight || 800)
     setProgress((previous) => (Math.abs(next - previous) > 0.003 ? next : previous))
   })
   return reduced ? 1 : progress
@@ -96,7 +110,7 @@ function useProgress(ref: RefObject<HTMLElement | null>, compute: (bounds: DOMRe
  * the viewport bottom. Reads 1 under reduced motion, so a section renders its final state.
  */
 export function usePinProgress(ref: RefObject<HTMLElement | null>): number {
-  return useProgress(ref, (bounds, viewport) => -bounds.top / Math.max(1, bounds.height - viewport))
+  return useProgress(ref, (bounds, viewport) => pinProgress(bounds.top, bounds.height, viewport))
 }
 
 /**
@@ -104,7 +118,7 @@ export function usePinProgress(ref: RefObject<HTMLElement | null>): number {
  * `start` of the viewport height, completes after `span` viewport heights of further scroll.
  */
 export function useEnterProgress(ref: RefObject<HTMLElement | null>, start = 0.9, span = 0.6): number {
-  return useProgress(ref, (bounds, viewport) => (viewport * start - bounds.top) / (viewport * span))
+  return useProgress(ref, (bounds, viewport) => enterProgress(bounds.top, viewport, start, span))
 }
 
 /** One-shot: true once the element's top has crossed `threshold` of the viewport height (true under reduced motion). */

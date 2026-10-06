@@ -30,7 +30,7 @@ const readColors = () => {
   return out
 }
 
-export function mountMerge(canvas) {
+export function mountMerge(canvas, isStill = () => false) {
   let live = null
   let waiter = null
   let disposed = false
@@ -38,7 +38,7 @@ export function mountMerge(canvas) {
     if (disposed || live) return true
     const colors = readColors()
     if (!colors) return false
-    live = build(canvas, colors)
+    live = build(canvas, colors, isStill)
     return true
   }
   if (!tryStart()) {
@@ -58,7 +58,7 @@ export function mountMerge(canvas) {
   }
 }
 
-function build(canvas, C) {
+function build(canvas, C, isStill) {
   let renderer
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
@@ -331,15 +331,16 @@ function build(canvas, C) {
           caret.style.opacity = caretOn ? '0.7' : '0'
         }, 530)
       : 0
+  let still = reduced
   const revealTitle = (v) => {
     if (sub) {
-      const k = reduced ? 1 : win(v, 0.12, 0.22)
+      const k = still ? 1 : win(v, 0.12, 0.22)
       sub.style.clipPath = `inset(-0.2em ${((1 - k) * 100).toFixed(1)}% -0.2em 0)`
     }
     const n = letters.length
     letters.forEach((s, i) => {
       const a = (i / n) * 0.1
-      const r = reduced ? 1 : win(v, a, a + 0.04)
+      const r = still ? 1 : win(v, a, a + 0.04)
       s.style.opacity = String(r)
       s.style.transform = `translateY(${((1 - r) * 0.35).toFixed(3)}em)`
     })
@@ -466,8 +467,9 @@ function build(canvas, C) {
     // The scroll parent is not the window here, so progress comes from the runway's own rect.
     const rr = runway.getBoundingClientRect()
     // pinned: nothing moves until the section reaches the top of the screen
-    const target = reduced ? 1 : clamp(-rr.top / Math.max(1, rr.height - (innerHeight || 800)))
-    p += (target - p) * 0.12
+    still = reduced || isStill()
+    const target = still ? 1 : clamp(-rr.top / Math.max(1, rr.height - (innerHeight || 800)))
+    p = still ? 1 : p + (target - p) * 0.12
     revealTitle(p)
 
     // act 1 cues
