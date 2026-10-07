@@ -12,12 +12,14 @@ import { Terminal } from './Terminal'
 // the merge scene reads the section's own scroll position, so the story plays as the reader scrolls
 // on a phone too, and the stage holds still long enough to read. Under reduced motion it is a
 // flowing section and the scene shows its end state. The canvas runs to the bottom of the stage,
-// with no strip below it that would cut the fabric off. The title and the mono log line are driven
-// letter by letter by the scene (`data-letter-reveal`, `data-sub-reveal`).
+// with no strip below it that would cut the fabric off. The title and the mono subtitle are driven
+// letter by letter by the scene (`data-letter-reveal`, `data-sub-reveal`) on the section's approach, so
+// they are complete when it pins. The event log is always on screen at its fixed bottom-left place
+// (the box is a constant six rows, narrower below 1200px so it clears the lower branch labels); the scene feeds it one line at a time from the branch's progress.
 export function HarnessDiagramSection() {
   const reduced = useReducedMotion()
   const pinned = !reduced
-  const [log, setLog] = useState<SceneLog>({ fits: false, lines: [] })
+  const [log, setLog] = useState<SceneLog>({ lines: [] })
 
   return (
     <section className={cn('relative bg-background text-foreground', pinned && 'h-[420vh]')}>
@@ -53,10 +55,7 @@ export function HarnessDiagramSection() {
             headerClassName='text-muted-foreground'
             lines={log.lines}
             rows={6}
-            className={cn(
-              'pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] transition-opacity max-[720px]:text-[0.8125rem] duration-300 motion-reduce:transition-none max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))]',
-              log.fits ? 'opacity-100' : 'opacity-0'
-            )}
+            className='pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] max-[1199px]:w-[min(19rem,30%)] max-[1199px]:text-[0.8125rem] max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))] max-[720px]:text-[0.8125rem]'
           />
         </div>
       </div>

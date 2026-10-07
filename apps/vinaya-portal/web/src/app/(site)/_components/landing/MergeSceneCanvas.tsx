@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react'
 import type { TerminalLine } from './Terminal'
 
-/** What the scene reports about its event log: the lines that are on, and whether the box fits under the diagram. */
-export type SceneLog = { fits: boolean; lines: TerminalLine[] }
+/** What the scene reports about its event log: the lines that are on (the newest six). */
+export type SceneLog = { lines: TerminalLine[] }
 
 // Mounts the ported merge scene (`merge-scene/merge-scene.js`) behind a dynamic import so `three`
 // stays out of the SSR module graph, and tears it down on unmount (App Router remounts, StrictMode

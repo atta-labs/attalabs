@@ -34,7 +34,7 @@ const readColors = () => {
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {() => boolean} [isStill]
- * @param {(log: { fits: boolean, lines: { time: string, mark: '›' | '✓' | '✕' | '☞', text: string }[] }) => void} [onLog]
+ * @param {(log: { lines: { time: string, mark: '›' | '✓' | '✕' | '☞', text: string }[] }) => void} [onLog]
  */
 export function mountMerge(canvas, isStill = () => false, onLog = () => {}) {
   let live = null
@@ -406,6 +406,8 @@ function build(canvas, C, isStill, onLog) {
         }, 530)
       : 0
   let still = reduced
+  // `v` is the title's own progress on the section's APPROACH (0 as it enters the viewport, 1 at the
+  // pin), mapped onto the 0..0.22 range the letter and subtitle windows below are authored in.
   const revealTitle = (v) => {
     if (sub) {
       const k = still ? 1 : win(v, 0.12, 0.22)
@@ -421,13 +423,14 @@ function build(canvas, C, isStill, onLog) {
   }
 
   // ---- the event log: what the agents did, as it happens. The scene only decides WHICH events are
-  // on and whether there is room for the box under the diagram; the box itself is the page's
-  // `Terminal` component, fed through `onLog`.
+  // on, from the branch's own scroll progress (the first as the branch starts to draw, all twelve
+  // by the end, so the six rows are full); the box is the page's `Terminal` component, fixed at the
+  // bottom left from the first frame and fed through `onLog`. Nothing here depends on free space.
   const SP = (i) => 0.16 + i * 0.12
   const EV = [
-    [() => qv >= 0.1, '›', 'milestone checkout-v2 opened'],
-    [() => qv >= SP(0), '›', 'issues #418–#422 labelled'],
-    [() => qv >= SP(0) + 0.24, '✓', 'issues synced to the milestone'],
+    [() => qv >= 0.02, '›', 'milestone checkout-v2 opened'],
+    [() => qv >= 0.08, '›', 'issues #418–#422 labelled'],
+    [() => qv >= 0.14, '✓', 'issues synced to the milestone'],
     [() => qv >= SP(1), '›', 'developer agent coding · feat/418'],
     [() => qv >= SP(1) + 0.24, '✓', 'branch pushed'],
     [() => qv >= SP(2), '›', 'PR #893 opened'],
@@ -440,21 +443,12 @@ function build(canvas, C, isStill, onLog) {
   ]
   let qv = 0
   let pv = 0
-  let shown = ''
+  let shown = -1
   const updateLog = () => {
     const on = EV.filter((e) => e[0]())
-    // fit under the diagram: only as many lines as the free space below the lower labels allows
-    v.set(0, -1.5, 0).project(camera)
-    const free = vh - (-v.y * 0.5 + 0.5) * vh - 20
-    const rowH = vw <= 720 ? 18.6 : 24.5 // the log's text at its 1.7 line height (0.8125rem on a phone, 0.9rem above)
-    const headH = 44
-    // the box is a fixed six rows tall, so it fits only when all six do
-    const fits = free - headH - 16 >= rowH * 6
-    const key = `${on.length}:${fits ? 1 : 0}`
-    if (key === shown) return
-    shown = key
+    if (on.length === shown) return
+    shown = on.length
     onLog({
-      fits: on.length > 0 && fits,
       lines: on
         .slice(-6)
         .map((e) => ({ time: `11:${String(2 + EV.indexOf(e)).padStart(2, '0')}`, mark: e[1], text: e[2] }))
@@ -474,6 +468,7 @@ function build(canvas, C, isStill, onLog) {
   let raf = 0
   let visible = true
   let p = reduced ? 1 : 0
+  let ap = reduced ? 1 : 0
   let vw = 1
   let vh = 1
   let mx = 0
@@ -502,11 +497,14 @@ function build(canvas, C, isStill, onLog) {
     const t = ms / 1000
     // The scroll parent is not the window here, so progress comes from the runway's own rect.
     const rr = runway.getBoundingClientRect()
-    // pinned: nothing moves until the section reaches the top of the screen
+    // pinned: the branch and camera wait for the section to reach the top of the screen
     still = reduced || isStill()
     const target = still ? 1 : clamp(-rr.top / Math.max(1, rr.height - (innerHeight || 800)))
     p = still ? 1 : p + (target - p) * 0.12
-    revealTitle(p)
+    // the title rides the approach: 0 with the section's top at the bottom of the screen, 1 at the pin
+    const approach = still ? 1 : clamp(1 - rr.top / Math.max(1, innerHeight || 800))
+    ap = still ? 1 : ap + (approach - ap) * 0.12
+    revealTitle(0.22 * clamp((ap - 0.15) / 0.85))
 
     // act 1 cues
     const q = clamp((p - 0.16) / 0.5)
@@ -663,7 +661,7 @@ function build(canvas, C, isStill, onLog) {
     removeEventListener('pointermove', onMove)
     clearInterval(blink)
     layer.remove()
-    onLog({ fits: false, lines: [] })
+    onLog({ lines: [] })
     scene.traverse((o) => {
       o.geometry?.dispose()
       const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []
