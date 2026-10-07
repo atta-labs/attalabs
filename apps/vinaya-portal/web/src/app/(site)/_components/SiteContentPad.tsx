@@ -25,11 +25,17 @@ import { isLandingRoute } from './landing-route'
  * none, so the hero's `sticky top-0` still pins at the true page top; on every other route
  * a `sticky top-0` pins just under the fixed bar rather than behind it.
  *
+ * It carries `data-site-scroll`, the marker `TopBarChromeHost` uses to hand it the wheel and touch moves that start on the fixed bar (a sibling, not an ancestor).
+ *
  * A docs-shell route (`usesDocsShell`) gets no `pt-14` either: `TopBarChromeHost` renders
  * no fixed bar there, and `DocsShell` draws its own bar in flow at the top of its body.
  */
 export function SiteContentPad({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? ''
   const noBarPad = isLandingRoute(pathname) || usesDocsShell(pathname)
-  return <div className={noBarPad ? 'h-dvh overflow-y-auto' : 'h-dvh overflow-y-auto pt-14'}>{children}</div>
+  return (
+    <div data-site-scroll='' className={noBarPad ? 'h-dvh overflow-y-auto' : 'h-dvh overflow-y-auto pt-14'}>
+      {children}
+    </div>
+  )
 }
