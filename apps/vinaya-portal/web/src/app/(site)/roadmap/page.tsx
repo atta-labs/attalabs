@@ -4,6 +4,7 @@ import { Heading, Text } from '@atta/ui/shared'
 import type { Metadata } from 'next'
 import { getPublishedVersion } from '@/lib/published-version'
 import { DeploymentTrack, type DeploymentTrackItem } from './_components/DeploymentTrack'
+import { ScrollCue } from './_components/ScrollCue'
 import { deriveStatus } from './_lib/derive-status'
 import { resolveArtwork } from './_lib/resolve-artwork'
 import { sortMilestones } from './_lib/sort-milestones'
@@ -75,7 +76,9 @@ export default async function RoadmapPage() {
     // instead would cap the fabric at the reading column's width on any screen wider than
     // it, reproducing the gutter this structure exists to avoid.
     <main className='flex w-full flex-col gap-10 overflow-x-hidden py-8'>
-      <section className='mx-auto flex w-full max-w-5xl flex-col gap-4 px-8'>
+      {/* The "SCROLL" cue — shown at rest, gone as soon as the reader scrolls. */}
+      <ScrollCue />
+      <section className='relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-4 px-8'>
         <Heading
           level={1}
           className='mx-auto mt-5 max-w-4xl text-center font-serif font-normal text-4xl text-foreground tracking-tight sm:text-5xl lg:text-6xl'
