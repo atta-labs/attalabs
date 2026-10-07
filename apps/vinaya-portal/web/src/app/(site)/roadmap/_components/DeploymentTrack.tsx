@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
 import { computeTrackFrame } from '../_lib/deployment-progress'
 import { attach as attachRest, getPhase, getRest, subscribe as subscribeRest } from '../_lib/rest-signal'
-import { findScrollParent } from '../_lib/scroll-signal'
+import { findScrollParent, scrollWeight } from '../_lib/scroll-signal'
 import '../marks-motion.css'
 import type { MilestoneArtwork } from '../_lib/resolve-artwork'
 import { computeLanding, HarnessLanding, LANDING } from './HarnessLanding'
@@ -66,20 +66,17 @@ const CONFIG = {
   // own `html{font-size:18px}`, so 52.5rem and 840px are the same breakpoint by definition.
 }
 
-// The head, the tube and the pad's rungs — ported 1:1 from the Claude Design handoff's
-// `tick()` front canvas (draw order, numbers and cadence unchanged). Everything is measured
-// in `u`, one pad unit (the 200-unit pad SVG is 12.5rem wide, so u = 0.0625rem, half that on
-// the narrow layout where the pad is scaled 0.5). The canvas covers the track plus `TOP_PAD`
-// above it, so the pad's aperture and rungs (which sit above the track's top edge) are on it.
+// The head, the tube and the pad's rungs — the Claude Design handoff's `tick()` front canvas
+// (draw order and numbers unchanged), except the ELECTRICITY, which is the hero harness's
+// traveling-sine wave crackle (below), not the design's jagged strands. Everything is measured
+// in `u`, one pad unit (the 200-unit pad SVG is 12.5rem wide, so u = 0.0625rem). The canvas covers
+// the track plus `TOP_PAD` above it, so the pad's aperture and rungs (which sit above the track's
+// top edge) are on it.
 //
-//   * a card-filled TUBE (half-width 9u) from the aperture (the deck's bottom edge, pad y 112)
-//     down to the rocket's body top, with a primary side-glow (alpha .06 + .16e), one jagged
-//     foreground strand at rest (redrawn every 160ms, alpha .25) or three once the reader has
-//     scrolled (every 90ms, alpha .30 + .40e), jag up to 4u, clamped to +-7u, and 2px walls;
-//   * the three RUNGS (pad y 22 / 50 / 78) as three jagged strands each (jag step 7px,
-//     amplitude (1.2 + 1.3e)u), each drawn as a 3.5px halo (tieA * .12) then a 1px core
-//     (tieA, or tieA * .55 for the 2nd and 3rd), foreground at rest and primary once e > .05,
-//     tieA = min(.9, .38 + .5e);
+//   * a card-filled TUBE (half-width 9u, or the spur's thickness on narrow) from the aperture
+//     (the deck's bottom edge, pad y 112) down to the rocket's body top, a primary side-glow
+//     (alpha .06 + .16e), the wave crackle along it, and 2px walls;
+//   * the three RUNGS (pad y 22 / 50 / 78), carrying the same wave crackle across them;
 //   * the aperture's radial glow (radius 30u, alpha (.08 + .25e) * (active ? 1 : .4)).
 //
 // `e` is the scroll energy: min(1, |scroll speed| / 1200 px/s) low-passed with tau 250ms.
@@ -100,35 +97,139 @@ const TOP_PAD_REM = 8
 const NARROW_END_SCALE = 0.74
 const RUNG_Y = [22, 50, 78]
 
-type Point = [number, number]
-function jag(x0: number, y0: number, x1: number, y1: number, step: number, amp: number, vertical: boolean): Point[] {
-  const pts: Point[] = []
-  const len = vertical ? y1 - y0 : x1 - x0
-  const n = Math.max(2, Math.ceil(len / step))
-  for (let i = 0; i <= n; i++) {
-    const f = i / n
-    const j = i === 0 || i === n ? 0 : (Math.random() * 2 - 1) * amp
-    pts.push(vertical ? [x0 + j, y0 + len * f] : [x0 + len * f, y0 + j])
-  }
-  return pts
+// Deterministic pseudo-random 0..1 from an int — the same formula `ElectricLabel`/
+// `HarnessStructure` (the home hero's harness ring) each carry their own copy of.
+function hash01(n: number): number {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return s - Math.floor(s)
 }
 
-type Strands = { tube: Point[][]; ties: Point[][][] }
-function makeStrands(active: boolean, e: number, u: number, pu: number): Strands {
-  return {
-    tube: Array.from({ length: active ? 3 : 1 }, () => jag(0, 0, 0, 1, 1 / 24, 4 * u, true)),
-    ties: RUNG_Y.map(() => [0, 1, 2].map(() => jag(-57 * pu, 0, 57 * pu, 0, 7, (1.2 + 1.3 * e) * pu, false)))
+// The electricity: the hero harness's traveling-sine strands (`ElectricLabel`'s `waveOffset`),
+// restored from before the design port. OFF at rest: they draw only once the reader has
+// scrolled (`live`), with alpha ramped by the scroll weight; the beam's also dims as the clamps
+// lock at landing. `band`/`amplitude` are px at the old 20px-wide beam, so they are scaled by
+// `hw / 10` to stay inside the tube's walls at any tube width; the rungs' by `pu / u0` (the pad
+// unit against its full size) to stay between the towers at any pad scale.
+const CRACKLE_STRANDS = [
+  { seed: 0, band: -3, amplitude: 3.2, speed: 0.05, width: 1, alpha: 0.55, color: 'primary' as const },
+  { seed: 41, band: 2.6, amplitude: 2.6, speed: 0.065, width: 0.75, alpha: 0.4, color: 'primary' as const },
+  { seed: 88, band: 0, amplitude: 3.8, speed: 0.042, width: 0.75, alpha: 0.35, color: 'secondary' as const }
+]
+const CRACKLE_STEP = 5 // px of tube length between crackle sample points
+const PAD_STRAND_TEMPLATE = [
+  { seed: 5, band: -1.4, amplitude: 2.2, speed: 0.05, width: 1, alpha: 0.6, color: 'primary' as const },
+  { seed: 63, band: 1.2, amplitude: 1.8, speed: 0.065, width: 0.75, alpha: 0.45, color: 'primary' as const },
+  { seed: 19, band: 0, amplitude: 2.6, speed: 0.045, width: 0.75, alpha: 0.35, color: 'secondary' as const }
+]
+const PAD_CRACKLE_STEP = 24 // sample points per rung
+
+type Colors = ReturnType<typeof readThemeColors>
+
+// The wave crackle along the tube, from the aperture (`y0`) to the head (`y1`), centred on it.
+function drawTubeCrackle(
+  ctx: CanvasRenderingContext2D,
+  colors: Colors,
+  cx: number,
+  y0: number,
+  y1: number,
+  k: number,
+  time: number,
+  lock: number,
+  scrollW: number
+) {
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  const len = y1 - y0
+  for (const strand of CRACKLE_STRANDS) {
+    const n = Math.max(2, Math.floor(len / CRACKLE_STEP))
+    ctx.beginPath()
+    for (let i = 0; i <= n; i++) {
+      const y = y0 + (i / n) * len
+      const h1 = hash01(i + strand.seed)
+      const h2 = hash01(i + strand.seed + 97)
+      const off =
+        Math.sin(i * 0.4 - time * strand.speed + h1 * 6.283) * 0.6 +
+        Math.sin(i * 1.3 - time * strand.speed * 1.8 + h2 * 6.283) * 0.4
+      const x = cx + (strand.band + off * strand.amplitude) * k
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.strokeStyle = colors[strand.color]
+    ctx.shadowColor = colors[strand.color]
+    ctx.shadowBlur = 2.5
+    ctx.globalAlpha = strand.alpha * (1 - 0.75 * lock) * scrollW
+    ctx.lineWidth = strand.width
+    ctx.stroke()
   }
+  ctx.shadowBlur = 0
+  ctx.globalAlpha = 1
+}
+
+// The same waves rotated 90 degrees across the three rungs: 3 strands per rung, a horizontal
+// run between the towers (x +-57 pad units), seeds offset per rung so they do not crackle in
+// lockstep.
+function drawRungCrackle(
+  ctx: CanvasRenderingContext2D,
+  colors: Colors,
+  cx: number,
+  padV: number,
+  pu: number,
+  k: number,
+  time: number,
+  scrollW: number
+) {
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  const x0 = cx - 57 * pu
+  const span = 114 * pu
+  RUNG_Y.forEach((ty, tieIndex) => {
+    const y = padV + ty * pu
+    for (const strand of PAD_STRAND_TEMPLATE) {
+      const seed = strand.seed + tieIndex * 17
+      ctx.beginPath()
+      for (let i = 0; i <= PAD_CRACKLE_STEP; i++) {
+        const x = x0 + (i / PAD_CRACKLE_STEP) * span
+        const h1 = hash01(i + seed)
+        const h2 = hash01(i + seed + 97)
+        const off =
+          Math.sin(i * 0.5 - time * strand.speed + h1 * 6.283) * 0.6 +
+          Math.sin(i * 1.6 - time * strand.speed * 1.8 + h2 * 6.283) * 0.4
+        const yy = y + (strand.band + off * strand.amplitude) * k
+        if (i === 0) ctx.moveTo(x, yy)
+        else ctx.lineTo(x, yy)
+      }
+      ctx.strokeStyle = colors[strand.color]
+      ctx.shadowColor = colors[strand.color]
+      ctx.shadowBlur = 2.5
+      ctx.globalAlpha = strand.alpha * scrollW
+      ctx.lineWidth = strand.width
+      ctx.stroke()
+    }
+  })
+  ctx.shadowBlur = 0
+  ctx.globalAlpha = 1
 }
 
 function drawHead(
   fc: CanvasRenderingContext2D,
-  col: ReturnType<typeof readThemeColors>,
-  strands: Strands,
-  p: { cx: number; u: number; pu: number; apY: number; y1: number; hw: number; e: number; active: boolean }
+  col: Colors,
+  p: {
+    cx: number
+    pu: number
+    u0: number
+    apY: number
+    y1: number
+    hw: number
+    e: number
+    active: boolean
+    time: number
+    lock: number
+    scrollW: number
+    live: boolean
+  }
 ) {
   // `u`: the head's and tube's unit; `pu`: the pad's (smaller while the narrow slide shrinks it).
-  const { cx, pu, apY, y1, hw, e, active } = p
+  const { cx, pu, u0, apY, y1, hw, e, active, time, lock, scrollW, live } = p
   const ap = apY // canvas y of the aperture (the deck's bottom edge, pad y 112)
   const padV = ap - 112 * pu // canvas y of pad y = 0
   const y0 = ap
@@ -145,19 +246,8 @@ function drawHead(
       fc.fillStyle = g
       fc.fillRect(cx - hw * 2.6, y0, hw * 5.2, y1 - y0)
     }
-    fc.strokeStyle = col.foreground
-    fc.lineWidth = 1
-    fc.globalAlpha = active ? 0.3 + 0.4 * e : 0.25
-    for (const st of strands.tube) {
-      fc.beginPath()
-      st.forEach(([jx, f], i) => {
-        const x = cx + Math.max(-7 * (hw / 9), Math.min(7 * (hw / 9), jx))
-        const y = y0 + (y1 - y0) * f
-        if (i) fc.lineTo(x, y)
-        else fc.moveTo(x, y)
-      })
-      fc.stroke()
-    }
+    // The wave crackle inside the tube: off at rest, on once the reader has scrolled.
+    if (live) drawTubeCrackle(fc, col, cx, y0, y1, hw / 10, time, lock, scrollW)
     fc.globalAlpha = 1
     fc.lineWidth = 2
     fc.beginPath()
@@ -167,26 +257,7 @@ function drawHead(
     fc.lineTo(cx + hw, y1)
     fc.stroke()
   }
-  const tieA = Math.min(0.9, 0.38 + 0.5 * e)
-  RUNG_Y.forEach((ty, i) => {
-    const yy = padV + ty * pu
-    fc.strokeStyle = e > 0.05 ? col.primary : col.foreground
-    strands.ties[i]?.forEach((pts, n) => {
-      for (const [lw, a] of [
-        [3.5, tieA * 0.12],
-        [1, tieA * (n ? 0.55 : 1)]
-      ] as const) {
-        fc.lineWidth = lw
-        fc.globalAlpha = a
-        fc.beginPath()
-        pts.forEach(([x, jy], j) => {
-          if (j) fc.lineTo(cx + x, yy + jy)
-          else fc.moveTo(cx + x, yy + jy)
-        })
-        fc.stroke()
-      }
-    })
-  })
+  if (live) drawRungCrackle(fc, col, cx, padV, pu, pu / u0, time, scrollW)
   const rg = fc.createRadialGradient(cx, ap, 0, cx, ap, 30 * pu)
   rg.addColorStop(0, col.primary)
   rg.addColorStop(1, 'transparent')
@@ -306,6 +377,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   // The narrow slide (0 centred -> 1 at the beam line) and the first spur bar, whose height the
   // narrow tube matches.
   const slideRef = useRef(1)
+  const lockRef = useRef(0)
   const spurRef = useRef<HTMLDivElement | null>(null)
   // Raised by the scroll effect below whenever the tip moves, decayed toward 0 every
   // animation frame by the canvas effect further down — the same "raise on input, decay
@@ -425,6 +497,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       beamInner.style.height = `${H}px`
       beamOuter.style.height = `${land.headTop}px`
       deployedRef.current = land.headTop // head + crackle stop at touchdown
+      lockRef.current = land.lock // `--lk`: the clamps close, the tube's current drains
       velTargetRef.current = land.landed ? 0 : frame.velTarget // glow dies at contact
       lastTForVelRef.current = frame.deployed
 
@@ -481,8 +554,11 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     // speed only (see `mv` below): none at rest, none while the rocket is not moving, none once landed.
     let spawnAcc = 0
     let streaks: Array<{ x: number; y: number; len: number; life: number; a: number }> = []
-    let strands: Strands | null = null
-    let genAt = 0
+    // The electricity (hero-harness wave crackle) is off at rest: `scrollW` eases the scroll
+    // weight (0 at the top, 1 past 70px) and gates and ramps it. Reduced motion keeps the old
+    // behaviour: fully on wherever the beam has deployed, one still frame (`time` never advances).
+    let scrollW = reduce ? 1 : 0
+    let time = 0
 
     // One frame of the design's `tick()` for the head: the idle group, the glow, then the
     // front canvas (tube, rungs, aperture glow). The head's own `top` is `deployed` from the
@@ -531,19 +607,20 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       // The head's x in track space (it is translated by the narrow layout's slide), so the
       // tube and rungs are drawn where the pad really is.
       const cx = head.getBoundingClientRect().left - track.getBoundingClientRect().left
-      if (!strands || (!reduce && now - genAt > (active ? 90 : 160))) {
-        genAt = now
-        strands = makeStrands(active, energy, u, pu)
-      }
-      drawHead(ctx, colors, strands, {
+      scrollW = reduce ? 1 : scrollW + (scrollWeight(s) - scrollW) * 0.12
+      drawHead(ctx, colors, {
         cx,
-        u,
         pu,
+        u0,
         apY: TOP_PAD_REM * remPx - 12 * u0,
         y1: TOP_PAD_REM * remPx + deployed + 4 * u,
         hw,
         e: energy,
-        active
+        active,
+        time,
+        lock: lockRef.current,
+        scrollW,
+        live: deployed > 0 && scrollW > 0.02
       })
 
       // Motion cues, drawn after the tube, rungs and aperture (design `tick()`): speed streaks
@@ -604,7 +681,10 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       ctx.lineCap = 'butt'
       ctx.globalAlpha = 1
 
-      if (!reduce) raf = requestAnimationFrame(render)
+      if (!reduce) {
+        time += 1
+        raf = requestAnimationFrame(render)
+      }
     }
     raf = requestAnimationFrame(render)
 
