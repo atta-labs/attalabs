@@ -16,7 +16,7 @@ import { UnderlineLink } from './UnderlineLink'
 type CheckRow = { label: string; title: string; chip: ReactNode; chipClass: string }
 
 const CHIP_BASE =
-  'inline-flex items-center gap-[0.35rem] justify-self-start whitespace-nowrap rounded-sm border px-[0.7rem] py-[0.4rem] font-mono text-sm transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none'
+  'inline-flex min-w-0 max-w-full items-center gap-[0.35rem] justify-self-start rounded-sm border px-[0.7rem] py-[0.4rem] font-mono text-sm transition-[opacity,transform] duration-[400ms] motion-reduce:transition-none'
 
 const ROWS: readonly CheckRow[] = [
   {

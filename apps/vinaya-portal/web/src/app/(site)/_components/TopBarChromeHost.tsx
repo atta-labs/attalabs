@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { usesDocsShell } from './docs-shell-route'
 import { useHeroLockupRegister } from './hero-lockup-context'
 import { isLandingRoute } from './landing-route'
@@ -19,6 +19,54 @@ import { isLandingRoute } from './landing-route'
  */
 const TOGGLE_DOCK_CLASS =
   '[&[data-bare=true]_:is(button:has([title^=Switch][title$=mode]),[title^=Switch][title$=mode])]:invisible'
+
+/**
+ * While the lockup is in its hero state (`data-bare` is `true`) it is the big "Vinaya /
+ * Development harness" title in the middle of the hero, but its DOM node still lives inside this
+ * fixed bar. The page scrolls in `SiteContentPad`, which is a SIBLING of the bar, not its
+ * ancestor, so a wheel or touch that starts on an element inside the bar has no scrollable
+ * ancestor and scrolls nothing: the hero title felt blocked under the cursor. The lockup takes no
+ * pointer events while bare, so the gesture lands on the hero beneath it; once it docks it is
+ * the small logo link and is clickable again.
+ */
+const LOCKUP_BARE_CLASS = '[&[data-bare=true]_[data-hero-lockup]]:pointer-events-none'
+
+/**
+ * The same reason applies to the bar itself: its strip (and any open nav panel) sits over the
+ * content but outside the scroller, so a wheel or a touch drag that starts on it scrolled
+ * nothing. A wheel or a vertical drag on the bar is handed to the scroller (`[data-site-scroll]`).
+ * Nothing is prevented, so clicks, taps and hover menus behave as before.
+ */
+function useForwardScrollToPage(barRef: { current: HTMLElement | null }, pathname: string) {
+  // `pathname` is a dependency on purpose: the bar unmounts on docs routes, so the listeners follow the route
+  useEffect(() => {
+    const bar = barRef.current
+    if (!bar) return
+    const page = () => document.querySelector<HTMLElement>('[data-site-scroll]')
+    const onWheel = (event: WheelEvent) => {
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
+      page()?.scrollBy({ top: event.deltaY * unit, left: event.deltaX * unit })
+    }
+    let lastY = 0
+    const onTouchStart = (event: TouchEvent) => {
+      lastY = event.touches[0]?.clientY ?? 0
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      page()?.scrollBy({ top: lastY - touch.clientY })
+      lastY = touch.clientY
+    }
+    bar.addEventListener('wheel', onWheel, { passive: true })
+    bar.addEventListener('touchstart', onTouchStart, { passive: true })
+    bar.addEventListener('touchmove', onTouchMove, { passive: true })
+    return () => {
+      bar.removeEventListener('wheel', onWheel)
+      bar.removeEventListener('touchstart', onTouchStart)
+      bar.removeEventListener('touchmove', onTouchMove)
+    }
+  }, [barRef, pathname])
+}
 
 /**
  * Replaces the plain `<div className='relative z-30'>` wrapper around the topbar. Fixed
@@ -54,14 +102,19 @@ const TOGGLE_DOCK_CLASS =
 export function TopBarChromeHost({ children }: { children: ReactNode }) {
   const setNode = useHeroLockupRegister()
   const pathname = usePathname() ?? ''
+  const barRef = useRef<HTMLDivElement | null>(null)
+  useForwardScrollToPage(barRef, pathname)
   if (usesDocsShell(pathname)) return null
   const isLanding = isLandingRoute(pathname)
 
   return (
     <div
-      ref={(el) => setNode('bar', el)}
+      ref={(el) => {
+        barRef.current = el
+        setNode('bar', el)
+      }}
       data-bare={isLanding ? 'true' : 'false'}
-      className={`fixed inset-x-0 top-0 z-30 ${TOGGLE_DOCK_CLASS}`}
+      className={`fixed inset-x-0 top-0 z-30 ${TOGGLE_DOCK_CLASS} ${LOCKUP_BARE_CLASS}`}
     >
       {children}
     </div>
