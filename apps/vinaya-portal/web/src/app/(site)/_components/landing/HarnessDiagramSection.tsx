@@ -15,7 +15,10 @@ import { Terminal } from './Terminal'
 // with no strip below it that would cut the fabric off. The title and the mono subtitle are driven
 // letter by letter by the scene (`data-letter-reveal`, `data-sub-reveal`) on the section's approach, so
 // they are complete when it pins. The event log is always on screen at its fixed bottom-left place
-// (the box is a constant six rows, narrower below 1200px so it clears the lower branch labels); the scene feeds it one line at a time from the branch's progress.
+// (the box is a constant six rows, narrower below 1200px so it clears the lower branch labels). The font-size
+// overrides carry their own `leading-[1.7]`: the class merger drops the Terminal's line height together with the
+// size it replaces, and the body height is sized in `em` for exactly six 1.7 lines, so without it the box ends
+// up a row of empty space too tall; the scene feeds it one line at a time from the branch's progress.
 export function HarnessDiagramSection() {
   const reduced = useReducedMotion()
   const pinned = !reduced
@@ -55,7 +58,7 @@ export function HarnessDiagramSection() {
             headerClassName='text-muted-foreground'
             lines={log.lines}
             rows={6}
-            className='pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] max-[1199px]:w-[min(19rem,30%)] max-[1199px]:text-[0.8125rem] max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))] max-[720px]:text-[0.8125rem]'
+            className='pointer-events-none absolute bottom-5 left-6 w-[min(28rem,44%)] text-[0.9rem] leading-[1.7] max-[1199px]:w-[min(19rem,30%)] max-[1199px]:text-[0.8125rem] max-[1199px]:leading-[1.7] max-[720px]:left-4 max-[720px]:w-[min(24rem,calc(100%-2rem))] max-[720px]:text-[0.8125rem] max-[720px]:leading-[1.7]'
           />
         </div>
       </div>
