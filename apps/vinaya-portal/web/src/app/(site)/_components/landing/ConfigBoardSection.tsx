@@ -97,7 +97,7 @@ function SlotRow({ slot, on, last }: { slot: Slot; on: boolean; last: boolean })
   return (
     <div
       className={cn(
-        'flex flex-nowrap items-center gap-[clamp(0.5rem,1.2vw,1rem)] border-t border-border py-6',
+        'flex flex-wrap items-center gap-x-[clamp(0.5rem,1.2vw,1rem)] gap-y-3 border-t border-border py-6 sm:flex-nowrap',
         last && 'border-b'
       )}
     >
