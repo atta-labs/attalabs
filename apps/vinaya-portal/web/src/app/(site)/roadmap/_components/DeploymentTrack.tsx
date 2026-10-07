@@ -8,11 +8,15 @@ import { ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
-import { EnergyFieldBg } from '../../_components/EnergyFieldBg'
 import { computeTrackFrame } from '../_lib/deployment-progress'
+import { attach as attachRest, getPhase, getRest, subscribe as subscribeRest } from '../_lib/rest-signal'
+import { findScrollParent } from '../_lib/scroll-signal'
 import '../marks-motion.css'
 import type { MilestoneArtwork } from '../_lib/resolve-artwork'
-import { computeLanding, HarnessLanding, LANDING, LandingLegs } from './HarnessLanding'
+import { computeLanding, HarnessLanding, LANDING } from './HarnessLanding'
+import { PadScreen } from './PadScreen'
+import { RoadmapFabric } from './RoadmapFabric'
+import { ScrollParticles } from './ScrollParticles'
 
 // Deployment harness (designer handoff) — a scroll-linked "install" animation
 // wrapping the existing card design, not a new card design. Contract from the
@@ -62,132 +66,134 @@ const CONFIG = {
   // own `html{font-size:18px}`, so 52.5rem and 840px are the same breakpoint by definition.
 }
 
-// Deterministic pseudo-random 0..1 from an int — same formula `ElectricLabel`/
-// `HarnessStructure` (the home hero's harness ring) each already carry their own copy
-// of, not shared: every canvas-electricity component in this app owns this one line
-// rather than importing it, which is the established precedent here.
-function hash01(n: number): number {
-  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453
-  return s - Math.floor(s)
-}
+// The head, the tube and the pad's rungs — ported 1:1 from the Claude Design handoff's
+// `tick()` front canvas (draw order, numbers and cadence unchanged). Everything is measured
+// in `u`, one pad unit (the 200-unit pad SVG is 12.5rem wide, so u = 0.0625rem, half that on
+// the narrow layout where the pad is scaled 0.5). The canvas covers the track plus `TOP_PAD`
+// above it, so the pad's aperture and rungs (which sit above the track's top edge) are on it.
+//
+//   * a card-filled TUBE (half-width 9u) from the aperture (the deck's bottom edge, pad y 112)
+//     down to the rocket's body top, with a primary side-glow (alpha .06 + .16e), one jagged
+//     foreground strand at rest (redrawn every 160ms, alpha .25) or three once the reader has
+//     scrolled (every 90ms, alpha .30 + .40e), jag up to 4u, clamped to +-7u, and 2px walls;
+//   * the three RUNGS (pad y 22 / 50 / 78) as three jagged strands each (jag step 7px,
+//     amplitude (1.2 + 1.3e)u), each drawn as a 3.5px halo (tieA * .12) then a 1px core
+//     (tieA, or tieA * .55 for the 2nd and 3rd), foreground at rest and primary once e > .05,
+//     tieA = min(.9, .38 + .5e);
+//   * the aperture's radial glow (radius 30u, alpha (.08 + .25e) * (active ? 1 : .4)).
+//
+// `e` is the scroll energy: min(1, |scroll speed| / 1200 px/s) low-passed with tau 250ms.
+const TOP_PAD_REM = 8
 
-// The beam-current strands — same traveling-sine shape as `ElectricLabel`'s `waveOffset`,
-// ported from a closed border loop to an open vertical run: no envelope pinning to 0 at
-// the ends (there's no seam to close), just a continuous jag from y=0 to the deployed tip.
-// `band` is each strand's resting x-offset (px) from the beam centerline; kept well inside
-// the beam's own 20px width so the crackle reads as current IN the rail, not spilling past it.
-const CRACKLE_STRANDS = [
-  { seed: 0, band: -3, amplitude: 3.2, speed: 0.05, width: 1, alpha: 0.55, color: 'primary' as const },
-  { seed: 41, band: 2.6, amplitude: 2.6, speed: 0.065, width: 0.75, alpha: 0.4, color: 'primary' as const },
-  { seed: 88, band: 0, amplitude: 3.8, speed: 0.042, width: 0.75, alpha: 0.35, color: 'secondary' as const }
-]
-const CRACKLE_STEP = 5 // px of beam travel between crackle sample points
+// Narrow layout: the pad (SVG, sign and screen, rungs, aperture glow) is full size (1.0, as on
+// desktop) at rest and slides from the centre to the beam's left line. The narrow beam sits at
+// 4.90625rem (88.3px at the 18px root): the spur bars to the cards are half their old length
+// (3.0625rem -> 1.53125rem) and the beam moved right by that saving, cards unchanged. At slide = 1
+// the pad's centre is on the beam line, and its widest part, the deck slab's left edge (stroke
+// included, 107.1px * scale from the centre), has to stay at least 0.5rem (9px) inside the
+// viewport: 88.3 - 107.1 * scale >= 9 gives scale <= 0.741, so this is the largest scale that
+// fits (0.74, leaving 9.06px), with the sign, its screen and the towers fully on screen. This is
+// the scale the PAD alone shrinks TO about the aperture centre as `--slide` goes 0 -> 1
+// (scale = 1 - (1 - NARROW_END_SCALE) * slide). The rocket head and the tube do NOT shrink: the
+// tube stays exactly as thick as the spur bars, and starts just below the (then narrower)
+// aperture like a nozzle.
+const NARROW_END_SCALE = 0.74
+const RUNG_Y = [22, 50, 78]
 
-// The head — a designer-supplied reference implementation (`The Head -
-// isolated.html`), ported verbatim rather than re-derived: a `<div>`/`<svg>`
-// DOM structure (see the JSX below), not canvas — the head is a STATIC shape
-// (no wobble, no re-tuning risk) layered with CSS `opacity`/`scale` driven by
-// one custom property, `--v` (0 at rest, 1 moving fast), which the effect
-// below writes every animation frame. Canvas keeps only what genuinely needs
-// per-frame redrawing: the shimmering current strands and the sealed end cap.
-// `lock` (0→1, the landing's `--lk`) drains the current into the pad once the clamps close.
-function drawCrackle(
-  ctx: CanvasRenderingContext2D,
-  colors: ReturnType<typeof readThemeColors>,
-  beamX: number,
-  deployed: number,
-  time: number,
-  lock: number
-) {
-  ctx.lineJoin = 'round'
-  ctx.lineCap = 'round'
-
-  for (const strand of CRACKLE_STRANDS) {
-    const n = Math.max(2, Math.floor(deployed / CRACKLE_STEP))
-    ctx.beginPath()
-    for (let i = 0; i <= n; i++) {
-      const y = (i / n) * deployed
-      const h1 = hash01(i + strand.seed)
-      const h2 = hash01(i + strand.seed + 97)
-      const off =
-        Math.sin(i * 0.4 - time * strand.speed + h1 * 6.283) * 0.6 +
-        Math.sin(i * 1.3 - time * strand.speed * 1.8 + h2 * 6.283) * 0.4
-      const x = beamX + strand.band + off * strand.amplitude
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-    ctx.strokeStyle = colors[strand.color]
-    ctx.shadowColor = colors[strand.color]
-    ctx.shadowBlur = 2.5
-    ctx.globalAlpha = strand.alpha * (1 - 0.75 * lock)
-    ctx.lineWidth = strand.width
-    ctx.stroke()
+type Point = [number, number]
+function jag(x0: number, y0: number, x1: number, y1: number, step: number, amp: number, vertical: boolean): Point[] {
+  const pts: Point[] = []
+  const len = vertical ? y1 - y0 : x1 - x0
+  const n = Math.max(2, Math.ceil(len / step))
+  for (let i = 0; i <= n; i++) {
+    const f = i / n
+    const j = i === 0 || i === n ? 0 : (Math.random() * 2 - 1) * amp
+    pts.push(vertical ? [x0 + j, y0 + len * f] : [x0 + len * f, y0 + j])
   }
-  ctx.shadowBlur = 0
+  return pts
 }
 
-// The launchpad's three cross-ties, energized — same traveling-sine shimmer as
-// `CRACKLE_STRANDS`/`drawCrackle` above (the beam's own current), just rotated 90°: a
-// horizontal jag along each tie instead of a vertical one along the beam, and — same as
-// the beam — a BUNDLE of 3 strands per tie, not one: `band` offsets each strand
-// vertically off the tie's own y (mirroring the beam's `band` x-offset), so a single tie
-// reads as one current-carrying rail, not a lone wire. `yFrac`/`xFrac` are fractions of
-// the pad SVG's own `0 0 200 124` viewBox (the tie y-positions 26/54/82 and their shared
-// x-span 42–158), so the bundle tracks the static tie line exactly at any rendered size.
-// Drawn only while `deployed > 0` (the same gate `drawCrackle` runs under) — flat and
-// inert at rest, current only once the harness has actually started moving, which is the
-// literal "as we scroll they become electricity" ask.
-const PAD_TIE_Y_FRACS = [26 / 124, 54 / 124, 82 / 124]
-const PAD_STRAND_TEMPLATE = [
-  { seed: 5, band: -1.4, amplitude: 2.2, speed: 0.05, width: 1, alpha: 0.6, color: 'primary' as const },
-  { seed: 63, band: 1.2, amplitude: 1.8, speed: 0.065, width: 0.75, alpha: 0.45, color: 'primary' as const },
-  { seed: 19, band: 0, amplitude: 2.6, speed: 0.045, width: 0.75, alpha: 0.35, color: 'secondary' as const }
-]
-const PAD_CRACKLE_X0_FRAC = 42 / 200
-const PAD_CRACKLE_X1_FRAC = 158 / 200
-const PAD_CRACKLE_STEP = 24 // sample points per tie — the ties are short, so a fixed count reads smoother than CRACKLE_STEP's per-pixel sampling
+type Strands = { tube: Point[][]; ties: Point[][][] }
+function makeStrands(active: boolean, e: number, u: number, pu: number): Strands {
+  return {
+    tube: Array.from({ length: active ? 3 : 1 }, () => jag(0, 0, 0, 1, 1 / 24, 4 * u, true)),
+    ties: RUNG_Y.map(() => [0, 1, 2].map(() => jag(-57 * pu, 0, 57 * pu, 0, 7, (1.2 + 1.3 * e) * pu, false)))
+  }
+}
 
-function drawPadCrackle(
-  ctx: CanvasRenderingContext2D,
-  colors: ReturnType<typeof readThemeColors>,
-  w: number,
-  h: number,
-  time: number
+function drawHead(
+  fc: CanvasRenderingContext2D,
+  col: ReturnType<typeof readThemeColors>,
+  strands: Strands,
+  p: { cx: number; u: number; pu: number; apY: number; y1: number; hw: number; e: number; active: boolean }
 ) {
-  ctx.lineJoin = 'round'
-  ctx.lineCap = 'round'
-
-  const x0 = PAD_CRACKLE_X0_FRAC * w
-  const x1 = PAD_CRACKLE_X1_FRAC * w
-  const span = x1 - x0
-
-  PAD_TIE_Y_FRACS.forEach((yFrac, tieIndex) => {
-    const y = yFrac * h
-    for (const strand of PAD_STRAND_TEMPLATE) {
-      // Offset the seed per tie so the three ties don't crackle in lockstep unison.
-      const seed = strand.seed + tieIndex * 17
-      ctx.beginPath()
-      for (let i = 0; i <= PAD_CRACKLE_STEP; i++) {
-        const x = x0 + (i / PAD_CRACKLE_STEP) * span
-        const h1 = hash01(i + seed)
-        const h2 = hash01(i + seed + 97)
-        const off =
-          Math.sin(i * 0.5 - time * strand.speed + h1 * 6.283) * 0.6 +
-          Math.sin(i * 1.6 - time * strand.speed * 1.8 + h2 * 6.283) * 0.4
-        const yy = y + strand.band + off * strand.amplitude
-        if (i === 0) ctx.moveTo(x, yy)
-        else ctx.lineTo(x, yy)
-      }
-      ctx.strokeStyle = colors[strand.color]
-      ctx.shadowColor = colors[strand.color]
-      ctx.shadowBlur = 2.5
-      ctx.globalAlpha = strand.alpha
-      ctx.lineWidth = strand.width
-      ctx.stroke()
+  // `u`: the head's and tube's unit; `pu`: the pad's (smaller while the narrow slide shrinks it).
+  const { cx, pu, apY, y1, hw, e, active } = p
+  const ap = apY // canvas y of the aperture (the deck's bottom edge, pad y 112)
+  const padV = ap - 112 * pu // canvas y of pad y = 0
+  const y0 = ap
+  fc.globalAlpha = 1
+  if (y1 > y0) {
+    fc.fillStyle = col.card
+    fc.fillRect(cx - hw, y0, hw * 2, y1 - y0)
+    if (active || e > 0.02) {
+      const g = fc.createLinearGradient(cx - hw * 2.6, 0, cx + hw * 2.6, 0)
+      g.addColorStop(0, 'transparent')
+      g.addColorStop(0.5, col.primary)
+      g.addColorStop(1, 'transparent')
+      fc.globalAlpha = 0.06 + 0.16 * e
+      fc.fillStyle = g
+      fc.fillRect(cx - hw * 2.6, y0, hw * 5.2, y1 - y0)
     }
+    fc.strokeStyle = col.foreground
+    fc.lineWidth = 1
+    fc.globalAlpha = active ? 0.3 + 0.4 * e : 0.25
+    for (const st of strands.tube) {
+      fc.beginPath()
+      st.forEach(([jx, f], i) => {
+        const x = cx + Math.max(-7 * (hw / 9), Math.min(7 * (hw / 9), jx))
+        const y = y0 + (y1 - y0) * f
+        if (i) fc.lineTo(x, y)
+        else fc.moveTo(x, y)
+      })
+      fc.stroke()
+    }
+    fc.globalAlpha = 1
+    fc.lineWidth = 2
+    fc.beginPath()
+    fc.moveTo(cx - hw, y0)
+    fc.lineTo(cx - hw, y1)
+    fc.moveTo(cx + hw, y0)
+    fc.lineTo(cx + hw, y1)
+    fc.stroke()
+  }
+  const tieA = Math.min(0.9, 0.38 + 0.5 * e)
+  RUNG_Y.forEach((ty, i) => {
+    const yy = padV + ty * pu
+    fc.strokeStyle = e > 0.05 ? col.primary : col.foreground
+    strands.ties[i]?.forEach((pts, n) => {
+      for (const [lw, a] of [
+        [3.5, tieA * 0.12],
+        [1, tieA * (n ? 0.55 : 1)]
+      ] as const) {
+        fc.lineWidth = lw
+        fc.globalAlpha = a
+        fc.beginPath()
+        pts.forEach(([x, jy], j) => {
+          if (j) fc.lineTo(cx + x, yy + jy)
+          else fc.moveTo(cx + x, yy + jy)
+        })
+        fc.stroke()
+      }
+    })
   })
-  ctx.shadowBlur = 0
-  ctx.globalAlpha = 1
+  const rg = fc.createRadialGradient(cx, ap, 0, cx, ap, 30 * pu)
+  rg.addColorStop(0, col.primary)
+  rg.addColorStop(1, 'transparent')
+  fc.globalAlpha = (0.08 + 0.25 * e) * (active ? 1 : 0.4)
+  fc.fillStyle = rg
+  fc.fillRect(cx - 30 * pu, ap - 30 * pu, 60 * pu, 60 * pu)
+  fc.globalAlpha = 1
 }
 
 const STATUS_META: Record<RoadmapMilestone['status'], { label: string; badgeClass: string }> = {
@@ -288,27 +294,19 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   const beamInnerRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Array<HTMLDivElement | null>>([])
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  // A second, small canvas scoped to the launchpad's own footprint — its cross-ties sit
-  // ABOVE `trackRef`'s own top edge (negative offset, same anchor `headRef` hangs off), so
-  // they fall outside the main canvas's `inset-0` box. Kept separate rather than growing
-  // the main canvas upward: that would mean re-deriving every beam/head coordinate the
-  // main render loop already writes in track-local (not pad-local) space.
-  const padCanvasRef = useRef<HTMLCanvasElement>(null)
   // How far the beam has deployed, in track-local px — written every scroll frame by the
   // effect below, read every ANIMATION frame by the crackle effect further down. Two
   // separate loops on purpose: the deploy math only needs to recompute on scroll/resize,
   // but the crackle must keep shimmering continuously even while the page sits still.
   const deployedRef = useRef(0)
   const headRef = useRef<HTMLDivElement>(null)
-  // Wraps glow/plume/atmosphere only — NOT the nose — so the two can fade independently:
-  // the rocket stays fully drawn once deployment starts, the atmosphere around it fades
-  // out once installation completes.
-  const atmoRef = useRef<HTMLDivElement>(null)
-  // The fabric background — invisible at rest, fades IN once the rocket starts moving
-  // (the same `deployed > 8` start gate the head itself uses) and stays on rather than
-  // flickering with every velocity change, since it's an ambient backdrop, not a
-  // speed-reactive effect like the atmosphere.
-  const fabricRef = useRef<HTMLDivElement>(null)
+  // The head overlay's glow disc — written imperatively by the render loop (the design's
+  // `r.glow`).
+  const glowRef = useRef<HTMLDivElement>(null)
+  // The narrow slide (0 centred -> 1 at the beam line) and the first spur bar, whose height the
+  // narrow tube matches.
+  const slideRef = useRef(1)
+  const spurRef = useRef<HTMLDivElement | null>(null)
   // Raised by the scroll effect below whenever the tip moves, decayed toward 0 every
   // animation frame by the canvas effect further down — the same "raise on input, decay
   // continuously" split `deployedRef` already uses, just for velocity instead of
@@ -318,11 +316,9 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
   const lastTForVelRef = useRef<number | null>(null)
   // The landing pad's anchor (deck top) — `style.top` written by the scroll effect below.
   const landRef = useRef<HTMLDivElement>(null)
-  const lockRef = useRef(0) // --lk, read by the crackle loop
   // The track's trailing run-out — its height is written by the scroll effect below (see
   // `fitRunOut`), not fixed in a class.
   const runOutRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     const track = trackRef.current
     const beamOuter = beamOuterRef.current
@@ -339,14 +335,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     // measure). `NextWebShell`'s app chrome scrolls an inner `overflow-y-auto` region,
     // not `window`, on every product this route could ship under — walk up for it
     // instead of assuming window.
-    let scrollTarget: HTMLElement | Window = window
-    for (let el = track.parentElement; el; el = el.parentElement) {
-      const style = getComputedStyle(el)
-      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) {
-        scrollTarget = el
-        break
-      }
-    }
+    const scrollTarget: HTMLElement | Window = findScrollParent(track) ?? window
     const scrollEl = scrollTarget instanceof HTMLElement ? scrollTarget : document.documentElement
 
     // Sizes the trailing run-out so the page ends where the landing does. Two floors, the
@@ -413,13 +402,31 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       fitRunOut(land.deckTop, frame.installDoneAt + LANDING.approachRem * remPx)
       for (const [k, v] of Object.entries(land.vars)) track.style.setProperty(k, v)
       if (landRef.current) landRef.current.style.top = `${land.deckTop}px`
+      // The landing's ambient layers (sky drift, comets) wait on this flag.
+      const landedFlag = land.landed ? 'true' : 'false'
+      if (track.dataset.landed !== landedFlag) track.dataset.landed = landedFlag
+      // Narrow layout only (the classes below are `max-[52.5rem]:`): the pad assembly rests
+      // centred and slides to the beam's left position as the reader scrolls. A pure function
+      // of the scroll offset (`--slide`, 0 centred -> 1 left, smoothstep), finished at 85% of
+      // the distance `s0` the page must scroll before the beam first reaches the track
+      // (`r.top + scrollTop` is constant, so `s0` is a layout fact, not history). `--cx` is
+      // the centred offset: half the track's width minus the beam centreline (4.90625rem on narrow, with the spur bars halved).
+      // Reduced motion shows the final left position.
+      const scrollTopNow = Math.max(0, scrollEl.scrollTop)
+      const s0 = scrollTopNow + (r.top - line)
+      const slideSpan = (s0 > 8 ? s0 : 240) * 0.85
+      const slideT = still ? 1 : Math.min(1, scrollTopNow / slideSpan)
+      const slide = slideT * slideT * (3 - 2 * slideT)
+      slideRef.current = slide
+      track.style.setProperty('--slide', slide.toFixed(4))
+      track.style.setProperty('--ses', String(NARROW_END_SCALE))
+      track.style.setProperty('--cx', `${(track.clientWidth / 2 - 4.90625 * remPx).toFixed(1)}px`)
 
       beamInner.style.height = `${H}px`
       beamOuter.style.height = `${land.headTop}px`
       deployedRef.current = land.headTop // head + crackle stop at touchdown
       velTargetRef.current = land.landed ? 0 : frame.velTarget // glow dies at contact
       lastTForVelRef.current = frame.deployed
-      lockRef.current = land.lock
 
       cards.forEach((card, i) => {
         const stage = frame.cardStages[i]
@@ -455,29 +462,37 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
 
   useEffect(() => {
     const track = trackRef.current
-    const beamOuter = beamOuterRef.current
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
-    const padCanvas = padCanvasRef.current
-    const padCtx = padCanvas?.getContext('2d')
-    if (!track || !beamOuter || !canvas || !ctx) return
+    const head = headRef.current
+    if (!track || !canvas || !ctx || !head) return
 
     let colors = readThemeColors(canvas)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const narrow = window.matchMedia('(max-width: 52.5rem)')
+    const scrollTarget: HTMLElement | Window = findScrollParent(track) ?? window
+    const scrollEl = scrollTarget instanceof HTMLElement ? scrollTarget : document.documentElement
     let raf = 0
-    let time = 0
-    // Chases `velTargetRef` (raised by the scroll effect) 20% of the way per frame,
-    // which is what turns discrete scroll ticks into a smooth `--v` — the designer
-    // handoff's own settle formula, just folded into this file's already-continuous
-    // RAF loop instead of the handoff's own self-starting/stopping one, since this
-    // loop already runs every frame regardless (for the strand shimmer).
-    let vel = 0
-    let fabricOpacity = 0
+    let lastT = 0
+    let lastS = scrollEl.scrollTop
+    let e = 0 // scroll energy: min(1, |px/s| / 1200), low-passed with tau 250ms
+    let noise = 0.5 // the rocket glow's low-passed noise (tau 400ms)
+    // Motion cues (design): streaks are the speed lines beside the body. They are a result of
+    // speed only (see `mv` below): none at rest, none while the rocket is not moving, none once landed.
+    let spawnAcc = 0
+    let streaks: Array<{ x: number; y: number; len: number; life: number; a: number }> = []
+    let strands: Strands | null = null
+    let genAt = 0
 
-    const render = () => {
+    // One frame of the design's `tick()` for the head: the idle group, the glow, then the
+    // front canvas (tube, rungs, aperture glow). The head's own `top` is `deployed` from the
+    // scroll effect (`computeTrackFrame` / `computeLanding`), unchanged.
+    const render = (now: number) => {
+      const dt = Math.min(0.1, (now - (lastT || now)) / 1000) || 0.016
+      lastT = now
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const w = track.clientWidth
-      const h = track.clientHeight
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
       if (w > 0 && h > 0 && (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr))) {
         canvas.width = Math.round(w * dpr)
         canvas.height = Math.round(h * dpr)
@@ -485,80 +500,143 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
 
-      // Cleared unconditionally, same as the main canvas above, so scrolling back to
-      // `deployed <= 0` erases the last-drawn crackle instead of leaving it stuck.
-      if (padCanvas && padCtx) {
-        const pw = padCanvas.clientWidth
-        const ph = padCanvas.clientHeight
-        if (
-          pw > 0 &&
-          ph > 0 &&
-          (padCanvas.width !== Math.round(pw * dpr) || padCanvas.height !== Math.round(ph * dpr))
-        ) {
-          padCanvas.width = Math.round(pw * dpr)
-          padCanvas.height = Math.round(ph * dpr)
-        }
-        padCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        padCtx.clearRect(0, 0, pw, ph)
-      }
+      const remPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
+      // `u0`: one pad unit (0.0625rem). `sc`: the narrow slide's optional shrink (1 by default),
+      // about the aperture; `u` is the scaled unit the pad and head are drawn at.
+      const isNarrow = narrow.matches
+      const sc = isNarrow ? 1 - (1 - NARROW_END_SCALE) * slideRef.current : 1
+      const u0 = 0.0625 * remPx
+      const u = u0 // the head's and tube's unit: never shrinks
+      const pu = u0 * sc // the pad's unit (rungs, aperture glow)
+      // Narrow: the tube is exactly as thick as the spur bars out to the cards (`h-5`, 1.25rem,
+      // measured off the first spur); desktop keeps the design's 9u half-width.
+      const spurH = spurRef.current?.offsetHeight || 1.25 * remPx
+      const hw = isNarrow ? spurH / 2 : 9 * u
+      const s = scrollEl.scrollTop
+      const v = Math.abs(s - lastS) / dt
+      lastS = s
+      e += (Math.min(1, v / 1200) - e) * (1 - Math.exp(-dt / 0.25))
+      const energy = reduce ? 0 : e
+      const rest = getRest(now)
+      const active = getPhase() !== 'idle'
+      const t = reduce ? 0 : now / 1000
 
-      vel += (velTargetRef.current - vel) * 0.2
-      velTargetRef.current *= 0.85
+      // The glow is low-passed noise (tau 400ms), .55 to .70, scaled by `rest`; static .62 reduced.
+      // Nothing else idles at the nose (the design removed its idle lines and ripple arcs).
+      noise += (Math.random() - noise) * (1 - Math.exp(-dt / 0.4))
+      if (glowRef.current) glowRef.current.style.opacity = (rest * (reduce ? 0.62 : 0.55 + 0.15 * noise)).toFixed(3)
 
       const deployed = deployedRef.current
-      if (fabricRef.current) {
-        fabricOpacity += ((deployed > 8 ? 1 : 0) - fabricOpacity) * 0.05
-        fabricRef.current.style.opacity = fabricOpacity.toFixed(3)
+      head.style.top = `${deployed}px`
+      // The head's x in track space (it is translated by the narrow layout's slide), so the
+      // tube and rungs are drawn where the pad really is.
+      const cx = head.getBoundingClientRect().left - track.getBoundingClientRect().left
+      if (!strands || (!reduce && now - genAt > (active ? 90 : 160))) {
+        genAt = now
+        strands = makeStrands(active, energy, u, pu)
       }
-      // Set on `track`, not `headRef` — the launchpad's aperture glow is a SIBLING of the
-      // head, not a descendant, so it can only pick up `--v` via inheritance from an
-      // ancestor the two share. One number, both structures light up together.
-      track.style.setProperty('--v', vel.toFixed(4))
-      if (headRef.current) {
-        // The rocket is always rendered, docked to the launchpad at `deployed === 0` —
-        // never faded out — so the harness never reads as headless before the first
-        // scroll. Only the atmosphere around it (glow/plume/shock-arcs, below) is a
-        // speed-earned effect; those already read as ~0 at rest via `var(--v,0)`.
-        headRef.current.style.top = `${deployed}px`
-        headRef.current.style.opacity = '1'
-      }
-      if (deployed > 0) {
-        // `offsetLeft` reports the box's pre-transform layout position — it does not
-        // account for the `-translate-x-1/2` centering transform on `beamOuter`, so it
-        // reads ~10px right of the beam's real painted centerline. `getBoundingClientRect`
-        // reflects the actual transformed geometry; subtracting the track's own rect
-        // converts it back to the track-local coordinate space the canvas draws in.
-        const trackRect = track.getBoundingClientRect()
-        const beamRect = beamOuter.getBoundingClientRect()
-        const beamX = beamRect.left + beamRect.width / 2 - trackRect.left
-        drawCrackle(ctx, colors, beamX, deployed, time, lockRef.current)
+      drawHead(ctx, colors, strands, {
+        cx,
+        u,
+        pu,
+        apY: TOP_PAD_REM * remPx - 12 * u0,
+        y1: TOP_PAD_REM * remPx + deployed + 4 * u,
+        hw,
+        e: energy,
+        active
+      })
 
-        if (padCanvas && padCtx) {
-          drawPadCrackle(padCtx, colors, padCanvas.clientWidth, padCanvas.clientHeight, time)
+      // Motion cues, drawn after the tube, rungs and aperture (design `tick()`): speed streaks
+      // beside the body and a two-arc bow shock hugging the nose. They are driven by scroll speed
+      // ALONE (no cruise floor, unlike the design): absent at rest, absent whenever the rocket is
+      // not moving (the reader stopped scrolling), and absent after landing; they ease out with
+      // the 250ms low-pass on `e` when scrolling stops.
+      // `nose` is the rocket's tip: the head anchor + 72u (body top at +4u, tip 68u below it).
+      const landed = track.dataset.landed === 'true'
+      const nose = deployed + 72 * u + TOP_PAD_REM * remPx
+      const mv = reduce || !active || landed ? 0 : Math.max(0, (e - 0.04) / 0.96)
+      if (mv > 0) {
+        spawnAcc += dt * (4 + 14 * mv)
+        while (spawnAcc > 1) {
+          spawnAcc -= 1
+          const side = Math.random() < 0.5 ? -1 : 1
+          streaks.push({
+            x: side * (16 + Math.random() * 20) * u,
+            y: nose + (Math.random() * 30 - 6) * u,
+            len: (8 + 22 * mv) * u,
+            life: 0,
+            a: 0.25 + 0.35 * mv
+          })
         }
       }
-
-      if (!reduce) {
-        time += 1
-        raf = requestAnimationFrame(render)
+      ctx.strokeStyle = colors.foreground
+      ctx.lineCap = 'round'
+      ctx.lineWidth = 1.5
+      streaks = streaks.filter((q) => {
+        q.life += dt
+        q.y -= (260 + 900 * mv) * dt
+        const f = q.life / 0.6
+        if (f >= 1) return false
+        ctx.globalAlpha = q.a * Math.sin(Math.PI * f)
+        ctx.beginPath()
+        ctx.moveTo(cx + q.x, q.y)
+        ctx.lineTo(cx + q.x, q.y + q.len)
+        ctx.stroke()
+        return true
+      })
+      if (mv > 0.02) {
+        for (const [i, [dy, hw0, a]] of (
+          [
+            [5, 12, 0.55],
+            [13, 20, 0.32]
+          ] as const
+        ).entries()) {
+          const hw = (hw0 + 10 * mv + 1.5 * Math.sin(t * 9 + i * 2)) * u
+          const y = nose + dy * u
+          const lift = (8 + 8 * mv) * u
+          ctx.globalAlpha = a * Math.min(1, mv * 1.6)
+          ctx.beginPath()
+          ctx.moveTo(cx - hw, y - lift)
+          ctx.quadraticCurveTo(cx, y + lift * 0.9, cx + hw, y - lift)
+          ctx.stroke()
+        }
       }
+      ctx.lineCap = 'butt'
+      ctx.globalAlpha = 1
+
+      if (!reduce) raf = requestAnimationFrame(render)
     }
     raf = requestAnimationFrame(render)
+
+    // Reduced motion draws still frames, so redraw when the head moves or the rest state changes.
+    const rerender = () => render(performance.now())
+    if (reduce) {
+      scrollTarget.addEventListener('scroll', rerender, { passive: true })
+      window.addEventListener('resize', rerender)
+    }
+    const unsubscribeRest = subscribeRest(() => {
+      if (reduce) rerender()
+    })
 
     const themeObserver = new MutationObserver(() => {
       colors = readThemeColors(canvas)
     })
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    const detachRest = attachRest(track)
 
     return () => {
+      detachRest()
+      unsubscribeRest()
       cancelAnimationFrame(raf)
+      scrollTarget.removeEventListener('scroll', rerender)
+      window.removeEventListener('resize', rerender)
       themeObserver.disconnect()
     }
   }, [])
 
   return (
     // Full-bleed outer, same split home's own full-width sections use (`page.tsx`'s
-    // `#next-steps`): the fabric backdrop is absolute against THIS box, so it spans the
+    // `#next-steps`): the fabric canvas is clipped to THIS box's bottom, so it spans the
     // whole viewport regardless of screen width, while `trackRef` below constrains the
     // beam/cards to a readable column. A single `max-w-5xl` wrapper around both would put
     // the fabric behind the same gutter as the text, which is exactly the "still has x
@@ -566,21 +644,15 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
     // run-out (see `fitRunOut`) ends it at the landscape's bottom, and `-mb-8` cancels
     // `page.tsx`'s `py-8` bottom so the planet meets the footer's rule directly.
     <div className='relative w-full -mb-8'>
-      {/* The "fabric of the universe" backdrop, mounted FIRST so every later sibling
-          (beam, canvas, head, cards) paints over it. Invisible at rest, fades in once
-          the rocket starts moving (see `fabricOpacity` in the effect above) rather than
-          being visible behind the static intro copy above this track. */}
-      <div ref={fabricRef} aria-hidden className='pointer-events-none absolute inset-0 opacity-0 motion-reduce:hidden'>
-        <EnergyFieldBg interactive={false} />
-      </div>
-      {/* `mt`, not `pt` — the beam/head/pad anchors are `position:absolute` with `top-0`,
-          which resolves against `trackRef`'s PADDING edge regardless of how much
-          padding-top it carries (padding never moves an absolutely positioned descendant's
-          containing-block edge — only normal-flow content, i.e. the cards, would shift).
-          `pt-32` here previously left the launchpad overlapping the hero text above it,
-          since the anchor point never actually moved. `mt` instead shifts `trackRef`'s
-          whole box within the outer wrapper's flow, which does move the anchor. */}
-      <div ref={trackRef} className='relative mx-auto max-w-5xl mt-40'>
+      {/* The roadmap's own fabric — a perspective grid with a slow shimmer, visible from the
+          first frame (see `RoadmapFabric.tsx`; the shared `EnergyFieldBg` is not used here).
+          Mounted FIRST so every later sibling (particles, beam, canvas, head, cards) paints
+          over it. */}
+      <RoadmapFabric />
+      {/* Square particles drifting over the fabric with parallax — a viewport-fixed canvas,
+          mounted before the track so the beam, head and cards paint over it. */}
+      <ScrollParticles />
+      <div ref={trackRef} data-landed='false' className='relative mx-auto max-w-5xl mt-56'>
         {/* The launchpad — ported from the designer's own isolated reference file, same
           precedent as the head. STRUCTURE, not animation: drawn fully at rest (no deploy
           fade), because the page would otherwise read as having no origin until scrolled.
@@ -589,15 +661,36 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
           effect above, so the two stay in sync with zero bookkeeping here. Must come
           BEFORE the beam in source so the beam paints over the deck's aperture gap
           instead of under it. */}
-        <div aria-hidden className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[3.375rem]'>
-          <div className='absolute top-[-1.375rem] left-[-2.125rem] h-[4.25rem] w-[4.25rem] rounded-full opacity-[calc(0.22+0.78*var(--v,0))] motion-reduce:opacity-[0.22] bg-[radial-gradient(circle,color-mix(in_oklab,var(--primary)_32%,transparent)_0%,transparent_62%)]' />
+        <div
+          aria-hidden
+          className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[4.90625rem] max-[52.5rem]:translate-x-[calc((1-var(--slide,1))*var(--cx,0px))] max-[52.5rem]:scale-[calc(1-(1-var(--ses,1))*var(--slide,1))] max-[52.5rem]:[transform-origin:0_-0.75rem]'
+        >
           <svg
-            viewBox='0 0 200 124'
-            className='absolute top-[-7.75rem] left-[-6.25rem] h-[7.75rem] w-[12.5rem] origin-bottom max-[52.5rem]:scale-50'
+            // `0 -58 200 182`: the original 200x124 pad (every coordinate below unchanged)
+            // plus 58 units above it for the sign. Same width and bottom edge, so the
+            // 11.375rem box grows upward only. No static rungs or scorch: the rungs between the
+            // towers and the aperture's glow are drawn on the front canvas (`drawHead`).
+            viewBox='0 -58 200 182'
+            className='absolute top-[-11.375rem] left-[-6.25rem] h-[11.375rem] w-[12.5rem] origin-bottom'
             fill='none'
           >
-            {/* cross-ties between the towers, drawn first so the towers cap them */}
-            <path d='M42 26 H158 M42 54 H158 M42 82 H158' stroke='var(--foreground)' strokeWidth='1.6' opacity='0.26' />
+            {/* the sign above the towers: a conduit down into the left tower, two short
+              posts (centred on the towers' x 34 and 166), and the sign itself; the live
+              screen is `PadScreen`, laid over this rect */}
+            <path d='M22 -36 H14 V30 H26' stroke='var(--foreground)' strokeWidth='1.5' opacity='0.6' />
+            <rect x='30' y='-10' width='8' height='16' fill='var(--card)' stroke='var(--foreground)' strokeWidth='2' />
+            <rect x='162' y='-10' width='8' height='16' fill='var(--card)' stroke='var(--foreground)' strokeWidth='2' />
+            <path d='M30 -2 H38 M162 -2 H170' stroke='var(--foreground)' strokeWidth='1' opacity='0.5' />
+            <rect
+              x='22'
+              y='-54'
+              width='156'
+              height='44'
+              rx='3'
+              fill='var(--card)'
+              stroke='var(--foreground)'
+              strokeWidth='2'
+            />
             {/* service towers */}
             <rect x='26' y='6' width='16' height='90' fill='var(--card)' stroke='var(--foreground)' strokeWidth='2' />
             <rect x='158' y='6' width='16' height='90' fill='var(--card)' stroke='var(--foreground)' strokeWidth='2' />
@@ -624,24 +717,9 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
             <path d='M22 104 H50 M150 104 H178' stroke='var(--primary)' strokeWidth='3.2' strokeLinecap='round' />
             {/* footings */}
             <path d='M22 112 L10 122 M178 112 L190 122' stroke='var(--foreground)' strokeWidth='2.2' />
-            {/* scorch: evidence the rocket already went */}
-            <path
-              d='M82 121 Q100 114 118 121'
-              stroke='var(--primary)'
-              strokeWidth='2'
-              strokeLinecap='round'
-              opacity='0.34'
-            />
           </svg>
-          {/* The cross-ties, energized — see `drawPadCrackle` above. Same box as the SVG
-            above (position, size, `origin-bottom` + mobile scale) so its three strands
-            trace the static tie lines exactly; drawn as a sibling rather than baked into
-            the SVG since it needs its own per-frame canvas repaint. */}
-          <canvas
-            ref={padCanvasRef}
-            aria-hidden
-            className='pointer-events-none absolute top-[-7.75rem] left-[-6.25rem] h-[7.75rem] w-[12.5rem] origin-bottom max-[52.5rem]:scale-50'
-          />
+          {/* The live screen inside the sign above the towers — see `PadScreen.tsx`. */}
+          <PadScreen />
         </div>
         {/* The landing pad + planet surface — mounted before the beam so the nose paints
           over the deck. See `HarnessLanding.tsx`. */}
@@ -649,91 +727,59 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
         <div
           ref={beamOuterRef}
           aria-hidden
-          className='pointer-events-none absolute top-0 left-1/2 h-0 w-5 -translate-x-1/2 overflow-hidden max-[52.5rem]:left-[2.75rem] max-[52.5rem]:translate-x-0'
+          className='pointer-events-none absolute top-0 left-1/2 h-0 w-5 -translate-x-1/2 overflow-hidden max-[52.5rem]:left-[4.28125rem] max-[52.5rem]:translate-x-0'
         >
-          <div
-            ref={beamInnerRef}
-            className='absolute top-0 left-0 h-0 w-5 border-x-2 border-foreground bg-[repeating-linear-gradient(to_bottom,var(--foreground)_0_1px,transparent_1px_72px)]'
-          />
+          <div ref={beamInnerRef} className='absolute top-0 left-0 h-0 w-5' />
         </div>
-        <canvas ref={canvasRef} aria-hidden className='pointer-events-none absolute inset-0 size-full' />
 
-        {/* The head — ported from the designer's own isolated reference file rather than
-          re-derived. A zero-size anchor point riding the beam tip (`top`/`--v` written
-          imperatively by the canvas effect above, same "no Tailwind equivalent" carve-out
-          RULE 3 already covers); everything visible hangs off it via fixed rem offsets, in
-          PAINT order — glow, then plume, then the atmosphere arcs, then the nose LAST so
-          it sits on top of its own glow. Only the nose is static; the other three read
-          `--v` for opacity/scale, so the "atmosphere" is earned by scroll speed instead of
-          looping. Positioned like `beamOuter`: `left-1/2` desktop, the beam's own mobile
-          centerline (`3.375rem`, see the junction's comment) below the breakpoint — a
-          zero-width box needs no `-translate-x-1/2` correction the way a wide one would. */}
+        {/* The head — the Claude Design handoff's overlay, 1:1: an `0.0625rem`-per-unit SVG
+          (viewBox -60 -4 160 116) with the card-filled rocket, its fins, nose band and cockpit
+          slot and, behind it, a soft glow disc (no idle lines: the design removed them). A zero-size anchor riding the head's tip
+          (`top` written imperatively by the canvas effect; on the narrow layout it is also
+          translated by the slide). The body's top edge sits 4 units below the anchor, which is
+          where the tube ends. Half size narrow, like the pad. */}
         <div
           ref={headRef}
           aria-hidden
-          className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[3.375rem]'
+          className='pointer-events-none absolute top-0 left-1/2 size-0 max-[52.5rem]:left-[4.90625rem] max-[52.5rem]:translate-x-[calc((1-var(--slide,1))*var(--cx,0px))]'
         >
-          <div ref={atmoRef} className='opacity-[var(--af,1)]'>
-            <div className='absolute top-[-2.75rem] left-[-6.5rem] h-[13rem] w-[13rem] rounded-full opacity-[calc(0.16+0.84*var(--v,0))] scale-[calc(0.72+0.44*var(--v,0))] motion-reduce:hidden bg-[radial-gradient(circle,color-mix(in_oklab,var(--primary)_40%,transparent)_0%,color-mix(in_oklab,var(--primary)_11%,transparent)_38%,transparent_66%)]' />
-            <div className='absolute top-[-7rem] left-[-0.5625rem] h-[7rem] w-[1.125rem] opacity-[var(--v,0)] motion-reduce:hidden bg-[linear-gradient(to_top,color-mix(in_oklab,var(--primary)_58%,transparent),transparent)]' />
+          <div className='absolute top-[-0.125rem] left-[-5rem] h-[7.25rem] w-[10rem] origin-[50%_1.72%]'>
+            <div
+              ref={glowRef}
+              className='absolute top-[62%] left-1/2 aspect-square w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 bg-[radial-gradient(closest-side,color-mix(in_oklch,var(--foreground)_9%,transparent),transparent)]'
+            />
             <svg
-              viewBox='0 0 140 100'
-              // Scaled down below the breakpoint about its own top-center, so the arcs'
-              // 4.375rem half-width fits inside the mobile centerline instead of running
-              // off the viewport's left edge.
-              className='absolute top-[0.125rem] left-[-4.375rem] h-[6.25rem] w-[8.75rem] origin-top opacity-[calc(0.2+0.8*var(--v,0))] max-[52.5rem]:scale-75'
+              viewBox='-60 -4 160 116'
+              className='relative block w-full overflow-visible'
               fill='none'
+              stroke='var(--foreground)'
+              strokeWidth='2'
             >
-              <path
-                d='M8 32 H30 M132 32 H110 M15 45 H33 M125 45 H107'
-                stroke='var(--primary)'
-                strokeWidth='2.4'
+              <path d='M12 2 H28 V40 L20 70 L12 40 Z' fill='var(--card)' vectorEffect='non-scaling-stroke' />
+              <path d='M12 24 L5 33 V42 L12 37' fill='var(--card)' vectorEffect='non-scaling-stroke' />
+              <path d='M28 24 L35 33 V42 L28 37' fill='var(--card)' vectorEffect='non-scaling-stroke' />
+              <line x1='12' y1='8' x2='28' y2='8' strokeWidth='1' opacity='0.4' vectorEffect='non-scaling-stroke' />
+              <line
+                x1='16'
+                y1='26'
+                x2='24'
+                y2='26'
+                strokeWidth='3'
                 strokeLinecap='round'
-                opacity='0.55'
-              />
-              <path
-                d='M22 86 Q70 63 118 86'
-                stroke='var(--primary)'
-                strokeWidth='2.6'
-                strokeLinecap='round'
-                opacity='0.5'
-              />
-              <path
-                d='M41 95 Q70 81 99 95'
-                stroke='var(--primary)'
-                strokeWidth='2'
-                strokeLinecap='round'
-                opacity='0.3'
+                vectorEffect='non-scaling-stroke'
               />
             </svg>
           </div>
-          <LandingLegs />
-          <svg viewBox='0 0 48 64' className='absolute top-[-0.25rem] left-[-1.5rem] h-[4rem] w-[3rem]' fill='none'>
-            <path
-              d='M12 10 L3 22 V34 L12 26 Z'
-              fill='var(--card)'
-              stroke='var(--foreground)'
-              strokeWidth='2'
-              strokeLinejoin='miter'
-            />
-            <path
-              d='M36 10 L45 22 V34 L36 26 Z'
-              fill='var(--card)'
-              stroke='var(--foreground)'
-              strokeWidth='2'
-              strokeLinejoin='miter'
-            />
-            <path
-              d='M12 0 H36 V30 L24 60 L12 30 Z'
-              fill='var(--background)'
-              stroke='var(--foreground)'
-              strokeWidth='2.4'
-              strokeLinejoin='miter'
-            />
-            <path d='M12 9 H36' stroke='var(--foreground)' strokeWidth='1.6' opacity='0.4' />
-            <path d='M17 19 H31' stroke='var(--primary)' strokeWidth='3.4' strokeLinecap='round' />
-          </svg>
         </div>
+
+        {/* The front canvas: the tube from the aperture to the head, the rungs and the aperture
+          glow (`drawHead`). It covers the track plus 8rem above it, where the pad's aperture
+          and rungs sit. The beam is only a measuring box now; the tube replaces its rail. Mounted AFTER the head so the motion cues (speed streaks, bow shock) paint over the head's card-filled body. */}
+        <canvas
+          ref={canvasRef}
+          aria-hidden
+          className='pointer-events-none absolute top-[-8rem] left-0 h-[calc(100%+8rem)] w-full'
+        />
 
         {items.map((item, i) => {
           const side = i % 2 === 0 ? 'right' : 'left'
@@ -763,7 +809,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
             >
               <div
                 aria-hidden
-                // `max-[52.5rem]:left-[3.375rem]` is the beam's own mobile CENTERLINE, not
+                // `max-[52.5rem]:left-[4.90625rem]` is the beam's own mobile CENTERLINE, not
                 // its left edge — the beam is a narrow `w-5` (1.25rem) box at
                 // `left-[2.75rem]`, so its center sits at 2.75rem + 1.25rem/2 = 3.375rem.
                 // That centerline is set by the widest thing hanging off it, the launchpad:
@@ -778,7 +824,7 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                 // `-translate-x-1/2` stays active at every breakpoint (only the anchor
                 // changes) so a wide box centers on a POINT the same way it does on
                 // desktop, rather than left-aligning to one.
-                className='absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2 opacity-[var(--b,0)] scale-[calc(0.74+0.26*var(--b,0))] max-[52.5rem]:left-[3.375rem] motion-reduce:scale-100 motion-reduce:opacity-100'
+                className='absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2 opacity-[var(--b,0)] scale-[calc(0.74+0.26*var(--b,0))] max-[52.5rem]:left-[4.90625rem] motion-reduce:scale-100 motion-reduce:opacity-100'
               >
                 <JunctionGlyph />
               </div>
@@ -799,7 +845,8 @@ export function DeploymentTrack({ items }: { items: DeploymentTrackItem[] }) {
                 // change between breakpoints, only where the beam's centerline sits does.
                 // The mobile spur length is what's left between that start and the panel's
                 // fixed margin, so moving the centerline never moves or narrows the cards.
-                className='pointer-events-none absolute top-1/2 left-[calc(50%+0.974375rem)] h-5 -translate-y-1/2 overflow-hidden [--spur-len:2.9375rem] w-[calc(var(--spur-len)*var(--a,0))] max-[52.5rem]:left-[4.349375rem] max-[52.5rem]:[--spur-len:3.0625rem] motion-reduce:w-[var(--spur-len)]'
+                ref={i === 0 ? spurRef : undefined}
+                className='pointer-events-none absolute top-1/2 left-[calc(50%+0.974375rem)] h-5 -translate-y-1/2 overflow-hidden [--spur-len:2.9375rem] w-[calc(var(--spur-len)*var(--a,0))] max-[52.5rem]:left-[5.880625rem] max-[52.5rem]:[--spur-len:1.53125rem] motion-reduce:w-[var(--spur-len)]'
               >
                 <div className='absolute top-0 left-0 h-5 w-[var(--spur-len)] border-y-2 border-foreground bg-[repeating-linear-gradient(to_right,var(--foreground)_0_1px,transparent_1px_26px)]' />
               </div>

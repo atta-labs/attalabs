@@ -29,3 +29,15 @@
 /* The roadmap landing (`_components/HarnessLanding.tsx`) — the only keyframes it
    needs: the primary star sparkles in the sky. */
 @keyframes vin-twinkle { 0%, 100% { transform: scale(0.55); } 50% { transform: scale(1.1); } }
+
+/* The landing's ambient sky drift is not CSS: `DeploymentTrack`'s render loop ramps an
+   amplitude after touchdown and writes the moon / ringed planet / star offsets as
+   `--dm-*`, `--dr-*`, `--ds-*` custom properties (SVG user units) on the track; the
+   landscape's groups read them (`_components/HarnessLanding.tsx`). Nothing is written under
+   reduced motion, so the groups stay put. */
+
+/* The pad screen's blinking cursor (`_components/PadScreen.tsx`). The component only
+   renders the cursor when motion is allowed; the rule below is a second guard. */
+@keyframes vin-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.vin-cursor { animation: vin-blink 1.06s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) { .vin-cursor { animation: none; } }
