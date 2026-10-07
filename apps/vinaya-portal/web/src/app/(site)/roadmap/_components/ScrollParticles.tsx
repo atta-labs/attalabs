@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { readThemeColors } from '../../_components/canvas/theme-colors'
+import { HORIZON_Y, horizonDepth } from '../_lib/horizon'
 import { findScrollParent } from '../_lib/scroll-signal'
 
 // Drifting squares over the fabric (the design's numbers, but SOLID like the landing hero's and
@@ -18,7 +19,8 @@ import { findScrollParent } from '../_lib/scroll-signal'
 // sway, and a small cursor parallax (the hero tilts its camera a little with the pointer; here the
 // layers shift slightly against it, bigger squares, which read as nearer, shifting more; smoothed
 // at 0.05 per frame, no repulsion, as in the hero). Under reduced motion: one still frame, no
-// sway, no drift, no pointer, no parallax.
+// sway, no drift, no pointer, no parallax. They read the fabric's horizon (`_lib/horizon.ts`):
+// size and alpha scale 0.5..1 with the same depth factor, motion unchanged.
 const COUNT = 18
 const SQUARE_ALPHA_LIGHT = 0.08 // the hero's --hero-fabric-alpha per scheme
 const SQUARE_ALPHA_DARK = 0.12
@@ -100,7 +102,8 @@ export function ScrollParticles() {
       const worldH = maxScroll() * 0.5 + h
       const dark = document.documentElement.dataset.theme === 'dark'
       ctx.fillStyle = colors.foreground
-      ctx.globalAlpha = (dark ? SQUARE_ALPHA_DARK : SQUARE_ALPHA_LIGHT) * onScreen
+      const squareAlpha = (dark ? SQUARE_ALPHA_DARK : SQUARE_ALPHA_LIGHT) * onScreen
+      const horizonPx = h * HORIZON_Y
       for (const q of SQUARES) {
         const reach = POINTER_SHIFT * q.size
         const y =
@@ -109,10 +112,14 @@ export function ScrollParticles() {
           (reduce ? 0 : DRIFT_Y * Math.sin((TAU * t) / q.periodY + q.phaseY) + pointerY * reach)
         if (y < -20 || y > h + 20) continue
         const x = q.fx * w + (reduce ? 0 : 3 * Math.sin((TAU * t) / q.period + q.phase) + pointerX * reach)
+        // The same horizon as the fabric: squares near it are smaller and fainter (0.5 .. 1).
+        const depth = 0.5 + 0.5 * horizonDepth((y - horizonPx) / (h - horizonPx))
+        const size = q.size * depth
+        ctx.globalAlpha = squareAlpha * depth
         ctx.save()
         ctx.translate(x, y)
         ctx.rotate(q.rot)
-        ctx.fillRect(-q.size / 2, -q.size / 2, q.size, q.size)
+        ctx.fillRect(-size / 2, -size / 2, size, size)
         ctx.restore()
       }
       ctx.globalAlpha = 1

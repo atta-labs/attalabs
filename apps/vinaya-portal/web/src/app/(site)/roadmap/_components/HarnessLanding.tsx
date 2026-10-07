@@ -1,8 +1,7 @@
 'use client'
 
 // HarnessLanding — the moon-landing scene, ported 1:1 from the Claude Design handoff's scene
-// SVG (viewBox 0 0 1400 560: 30 seeded '+' stars, the moon, the ringed planet, the home
-// planet with its craters, the landing pad slab). The landing's TRIGGER and PROGRESS are
+// SVG (viewBox 0 0 1400 560: the home planet with its craters, the landing pad slab). The landing's TRIGGER and PROGRESS are
 // unchanged: ONE scroll-derived value, L (0 -> 1), from the pure `computeLanding` below
 // (`frame.deployed` + `frame.installDoneAt`; no keyframes, no history, so scrolling back
 // un-lands exactly). It writes custom properties on `trackRef`; of them only `--lp` (the
@@ -15,14 +14,11 @@
 //     rocket is the HEAD overlay in `DeploymentTrack`: at touchdown its nose tip rests on
 //     the slab top (4.5rem below the head anchor, against the 2.875rem the pure
 //     `computeLanding` uses for `deckTop`, hence the 1.625rem nudge on the scene's `top`).
-//   • Drift and comets are the design's `tick()` numbers in scene units: after landing an
-//     amplitude A eases 0 -> 1 over 1.2s (back over 0.6s, `1-(1-p)^3`); the moon moves
-//     (5A sin(2*pi*t/11), 3A cos(..)), the ringed planet (8A sin(2*pi*t/19), 4A sin(.. + 1);
-//     its tilt stays -18deg), the stars (2A sin(2*pi*t/23), 1.5A cos(..)); the home planet
-//     and the pad stay still. One comet at a time: the first 1.5-3s after landing, then a
-//     5-11s gap; 520 units in 1.8s, linear, a 70-unit gradient tail, fading over the first
-//     and last 20%. A single rAF loop writes the attributes; none of it runs under reduced
-//     motion.
+//   • Comets are the design's `tick()` numbers in scene units: one at a time, the first 1.5-3s
+//     after landing, then a 5-11s gap; 520 units in 1.8s, linear, a 70-unit gradient tail, fading
+//     over the first and last 20%. A single rAF loop writes the attributes; none of it runs
+//     under reduced motion. The scene keeps only the destination: the home planet and the pad
+//     (no moon, ringed planet or star field).
 //   • Dimensions are rem; colours are `var(--foreground|--card)` presentation attributes.
 
 import { forwardRef, useEffect, useId, useRef } from 'react'
@@ -71,49 +67,23 @@ export function computeLanding(deployed: number, installDoneAt: number, remPx: n
   }
 }
 
-// The design's seeded star field (a Lehmer generator), 30 small '+' marks.
-const STARS = (() => {
-  let seed = 7
-  const rnd = () => {
-    seed = (seed * 16807) % 2147483647
-    return seed / 2147483647
-  }
-  return Array.from({ length: 30 }, () => {
-    const x = 60 + rnd() * 1280
-    const y = 20 + rnd() * 320
-    const z = 1.5 + rnd() * 2
-    return `M${(x - z).toFixed(1)} ${y.toFixed(1)}H${(x + z).toFixed(1)}M${x.toFixed(1)} ${(y - z).toFixed(1)}V${(y + z).toFixed(1)}`
-  })
-})()
-
-const TAU = Math.PI * 2
 const NS = 'non-scaling-stroke'
 
-// The scene + the drift/comet loop. A zero-size anchor on the beam centreline at the DECK
+// The scene + the comet loop. A zero-size anchor on the beam centreline at the DECK
 // TOP; `style.top` is written imperatively by the scroll effect (same carve-out as headRef).
 // Mount it BEFORE the beam/head so the head paints over the scene.
 export const HarnessLanding = forwardRef<HTMLDivElement>(function HarnessLanding(_, ref) {
   const gradientId = useId().replace(/:/g, '')
-  const moonRef = useRef<SVGGElement>(null)
-  const ringedRef = useRef<SVGGElement>(null)
-  const starsRef = useRef<SVGGElement>(null)
   const cometRef = useRef<SVGLineElement>(null)
 
   useEffect(() => {
-    const moon = moonRef.current
-    const ringed = ringedRef.current
-    const stars = starsRef.current
     const comet = cometRef.current
-    if (!moon || !ringed || !stars || !comet) return
+    if (!comet) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const track = moon.closest<HTMLElement>('[data-landed]')
+    const track = comet.closest<HTMLElement>('[data-landed]')
     if (!track) return
 
     let raf = 0
-    let land = 0
-    let landFrom = 0
-    let landTo = 0
-    let landT0 = 0
     let wasLanded: boolean | null = null
     let cometNext = Number.POSITIVE_INFINITY
     let live: { dir: number; ang: number; x: number; y: number; t0: number } | null = null
@@ -121,13 +91,9 @@ export const HarnessLanding = forwardRef<HTMLDivElement>(function HarnessLanding
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
       if (document.hidden) return
-      const t = now / 1000
       const landed = track.dataset.landed === 'true'
       if (landed !== wasLanded) {
         wasLanded = landed
-        landTo = landed ? 1 : 0
-        landT0 = now
-        landFrom = land
         if (landed) {
           cometNext = now + 1500 + Math.random() * 1500
         } else {
@@ -135,21 +101,6 @@ export const HarnessLanding = forwardRef<HTMLDivElement>(function HarnessLanding
           comet.setAttribute('opacity', '0')
         }
       }
-      const lp = Math.min(1, (now - landT0) / (landTo ? 1200 : 600))
-      land = landFrom + (landTo - landFrom) * (1 - (1 - lp) ** 3)
-      const A = land
-      moon.setAttribute(
-        'transform',
-        `translate(${(5 * A * Math.sin((TAU * t) / 11)).toFixed(2)} ${(3 * A * Math.cos((TAU * t) / 11)).toFixed(2)})`
-      )
-      ringed.setAttribute(
-        'transform',
-        `translate(${(8 * A * Math.sin((TAU * t) / 19)).toFixed(2)} ${(4 * A * Math.sin((TAU * t) / 19 + 1)).toFixed(2)})`
-      )
-      stars.setAttribute(
-        'transform',
-        `translate(${(2 * A * Math.sin((TAU * t) / 23)).toFixed(2)} ${(1.5 * A * Math.cos((TAU * t) / 23)).toFixed(2)})`
-      )
 
       if (!landed) return
       if (!live && now > cometNext) {
@@ -213,11 +164,6 @@ export const HarnessLanding = forwardRef<HTMLDivElement>(function HarnessLanding
             <stop offset='1' stopColor='var(--foreground)' stopOpacity='0.7' />
           </linearGradient>
         </defs>
-        <g ref={starsRef} strokeWidth='1.2' opacity='0.5'>
-          {STARS.map((d) => (
-            <path key={d} d={d} vectorEffect={NS} />
-          ))}
-        </g>
         <line
           ref={cometRef}
           x1='0'
@@ -230,21 +176,6 @@ export const HarnessLanding = forwardRef<HTMLDivElement>(function HarnessLanding
           opacity='0'
           vectorEffect={NS}
         />
-        <g ref={moonRef}>
-          <g transform='translate(330 170)'>
-            <circle r='26' fill='var(--card)' vectorEffect={NS} />
-            <circle cx='-8' cy='-6' r='5' strokeWidth='1.2' opacity='0.5' vectorEffect={NS} />
-            <circle cx='9' cy='8' r='3' strokeWidth='1.2' opacity='0.5' vectorEffect={NS} />
-          </g>
-        </g>
-        <g ref={ringedRef}>
-          <g transform='translate(1100 120) rotate(-18)'>
-            <ellipse rx='62' ry='14' vectorEffect={NS} />
-            <circle r='34' fill='var(--card)' vectorEffect={NS} />
-            <path d='M-62 0 A62 14 0 0 0 62 0' vectorEffect={NS} />
-            <line x1='-22' y1='-12' x2='10' y2='-12' strokeWidth='1.2' opacity='0.4' vectorEffect={NS} />
-          </g>
-        </g>
         <circle cx='700' cy='780' r='380' fill='var(--card)' vectorEffect={NS} />
         <ellipse cx='560' cy='470' rx='26' ry='8' strokeWidth='1.2' opacity='0.45' vectorEffect={NS} />
         <ellipse cx='850' cy='452' rx='18' ry='6' strokeWidth='1.2' opacity='0.45' vectorEffect={NS} />
