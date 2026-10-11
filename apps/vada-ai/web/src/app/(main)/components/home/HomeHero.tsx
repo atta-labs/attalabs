@@ -1,59 +1,32 @@
 'use client'
 
-import { Heading, Text } from '@atta/ui/components'
-import { useEffect, useState } from 'react'
-import { DeliberateAction } from './DeliberateAction'
+import { Text } from '@atta/ui/shared'
 import { HomeCanvas } from './HomeCanvas'
-import { LearnMoreAction } from './LearnMoreAction'
+import { LetterReveal } from './LetterReveal'
 
+// Title + subtitle are Vinaya Portal's landing lockup in its hero state (`HeroLockup.tsx`
+// scaled by `lockup-flip.js`'s FLIP.HERO_SCALE = 3.6, descriptor counter-scaled by
+// DESC_HERO = 0.5): the word is font-mono normal at text-sm × 3.6 = 3.15rem, the descriptor
+// font-mono medium uppercase tracking-[0.18em] at text-sm × 1.8 = 1.575rem. Same letter
+// cascade, same 40ms / 25ms steps.
 export function HomeHero() {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
   return (
     <HomeCanvas
-      render={({ animationComplete, ringVisible }) => (
-        <div
-          className={`relative z-10 flex flex-col items-center gap-10 transition-opacity duration-150 ${ringVisible ? '' : 'opacity-0 pointer-events-none'}`}
-        >
-          <div
-            className={`flex flex-col items-center gap-4 transition-all duration-700 ease-out ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
-          >
-            <Heading level={1} className='text-6xl text-foreground font-serif'>
-              Vāda
-            </Heading>
-            <Text className='text-xl font-mono uppercase tracking-widest text-muted-foreground'>
-              Multi-model deliberation
-            </Text>
-          </div>
-
-          <div className='flex flex-col items-center gap-6'>
-            <Text
-              as='p'
-              className={`text-2xl text-foreground text-center max-w-md transition-[clip-path] duration-[900ms] ease-out ${animationComplete ? '[clip-path:inset(0_0_0_0)]' : '[clip-path:inset(0_100%_0_0)]'}`}
-            >
-              The room outperforms the individual.
-            </Text>
-            <Text
-              as='p'
-              className={`text-base text-muted-foreground text-center max-w-sm transition-opacity duration-700 ease-out ${animationComplete ? 'opacity-100 delay-500' : 'opacity-0 delay-0'}`}
-            >
-              Bring a question. A team of AI models debates it. You get the disagreement, not just the answer.
-            </Text>
-
-            <div
-              className={`pointer-events-auto flex flex-row items-center gap-4 transition-opacity duration-500 ease-out ${animationComplete ? 'opacity-100 delay-300' : 'opacity-0 delay-0'}`}
-            >
-              <DeliberateAction />
-              <LearnMoreAction />
-            </div>
-          </div>
-
+      renderTop={({ scrolled }) => (
+        <div className={`transition-opacity duration-500 ${scrolled ? 'opacity-0' : ''}`}>
           <Text
-            as='small'
-            className={`uppercase tracking-widest transition-opacity duration-700 ease-out ${animationComplete ? 'opacity-100 delay-1000' : 'opacity-0 delay-0'}`}
+            as='span'
+            weight='normal'
+            className='absolute top-[15.5%] left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[3.15rem] max-sm:text-[2.25rem] leading-none tracking-normal text-foreground'
           >
-            AN ATTĀ PRODUCT
+            <LetterReveal text='Vāda' delayStep={40} />
+          </Text>
+          <Text
+            as='span'
+            weight='medium'
+            className='absolute top-[24%] left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[1.575rem] leading-none uppercase tracking-[0.18em] text-muted-foreground max-sm:text-xs'
+          >
+            <LetterReveal text='Multi-model deliberation' delayStep={25} />
           </Text>
         </div>
       )}

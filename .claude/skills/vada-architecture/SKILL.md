@@ -156,6 +156,8 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 
 **retro's `Badge` has no `size` variant** (only `variant`) since the retroui relaunch (`d2bca515`) — `SessionCard.tsx` carried a stale `size='xs'` prop until fixed here; grep `<Badge` call sites for a stray `size=` before reusing this pattern elsewhere in Vāda.
 
+**The home hero is a Three.js scene** (`three` is a direct `web` dependency, used only under `(main)/components/home/fabric/`). It never hardcodes colors: it reads the same CSS tokens at runtime (`--agent-*`, `--foreground`, `--card`, …) and re-reads them on theme change, so CMS themes reach it like any DOM surface. The scene's beats and invariants are documented in `.claude/skills/vada-home-sections/SKILL.md`.
+
 ## Locked Architectural Decisions
 
 | Decision | Reason |

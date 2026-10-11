@@ -23,6 +23,8 @@
       "!apps/vinaya-portal/web/src/app/(site)/_components/hero-canvas/harness-model.js",
       "!apps/vinaya-portal/web/src/app/(site)/_components/hero-canvas/field-3d.js",
       "!apps/vinaya-portal/web/src/app/(site)/_components/hero-canvas/underworld-beam.js",
+      "!apps/vada-ai/web/src/app/(main)/components/home/fabric/field-3d.js",
+      "!apps/vada-ai/web/src/app/(main)/components/home/fabric/floaters.js",
       "!.worktrees",
       "!.claude/worktrees",
       "!.mcp.json",

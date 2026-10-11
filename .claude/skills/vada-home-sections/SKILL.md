@@ -11,6 +11,24 @@ This skill documents the reusable primitives and the convention every new sectio
 
 ---
 
+## The Hero Above §2
+
+`components/home/HomeHero.tsx` mounts `HomeCanvas`, a scroll-driven Three.js scene in `components/home/fabric/`. The scene shows a deliberation in four beats as the hero track scrolls:
+
+1. **Question** — the Synthesizer hub sphere shows the question; five reviewer spheres sit in a ring around it.
+2. **Fan-out** — one spoke per reviewer grows from the hub; a message dot carries the question out along each.
+3. **Answers** — each reviewer's answer dot travels back. Its spoke closes into the hub behind the dot, so spokes disappear one by one in answer order.
+4. **Verdict** — the hub text morphs into the decision while the camera leans in.
+
+Invariants:
+
+- **Colors come from tokens, read at runtime.** `fabric/tokens.js` resolves CSS variables (`--agent-*`, `--foreground`, `--card`, …) to Three.js colors, and the scene re-reads them on theme change. Never hardcode a color in the scene.
+- **Hub text is canvas-drawn** in `--font-mono`, with sizes as fractions of the canvas size (`fabric-scene.js`). At the current sizes "Should we ship it?" spans most of the sphere's width.
+- **Spokes are thin cylinders, not `Line`s.** A 1px line breaks into fragments once the camera tilts.
+- **The title lockup** (`Vāda` / `Multi-model deliberation`) uses the shared `Text` primitive with `LetterReveal`, a per-letter cascade matching Vinaya Portal's hero.
+
+---
+
 ## File Layout
 
 ```

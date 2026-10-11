@@ -15,6 +15,12 @@ import { fetchVadaBranding } from '@/lib/branding'
 import { PUBLIC_ROUTES, AUTH_ROUTES } from '@/lib/route-config'
 import type { FaceStyle } from '@/components/agents'
 
+// No bottom border anywhere. On the home hero's opening state (`data-bare="true"` on the
+// header, see StickyHeaderTopBar) the frame has no surface at all — background, shadow and
+// backdrop blur drop, so the fabric paints straight through (Vinaya's TOPBAR_CHROME_CLASS).
+const TOPBAR_CHROME_CLASS =
+  'border-transparent [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none [[data-bare=true]_&]:backdrop-blur-none'
+
 export default async function MainLayout({ children }: { children: ReactNode }) {
   const { userId: clerkId } = await auth()
   let faceStyle: FaceStyle = 'emblematic'
@@ -29,7 +35,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const darkUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url
   const logo =
     lightUrl || darkUrl ? (
-      <NextLink variant='unstyled' href='/'>
+      <NextLink variant='unstyled' href='/' data-topbar-logo>
         <Logo
           light={lightUrl}
           dark={darkUrl}
@@ -53,7 +59,13 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
       <ToastProvider defaultPosition='bottom-right'>
         <div className='flex flex-col min-h-dvh'>
           <StickyHeaderTopBar isBlurred={true} className='z-40 border-border/40'>
-            <TopBar logo={logo} links={PUBLIC_ROUTES} signedInLinks={AUTH_ROUTES} extraActions={extraActions} />
+            <TopBar
+              logo={logo}
+              links={PUBLIC_ROUTES}
+              signedInLinks={AUTH_ROUTES}
+              extraActions={extraActions}
+              chromeClassName={TOPBAR_CHROME_CLASS}
+            />
           </StickyHeaderTopBar>
           <div className='flex-1 flex flex-col'>
             <div className='flex-1'>{children}</div>
