@@ -40,7 +40,7 @@ jobs:
       - name: Run vinaya archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.37.0 archive --merge-sha=${{ github.sha }}
+        run: npx --yes @attalabs/vinaya@0.38.0 archive --merge-sha=${{ github.sha }}
       - name: Self-archive the tranche once its last task merges (O4)
         # `vinaya archive tranche` already IS the "any open task Issue left"
         # check (`trancheArchivalStatus`) — this step never re-derives that
@@ -56,7 +56,7 @@ jobs:
           BRANCH="$(gh pr view "$PR_NUMBER" -R ${{ github.repository }} --json headRefName --jq .headRefName)"
           SLUG="$(printf '%s' "$BRANCH" | sed -n 's#^task/\([^/]*\)/.*#\1#p')"
           if [ -z "$SLUG" ]; then exit 0; fi
-          npx --yes @attalabs/vinaya@0.37.0 archive tranche "$SLUG" --yes
+          npx --yes @attalabs/vinaya@0.38.0 archive tranche "$SLUG" --yes
 
   issue-closed:
     name: Tranche Self-Archive (task Issue closed)
@@ -99,7 +99,7 @@ jobs:
           SLUGS="$(gh issue view "$ISSUE_NUMBER" -R ${{ github.repository }} --json labels --jq '.labels[].name | select(startswith("vinaya/tranche:")) | ltrimstr("vinaya/tranche:")')"
           for SLUG in $SLUGS; do
             case "$SLUG" in ''|-*|*[!A-Za-z0-9._-]*) continue ;; esac
-            npx --yes @attalabs/vinaya@0.37.0 archive tranche "$SLUG" --yes
+            npx --yes @attalabs/vinaya@0.38.0 archive tranche "$SLUG" --yes
           done
 
   daily-drift:
@@ -125,7 +125,7 @@ jobs:
         continue-on-error: true # never-red — this job is a notification channel, not a gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.37.0 audit --only=dead-branches
+        run: npx --yes @attalabs/vinaya@0.38.0 audit --only=dead-branches
       - name: Archive every finished tranche not yet archived
         # The catch-up the two event-driven triggers cannot make: a tranche that
         # finished before this workflow existed, or whose closing event was
@@ -135,7 +135,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.37.0 archive tranches --yes
+        run: npx --yes @attalabs/vinaya@0.38.0 archive tranches --yes
 
   direct-main-push-detection:
     name: Direct-Main-Push Detection
@@ -159,4 +159,4 @@ jobs:
       - name: Run vinaya audit --only=direct-push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.37.0 audit --only=direct-push --sha=${{ github.sha }}
+        run: npx --yes @attalabs/vinaya@0.38.0 audit --only=direct-push --sha=${{ github.sha }}
