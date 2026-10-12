@@ -614,11 +614,9 @@ function TopBarNoAuth({
                   </div>
                 </div>
                 <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
-                  {/* `my-auto`, not `justify-center` on the scroll container — see the
-                      matching comment in `TopBarWithAuth` for why: `justify-center`
-                      clips the first row above the reachable scroll range once content
-                      overflows, while `my-auto` degrades to top-aligned automatically. */}
-                  <div className='my-auto [&>*:last-child]:border-b-0'>
+                  {/* Top-aligned, same as `TopBarWithAuth`'s sheet — never `justify-center` on
+                      the scroll container, which clips the first row above `scrollTop: 0`. */}
+                  <div className='pt-4 [&>*:last-child]:border-b-0'>
                     {links.map((item) => {
                       if (isTopBarGroup(item)) {
                         return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
