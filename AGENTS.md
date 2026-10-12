@@ -32,9 +32,7 @@ anything substantive:
 
     vinaya doctrine --role <name>
 
-prints the absolute path to that role's doctrine — `architect`,
-`developer`, `reviewer`, `planner`, `security`, `archivist`,
-`tranche-archivist`, or `principal`. If your agent tool
+prints the absolute path to that role's doctrine — `architect`, `archivist`, `developer`, `operator`, `planner`, `reviewer`, `security`, or `tranche-archivist`. If your agent tool
 supports slash-style commands, the same doctrine is likely exposed as
 `/vinaya <role>` — check your tool's command list before falling back to
 the raw CLI form.
