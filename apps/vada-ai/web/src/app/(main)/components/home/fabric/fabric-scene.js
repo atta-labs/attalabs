@@ -200,7 +200,7 @@ const LIVE_ROWS = 4
 const LABEL_PX = 0.05
 const HEADLINE_PX = 0.08
 const HEADLINE_LH = 1.12
-const DETAIL_PX = 0.04
+const DETAIL_PX = 0.05
 const LABEL_Y = -0.215
 const HEADLINE_Y = -0.12
 const DETAIL_Y = 0.02
@@ -239,7 +239,7 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
   // detail slot
   if (beat === 'live') {
     const fontPx = Math.round(size * DETAIL_PX)
-    const lineH = fontPx * 1.85
+    const lineH = fontPx * 1.7
     ctx.font = `400 ${fontPx}px ${font}`
     ctx.textAlign = 'left'
     const charW = ctx.measureText('m').width
@@ -288,9 +288,9 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
     ctx.globalAlpha = 0.75 * step(0.3, 0.45)
     ctx.fillText(t.tally, c, c + size * DETAIL_Y)
     const n = colors.length
-    const gap = size * 0.04
-    const pip = size * 0.012
-    const y = c + size * (DETAIL_Y + 0.07)
+    const gap = size * 0.045
+    const pip = size * 0.014
+    const y = c + size * (DETAIL_Y + 0.08)
     const agree = colors.map((_, i) => i).filter((i) => i !== dissent)
     const rowW = (n - 1) * gap
     agree.forEach((i, k) => {
@@ -311,7 +311,7 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
       ctx.globalAlpha = out
       ctx.font = `400 ${Math.round(size * DETAIL_PX)}px ${font}`
       ctx.fillStyle = toCss(colors[dissent])
-      ctx.fillText(t.dissentLabel, c, y + size * 0.07)
+      ctx.fillText(t.dissentLabel, c, y + size * 0.08)
     }
     ctx.globalAlpha = 1
   }

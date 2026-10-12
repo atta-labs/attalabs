@@ -256,10 +256,9 @@ export function buildAgentRing(THREE, opts) {
 
       placeLink(ag, a, r * s, dr * ds)
 
-      // the question reaches each reviewer directly (the hub does not hand it out): its dot pops
-      // up at the reviewer's end of the link while the question is out
+      // the question travels out from the hub along each link: 0 at the hub, 1 at the reviewer
       const up = s > 0.5 && out > 0 && out < 1
-      ag.question = up ? smooth(clamp01(out / 0.25)) * (1 - smooth(clamp01((out - 0.8) / 0.2))) : 0
+      ag.question = up ? smooth(out) : 0
       // the answer travels the link back to the hub, 0 at the reviewer to 1 at the hub
       ag.answer = s > 0.5 ? smooth(answerProgress(back, i, count)) : 0
     })
@@ -277,7 +276,7 @@ export function buildAgentRing(THREE, opts) {
 
   /** World anchors for the HTML overlay: each core's centre and current radius, each reviewer's
       link as a world-space quadratic curve `{ S, C, H }` (reviewer end, bend, hub end), and its
-      messages (`question` size and `answer` progress, both 0–1). */
+      messages (`question` and `answer` progress along the link, both 0–1). */
   function anchors() {
     return {
       driver: { pos: driver.holder.position, radius: dr * driver.holder.scale.x },

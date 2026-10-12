@@ -3,8 +3,8 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 /* The hub's links, in the scene itself: one link per reviewer, and each link owns everything
-   that travels on it — its line, the question dot that lands at the reviewer, and the answer dot
-   that travels back to the hub. The shape is each reviewer's world-space curve from
+   that travels on it — its line, the question dot that travels out to the reviewer, and the
+   answer dot that travels back to the hub. The shape is each reviewer's world-space curve from
    `agent-ring-3d.js` (`placeLink`); the line and both dots are placed on that one curve, so a
    message can never leave its line. Being real geometry, a link turns with the scene, and the
    hub hides the stretch that runs behind it by depth, like any solid object — no overlay, no
@@ -16,7 +16,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 const SAMPLES = 32 // points along each line
 const LINE_PX = 2
-const DOT_RADIUS = 0.045 // world units
+const DOT_RADIUS = 0.06 // world units
 const LIVE_OPACITY = 0.7
 const LANDED_OPACITY = 0.45
 const FADE_S = 0.6 // colour and opacity ease when an answer lands
@@ -67,6 +67,9 @@ export function buildLinks(THREE, count, colors, dotOpacity) {
     const answerMat = dotMat(colors.agentColors[i])
     const answer = new THREE.Mesh(dotGeo, answerMat)
     question.visible = answer.visible = false
+    // the dots draw over their line, never under it
+    line.renderOrder = 1
+    question.renderOrder = answer.renderOrder = 2
     group.add(line, question, answer)
     return { line, geometry, material, question, answer, answerMat, color: colors.agentColors[i], landed: 0, key: '' }
   })
@@ -84,7 +87,7 @@ export function buildLinks(THREE, count, colors, dotOpacity) {
 
   /**
    * Once per frame, before `scene` is drawn. `driver` and `agents` are the ring's anchors (each with its `link` curve, `radius`,
-   * `question` size and `answer` progress); `landed[i]` says reviewer i's answer has reached the
+   * `question` and `answer` progress); `landed[i]` says reviewer i's answer has reached the
    * hub; `hubUp` that the hub is showing; `size` is the canvas in CSS px.
    */
   function update(driver, agents, landed, dt, reduced, size) {
@@ -127,11 +130,9 @@ export function buildLinks(THREE, count, colors, dotOpacity) {
       link.material.color.copy(live.lerp(muted, link.landed))
       link.material.opacity = LIVE_OPACITY + (LANDED_OPACITY - LIVE_OPACITY) * link.landed
 
-      link.question.visible = ag.question > 0.001
-      if (link.question.visible) {
-        link.question.position.copy(S)
-        link.question.scale.setScalar(ag.question)
-      }
+      // the question travels hub → reviewer, the answer reviewer → hub, on the same curve
+      link.question.visible = ag.question > 0 && ag.question < 1
+      if (link.question.visible) pointOn(ag.link, 1 - ag.question, link.question.position)
       link.answer.visible = ag.answer > 0 && ag.answer < 1
       if (link.answer.visible) pointOn(ag.link, ag.answer, link.answer.position)
     })

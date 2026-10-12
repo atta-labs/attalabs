@@ -60,7 +60,7 @@ Two rules disambiguate most questions:
 The scene runs Vāda's **Outside Read** team (`vada-fusion-native.yaml`): four reviewers answering in parallel, each alone, and the Synthesizer writing the result from their answers. In order, as the hero track scrolls:
 
 1. **Question.** The hub (the Synthesizer, large, at the front) shows QUESTION and "Should we ship it?". The four reviewers sit on an arc behind it. A line joins each reviewer to the hub.
-2. **The question reaches the reviewers.** A dot pops up at each reviewer's rim. The question does not travel out of the hub: the Synthesizer never hands out work, the engine sends the question to each reviewer.
+2. **The question reaches the reviewers.** A dot in the hub's colour travels out along each link from the hub to its reviewer.
 3. **Live deliberation.** The hub shows a log row per reviewer (the tool it works with), typing in.
 4. **Answers.** Each reviewer's answer dot travels its line to the hub; as it lands, that reviewer's line goes from its colour to muted and stays. A line and its dots are one component (`links-3d.js`), placed from one path, so a dot never leaves its line.
 5. **Verdict.** The headline becomes the decision, with the tally and the one dissent named; the camera leans in.
