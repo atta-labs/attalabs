@@ -79,7 +79,8 @@ const LINE_DELAYS = ['delay-[900ms]', 'delay-[1040ms]', 'delay-[1180ms]'] as con
 
 export function RoomsSection() {
   const row = useRef<HTMLDivElement>(null)
-  const seen = useSeen(row, 1)
+  // starts late: the cards rise once their row's top is past the middle of the screen, in view
+  const seen = useSeen(row, 0.55)
 
   return (
     <LandingSection id='teams' background='bg-background text-foreground' py='spacious'>

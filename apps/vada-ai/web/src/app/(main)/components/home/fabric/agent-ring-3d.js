@@ -40,9 +40,6 @@ export const CONCLUDE_AT = 0.66
 const LINK_TURN = (40 * Math.PI) / 180
 const LINK_REACH = 0.35
 
-/** A message dot's radius, as a share of a reviewer sphere's. */
-const DOT_RATIO = 0.11
-
 const ARC = (150 * Math.PI) / 180 // the bench's spread, centred on the back (-z)
 
 /** Angle of reviewer i on the arc (0 is straight back, -z). */
@@ -280,8 +277,7 @@ export function buildAgentRing(THREE, opts) {
 
   /** World anchors for the HTML overlay: each core's centre and current radius, each reviewer's
       link as a world-space quadratic curve `{ S, C, H }` (reviewer end, bend, hub end), and its
-      messages (`question` size and `answer` progress, both 0–1). `dotRatio` is a
-      message dot's radius as a share of a reviewer's. */
+      messages (`question` size and `answer` progress, both 0–1). */
   function anchors() {
     return {
       driver: { pos: driver.holder.position, radius: dr * driver.holder.scale.x },
@@ -291,8 +287,7 @@ export function buildAgentRing(THREE, opts) {
         question: ag.question,
         answer: ag.answer,
         link: ag.link
-      })),
-      dotRatio: DOT_RATIO
+      }))
     }
   }
 

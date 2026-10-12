@@ -28,10 +28,13 @@ const LABEL = 'font-mono text-xs uppercase tracking-[0.08em] text-muted-foregrou
 
 function AnswersVisual({ answered, summed }: { answered: boolean; summed: boolean }) {
   return (
-    <div className='flex flex-col gap-3'>
-      <Card className='gap-1 rounded-lg border border-border bg-card px-4 py-3 text-card-foreground shadow-none'>
-        <span className={LABEL}>the question</span>
-        <span className='text-lg'>{QUESTION}</span>
+    <div className='flex flex-col gap-2'>
+      {/* layout lives on an inner div: libraries give Card their own flex direction */}
+      <Card className='rounded-lg border border-border bg-card px-4 py-3 text-card-foreground shadow-none'>
+        <div className='flex flex-col gap-1'>
+          <span className={LABEL}>the question</span>
+          <span className='text-base'>{QUESTION}</span>
+        </div>
       </Card>
 
       {REVIEWERS.map((r, index) => {
@@ -41,17 +44,19 @@ function AnswersVisual({ answered, summed }: { answered: boolean; summed: boolea
           <Card
             key={r.vendor}
             className={cn(
-              'flex-row items-center gap-4 rounded-lg border bg-card px-4 py-3 text-card-foreground shadow-none',
+              'rounded-lg border bg-card px-3 py-2 text-card-foreground shadow-none',
               ITEM,
               DELAYS[index],
               answered ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
               summed && !answer.agrees ? 'border-warning' : 'border-border'
             )}
           >
-            <ReviewerAgent id={`landing-independent-${r.vendor}`} vendor={r.vendor} model={r.model} />
-            <div className='flex min-w-0 flex-col gap-0.5'>
-              <span className={LABEL}>{r.vendor} · on its own</span>
-              <span className='text-base leading-snug'>{answer.text}</span>
+            <div className='flex items-center gap-3'>
+              <ReviewerAgent tight id={`landing-independent-${r.vendor}`} vendor={r.vendor} model={r.model} />
+              <div className='flex min-w-0 flex-col gap-0.5'>
+                <span className={LABEL}>{r.vendor} · on its own</span>
+                <span className='text-sm leading-snug'>{answer.text}</span>
+              </div>
             </div>
           </Card>
         )
@@ -76,7 +81,9 @@ function AnswersVisual({ answered, summed }: { answered: boolean; summed: boolea
 export function IndependentSection() {
   const ref = useRef<HTMLElement>(null)
   const reduced = useReducedMotion()
-  const entered = useEnterProgress(ref, 0.75, 0.6)
+  // starts late: the answers arrive as the section's top nears the top of the screen (a quarter
+  // of the way down), and the verdict line once it has almost reached it
+  const entered = useEnterProgress(ref, 0.35, 0.35)
   const progress = reduced ? 1 : entered
 
   return (

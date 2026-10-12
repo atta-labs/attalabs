@@ -11,7 +11,7 @@ import {
   Q_TO
 } from './agent-ring-3d'
 import { buildField } from './field-3d'
-import { buildLinks } from './links-2d'
+import { buildLinks } from './links-3d'
 import { buildFloaters } from './floaters'
 import { cssColor, cssNumber, readToken } from './tokens'
 
@@ -102,6 +102,8 @@ function readPalette(root, agentTokens, hubToken) {
       deep: cssColor(root, '--hero-core-deep'),
       fabricInk: cssColor(root, '--hero-fabric-ink'),
       fabricAlpha: cssNumber(root, '--hero-fabric-alpha'),
+      muted: cssColor(root, '--muted-foreground'),
+      cardFg: cssColor(root, '--card-foreground'),
       hubColor: (() => {
         try {
           return cssColor(root, hubToken)
@@ -328,7 +330,7 @@ export function mountHeroScene({
   const agentTokens = script.reviewers.map((rv) => rv.token)
   const palette = readPalette(root, agentTokens, script.hub.token)
   if (!palette) return { setFaces() {}, setRing() {}, dispose() {} }
-  let { bg, ink, card, shade, deep, fabricInk, fabricAlpha, agentColors, hubColor } = palette
+  let { bg, ink, card, shade, deep, fabricInk, fabricAlpha, agentColors, hubColor, muted, cardFg } = palette
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   const L_H1A = splitLetters(root.querySelector('[data-hero-h1a]'), labelClass)
@@ -338,6 +340,8 @@ export function mountHeroScene({
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))
+  // cleared by hand each frame: the links' scene draws over the main one (see the frame loop)
+  renderer.autoClear = false
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(bg)
   const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 400)
@@ -409,20 +413,10 @@ export function mountHeroScene({
   }
   const nameEls = script.reviewers.map((rv) => nameEl(rv.name, rv.token))
 
-  /* The links (`links-2d.js`): one per reviewer, each drawing its line and the messages that
-     travel on it from one path, placed every frame from the same anchors as the names. In the
-     reviewer's colour until its answer has landed, then muted — it stays for good, so the final
-     view still shows everyone connected to the hub. */
-  const linkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  // inline layout: this file is not scanned by Tailwind
-  linkSvg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none'
-  labels.prepend(linkSvg)
-  const links = buildLinks(
-    linkSvg,
-    script.reviewers.map((rv) => rv.token),
-    script.hub.token,
-    MESSAGE_OPACITY
-  )
+  /* The links (`links-3d.js`): one per reviewer, real geometry in the scene, each carrying its
+     own messages. In the reviewer's colour until its answer has landed, then muted — it stays
+     for good, so the final view still shows everyone connected to the hub. */
+  const links = buildLinks(THREE, script.reviewers.length, { agentColors, hubColor, muted }, MESSAGE_OPACITY)
   const hubNameEl = nameEl(script.hub.name, script.hub.token)
   const HUB_TEX = 768
   const hubCanvas = document.createElement('canvas')
@@ -433,6 +427,8 @@ export function mountHeroScene({
   // when each row first appeared, so it types in once; rows scrolled away are forgotten
   const appeared = new Map()
   let lastPaint = -1
+  let lastP = -1
+  let hubDirty = true
   const paintHub = (p, now) => {
     if (!hubCtx) return
     const { beat, resolve } = hubBeat(p)
@@ -440,24 +436,21 @@ export function mountHeroScene({
     const ids = new Set(rows.map((r) => r.id))
     for (const id of appeared.keys()) if (!ids.has(id)) appeared.delete(id)
     for (const r of rows) if (!appeared.has(r.id)) appeared.set(r.id, reduced || lastPaint < 0 ? null : now)
-    // the hub is alive (spinners, typing, scrambling glyphs) — repaint at ~20fps, not every frame
-    if (lastPaint >= 0 && now - lastPaint < 0.05) return
+    // repaint (and re-upload the texture) only when something on the hub moves: scroll changed
+    // its text, or it is alive (a spinner, a row typing in, a label or headline mid-scramble).
+    // Alive, it repaints at ~20fps rather than every frame.
+    const alive =
+      rows.some((r) => r.state === 'work' || (appeared.get(r.id) ?? -1e9) > now - 2) ||
+      [LABEL_TO_LIVE, LABEL_TO_VERDICT, HEADLINE_TO_DECISION].some((w) => {
+        const m = span(p, w)
+        return m > 0 && m < 1
+      })
+    if (!hubDirty && p === lastP && !alive) return
+    if (!hubDirty && lastPaint >= 0 && now - lastPaint < 0.05) return
+    hubDirty = false
+    lastP = p
     lastPaint = now
-    drawHub(
-      hubCtx,
-      HUB_TEX,
-      p,
-      beat,
-      resolve,
-      rows,
-      appeared,
-      now,
-      script,
-      agentColors,
-      dissent,
-      cssColor(root, '--card-foreground'),
-      monoFont
-    )
+    drawHub(hubCtx, HUB_TEX, p, beat, resolve, rows, appeared, now, script, agentColors, dissent, cardFg, monoFont)
     ring.setHubFace(hubCanvas)
   }
 
@@ -472,18 +465,6 @@ export function mountHeroScene({
     edge.copy(pos).addScaledVector(camRight, radius).project(camera)
     const x = ((proj.x + 1) / 2) * w
     return { x, y: ((1 - proj.y) / 2) * h, r: Math.abs(((edge.x + 1) / 2) * w - x) }
-  }
-  // the screen point at t on a link's world-space quadratic curve
-  const onCurve = new THREE.Vector3()
-  const alongLink = ({ S, C, H }, t, w, h) => {
-    const u = 1 - t
-    onCurve
-      .copy(S)
-      .multiplyScalar(u * u)
-      .addScaledVector(C, 2 * u * t)
-      .addScaledVector(H, t * t)
-      .project(camera)
-    return { x: ((onCurve.x + 1) / 2) * w, y: ((1 - onCurve.y) / 2) * h }
   }
   const show = (el, alpha) => {
     el.style.opacity = alpha.toFixed(2)
@@ -504,23 +485,6 @@ export function mountHeroScene({
     })
     const hub = onScreen(a.driver.pos, a.driver.radius, w, h)
     pinUnder(hubNameEl, hub, names)
-    const back = clamp01((p - A_FROM) / (A_TO - A_FROM))
-    links.setHub(hub)
-    a.agents.forEach((ag, i) => {
-      const at = onScreen(ag.pos, ag.radius, w, h)
-      // hidden until both spheres are up; once the camera leans in and the spheres overlap on
-      // screen, the link stays (muted) and the hub's mask hides only what runs behind the hub
-      if (!at || !hub) {
-        links.hide(i)
-        return
-      }
-      links.place(i, (t) => alongLink(ag.link, t, w, h), {
-        question: ag.question,
-        answer: ag.answer,
-        landed: p >= A_FROM && answerProgress(back, i, a.agents.length) >= 1,
-        dot: at.r * a.dotRatio
-      })
-    })
     paintHub(p, now)
   }
 
@@ -531,9 +495,12 @@ export function mountHeroScene({
     resizePending = true
   })
   resizeObserver.observe(root)
+  const viewSize = { width: 1, height: 1 }
   const resize = () => {
     const w = root.clientWidth
     const h = root.clientHeight
+    viewSize.width = w
+    viewSize.height = h
     renderer.setSize(w, h, false)
     camera.aspect = w / h
     const shift = frameShiftRem * Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
@@ -629,7 +596,21 @@ export function mountHeroScene({
     const dist = lerp(13.5, 10.4, tip) * fit * (1 - 0.1 * easeInOut(clamp01((p - CONCLUDE_AT) / 0.12)))
     place(lerp(88, 17, tip) + py * 2.5 * tip, dist, lerp(seatY, seatY + 1, tip), px * 3.5 * tip)
     field.setFade(dist * 0.8, dist * 2.7)
+    const back = clamp01((p - A_FROM) / (A_TO - A_FROM))
+    const anchors = ring.anchors()
+    links.update(
+      anchors.driver,
+      anchors.agents,
+      anchors.agents.map((_, i) => p >= A_FROM && answerProgress(back, i, anchors.agents.length) >= 1),
+      dt,
+      reduced,
+      viewSize
+    )
+    renderer.clear()
     renderer.render(scene, camera)
+    // the links over the scene, hidden only by the spheres (see `links-3d.js`)
+    renderer.clearDepth()
+    renderer.render(links.scene, camera)
     placeLabels(p, tip, t)
   }
   raf = requestAnimationFrame(frame)
@@ -637,13 +618,14 @@ export function mountHeroScene({
   const applyTheme = () => {
     const next = readPalette(root, agentTokens, script.hub.token)
     if (!next) return
-    ;({ bg, ink, card, shade, deep, fabricInk, fabricAlpha, agentColors, hubColor } = next)
+    ;({ bg, ink, card, shade, deep, fabricInk, fabricAlpha, agentColors, hubColor, muted, cardFg } = next)
     scene.background = new THREE.Color(bg)
     renderer.setClearColor(bg, 1)
     field.retheme({ ink: fabricInk, surface: bg, opacity: fabricAlpha })
     floaters.retheme(fabricInk, fabricAlpha * FLOATER_ALPHA)
     ring.retheme({ card, shade, deep, ink, agentColors, hubColor })
-    lastPaint = -1
+    links.retheme({ agentColors, hubColor, muted })
+    hubDirty = true
   }
   const themeObserver = new MutationObserver(applyTheme)
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
@@ -667,6 +649,7 @@ export function mountHeroScene({
           m.dispose?.()
         }
       })
+      links.dispose()
       renderer.dispose()
     }
   }

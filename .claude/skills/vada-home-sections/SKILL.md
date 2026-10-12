@@ -29,7 +29,7 @@ Two rules disambiguate most questions:
 │   └── fabric/                    the Three.js scene
 │       ├── HeroFabric3D.tsx       the script: hub, reviewers, hub text, display names
 │       ├── fabric-scene.js        scene, camera, hub painting, labels
-│       ├── links-2d.js            the links: each reviewer's line and the messages on it, one path
+│       ├── links-3d.js            the links: each reviewer's line and its messages, real 3D in their own pass
 │       ├── agent-ring-3d.js       the spheres and the message timing
 │       ├── agent-face-canvases.tsx  face SVGs rasterised to canvases
 │       ├── field-3d.js, floaters.js the background fabric
@@ -62,7 +62,7 @@ The scene runs Vāda's **Outside Read** team (`vada-fusion-native.yaml`): four r
 1. **Question.** The hub (the Synthesizer, large, at the front) shows QUESTION and "Should we ship it?". The four reviewers sit on an arc behind it. A line joins each reviewer to the hub.
 2. **The question reaches the reviewers.** A dot pops up at each reviewer's rim. The question does not travel out of the hub: the Synthesizer never hands out work, the engine sends the question to each reviewer.
 3. **Live deliberation.** The hub shows a log row per reviewer (the tool it works with), typing in.
-4. **Answers.** Each reviewer's answer dot travels its line to the hub; as it lands, that reviewer's line goes from its colour to muted and stays. A line and its dots are one component (`links-2d.js`), placed from one path, so a dot never leaves its line.
+4. **Answers.** Each reviewer's answer dot travels its line to the hub; as it lands, that reviewer's line goes from its colour to muted and stays. A line and its dots are one component (`links-3d.js`), placed from one path, so a dot never leaves its line.
 5. **Verdict.** The headline becomes the decision, with the tally and the one dissent named; the camera leans in.
 
 ### Invariants

@@ -21,5 +21,11 @@ export function RouteAwareFooter({ logo, links }: { logo?: ReactNode; links: Nav
   const pathname = usePathname() ?? ''
   const suppressed = FOOTER_SUPPRESSED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))
   if (suppressed) return null
-  return <Footer product='vada' logo={logo} links={links.map(({ label, href }) => ({ label, href }))} />
+  // no rule above it, and its own surface so it reads apart from the last section — styled
+  // from here so the shared Footer stays untouched for every other product
+  return (
+    <div className='bg-card [&>footer]:border-t-0'>
+      <Footer product='vada' logo={logo} links={links.map(({ label, href }) => ({ label, href }))} />
+    </div>
+  )
 }
