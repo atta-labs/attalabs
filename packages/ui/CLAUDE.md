@@ -111,7 +111,7 @@ import { cn } from '@atta/ui/lib/utils'
 
 ## The Library System
 
-Three component libraries, one active per product. A build-time app's active library is a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`), not a live CMS read. A runtime-switching app (Herald's public profile) resolves it per-user from the database instead.
+Three component libraries, one active per product. A build-time app's active library is its Sanity config's `userInterface.library` — read by `scripts/generate-ui.ts` at build time and by `NextWebShell` at runtime, so the two can't disagree. The build stops with an error if the CMS can't be read or has no valid library; there is no silent fallback. A runtime-switching app (Herald's public profile) resolves it per-user from the database instead.
 
 | Library | Style |
 |---------|-------|
@@ -121,7 +121,7 @@ Three component libraries, one active per product. A build-time app's active lib
 
 **Runtime switching** is handled by `LibraryProvider` (inside `NextWebShell`). It dynamically imports the active library via `useLibraryLoader`, which guards against race conditions — a slower import won't overwrite a later one.
 
-**Never hard-switch libraries in component code** unless you have a specific reason to use a non-active library. A build-time app's active library comes from the pin file above; a runtime-switching app resolves it per-user instead.
+**Never hard-switch libraries in component code** unless you have a specific reason to use a non-active library. A build-time app's active library comes from its CMS config; a runtime-switching app resolves it per-user instead.
 
 ---
 

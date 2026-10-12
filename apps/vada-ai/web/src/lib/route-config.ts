@@ -1,6 +1,6 @@
 /**
  * Single source of truth for route access control and navigation.
- * Both middleware and topbar consume this to stay in sync.
+ * Middleware, the topbar and the footer all consume this to stay in sync.
  */
 
 export interface NavLink {
@@ -9,18 +9,21 @@ export interface NavLink {
   exact: boolean
 }
 
-/** Routes visible to all users */
-export const PUBLIC_ROUTES: NavLink[] = [
-  { href: '/trust', label: 'Trust', exact: false },
-  { href: '/teams', label: 'Teams', exact: false }
-]
+const TEAMS: NavLink = { href: '/teams', label: 'Teams', exact: false }
+const MCP: NavLink = { href: '/mcp', label: 'MCP', exact: false }
+const TRUST: NavLink = { href: '/trust', label: 'Trust', exact: false }
+const DELIBERATE: NavLink = { href: '/deliberate', label: 'Deliberate', exact: true }
+const SESSIONS: NavLink = { href: '/sessions', label: 'Sessions', exact: true }
 
-/** Routes visible only to authenticated users */
-export const AUTH_ROUTES: NavLink[] = [
-  { href: '/deliberate', label: 'Deliberate', exact: true },
-  { href: '/mcp', label: 'MCP', exact: false },
-  { href: '/sessions', label: 'My Sessions', exact: true }
-]
+/** Topbar for a signed-out visitor: what they check before signing up. */
+export const SIGNED_OUT_NAV: NavLink[] = [TEAMS, MCP, TRUST]
+
+/** Topbar once signed in: what they use, Deliberate first. Trust moves to the footer. */
+export const SIGNED_IN_NAV: NavLink[] = [DELIBERATE, SESSIONS, TEAMS, MCP]
+
+/** Footer link row. Sessions only once signed in — for a visitor it would only bounce to sign-in. */
+export const SIGNED_OUT_FOOTER_NAV: NavLink[] = [TEAMS, MCP, TRUST]
+export const SIGNED_IN_FOOTER_NAV: NavLink[] = [TEAMS, MCP, TRUST, SESSIONS]
 
 /** Route patterns that require authentication (for middleware) */
 export const PROTECTED_ROUTE_PATTERNS = [

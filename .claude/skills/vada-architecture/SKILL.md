@@ -23,7 +23,7 @@ The product surface today is the catalog of YAML team specs at `packages/agents/
 
 ## Vāda Teams Catalog
 
-Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 10 YAML team specs at `packages/agents/vada-deliberation/yamls/` (3 published, 7 experimental). New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
+Vāda exposes deliberation as a catalog of YAML team specs compiled by the Atta engine. Both MCP tools are generic — there are no per-team tools. The catalog currently contains 13 YAML team specs at `packages/agents/vada-deliberation/yamls/` (5 published, 8 experimental). "Published" means `experimental: false` — exactly what `listPublicSpecs()` returns and what the public Teams pages list. The MCP tools accept a narrower set: `vada__deliberate`'s `team` enum is `vada-reviewers` / `vada-reviewers-synthesis`, and Outside Read is reached through `vada__consult`'s `spec_id`. New teams are added by authoring YAML and dropping the file into the directory — the engine's `listPublicSpecs()` discovers it dynamically.
 
 `listPublicSpecs()` reads this directory from disk at runtime (`readdirSync`), so `apps/vada-ai/web/next.config.ts`'s `outputFileTracingIncludes` must separately declare the directory for Vercel's static tracer, which cannot detect a dynamically-joined path. Moving the catalog without updating that entry breaks every catalog-backed route in production only (green build, green local dev) — see `.claude/skills/vada-yaml-authoring/SKILL.md` for the full note.
 
@@ -42,7 +42,10 @@ Both surfaces are live. `vada__consult` accepts an optional `reviewer_config: Re
 | `brokered-quartet` | Brokered Quartet | brokered-no-synth | Experimental |
 | `vada-reviewers` | Reviewers | brokered-no-synth | **Published** |
 | `vada-reviewers-synthesis` | Reviewers + Synthesis | brokered-synth | **Published** |
+| `vada-council` | Council | brokered-no-synth | **Published** (web only) |
+| `vada-council-synthesis` | Council + Synthesis | brokered-synth | **Published** (web only) |
 | `vada-fusion-native` | Outside Read | rounds-audit | **Published** (`vada__consult` spec_id) |
+| `vada-fusion` | — | — | Experimental (benchmark only, not a catalog team) |
 | `sparring` | Sparring | rounds-audit | Experimental (unpublished) |
 | `crucible` | Crucible | rounds-audit | Experimental (unpublished) |
 | `war-room` | War Room | rounds-audit | Experimental (unpublished) |
@@ -157,6 +160,10 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 **retro's `Badge` has no `size` variant** (only `variant`) since the retroui relaunch (`d2bca515`) — `SessionCard.tsx` carried a stale `size='xs'` prop until fixed here; grep `<Badge` call sites for a stray `size=` before reusing this pattern elsewhere in Vāda.
 
 **The home hero is a Three.js scene** (`three` is a direct `web` dependency, used only under `(main)/components/home/fabric/`) that plays the published Outside Read team: four reviewers answering in parallel, the Synthesizer writing the result. It never hardcodes colors: it reads the same CSS tokens at runtime (`--agent-*`, `--foreground`, `--card`, …) and re-reads them on theme change, so CMS themes reach it like any DOM surface. The scene's beats and invariants are documented in `.claude/skills/vada-home-sections/SKILL.md`.
+
+## Public web surface
+
+Signed out, the top bar is Teams · MCP · Trust; signed in, Deliberate · Sessions · Teams · MCP (each link with a lucide icon, attached in `(main)/layout.tsx` — `src/lib/route-config.ts` stays plain data because the middleware imports it). The footer is the shared `Footer` given the top bar's logo lockup and a link row (Sessions only when signed in). `/trust` is the data-handling page and must state only what the code does; `/mcp` lists only the teams each MCP tool accepts. Vāda's component library is its CMS `userInterface.library` (currently animate) — see `.claude/skills/ui-library-system/SKILL.md`.
 
 ## Locked Architectural Decisions
 

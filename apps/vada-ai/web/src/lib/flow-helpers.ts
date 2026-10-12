@@ -47,9 +47,19 @@ export function getFlowAgentCount(flow: Flow): number {
   return first.agents.length
 }
 
+/**
+ * A rounds-audit flow whose first round runs once is not a debate: it is an isolated panel, then
+ * synthesis, then an audit (Outside Read). Only a repeating first round means agents answer each
+ * other across rounds.
+ */
+export function isAuditedPanel(flow: Flow): boolean {
+  return detectShape(flow) === 'rounds-audit' && (flow.rounds[0]!.repeats ?? 1) <= 1
+}
+
 export function getFlowShapeLabel(flow: Flow): string {
   const shape = detectShape(flow)
   if (shape === 'solo') return 'single shot'
+  if (isAuditedPanel(flow)) return 'panel · synthesis · audit'
   if (shape === 'rounds-audit') return `${flow.rounds[0]!.repeats ?? 1} rounds`
   if (shape === 'brokered-synth') return 'reviewers + synthesis'
   return 'parallel reviewers'
@@ -88,4 +98,20 @@ export function getSpecLabel(specId: string, fallback: { displayName: string }):
   const explicit = SPEC_LABELS[specId]
   if (explicit) return explicit
   return { short: fallback.displayName, subtitle: '' }
+}
+
+/** `AssumptionHunter` → `Assumption Hunter` — an agent's YAML name, readable as a label. */
+export function humanizeAgentName(name: string): string {
+  return name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ')
+}
+
+/**
+ * The label an agent shows on a Teams card. An audited panel (Outside Read) reuses the debate roles
+ * only for colour and face — two of its agents are `critic`, two `researcher` — so its agents are
+ * labelled by their own names. Unroled reviewer slots stay `REVIEWER`: their YAML names (Gemini,
+ * GPT, Grok) would read as fixed vendors, and the user picks each slot's model.
+ */
+export function teamAgentLabel(flow: Flow, agent: { name: string; role?: string }): string {
+  if (isAuditedPanel(flow)) return humanizeAgentName(agent.name).toUpperCase()
+  return agent.role ? formatRoleLabel(agent.role) : 'REVIEWER'
 }

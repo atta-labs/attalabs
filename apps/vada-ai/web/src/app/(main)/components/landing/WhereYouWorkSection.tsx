@@ -17,7 +17,7 @@ type Line = { kind: 'prompt' | 'call' | 'result'; text: string }
 
 const SESSION: readonly Line[] = [
   { kind: 'prompt', text: 'Ask Vāda: should we rewrite the billing service?' },
-  { kind: 'call', text: 'vada__deliberate(spec_id: "vada-reviewers-synthesis")' },
+  { kind: 'call', text: 'vada__deliberate(team: "vada-reviewers-synthesis")' },
   { kind: 'result', text: '3 reviewers · anthropic, openai, google' },
   { kind: 'result', text: 'consensus: rewrite invoicing first' },
   { kind: 'result', text: 'conflict: one quarter or two' },

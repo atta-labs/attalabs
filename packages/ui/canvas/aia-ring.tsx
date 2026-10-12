@@ -94,14 +94,19 @@ function AIARingInner({
   const timesRef = useRef<number[]>(WAVE_VARIANTS.map(() => 0))
   const rafRef = useRef<number>(0)
 
+  // Stable members only — the context object changes with the canvas phase (see useAIASphere).
+  const registerRing = ctx?.registerRing
+  const unregisterRing = ctx?.unregisterRing
+  const updateRing = ctx?.updateRing
+
   // Register ring center/radius with canvas context
   useEffect(() => {
     const el = containerRef.current
-    if (!el || !ctx) return
+    if (!el || !registerRing || !unregisterRing) return
 
     const register = () => {
       const rect = el.getBoundingClientRect()
-      ctx.registerRing({
+      registerRing({
         id: 'main-ring',
         centerX: rect.left + rect.width / 2,
         centerY: rect.top + rect.height / 2,
@@ -119,21 +124,19 @@ function AIARingInner({
     window.addEventListener('resize', register)
     return () => {
       window.removeEventListener('resize', register)
-      ctx.unregisterRing('main-ring')
+      unregisterRing('main-ring')
     }
-  }, [size, ctx, numSpheres])
+  }, [size, registerRing, unregisterRing, numSpheres])
 
   // Sync thinking state without unregister/re-register
   useEffect(() => {
-    if (!ctx) return
-    ctx.updateRing('main-ring', { thinking })
-  }, [ctx, thinking])
+    updateRing?.('main-ring', { thinking })
+  }, [updateRing, thinking])
 
   // Sync bgOpacity without unregister/re-register (e.g. scroll-driven fade)
   useEffect(() => {
-    if (!ctx) return
-    ctx.updateRing('main-ring', { bgOpacity })
-  }, [ctx, bgOpacity])
+    updateRing?.('main-ring', { bgOpacity })
+  }, [updateRing, bgOpacity])
 
   // Animate wave paths — drives wave motion by updating SVG path `d` attributes directly
   // This bypasses React re-renders for maximum performance

@@ -53,6 +53,14 @@ export function useAIASphere({
   const id = externalId ?? generatedId
   const ref = useRef<HTMLDivElement>(null)
   const ctx = useAIAContext()
+  // The context object changes whenever the canvas phase does (wander → forming → settled, in the
+  // first second). Depending on it re-ran the registration effect on each change: the sphere
+  // unregistered, missed a frame (no matrix, no fill, no particles) and re-registered — the
+  // one-or-two blinks on mount. These members are stable for the canvas's lifetime.
+  const registerSphere = ctx?.registerSphere
+  const unregisterSphere = ctx?.unregisterSphere
+  const updateSphere = ctx?.updateSphere
+  const containerRef = ctx?.containerRef
   const matrixOpacityRef = useRef(matrixOpacity)
   matrixOpacityRef.current = matrixOpacity
   const solidBgRef = useRef(solidBg)
@@ -77,7 +85,7 @@ export function useAIASphere({
   // CSS animations, layout shifts, anything).
   // Cost: one getBoundingClientRect per sphere per frame — negligible.
   useEffect(() => {
-    if (!ctx || !ref.current || !ctx.containerRef.current) return
+    if (!registerSphere || !unregisterSphere || !containerRef || !ref.current || !containerRef.current) return
 
     let rafId = 0
     let lastX = -1
@@ -89,13 +97,13 @@ export function useAIASphere({
     let lastResolved = resolveColor(color)
 
     const track = () => {
-      if (!ref.current || !ctx.containerRef.current) {
+      if (!ref.current || !containerRef.current) {
         rafId = requestAnimationFrame(track)
         return
       }
 
       const sphereRect = ref.current.getBoundingClientRect()
-      const containerRect = ctx.containerRef.current.getBoundingClientRect()
+      const containerRect = containerRef.current.getBoundingClientRect()
       const exactX = sphereRect.left - containerRect.left + sphereRect.width / 2
       const exactY = sphereRect.top - containerRect.top + sphereRect.height / 2
 
@@ -122,7 +130,7 @@ export function useAIASphere({
         lastX = exactX
         lastY = exactY
         lastColor = resolved
-        ctx.registerSphere({
+        registerSphere({
           id,
           x: exactX,
           y: exactY,
@@ -147,15 +155,14 @@ export function useAIASphere({
 
     return () => {
       cancelAnimationFrame(rafId)
-      ctx.unregisterSphere(id)
+      unregisterSphere(id)
     }
-  }, [ctx, id, diameter, color, particles])
+  }, [registerSphere, unregisterSphere, containerRef, id, diameter, color, particles])
 
   // Effect 2 — Render-only props sync (no position change, no cluster reassignment)
   useEffect(() => {
-    if (!ctx) return
-    ctx.updateSphere(id, { state, showMatrix, solidBg, bgOpacity, visible })
-  }, [ctx, id, state, showMatrix, solidBg, bgOpacity, visible])
+    updateSphere?.(id, { state, showMatrix, solidBg, bgOpacity, visible })
+  }, [updateSphere, id, state, showMatrix, solidBg, bgOpacity, visible])
 
   return {
     ref,

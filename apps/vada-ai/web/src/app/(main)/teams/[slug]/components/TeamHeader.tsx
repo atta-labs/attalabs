@@ -1,9 +1,10 @@
 import { Heading } from '@atta/ui/shared'
 import type { Flow } from '@atta/engine'
-import { getFlowAgentCount, detectShape } from '@/lib/flow-helpers'
+import { detectShape, getFlowAgentCount, isAuditedPanel } from '@/lib/flow-helpers'
 
 function getDetailShapeLabel(flow: Flow): string {
   const shape = detectShape(flow)
+  if (isAuditedPanel(flow)) return 'parallel panel → synthesis → audit'
   if (shape === 'rounds-audit') {
     const roundCount = flow.rounds[0]!.repeats ?? 1
     const agentCount = flow.rounds[0]!.agents.length

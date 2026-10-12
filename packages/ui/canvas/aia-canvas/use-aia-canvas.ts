@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import {
   AIAContext,
   type AIAContextValue,
@@ -357,20 +357,38 @@ export function useAIACanvas(
 
   // ── Context value ────────────────────────────────────────────────────────
 
-  const contextValue: AIAContextValue = {
-    registerSphere,
-    updateSphere,
-    unregisterSphere,
-    registerRing,
-    updateRing,
-    unregisterRing,
-    phase,
-    containerRef,
-    fireDirectedMessage,
-    startGravity,
-    fireSphereOrigin,
-    fireSphereGather
-  }
+  // Memoised: every member but `phase` is stable, so the object changes only when the phase does.
+  // Consumers' registration effects must still depend on the stable members, not on this object —
+  // see useAIASphere / AIARing — or a phase change would unregister and re-register them.
+  const contextValue: AIAContextValue = useMemo(
+    () => ({
+      registerSphere,
+      updateSphere,
+      unregisterSphere,
+      registerRing,
+      updateRing,
+      unregisterRing,
+      phase,
+      containerRef,
+      fireDirectedMessage,
+      startGravity,
+      fireSphereOrigin,
+      fireSphereGather
+    }),
+    [
+      registerSphere,
+      updateSphere,
+      unregisterSphere,
+      registerRing,
+      updateRing,
+      unregisterRing,
+      phase,
+      fireDirectedMessage,
+      startGravity,
+      fireSphereOrigin,
+      fireSphereGather
+    ]
+  )
 
   return { containerRef, canvasRef, contextValue }
 }

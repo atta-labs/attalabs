@@ -94,7 +94,7 @@ The scene runs Vāda's **Outside Read** team (`vada-fusion-native.yaml`): four r
 | 03 | The conclusion shows its work. | `SplitSection` | A result card building in: agreement, conflict, transcript, then the Outside Read audit |
 | 04 | Use Vāda where you work. | `SplitSection fill={false}` | An assistant session calling `vada__deliberate`; the web-app and MCP calls to action |
 
-Claims to keep true: the audit (blind critic, fact-checker) is Outside Read only; reviewer slots are chosen by the user, any vendor with a key; 04's call is the real tool name and spec id.
+Claims to keep true: the audit (blind critic, fact-checker) is Outside Read only; reviewer slots are chosen by the user, any vendor with a key; 04's call is the real tool and parameter (`vada__deliberate` takes `team`; `spec_id` belongs to `vada__consult`).
 
 ### Rules that cost time before
 
