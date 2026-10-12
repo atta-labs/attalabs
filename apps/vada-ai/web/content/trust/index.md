@@ -36,7 +36,7 @@ You bring your own keys. Vāda stores them on its servers because hosted MCP nee
 
 - You authenticate an MCP client with a Vāda API key (`vada_…`), created and revoked one by one in Settings → Vāda API Keys. Keys carry 256 bits of randomness and are stored only as a SHA-256 hash.
 - Over MCP, Vāda uses your Anthropic, Google, OpenAI and xAI keys. Keys you saved for other providers are not used by MCP calls.
-- Each MCP consultation is stored in full: the prompt and any context you pass, every reviewer's response, the transcript, the synthesis, token counts and cost. Records are private to your account.
+- Each MCP consultation is stored in full: the prompt and any context you pass, every reviewer's response, the transcript, the synthesis, token counts and cost. Records are private to your account. Each record is created with a share token, but sharing is off and no page serves shared records today.
 
 ## What data goes where
 
@@ -45,6 +45,7 @@ You bring your own keys. Vāda stores them on its servers because hosted MCP nee
 | Your question, context, the transcript so far | Each AI provider assigned to a slot | Yours (your key) |
 | Search queries written by a model | Google Custom Search, falling back to Tavily, for GPT, Grok and Groq models | Vāda's |
 | Search by Anthropic models | Anthropic's own web search | Yours (your key) |
+| Search by Gemini models | Google's grounding with Google Search | Yours (your key) |
 | Everything in "What Vāda stores" | Vāda's database (Neon Postgres) | Vāda's |
 | Your sign-in and email | Clerk | Vāda's |
 
