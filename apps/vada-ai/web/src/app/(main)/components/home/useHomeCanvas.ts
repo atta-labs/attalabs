@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react'
 // new version once, then resume skipping. `?intro=1` always replays it.
 const INTRO_SEEN_KEY = 'vada:home-intro-seen-v6'
 
-const REVIEWER_COUNT = 5
+// Outside Read's four reviewers on the arc (`HeroFabric3D.tsx`).
+const REVIEWER_COUNT = 4
 // The Synthesizer hub plus every reviewer on the arc.
 const CORE_COUNT = REVIEWER_COUNT + 1
 const CORE_GAP_MS = 220

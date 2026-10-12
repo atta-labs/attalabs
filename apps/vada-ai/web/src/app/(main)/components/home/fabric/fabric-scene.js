@@ -49,14 +49,20 @@ const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 function splitLetters(el, labelClass) {
   if (!el) return []
   const words = (el.dataset.text ?? el.textContent ?? '').trim().split(' ')
-  el.innerHTML = words
-    .map(
-      (w) =>
-        `<span class="${labelClass.word}">${[...w]
-          .map((c) => `<i class="${labelClass.letter}">${c === '&' ? '&amp;' : c}</i>`)
-          .join('')}</span>`
-    )
-    .join(' ')
+  // built as nodes with textContent, never innerHTML, so the copy is always text
+  el.replaceChildren(
+    ...words.flatMap((w, i) => {
+      const word = document.createElement('span')
+      word.className = labelClass.word
+      for (const c of w) {
+        const letter = document.createElement('i')
+        letter.className = labelClass.letter
+        letter.textContent = c
+        word.append(letter)
+      }
+      return i === 0 ? [word] : [' ', word]
+    })
+  )
   return [...el.querySelectorAll('i')]
 }
 
@@ -650,7 +656,10 @@ export function mountHeroScene({
       scene.traverse((o) => {
         o.geometry?.dispose?.()
         const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []
-        for (const m of mats) m.dispose?.()
+        for (const m of mats) {
+          for (const value of Object.values(m)) if (value?.isTexture) value.dispose()
+          m.dispose?.()
+        }
       })
       renderer.dispose()
     }

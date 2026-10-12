@@ -67,7 +67,7 @@ The scene runs Vāda's **Outside Read** team (`vada-fusion-native.yaml`): four r
 ### Invariants
 
 - **The cast follows a real team.** `HeroFabric3D.tsx` keeps only the roles in `PANEL_ROLES` (Outside Read's: strategist, critic, devils_advocate, researcher). Change the cast only to match another published team.
-- **Display names are hero-only.** `HERO_NAMES` shows the Devil's Advocate as **Reframer** (its prompt audits the question's framing). The agents' real names stay everywhere else in the product.
+- **One roster for Outside Read.** `HERO_NAMES` labels each reviewer with its `vada-fusion-native.yaml` name (Assumption Hunter, Base Rate, Failure Mode, Second Order), the same names the "Pick your room" card and `/teams` show. Never invent a hero-only name for an agent.
 - **Colours come from tokens, read at runtime.** `tokens.js` resolves `--agent-*`, `--foreground`, `--card`, … and the scene re-reads them on theme change. Never hardcode a colour in the scene.
 - **Hub text is one type scale** (`LABEL_PX`, `HEADLINE_PX`, `DETAIL_PX` in `fabric-scene.js`), all `--font-mono`. The headline keeps one size from question to decision, and the gaps between the slots are what keep it readable. Grow a size only with the spacing.
 - **The links are 2D lines, not 3D.** One SVG line per reviewer in the label overlay, drawn edge to edge between the projected spheres every frame, so no sphere can hide or fragment it. A 3D tube aliased and broke apart as the camera tipped, and the hub hid it.

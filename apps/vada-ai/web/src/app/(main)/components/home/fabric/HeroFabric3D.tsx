@@ -23,14 +23,18 @@ const hub = AGENT_LIST.find((a) => a.name === HUB) ?? { name: HUB, role: 'synthe
    reached for, or the kind of reasoning it is doing. */
 const TOOLS: Record<string, string> = {
   Strategist: 'scenarios',
-  Critic: 'web_fetch',
+  Critic: 'web_search',
   "Devil's Advocate": 'reframing',
   Researcher: 'web_search'
 }
-/* The hero's own name for one role, display only (the agent itself, and every other page, keep
-   its name): every label is then one professional role. The Devil's Advocate's prompt audits the
-   question's framing, so here it is the Reframer. */
-const HERO_NAMES: Record<string, string> = { "Devil's Advocate": 'Reframer' }
+/* Each reviewer is labelled with its name in `vada-fusion-native.yaml`, the same names the team
+   card and `/teams` show, so the page carries one roster for Outside Read. */
+const HERO_NAMES: Record<string, string> = {
+  "Devil's Advocate": 'Assumption Hunter',
+  Researcher: 'Base Rate',
+  Critic: 'Failure Mode',
+  Strategist: 'Second Order'
+}
 const heroName = (name: string) => HERO_NAMES[name] ?? name
 
 /* The hero runs Vāda's Outside Read team: four reviewers answering the question in parallel, each
@@ -43,7 +47,7 @@ const reviewers = AGENT_LIST.flatMap((a, faceIndex) =>
     ? []
     : [{ name: heroName(a.name), token: tokenOf(a.role), faceIndex, tool: TOOLS[a.name] ?? 'thinking' }]
 )
-/* The hub's three beats: the question, the live deliberation, the verdict — with the Reframer's
+/* The hub's three beats: the question, the live deliberation, the verdict — with the Assumption Hunter's
    dissent kept on record rather than erased. */
 const SCRIPT = {
   hub: { name: hub.name, token: tokenOf(hub.role) },
@@ -123,13 +127,19 @@ export function useHeroScene({
 
   useEffect(() => {
     let cancelled = false
+    let raf = 0
     buildAgentFaceCanvases(faceStyle).then((canvases) => {
       if (cancelled) return
-      const apply = () => (sceneRef.current ? sceneRef.current.setFaces(canvases) : requestAnimationFrame(apply))
+      const apply = () => {
+        if (cancelled) return
+        if (sceneRef.current) sceneRef.current.setFaces(canvases)
+        else raf = requestAnimationFrame(apply)
+      }
       apply()
     })
     return () => {
       cancelled = true
+      cancelAnimationFrame(raf)
     }
   }, [faceStyle])
 
