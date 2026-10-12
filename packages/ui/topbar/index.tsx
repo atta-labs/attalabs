@@ -443,15 +443,10 @@ function TopBarWithAuth({
                 </div>
               </div>
               <nav className='flex min-h-0 flex-1 flex-col overflow-y-auto px-6'>
-                {/* `my-auto`, not `justify-center` on `<nav>` itself — `justify-center`
-                    on the SCROLL container centers the overflow symmetrically on both
-                    sides, which clips the first row above `scrollTop: 0` with no way to
-                    scroll back up to it (verified via CDP: `firstRow.top` sat at -66px
-                    even at minimum scroll). `margin: auto` on this inner wrapper centers
-                    it ONLY when there's surplus space in `<nav>`; the moment content
-                    exceeds the available height the auto margins collapse to 0 and the
-                    list simply starts at the top, scrollable in full either way. */}
-                <div className='my-auto [&>*:last-child]:border-b-0'>
+                {/* Links start at the top of the sheet, under the header, and scroll
+                    when they overflow. Never `justify-center` on this scroll container:
+                    it clips the first row above `scrollTop: 0`. */}
+                <div className='pt-4 [&>*:last-child]:border-b-0'>
                   {visibleLinks.map((item) => {
                     if (isTopBarGroup(item)) {
                       return <SheetNavGroup key={navItemKey(item)} item={item} isActive={isActive} />
