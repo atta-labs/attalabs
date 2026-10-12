@@ -78,7 +78,7 @@ function NavBody({ pathname, projectLinks }: { pathname: string; projectLinks: S
                           {/* `asChild`, not `render`: unlike `SidebarMenuButton`,
                            * `SidebarMenuSubButton` carries no cross-library `render` shim
                            * (`interactive/sidebar-menu-button.tsx`'s own comment names this
-                           * gap) — Studio is pinned to `retro` (`ui-library-pins.ts`), whose
+                           * gap) — this assumes Studio's CMS library is `retro`, whose
                            * native `installed/sidebar.tsx` understands `asChild`/`Slot`, not
                            * `render`. */}
                           <SidebarMenuSubButton

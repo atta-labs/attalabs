@@ -142,6 +142,10 @@ Diagnostic: if a colored particle reads as a grey disc on light bg, check the ou
 
 `useAIASphere` runs `requestAnimationFrame` with `getBoundingClientRect()` every frame. Only updates when position changes >0.5px. Works in all scroll contexts. Do NOT add scroll/resize listeners.
 
+### 10b. Registration effects depend on the context's stable members, never on the context object
+
+`AIACanvas`'s context value changes whenever its `phase` does (wander → forming → settled, in the first second). An effect keyed on the whole context (`[ctx, …]`) re-runs on each change: the sphere or ring unregisters, misses a frame (no matrix, no fill, no particles) and re-registers — a visible blink on mount. `useAIASphere` and `AIARing` therefore depend on `registerSphere` / `unregisterSphere` / `updateSphere` / `containerRef` and `registerRing` / `unregisterRing` / `updateRing`, which are stable for the canvas's lifetime; the context value itself is memoised so it changes only with `phase`. Any new consumer that registers with the canvas follows the same rule. Read `ctx.phase` only where phase is the point (e.g. gating a simulation on `'settled'`).
+
 ### 11. Particles use direct positioning
 
 `updateClusterOrbit` sets `p.x = target.x + offset` every frame. No lerp. Sphere moves → particles move instantly. Jitter value `0.3` controls calmness.

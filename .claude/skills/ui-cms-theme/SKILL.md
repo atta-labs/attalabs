@@ -143,18 +143,20 @@ interface PortalUiConfig {
   userInterface: {
     theme: CMSTheme | null          // null until theme is set in Sanity
     colorScheme: 'dark' | 'light'   // default scheme; the atta-color-scheme cookie can override per-visitor
-    library: CMSLibrary | null      // null falls back to 'basic'
+    library: CMSLibrary | null      // required for build-time apps — null fails the build
   }
 }
 ```
 
-**`userInterface.library` is no longer decisive for build-time apps.** `packages/ui/scripts/generate-ui.ts`
-now reads a repo-committed pin (`packages/ui/scripts/ui-library-pins.ts`) instead of this
-field — this field is at most a proposal a maintainer reflects into the pin file, not the
-thing that decides the build. Don't treat it as load-bearing when deciding whether a new
-product document is safely additive. `userInterface.theme`/`colorScheme` are unaffected —
-those still resolve live through `getProductCms` at both build and runtime, as described
-above.
+**`userInterface.library` is the one setting that picks an app's component library.**
+`packages/ui/scripts/generate-ui.ts` reads it at build time (to write
+`packages/ui/generated/{app}/components.ts`) and `NextWebShell` reads it at runtime (to feed
+`LibraryProvider`), so the page components and the runtime chrome always agree. It is
+load-bearing: a build-time app whose document has no valid library (`basic`, `animate`,
+`retro`) fails to build — `generate-ui.ts` stops with an error instead of falling back to
+`basic`, which is what once made two builds of one commit differ. Changing it changes what
+the next build emits; redeploy after editing it. `UI_LIBRARY_OVERRIDE` (env) overrides it
+for one build, e.g. to typecheck an app under every library.
 
 ---
 

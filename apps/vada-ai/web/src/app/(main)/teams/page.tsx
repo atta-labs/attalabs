@@ -2,8 +2,22 @@ import { listPublicSpecs } from '@atta/engine'
 import { Heading } from '@atta/ui/shared'
 import { TeamCard } from './components/TeamCard'
 
+// Simplest first: plain reviewers, then the same with synthesis, then the deeper audited panel.
+// Any public spec not named here follows, in catalog order.
+const TEAM_ORDER = [
+  'vada-reviewers',
+  'vada-reviewers-synthesis',
+  'vada-council',
+  'vada-council-synthesis',
+  'vada-fusion-native'
+]
+const rank = (id: string) => {
+  const i = TEAM_ORDER.indexOf(id)
+  return i === -1 ? TEAM_ORDER.length : i
+}
+
 export default function TeamsPage() {
-  const specs = listPublicSpecs()
+  const specs = [...listPublicSpecs()].sort((a, b) => rank(a.id) - rank(b.id))
 
   // Server-side search availability: reflects whether Vāda's search infrastructure
   // is configured, not per-user BYOK keys. Safe to pass as a boolean to the client.
