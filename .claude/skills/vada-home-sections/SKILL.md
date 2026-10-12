@@ -28,8 +28,9 @@ Two rules disambiguate most questions:
 │   ├── DeliberateAction.tsx       the sign-in-aware "go to /deliberate" button (label prop)
 │   └── fabric/                    the Three.js scene
 │       ├── HeroFabric3D.tsx       the script: hub, reviewers, hub text, display names
-│       ├── fabric-scene.js        scene, camera, hub painting, labels and link lines
-│       ├── agent-ring-3d.js       the spheres, question and answer dots, timing
+│       ├── fabric-scene.js        scene, camera, hub painting, labels
+│       ├── links-2d.js            the links: each reviewer's line and the messages on it, one path
+│       ├── agent-ring-3d.js       the spheres and the message timing
 │       ├── agent-face-canvases.tsx  face SVGs rasterised to canvases
 │       ├── field-3d.js, floaters.js the background fabric
 │       └── tokens.js              CSS tokens → Three.js colours
@@ -61,13 +62,13 @@ The scene runs Vāda's **Outside Read** team (`vada-fusion-native.yaml`): four r
 1. **Question.** The hub (the Synthesizer, large, at the front) shows QUESTION and "Should we ship it?". The four reviewers sit on an arc behind it. A line joins each reviewer to the hub.
 2. **The question reaches the reviewers.** A dot pops up at each reviewer's rim. The question does not travel out of the hub: the Synthesizer never hands out work, the engine sends the question to each reviewer.
 3. **Live deliberation.** The hub shows a log row per reviewer (the tool it works with), typing in.
-4. **Answers.** Each reviewer's answer dot travels to the hub; as it lands, that reviewer's line goes from its colour to muted and stays.
+4. **Answers.** Each reviewer's answer dot travels its line to the hub; as it lands, that reviewer's line goes from its colour to muted and stays. A line and its dots are one component (`links-2d.js`), placed from one path, so a dot never leaves its line.
 5. **Verdict.** The headline becomes the decision, with the tally and the one dissent named; the camera leans in.
 
 ### Invariants
 
 - **The cast follows a real team.** `HeroFabric3D.tsx` keeps only the roles in `PANEL_ROLES` (Outside Read's: strategist, critic, devils_advocate, researcher). Change the cast only to match another published team.
-- **One roster for Outside Read.** `HERO_NAMES` labels each reviewer with its `vada-fusion-native.yaml` name (Assumption Hunter, Base Rate, Failure Mode, Second Order), the same names the "Pick your room" card and `/teams` show. Never invent a hero-only name for an agent.
+- **Display names are hero-only.** `HERO_NAMES` shows the Devil's Advocate as **Reframer** (its prompt audits the question's framing). The agents' real role names stay everywhere else in the product.
 - **Colours come from tokens, read at runtime.** `tokens.js` resolves `--agent-*`, `--foreground`, `--card`, … and the scene re-reads them on theme change. Never hardcode a colour in the scene.
 - **Hub text is one type scale** (`LABEL_PX`, `HEADLINE_PX`, `DETAIL_PX` in `fabric-scene.js`), all `--font-mono`. The headline keeps one size from question to decision, and the gaps between the slots are what keep it readable. Grow a size only with the spacing.
 - **The links are 2D lines, not 3D.** One SVG line per reviewer in the label overlay, drawn edge to edge between the projected spheres every frame, so no sphere can hide or fragment it. A 3D tube aliased and broke apart as the camera tipped, and the hub hid it.

@@ -35,6 +35,14 @@ export function answerProgress(back, i, count) {
 /** Progress at which the deliberation concludes — the caller fires the shock wave here. */
 export const CONCLUDE_AT = 0.66
 
+/** How far a link leaves its reviewer turned toward the arc's middle, at most, and how far its
+    curve holds that heading (a share of the link's length). */
+const LINK_TURN = (40 * Math.PI) / 180
+const LINK_REACH = 0.35
+
+/** A message dot's radius, as a share of a reviewer sphere's. */
+const DOT_RATIO = 0.11
+
 const ARC = (150 * Math.PI) / 180 // the bench's spread, centred on the back (-z)
 
 /** Angle of reviewer i on the arc (0 is straight back, -z). */
@@ -88,13 +96,6 @@ export function buildAgentRing(THREE, opts) {
   const contourMat = rimMat(opts.ink, 0.18)
   const sphereGeo = new THREE.SphereGeometry(1, 96, 64)
   const contourGeo = new THREE.SphereGeometry(1.009, 64, 48)
-  const dotGeo = new THREE.SphereGeometry(0.045, 16, 12)
-  // the question in the hub's own colour — never a hard ink dot
-  // messages are light touches, not solid balls: translucent, in the sender's colour
-  const DOT_OPACITY = 0.4
-  const dotMat = (color) =>
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: DOT_OPACITY, depthWrite: false })
-  const questionMat = dotMat(opts.hubColor ?? opts.ink)
   // the face patch, centred on +z (the side main's spinner tips toward the camera)
   const PATCH = 2.2
   const patchGeo = new THREE.SphereGeometry(
@@ -148,19 +149,14 @@ export function buildAgentRing(THREE, opts) {
     const faceMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, opacity: 0 })
     core.spinner.add(new THREE.Mesh(patchGeo, faceMat))
 
-    const question = new THREE.Mesh(dotGeo, questionMat)
-    const answerMat = dotMat(opts.agentColors[i] ?? opts.ink)
-    const answer = new THREE.Mesh(dotGeo, answerMat)
-    question.visible = answer.visible = false
-    group.add(question, answer)
-
     agents.push({
       ...core,
       faceMat,
-      answerMat,
       agentRim,
-      question,
-      answer,
+      // the messages on this reviewer's link, drawn by the link itself (`links-2d.js`)
+      question: 0,
+      answer: 0,
+      link: { S: new THREE.Vector3(), C: new THREE.Vector3(), H: new THREE.Vector3() },
       open: 0,
       angle: arcAngle(i, count)
     })
@@ -206,9 +202,6 @@ export function buildAgentRing(THREE, opts) {
   }
 
   const camLocal = new THREE.Vector3()
-  const from = new THREE.Vector3()
-  const to = new THREE.Vector3()
-  const dir = new THREE.Vector3()
   const faceCamera = (spinner) => {
     camLocal.copy(cameraPos)
     spinner.parent.worldToLocal(camLocal)
@@ -220,6 +213,28 @@ export function buildAgentRing(THREE, opts) {
     const s = easeOut(clamp01(core.open))
     core.holder.visible = s > 0.01
     return s
+  }
+
+  /* Each link is a curve in the ring's own plane, in world space, so it turns with the scene
+     like the spheres do and the camera never bends it. It runs from the reviewer's rim to the
+     hub's rim, where the straight line between their centres meets it (so the links stay apart
+     at the hub). A reviewer near the back of the arc leaves its sphere turned toward the arc's
+     middle, by LINK_TURN at most, which keeps the line off the name pinned under the sphere, and
+     the curve settles into the straight path to the hub. The turn fades out toward the arc's
+     ends, where the straight line already clears the name. Mirror-image reviewers get
+     mirror-image links. */
+  const toHub = new THREE.Vector3()
+  const leave = new THREE.Vector3()
+  function placeLink(ag, a, agentR, hubR) {
+    const { S, C, H } = ag.link
+    toHub.set(-Math.sin(a), 0, Math.cos(a))
+    const turn = LINK_TURN * smooth(clamp01((Math.cos(a) - 0.5) / 0.5))
+    leave.copy(toHub)
+    leave.x += Math.sign(-Math.sin(a)) * Math.tan(turn) * Math.abs(toHub.z)
+    leave.normalize()
+    S.copy(ag.holder.position).addScaledVector(leave, agentR)
+    H.copy(driver.holder.position).addScaledVector(toHub, -hubR)
+    C.copy(S).addScaledVector(leave, S.distanceTo(H) * LINK_REACH)
   }
 
   /** dt seconds, t seconds, camera (faces turn to it), reduced: snap everything open */
@@ -234,7 +249,6 @@ export function buildAgentRing(THREE, opts) {
     faceCamera(driver.spinner)
 
     const rad = R
-    const driverR = dr
 
     agents.forEach((ag, i) => {
       const s = grow(ag, i + 1 < revealed ? 1 : 0, dt, reduced)
@@ -243,45 +257,42 @@ export function buildAgentRing(THREE, opts) {
       ag.holder.scale.setScalar(Math.max(0.0001, s))
       faceCamera(ag.spinner)
 
-      // rim to rim, driver to agent: where the question lands and the answer travels
-      dir.set(Math.sin(a), 0, -Math.cos(a))
-      from.copy(dir).multiplyScalar(driverR).setY(y)
-      to.copy(dir)
-        .multiplyScalar(rad - r)
-        .setY(y)
+      placeLink(ag, a, r * s, dr * ds)
 
-      // the question reaches each reviewer directly (the hub does not hand it out): its dot pops up
-      // at the reviewer's rim while the question is out, rather than travelling from the hub
-      ag.question.visible = s > 0.5 && out > 0 && out < 1
-      if (ag.question.visible) {
-        ag.question.position.copy(to)
-        ag.question.scale.setScalar(
-          Math.max(0.0001, smooth(clamp01(out / 0.25)) * (1 - smooth(clamp01((out - 0.8) / 0.2))))
-        )
-      }
-      const mine = answerProgress(back, i, count)
-      ag.answer.visible = s > 0.5 && mine > 0 && mine < 1
-      if (ag.answer.visible) ag.answer.position.lerpVectors(to, from, smooth(mine))
+      // the question reaches each reviewer directly (the hub does not hand it out): its dot pops
+      // up at the reviewer's end of the link while the question is out
+      const up = s > 0.5 && out > 0 && out < 1
+      ag.question = up ? smooth(clamp01(out / 0.25)) * (1 - smooth(clamp01((out - 0.8) / 0.2))) : 0
+      // the answer travels the link back to the hub, 0 at the reviewer to 1 at the hub
+      ag.answer = s > 0.5 ? smooth(answerProgress(back, i, count)) : 0
     })
   }
 
-  function retheme({ card, shade, deep, ink, agentColors, hubColor }) {
+  function retheme({ card, shade, deep, ink, agentColors }) {
     sphereMat.uniforms.uCard.value = lin(card)
     sphereMat.uniforms.uShade.value = lin(shade)
     sphereMat.uniforms.uDeep.value = lin(deep)
     contourMat.color.set(ink)
-    questionMat.color.set(hubColor ?? ink)
     agents.forEach((ag, i) => {
-      ag.answerMat.color.set(agentColors?.[i] ?? ink)
       ag.agentRim.color.set(agentColors?.[i] ?? ink)
     })
   }
 
-  /** World anchors for the HTML labels: each core's centre and current radius. */
+  /** World anchors for the HTML overlay: each core's centre and current radius, each reviewer's
+      link as a world-space quadratic curve `{ S, C, H }` (reviewer end, bend, hub end), and its
+      messages (`question` size and `answer` progress, both 0–1). `dotRatio` is a
+      message dot's radius as a share of a reviewer's. */
   function anchors() {
     return {
       driver: { pos: driver.holder.position, radius: dr * driver.holder.scale.x },
-      agents: agents.map((ag) => ({ pos: ag.holder.position, radius: r * ag.holder.scale.x }))
+      agents: agents.map((ag) => ({
+        pos: ag.holder.position,
+        radius: r * ag.holder.scale.x,
+        question: ag.question,
+        answer: ag.answer,
+        link: ag.link
+      })),
+      dotRatio: DOT_RATIO
     }
   }
 

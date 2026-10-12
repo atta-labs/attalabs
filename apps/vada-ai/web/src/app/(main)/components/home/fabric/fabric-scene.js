@@ -11,6 +11,7 @@ import {
   Q_TO
 } from './agent-ring-3d'
 import { buildField } from './field-3d'
+import { buildLinks } from './links-2d'
 import { buildFloaters } from './floaters'
 import { cssColor, cssNumber, readToken } from './tokens'
 
@@ -38,6 +39,8 @@ const ARRIVAL_T = 0.2
 const MASS_RAMP_S = 1.2 // the well deepens as the scene opens
 const FLOATER_ALPHA = 1
 const RING_RADIUS = 2.3
+// messages are light touches, not solid balls: translucent, in the sender's colour
+const MESSAGE_OPACITY = 0.4
 const FIT_ASPECT = 0.72 // narrowest aspect at which the reviewers' arc still fits edge to edge
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x))
@@ -406,24 +409,20 @@ export function mountHeroScene({
   }
   const nameEls = script.reviewers.map((rv) => nameEl(rv.name, rv.token))
 
-  /* The links: one plain 2D line per reviewer, from the hub's edge to the reviewer's edge on
-     screen, placed every frame from the same anchors as the names. Drawn edge to edge, so no
-     sphere ever hides it. In the reviewer's colour until its answer has landed, then muted — it
-     stays for good, so the final view still shows everyone connected to the hub. */
-  const SVG_NS = 'http://www.w3.org/2000/svg'
-  const linkSvg = document.createElementNS(SVG_NS, 'svg')
+  /* The links (`links-2d.js`): one per reviewer, each drawing its line and the messages that
+     travel on it from one path, placed every frame from the same anchors as the names. In the
+     reviewer's colour until its answer has landed, then muted — it stays for good, so the final
+     view still shows everyone connected to the hub. */
+  const linkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   // inline layout: this file is not scanned by Tailwind
   linkSvg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none'
   labels.prepend(linkSvg)
-  const links = script.reviewers.map((rv) => {
-    const line = document.createElementNS(SVG_NS, 'line')
-    line.setAttribute('stroke-width', '2')
-    line.setAttribute('stroke-linecap', 'round')
-    line.style.stroke = `var(${rv.token})`
-    line.style.transition = 'stroke 600ms ease-out, opacity 600ms ease-out'
-    linkSvg.appendChild(line)
-    return line
-  })
+  const links = buildLinks(
+    linkSvg,
+    script.reviewers.map((rv) => rv.token),
+    script.hub.token,
+    MESSAGE_OPACITY
+  )
   const hubNameEl = nameEl(script.hub.name, script.hub.token)
   const HUB_TEX = 768
   const hubCanvas = document.createElement('canvas')
@@ -474,6 +473,18 @@ export function mountHeroScene({
     const x = ((proj.x + 1) / 2) * w
     return { x, y: ((1 - proj.y) / 2) * h, r: Math.abs(((edge.x + 1) / 2) * w - x) }
   }
+  // the screen point at t on a link's world-space quadratic curve
+  const onCurve = new THREE.Vector3()
+  const alongLink = ({ S, C, H }, t, w, h) => {
+    const u = 1 - t
+    onCurve
+      .copy(S)
+      .multiplyScalar(u * u)
+      .addScaledVector(C, 2 * u * t)
+      .addScaledVector(H, t * t)
+      .project(camera)
+    return { x: ((onCurve.x + 1) / 2) * w, y: ((1 - onCurve.y) / 2) * h }
+  }
   const show = (el, alpha) => {
     el.style.opacity = alpha.toFixed(2)
     return alpha > 0
@@ -494,26 +505,21 @@ export function mountHeroScene({
     const hub = onScreen(a.driver.pos, a.driver.radius, w, h)
     pinUnder(hubNameEl, hub, names)
     const back = clamp01((p - A_FROM) / (A_TO - A_FROM))
+    links.setHub(hub)
     a.agents.forEach((ag, i) => {
-      const line = links[i]
       const at = onScreen(ag.pos, ag.radius, w, h)
-      const dx = at && hub ? at.x - hub.x : 0
-      const dy = at && hub ? at.y - hub.y : 0
-      const d = Math.hypot(dx, dy)
-      // hidden until both spheres are up, and wherever they touch on screen
-      if (!at || !hub || d <= hub.r + at.r + 2) {
-        line.style.opacity = '0'
+      // hidden until both spheres are up; once the camera leans in and the spheres overlap on
+      // screen, the link stays (muted) and the hub's mask hides only what runs behind the hub
+      if (!at || !hub) {
+        links.hide(i)
         return
       }
-      const ux = dx / d
-      const uy = dy / d
-      line.setAttribute('x1', (hub.x + ux * hub.r).toFixed(1))
-      line.setAttribute('y1', (hub.y + uy * hub.r).toFixed(1))
-      line.setAttribute('x2', (at.x - ux * at.r).toFixed(1))
-      line.setAttribute('y2', (at.y - uy * at.r).toFixed(1))
-      const landed = p >= A_FROM && answerProgress(back, i, links.length) >= 1
-      line.style.stroke = landed ? 'var(--muted-foreground)' : `var(${script.reviewers[i].token})`
-      line.style.opacity = landed ? '0.45' : '0.7'
+      links.place(i, (t) => alongLink(ag.link, t, w, h), {
+        question: ag.question,
+        answer: ag.answer,
+        landed: p >= A_FROM && answerProgress(back, i, a.agents.length) >= 1,
+        dot: at.r * a.dotRatio
+      })
     })
     paintHub(p, now)
   }
