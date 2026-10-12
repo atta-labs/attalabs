@@ -1,5 +1,15 @@
 import * as THREE from 'three'
-import { A_FROM, A_TO, ANSWER_SPAN, arcAngle, buildAgentRing, CONCLUDE_AT, Q_FROM, Q_TO } from './agent-ring-3d'
+import {
+  A_FROM,
+  A_TO,
+  ANSWER_SPAN,
+  answerProgress,
+  arcAngle,
+  buildAgentRing,
+  CONCLUDE_AT,
+  Q_FROM,
+  Q_TO
+} from './agent-ring-3d'
 import { buildField } from './field-3d'
 import { buildFloaters } from './floaters'
 import { cssColor, cssNumber, readToken } from './tokens'
@@ -171,6 +181,18 @@ function liveRows(p, script, colors, dissent) {
 }
 
 const LIVE_ROWS = 4
+/* One type scale for the whole run, as shares of the hub: the label (QUESTION / LIVE DELIBERATION /
+   VERDICT), the headline (the question, then the decision, at the same size — it never grows), and
+   one detail size for everything under it (the live rows, the tally, the dissent line). The
+   headline may run to two lines (`\n` in the script); the space between the slots is what lets
+   the hub breathe. */
+const LABEL_PX = 0.05
+const HEADLINE_PX = 0.08
+const HEADLINE_LH = 1.12
+const DETAIL_PX = 0.04
+const LABEL_Y = -0.215
+const HEADLINE_Y = -0.12
+const DETAIL_Y = 0.02
 const TYPE_CPS = 45 // characters per second as a new row types in
 
 /* Paints the hub onto its patch canvas — the fixed layout, its slots at their current text. */
@@ -186,23 +208,27 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
     p >= LABEL_TO_VERDICT[0]
       ? morph(t.liveLabel, t.verdictLabel, span(p, LABEL_TO_VERDICT), now)
       : morph(t.questionLabel, t.liveLabel, span(p, LABEL_TO_LIVE), now)
-  ctx.font = `500 ${Math.round(size * 0.05)}px ${font}`
-  ctx.letterSpacing = `${Math.round(size * 0.006)}px`
+  ctx.font = `500 ${Math.round(size * LABEL_PX)}px ${font}`
+  ctx.letterSpacing = `${Math.round(size * 0.008)}px`
   ctx.fillStyle = toCss(ink)
   ctx.globalAlpha = 0.5
-  ctx.fillText(label, c, c - size * 0.175)
+  ctx.fillText(label, c, c + size * LABEL_Y)
   ctx.letterSpacing = '0px'
   ctx.globalAlpha = 1
 
   // headline slot: the question stays up while it is deliberated, then becomes the decision
   const decided = span(p, HEADLINE_TO_DECISION)
-  ctx.font = `500 ${Math.round(size * (0.072 + 0.015 * decided))}px ${font}`
-  ctx.fillText(morph(t.question, t.decision, decided, now), c, c - size * 0.085)
+  const headPx = Math.round(size * HEADLINE_PX)
+  ctx.font = `500 ${headPx}px ${font}`
+  const lines = morph(t.question, t.decision, decided, now).split('\n')
+  lines.forEach((line, k) => {
+    ctx.fillText(line, c, c + size * HEADLINE_Y + k * headPx * HEADLINE_LH)
+  })
 
   // detail slot
   if (beat === 'live') {
-    const fontPx = Math.round(size * 0.04)
-    const lineH = fontPx * 1.6
+    const fontPx = Math.round(size * DETAIL_PX)
+    const lineH = fontPx * 1.85
     ctx.font = `400 ${fontPx}px ${font}`
     ctx.textAlign = 'left'
     const charW = ctx.measureText('m').width
@@ -211,7 +237,7 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
     const left = c - (widest + charW * 2) / 2
     const fade = 1 - clamp01(resolve / LIVE_OUT)
     shown.forEach((row, k) => {
-      const y = c + size * 0.02 + k * lineH
+      const y = c + size * DETAIL_Y + k * lineH
       const since = appeared.get(row.id)
       const full = `${row.who}  ${row.text}`
       const typed = since == null ? full.length : Math.floor((now - since) * TYPE_CPS)
@@ -247,13 +273,13 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
     const step = (a, b) => clamp01((v - a) / (b - a))
     ctx.textAlign = 'center'
     ctx.fillStyle = toCss(ink)
-    ctx.font = `400 ${Math.round(size * 0.034)}px ${font}`
+    ctx.font = `400 ${Math.round(size * DETAIL_PX)}px ${font}`
     ctx.globalAlpha = 0.75 * step(0.3, 0.45)
-    ctx.fillText(t.tally, c, c + size * 0.02)
+    ctx.fillText(t.tally, c, c + size * DETAIL_Y)
     const n = colors.length
     const gap = size * 0.04
     const pip = size * 0.012
-    const y = c + size * 0.08
+    const y = c + size * (DETAIL_Y + 0.07)
     const agree = colors.map((_, i) => i).filter((i) => i !== dissent)
     const rowW = (n - 1) * gap
     agree.forEach((i, k) => {
@@ -272,9 +298,9 @@ function drawHub(ctx, size, p, beat, resolve, rows, appeared, now, script, color
       ctx.strokeStyle = toCss(colors[dissent])
       ctx.stroke()
       ctx.globalAlpha = out
-      ctx.font = `400 ${Math.round(size * 0.034)}px ${font}`
+      ctx.font = `400 ${Math.round(size * DETAIL_PX)}px ${font}`
       ctx.fillStyle = toCss(colors[dissent])
-      ctx.fillText(t.dissentLabel, c, y + size * 0.055)
+      ctx.fillText(t.dissentLabel, c, y + size * 0.07)
     }
     ctx.globalAlpha = 1
   }
@@ -373,6 +399,25 @@ export function mountHeroScene({
     return el
   }
   const nameEls = script.reviewers.map((rv) => nameEl(rv.name, rv.token))
+
+  /* The links: one plain 2D line per reviewer, from the hub's edge to the reviewer's edge on
+     screen, placed every frame from the same anchors as the names. Drawn edge to edge, so no
+     sphere ever hides it. In the reviewer's colour until its answer has landed, then muted — it
+     stays for good, so the final view still shows everyone connected to the hub. */
+  const SVG_NS = 'http://www.w3.org/2000/svg'
+  const linkSvg = document.createElementNS(SVG_NS, 'svg')
+  // inline layout: this file is not scanned by Tailwind
+  linkSvg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none'
+  labels.prepend(linkSvg)
+  const links = script.reviewers.map((rv) => {
+    const line = document.createElementNS(SVG_NS, 'line')
+    line.setAttribute('stroke-width', '2')
+    line.setAttribute('stroke-linecap', 'round')
+    line.style.stroke = `var(${rv.token})`
+    line.style.transition = 'stroke 600ms ease-out, opacity 600ms ease-out'
+    linkSvg.appendChild(line)
+    return line
+  })
   const hubNameEl = nameEl(script.hub.name, script.hub.token)
   const HUB_TEX = 768
   const hubCanvas = document.createElement('canvas')
@@ -442,6 +487,28 @@ export function mountHeroScene({
     })
     const hub = onScreen(a.driver.pos, a.driver.radius, w, h)
     pinUnder(hubNameEl, hub, names)
+    const back = clamp01((p - A_FROM) / (A_TO - A_FROM))
+    a.agents.forEach((ag, i) => {
+      const line = links[i]
+      const at = onScreen(ag.pos, ag.radius, w, h)
+      const dx = at && hub ? at.x - hub.x : 0
+      const dy = at && hub ? at.y - hub.y : 0
+      const d = Math.hypot(dx, dy)
+      // hidden until both spheres are up, and wherever they touch on screen
+      if (!at || !hub || d <= hub.r + at.r + 2) {
+        line.style.opacity = '0'
+        return
+      }
+      const ux = dx / d
+      const uy = dy / d
+      line.setAttribute('x1', (hub.x + ux * hub.r).toFixed(1))
+      line.setAttribute('y1', (hub.y + uy * hub.r).toFixed(1))
+      line.setAttribute('x2', (at.x - ux * at.r).toFixed(1))
+      line.setAttribute('y2', (at.y - uy * at.r).toFixed(1))
+      const landed = p >= A_FROM && answerProgress(back, i, links.length) >= 1
+      line.style.stroke = landed ? 'var(--muted-foreground)' : `var(${script.reviewers[i].token})`
+      line.style.opacity = landed ? '0.45' : '0.7'
+    })
     paintHub(p, now)
   }
 

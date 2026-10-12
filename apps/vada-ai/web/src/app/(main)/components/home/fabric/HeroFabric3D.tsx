@@ -13,8 +13,8 @@ const LABEL_CLASS = {
   name: 'absolute top-0 left-0 whitespace-nowrap font-mono text-xs uppercase tracking-widest opacity-0'
 }
 
-/* The Synthesizer is the hub: every reviewer answers to it and it writes the conclusion — how
-   Vāda's Reviewers + Synthesis team runs. The rest sit on the arc, left to right. */
+/* The Synthesizer is the hub: every reviewer's answer goes to it and it writes the conclusion — how
+   Vāda's Outside Read team runs. It does not hand out the question: that reaches each reviewer directly. The rest sit on the arc, left to right. */
 const HUB = 'Synthesizer'
 const tokenOf = (role: string) => `--agent-${role.replaceAll('_', '-')}`
 const hub = AGENT_LIST.find((a) => a.name === HUB) ?? { name: HUB, role: 'synthesizer' }
@@ -24,15 +24,27 @@ const hub = AGENT_LIST.find((a) => a.name === HUB) ?? { name: HUB, role: 'synthe
 const TOOLS: Record<string, string> = {
   Strategist: 'scenarios',
   Critic: 'web_fetch',
-  "Devil's Advocate": 'counter-case',
-  Researcher: 'web_search',
-  Operator: 'cost model'
+  "Devil's Advocate": 'reframing',
+  Researcher: 'web_search'
 }
+/* The hero's own name for one role, display only (the agent itself, and every other page, keep
+   its name): every label is then one professional role. The Devil's Advocate's prompt audits the
+   question's framing, so here it is the Reframer. */
+const HERO_NAMES: Record<string, string> = { "Devil's Advocate": 'Reframer' }
+const heroName = (name: string) => HERO_NAMES[name] ?? name
+
+/* The hero runs Vāda's Outside Read team: four reviewers answering the question in parallel, each
+   on its own, and the Synthesizer writing the result from their answers (`vada-fusion-native.yaml`:
+   a Devil's Advocate, a Researcher, a Critic and a Strategist). So the Operator sits this one out. */
+const PANEL_ROLES = new Set(['strategist', 'critic', 'devils_advocate', 'researcher'])
+
 const reviewers = AGENT_LIST.flatMap((a, faceIndex) =>
-  a.name === hub.name ? [] : [{ name: a.name, token: tokenOf(a.role), faceIndex, tool: TOOLS[a.name] ?? 'thinking' }]
+  a.name === hub.name || !PANEL_ROLES.has(a.role)
+    ? []
+    : [{ name: heroName(a.name), token: tokenOf(a.role), faceIndex, tool: TOOLS[a.name] ?? 'thinking' }]
 )
-/* The hub's three beats: the question, the live deliberation, the verdict — with the Devil's
-   Advocate's dissent kept on record rather than erased. */
+/* The hub's three beats: the question, the live deliberation, the verdict — with the Reframer's
+   dissent kept on record rather than erased. */
 const SCRIPT = {
   hub: { name: hub.name, token: tokenOf(hub.role) },
   reviewers,
@@ -45,8 +57,8 @@ const SCRIPT = {
     verdictLabel: 'VERDICT',
     decision: 'Ship it',
     tally: `${reviewers.length - 1} of ${reviewers.length} recommend shipping`,
-    dissenter: "Devil's Advocate",
-    dissentLabel: "Devil's Advocate · dissent recorded"
+    dissenter: heroName("Devil's Advocate"),
+    dissentLabel: `${heroName("Devil's Advocate")} · dissent recorded`
   }
 }
 

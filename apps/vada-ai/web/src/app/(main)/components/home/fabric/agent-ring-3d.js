@@ -1,6 +1,6 @@
 /* Vāda's deliberation as real 3D, in the same scene as the fabric, laid out as a council: the
    reviewers sit on an arc at the back like a bench, and the Synthesizer — the hub every message
-   goes through — sits large at the front over the dish, its status painted on its surface. Reviewers never talk to each other, so the only links are spokes from
+   goes through — sits large at the front over the dish, its status painted on its surface. Reviewers never talk to each other, so the only links are lines from
    the hub. Every reviewer is on the far side of the hub, so tipping the camera only spreads the
    arc out — nothing hides behind the hub.
 
@@ -86,23 +86,15 @@ export function buildAgentRing(THREE, opts) {
   const rimMat = (color, opacity) =>
     new THREE.MeshBasicMaterial({ color, side: THREE.BackSide, transparent: true, opacity, depthWrite: false })
   const contourMat = rimMat(opts.ink, 0.18)
-  /* The spokes are solid tubes, not 1px lines: a hairline aliased and broke into fragments as
-     the camera tipped. Each is a unit cylinder placed, aimed and stretched every frame, in the
-     reviewer's colour, translucent like the messages it carries. */
-  const SPOKE_R = 0.014
-  const SPOKE_OPACITY = 0.35
-  const spokeGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true)
-  const UP = new THREE.Vector3(0, 1, 0)
-  // the question leaves the hub in the hub's own colour — never a hard ink dot
+  const sphereGeo = new THREE.SphereGeometry(1, 96, 64)
+  const contourGeo = new THREE.SphereGeometry(1.009, 64, 48)
+  const dotGeo = new THREE.SphereGeometry(0.045, 16, 12)
+  // the question in the hub's own colour — never a hard ink dot
   // messages are light touches, not solid balls: translucent, in the sender's colour
   const DOT_OPACITY = 0.4
   const dotMat = (color) =>
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity: DOT_OPACITY, depthWrite: false })
   const questionMat = dotMat(opts.hubColor ?? opts.ink)
-
-  const sphereGeo = new THREE.SphereGeometry(1, 96, 64)
-  const contourGeo = new THREE.SphereGeometry(1.009, 64, 48)
-  const dotGeo = new THREE.SphereGeometry(0.045, 16, 12)
   // the face patch, centred on +z (the side main's spinner tips toward the camera)
   const PATCH = 2.2
   const patchGeo = new THREE.SphereGeometry(
@@ -156,14 +148,6 @@ export function buildAgentRing(THREE, opts) {
     const faceMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, opacity: 0 })
     core.spinner.add(new THREE.Mesh(patchGeo, faceMat))
 
-    const spokeMat = new THREE.MeshBasicMaterial({
-      color: opts.agentColors[i] ?? opts.ink,
-      transparent: true,
-      opacity: SPOKE_OPACITY,
-      depthWrite: false
-    })
-    const spoke = new THREE.Mesh(spokeGeo, spokeMat)
-    group.add(spoke)
     const question = new THREE.Mesh(dotGeo, questionMat)
     const answerMat = dotMat(opts.agentColors[i] ?? opts.ink)
     const answer = new THREE.Mesh(dotGeo, answerMat)
@@ -175,8 +159,6 @@ export function buildAgentRing(THREE, opts) {
       faceMat,
       answerMat,
       agentRim,
-      spoke,
-      spokeMat,
       question,
       answer,
       open: 0,
@@ -261,27 +243,23 @@ export function buildAgentRing(THREE, opts) {
       ag.holder.scale.setScalar(Math.max(0.0001, s))
       faceCamera(ag.spinner)
 
-      // the spoke runs rim to rim, driver to agent
+      // rim to rim, driver to agent: where the question lands and the answer travels
       dir.set(Math.sin(a), 0, -Math.cos(a))
       from.copy(dir).multiplyScalar(driverR).setY(y)
       to.copy(dir)
         .multiplyScalar(rad - r)
         .setY(y)
-      /* A spoke is the channel for one exchange: it stays open until this reviewer's answer is
-         sent, then its far end rides along behind the answer dot, so the channel closes into the
-         hub as the answer arrives — one by one, in the order the answers land. */
-      const mine = answerProgress(back, i, count)
-      const k = s * (1 - smooth(mine))
-      const len = from.distanceTo(to) * k
-      ag.spoke.visible = len > 0.01
-      if (ag.spoke.visible) {
-        ag.spoke.position.copy(from).addScaledVector(dir, len / 2)
-        ag.spoke.quaternion.setFromUnitVectors(UP, dir)
-        ag.spoke.scale.set(SPOKE_R, len, SPOKE_R)
-      }
 
+      // the question reaches each reviewer directly (the hub does not hand it out): its dot pops up
+      // at the reviewer's rim while the question is out, rather than travelling from the hub
       ag.question.visible = s > 0.5 && out > 0 && out < 1
-      if (ag.question.visible) ag.question.position.lerpVectors(from, to, smooth(out))
+      if (ag.question.visible) {
+        ag.question.position.copy(to)
+        ag.question.scale.setScalar(
+          Math.max(0.0001, smooth(clamp01(out / 0.25)) * (1 - smooth(clamp01((out - 0.8) / 0.2))))
+        )
+      }
+      const mine = answerProgress(back, i, count)
       ag.answer.visible = s > 0.5 && mine > 0 && mine < 1
       if (ag.answer.visible) ag.answer.position.lerpVectors(to, from, smooth(mine))
     })
@@ -296,7 +274,6 @@ export function buildAgentRing(THREE, opts) {
     agents.forEach((ag, i) => {
       ag.answerMat.color.set(agentColors?.[i] ?? ink)
       ag.agentRim.color.set(agentColors?.[i] ?? ink)
-      ag.spokeMat.color.set(agentColors?.[i] ?? ink)
     })
   }
 
