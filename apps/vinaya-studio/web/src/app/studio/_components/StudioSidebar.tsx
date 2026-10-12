@@ -75,12 +75,10 @@ function NavBody({ pathname, projectLinks }: { pathname: string; projectLinks: S
                     <SidebarMenuSub>
                       {projectLinks.map((p) => (
                         <SidebarMenuSubItem key={p.segment}>
-                          {/* `asChild`, not `render`: unlike `SidebarMenuButton`,
-                           * `SidebarMenuSubButton` carries no cross-library `render` shim
-                           * (`interactive/sidebar-menu-button.tsx`'s own comment names this
-                           * gap) — Studio is pinned to `retro` (`ui-library-pins.ts`), whose
-                           * native `installed/sidebar.tsx` understands `asChild`/`Slot`, not
-                           * `render`. */}
+                          {/* `asChild` is the cross-library contract: retro's native
+                           * `installed/sidebar.tsx` takes it via `Slot`, and basic (re-exported
+                           * by animate) adapts it to Base UI `render` in
+                           * `interactive/sidebar-menu-sub-button.tsx`. */}
                           <SidebarMenuSubButton
                             asChild
                             isActive={pathname === p.href || pathname.startsWith(`${p.href}/`)}
