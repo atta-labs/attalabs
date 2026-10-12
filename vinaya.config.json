@@ -156,7 +156,6 @@
       ".github/workflows/vinaya-review-verdict.yml",
       ".github/workflows/vinaya-archivist.yml",
       ".github/workflows/vinaya-body-checks.yml",
-      "VINAYA.md",
       "vinaya/checks/.gitkeep",
       "vinaya/roles/.gitkeep",
       ".agents/skills/vinaya-architect/SKILL.md",
@@ -169,7 +168,17 @@
       ".agents/skills/vinaya-tranche-archivist/SKILL.md",
       ".claude/commands/vinaya.md",
       ".mcp.json",
-      ".gemini/commands/vinaya.toml"
+      ".gemini/commands/vinaya.toml",
+      ".claude/skills/vinaya-architect/SKILL.md",
+      ".claude/skills/vinaya-archivist/SKILL.md",
+      ".claude/skills/vinaya-developer/SKILL.md",
+      ".claude/skills/vinaya-operator/SKILL.md",
+      ".claude/skills/vinaya-planner/SKILL.md",
+      ".claude/skills/vinaya-reviewer/SKILL.md",
+      ".claude/skills/vinaya-security/SKILL.md",
+      ".claude/skills/vinaya-tranche-archivist/SKILL.md",
+      "AGENTS.md",
+      ".gemini/settings.json"
     ],
     "blocks": [
       {

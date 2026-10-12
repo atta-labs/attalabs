@@ -26,14 +26,11 @@
  * Goal/lifecycle/task-list all derive via `@attalabs/aeg-forge-state`'s
  * `deriveTrancheFromForge`, the same adapter the CLI gates use.
  * `dependsOn`/`conflictsWith` for an ACTIVE tranche derive from the forge
- * like everything else. A legacy `aeg-root/tranches/<slug>.md` topology
- * table was once merged in as best-effort enrichment for pre-cutover files;
- * that path was removed by `deprecation-v1` task 1 once it was
- * provably unreachable — no live tranche has carried such a file since
- * #512/#517 deleted the last one (`aeg-drift-prevention-v1.md`), and
- * `check-no-disk-state.ts` now CI-blocks adding a new active topology file
- * at all. Archived tranches never had a file merge and never will — their
- * dependency edges resolve entirely from each closed Issue's own body.
+ * like everything else. No plan file is read for enrichment any more: no
+ * live tranche carries one, and `check-no-disk-state.ts` CI-blocks adding a
+ * plan file to the repository at all. Archived tranches never had one merged
+ * either — their dependency edges resolve entirely from each closed Issue's
+ * own body.
  *
  * Reads are confined to this module. Parsing is delegated to `@attalabs/aeg-core`
  * (pure, no I/O) for the `.vinaya/projects.md` registry — the only file this
@@ -419,12 +416,9 @@ async function readActiveTranche(fileSlug: string): Promise<{ fileSlug: string; 
  * Enumerates every archived tranche from the forge (closed Milestones),
  * deriving each one's full `Tranche` via `deriveTrancheFromForge`. Every
  * pre-Milestone-era tranche now has a real closed Milestone (backfilled with
- * its original topology preserved in the Milestone's description field), so
- * there is no gap left to fill — this used to also supplement with any
- * `aeg-root/tranches/completed/*.md` file whose slug wasn't already resolved
- * via a Milestone (`aeg-forge-state-v1` task 5, #515); that local-file
- * fallback and its backing directory are gone (attalabs carries no local
- * `aeg-root/` at all any more).
+ * its original plan preserved in the Milestone's description field), so
+ * there is no gap left to fill — no local file fallback remains, and
+ * attalabs carries no local doctrine tree at all any more.
  */
 async function loadArchivedTranchesWithStatus(): Promise<LoadedTranches> {
   const results: Array<{ fileSlug: string; tranche: Tranche }> = []

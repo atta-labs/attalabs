@@ -247,5 +247,5 @@ Vāda-internal:
 
 Ecosystem-level (for the wider AttaLabs framing):
 - root `CLAUDE.md`'s naming bullets — v2 brand architecture
-- `aeg-project/state.md` — cross-project current state
+- Cross-project current state — derived from the forge (Milestones and `vinaya/tranche:*` labeled Issues), not a file
 - `docs/decisions-legacy.md` — global frozen decision archive
