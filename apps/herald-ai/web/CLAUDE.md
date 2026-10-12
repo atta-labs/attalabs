@@ -3,10 +3,10 @@
 ## Session start (REQUIRED)
 
 Before any task in this product, read:
-1. `apps/herald-ai/aeg-project/state.md` — current phase, what's built, what's unknown
-2. `apps/herald-ai/aeg-project/now.md` — what's in flight and what's next
+1. `apps/herald-ai/CLAUDE.md` — product overview
+2. The open Issues labeled `vinaya/tranche:herald-*` — what's in flight and what's next
 
-These files are the source of truth for Herald's current state. Do not rely on memory or project knowledge.
+The forge is the source of truth for Herald's current state: it is derived from Milestones and labeled Issues, not from a file. Do not rely on memory or project knowledge.
 
 ---
 

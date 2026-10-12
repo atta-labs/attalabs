@@ -684,7 +684,7 @@ Vāda is a YAML-driven deliberation runtime. The engine executes deliberation co
 
 The v2 schema collapses all deliberation patterns into a single model: a flow is a sequence of rounds. Each round has agents, layout (parallel or serial), optional repeats, and optional declarative revision. The compiler detects four shapes from this structure (solo, brokered ± synthesis, rounds + audit) and emits a Plan graph the adapter executes identically across all of them.
 
-Vāda is one product within the AttaLabs ecosystem (`vada.attalabs.dev`). It is also the deliberation layer inside Atta-the-product (the composed deep-thinking AI; see `apps/atta-ai/specs/atta-naming-decision.md` and `aeg-project/state.md` for the v2 framing). This document tracks Vāda-internal state — for ecosystem-level positioning see those documents.
+Vāda is one product within the AttaLabs ecosystem (`vada.attalabs.dev`). It is also the deliberation layer inside Atta-the-product (the composed deep-thinking AI; see `apps/atta-ai/specs/atta-naming-decision.md` for the v2 framing). This document tracks Vāda-internal state — for ecosystem-level positioning see those documents.
 
 ---
 
@@ -933,7 +933,7 @@ Existing canonical docs:
 Ecosystem-level docs (for the wider AttaLabs framing, not Vāda-internal):
 - `apps/atta-ai/specs/atta-naming-decision.md` — v2 brand architecture (AttaLabs vs Atta)
 - `apps/atta-ai/specs/atta-ecosystem-vision.md` — strategic positioning
-- `aeg-project/state.md` — current state across all products
+- Current state across all products — derived from the forge (Milestones and `vinaya/tranche:*` labeled Issues), not a file
 
 Skills (`.claude/skills/`):
 - `vada-architecture/SKILL.md` — architecture master reference
