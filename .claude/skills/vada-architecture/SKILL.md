@@ -159,6 +159,8 @@ is a hue shift, not a contrast change. **New Vāda UI must use `text-primary` /
 
 **retro's `Badge` has no `size` variant** (only `variant`) since the retroui relaunch (`d2bca515`) — `SessionCard.tsx` carried a stale `size='xs'` prop until fixed here; grep `<Badge` call sites for a stray `size=` before reusing this pattern elsewhere in Vāda.
 
+**The home hero is a Three.js scene** (`three` is a direct `web` dependency, used only under `(main)/components/home/fabric/`) that plays the published Outside Read team: four reviewers answering in parallel, the Synthesizer writing the result. It never hardcodes colors: it reads the same CSS tokens at runtime (`--agent-*`, `--foreground`, `--card`, …) and re-reads them on theme change, so CMS themes reach it like any DOM surface. The scene's beats and invariants are documented in `.claude/skills/vada-home-sections/SKILL.md`.
+
 ## Public web surface
 
 Signed out, the top bar is Teams · MCP · Trust; signed in, Deliberate · Sessions · Teams · MCP (each link with a lucide icon, attached in `(main)/layout.tsx` — `src/lib/route-config.ts` stays plain data because the middleware imports it). The footer is the shared `Footer` given the top bar's logo lockup and a link row (Sessions only when signed in). `/trust` is the data-handling page and must state only what the code does; `/mcp` lists only the teams each MCP tool accepts. Vāda's component library is its CMS `userInterface.library` (currently animate) — see `.claude/skills/ui-library-system/SKILL.md`.

@@ -21,6 +21,12 @@ import {
 } from '@/lib/route-config'
 import type { FaceStyle } from '@/components/agents'
 
+// No bottom border anywhere. On the home hero's opening state (`data-bare="true"` on the
+// header, see StickyHeaderTopBar) the frame has no surface at all — background, shadow and
+// backdrop blur drop, so the fabric paints straight through (Vinaya's TOPBAR_CHROME_CLASS).
+const TOPBAR_CHROME_CLASS =
+  'border-transparent [[data-bare=true]_&]:bg-transparent [[data-bare=true]_&]:shadow-none [[data-bare=true]_&]:backdrop-blur-none'
+
 // Top-bar links carry an icon in their label, the way Vinaya Portal's do (an icon + text inside the
 // one label node, so the shared TopBar renders it in both the desktop nav and the mobile sheet).
 // `route-config.ts` stays plain data — the middleware imports it — so icons are attached here.
@@ -59,7 +65,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const darkUrl = branding?.logoSolidDark?.url ?? branding?.logoSolidLight?.url
   const logo =
     lightUrl || darkUrl ? (
-      <NextLink variant='unstyled' href='/'>
+      <NextLink variant='unstyled' href='/' data-topbar-logo>
         <Logo
           light={lightUrl}
           dark={darkUrl}
@@ -89,6 +95,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
               logo={logo}
               links={withIcons(clerkId ? SIGNED_IN_NAV : SIGNED_OUT_NAV)}
               extraActions={extraActions}
+              chromeClassName={TOPBAR_CHROME_CLASS}
             />
           </StickyHeaderTopBar>
           <div className='flex-1 flex flex-col'>

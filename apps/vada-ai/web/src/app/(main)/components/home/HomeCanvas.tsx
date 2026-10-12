@@ -1,193 +1,67 @@
 'use client'
 
-import { AIACanvas, AIARing } from '@atta/ui/canvas'
-import { VadaAgent as AIAgent, type AgentName } from '@/components/agents'
-import React, { type ReactNode, useCallback, useRef } from 'react'
-import { useHomeCanvas } from './useHomeCanvas'
-import { useSphereAbsorb } from './useSphereAbsorb'
+import { Heading, Text } from '@atta/ui/shared'
+import { type ReactNode, useRef } from 'react'
 import { useUserPreferences } from '@/lib/user-preferences-context'
-import { renderAutonomousFabric } from './fabric-autonomous'
-import { useRotatingEncryptedLabel } from './RotatingEncryptedLabel'
-import { AGENT_WORD_LISTS } from './agent-words'
-
-// Wrapper component to use the hook
-function AgentSphereWithRotatingLabel({
-  id,
-  name,
-  faceStyle,
-  size,
-  state,
-  showMatrix,
-  solidBg,
-  visible,
-  revealed,
-  onSphereAbsorb
-}: {
-  id: string
-  name: AgentName
-  faceStyle: any
-  size: any
-  state: any
-  showMatrix: boolean
-  solidBg: boolean
-  visible: boolean
-  revealed: boolean
-  onSphereAbsorb: (sphereId: string, callback: () => void) => void
-}) {
-  const [nextWordCallback, setNextWordCallback] = React.useState<(() => void) | null>(null)
-
-  const handleParticleAbsorb = useCallback((callback: () => void) => {
-    setNextWordCallback(() => callback)
-  }, [])
-
-  const encryptedLabel = useRotatingEncryptedLabel(AGENT_WORD_LISTS[name] ?? [], handleParticleAbsorb)
-
-  // Register this sphere's callback with the absorption handler
-  React.useEffect(() => {
-    if (nextWordCallback) {
-      onSphereAbsorb(id, nextWordCallback)
-    }
-  }, [id, nextWordCallback, onSphereAbsorb])
-
-  return (
-    <AIAgent
-      id={id}
-      name={name}
-      faceStyle={faceStyle}
-      size={size}
-      state={state}
-      showMatrix={showMatrix}
-      matrixOpacity={0.3}
-      label={revealed ? encryptedLabel : undefined}
-      solidBg={solidBg}
-      visible={visible}
-    />
-  )
-}
+import { useHeroScene } from './fabric/HeroFabric3D'
+import { useHeroScrolled, useRingSequence } from './useHomeCanvas'
 
 interface HomeCanvasProps {
-  render: (state: { animationStarted: boolean; animationComplete: boolean; ringVisible: boolean }) => ReactNode
+  // The opening title, absolutely positioned over the hero viewport (Vinaya's distribution).
+  // `scrolled` turns true once the camera starts to tip.
+  renderTop: (state: { scrolled: boolean }) => ReactNode
 }
 
-interface HomeCanvasInnerProps extends HomeCanvasProps {
-  registerSphere: (id: string, el: HTMLElement | null) => void
-  onOriginCompleteRef: React.MutableRefObject<(() => void) | null>
-  labelCallbacksRef: React.MutableRefObject<Map<string, () => void>>
-}
-
-const AGENTS: AgentName[] = ['Strategist', 'Critic', "Devil's Advocate", 'Synthesizer', 'Researcher', 'Operator']
-
-const SPHERE_IDS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
-
-// Inner — must be inside AIACanvas to access canvas context
-function HomeCanvasInner({ render, registerSphere, onOriginCompleteRef, labelCallbacksRef }: HomeCanvasInnerProps) {
-  const {
-    activeAgent,
-    activeStep,
-    revealedCount,
-    animationStarted,
-    animationComplete,
-    ringSize,
-    sphereSize,
-    sphereRadius,
-    ringDivRef,
-    ringVisible
-  } = useHomeCanvas(onOriginCompleteRef)
+// Vinaya's hero shape: a tall scroll track with a sticky viewport inside it. One WebGL scene
+// paints the viewport — fabric, floaters, the driver and its ring of agents — and the camera
+// tips from top-down toward the horizon as you scroll, while the headline scrubs in and the
+// deliberation plays out (question out, answers back, converge, conclude).
+export function HomeCanvas({ renderTop }: HomeCanvasProps) {
+  const trackRef = useRef<HTMLElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const labelsRef = useRef<HTMLDivElement>(null)
   const { faceStyle } = useUserPreferences()
-
-  // Register particle absorption callback for each sphere's label
-  const handleSphereAbsorb = useCallback((sphereId: string, callback: () => void) => {
-    labelCallbacksRef.current.set(sphereId, callback)
-  }, [])
-
-  const isTouched = (index: number) => activeStep > index
-  const getSphereState = (id: string, index: number) => {
-    if (activeAgent === id || isTouched(index)) return 'speaking' as const
-    return 'idle' as const
-  }
-
-  return (
-    <div className='relative flex h-dvh w-full items-center justify-center overflow-hidden'>
-      {/* opacity driven directly by scroll via ringDivRef — no CSS transition */}
-      <div ref={ringDivRef}>
-        <AIARing
-          size={ringSize}
-          activeStep={activeStep}
-          thinking={animationComplete && ringVisible}
-          sphereRadius={sphereRadius}
-          matrixOpacity={0.2}
-          bgOpacity={ringVisible ? 0.5 : 0}
-          orbit={SPHERE_IDS.map((id, i) => {
-            const revealed = revealedCount > i
-            const showMatrix = (activeAgent === id || isTouched(i)) && ringVisible
-            return (
-              <div
-                key={id}
-                ref={(el) => registerSphere(id, el)}
-                style={{
-                  opacity: revealed ? 1 : 0,
-                  transform: revealed ? 'scale(1)' : 'scale(0.85)',
-                  transition: 'opacity 500ms ease-in, transform 500ms ease-out'
-                }}
-              >
-                <AgentSphereWithRotatingLabel
-                  id={id}
-                  name={AGENTS[i]!}
-                  faceStyle={faceStyle}
-                  size={sphereSize}
-                  state={getSphereState(id, i)}
-                  showMatrix={showMatrix}
-                  solidBg={revealed && ringVisible}
-                  visible={revealed && ringVisible}
-                  revealed={revealed}
-                  onSphereAbsorb={handleSphereAbsorb}
-                />
-              </div>
-            )
-          })}
-        >
-          {render({ animationStarted, animationComplete, ringVisible })}
-        </AIARing>
-      </div>
-    </div>
-  )
-}
-
-// Outer — sets up AIACanvas (the context provider), renders HomeCanvasInner inside it
-export function HomeCanvas({ render }: HomeCanvasProps) {
-  const { onSphereAbsorb, registerSphere } = useSphereAbsorb()
-  const onOriginCompleteRef = useRef<(() => void) | null>(null)
-  const labelCallbacksRef = useRef<Map<string, () => void>>(new Map())
-
-  // Wrap onSphereAbsorb to also trigger label update
-  const handleCanvasAbsorb = (sphereId: string) => {
-    onSphereAbsorb(sphereId)
-    const labelCallback = labelCallbacksRef.current.get(sphereId)
-    if (labelCallback) labelCallback()
-  }
+  const { revealedCount } = useRingSequence()
+  const scrolled = useHeroScrolled()
+  useHeroScene({
+    canvasRef,
+    rootRef: viewportRef,
+    trackRef,
+    labelsRef,
+    faceStyle,
+    revealed: revealedCount
+  })
 
   return (
-    <>
-      <section id='hero' className='relative h-dvh w-full' />
-      {/* Canvas wrapper always visible — fabric persists as background when ring fades */}
-      <div className='pointer-events-none fixed inset-0 z-0'>
-        <AIACanvas
-          bg={renderAutonomousFabric}
-          wanderDuration={30}
-          alwaysRenderSpheres
-          autoTriggerGravity={false}
-          onSphereAbsorb={handleCanvasAbsorb}
-          onOriginComplete={() => onOriginCompleteRef.current?.()}
-          className='h-full w-full'
-        >
-          <HomeCanvasInner
-            render={render}
-            registerSphere={registerSphere}
-            onOriginCompleteRef={onOriginCompleteRef}
-            labelCallbacksRef={labelCallbacksRef}
-          />
-        </AIACanvas>
+    <section id='hero' ref={trackRef} data-hero-track className='relative h-[320vh] w-full'>
+      <div
+        ref={viewportRef}
+        data-hero-viewport
+        className='sticky top-0 h-dvh w-full overflow-hidden bg-background [--hero-core-card:var(--card)] [--hero-core-deep:var(--primary)] [--hero-core-shade:var(--secondary)] [--hero-fabric-alpha:0.08] [--hero-fabric-ink:var(--foreground)] dark:[--hero-core-deep:color-mix(in_oklch,var(--card),var(--primary)_40%)] dark:[--hero-core-shade:color-mix(in_oklch,var(--card),var(--primary)_18%)] dark:[--hero-fabric-alpha:0.12]'
+      >
+        <canvas ref={canvasRef} className='absolute inset-0 z-0 block h-full w-full' />
+        {/* role names under the agents and the driver's caption, pinned by the scene each frame */}
+        <div ref={labelsRef} aria-hidden className='pointer-events-none absolute inset-0 z-1' />
+
+        {/* headline + sub: hidden at scroll 0, revealed a letter at a time as you scroll */}
+        <div className='pointer-events-none absolute inset-x-0 top-0 z-2 flex h-[52%] flex-col items-center justify-center gap-2 px-6 text-center'>
+          <Heading
+            level={1}
+            weight='normal'
+            className='m-0 text-balance font-serif text-[clamp(1.875rem,5.4vw,4rem)] leading-none tracking-tight text-foreground'
+          >
+            <span data-hero-h1a data-text='The room outperforms' />
+            <br />
+            <span data-hero-h1b data-text='the individual' />
+          </Heading>
+          <Text className='m-0 mt-3.5 text-balance font-sans text-2xl leading-snug tracking-tight text-muted-foreground sm:text-[1.75rem]'>
+            <span data-hero-sub data-text='Bring a question. A team of AI models debates it.' />
+          </Text>
+        </div>
+
+        <div className='pointer-events-none absolute inset-0 z-3'>{renderTop({ scrolled })}</div>
       </div>
-    </>
+    </section>
   )
 }

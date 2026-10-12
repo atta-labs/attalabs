@@ -1,19 +1,18 @@
-import { McpDeveloperSection } from './sections/McpDeveloperSection'
-import { NegationsSection } from './sections/NegationsSection'
-import { SeeItWorkSection } from './sections/SeeItWorkSection'
-import { TryItSection } from './sections/TryItSection'
-import { WhatItIsSection } from './sections/WhatItIsSection'
-import { WhyItWorksSection } from './sections/WhyItWorksSection'
+import { IndependentSection } from './landing/IndependentSection'
+import { RecordSection } from './landing/RecordSection'
+import { RoomsSection } from './landing/RoomsSection'
+import { WhereYouWorkSection } from './landing/WhereYouWorkSection'
 
+// The landing below the hero, in Vinaya's landing language (`components/landing/`): four
+// two-column sections whose copy and animation swap sides each time, each on a different
+// background from the next.
 export function SectionsWithCanvas() {
   return (
     <div className='relative z-10'>
-      <WhatItIsSection />
-      <WhyItWorksSection />
-      <NegationsSection />
-      <SeeItWorkSection />
-      <TryItSection />
-      <McpDeveloperSection />
+      <IndependentSection />
+      <RoomsSection />
+      <RecordSection />
+      <WhereYouWorkSection />
     </div>
   )
 }
