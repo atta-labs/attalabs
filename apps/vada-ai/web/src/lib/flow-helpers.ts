@@ -99,3 +99,19 @@ export function getSpecLabel(specId: string, fallback: { displayName: string }):
   if (explicit) return explicit
   return { short: fallback.displayName, subtitle: '' }
 }
+
+/** `AssumptionHunter` → `Assumption Hunter` — an agent's YAML name, readable as a label. */
+export function humanizeAgentName(name: string): string {
+  return name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ')
+}
+
+/**
+ * The label an agent shows on a Teams card. An audited panel (Outside Read) reuses the debate roles
+ * only for colour and face — two of its agents are `critic`, two `researcher` — so its agents are
+ * labelled by their own names. Unroled reviewer slots stay `REVIEWER`: their YAML names (Gemini,
+ * GPT, Grok) would read as fixed vendors, and the user picks each slot's model.
+ */
+export function teamAgentLabel(flow: Flow, agent: { name: string; role?: string }): string {
+  if (isAuditedPanel(flow)) return humanizeAgentName(agent.name).toUpperCase()
+  return agent.role ? formatRoleLabel(agent.role) : 'REVIEWER'
+}

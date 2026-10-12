@@ -6,7 +6,7 @@ import type { Flow, FlowAgent } from '@atta/engine'
 import { VadaAgent, type AgentRole } from '@/components/agents/VadaAgent'
 import { AgentToolIndicator } from '@/components/AgentToolIndicator'
 import Link from 'next/link'
-import { formatRoleLabel, getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel } from '@/lib/flow-helpers'
+import { getDisplayAgentNames, getFlowAgentCount, getFlowShapeLabel, teamAgentLabel } from '@/lib/flow-helpers'
 
 interface DisplayAgent {
   name: string
@@ -31,14 +31,17 @@ function Sphere({
   size,
   specId,
   defaultModel,
-  searchAvailable
+  searchAvailable,
+  spec
 }: {
   agent: DisplayAgent
   size: SphereSize
   specId: string
   defaultModel: string
   searchAvailable: boolean
+  spec: Flow
 }) {
+  const label = teamAgentLabel(spec, agent)
   const hasWebSearch = searchAvailable && agent.tools?.includes('web_search')
   // Teams page is a "you choose" preview — reviewer slots are never user-configured
   // here (no per-slot model selection UI exists on the teams listing page).
@@ -54,7 +57,7 @@ function Sphere({
       state='speaking'
       size={size}
       visible
-      label={agent.role ? formatRoleLabel(agent.role) : 'REVIEWER'}
+      label={label}
       toolBadge={hasWebSearch ? <AgentToolIndicator tool='web_search' /> : undefined}
     />
   )
@@ -66,7 +69,7 @@ export function TeamCard({ spec, searchAvailable }: { spec: Flow; searchAvailabl
   const shapeLabel = getFlowShapeLabel(spec)
   const defaultModel = spec.defaults.model
 
-  const sphereProps = { specId: spec.id, defaultModel, searchAvailable }
+  const sphereProps = { specId: spec.id, defaultModel, searchAvailable, spec }
 
   let spheres: React.ReactNode
 

@@ -5,7 +5,7 @@ import { Text } from '@atta/ui/shared'
 import { VadaAgent } from '@/components/agents/VadaAgent'
 import type { AgentRole } from '@/components/agents/VadaAgent'
 import { AgentToolIndicator } from '@/components/AgentToolIndicator'
-import { getDisplayAgentNames } from '@/lib/flow-helpers'
+import { getDisplayAgentNames, humanizeAgentName } from '@/lib/flow-helpers'
 
 export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailable: boolean }) {
   const displayNames = new Set(getDisplayAgentNames(spec))
@@ -33,6 +33,7 @@ export function AgentTab({ spec, searchAvailable }: { spec: Flow; searchAvailabl
             state='speaking'
             size='md'
             visible
+            label={humanizeAgentName(agent.name)}
             toolBadge={
               searchAvailable && agent.tools?.includes('web_search') ? (
                 <AgentToolIndicator tool='web_search' />
