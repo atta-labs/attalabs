@@ -71,6 +71,9 @@ const ROOMS = [
   }
 ] as const
 
+// a card and its link share the grid's six rows from WIDE (1000px)
+const SUBGRID = 'min-[1000px]:row-span-6 min-[1000px]:grid min-[1000px]:grid-rows-subgrid'
+
 const DELAYS = ['delay-0', 'delay-[140ms]', 'delay-[280ms]'] as const
 // per card, after it has risen: the name wipes, the rule draws, the line fades in
 const TITLE_DELAYS = ['delay-[300ms]', 'delay-[440ms]', 'delay-[580ms]'] as const
@@ -90,43 +93,57 @@ export function RoomsSection() {
           <WipeReveal late>{KEYS_STRIP}</WipeReveal>
         </SectionSubtitle>
       </SectionHeader>
-      <div ref={row} className={cn(HEADER_MARGIN, 'grid gap-4 xl:grid-cols-3')}>
+      {/* Three columns from WIDE: every card is a subgrid over the same six rows (number, name,
+          rule, line, agents, link), so each row lines up across the cards whatever wraps. Below
+          WIDE the cards stack, each only as tall as its content. Spacing lives on the rows. */}
+      <div ref={row} className={cn(HEADER_MARGIN, 'grid gap-4 min-[1000px]:grid-cols-3 min-[1000px]:gap-y-0')}>
         {ROOMS.map((room, index) => (
-          <NextLink key={room.name} href={`/teams/${room.slug}`} variant='unstyled' className='group/room block h-full'>
+          <NextLink
+            key={room.name}
+            href={`/teams/${room.slug}`}
+            variant='unstyled'
+            className={cn('group/room block', SUBGRID)}
+          >
             <Card
               className={cn(
-                'flex h-full flex-col transition-[opacity,transform,border-color] duration-700 group-hover/room:border-primary ease-out motion-reduce:transition-none',
+                'flex flex-col gap-0 px-5 py-5 xl:px-8 xl:py-6',
+                SUBGRID,
+                'transition-[opacity,transform,border-color] duration-700 group-hover/room:border-primary ease-out motion-reduce:transition-none',
                 DELAYS[index],
                 seen ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-12 scale-[0.96] opacity-0'
               )}
             >
-              <CardHeader className='px-8'>
-                <Text className='font-mono text-base uppercase tracking-[0.06em] opacity-80'>{`0${index + 1}`}</Text>
-                <CardTitle className='mt-2 min-h-[2.3em] font-sans text-[1.875rem] font-normal leading-[1.15] tracking-[-0.02em]'>
+              <CardHeader className='contents'>
+                <Text className='font-mono text-sm uppercase tracking-[0.06em] opacity-80 xl:text-base'>{`0${index + 1}`}</Text>
+                <CardTitle className='mt-1 font-sans text-2xl font-normal leading-[1.15] tracking-[-0.02em] xl:mt-2 xl:text-[1.875rem]'>
                   <WipeReveal delayClass={TITLE_DELAYS[index]}>{room.name}</WipeReveal>
                 </CardTitle>
                 {/* the rule draws in under the name, as on Vinaya's audience cards */}
                 <span
                   aria-hidden='true'
                   className={cn(
-                    'mt-4 block h-0.5 origin-left bg-current opacity-25 transition-transform duration-700 ease-out motion-reduce:transition-none',
+                    'mt-4 block h-0.5 origin-left self-start w-full bg-current opacity-25 transition-transform duration-700 ease-out motion-reduce:transition-none',
                     RULE_DELAYS[index],
                     seen ? 'scale-x-100' : 'scale-x-0'
                   )}
                 />
               </CardHeader>
-              <CardContent className='flex flex-1 flex-col gap-5 px-8'>
+              <CardContent className='contents'>
                 <Text
                   className={cn(
-                    'min-h-[3em] text-lg leading-[1.5] transition-opacity duration-700 motion-reduce:transition-none',
+                    'mt-4 text-base leading-[1.5] transition-opacity duration-700 motion-reduce:transition-none xl:mt-5 xl:text-lg',
                     LINE_DELAYS[index],
                     seen ? 'opacity-80' : 'opacity-0'
                   )}
                 >
                   {room.line}
                 </Text>
-                <div className='mt-auto flex flex-nowrap items-center gap-1'>{room.agents}</div>
-                <span className='inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.06em] text-muted-foreground transition-colors group-hover/room:text-primary'>
+                {/* a row of four spheres is wider than a card between WIDE and xl: the row is zoomed
+                    down there (spacing included), never overlapped or wrapped */}
+                <div className='mt-4 flex flex-nowrap items-center gap-2 max-xl:min-[1000px]:[zoom:0.82] xl:mt-5'>
+                  {room.agents}
+                </div>
+                <span className='mt-4 inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.06em] text-muted-foreground transition-colors group-hover/room:text-primary xl:mt-5'>
                   Explore team
                   <ArrowRight className='size-3.5 transition-transform group-hover/room:translate-x-1' />
                 </span>

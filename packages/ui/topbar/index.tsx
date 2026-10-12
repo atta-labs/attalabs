@@ -423,7 +423,7 @@ function TopBarWithAuth({
               <span className='sr-only'>Open menu</span>
             </SheetTrigger>
             <SheetContent side='top' showCloseButton={false} className='flex flex-col gap-0 p-0 data-[side=top]:h-dvh'>
-              <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
+              <div className='flex h-14 shrink-0 items-center justify-between px-6'>
                 {logo ? (
                   logo
                 ) : (
@@ -594,7 +594,7 @@ function TopBarNoAuth({
                 showCloseButton={false}
                 className='flex flex-col gap-0 p-0 data-[side=top]:h-dvh'
               >
-                <div className='flex h-14 shrink-0 items-center justify-between border-b border-border px-6'>
+                <div className='flex h-14 shrink-0 items-center justify-between px-6'>
                   {logo ? (
                     logo
                   ) : (
