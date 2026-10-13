@@ -31,6 +31,12 @@ Theme and branding come from CMS via `getProductCms('attalabs')` — this hub re
 
 ---
 
+## Product stacks on the home page
+
+Each home section lists the stack its product is built on. A name is listed only when it is in the product's dependency graph today or committed in a live project spec (Vinaya's "Heading to" group follows the Linear project "Migrate devreview Loop to Atta Engine"). Nothing else goes on the page. The lists live in `web/src/components/home/EcosystemHero.tsx`.
+
+---
+
 ## Related
 
 - [Root CLAUDE.md](../../CLAUDE.md) — AttaLabs monorepo routing index

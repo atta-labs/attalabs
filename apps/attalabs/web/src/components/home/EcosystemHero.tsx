@@ -117,15 +117,33 @@ const VADA_AGENT_COLORS = {
 } as const
 
 /**
- * Per-section stacks. Every name below was checked against the real dependency graph before
- * being listed — Langfuse, Mastra, PostHog, Sentry and OpenTelemetry are deliberately absent
- * because this repo does not use them. On a portfolio a wrong claim costs more than a short list.
+ * Per-section stacks. A name is listed when the product has it in its dependency graph today,
+ * or when a live project spec commits to it (Vinaya's "Heading to" group, from the Linear
+ * project "Migrate devreview Loop to Atta Engine"). Nothing else goes on the page —
+ * Langfuse, Mastra, PostHog, Sentry and OpenTelemetry stay off until a live spec commits to them.
  */
 const VADA_STACK: SectionStack = {
   groups: [
-    { label: 'Agents', items: ['LangGraph', 'Vercel AI SDK', 'MCP server'] },
-    { label: 'Models', items: ['Anthropic', 'OpenAI', 'Google', 'Groq', 'OpenRouter', 'Ollama'] },
-    { label: 'Data', items: ['Neon Postgres', 'Drizzle ORM'] },
+    { label: 'Agents', items: ['Atta Engine', 'LangGraph', 'Vercel AI SDK', 'MCP server'] },
+    {
+      label: 'Models',
+      items: [
+        'Anthropic',
+        'OpenAI',
+        'Google',
+        'xAI',
+        'Groq',
+        'OpenRouter',
+        'DeepSeek',
+        'Cerebras',
+        'Mistral',
+        'Together AI',
+        'Fireworks AI',
+        'Ollama'
+      ]
+    },
+    { label: 'Data', items: ['Neon Postgres', 'Drizzle ORM', 'Sanity CMS'] },
+    { label: 'Visuals', items: ['Three.js', 'React Flow', 'Motion'] },
     { label: 'Platform', items: ['Next.js', 'React 19', 'TypeScript', 'Clerk', 'Zod'] }
   ],
   note: 'BYOK keys sealed with AES-256-GCM envelope encryption — never stored in the clear.'
@@ -134,8 +152,11 @@ const VADA_STACK: SectionStack = {
 const HERALD_STACK: SectionStack = {
   groups: [
     { label: 'Agents', items: ['Atta Engine', 'LangGraph', 'MCP server'] },
-    { label: 'Models', items: ['Anthropic Claude', 'Vercel AI SDK'] },
-    { label: 'Data', items: ['Neon Postgres', 'Drizzle ORM', 'Upstash Redis'] },
+    { label: 'Models', items: ['Anthropic Claude', 'Vercel AI SDK', 'Shared model catalog'] },
+    {
+      label: 'Data',
+      items: ['Neon Postgres', 'Drizzle ORM', 'Upstash Redis', 'Upstash Ratelimit', 'Sanity CMS']
+    },
     { label: 'Ingest', items: ['GitHub API', 'unpdf', 'Vercel Blob'] },
     { label: 'Platform', items: ['Next.js', 'React 19', 'TypeScript', 'Clerk'] }
   ],
@@ -144,19 +165,45 @@ const HERALD_STACK: SectionStack = {
 
 const VINAYA_STACK: SectionStack = {
   groups: [
+    {
+      label: 'Ships today',
+      items: ['@attalabs/vinaya CLI', 'Vinaya packages', 'Portal (public)', 'Studio (local)']
+    },
     { label: 'Forge', items: ['GitHub GraphQL', 'Octokit'] },
-    { label: 'Platform', items: ['Next.js App Router', 'React 19', 'TypeScript'] },
-    { label: 'Content', items: ['Sanity CMS', 'Clerk'] },
-    { label: 'Visualisation', items: ['d3-shape'] }
+    {
+      label: 'Platform',
+      items: ['Next.js App Router', 'React 19', 'TypeScript', 'Sanity CMS', 'Vercel Analytics']
+    },
+    { label: 'Visuals', items: ['Three.js', 'Framer Motion', 'd3-shape'] },
+    {
+      label: 'Heading to',
+      items: ['Atta Engine', 'LangGraph', 'Claude Code adapter', 'Codex adapter', 'Evaluation program', 'Agent sandbox']
+    }
   ],
-  note: 'Task status is derived from the forge on read, never stored — so it cannot drift.'
+  note: 'Task status is derived from the forge on read, never stored — and the developer-review loop is moving onto Atta Engine.'
 }
 
 const ENGINE_STACK: SectionStack = {
   groups: [
     { label: 'Runtime', items: ['LangGraph', 'LangChain Core'] },
     { label: 'Compiler', items: ['js-yaml', 'Zod', 'Handlebars'] },
-    { label: 'Vendors', items: ['Anthropic', 'OpenAI', 'Google'] },
+    {
+      label: 'Vendors',
+      items: [
+        'Anthropic',
+        'OpenAI',
+        'Google',
+        'xAI',
+        'Groq',
+        'OpenRouter',
+        'DeepSeek',
+        'Cerebras',
+        'Mistral',
+        'Together AI',
+        'Fireworks AI',
+        'Ollama'
+      ]
+    },
     { label: 'Build', items: ['Turborepo', 'Bun', 'TypeScript strict'] }
   ],
   note: 'A cognitive router picks the model vendor per step of a plan, not per application.'
