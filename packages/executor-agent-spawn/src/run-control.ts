@@ -76,7 +76,13 @@
 
 import type { BaseCheckpointSaver } from '@langchain/langgraph'
 import type { Plan } from '@atta/engine'
-import { buildAgentSpawnStateGraph, createAgentLifecycleNodeExecutor } from './graph-builder'
+import {
+  type AgentLifecycleLegOptions,
+  type AgentLifecycleNodeExecutor,
+  buildAgentSpawnStateGraph,
+  createAgentLifecycleNodeExecutor,
+  withAgentLifecycleLeg
+} from './graph-builder'
 import type { AgentSpawnGraphStateValue } from './graph-state'
 import type { SpawnFn } from './node-executor'
 import { describesRunHalt, failureMessageOf, runHaltOf } from './run-halt'
@@ -114,8 +120,21 @@ interface ControlledRunBase {
   checkpointer: BaseCheckpointSaver
   /** The halt handle for this leg. Omitted, the leg cannot be halted. */
   control?: RunControl
-  /** Test/injection seam, forwarded to the node executor unchanged. */
+  /** Test/injection seam, forwarded to the built-in node executor unchanged. */
   spawnFn?: SpawnFn
+  /**
+   * The caller's own node executor, run in place of the built-in one. Omitted,
+   * the built-in executor runs every node, exactly as before this option
+   * existed. Supplied, it does each node's work — and only that: the halt
+   * boundary, the `node:*` events through `config.onEvent`, the `resumed` record
+   * and a terminated child read as a halt still come from the leg wrapper that
+   * wraps the built-in executor too (`withAgentLifecycleLeg`), so this outcome
+   * vocabulary means the same thing whichever executor ran. It receives the
+   * leg's `control.signal` as `context.signal`, and reports cancelled work by
+   * throwing `ProcessCancelledError` or `RunHaltedError`; anything else it throws
+   * is a `failed` run. `spawnFn` is not passed to it.
+   */
+  executor?: AgentLifecycleNodeExecutor
   /** Forwarded to `invoke()` when supplied — a legally looping Plan can exceed LangGraph's default ceiling. */
   recursionLimit?: number
 }
@@ -539,6 +558,17 @@ async function readRunCheckpointOrThrow(
 }
 
 /**
+ * The node executor one leg runs: the caller's own when it supplied one, the
+ * built-in one otherwise — wrapped, either way, in the same per-leg guarantees.
+ */
+function legExecutor(params: ControlledRunBase, leg: AgentLifecycleLegOptions): AgentLifecycleNodeExecutor {
+  const { config, spawnFn, executor } = params
+  return executor
+    ? withAgentLifecycleLeg(executor, config, leg)
+    : createAgentLifecycleNodeExecutor(config, spawnFn, leg)
+}
+
+/**
  * Begins a run and reports a typed reason for how the leg ended.
  *
  * Halting is the caller's to trigger: pass a `control` from `createRunControl`,
@@ -547,14 +577,14 @@ async function readRunCheckpointOrThrow(
  * halt is something the caller asked for.
  */
 export async function startControlledRun(params: StartControlledRunParams): Promise<RunOutcome> {
-  const { plan, config, checkpointer, control, spawnFn, recursionLimit, onIdentity } = params
+  const { plan, config, checkpointer, control, recursionLimit, onIdentity } = params
   const identity = params.identity ?? createRunIdentity()
   assertDerivedIdentity(identity)
 
   onIdentity?.(identity)
   await assertNoExistingCheckpoint(checkpointer, identity)
 
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control })
+  const executor = legExecutor(params, { control })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   let state: AgentSpawnGraphStateValue
@@ -611,7 +641,7 @@ function assertPlanCoversRecordedResults(plan: Plan, checkpoint: RunCheckpointSt
  * refuses a thread that has state, a resume refuses one that has none.
  */
 export async function resumeControlledRun(params: ResumeControlledRunParams): Promise<RunOutcome> {
-  const { plan, config, checkpointer, identity, control, spawnFn, recursionLimit } = params
+  const { plan, config, checkpointer, identity, control, recursionLimit } = params
   assertDerivedIdentity(identity)
 
   const checkpoint = await readRunCheckpoint(checkpointer, identity)
@@ -623,7 +653,7 @@ export async function resumeControlledRun(params: ResumeControlledRunParams): Pr
   assertPlanCoversRecordedResults(plan, checkpoint)
 
   const resumedFrom = checkpoint.checkpointId
-  const executor = createAgentLifecycleNodeExecutor(config, spawnFn, { control, resumedFrom })
+  const executor = legExecutor(params, { control, resumedFrom })
   const graph = buildAgentSpawnStateGraph(plan, executor, config, { checkpointer })
 
   const pendingBefore = await pendingNodesOf(graph, identity, recursionLimit)

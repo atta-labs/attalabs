@@ -207,6 +207,60 @@ check(
   injectedState.results.review?.kind === 'mechanical' && injectedState.results.review.action === 'consumer-injected'
 )
 
+// ── 2b. The consumer's own executor through the public start and resume ─────
+
+section('2b. The injected executor runs through startControlledRun and resumeControlledRun')
+
+const ownCheckpointer = new MemorySaver()
+const ownIdentity = createRunIdentity()
+const ownControl = createRunControl()
+const ownEvents: AgentLifecycleEvent[] = []
+const executedByOwn: string[] = []
+const ownExecutor: AgentLifecycleNodeExecutor = async (state, context) => {
+  executedByOwn.push(context.node.id)
+  return await injectedExecutor(state, context)
+}
+
+const ownFirstLeg = await startControlledRun({
+  plan,
+  checkpointer: ownCheckpointer,
+  identity: ownIdentity,
+  control: ownControl,
+  executor: ownExecutor,
+  config: executorConfig([], (event) => {
+    ownEvents.push(event)
+    if (event.type === 'node:complete' && event.nodeId === 'implement') ownControl.halt('own executor pause')
+  })
+})
+
+check('the halted leg reports paused with the consumer executor', ownFirstLeg.reason === 'paused')
+check(
+  'the halt refused the next node before the consumer executor saw it',
+  ownFirstLeg.reason === 'paused' &&
+    ownFirstLeg.pendingNodes?.includes('review') === true &&
+    executedByOwn.join(',') === 'implement'
+)
+check(
+  'the package, not the consumer executor, emitted the lifecycle events',
+  ownEvents.map((event) => event.type).join(',') === 'node:start,node:complete'
+)
+
+const ownSecondLeg = await resumeControlledRun({
+  plan,
+  checkpointer: ownCheckpointer,
+  identity: ownIdentity,
+  executor: ownExecutor,
+  config: executorConfig([])
+})
+
+check('the resumed leg reaches completed with the consumer executor', ownSecondLeg.reason === 'completed')
+check('the resumed outcome names the checkpoint it continued from', ownSecondLeg.resumedFrom !== undefined)
+check('no node ran twice across the halt and resume', executedByOwn.join(',') === 'implement,review,record')
+check(
+  'the store answers completed for the consumer-executed run',
+  (await readRunOutcome(ownCheckpointer, ownIdentity))?.reason === 'completed'
+)
+
 // ── 3. A durable run, halted at a node boundary ──────────────────────────────
 
 section('3. Durable start, live observation, halt at a node boundary')
