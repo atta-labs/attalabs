@@ -45,6 +45,7 @@ import {
   type ForgeFacts,
   type Task
 } from '@attalabs/aeg-core'
+import { STUDIO_PRINCIPALS } from './principals'
 
 export type DispatchInputSources = {
   trancheSlug: string
@@ -121,6 +122,7 @@ export function buildDispatchGateInput(s: DispatchInputSources): DispatchGateInp
           hasProvenance: s.priorTask.issue !== null ? (s.provenanceByIssue.get(s.priorTask.issue) ?? false) : false
         }
       : null,
-    priorTrancheArchival: s.priorTrancheArchival
+    priorTrancheArchival: s.priorTrancheArchival,
+    principalAllowlist: STUDIO_PRINCIPALS
   }
 }

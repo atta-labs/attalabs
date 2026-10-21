@@ -12,8 +12,9 @@ on:
 # report --push` always follows it with a body edit (`gh pr edit`) carrying
 # that push's real head, which fires `edited` — the only trigger left this
 # workflow needs, against a body that already names the new head. A push
-# with no following edit simply produces no run, by design; `evidence-fresh`
-# at the merge gate is what still catches that case.
+# with no following edit produces no run of this workflow, by design;
+# `evidence-fresh` still runs on every push, as its own job in
+# `vinaya-review.yml`, which triggers on `synchronize` and `edited`.
 #
 # Several `types:` above can still fire in the same instant — `vinaya pr
 # create` opens the PR and applies its tranche label immediately after, so
@@ -49,15 +50,12 @@ jobs:
       contents: read
       pull-requests: read
       issues: read
-      # O2's shared-build lookup (`vinayaSetupSteps(..., 'shared-build')`)
-      # calls `gh api .../actions/workflows/ci.yml/runs` and
-      # `.../actions/runs/$RUN_ID/artifacts`, then downloads via
-      # `actions/download-artifact@v4` with a cross-run `run-id` — all three
-      # need `actions: read` on GITHUB_TOKEN, which an explicit `permissions:`
-      # block does not grant by default (security review finding: every run
-      # 403'd on the lookup/download without this).
-      actions: read
     steps:
+      - name: Record the GraphQL budget at job start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -88,24 +86,33 @@ jobs:
           gitleaks version
       # PR_BODY is what makes test-plan/closes-n/pr-report-density EVALUATE:
       # none of the three fetches the body itself (all read
-      # `process.env.PR_BODY` only) — without it they read "no body —
-      # nothing to check" and pass vacuously regardless of the PR's real
-      # content, on every run. Fetched live from the forge, never the
-      # event payload — a rerun of an old run must read the body as it
-      # stands NOW, not as it stood when the triggering event fired. See
-      # `verifiedFetchPrBodyStep`'s own doc comment for why this re-reads
-      # with a bounded backoff instead of trusting the first read.
-      - name: Fetch PR body
+      # `process.env.PR_BODY`) — without it they read "no body — nothing to
+      # check" and pass vacuously regardless of the PR's real content, on
+      # every run. The pull request, its comments, the task Issue its body
+      # closes and that Issue's comments are read once, over REST, into the
+      # forge snapshot the checks read — see `pullRequestReadStep`'s own doc
+      # comment for why the read is live and re-reads with a bounded backoff.
+      - name: Read the pull request over REST
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.head_ref }}
         run: |
+          set -o pipefail
+          RAW="$RUNNER_TEMP/vinaya-forge-snapshot/raw"
+          mkdir -p "$RAW"
+          fail_read() {
+            echo "::error::Reading $1 over the REST API failed: $(cat "$RAW/read-error.txt" 2>/dev/null)" >&2
+            gh api rate_limit --jq '.resources as $r | "::error::GitHub REST (core) budget: \($r.core.remaining) of \($r.core.limit) left, resets at \($r.core.reset | todate)\(if $r.core.remaining == 0 then " - spent, so GitHub rate-limited this read" else "" end); GraphQL budget: \($r.graphql.remaining) of \($r.graphql.limit) left, resets at \($r.graphql.reset | todate)\(if $r.graphql.remaining == 0 then " - spent" else "" end)."' >&2 || echo "::error::The token budget could not be read either." >&2
+            exit 1
+          }
           ATTEMPTS=0
           MAX_ATTEMPTS=6
           SLEEP_SECONDS=5
           while :; do
-            BODY="$(gh pr view "$PR_NUMBER" --json body --jq .body)"
+            gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER" > "$RAW/pull.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER"
+            BODY="$(jq -r '.body // ""' "$RAW/pull.json")"
             WAIT_FOR=""
             if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
               CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
@@ -123,15 +130,53 @@ jobs:
             fi
             sleep "$SLEEP_SECONDS"
           done
+          gh api --paginate --slurp "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" > "$RAW/pull-comments.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER's comments"
+      - name: Write the forge snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
           DELIM="PR_BODY_$(openssl rand -hex 16)"
-          echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
-          printf '%s\n' "$BODY" >> "$GITHUB_ENV"
-          echo "$DELIM" >> "$GITHUB_ENV"
+          {
+            echo "PR_BODY<<$DELIM"
+            cat "$RUNNER_TEMP/vinaya-forge-snapshot/body.md"
+            echo
+            echo "$DELIM"
+          } >> "$GITHUB_ENV"
+      - name: Resolve the diff base
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git rev-parse --verify -q HEAD^2 > /dev/null; then
+            BASE="$(git rev-parse HEAD^1)"
+            SOURCE="the checked-out merge commit's first parent"
+          else
+            BASE="$EVENT_BASE_SHA"
+            SOURCE="the event's base commit, because HEAD is not a merge commit"
+          fi
+          if [[ ! "$BASE" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The diff base from $SOURCE is not a full commit id." >&2
+            exit 1
+          fi
+          echo "Diff base: $BASE, from $SOURCE."
+          echo "BASE_SHA=$BASE" >> "$GITHUB_ENV"
       - name: Run checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          # The run's forge snapshot (`lib/forge-snapshot.ts`): the checks read
+          # the pull request and its task Issue from it instead of reading the
+          # forge for them again. Set on this step only.
+          VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
+          PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
           BRANCH: ${{ github.head_ref }}
+          # The pull request's own head — never `git rev-parse HEAD`, which on
+          # a pull_request run is the merge ref — at which `test-plan` demands
+          # a passed `AEG:LIVE` entry for each `[live]` line of the brief.
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # BASE_SHA comes from the job environment `Resolve the diff base`
+          # wrote — never set here, where a step-level entry would override it.
           # O3: this job's gate events deliver live to the `logs.url` server
           # destination the default branch's own `vinaya.config.json`
           # declares — never a fork PR's own working-tree copy
@@ -153,7 +198,7 @@ jobs:
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.39.0 check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes @attalabs/vinaya@0.40.0 check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,
@@ -170,3 +215,17 @@ jobs:
             cat vinaya-check-output.txt 2>/dev/null || echo 'no check output captured (runner did not start)'
             echo '~~~'
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true

@@ -34,15 +34,35 @@ jobs:
       number: ${{ steps.pr.outputs.number }}
       sha: ${{ steps.pr.outputs.sha }}
     steps:
-      # issue_comment payloads carry no PR head SHA — resolve it for immutable
-      # run identity only. It never selects executable code.
-      - name: Resolve PR head
-        id: pr
+      - name: Record the GraphQL budget at job start
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      - name: Read the pull request over REST
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -o pipefail
+          RAW="$RUNNER_TEMP/vinaya-forge-snapshot/raw"
+          mkdir -p "$RAW"
+          fail_read() {
+            echo "::error::Reading $1 over the REST API failed: $(cat "$RAW/read-error.txt" 2>/dev/null)" >&2
+            gh api rate_limit --jq '.resources as $r | "::error::GitHub REST (core) budget: \($r.core.remaining) of \($r.core.limit) left, resets at \($r.core.reset | todate)\(if $r.core.remaining == 0 then " - spent, so GitHub rate-limited this read" else "" end); GraphQL budget: \($r.graphql.remaining) of \($r.graphql.limit) left, resets at \($r.graphql.reset | todate)\(if $r.graphql.remaining == 0 then " - spent" else "" end)."' >&2 || echo "::error::The token budget could not be read either." >&2
+            exit 1
+          }
+          gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER" > "$RAW/pull.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER"
+          gh api --paginate --slurp "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" > "$RAW/pull-comments.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER's comments"
+      # issue_comment payloads carry no PR head SHA — resolve it, from the REST
+      # read just above, for immutable run identity only. It never selects
+      # executable code.
+      - name: Resolve PR head
+        id: pr
+        run: |
           NUMBER="${{ github.event.issue.number }}"
-          SHA=$(gh pr view "$NUMBER" --repo "${{ github.repository }}" --json headRefOid -q .headRefOid)
+          SHA=$(jq -r '.head.sha' "$RUNNER_TEMP/vinaya-forge-snapshot/raw/pull.json")
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
@@ -55,13 +75,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Write the forge snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
       - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Same wiring as the required workflow: PR_NUMBER is what makes
           # the adapter evaluate instead of no-op'ing as "local dev".
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: npx --yes @attalabs/vinaya@0.39.0 check review-gate
+          # The run's forge snapshot (`lib/forge-snapshot.ts`): the checks read
+          # the pull request and its task Issue from it instead of reading the
+          # forge for them again. Set on this step only.
+          VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
+          PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
+        run: npx --yes @attalabs/vinaya@0.40.0 check review-gate
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true
 
   # Executes nothing; consumes only the evaluator's outputs.
   #
@@ -78,6 +123,11 @@ jobs:
     permissions:
       actions: write
     steps:
+      - name: Record the GraphQL budget at job start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
       - name: Re-run the required review gate for this branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -137,3 +187,17 @@ jobs:
           # working, not a failure worth reddening the step over; a real
           # 403 or an expired run still surfaces in the log.
           gh run rerun "$RUN_ID" --repo "${{ github.repository }}" || echo "rerun declined (already queued, or run too old) - the other verdict's retrigger covers it"
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true

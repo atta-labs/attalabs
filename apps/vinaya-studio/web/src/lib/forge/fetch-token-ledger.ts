@@ -44,14 +44,9 @@
  */
 
 import { graphql } from '@octokit/graphql'
-import {
-  aggregateTaskTokenRows,
-  buildBranchName,
-  type LedgerRow,
-  PRINCIPAL_ALLOWLIST,
-  type TokenSourcePr
-} from '@attalabs/aeg-core'
+import { aggregateTaskTokenRows, buildBranchName, type LedgerRow, type TokenSourcePr } from '@attalabs/aeg-core'
 import { resolveGithubToken } from '@attalabs/aeg-forge-state'
+import { STUDIO_PRINCIPALS } from './principals'
 
 export type FetchTokenLedgerInput = {
   owner: string
@@ -115,7 +110,7 @@ export async function fetchTrancheTokenLedger(input: FetchTokenLedgerInput): Pro
       body: pr.body ?? '',
       comments: pr.comments.nodes.map((c) => ({ body: c.body, author: c.author?.login ?? null }))
     }))
-    ledgers.set(task.id, aggregateTaskTokenRows(prs, PRINCIPAL_ALLOWLIST))
+    ledgers.set(task.id, aggregateTaskTokenRows(prs, STUDIO_PRINCIPALS))
   }
 
   return { ledgers, unavailable: false }

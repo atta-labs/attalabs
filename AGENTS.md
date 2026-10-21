@@ -22,7 +22,8 @@ off — every ring above runs unconditionally, for every adopter, by default.
 non-security-critical slice of that work each: `true` (or absent — the
 default) runs it, exactly as described above; `false` opts OUT of that one
 slice once you've outgrown it (brief-schema validation for ring 1;
-dead-branch-push bookkeeping for ring 2). Neither flag ever disables
+the post-merge task archive and dead-branch-push bookkeeping for ring 2).
+Neither flag ever disables
 direct-main-push detection — that stays unconditional by design.
 
 ## Your role
