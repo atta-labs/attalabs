@@ -271,6 +271,7 @@ try {
 
   copyFileSync(join(fixtureDir, 'consumer.ts'), join(consumerDir, 'consumer.ts'))
   copyFileSync(join(fixtureDir, 'lifecycle.flow.yaml'), join(consumerDir, 'lifecycle.flow.yaml'))
+  copyFileSync(join(fixtureDir, 'review-loop.flow.yaml'), join(consumerDir, 'review-loop.flow.yaml'))
 
   run('bun', ['install'], consumerDir)
   note('  installed')

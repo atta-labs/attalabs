@@ -135,8 +135,43 @@ interface ControlledRunBase {
    * is a `failed` run. `spawnFn` is not passed to it.
    */
   executor?: AgentLifecycleNodeExecutor
-  /** Forwarded to `invoke()` when supplied — a legally looping Plan can exceed LangGraph's default ceiling. */
+  /**
+   * Forwarded to `invoke()` when supplied. Omitted, the leg derives one from the
+   * Plan (`planRecursionLimit`), so a Plan that loops legally is never failed by
+   * LangGraph's default ceiling of 25.
+   */
   recursionLimit?: number
+}
+
+/** LangGraph's own default — the derived limit never goes below it. */
+const LANGGRAPH_DEFAULT_RECURSION_LIMIT = 25
+
+/**
+ * The recursion limit a leg runs under when its caller passed none: the Plan's
+ * node count times the largest `maxRevisions` plus one, plus the node count,
+ * never below LangGraph's default of 25.
+ *
+ * LangGraph counts supersteps, and a Plan whose decisions loop back can legally
+ * run far more of them than its node count. A loop-back target runs at most
+ * `maxRevisions + 1` times — the original attempt plus each permitted
+ * loop-back, bounded by the ceiling `buildDecisionPathFn` enforces — and so does
+ * each node between it and the decision that loops to it; the added node count
+ * covers the exhaustion recorder and the steps after the last loop. A
+ * decision-free Plan gets `2 × nodes`, or 25. The derivation assumes loops do not
+ * nest inside one another's bodies with separate targets; a Plan that does can
+ * pass its own `recursionLimit`.
+ */
+export function planRecursionLimit(plan: Plan): number {
+  const nodes = Object.values(plan.graph.nodes)
+  let largestMaxRevisions = 0
+  for (const node of nodes) {
+    if (node.kind !== 'agent-spawn' && node.kind !== 'mechanical') continue
+    if (node.decision && node.decision.maxRevisions > largestMaxRevisions) {
+      largestMaxRevisions = node.decision.maxRevisions
+    }
+  }
+  const derived = nodes.length * (largestMaxRevisions + 1) + nodes.length
+  return Math.max(LANGGRAPH_DEFAULT_RECURSION_LIMIT, derived)
 }
 
 export interface StartControlledRunParams extends ControlledRunBase {
@@ -577,7 +612,8 @@ function legExecutor(params: ControlledRunBase, leg: AgentLifecycleLegOptions): 
  * halt is something the caller asked for.
  */
 export async function startControlledRun(params: StartControlledRunParams): Promise<RunOutcome> {
-  const { plan, config, checkpointer, control, recursionLimit, onIdentity } = params
+  const { plan, config, checkpointer, control, onIdentity } = params
+  const recursionLimit = params.recursionLimit ?? planRecursionLimit(plan)
   const identity = params.identity ?? createRunIdentity()
   assertDerivedIdentity(identity)
 
@@ -641,7 +677,8 @@ function assertPlanCoversRecordedResults(plan: Plan, checkpoint: RunCheckpointSt
  * refuses a thread that has state, a resume refuses one that has none.
  */
 export async function resumeControlledRun(params: ResumeControlledRunParams): Promise<RunOutcome> {
-  const { plan, config, checkpointer, identity, control, recursionLimit } = params
+  const { plan, config, checkpointer, identity, control } = params
+  const recursionLimit = params.recursionLimit ?? planRecursionLimit(plan)
   assertDerivedIdentity(identity)
 
   const checkpoint = await readRunCheckpoint(checkpointer, identity)

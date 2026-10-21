@@ -261,6 +261,96 @@ check(
   (await readRunOutcome(ownCheckpointer, ownIdentity))?.reason === 'completed'
 )
 
+// ── 2c. A looping Flow — the ceiling and the recursion limit, with no help ───
+
+section('2c. A fourteen-step review loop runs to exhausted and to completed with the consumer executor')
+
+const reviewLoopFlow = loadStepsFlow(
+  readFileSync(join(here, 'review-loop.flow.yaml'), 'utf-8').replaceAll('__WORKING_DIRECTORY__', workingDirectoryRoot)
+)
+validateStepsFlow(reviewLoopFlow)
+const reviewLoopPlan = compileFlow(reviewLoopFlow, 'Converge on a reviewed change')
+
+check('the review loop compiles to fourteen nodes', Object.keys(reviewLoopPlan.graph.nodes).length === 14)
+
+/**
+ * The consumer's own executor for the loop: it returns `results` and nothing
+ * else — no revision count, no session — and `outputs` scripts what a node
+ * reports on each visit. `fail` from `gate-run` or `revise` from `assess` sends
+ * the run back to `work`.
+ */
+function loopExecutor(outputs: Record<string, string[]>): {
+  readonly calls: string[]
+  readonly executor: AgentLifecycleNodeExecutor
+} {
+  const calls: string[] = []
+  const executor: AgentLifecycleNodeExecutor = async (_state, { node }) => {
+    const visit = calls.filter((call) => call === node.id).length
+    calls.push(node.id)
+    return {
+      results: {
+        [node.id]: {
+          nodeId: node.id,
+          kind: 'mechanical',
+          action: 'consumer-injected',
+          command: 'none',
+          exitCode: 0,
+          stdout: outputs[node.id]?.[visit] ?? 'ok',
+          stderr: '',
+          durationMs: 0
+        }
+      }
+    }
+  }
+  return { calls, executor }
+}
+
+const loopConfig: AgentSpawnExecutorConfig = {
+  ...executorConfig([]),
+  decisionPredicates: {
+    gate: (result) => result.kind === 'mechanical' && result.stdout === 'fail',
+    'assess-decision': (result) => result.kind === 'mechanical' && result.stdout === 'revise'
+  }
+}
+const runsOf = (calls: readonly string[], nodeId: string) => calls.filter((call) => call === nodeId).length
+
+const neverPasses = loopExecutor({ 'gate-run': Array.from({ length: 50 }, () => 'fail') })
+const exhaustedRun = await startControlledRun({
+  plan: reviewLoopPlan,
+  checkpointer: new MemorySaver(),
+  executor: neverPasses.executor,
+  config: loopConfig
+})
+
+check('a gate that never passes ends the run exhausted', exhaustedRun.reason === 'exhausted')
+check(
+  'the ceiling names the gate, the agent step and its max_revisions',
+  exhaustedRun.reason === 'exhausted' &&
+    exhaustedRun.exhaustion.nodeId === 'gate' &&
+    exhaustedRun.exhaustion.target === 'work' &&
+    exhaustedRun.exhaustion.maxRevisions === 2
+)
+check('the agent step ran its original attempt plus two loop-backs', runsOf(neverPasses.calls, 'work') === 3)
+
+const convergesLate = loopExecutor({ assess: ['revise', 'revise', 'ok'] })
+const completedLoopRun = await startControlledRun({
+  plan: reviewLoopPlan,
+  checkpointer: new MemorySaver(),
+  executor: convergesLate.executor,
+  config: loopConfig
+})
+
+check(
+  'two review loop-backs then a pass completes — past the default recursion limit, with none passed',
+  completedLoopRun.reason === 'completed'
+)
+check(
+  'each review loop ran the reviews and their join once per pass',
+  runsOf(convergesLate.calls, 'review-a') === 3 &&
+    runsOf(convergesLate.calls, 'join-reviews') === 3 &&
+    runsOf(convergesLate.calls, 'final') === 1
+)
+
 // ── 3. A durable run, halted at a node boundary ──────────────────────────────
 
 section('3. Durable start, live observation, halt at a node boundary')

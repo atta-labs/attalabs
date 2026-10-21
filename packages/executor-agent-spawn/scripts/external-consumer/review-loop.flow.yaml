@@ -1,0 +1,120 @@
+# A fourteen-step review loop: the topology the revision ceiling and the
+# recursion limit have to hold for, with any executor.
+#
+# Generic on purpose — no process names, prompts or policy from any consumer.
+# Read by `src/review-loop.test.ts` and copied verbatim into the external
+# consumer project by `scripts/verify-external-consumer.ts`.
+#
+#   prepare-1 → prepare-2 → prepare-3 → work → gate-run → gate
+#   gate: loops back to work (if_true) or goes on to review-setup (if_false)
+#   review-setup fans out to review-a and review-b, joined by join-reviews
+#   join-reviews → assess → assess-decision
+#   assess-decision: loops back to work (if_true) or goes on to finalize
+#   finalize → final
+#
+# One pass through both loops is 8 supersteps, so a run that loops back twice
+# needs more than LangGraph's default recursion limit of 25.
+#
+# `__WORKING_DIRECTORY__` is substituted by whoever loads this file, because an
+# agent step's `working_directory` must be an absolute path on the machine
+# executing it.
+schema_version: "2.0"
+id: review-loop-fixture
+display_name: Review loop fixture
+description: Preparation, one agent step, a gate loop, a parallel review joined by one step, an assessment loop and a final step.
+experimental: false
+benchmarked: false
+
+defaults:
+  model: not-used-by-this-shape
+
+agents:
+  - role: worker
+  - role: reviewer
+  - role: assessor
+
+steps:
+  - id: prepare-1
+    type: mechanical
+    action: prepare
+
+  - id: prepare-2
+    type: mechanical
+    action: prepare
+
+  - id: prepare-3
+    type: mechanical
+    action: prepare
+
+  - id: work
+    type: agent
+    role: worker
+    prompt_template: "Work on: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 2
+
+  - id: gate-run
+    type: mechanical
+    action: run-gate
+
+  - id: gate
+    type: mechanical
+    action: record-gate
+    decision:
+      examine: gate-run
+      if_true: work
+      if_false: review-setup
+      max_revisions: 2
+
+  - id: review-setup
+    type: mechanical
+    action: prepare
+
+  - id: review-a
+    type: agent
+    role: reviewer
+    prompt_template: "Review the work on: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 2
+    depends_on: [review-setup]
+
+  - id: review-b
+    type: agent
+    role: reviewer
+    prompt_template: "Review the work on: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 2
+    depends_on: [review-setup]
+
+  - id: join-reviews
+    type: mechanical
+    action: join-reviews
+    depends_on: [review-a, review-b]
+
+  - id: assess
+    type: agent
+    role: assessor
+    prompt_template: "Assess the reviews of: {{question}}"
+    permission: default
+    working_directory: __WORKING_DIRECTORY__
+    max_turns: 2
+
+  - id: assess-decision
+    type: mechanical
+    action: record-assessment
+    decision:
+      examine: assess
+      if_true: work
+      if_false: finalize
+      max_revisions: 2
+
+  - id: finalize
+    type: mechanical
+    action: finalize
+
+  - id: final
+    type: mechanical
+    action: finalize
