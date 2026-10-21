@@ -4,10 +4,18 @@
 # request can rewrite. `pull_request_target` is the same boundary
 # `vinaya-review.yml` uses: GitHub loads this workflow and its default
 # checkout from the repository's default branch, never from the pull
-# request being judged. Neither job fetches, checks out, installs, builds,
-# or executes pull-request content — every check registered here reads only
-# live-fetched PR metadata (`gh pr view`), never the diff or repo tree, the
-# same shape `review-gate` already requires of its own checks.
+# request being judged. No job fetches, checks out, installs, builds, or
+# executes pull-request content — every check registered here reads only
+# live-fetched PR metadata, never the diff or repo tree, the same shape
+# `review-gate` already requires of its own checks.
+#
+# That metadata is read once per run: the `vinaya-forge-read` job reads the
+# pull request, its comments, the task Issue its body closes and that Issue's
+# comments over REST into the forge snapshot, and both check jobs take it as
+# this run's own artifact. Each check job needs the read job and runs with
+# `!cancelled()`, so a failed read fails both required checks by name on
+# their first step instead of skipping them. Re-run the whole run, not only
+# the failed jobs, to read the pull request afresh.
 #
 # `body-bare-digits`: its Changesets-release
 # exemption live-fetches the PR's real author, keyed on `PR_NUMBER` — on a
@@ -41,13 +49,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  vinaya-body-checks:
-    name: vinaya check body-bare-digits
+  # The one read of the pull request this run makes: the pull request, its
+  # comments, the task Issue its body closes and that Issue's comments, over
+  # REST, into the forge snapshot — handed to both check jobs below as this
+  # run's own artifact, so neither job reads the forge for them again.
+  vinaya-forge-read:
+    name: vinaya read pull request
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: read
       pull-requests: read
     steps:
+      - name: Record the GraphQL budget at job start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           # Explicit trusted ref: never use the PR head/merge ref in this job.
@@ -57,23 +75,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # PR_BODY is what makes body-bare-digits EVALUATE at all — the bin
-      # reads `process.env.PR_BODY` only, never fetches it itself. Fetched
-      # live from the forge, never the event payload — same reasoning as
-      # `vinaya-checks.yml`'s own PR_BODY step. See `verifiedFetchPrBodyStep`'s
-      # own doc comment for why this re-reads with a bounded backoff instead
-      # of trusting the first read.
-      - name: Fetch PR body
+      - name: Read the pull request over REST
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.head_ref }}
         run: |
+          set -o pipefail
+          RAW="$RUNNER_TEMP/vinaya-forge-snapshot/raw"
+          mkdir -p "$RAW"
+          fail_read() {
+            echo "::error::Reading $1 over the REST API failed: $(cat "$RAW/read-error.txt" 2>/dev/null)" >&2
+            gh api rate_limit --jq '.resources as $r | "::error::GitHub REST (core) budget: \($r.core.remaining) of \($r.core.limit) left, resets at \($r.core.reset | todate)\(if $r.core.remaining == 0 then " - spent, so GitHub rate-limited this read" else "" end); GraphQL budget: \($r.graphql.remaining) of \($r.graphql.limit) left, resets at \($r.graphql.reset | todate)\(if $r.graphql.remaining == 0 then " - spent" else "" end)."' >&2 || echo "::error::The token budget could not be read either." >&2
+            exit 1
+          }
           ATTEMPTS=0
           MAX_ATTEMPTS=6
           SLEEP_SECONDS=5
           while :; do
-            BODY="$(gh pr view "$PR_NUMBER" --json body --jq .body)"
+            gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER" > "$RAW/pull.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER"
+            BODY="$(jq -r '.body // ""' "$RAW/pull.json")"
             WAIT_FOR=""
             if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
               CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
@@ -91,27 +113,139 @@ jobs:
             fi
             sleep "$SLEEP_SECONDS"
           done
+          gh api --paginate --slurp "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" > "$RAW/pull-comments.json" 2> "$RAW/read-error.txt" || fail_read "pull request #$PR_NUMBER's comments"
+      - name: Write the forge snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+      - name: Share the forge snapshot with the check jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: vinaya-forge-snapshot
+          path: ${{ runner.temp }}/vinaya-forge-snapshot
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true
+
+  vinaya-body-checks:
+    name: vinaya check body-bare-digits
+    needs: vinaya-forge-read
+    # `!cancelled()`, never `always()` and never the default: a skipped job
+    # counts as passing on the merge box, so this job runs when the read job
+    # failed and fails on its own first step instead of skipping; a run the
+    # concurrency group cancelled stays cancelled.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Require the pull request read
+        env:
+          READ_RESULT: ${{ needs.vinaya-forge-read.result }}
+        run: |
+          if [ "$READ_RESULT" != "success" ]; then
+            echo "::error::The pull request read job ended '$READ_RESULT', so this check has no pull request to evaluate. Its own log names the failed read; re-run the whole workflow run." >&2
+            exit 1
+          fi
+      - name: Record the GraphQL budget at job start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          # Explicit trusted ref: never use the PR head/merge ref in this job.
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download the forge snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: vinaya-forge-snapshot
+          path: ${{ runner.temp }}/vinaya-forge-snapshot
+      - name: Export the pull request body
+        run: |
           DELIM="PR_BODY_$(openssl rand -hex 16)"
-          echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
-          printf '%s\n' "$BODY" >> "$GITHUB_ENV"
-          echo "$DELIM" >> "$GITHUB_ENV"
+          {
+            echo "PR_BODY<<$DELIM"
+            cat "$RUNNER_TEMP/vinaya-forge-snapshot/body.md"
+            echo
+            echo "$DELIM"
+          } >> "$GITHUB_ENV"
       - name: Body checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # PR_NUMBER is what makes the Changesets-release exemption
-          # EVALUATE its live gh pr view fetch: without it the check reads
+          # EVALUATE its pull request read: without it the check reads
           # "no PR yet — local dev" and falls through to the ordinary
           # bare-digit scan.
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx --yes @attalabs/vinaya@0.39.0 check body-bare-digits
+          # The run's forge snapshot (`lib/forge-snapshot.ts`): the checks read
+          # the pull request and its task Issue from it instead of reading the
+          # forge for them again. Set on this step only.
+          VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
+          PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
+        run: npx --yes @attalabs/vinaya@0.40.0 check body-bare-digits
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true
 
   vinaya-principal-test-plan-wait:
     name: vinaya check principal-test-plan-wait
+    needs: vinaya-forge-read
+    # Same `!cancelled()` condition as the sibling job above, same reason.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # The task Issue's frozen brief, read for its `[live]` lines.
+      issues: read
       pull-requests: read
     steps:
+      - name: Require the pull request read
+        env:
+          READ_RESULT: ${{ needs.vinaya-forge-read.result }}
+        run: |
+          if [ "$READ_RESULT" != "success" ]; then
+            echo "::error::The pull request read job ended '$READ_RESULT', so this check has no pull request to evaluate. Its own log names the failed read; re-run the whole workflow run." >&2
+            exit 1
+          fi
+      - name: Record the GraphQL budget at job start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '"GraphQL budget at job start: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job start: unreadable" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           # Explicit trusted ref: never use the PR head/merge ref in this job.
@@ -121,40 +255,44 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # PR_BODY is what makes this check EVALUATE at all — the bin reads
-      # `process.env.PR_BODY` only, never fetches it itself. Fetched live from
-      # the forge, same reasoning as the sibling job's identical step above.
-      - name: Fetch PR body
+      - name: Download the forge snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: vinaya-forge-snapshot
+          path: ${{ runner.temp }}/vinaya-forge-snapshot
+      - name: Export the pull request body
+        run: |
+          DELIM="PR_BODY_$(openssl rand -hex 16)"
+          {
+            echo "PR_BODY<<$DELIM"
+            cat "$RUNNER_TEMP/vinaya-forge-snapshot/body.md"
+            echo
+            echo "$DELIM"
+          } >> "$GITHUB_ENV"
+      - name: Principal Test Plan wait
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.head_ref }}
+          # The pull request's own head, at which each `[live]` line of the
+          # task's frozen brief must have passed for the merge to go through.
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # The run's forge snapshot (`lib/forge-snapshot.ts`): the checks read
+          # the pull request and its task Issue from it instead of reading the
+          # forge for them again. Set on this step only.
+          VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
+          PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
+        run: npx --yes @attalabs/vinaya@0.40.0 check principal-test-plan-wait
+      - name: Record the GraphQL budget at job end
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ATTEMPTS=0
-          MAX_ATTEMPTS=6
-          SLEEP_SECONDS=5
-          while :; do
-            BODY="$(gh pr view "$PR_NUMBER" --json body --jq .body)"
-            WAIT_FOR=""
-            if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
-              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
-              if ! printf '%s\n' "$CLOSES_REGION" | grep -qE '#[0-9]+'; then
-                WAIT_FOR="a real Closes #N inside the AEG:CLOSES region for task branch $BRANCH"
-              fi
-            fi
-            if [ -z "$WAIT_FOR" ]; then
-              break
-            fi
-            ATTEMPTS=$((ATTEMPTS + 1))
-            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
-              echo "::error::Gave up after $ATTEMPTS attempts waiting for $WAIT_FOR." >&2
-              exit 1
-            fi
-            sleep "$SLEEP_SECONDS"
-          done
-          DELIM="PR_BODY_$(openssl rand -hex 16)"
-          echo "PR_BODY<<$DELIM" >> "$GITHUB_ENV"
-          printf '%s\n' "$BODY" >> "$GITHUB_ENV"
-          echo "$DELIM" >> "$GITHUB_ENV"
-      - name: Principal Test Plan wait
-        run: npx --yes @attalabs/vinaya@0.39.0 check principal-test-plan-wait
+          gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
+      # When this job failed, print its own token budgets on one line for
+      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      - name: Report this job's GitHub token budget
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api rate_limit --jq '.resources as $r | "vinaya-budget: exhausted=\(if $r.core.remaining == 0 then "core" elif $r.graphql.remaining == 0 then "graphql" else "none" end) core_remaining=\($r.core.remaining) core_reset=\($r.core.reset) graphql_remaining=\($r.graphql.remaining) graphql_reset=\($r.graphql.reset)"' || true
