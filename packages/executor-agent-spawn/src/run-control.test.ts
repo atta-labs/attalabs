@@ -10,6 +10,7 @@ import { ProcessCancelledError } from './process-lifecycle'
 import { createRunControl, runHaltOf, RunHaltedError } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runIdentityForRunId, startRun } from './run-identity'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl } from './types'
+import type { AgentLifecycleNodeExecutor } from './graph-builder'
 // Imported from the package root deliberately: `AgentLifecycleLegOptions` is the
 // declared parameter type of an exported function, so a caller outside this
 // package has to be able to name it without reaching into a source file.
@@ -746,5 +747,262 @@ describe('resumeControlledRun — continuing a halted run', () => {
     })
 
     expect(outcome.reason).toBe('completed')
+  })
+})
+
+describe('startControlledRun / resumeControlledRun — a caller-injected executor', () => {
+  /**
+   * A caller's own node executor, with no `spawnFn` anywhere: it records each
+   * node it is asked to run and returns a result of its own. `onRun` lets a test
+   * act from inside a node (halt mid-flight, fail, wait on the signal).
+   */
+  function fakeExecutor(onRun?: (nodeId: string, signal: AbortSignal | undefined) => Promise<void> | void): {
+    readonly calls: string[]
+    readonly signals: Array<AbortSignal | undefined>
+    readonly executor: AgentLifecycleNodeExecutor
+  } {
+    const calls: string[] = []
+    const signals: Array<AbortSignal | undefined> = []
+    const executor: AgentLifecycleNodeExecutor = async (_state, { node, signal }) => {
+      calls.push(node.id)
+      signals.push(signal)
+      await onRun?.(node.id, signal)
+      return {
+        results: {
+          [node.id]: {
+            nodeId: node.id,
+            kind: 'mechanical',
+            action: 'caller-injected',
+            command: 'none',
+            exitCode: 0,
+            stdout: `${node.id} ran in the caller's executor`,
+            stderr: '',
+            durationMs: 0
+          }
+        }
+      }
+    }
+    return { calls, signals, executor }
+  }
+
+  const countOf = (calls: readonly string[], nodeId: string) => calls.filter((call) => call === nodeId).length
+
+  it('runs every node through the injected executor and reports completed', async () => {
+    const checkpointer = new MemorySaver()
+    const fake = fakeExecutor()
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity: createRunIdentity('injected-completed'),
+      executor: fake.executor
+    })
+
+    expect(outcome.reason).toBe('completed')
+    if (outcome.reason !== 'completed') throw new Error('narrowing guard')
+    expect(fake.calls).toEqual(['implement', 'review', 'land'])
+    expect(outcome.checkpoint.results.review?.kind).toBe('mechanical')
+    expect(outcome.resumedFrom).toBeUndefined()
+  })
+
+  it('refuses the entry node of a run halted before it began — the fake is never called', async () => {
+    const control = createRunControl()
+    control.halt('halted before it began')
+    const fake = fakeExecutor()
+    const events: AgentLifecycleEvent[] = []
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig((event) => events.push(event)),
+      checkpointer: new MemorySaver(),
+      identity: createRunIdentity('injected-halted-at-entry'),
+      control,
+      executor: fake.executor
+    })
+
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['implement'])
+    expect(outcome.haltReason).toBe('halted before it began')
+    expect(fake.calls).toEqual([])
+    expect(events).toEqual([])
+  })
+
+  it('pauses a mid-run halt at the next node, keeping the completed node recorded', async () => {
+    const control = createRunControl()
+    const fake = fakeExecutor()
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(haltAfter('implement', control, 'operator paused after implement')),
+      checkpointer: new MemorySaver(),
+      identity: createRunIdentity('injected-halted-mid-run'),
+      control,
+      executor: fake.executor
+    })
+
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['review'])
+    expect(outcome.haltReason).toBe('operator paused after implement')
+    expect(fake.calls).toEqual(['implement'])
+    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
+  })
+
+  it('resumes without replaying: each node runs once across both legs, and resumed names its checkpoint', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('injected-resume')
+    const control = createRunControl()
+    const fake = fakeExecutor()
+
+    const first = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(haltAfter('implement', control)),
+      checkpointer,
+      identity,
+      control,
+      executor: fake.executor
+    })
+    expect(first.reason).toBe('paused')
+    const before = await readRunCheckpoint(checkpointer, identity)
+    const recordedOutcomes: unknown[] = []
+
+    const outcome = await resumeControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer,
+      identity,
+      executor: async (state, context) => {
+        recordedOutcomes.push(state.outcome)
+        return await fake.executor(state, context)
+      }
+    })
+
+    expect(outcome.reason).toBe('completed')
+    if (outcome.reason !== 'completed') throw new Error('narrowing guard')
+    expect(outcome.resumedFrom).toBe(before?.checkpointId)
+    for (const nodeId of ['implement', 'review', 'land']) expect(countOf(fake.calls, nodeId)).toBe(1)
+    expect(fake.calls).toEqual(['implement', 'review', 'land'])
+    // The `resumed` record was written by the leg wrapper on the resumed leg's
+    // first node, so the next node of that leg reads it from state.
+    expect(recordedOutcomes[1]).toMatchObject({ reason: 'resumed', fromCheckpointId: before?.checkpointId })
+  })
+
+  it('can be halted again after a resume, pausing at the node after the one it just ran', async () => {
+    const checkpointer = new MemorySaver()
+    const identity = createRunIdentity('injected-resume-then-halt')
+    const firstControl = createRunControl()
+    const fake = fakeExecutor()
+    await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(haltAfter('implement', firstControl)),
+      checkpointer,
+      identity,
+      control: firstControl,
+      executor: fake.executor
+    })
+
+    const control = createRunControl()
+    const outcome = await resumeControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(haltAfter('review', control, 'paused again')),
+      checkpointer,
+      identity,
+      control,
+      executor: fake.executor
+    })
+
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['land'])
+    expect(outcome.haltReason).toBe('paused again')
+    expect(outcome.resumedFrom).toBeDefined()
+    expect(fake.calls).toEqual(['implement', 'review'])
+  })
+
+  it("hands the leg's abort signal to the injected executor, which cancels its own work on it", async () => {
+    const control = createRunControl()
+    const fake = fakeExecutor(async (nodeId, signal) => {
+      if (!signal) throw new Error('the injected executor was given no signal')
+      const aborted = new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve()))
+      control.halt('operator cancelled mid-node')
+      await aborted
+      throw new ProcessCancelledError({ nodeId, agentRole: 'caller', forced: false, spawned: true })
+    })
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer: new MemorySaver(),
+      identity: createRunIdentity('injected-cancelled'),
+      control,
+      executor: fake.executor
+    })
+
+    expect(fake.signals[0]).toBe(control.signal)
+    expect(fake.signals[0]?.aborted).toBe(true)
+    // Cancelled work is a halt, not a failure, whichever executor did it.
+    expect(outcome.reason).toBe('paused')
+    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+    expect(outcome.pendingNodes).toEqual(['implement'])
+    expect(outcome.haltReason).toBe('operator cancelled mid-node')
+  })
+
+  it('gives the injected executor no signal on a leg that has no control', async () => {
+    const fake = fakeExecutor()
+    await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig(),
+      checkpointer: new MemorySaver(),
+      identity: createRunIdentity('injected-no-control'),
+      executor: fake.executor
+    })
+    expect(fake.signals).toEqual([undefined, undefined, undefined])
+  })
+
+  it('emits the lifecycle events around the injected executor, once each and in order', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const identity = createRunIdentity('injected-events')
+
+    await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig((event) => events.push(event)),
+      checkpointer: new MemorySaver(),
+      identity,
+      executor: fakeExecutor().executor
+    })
+
+    expect(events.map((event) => `${event.type}:${event.nodeId}`)).toEqual([
+      'node:start:implement',
+      'node:complete:implement',
+      'node:start:review',
+      'node:complete:review',
+      'node:start:land',
+      'node:complete:land'
+    ])
+    expect(events.every((event) => event.runId === identity.runId)).toBe(true)
+  })
+
+  it('reports a failing injected executor as failed, not paused', async () => {
+    const events: AgentLifecycleEvent[] = []
+    const fake = fakeExecutor((nodeId) => {
+      if (nodeId === 'review') throw new Error('the caller executor broke on review')
+    })
+
+    const outcome = await startControlledRun({
+      plan: threeStepPlan(),
+      config: executorConfig((event) => events.push(event)),
+      checkpointer: new MemorySaver(),
+      identity: createRunIdentity('injected-failed'),
+      executor: fake.executor
+    })
+
+    expect(outcome.reason).toBe('failed')
+    if (outcome.reason !== 'failed') throw new Error('narrowing guard')
+    expect(outcome.error).toMatch(/the caller executor broke on review/)
+    expect(outcome.pendingNodes).toEqual(['review'])
+    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
+    expect(events.at(-1)).toMatchObject({ type: 'node:failed', nodeId: 'review' })
   })
 })

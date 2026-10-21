@@ -61,12 +61,15 @@
  *
  * **The halt lives in the node wrapper, not in the topology.** A run held by a
  * `RunControl` stops at whichever of two points it can reach first. A node that
- * has not started is refused: the wrapper checks the handle before it emits
- * `node:start` or reaches either executor, and throws `RunHaltedError`. A node
- * already running is stopped by its child being terminated — the wrapper
- * forwards `control.signal` into `executeAgentSpawnNode`, and the
- * `ProcessCancelledError` that comes back is re-reported as the halt it is (see
- * `haltOfTerminatedChild`). Nothing about the compiled graph
+ * has not started is refused: the wrapper (`withAgentLifecycleLeg`) checks the
+ * handle before it emits `node:start` or reaches the executor it wraps, and
+ * throws `RunHaltedError`. A node already running is stopped by its work being
+ * cancelled — the wrapper hands `control.signal` to that executor as
+ * `context.signal`, the built-in one forwards it into `executeAgentSpawnNode` /
+ * `executeMechanicalNode`, and the `ProcessCancelledError` that comes back is
+ * re-reported as the halt it is (see `haltOfTerminatedChild`). The wrapper is
+ * the same whether the executor inside it is the built-in one or a caller's
+ * own, so neither can opt out of the halt. Nothing about the compiled graph
  * changes — no extra node, no extra edge, no conditional route — because the
  * property a halt needs is already LangGraph's: one checkpoint per superstep, so
  * the last completed node's result is durable and the node that threw is left
@@ -189,6 +192,14 @@ function safeEmit(onEvent: ((event: AgentLifecycleEvent) => void) | undefined, e
 export interface NodeExecutionContext {
   node: PlanNode
   plan: Plan
+  /**
+   * The leg's abort signal — `RunControl.signal` — when the leg was given a halt
+   * handle, so an executor can stop work already under way when the run is
+   * halted. Optional because a leg with no `control` has nothing to cancel, and
+   * because `buildAgentSpawnStateGraph` calls every executor with the node and
+   * Plan alone: the leg wrapper is what fills it in.
+   */
+  signal?: AbortSignal
 }
 
 export type AgentLifecycleNodeExecutor = (
@@ -276,42 +287,42 @@ export interface AgentLifecycleLegOptions {
 }
 
 /**
- * Builds the node executor wired into every node of the translated graph.
- * Dispatches on `node.kind` to this package's two node kinds: `agent-spawn`
- * (spawns an agent process and captures its event stream) and `mechanical`
- * (runs a configured command, no model turn at all). Every other kind is
- * refused — this package executes steps-shaped Plans only.
+ * Wraps a node executor in the per-leg guarantees every node of a controlled run
+ * gets, whichever executor actually does the node's work. It is the one place
+ * those guarantees live: the built-in executor (`createAgentLifecycleNodeExecutor`)
+ * and a caller's own executor handed to `startControlledRun` /
+ * `resumeControlledRun` both run inside it, so neither path can drop one.
  *
- * Both branches record their result the same way: through the returned
- * partial state, which LangGraph passes to the annotation's keyed-merge
- * reducer. Neither writes into `state` directly, or concurrent nodes would
- * race and lose each other's writes.
+ * Four things hold, in this order:
  *
- * This function is also the executor's single emission path: it calls
- * `config.onEvent` (see `types.ts`) around whichever branch it dispatches
- * to, so `node:start` / `node:complete` / `node:failed` are ordered by this
- * function's own control flow rather than by two node-kind implementations
- * each deciding independently when to report themselves.
+ * - **The halt boundary.** Checked first — ahead of `node:start`, ahead of the
+ *   wrapped executor — so a halted run's next node produces no event, does no
+ *   work, and records no result. That halt bypasses the `catch` block below and
+ *   so emits no `node:failed`, because it is not a node failure, it is a node
+ *   that never ran.
+ * - **The lifecycle events.** `node:start` before the wrapped executor runs,
+ *   `node:complete` once it resolves, `node:failed` when it throws — ordered by
+ *   this function's own control flow rather than by each executor deciding when
+ *   to report itself. Anything the wrapped executor emits itself (the built-in
+ *   one's `node:streaming`) lands between the first two.
+ * - **The `resumed` record**, merged into the first result this leg returns.
+ * - **The terminated-child mapping.** A node already running when the halt fires
+ *   is stopped through `context.signal`; a `ProcessCancelledError` it throws
+ *   back is re-reported as the halt it is (see `haltOfTerminatedChild`). It
+ *   *does* go through the `catch` and emit `node:failed`: that node genuinely
+ *   started and genuinely did not complete, so claiming otherwise would hide a
+ *   real event from an observer. Both halts are reported as `paused` by
+ *   `run-control.ts`, on the same basis — the node is pending and the run is
+ *   resumable.
  *
- * An optional `control` makes the run haltable, in the two ways this file's
- * header describes. The boundary check is the first thing the returned executor
- * does — ahead of `node:start`, ahead of either executor — so a halted run's
- * next node produces no event, spawns no process, and records no result; that
- * halt bypasses the `catch` block below and so emits no `node:failed`, because
- * it is not a node failure, it is a node that never ran. A node already running
- * when the halt fires is the other case, and it *does* go through that `catch`
- * and does emit `node:failed`: that node genuinely started and genuinely did
- * not complete, so claiming otherwise would hide a real event from an observer.
- * Both are reported as `paused` by `run-control.ts`, on the same basis — the
- * node is pending and the run is resumable. An agent-spawn
- * node's captured event stream is additionally surfaced as `node:streaming`
- * — what the spawned process reported — between `node:start` and
- * `node:complete`; a mechanical node has no such stream, so it only ever
- * produces the two lifecycle events.
+ * The wrapped executor receives `control.signal` as `context.signal` when the leg
+ * has a `control`, and the context unchanged when it does not. An executor that
+ * cancels its own work on that signal reports it by throwing a
+ * `ProcessCancelledError` or a `RunHaltedError`; any other error is a failure.
  */
-export function createAgentLifecycleNodeExecutor(
+export function withAgentLifecycleLeg(
+  executor: AgentLifecycleNodeExecutor,
   config: AgentSpawnExecutorConfig,
-  spawnFn?: SpawnFn,
   options?: AgentLifecycleLegOptions
 ): AgentLifecycleNodeExecutor {
   const control = options?.control
@@ -331,78 +342,28 @@ export function createAgentLifecycleNodeExecutor(
     return { outcome: { reason: 'resumed', at: new Date().toISOString(), fromCheckpointId: resumedFrom } }
   }
 
-  return async (state, { node, plan }) => {
+  return async (state, context) => {
     const { onEvent } = config
     const { runId } = state
+    const { node } = context
 
     // The halt boundary for a node that has not started. Checked here — before
-    // `node:start` is emitted and before either executor is reached — because a
-    // halted run's next node must not start at all: no event claiming it did, no
-    // subprocess spawned, nothing for a resume to have to reconcile. Throwing
-    // (rather than returning an empty partial state) is what leaves this node
-    // pending on the thread, which is where a resume continues from; returning
-    // would let LangGraph route onward as though the node had run. A node
-    // already running when the halt fires cannot be caught here — it is stopped
-    // by `control.signal` reaching its child, below.
+    // `node:start` is emitted and before the wrapped executor is reached —
+    // because a halted run's next node must not start at all: no event claiming
+    // it did, no subprocess spawned, nothing for a resume to have to reconcile.
+    // Throwing (rather than returning an empty partial state) is what leaves this
+    // node pending on the thread, which is where a resume continues from;
+    // returning would let LangGraph route onward as though the node had run. A
+    // node already running when the halt fires cannot be caught here — it is
+    // stopped by `control.signal` reaching its work, below.
     if (control?.halted) throw new RunHaltedError(node.id, control.haltReason)
 
     safeEmit(onEvent, { type: 'node:start', nodeId: node.id, runId })
 
     try {
-      if (node.kind === 'mechanical') {
-        // The same signal the agent-spawn branch gets, for the same reason: a
-        // mechanical node's command holds this run's working directory and
-        // execution permissions, so a halt that left it running would keep it
-        // acting on the tree — for up to its own `timeoutMs` — after the
-        // caller believed the run was cancelled.
-        const result = await executeMechanicalNode({ node, config, spawnFn, signal: control?.signal })
-        safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
-        // No `sessions` write: a mechanical node has no model turn and so no
-        // session for a later step's `resume` to look up.
-        return {
-          ...resumeRecord(),
-          results: { [node.id]: narrowPersistedResult(result) },
-          revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
-        }
-      }
-      if (node.kind !== 'agent-spawn') {
-        throw new Error(
-          `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' and 'mechanical' steps.`
-        )
-      }
-
-      const resumeSessionId = node.resume ? state.sessions[node.resume] : undefined
-      if (node.resume && !resumeSessionId) {
-        throw new Error(
-          `Agent-spawn node '${node.id}' declares resume: '${node.resume}', but no session id has been recorded for it yet.`
-        )
-      }
-
-      const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
-      const result = await executeAgentSpawnNode({
-        node,
-        prompt,
-        resumeSessionId,
-        config,
-        spawnFn,
-        signal: control?.signal
-      })
-
-      for (const reported of result.events) {
-        const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
-        safeEmit(onEvent, { type: 'node:streaming', nodeId: node.id, runId, content })
-      }
+      const update = await executor(state, control ? { ...context, signal: control.signal } : context)
       safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
-
-      // `sessions` takes the real id off the capture, deliberately before the
-      // result is narrowed: that channel is what a later step's `resume` reads,
-      // and it is the one place the verbatim id has to survive.
-      return {
-        ...resumeRecord(),
-        results: { [node.id]: narrowPersistedResult(result) },
-        sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
-        revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
-      }
+      return { ...resumeRecord(), ...update }
     } catch (err) {
       const reported = haltOfTerminatedChild(err, node.id, control) ?? err
       const error = reported instanceof Error ? reported.message : String(reported)
@@ -410,6 +371,92 @@ export function createAgentLifecycleNodeExecutor(
       throw reported
     }
   }
+}
+
+/**
+ * The built-in node work, with no leg guarantees of its own — those are
+ * `withAgentLifecycleLeg`'s. Dispatches on `node.kind` to this package's two
+ * node kinds: `agent-spawn` (spawns an agent process and captures its event
+ * stream) and `mechanical` (runs a configured command, no model turn at all).
+ * Every other kind is refused — this package executes steps-shaped Plans only.
+ *
+ * Both branches record their result the same way: through the returned
+ * partial state, which LangGraph passes to the annotation's keyed-merge
+ * reducer. Neither writes into `state` directly, or concurrent nodes would
+ * race and lose each other's writes.
+ *
+ * Both forward `context.signal` into their executor, so a halt reaches a child
+ * already running. An agent-spawn node's captured event stream is surfaced as
+ * `node:streaming` — what the spawned process reported — before this function
+ * returns, which puts it between the wrapper's `node:start` and `node:complete`;
+ * a mechanical node has no such stream.
+ */
+function builtInNodeExecutor(config: AgentSpawnExecutorConfig, spawnFn?: SpawnFn): AgentLifecycleNodeExecutor {
+  return async (state, { node, plan, signal }) => {
+    const { onEvent } = config
+    const { runId } = state
+
+    if (node.kind === 'mechanical') {
+      // The same signal the agent-spawn branch gets, for the same reason: a
+      // mechanical node's command holds this run's working directory and
+      // execution permissions, so a halt that left it running would keep it
+      // acting on the tree — for up to its own `timeoutMs` — after the
+      // caller believed the run was cancelled.
+      const result = await executeMechanicalNode({ node, config, spawnFn, signal })
+      // No `sessions` write: a mechanical node has no model turn and so no
+      // session for a later step's `resume` to look up.
+      return {
+        results: { [node.id]: narrowPersistedResult(result) },
+        revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+      }
+    }
+    if (node.kind !== 'agent-spawn') {
+      throw new Error(
+        `Unsupported node kind '${node.kind}' for node '${node.id}' — this package only executes 'agent-spawn' and 'mechanical' steps.`
+      )
+    }
+
+    const resumeSessionId = node.resume ? state.sessions[node.resume] : undefined
+    if (node.resume && !resumeSessionId) {
+      throw new Error(
+        `Agent-spawn node '${node.id}' declares resume: '${node.resume}', but no session id has been recorded for it yet.`
+      )
+    }
+
+    const prompt = renderStepPrompt(node, { question: plan.question, results: state.results })
+    const result = await executeAgentSpawnNode({ node, prompt, resumeSessionId, config, spawnFn, signal })
+
+    for (const reported of result.events) {
+      const content = typeof reported === 'string' ? reported : JSON.stringify(reported)
+      safeEmit(onEvent, { type: 'node:streaming', nodeId: node.id, runId, content })
+    }
+
+    // `sessions` takes the real id off the capture, deliberately before the
+    // result is narrowed: that channel is what a later step's `resume` reads,
+    // and it is the one place the verbatim id has to survive.
+    return {
+      results: { [node.id]: narrowPersistedResult(result) },
+      sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
+      revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+    }
+  }
+}
+
+/**
+ * Builds the node executor wired into every node of the translated graph: the
+ * built-in node work (`builtInNodeExecutor`) inside the per-leg guarantees
+ * (`withAgentLifecycleLeg`) — the halt boundary, the `node:start` /
+ * `node:complete` / `node:failed` events around `config.onEvent`, the `resumed`
+ * record, and a terminated child read as a halt. A caller with its own node
+ * executor gets the same guarantees by passing it to `startControlledRun` /
+ * `resumeControlledRun` as `executor`.
+ */
+export function createAgentLifecycleNodeExecutor(
+  config: AgentSpawnExecutorConfig,
+  spawnFn?: SpawnFn,
+  options?: AgentLifecycleLegOptions
+): AgentLifecycleNodeExecutor {
+  return withAgentLifecycleLeg(builtInNodeExecutor(config, spawnFn), config, options)
 }
 
 /**
