@@ -293,7 +293,7 @@ export interface AgentLifecycleLegOptions {
  * and a caller's own executor handed to `startControlledRun` /
  * `resumeControlledRun` both run inside it, so neither path can drop one.
  *
- * Four things hold, in this order:
+ * Five things hold, in this order:
  *
  * - **The halt boundary.** Checked first — ahead of `node:start`, ahead of the
  *   wrapped executor — so a halted run's next node produces no event, does no
@@ -306,6 +306,11 @@ export interface AgentLifecycleLegOptions {
  *   to report itself. Anything the wrapped executor emits itself (the built-in
  *   one's `node:streaming`) lands between the first two.
  * - **The `resumed` record**, merged into the first result this leg returns.
+ * - **The revision count.** Every node this wrapper runs to completion increments
+ *   its own `revisionCounts` entry, whichever executor did the work, and the
+ *   wrapper's value replaces any the executor returned. A decision's
+ *   `maxRevisions` ceiling is compared against that count, so leaving it to the
+ *   executor let a caller's executor that never wrote one loop without bound.
  * - **The terminated-child mapping.** A node already running when the halt fires
  *   is stopped through `context.signal`; a `ProcessCancelledError` it throws
  *   back is re-reported as the halt it is (see `haltOfTerminatedChild`). It
@@ -363,7 +368,16 @@ export function withAgentLifecycleLeg(
     try {
       const update = await executor(state, control ? { ...context, signal: control.signal } : context)
       safeEmit(onEvent, { type: 'node:complete', nodeId: node.id, runId })
-      return { ...resumeRecord(), ...update }
+      // The revision count is the runtime's, never the executor's: a decision's
+      // `maxRevisions` ceiling is compared against it, so a count that depended on
+      // the executor returning one would leave an injected executor's loops
+      // unbounded. Written last, so any `revisionCounts` the executor returned
+      // is replaced rather than added to — one increment per node run, always.
+      return {
+        ...resumeRecord(),
+        ...update,
+        revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+      }
     } catch (err) {
       const reported = haltOfTerminatedChild(err, node.id, control) ?? err
       const error = reported instanceof Error ? reported.message : String(reported)
@@ -405,10 +419,7 @@ function builtInNodeExecutor(config: AgentSpawnExecutorConfig, spawnFn?: SpawnFn
       const result = await executeMechanicalNode({ node, config, spawnFn, signal })
       // No `sessions` write: a mechanical node has no model turn and so no
       // session for a later step's `resume` to look up.
-      return {
-        results: { [node.id]: narrowPersistedResult(result) },
-        revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
-      }
+      return { results: { [node.id]: narrowPersistedResult(result) } }
     }
     if (node.kind !== 'agent-spawn') {
       throw new Error(
@@ -436,8 +447,7 @@ function builtInNodeExecutor(config: AgentSpawnExecutorConfig, spawnFn?: SpawnFn
     // and it is the one place the verbatim id has to survive.
     return {
       results: { [node.id]: narrowPersistedResult(result) },
-      sessions: result.sessionId ? { [node.id]: result.sessionId } : {},
-      revisionCounts: { [node.id]: (state.revisionCounts[node.id] ?? 0) + 1 }
+      sessions: result.sessionId ? { [node.id]: result.sessionId } : {}
     }
   }
 }
@@ -540,7 +550,8 @@ function buildExhaustionRecorder(
  * merely has to exist, so a flow can legally point it backward too. A
  * ceiling that only guarded `ifTrue` would leave a backward-pointing
  * `ifFalse` free to loop an agent-spawn node's real subprocess spawn
- * unboundedly, with no `recursionLimit` in this package to catch it. Once
+ * until LangGraph's recursion limit failed the run — a crash, not the typed
+ * `exhausted` stop this ceiling exists to give. Once
  * that target's `revisionCounts` has *exceeded* `decision.maxRevisions`,
  * routing goes to the `exhausted*` route for the branch it resolved to — wired
  * by the caller to a synthetic node that records the refused ceiling and then

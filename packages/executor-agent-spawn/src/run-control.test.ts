@@ -7,6 +7,7 @@ import { MemorySaver } from '@langchain/langgraph'
 import type { SpawnedProcessLike, SpawnFn } from './node-executor'
 import { resumeControlledRun, startControlledRun } from './run-control'
 import { ProcessCancelledError } from './process-lifecycle'
+import { EXECUTOR_VARIANTS } from './executor-variants.fixture'
 import { createRunControl, runHaltOf, RunHaltedError } from './run-halt'
 import { createRunIdentity, readRunCheckpoint, runIdentityForRunId, startRun } from './run-identity'
 import type { AgentLifecycleEvent, AgentSpawnExecutorConfig, RunControl } from './types'
@@ -303,452 +304,460 @@ describe('createRunControl — the halt handle', () => {
   })
 })
 
-describe('startControlledRun — a typed outcome instead of resolve-or-throw', () => {
-  it('reports a completed run with the state its own checkpointer holds', async () => {
-    const checkpointer = new MemorySaver()
-    const log = recordingSpawn()
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity: createRunIdentity('completed-run'),
-      spawnFn: log.spawnFn
-    })
+for (const variant of EXECUTOR_VARIANTS) {
+  describe(`startControlledRun — a typed outcome instead of resolve-or-throw — ${variant.name}`, () => {
+    const { startControlledRun } = variant
 
-    expect(outcome.reason).toBe('completed')
-    if (outcome.reason !== 'completed') throw new Error('narrowing guard')
-    expect(Object.keys(outcome.checkpoint.results).sort()).toEqual(['implement', 'land', 'review'])
-    expect(outcome.resumedFrom).toBeUndefined()
-    expect(log.commands).toEqual(['fake-coder', 'fake-reviewer', 'fake-lander'])
-  })
-
-  it('reports a halt before the entry node as paused, with nothing spawned at all', async () => {
-    const checkpointer = new MemorySaver()
-    const log = recordingSpawn()
-    const control = createRunControl()
-    control.halt('halted before it began')
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity: createRunIdentity('halted-at-entry'),
-      control,
-      spawnFn: log.spawnFn
-    })
-
-    expect(outcome.reason).toBe('paused')
-    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
-    expect(outcome.pendingNodes).toEqual(['implement'])
-    expect(outcome.haltReason).toBe('halted before it began')
-    expect(log.commands).toEqual([])
-  })
-
-  it('reports a mid-run halt as paused at the next node, keeping the completed node recorded', async () => {
-    const checkpointer = new MemorySaver()
-    const log = recordingSpawn()
-    const control = createRunControl()
-    const identity = createRunIdentity('halted-mid-run')
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(haltAfter('implement', control, 'operator paused after implement')),
-      checkpointer,
-      identity,
-      control,
-      spawnFn: log.spawnFn
-    })
-
-    expect(outcome.reason).toBe('paused')
-    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
-    expect(outcome.pendingNodes).toEqual(['review'])
-    expect(outcome.haltReason).toBe('operator paused after implement')
-    // The halted node never started; the completed one is durable.
-    expect(log.commands).toEqual(['fake-coder'])
-    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
-    expect(outcome.checkpoint?.sessions.implement).toBe('session-from-fake-coder')
-  })
-
-  it("terminates a node's already-running child when the halt fires, and still reports paused", async () => {
-    const checkpointer = new MemorySaver()
-    // Halting from inside the spawn means the child is alive when the abort
-    // lands — the case the node-boundary check structurally cannot catch.
-    const control = createRunControl()
-    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity: createRunIdentity('halted-mid-node'),
-      control,
-      spawnFn: live.spawnFn
-    })
-
-    // The child was signalled rather than left running to its own timeout.
-    expect(live.signals).toEqual(['SIGTERM'])
-    // And a halt that killed a child is still a halt, not a failure.
-    expect(outcome.reason).toBe('paused')
-    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
-    expect(outcome.pendingNodes).toEqual(['implement'])
-    expect(outcome.haltReason).toBe('operator cancelled mid-node')
-    // Nothing completed, so nothing is recorded — and the node is resumable.
-    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual([])
-  })
-
-  it('reports a terminated child as a halt that says so, carrying the cancellation as its cause', async () => {
-    const control = createRunControl()
-    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
-    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
-    const plan = threeStepPlan()
-    const node = plan.graph.nodes.implement
-    if (!node) throw new Error('fixture must declare the implement node')
-
-    const thrown = await executor(
-      { runId: 'halt-cause', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
-      { node, plan }
-    ).then(
-      () => undefined,
-      (err: unknown) => err
-    )
-
-    const halt = runHaltOf(thrown)
-    expect(halt).toBeInstanceOf(RunHaltedError)
-    // `false` would mean nothing was running and a resume is blind-safe; this
-    // run cut a live child off, which a caller has to be able to tell.
-    expect(halt?.terminatedProcess).toBe(true)
-    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
-  })
-
-  it("terminates a mechanical node's already-running command too, not just a spawned agent's", async () => {
-    const control = createRunControl()
-    const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
-    const config: AgentSpawnExecutorConfig = {
-      workingDirectoryRoot,
-      roleBinaries: {},
-      mechanicalActions: { 'git-apply': { command: 'git', args: ['apply', 'patch.diff'] } }
-    }
-    const executor = createAgentLifecycleNodeExecutor(config, live.spawnFn, { control })
-    const plan = mechanicalStepPlan()
-    const node = plan.graph.nodes['apply-patch']
-    if (!node) throw new Error('fixture must declare the apply-patch node')
-
-    const thrown = await executor(
-      { runId: 'halt-mechanical', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
-      { node, plan }
-    ).then(
-      () => undefined,
-      (err: unknown) => err
-    )
-
-    // A `git`-shaped command holds the same working directory and permissions
-    // an agent's child does, so it is signalled rather than left running to
-    // its own ten-minute timeout (round 5 security review).
-    expect(live.signals).toEqual(['SIGTERM'])
-    const halt = runHaltOf(thrown)
-    expect(halt).toBeInstanceOf(RunHaltedError)
-    expect(halt?.terminatedProcess).toBe(true)
-    expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
-  })
-
-  it('reports a halt that spawned nothing as one no working tree needs inspecting for', async () => {
-    const control = createRunControl()
-    control.halt('halted before the spawn')
-    const live = killableSpawn()
-    const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
-    const plan = threeStepPlan()
-    const node = plan.graph.nodes.implement
-    if (!node) throw new Error('fixture must declare the implement node')
-
-    // The boundary check catches this one, so no process is spawned at all and
-    // the halt must not claim a child was terminated.
-    const thrown = await executor(
-      { runId: 'halt-before-spawn', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
-      { node, plan }
-    ).then(
-      () => undefined,
-      (err: unknown) => err
-    )
-
-    expect(live.signals).toEqual([])
-    expect(runHaltOf(thrown)?.terminatedProcess).toBe(false)
-  })
-
-  it('never emits a lifecycle event for the node a halt stopped — it did not start', async () => {
-    const checkpointer = new MemorySaver()
-    const log = recordingSpawn()
-    const control = createRunControl()
-    const events: AgentLifecycleEvent[] = []
-
-    await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig((event) => {
-        events.push(event)
-        if (event.type === 'node:complete' && event.nodeId === 'implement') control.halt()
-      }),
-      checkpointer,
-      identity: createRunIdentity('halt-emits-nothing'),
-      control,
-      spawnFn: log.spawnFn
-    })
-
-    expect(events.some((event) => event.nodeId === 'review')).toBe(false)
-  })
-
-  it('reports a broken node as failed, distinct from a halt, with its own message', async () => {
-    const checkpointer = new MemorySaver()
-    const log = recordingSpawn((command) => (command === 'fake-reviewer' ? 1 : 0))
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity: createRunIdentity('failed-run'),
-      spawnFn: log.spawnFn
-    })
-
-    expect(outcome.reason).toBe('failed')
-    if (outcome.reason !== 'failed') throw new Error('narrowing guard')
-    expect(outcome.error).toMatch(/exited with code 1/)
-    expect(outcome.pendingNodes).toEqual(['review'])
-    expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
-  })
-
-  it('surfaces the minted identity before anything runs, even for a leg that pauses', async () => {
-    const checkpointer = new MemorySaver()
-    const control = createRunControl()
-    control.halt()
-    const seen: string[] = []
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      control,
-      onIdentity: (identity) => seen.push(identity.runId),
-      spawnFn: recordingSpawn().spawnFn
-    })
-
-    expect(seen).toHaveLength(1)
-    expect(outcome.identity.runId).toBe(seen[0])
-  })
-
-  it('still reports the halt when reading the run own state afterwards fails', async () => {
-    // The outcome path reads the pending-node list and the checkpoint to fill in a
-    // paused report. Neither read is the fact the caller needs, so a failure in
-    // one must not replace the halt with an unrelated error — the rule the
-    // checkpoint read already followed and the pending-node read did not.
-    class FailsAfterHalt extends MemorySaver {
-      failing = false
-      override async getTuple(config: Parameters<MemorySaver['getTuple']>[0]) {
-        if (this.failing) throw new Error('the checkpoint store went away')
-        return await super.getTuple(config)
-      }
-    }
-    const checkpointer = new FailsAfterHalt()
-    const control = createRunControl()
-
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig((event) => {
-        if (event.type === 'node:complete' && event.nodeId === 'implement') {
-          control.halt('store about to fail')
-          checkpointer.failing = true
-        }
-      }),
-      checkpointer,
-      identity: createRunIdentity('halt-with-broken-store'),
-      control,
-      spawnFn: recordingSpawn().spawnFn
-    })
-
-    expect(outcome.reason).toBe('paused')
-    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
-    expect(outcome.haltReason).toBe('store about to fail')
-    // Absent, never `[]`: the run genuinely has a node pending, so an empty array
-    // would be the outcome asserting the opposite of what `paused` means.
-    expect(outcome.pendingNodes).toBeUndefined()
-    expect('pendingNodes' in outcome).toBe(false)
-    expect(outcome.checkpoint).toBeUndefined()
-  })
-
-  it('refuses a thread that already holds a checkpoint rather than restarting it', async () => {
-    const checkpointer = new MemorySaver()
-    const identity = createRunIdentity('already-started')
-    await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity,
-      spawnFn: recordingSpawn().spawnFn
-    })
-
-    await expect(
-      startControlledRun({
+    it('reports a completed run with the state its own checkpointer holds', async () => {
+      const checkpointer = new MemorySaver()
+      const log = recordingSpawn()
+      const outcome = await startControlledRun({
         plan: threeStepPlan(),
         config: executorConfig(),
         checkpointer,
-        identity,
-        spawnFn: recordingSpawn().spawnFn
+        identity: createRunIdentity('completed-run'),
+        spawnFn: log.spawnFn
       })
-    ).rejects.toThrow(/already has a checkpoint/)
-  })
 
-  it('refuses a hand-assembled identity whose thread is not the one its run id derives', async () => {
-    const checkpointer = new MemorySaver()
-    await expect(
-      startControlledRun({
+      expect(outcome.reason).toBe('completed')
+      if (outcome.reason !== 'completed') throw new Error('narrowing guard')
+      expect(Object.keys(outcome.checkpoint.results).sort()).toEqual(['implement', 'land', 'review'])
+      expect(outcome.resumedFrom).toBeUndefined()
+      expect(log.commands).toEqual(['fake-coder', 'fake-reviewer', 'fake-lander'])
+    })
+
+    it('reports a halt before the entry node as paused, with nothing spawned at all', async () => {
+      const checkpointer = new MemorySaver()
+      const log = recordingSpawn()
+      const control = createRunControl()
+      control.halt('halted before it began')
+
+      const outcome = await startControlledRun({
         plan: threeStepPlan(),
         config: executorConfig(),
         checkpointer,
-        identity: { runId: 'mismatched', threadId: 'agent-spawn-run:something-else' },
-        spawnFn: recordingSpawn().spawnFn
+        identity: createRunIdentity('halted-at-entry'),
+        control,
+        spawnFn: log.spawnFn
       })
-    ).rejects.toThrow(/identity is inconsistent/)
-  })
-})
 
-describe('resumeControlledRun — continuing a halted run', () => {
-  /** Halts a fresh run after `implement`, returning the identity and the spawn log. */
-  async function haltedAfterImplement(checkpointer: MemorySaver, runId: string) {
-    const control = createRunControl()
-    const log = recordingSpawn()
-    const outcome = await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(haltAfter('implement', control)),
-      checkpointer,
-      identity: createRunIdentity(runId),
-      control,
-      spawnFn: log.spawnFn
-    })
-    if (outcome.reason !== 'paused') throw new Error(`expected a paused run, got '${outcome.reason}'`)
-    return { identity: outcome.identity, firstLeg: log }
-  }
-
-  it('continues to completion and reports the checkpoint it continued from', async () => {
-    const checkpointer = new MemorySaver()
-    const { identity } = await haltedAfterImplement(checkpointer, 'resume-to-completion')
-    const before = await readRunCheckpoint(checkpointer, identity)
-    const resumed = recordingSpawn()
-
-    const outcome = await resumeControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity,
-      spawnFn: resumed.spawnFn
+      expect(outcome.reason).toBe('paused')
+      if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+      expect(outcome.pendingNodes).toEqual(['implement'])
+      expect(outcome.haltReason).toBe('halted before it began')
+      expect(log.commands).toEqual([])
     })
 
-    expect(outcome.reason).toBe('completed')
-    if (outcome.reason !== 'completed') throw new Error('narrowing guard')
-    expect(outcome.resumedFrom).toBe(before?.checkpointId)
-    expect(Object.keys(outcome.checkpoint.results).sort()).toEqual(['implement', 'land', 'review'])
-  })
+    it('reports a mid-run halt as paused at the next node, keeping the completed node recorded', async () => {
+      const checkpointer = new MemorySaver()
+      const log = recordingSpawn()
+      const control = createRunControl()
+      const identity = createRunIdentity('halted-mid-run')
 
-  it('can be halted again, pausing at the node after the one it just ran', async () => {
-    const checkpointer = new MemorySaver()
-    const { identity } = await haltedAfterImplement(checkpointer, 'resume-then-halt-again')
-    const control = createRunControl()
-
-    const outcome = await resumeControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(haltAfter('review', control, 'paused again')),
-      checkpointer,
-      identity,
-      control,
-      spawnFn: recordingSpawn().spawnFn
-    })
-
-    expect(outcome.reason).toBe('paused')
-    if (outcome.reason !== 'paused') throw new Error('narrowing guard')
-    expect(outcome.pendingNodes).toEqual(['land'])
-    expect(outcome.haltReason).toBe('paused again')
-    expect(outcome.resumedFrom).toBeDefined()
-  })
-
-  it('refuses an identity the checkpointer has never seen — a resume never starts a run', async () => {
-    await expect(
-      resumeControlledRun({
+      const outcome = await startControlledRun({
         plan: threeStepPlan(),
-        config: executorConfig(),
-        checkpointer: new MemorySaver(),
-        identity: runIdentityForRunId('never-started'),
-        spawnFn: recordingSpawn().spawnFn
-      })
-    ).rejects.toThrow(/no checkpoint on thread/)
-  })
-
-  it('refuses a run that already reached a terminal node — there is nothing pending', async () => {
-    const checkpointer = new MemorySaver()
-    const identity = createRunIdentity('already-finished')
-    await startControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity,
-      spawnFn: recordingSpawn().spawnFn
-    })
-
-    await expect(
-      resumeControlledRun({
-        plan: threeStepPlan(),
-        config: executorConfig(),
-        checkpointer,
-        identity,
-        spawnFn: recordingSpawn().spawnFn
-      })
-    ).rejects.toThrow(/no pending nodes/)
-  })
-
-  it('refuses a Plan that cannot be the one this run recorded its results under', async () => {
-    const checkpointer = new MemorySaver()
-    const { identity } = await haltedAfterImplement(checkpointer, 'substituted-plan')
-
-    const substituted = threeStepPlan()
-    delete substituted.graph.nodes.implement
-    substituted.graph.entryNode = 'review'
-
-    await expect(
-      resumeControlledRun({
-        plan: substituted,
-        config: executorConfig(),
-        checkpointer,
-        identity,
-        spawnFn: recordingSpawn().spawnFn
-      })
-    ).rejects.toThrow(/does not contain/)
-  })
-
-  it('also resumes a run that startRun itself halted — the substrate and the surface agree', async () => {
-    const checkpointer = new MemorySaver()
-    const control = createRunControl()
-    const identity = createRunIdentity('halted-through-startrun')
-    const log = recordingSpawn()
-
-    // `startRun` throws on a halt rather than reporting it; the thread it leaves
-    // behind is the same one `resumeControlledRun` continues.
-    await expect(
-      startRun({
-        plan: threeStepPlan(),
-        config: executorConfig(haltAfter('implement', control)),
+        config: executorConfig(haltAfter('implement', control, 'operator paused after implement')),
         checkpointer,
         identity,
         control,
         spawnFn: log.spawnFn
       })
-    ).rejects.toThrow(/Run halted before node 'review'/)
 
-    const outcome = await resumeControlledRun({
-      plan: threeStepPlan(),
-      config: executorConfig(),
-      checkpointer,
-      identity,
-      spawnFn: recordingSpawn().spawnFn
+      expect(outcome.reason).toBe('paused')
+      if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+      expect(outcome.pendingNodes).toEqual(['review'])
+      expect(outcome.haltReason).toBe('operator paused after implement')
+      // The halted node never started; the completed one is durable.
+      expect(log.commands).toEqual(['fake-coder'])
+      expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
+      if (variant.recordsSessions) expect(outcome.checkpoint?.sessions.implement).toBe('session-from-fake-coder')
     })
 
-    expect(outcome.reason).toBe('completed')
+    it("terminates a node's already-running child when the halt fires, and still reports paused", async () => {
+      const checkpointer = new MemorySaver()
+      // Halting from inside the spawn means the child is alive when the abort
+      // lands — the case the node-boundary check structurally cannot catch.
+      const control = createRunControl()
+      const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+
+      const outcome = await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity: createRunIdentity('halted-mid-node'),
+        control,
+        spawnFn: live.spawnFn
+      })
+
+      // The child was signalled rather than left running to its own timeout.
+      expect(live.signals).toEqual(['SIGTERM'])
+      // And a halt that killed a child is still a halt, not a failure.
+      expect(outcome.reason).toBe('paused')
+      if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+      expect(outcome.pendingNodes).toEqual(['implement'])
+      expect(outcome.haltReason).toBe('operator cancelled mid-node')
+      // Nothing completed, so nothing is recorded — and the node is resumable.
+      expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual([])
+    })
+
+    it('reports a terminated child as a halt that says so, carrying the cancellation as its cause', async () => {
+      const control = createRunControl()
+      const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+      const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+      const plan = threeStepPlan()
+      const node = plan.graph.nodes.implement
+      if (!node) throw new Error('fixture must declare the implement node')
+
+      const thrown = await executor(
+        { runId: 'halt-cause', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+        { node, plan }
+      ).then(
+        () => undefined,
+        (err: unknown) => err
+      )
+
+      const halt = runHaltOf(thrown)
+      expect(halt).toBeInstanceOf(RunHaltedError)
+      // `false` would mean nothing was running and a resume is blind-safe; this
+      // run cut a live child off, which a caller has to be able to tell.
+      expect(halt?.terminatedProcess).toBe(true)
+      expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+    })
+
+    it("terminates a mechanical node's already-running command too, not just a spawned agent's", async () => {
+      const control = createRunControl()
+      const live = killableSpawn(() => control.halt('operator cancelled mid-node'))
+      const config: AgentSpawnExecutorConfig = {
+        workingDirectoryRoot,
+        roleBinaries: {},
+        mechanicalActions: { 'git-apply': { command: 'git', args: ['apply', 'patch.diff'] } }
+      }
+      const executor = createAgentLifecycleNodeExecutor(config, live.spawnFn, { control })
+      const plan = mechanicalStepPlan()
+      const node = plan.graph.nodes['apply-patch']
+      if (!node) throw new Error('fixture must declare the apply-patch node')
+
+      const thrown = await executor(
+        { runId: 'halt-mechanical', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+        { node, plan }
+      ).then(
+        () => undefined,
+        (err: unknown) => err
+      )
+
+      // A `git`-shaped command holds the same working directory and permissions
+      // an agent's child does, so it is signalled rather than left running to
+      // its own ten-minute timeout (round 5 security review).
+      expect(live.signals).toEqual(['SIGTERM'])
+      const halt = runHaltOf(thrown)
+      expect(halt).toBeInstanceOf(RunHaltedError)
+      expect(halt?.terminatedProcess).toBe(true)
+      expect((thrown as Error).cause).toBeInstanceOf(ProcessCancelledError)
+    })
+
+    it('reports a halt that spawned nothing as one no working tree needs inspecting for', async () => {
+      const control = createRunControl()
+      control.halt('halted before the spawn')
+      const live = killableSpawn()
+      const executor = createAgentLifecycleNodeExecutor(executorConfig(), live.spawnFn, { control })
+      const plan = threeStepPlan()
+      const node = plan.graph.nodes.implement
+      if (!node) throw new Error('fixture must declare the implement node')
+
+      // The boundary check catches this one, so no process is spawned at all and
+      // the halt must not claim a child was terminated.
+      const thrown = await executor(
+        { runId: 'halt-before-spawn', results: {}, sessions: {}, revisionCounts: {}, outcome: undefined },
+        { node, plan }
+      ).then(
+        () => undefined,
+        (err: unknown) => err
+      )
+
+      expect(live.signals).toEqual([])
+      expect(runHaltOf(thrown)?.terminatedProcess).toBe(false)
+    })
+
+    it('never emits a lifecycle event for the node a halt stopped — it did not start', async () => {
+      const checkpointer = new MemorySaver()
+      const log = recordingSpawn()
+      const control = createRunControl()
+      const events: AgentLifecycleEvent[] = []
+
+      await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig((event) => {
+          events.push(event)
+          if (event.type === 'node:complete' && event.nodeId === 'implement') control.halt()
+        }),
+        checkpointer,
+        identity: createRunIdentity('halt-emits-nothing'),
+        control,
+        spawnFn: log.spawnFn
+      })
+
+      expect(events.some((event) => event.nodeId === 'review')).toBe(false)
+    })
+
+    it('reports a broken node as failed, distinct from a halt, with its own message', async () => {
+      const checkpointer = new MemorySaver()
+      const log = recordingSpawn((command) => (command === 'fake-reviewer' ? 1 : 0))
+
+      const outcome = await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity: createRunIdentity('failed-run'),
+        spawnFn: log.spawnFn
+      })
+
+      expect(outcome.reason).toBe('failed')
+      if (outcome.reason !== 'failed') throw new Error('narrowing guard')
+      expect(outcome.error).toMatch(/exited with code 1/)
+      expect(outcome.pendingNodes).toEqual(['review'])
+      expect(Object.keys(outcome.checkpoint?.results ?? {})).toEqual(['implement'])
+    })
+
+    it('surfaces the minted identity before anything runs, even for a leg that pauses', async () => {
+      const checkpointer = new MemorySaver()
+      const control = createRunControl()
+      control.halt()
+      const seen: string[] = []
+
+      const outcome = await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        control,
+        onIdentity: (identity) => seen.push(identity.runId),
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      expect(seen).toHaveLength(1)
+      expect(outcome.identity.runId).toBe(seen[0])
+    })
+
+    it('still reports the halt when reading the run own state afterwards fails', async () => {
+      // The outcome path reads the pending-node list and the checkpoint to fill in a
+      // paused report. Neither read is the fact the caller needs, so a failure in
+      // one must not replace the halt with an unrelated error — the rule the
+      // checkpoint read already followed and the pending-node read did not.
+      class FailsAfterHalt extends MemorySaver {
+        failing = false
+        override async getTuple(config: Parameters<MemorySaver['getTuple']>[0]) {
+          if (this.failing) throw new Error('the checkpoint store went away')
+          return await super.getTuple(config)
+        }
+      }
+      const checkpointer = new FailsAfterHalt()
+      const control = createRunControl()
+
+      const outcome = await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig((event) => {
+          if (event.type === 'node:complete' && event.nodeId === 'implement') {
+            control.halt('store about to fail')
+            checkpointer.failing = true
+          }
+        }),
+        checkpointer,
+        identity: createRunIdentity('halt-with-broken-store'),
+        control,
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      expect(outcome.reason).toBe('paused')
+      if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+      expect(outcome.haltReason).toBe('store about to fail')
+      // Absent, never `[]`: the run genuinely has a node pending, so an empty array
+      // would be the outcome asserting the opposite of what `paused` means.
+      expect(outcome.pendingNodes).toBeUndefined()
+      expect('pendingNodes' in outcome).toBe(false)
+      expect(outcome.checkpoint).toBeUndefined()
+    })
+
+    it('refuses a thread that already holds a checkpoint rather than restarting it', async () => {
+      const checkpointer = new MemorySaver()
+      const identity = createRunIdentity('already-started')
+      await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      await expect(
+        startControlledRun({
+          plan: threeStepPlan(),
+          config: executorConfig(),
+          checkpointer,
+          identity,
+          spawnFn: recordingSpawn().spawnFn
+        })
+      ).rejects.toThrow(/already has a checkpoint/)
+    })
+
+    it('refuses a hand-assembled identity whose thread is not the one its run id derives', async () => {
+      const checkpointer = new MemorySaver()
+      await expect(
+        startControlledRun({
+          plan: threeStepPlan(),
+          config: executorConfig(),
+          checkpointer,
+          identity: { runId: 'mismatched', threadId: 'agent-spawn-run:something-else' },
+          spawnFn: recordingSpawn().spawnFn
+        })
+      ).rejects.toThrow(/identity is inconsistent/)
+    })
   })
-})
+}
+
+for (const variant of EXECUTOR_VARIANTS) {
+  describe(`resumeControlledRun — continuing a halted run — ${variant.name}`, () => {
+    const { startControlledRun, resumeControlledRun } = variant
+
+    /** Halts a fresh run after `implement`, returning the identity and the spawn log. */
+    async function haltedAfterImplement(checkpointer: MemorySaver, runId: string) {
+      const control = createRunControl()
+      const log = recordingSpawn()
+      const outcome = await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(haltAfter('implement', control)),
+        checkpointer,
+        identity: createRunIdentity(runId),
+        control,
+        spawnFn: log.spawnFn
+      })
+      if (outcome.reason !== 'paused') throw new Error(`expected a paused run, got '${outcome.reason}'`)
+      return { identity: outcome.identity, firstLeg: log }
+    }
+
+    it('continues to completion and reports the checkpoint it continued from', async () => {
+      const checkpointer = new MemorySaver()
+      const { identity } = await haltedAfterImplement(checkpointer, 'resume-to-completion')
+      const before = await readRunCheckpoint(checkpointer, identity)
+      const resumed = recordingSpawn()
+
+      const outcome = await resumeControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: resumed.spawnFn
+      })
+
+      expect(outcome.reason).toBe('completed')
+      if (outcome.reason !== 'completed') throw new Error('narrowing guard')
+      expect(outcome.resumedFrom).toBe(before?.checkpointId)
+      expect(Object.keys(outcome.checkpoint.results).sort()).toEqual(['implement', 'land', 'review'])
+    })
+
+    it('can be halted again, pausing at the node after the one it just ran', async () => {
+      const checkpointer = new MemorySaver()
+      const { identity } = await haltedAfterImplement(checkpointer, 'resume-then-halt-again')
+      const control = createRunControl()
+
+      const outcome = await resumeControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(haltAfter('review', control, 'paused again')),
+        checkpointer,
+        identity,
+        control,
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      expect(outcome.reason).toBe('paused')
+      if (outcome.reason !== 'paused') throw new Error('narrowing guard')
+      expect(outcome.pendingNodes).toEqual(['land'])
+      expect(outcome.haltReason).toBe('paused again')
+      expect(outcome.resumedFrom).toBeDefined()
+    })
+
+    it('refuses an identity the checkpointer has never seen — a resume never starts a run', async () => {
+      await expect(
+        resumeControlledRun({
+          plan: threeStepPlan(),
+          config: executorConfig(),
+          checkpointer: new MemorySaver(),
+          identity: runIdentityForRunId('never-started'),
+          spawnFn: recordingSpawn().spawnFn
+        })
+      ).rejects.toThrow(/no checkpoint on thread/)
+    })
+
+    it('refuses a run that already reached a terminal node — there is nothing pending', async () => {
+      const checkpointer = new MemorySaver()
+      const identity = createRunIdentity('already-finished')
+      await startControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      await expect(
+        resumeControlledRun({
+          plan: threeStepPlan(),
+          config: executorConfig(),
+          checkpointer,
+          identity,
+          spawnFn: recordingSpawn().spawnFn
+        })
+      ).rejects.toThrow(/no pending nodes/)
+    })
+
+    it('refuses a Plan that cannot be the one this run recorded its results under', async () => {
+      const checkpointer = new MemorySaver()
+      const { identity } = await haltedAfterImplement(checkpointer, 'substituted-plan')
+
+      const substituted = threeStepPlan()
+      delete substituted.graph.nodes.implement
+      substituted.graph.entryNode = 'review'
+
+      await expect(
+        resumeControlledRun({
+          plan: substituted,
+          config: executorConfig(),
+          checkpointer,
+          identity,
+          spawnFn: recordingSpawn().spawnFn
+        })
+      ).rejects.toThrow(/does not contain/)
+    })
+
+    it('also resumes a run that startRun itself halted — the substrate and the surface agree', async () => {
+      const checkpointer = new MemorySaver()
+      const control = createRunControl()
+      const identity = createRunIdentity('halted-through-startrun')
+      const log = recordingSpawn()
+
+      // `startRun` throws on a halt rather than reporting it; the thread it leaves
+      // behind is the same one `resumeControlledRun` continues.
+      await expect(
+        startRun({
+          plan: threeStepPlan(),
+          config: executorConfig(haltAfter('implement', control)),
+          checkpointer,
+          identity,
+          control,
+          spawnFn: log.spawnFn
+        })
+      ).rejects.toThrow(/Run halted before node 'review'/)
+
+      const outcome = await resumeControlledRun({
+        plan: threeStepPlan(),
+        config: executorConfig(),
+        checkpointer,
+        identity,
+        spawnFn: recordingSpawn().spawnFn
+      })
+
+      expect(outcome.reason).toBe('completed')
+    })
+  })
+}
 
 describe('startControlledRun / resumeControlledRun — a caller-injected executor', () => {
   /**
