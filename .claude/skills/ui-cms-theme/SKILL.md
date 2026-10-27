@@ -119,7 +119,8 @@ lives in code. Pass the key of the product whose *content* you want: a consumer
 that deliberately borrows another product's identity passes that product's key, and the
 call site says so out loud.
 
-`ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'`.
+`ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs' | 'portfolio'`.
+`portfolio` (`portfolioConfig`) shares the central `attalabs` project (`l5n0n8nn`) the same way.
 `vinayaPortal` (`vinayaPortalConfig` / `branding-vinayaPortal`) and `vinayaStudio`
 (`vinayaStudioConfig` / `branding-vinayaStudio`) are two additional product documents
 inside `vinaya`'s own Sanity project — not new projects, so `PROJECT_IDS` maps all three

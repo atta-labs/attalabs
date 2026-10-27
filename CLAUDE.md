@@ -31,6 +31,7 @@ This is the AttaLabs dev lab monorepo — a Turborepo containing multiple AI pro
 | Herald | [apps/herald-ai/](apps/herald-ai/) | [CLAUDE.md](apps/herald-ai/CLAUDE.md) | [README.md](apps/herald-ai/README.md) | `herald.attalabs.dev` | Active |
 | Vinaya Portal | [apps/vinaya-portal/](apps/vinaya-portal/) | — | [README.md](apps/vinaya-portal/web/README.md) | `vinaya.attalabs.dev` | The public site — same product as Vinaya Studio below, its own app. CLI developed in the standalone `atta-labs/vinaya` repo, published as `@attalabs/vinaya`, and installed into this monorepo from npm (attalabs is an ordinary adopter); CMS-backed via Vitakka's reused Sanity project. Serves every `(site)` route and contains no Studio route, so it needs no deploy-time gate. Deployed and live (Vercel repointed here). Run with `dev:vinaya-portal` (port 3007) |
 | Vinaya Studio | [apps/vinaya-studio/](apps/vinaya-studio/) | — | [README.md](apps/vinaya-studio/web/README.md) | not deployed (local-only) | The local governance dashboard — `/studio`, `/studio/projects`, `/studio/tranches`, `/studio/backlog`. Never deployed: no production/preview gate, no Portal↔Studio switch, because there is structurally nothing to gate against. Run with `dev:vinaya-studio` (port 3008) |
+| Portfolio | [apps/portfolio/](apps/portfolio/) | [CLAUDE.md](apps/portfolio/CLAUDE.md) | [README.md](apps/portfolio/README.md) | not yet deployed | Daniel's one-page animated portfolio — story, career, links to every product. Run with `dev:portfolio` (port 3009) |
 
 ## App Structure Convention
 

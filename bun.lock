@@ -146,6 +146,29 @@
         "typescript": "^5.7.0",
       },
     },
+    "apps/portfolio/web": {
+      "name": "@atta/portfolio-web",
+      "version": "0.1.0",
+      "dependencies": {
+        "@atta/cms": "workspace:*",
+        "@atta/instrumentation": "workspace:*",
+        "@atta/ui": "workspace:*",
+        "@tailwindcss/postcss": "^4.0.0",
+        "lucide-react": "^1.7.0",
+        "motion": "^12.38.0",
+        "next": "^16.2.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "tailwindcss": "^4.0.0",
+      },
+      "devDependencies": {
+        "@atta/typescript-config": "workspace:*",
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "apps/vada-ai/mcp-server": {
       "name": "@vada/mcp-server",
       "version": "0.0.1",
@@ -441,7 +464,7 @@
     },
     "packages/executor-agent-spawn": {
       "name": "@atta/executor-agent-spawn",
-      "version": "0.0.1",
+      "version": "0.1.1",
       "dependencies": {
         "@atta/engine": "workspace:*",
         "@langchain/langgraph": "^0.2.0",
@@ -709,6 +732,8 @@
     "@atta/instrumentation": ["@atta/instrumentation@workspace:packages/instrumentation"],
 
     "@atta/models": ["@atta/models@workspace:packages/models"],
+
+    "@atta/portfolio-web": ["@atta/portfolio-web@workspace:apps/portfolio/web"],
 
     "@atta/storage": ["@atta/storage@workspace:packages/storage"],
 
@@ -4087,6 +4112,8 @@
     "@atta/herald-ai-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
     "@atta/herald-ai-web/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+
+    "@atta/portfolio-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
     "@atta/vada-ai-web/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 

@@ -2,6 +2,7 @@ import { attalabsConfig } from './attalabs-config'
 import { branding } from './branding'
 import { heraldConfig } from './herald-config'
 import { library } from './library'
+import { portfolioConfig } from './portfolio-config'
 import { roadmapMilestone } from './roadmap-milestone'
 import { uiTheme } from './ui-theme'
 import { vadaConfig } from './vada-config'
@@ -19,5 +20,6 @@ export const schemaTypes = [
   vinayaPortalConfig,
   vinayaStudioConfig,
   vadaConfig,
-  attalabsConfig
+  attalabsConfig,
+  portfolioConfig
 ]
