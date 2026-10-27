@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Text, TextReveal } from '@atta/ui/components'
+import { Button, Heading, Text, TextReveal } from '@atta/ui/components'
 import { ArrowDown, ArrowUpRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import { links, profile } from '@/content/portfolio'
@@ -17,9 +17,14 @@ export function Hero() {
         {profile.role} · {profile.location}
       </motion.div>
 
-      <h1 className='font-serif text-5xl font-semibold leading-tight text-foreground sm:text-7xl'>
+      {/* TextReveal renders block-level divs, which a heading cannot contain — the heading
+          carries the name for assistive tech, the reveal is the visible (hidden-to-AT) copy. */}
+      <Heading level={1} className='sr-only'>
+        {profile.name}
+      </Heading>
+      <div aria-hidden className='font-serif text-5xl font-semibold leading-tight text-foreground sm:text-7xl'>
         <TextReveal text={profile.name} />
-      </h1>
+      </div>
 
       <motion.div
         className='mt-8 max-w-2xl'

@@ -102,6 +102,11 @@ export default defineConfig({
                           .title('Portfolio Config')
                       ),
                     S.listItem()
+                      .title('Portfolio Branding')
+                      .child(
+                        S.document().schemaType('branding').documentId('branding-portfolio').title('Portfolio Branding')
+                      ),
+                    S.listItem()
                       .title('User Interface')
                       .child(
                         S.list()

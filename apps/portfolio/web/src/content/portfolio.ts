@@ -47,7 +47,7 @@ export const story: string[] = [
 export const stats: { value: number; suffix: string; label: string }[] = [
   { value: 15, suffix: '+', label: 'years shipping production software' },
   { value: 4, suffix: '+', label: 'years building with AI agents, every day' },
-  { value: 4, suffix: '', label: 'products live in Atta Labs' }
+  { value: 3, suffix: '', label: 'products live on attalabs.dev' }
 ]
 
 export const career: CareerEntry[] = [
@@ -112,6 +112,12 @@ export const career: CareerEntry[] = [
     summary: 'Designed and built home-automation products to the KNX standard, in C, J2EE and LabVIEW.'
   }
 ]
+
+export const education = {
+  period: '2001 — 2008',
+  degree: 'Computer Science Engineering',
+  school: 'Polytechnic University of Madrid'
+}
 
 export const products: Product[] = [
   {

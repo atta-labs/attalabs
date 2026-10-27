@@ -97,6 +97,10 @@
       "path": "apps/attalabs"
     },
     {
+      "name": "portfolio",
+      "path": "apps/portfolio"
+    },
+    {
       "name": "vinaya"
     },
     {

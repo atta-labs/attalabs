@@ -39,7 +39,9 @@ export function ProductGrid() {
                       <ArrowUpRight className='h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary' />
                     </div>
                     <Text className='text-muted-foreground'>{product.summary}</Text>
-                    <span className='mt-auto pt-2 font-mono text-xs text-muted-foreground'>{product.host}</span>
+                    <Text as='span' size='xs' muted className='mt-auto pt-2 font-mono'>
+                      {product.host}
+                    </Text>
                   </CardContent>
                 </Card>
               </motion.a>

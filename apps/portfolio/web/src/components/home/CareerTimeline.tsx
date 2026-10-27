@@ -3,7 +3,7 @@
 import { Badge, Heading, Text } from '@atta/ui/components'
 import { motion, useScroll, useSpring } from 'motion/react'
 import { useRef } from 'react'
-import { career } from '@/content/portfolio'
+import { career, education } from '@/content/portfolio'
 import { Reveal } from './Reveal'
 
 export function CareerTimeline() {
@@ -44,11 +44,16 @@ export function CareerTimeline() {
               />
               <Reveal>
                 <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-                  <span className='font-mono text-xs text-muted-foreground'>{entry.period}</span>
+                  <Text as='span' size='xs' muted className='font-mono'>
+                    {entry.period}
+                  </Text>
                   <Badge variant='outline'>{entry.place}</Badge>
                 </div>
                 <Heading level={3} size='lg' className='mt-2 font-serif'>
-                  {entry.role} <span className='text-muted-foreground'>· {entry.company}</span>
+                  {entry.role}{' '}
+                  <Text as='span' size='lg' muted className='font-serif'>
+                    · {entry.company}
+                  </Text>
                 </Heading>
                 <Text className='mt-2 text-muted-foreground'>{entry.summary}</Text>
               </Reveal>
@@ -61,10 +66,14 @@ export function CareerTimeline() {
               className='absolute top-1.5 -left-8 h-[11px] w-[11px] rounded-full border-2 border-border bg-background sm:-left-10'
             />
             <Reveal>
-              <span className='font-mono text-xs text-muted-foreground'>2001 — 2008</span>
+              <Text as='span' size='xs' muted className='font-mono'>
+                {education.period}
+              </Text>
               <Heading level={3} size='lg' className='mt-2 font-serif'>
-                Computer Science Engineering{' '}
-                <span className='text-muted-foreground'>· Polytechnic University of Madrid</span>
+                {education.degree}{' '}
+                <Text as='span' size='lg' muted className='font-serif'>
+                  · {education.school}
+                </Text>
               </Heading>
             </Reveal>
           </li>
