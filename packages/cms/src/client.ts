@@ -25,6 +25,9 @@ export const cmsConfig = {
  * and `vinaya-studio-web`'s own root layouts each pass their own key to
  * `getProductCms`, and `tools/admin`'s root layout reads both for branding.
  * The bare `vinaya` key still exists, but no current call site targets it.
+ *
+ * `portfolio` lives the same way inside the central `attalabs` project: its
+ * `portfolioConfig` singleton sits beside `attalabsConfig`.
  */
 export const PROJECT_IDS = {
   herald: 'e9gbd2d1',
@@ -33,7 +36,8 @@ export const PROJECT_IDS = {
   vinaya: 'o56nzgrr',
   vinayaPortal: 'o56nzgrr',
   vinayaStudio: 'o56nzgrr',
-  attalabs: 'l5n0n8nn'
+  attalabs: 'l5n0n8nn',
+  portfolio: 'l5n0n8nn'
 } as const
 
 export type ProductKey = keyof typeof PROJECT_IDS

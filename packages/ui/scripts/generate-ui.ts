@@ -26,7 +26,7 @@ function getGeneratedDir(): string {
 }
 
 type UILibrary = 'basic' | 'animate' | 'retro'
-type App = 'vada' | 'herald' | 'attalabs' | 'vinayaPortal' | 'vinayaStudio'
+type App = 'vada' | 'herald' | 'attalabs' | 'portfolio' | 'vinayaPortal' | 'vinayaStudio'
 
 const LIBRARIES: readonly UILibrary[] = ['basic', 'animate', 'retro']
 

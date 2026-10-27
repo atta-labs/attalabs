@@ -42,8 +42,9 @@ Sanity CMS — branding document (one per product)
 | Vinaya         | `branding-vinaya`        | `o56nzgrr`     |
 | Vinaya Portal  | `branding-vinayaPortal`  | `o56nzgrr`     |
 | Vinaya Studio  | `branding-vinayaStudio`  | `o56nzgrr`     |
+| Portfolio      | `branding-portfolio`     | `l5n0n8nn`     |
 
-The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs.
+The project IDs are exported from `@atta/cms` as `PROJECT_IDS`. `branding-portfolio` sits in the central `attalabs` project beside `portfolioConfig`, and is not created yet — until it is, the portfolio renders without favicons. Both the document `_id` and the project are derived from the product key, so `getProductBranding(key)` is all a caller needs.
 
 Vinaya Portal and Vinaya Studio share Vinaya's project — they are additional product documents inside it, not new Sanity projects. No app calls `getProductBranding('vinayaPortal' | 'vinayaStudio')` yet; both apps still borrow `vinaya`'s branding. The two documents were seeded with values identical to `branding-vinaya`'s (same logos, same identity text) so that adopting either key later changes nothing about what renders — any visual divergence becomes a decision for whichever task repoints a call site at its own key.
 
@@ -81,14 +82,14 @@ const [atta, vada, vinaya] = await Promise.all([
 ])
 ```
 
-Reads hit the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'`.
+Reads hit the public CDN for the chosen project — no token required. `ProductKey` is `'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs' | 'portfolio'`.
 
 Returned shape — all asset fields include a resolved `url` string:
 
 ```ts
 interface CMSBranding {
   _id: string
-  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'
+  productId: 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs' | 'portfolio'
   productName: string
   paliRoot?: string
   paliMeaning?: string

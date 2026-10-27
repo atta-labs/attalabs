@@ -94,6 +94,19 @@ export default defineConfig({
                         S.document().schemaType('branding').documentId('branding-attalabs').title('AttalLabs Branding')
                       ),
                     S.listItem()
+                      .title('Portfolio Config')
+                      .child(
+                        S.document()
+                          .schemaType('portfolioConfig')
+                          .documentId('portfolioConfig')
+                          .title('Portfolio Config')
+                      ),
+                    S.listItem()
+                      .title('Portfolio Branding')
+                      .child(
+                        S.document().schemaType('branding').documentId('branding-portfolio').title('Portfolio Branding')
+                      ),
+                    S.listItem()
                       .title('User Interface')
                       .child(
                         S.list()

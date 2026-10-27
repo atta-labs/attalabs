@@ -133,7 +133,7 @@ Each product has a `branding` document in Sanity storing logo SVG files, the ful
 | `logos`     | `logoOutlineLight/Dark`, `logoSolidLight/Dark`, `logoLockupOutlineLight/Dark`, `logoLockupSolidLight/Dark` (SVG `file` assets) |
 | `favicons`  | Shared `appleTouchIcon` + `faviconLight` + `faviconDark` objects, each set with `ico` + 7 PNG sizes (16/32/48/64/128/256/512) |
 
-Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vinaya`, `branding-vinayaPortal`, `branding-vinayaStudio`
+Document IDs: `branding-herald`, `branding-atta`, `branding-vada`, `branding-vinaya`, `branding-vinayaPortal`, `branding-vinayaStudio`, `branding-portfolio`
 
 Query functions:
 ```ts
@@ -169,18 +169,19 @@ Each product has a singleton document in Sanity that stores:
 | `userInterface.colorScheme` | `'dark' \| 'light'` | Which color scheme to apply |
 | `userInterface.library` | ref → `uiLibrary` | Active component library |
 
-Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `vinayaPortalConfig`, `vinayaStudioConfig`, `attalabsConfig`
+Document types: `heraldConfig`, `vadaConfig`, `vinayaConfig`, `vinayaPortalConfig`, `vinayaStudioConfig`, `attalabsConfig`, `portfolioConfig`
 
 Query functions:
 ```ts
 import { getProductConfig } from '@atta/cms'
 
-const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs'
+const config = await getProductConfig('herald')   // 'herald' | 'atta' | 'vada' | 'vinaya' | 'vinayaPortal' | 'vinayaStudio' | 'attalabs' | 'portfolio'
 ```
 
 `vinayaPortal` and `vinayaStudio` are additional product documents inside `vinaya`'s
 own Sanity project (same `PROJECT_IDS` entry). Both `vinaya-portal-web` and
-`vinaya-studio-web`'s own root layouts pass their own key — see
+`vinaya-studio-web`'s own root layouts pass their own key. `portfolio`
+(`portfolioConfig`) lives the same way inside the central `attalabs` project — see
 `.claude/skills/ui-cms-theme/SKILL.md`.
 
 ### What You Configure in Each Studio
