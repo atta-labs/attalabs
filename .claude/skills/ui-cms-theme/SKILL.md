@@ -326,7 +326,7 @@ Steps 5a–6 above are the **plain shape** — every product except `vinaya-port
 
 The tradeoff this makes: a visitor who has overridden their scheme sees the correct colors with JavaScript enabled (the script runs before first paint — no visible flash), but the raw server-rendered HTML byte-for-byte (view-source, or any no-JS client) shows the CMS/`'dark'` default instead of their choice. Every other product keeps the plain shape's byte-for-byte-correct, no-JS-required SSR precisely because this tradeoff is real — `staticColorScheme` is opt-in, never the default, and should stay that way unless a product genuinely needs the same static-rendering unlock `vinaya-portal` did.
 
-No experimental Next feature (PPR / `cacheComponents`) is involved in any of this — removing the unconditional `cookies()` read was sufficient on its own for Next's ordinary static/ISR rendering to apply once `force-dynamic` was also removed from the route. See `apps/vinaya-portal/web/README.md`'s "Rendering mode" section.
+No experimental Next feature (PPR / `cacheComponents`) is involved in any of this — removing the unconditional `cookies()` read was sufficient on its own for Next's ordinary static/ISR rendering to apply once `force-dynamic` was also removed from the route. See the Portal's README "Rendering mode" section, in the vinaya repository.
 
 ## Root Layout Pattern
 
