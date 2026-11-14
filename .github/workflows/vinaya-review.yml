@@ -20,13 +20,13 @@
 #
 # Nothing re-runs this workflow when CI completes, and nothing needs to:
 # the review gate answers for the review verdicts, `evidence-fresh` for
-# the body's `AEG:EVIDENCE` block against the pushed head, and no other
+# the body's `VINAYA:EVIDENCE` block against the pushed head, and no other
 # check's result can change either answer, so a CI run finishing tells
 # neither anything.
 #
 # `synchronize` is what runs `evidence-fresh` on every push, so a push
 # with no following body edit turns its check-run red instead of producing
-# no run at all; `edited` re-runs it on the body edit `vinaya pr report
+# no run at all; `edited` re-runs it on the body edit `vinaya-pr-report
 # --push` makes after that push, so a body naming the pushed head turns the
 # same check-run green with no manual rerun.
 #
@@ -55,7 +55,7 @@ on:
     types: [opened, synchronize, reopened, edited, labeled, unlabeled]
 
 # One run per pull request COMMIT, always. Several `types:` above can fire in the
-# same instant — `vinaya pr create` opens the PR and applies its tranche
+# same instant — `vinaya-pr create` opens the PR and applies its tranche
 # label immediately after, so `opened` and `labeled` arrive together and
 # GitHub starts TWO runs of this workflow. Both then report under the same
 # check name, and the merge box counts both: one can go green while its twin
@@ -119,13 +119,13 @@ jobs:
       # before this pre-check existed.
       #
       # Both string constants spliced into the `jq` calls below are read
-      # from `packages/aeg-core` at CLI-GENERATION time — `WAIVER_LABEL_REVIEW`
+      # from the process's task contract at CLI-GENERATION time — `WAIVER_LABEL_REVIEW`
       # (`waiver-label.ts`) and `VERDICT_MARKER_SOURCE` (`verdict-extraction.ts`)
       # — the SAME constants `check-review-gate.ts` reads for the full gate,
       # never a second hand-typed copy of either fact (`#525`).
       #
       # Line-anchored `VERDICT:` — same anchor discipline
-      # `packages/aeg-core/src/verdict-extraction.ts` standardizes on
+      # `harness/processes/vinaya-strict/tools/task-contract/verdict-extraction.ts` standardizes on
       # (security-review FAIL finding, PR #636/#639): a bare substring/word
       # search matches ordinary prose that merely mentions "VERDICT" (an
       # escalation, a reviewer report, this very step's own description) and
@@ -139,7 +139,7 @@ jobs:
       # that module's full extraction (no first-five-lines window, no
       # value-side match, no most-recent-comment selection, no code-span
       # exclusion) — deliberately so: this step never runs after a checkout,
-      # so it cannot import `packages/aeg-core` at RUN time (the constant is
+      # so it cannot import the process code at RUN time (the constant is
       # instead read once, at CLI-generation time, and spliced in below). A
       # false positive here only wastes a trusted build; the downstream
       # `vinayaRun(selfHost, 'check review-gate')` step, which DOES run the
@@ -189,7 +189,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
       - name: Review gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -202,7 +202,7 @@ jobs:
           # forge for them again. Set on this step only.
           VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
           PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
-        run: npx --yes @attalabs/vinaya@0.40.0 check review-gate
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check review-gate
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -210,7 +210,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:
@@ -274,9 +274,9 @@ jobs:
             BODY="$(jq -r '.body // ""' "$RAW/pull.json")"
             WAIT_FOR=""
             if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
-              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
+              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- [A-Z]*:CLOSES:START -->/,/<!-- [A-Z]*:CLOSES:END -->/p')"
               if ! printf '%s\n' "$CLOSES_REGION" | grep -qE '#[0-9]+'; then
-                WAIT_FOR="a real Closes #N inside the AEG:CLOSES region for task branch $BRANCH"
+                WAIT_FOR="a real Closes #N inside the CLOSES region for task branch $BRANCH"
               fi
             fi
             if [ -z "$WAIT_FOR" ]; then
@@ -295,7 +295,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
           DELIM="PR_BODY_$(openssl rand -hex 16)"
           {
             echo "PR_BODY<<$DELIM"
@@ -334,7 +334,7 @@ jobs:
           # forge for them again. Set on this step only.
           VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
           PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
-        run: npx --yes @attalabs/vinaya@0.40.0 check evidence-fresh
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check evidence-fresh
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -342,7 +342,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:

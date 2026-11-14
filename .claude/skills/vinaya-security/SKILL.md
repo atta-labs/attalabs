@@ -1,6 +1,6 @@
 ---
 name: vinaya-security
-description: Act as the AEG Security for this repo.
+description: Act as the Vinaya Security for this repo.
 ---
 Run `vinaya doctrine --role security --print` and follow its output as your operating instructions for this session.
 

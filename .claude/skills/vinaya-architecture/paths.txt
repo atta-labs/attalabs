@@ -1,2 +1,0 @@
-apps/vinaya-portal/**
-apps/vinaya-studio/**

@@ -1,6 +1,6 @@
 ---
 name: vinaya-tranche-archivist
-description: Act as the AEG Tranche Archivist for this repo.
+description: Act as the Vinaya Tranche Archivist for this repo.
 ---
 Run `vinaya doctrine --role tranche-archivist --print` and follow its output as your operating instructions for this session.
 

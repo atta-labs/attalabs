@@ -5,9 +5,45 @@
       "command": "npx",
       "args": [
         "--yes",
-        "@attalabs/vinaya@0.40.0",
-        "task-tools",
-        "serve"
+        "-p",
+        "@attalabs/vinaya@0.42.1",
+        "vinaya-task-tools-serve"
+      ]
+    },
+    "vinaya-planner-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--yes",
+        "-p",
+        "@attalabs/vinaya@0.42.1",
+        "vinaya-task-tools-serve",
+        "--seat",
+        "planner"
+      ]
+    },
+    "vinaya-architect-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--yes",
+        "-p",
+        "@attalabs/vinaya@0.42.1",
+        "vinaya-task-tools-serve",
+        "--seat",
+        "architect"
+      ]
+    },
+    "vinaya-tranche-archivist-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--yes",
+        "-p",
+        "@attalabs/vinaya@0.42.1",
+        "vinaya-task-tools-serve",
+        "--seat",
+        "tranche-archivist"
       ]
     }
   }

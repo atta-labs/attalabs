@@ -49,7 +49,7 @@ Two rules disambiguate most questions:
     └── WhereYouWorkSection.tsx    04
 ```
 
-`LandingInteractions.tsx`, `SectionHeading.tsx`, `WipeReveal.tsx`, `UnderlineLink.tsx` and `pin-math.ts` are copies of Vinaya Portal's (`apps/vinaya-portal/web/src/app/(site)/_components/landing/`). Port further Vinaya patterns from there rather than reinventing them.
+`LandingInteractions.tsx`, `SectionHeading.tsx`, `WipeReveal.tsx`, `UnderlineLink.tsx` and `pin-math.ts` are copies of Vinaya Portal's landing components (its `_components/landing/`, in the vinaya repository). Port further Vinaya patterns from there rather than reinventing them.
 
 ---
 

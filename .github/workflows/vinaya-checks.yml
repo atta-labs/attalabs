@@ -1,6 +1,6 @@
 # Managed by Vinaya — created by `vinaya init`. `vinaya upgrade` regenerates it; `vinaya eject` removes it.
 #
-# The deterministic gate suite. Runs every registered vinaya check over the
+# The deterministic gate suite. Runs every registered vinaya-check over the
 # pull request's diff. This is the guarantee: a PR cannot merge red.
 name: Vinaya Checks
 
@@ -115,9 +115,9 @@ jobs:
             BODY="$(jq -r '.body // ""' "$RAW/pull.json")"
             WAIT_FOR=""
             if [[ "$BRANCH" =~ ^task/[^/]+/[^/]+$ ]]; then
-              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- AEG:CLOSES:START -->/,/<!-- AEG:CLOSES:END -->/p')"
+              CLOSES_REGION="$(printf '%s\n' "$BODY" | sed -n '/<!-- [A-Z]*:CLOSES:START -->/,/<!-- [A-Z]*:CLOSES:END -->/p')"
               if ! printf '%s\n' "$CLOSES_REGION" | grep -qE '#[0-9]+'; then
-                WAIT_FOR="a real Closes #N inside the AEG:CLOSES region for task branch $BRANCH"
+                WAIT_FOR="a real Closes #N inside the CLOSES region for task branch $BRANCH"
               fi
             fi
             if [ -z "$WAIT_FOR" ]; then
@@ -136,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
           DELIM="PR_BODY_$(openssl rand -hex 16)"
           {
             echo "PR_BODY<<$DELIM"
@@ -173,7 +173,7 @@ jobs:
           BRANCH: ${{ github.head_ref }}
           # The pull request's own head — never `git rev-parse HEAD`, which on
           # a pull_request run is the merge ref — at which `test-plan` demands
-          # a passed `AEG:LIVE` entry for each `[live]` line of the brief.
+          # a passed `VINAYA:LIVE` entry for each `[live]` line of the brief.
           PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           # BASE_SHA comes from the job environment `Resolve the diff base`
           # wrote — never set here, where a step-level entry would override it.
@@ -198,8 +198,8 @@ jobs:
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes @attalabs/vinaya@0.40.0 check --all --diff-only | tee vinaya-check-output.txt
-      # The job's one check name ("vinaya check --all --diff-only: failing")
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check --all --diff-only | tee vinaya-check-output.txt
+      # The job's one check name ("vinaya-check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,
       # readable without opening the log. `!cancelled()` rather than
@@ -210,7 +210,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           {
-            echo '### vinaya check --all --diff-only'
+            echo '### vinaya-check --all --diff-only'
             echo '~~~'
             cat vinaya-check-output.txt 2>/dev/null || echo 'no check output captured (runner did not start)'
             echo '~~~'
@@ -222,7 +222,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:

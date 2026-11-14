@@ -124,27 +124,6 @@ apps/*/web/src/app/api/**                             .claude/skills/ui-api-rout
 # README.md — to .claude/skills/vinaya-architecture/SKILL.md. `doctor`
 # reported it matched none of this repo's tracked code files (apps/vinaya
 # is deleted by sibling task #989), so the binding was removed rather than
-# left dangling. Studio and Portal keep their own bindings below, unchanged.
+# left dangling. Studio and Portal later moved to the vinaya repository, so their bindings are gone too.
 
-# ── Portal/Studio split, task 3 (#885, 2026-08-16) ────────────────────────
-# The (now-removed) apps/vinaya/** binding above was segment-wise, not a
-# prefix match, so it never covered `apps/vinaya-studio/**` — measured on
-# task 1's PR #917 (`bb43ff2b`), where
-# the identical gap for `apps/vinaya-portal/**` pushed `verify-docs --full`'s
-# unbound-surface count 3 → 4. This binding closes that gap for Studio.
-# `.claude/skills/vinaya-architecture/SKILL.md` is the same target the now-
-# removed `apps/vinaya/**` binding used to point at — this task updates that
-# skill's workspace tree to describe the CLI/portal/studio/sources split, so
-# the doc a Studio change owes is the doc this task itself keeps coherent.
-apps/vinaya-studio/**                                 .claude/skills/vinaya-architecture/SKILL.md
-
-# ── Portal binding, task 4 (#886, 2026-08-17) ─────────────────────────────
-# `apps/vinaya-portal/**` was deliberately left unbound by task 3 (#885) —
-# reserved for this task, which also settles the .vinaya/projects.md
-# registry decision it's coupled to (own `vinaya-portal`/`vinaya-studio`
-# rows — see that file). Same target as the Studio binding above: this task
-# is what keeps `.claude/skills/vinaya-architecture/SKILL.md` coherent with
-# the whole apps/vinaya*/** tree, so a Portal change and a Studio change
-# both owe the one file this PR itself updates.
-apps/vinaya-portal/**                                 .claude/skills/vinaya-architecture/SKILL.md
 

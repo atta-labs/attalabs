@@ -22,7 +22,7 @@
  *
  * `status` seeded here is a FALLBACK only — `/roadmap` derives `shipping`/
  * `planned` live from the published `@attalabs/vinaya` npm version
- * (`apps/vinaya-portal/web/src/app/(site)/roadmap/_lib/derive-status.ts`),
+ * (the Portal's `roadmap/_lib/derive-status.ts`, in the vinaya repository),
  * so nothing needs recomputing here as new versions ship. This field is only
  * read when that registry lookup is unreachable, or for `'dropped'` (an
  * editorial call no version comparison can derive) — seeded with what's true

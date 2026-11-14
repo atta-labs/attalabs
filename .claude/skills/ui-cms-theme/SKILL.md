@@ -326,7 +326,7 @@ Steps 5a–6 above are the **plain shape** — every product except `vinaya-port
 
 The tradeoff this makes: a visitor who has overridden their scheme sees the correct colors with JavaScript enabled (the script runs before first paint — no visible flash), but the raw server-rendered HTML byte-for-byte (view-source, or any no-JS client) shows the CMS/`'dark'` default instead of their choice. Every other product keeps the plain shape's byte-for-byte-correct, no-JS-required SSR precisely because this tradeoff is real — `staticColorScheme` is opt-in, never the default, and should stay that way unless a product genuinely needs the same static-rendering unlock `vinaya-portal` did.
 
-No experimental Next feature (PPR / `cacheComponents`) is involved in any of this — removing the unconditional `cookies()` read was sufficient on its own for Next's ordinary static/ISR rendering to apply once `force-dynamic` was also removed from the route. See `apps/vinaya-portal/web/README.md`'s "Rendering mode" section.
+No experimental Next feature (PPR / `cacheComponents`) is involved in any of this — removing the unconditional `cookies()` read was sufficient on its own for Next's ordinary static/ISR rendering to apply once `force-dynamic` was also removed from the route. See the Portal's README "Rendering mode" section, in the vinaya repository.
 
 ## Root Layout Pattern
 
@@ -528,7 +528,7 @@ never stored, because the eventual number isn't knowable in advance (a feature r
 can consume any minor first; this happened live to a milestone whose editorial copy
 had already committed to a specific number). An editor sets it exactly once, at
 completion, to the real version `@attalabs/vinaya` published. `derive-status.ts`'s
-`deriveStatus` (`apps/vinaya-portal/web/src/app/(site)/roadmap/_lib/derive-status.ts`)
+`deriveStatus` (the Portal's `roadmap/_lib/derive-status.ts`, which now lives in the vinaya repository)
 only runs its published-vs-`version` comparison when `version` is non-null; while empty,
 the CMS `status` field is trusted directly (never auto-derived, never auto-flips to
 "shipping"). `DeploymentTrack.tsx` renders no version stamp at all for a null `version`.

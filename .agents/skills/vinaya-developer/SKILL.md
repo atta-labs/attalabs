@@ -1,6 +1,6 @@
 ---
 name: vinaya-developer
-description: Act as the AEG Developer for this repo.
+description: Act as the Vinaya Developer for this repo.
 ---
 Run `vinaya doctrine --role developer --print` and follow its output as your operating instructions for this session.
 
