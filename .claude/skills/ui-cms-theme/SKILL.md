@@ -528,7 +528,7 @@ never stored, because the eventual number isn't knowable in advance (a feature r
 can consume any minor first; this happened live to a milestone whose editorial copy
 had already committed to a specific number). An editor sets it exactly once, at
 completion, to the real version `@attalabs/vinaya` published. `derive-status.ts`'s
-`deriveStatus` (`apps/vinaya-portal/web/src/app/(site)/roadmap/_lib/derive-status.ts`)
+`deriveStatus` (the Portal's `roadmap/_lib/derive-status.ts`, which now lives in the vinaya repository)
 only runs its published-vs-`version` comparison when `version` is non-null; while empty,
 the CMS `status` field is trusted directly (never auto-derived, never auto-flips to
 "shipping"). `DeploymentTrack.tsx` renders no version stamp at all for a null `version`.
