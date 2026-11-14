@@ -6,14 +6,20 @@
 # worktree" — a legitimate push of a task branch to origin must always pass.
 #
 # git feeds pre-push one line per ref on stdin: `<localref> <localsha> <remoteref> <remotesha>`.
-while read -r _localref _localsha remoteref _remotesha; do
+# Read it once, check it, then hand the same lines back as stdin: the managed
+# block below reads stdin too, and would otherwise get nothing.
+_push_refs="$(cat)"
+printf '%s\n' "$_push_refs" | while read -r _localref _localsha remoteref _remotesha; do
   if [ "$remoteref" = "refs/heads/main" ]; then
     echo "✖ pre-push: direct pushes to main are forbidden." >&2
-    echo "  AEG routes every change to main through a worktree branch + PR + green merge." >&2
-    echo "  Push your task/<tranche>/<n> branch and open a PR instead." >&2
+    echo "  Every change reaches main through a worktree branch + PR + green merge." >&2
+    echo "  Push your task branch and open a PR instead." >&2
     exit 1
   fi
-done
+done || exit 1
+exec <<EOF
+$_push_refs
+EOF
 
 # >>> vinaya:managed:pre-push >>>
 # Vinaya pre-push gate. Runs branch/dispatch checks before the push leaves.
@@ -22,5 +28,16 @@ done
 # tell a tag-only push apart from one that also carries a branch ref.
 VINAYA_PUSH_REFS="$(cat)"
 export VINAYA_PUSH_REFS
-VINAYA_HOST=hook npx --yes @attalabs/vinaya@0.40.0 check --all --local || exit 1
+VINAYA_HOST=hook npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check --all --local || exit 1
+# The ready push (after approval) runs the repository's declared test
+# runner, .vinaya/test-runner: an executable run from the repository root
+# with no arguments, whose exit status is the verdict. A repository that
+# declares none runs no local tests, and says so.
+if [ "$VINAYA_PUSH_MODE" = "ready" ]; then
+  if [ -x .vinaya/test-runner ]; then
+    ./.vinaya/test-runner || { echo "vinaya pre-push: refused — the declared test runner (.vinaya/test-runner) failed"; exit 1; }
+  else
+    echo "vinaya pre-push: no local tests (no test runner declared at .vinaya/test-runner)"
+  fi
+fi
 # <<< vinaya:managed:pre-push <<<

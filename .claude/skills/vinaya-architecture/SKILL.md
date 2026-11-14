@@ -5,6 +5,8 @@ description: Vinaya product architecture — the portal/studio split (the extrac
 
 # Vinaya — Product Architecture (`apps/vinaya-portal/`, `apps/vinaya-studio/`)
 
+> **Moved.** The Portal and Studio apps now live, build and deploy in the standalone `atta-labs/vinaya` repository; this repository no longer carries them. The sections below describe them as they were here and are kept only as history — read the vinaya repository for the current shape.
+
 ## Context
 
 Vinaya is AEG packaged as a distributable product: `npx @attalabs/vinaya init` turns any GitHub repo into a governed one. Everything under `apps/vinaya-portal/` and `apps/vinaya-studio/` exists to ship that packaging — it does not reimplement governance logic. The single rule that disambiguates almost every design question in this tree: **Vinaya renders and spawns; the published `@attalabs/aeg-core` and `@attalabs/aeg-forge-state` decide.** If a change under either of these apps starts computing a governance verdict instead of consuming one, it is very likely in the wrong package.

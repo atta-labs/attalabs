@@ -42,12 +42,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run vinaya archive
+      - name: Run vinaya-archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.40.0 archive --merge-sha=${{ github.sha }}
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-archive --merge-sha=${{ github.sha }}
       - name: Self-archive the tranche once its last task merges (O4)
-        # `vinaya archive tranche` already IS the "any open task Issue left"
+        # `vinaya-archive tranche` already IS the "any open task Issue left"
         # check (`trancheArchivalStatus`) — this step never re-derives that
         # rule, it only resolves which slug just merged and asks. Refusing
         # (exit 1) while task Issues remain open is the expected outcome on
@@ -61,7 +61,7 @@ jobs:
           BRANCH="$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq .head.ref)"
           SLUG="$(printf '%s' "$BRANCH" | sed -n 's#^task/\([^/]*\)/.*#\1#p')"
           if [ -z "$SLUG" ]; then exit 0; fi
-          npx --yes @attalabs/vinaya@0.40.0 archive tranche "$SLUG" --yes
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-archive tranche "$SLUG" --yes
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -69,7 +69,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:
@@ -109,7 +109,7 @@ jobs:
         with:
           node-version: 22
       - name: Self-archive the tranche this Issue belongs to
-        # `vinaya archive tranche` already IS the "any open task Issue left"
+        # `vinaya-archive tranche` already IS the "any open task Issue left"
         # check — refusing (exit 1) while task Issues remain open is the
         # expected outcome on every close but the last, never a reason to fail
         # this job. The Issue number is the only event field read, and the
@@ -123,7 +123,7 @@ jobs:
           SLUGS="$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.labels[].name | select(startswith("vinaya/tranche:")) | ltrimstr("vinaya/tranche:")')"
           for SLUG in $SLUGS; do
             case "$SLUG" in ''|-*|*[!A-Za-z0-9._-]*) continue ;; esac
-            npx --yes @attalabs/vinaya@0.40.0 archive tranche "$SLUG" --yes
+            npx --yes -p @attalabs/vinaya@0.42.1 vinaya-archive tranche "$SLUG" --yes
           done
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
@@ -132,7 +132,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:
@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true # never-red — this job is a notification channel, not a gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.40.0 audit --only=dead-branches
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-audit --only=dead-branches
       - name: Archive every finished tranche not yet archived
         # The catch-up the two event-driven triggers cannot make: a tranche that
         # finished before this workflow existed, or whose closing event was
@@ -178,7 +178,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.40.0 archive tranches --yes
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-archive tranches --yes
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -186,7 +186,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:
@@ -221,7 +221,7 @@ jobs:
       - name: Run vinaya audit --only=direct-push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes @attalabs/vinaya@0.40.0 audit --only=direct-push --sha=${{ github.sha }}
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-audit --only=direct-push --sha=${{ github.sha }}
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -229,7 +229,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:

@@ -52,7 +52,7 @@ below for what that resolves to).
 
 ## How to see what's running
 
-- `vinaya check --plan` — prints the resolved check registry and the
+- `vinaya-check --plan` — prints the resolved check registry and the
   resolved `roles` registry (default / overridden / additive), without
   running anything.
 - `vinaya doctor` — reports what is installed and diagnoses hook, workflow,
@@ -94,15 +94,15 @@ in-repo copy to drift. This pointer names that package, never a filesystem
 path: where a package sits is a property of one machine, and this file is
 committed for every clone.
 
-The doctrine's own front door is `aeg-root/skills/aeg/SKILL.md` inside that
+The doctrine's own front door is `doctrine/skills/vinaya/SKILL.md` inside that
 package — read first every session regardless of role. Resolve it on this
 machine with:
 
     npx --yes @attalabs/vinaya doctrine
 
    It prints the front door's absolute path on this machine, installing
-   the package first if it has to; the `aeg-root/` directory above it is
+   the package first if it has to; the `vinaya-strict/` directory above it is
    the full doctrine.
 
 Live task status is derived from the forge (Issues, labels, comments) via
-`vinaya check` — it is never written into a file here.
+`vinaya-check` — it is never written into a file here.

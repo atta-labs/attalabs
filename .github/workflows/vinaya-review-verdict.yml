@@ -80,7 +80,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes @attalabs/vinaya@0.40.0 pr snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
       - name: Review gate (verdict evaluation)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -92,7 +92,7 @@ jobs:
           # forge for them again. Set on this step only.
           VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
           PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
-        run: npx --yes @attalabs/vinaya@0.40.0 check review-gate
+        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check review-gate
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -100,7 +100,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:
@@ -194,7 +194,7 @@ jobs:
         run: |
           gh api rate_limit --jq '"GraphQL budget at job end: \(.resources.graphql.used) used of \(.resources.graphql.limit), resets at \(.resources.graphql.reset | todate)"' >> "$GITHUB_STEP_SUMMARY" || echo "GraphQL budget at job end: unreadable" >> "$GITHUB_STEP_SUMMARY"
       # When this job failed, print its own token budgets on one line for
-      # the review loop (`apps/cli/specs/loop.md`). Reading them spends none.
+      # the review loop (`harness/processes/vinaya-strict/loops/dev-review/loop.md`). Reading them spends none.
       - name: Report this job's GitHub token budget
         if: failure()
         env:

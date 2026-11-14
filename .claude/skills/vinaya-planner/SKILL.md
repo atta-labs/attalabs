@@ -1,6 +1,6 @@
 ---
 name: vinaya-planner
-description: Act as the AEG Planner for this repo.
+description: Act as the Vinaya Planner for this repo.
 ---
 Run `vinaya doctrine --role planner --print` and follow its output as your operating instructions for this session.
 

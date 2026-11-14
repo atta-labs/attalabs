@@ -3,8 +3,8 @@
 #
 # DENIES any raw command that would create or body-edit a PR or Issue,
 # directing the agent to the validated wrappers instead:
-#   gh pr create / gh pr edit --body*        → vinaya pr create / pr edit
-#   gh issue create / gh issue edit --body*  → vinaya issue create / issue edit
+#   gh pr create / gh pr edit --body*        → vinaya-pr create / vinaya-pr edit
+#   gh issue create / gh issue edit --body*  → the Planner tools task_issue_create / task_issue_edit
 #   gh api POST to /pulls or /issues         → same wrappers
 #
 # The wrappers run the identical deterministic contract gates that CI runs
@@ -42,7 +42,7 @@ deny() {
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+create\b'; then
   deny "Forge gate (D-078): raw \`gh pr create\` is not allowed — the PR body must pass the deterministic contract gates BEFORE anything reaches the forge. Use the validated wrapper instead:
 
-  npx vinaya pr create --title \"...\" --body-file /path/to/body.md [--label ...]
+  npx vinaya-pr create --title \"...\" --body-file /path/to/body.md [--label ...]
 
 It runs the config-defined brief-schema gate locally and only calls gh on green. On failure it prints the exact missing sections — fix the body file and rerun."
 fi
@@ -52,24 +52,24 @@ if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+pr[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
   deny "Forge gate (D-078): raw \`gh pr edit\` with a body or title change is not allowed — edited bodies re-pass the contract gates and titles the title grammar. Use:
 
-  npx vinaya pr edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
+  npx vinaya-pr edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
 fi
 
 # --- Issue creation ---------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+create\b'; then
-  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (tranche:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the validated wrapper instead:
+  deny "Forge gate (D-078): raw \`gh issue create\` is not allowed — a task Issue (tranche:* label) must carry the full eight-field Planner rationale, validated BEFORE it reaches the forge. Use the Planner's tool server instead (\`vinaya-planner-tools\` in .mcp.json):
 
-  npx vinaya issue create --title \"...\" --body-file /path/to/body.md --label tranche:<slug>
+  task_issue_validate (dry run), then task_issue_create with the title, body and labels
 
-Non-task Issues (no tranche label) pass straight through the wrapper unvalidated."
+It runs the Issue write gate locally and only writes on green."
 fi
 
 # --- Issue body edits -------------------------------------------------------
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+issue[[:space:]]+edit\b' \
   && printf '%s' "$command" | grep -qE '(--body|--body-file|--title|[[:space:]]-b[[:space:]]|[[:space:]]-F[[:space:]]|[[:space:]]-t[[:space:]])'; then
-  deny "Forge gate (D-078): raw \`gh issue edit\` with a body or title change is not allowed — edits re-pass the rationale/title gates. Use:
+  deny "Forge gate (D-078): raw \`gh issue edit\` with a body or title change is not allowed — edits re-pass the rationale/title gates. Use the Planner's tool server instead (\`vinaya-planner-tools\` in .mcp.json):
 
-  npx vinaya issue edit <n> [--body-file /path/to/body.md] [--title \"...\"]"
+  task_issue_edit with the Issue number and the new title or body"
 fi
 
 # NOTE (#614): the label names below are re-stated as literals because a bash
@@ -128,7 +128,7 @@ fi
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*POST|--method[[:space:]]*POST|[[:space:]]-f[[:space:]]|[[:space:]]-F[[:space:]])' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)(["'"'"'[:space:]]|$)'; then
-  deny "Forge gate (D-078): creating PRs/Issues via raw \`gh api\` bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr create\` / \`npx vinaya issue create\`."
+  deny "Forge gate (D-078): creating PRs/Issues via raw \`gh api\` bypasses the contract gates. Use the validated paths: \`npx vinaya-pr create\` / the Planner tool \`task_issue_create\`."
 fi
 
 # PATCH to .../pulls/N or .../issues/N (edit endpoints) — a body/title edit via
@@ -137,7 +137,7 @@ fi
 if printf '%s' "$command" | grep -qE '\bgh[[:space:]]+api\b' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*PATCH|--method[[:space:]]*PATCH)' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)/[0-9]+(["'"'"'[:space:]]|$)'; then
-  deny "Forge gate (D-078): editing PRs/Issues via raw \`gh api -X PATCH\` bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr edit <n>\` / \`npx vinaya issue edit <n>\`."
+  deny "Forge gate (D-078): editing PRs/Issues via raw \`gh api -X PATCH\` bypasses the contract gates. Use the validated paths: \`npx vinaya-pr edit <n>\` / the Planner tool \`task_issue_edit\`."
 fi
 
 # --- curl/wget bypass attempts ------------------------------------------------
@@ -147,7 +147,7 @@ if printf '%s' "$command" | grep -qE '\b(curl|wget)\b' \
   && printf '%s' "$command" | grep -qE 'api\.github\.com' \
   && printf '%s' "$command" | grep -qE '(/pulls|/issues)' \
   && printf '%s' "$command" | grep -qE '(-X[[:space:]]*(POST|PATCH|PUT)|--method[[:space:]]*(POST|PATCH|PUT)|--data\b|[[:space:]]-d[[:space:]]|--json\b|--post-data)'; then
-  deny "Forge gate (D-078): writing to PRs/Issues via raw curl/wget bypasses the contract gates. Use the validated wrappers: \`npx vinaya pr create\` / \`npx vinaya issue create\`."
+  deny "Forge gate (D-078): writing to PRs/Issues via raw curl/wget bypasses the contract gates. Use the validated paths: \`npx vinaya-pr create\` / the Planner tool \`task_issue_create\`."
 fi
 
 exit 0

@@ -98,14 +98,6 @@
     },
     {
       "name": "vinaya"
-    },
-    {
-      "name": "vinaya-portal",
-      "path": "apps/vinaya-portal"
-    },
-    {
-      "name": "vinaya-studio",
-      "path": "apps/vinaya-studio"
     }
   ],
   "ci": {

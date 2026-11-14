@@ -41,13 +41,10 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const REPO_ROOT = join(import.meta.dir, '..')
-const VINAYA_PACKAGES = [
-  '@attalabs/vinaya',
-  '@attalabs/aeg-core',
-  '@attalabs/aeg-forge-state',
-  '@attalabs/aeg-types',
-  '@attalabs/vinaya-sources'
-] as const
+// Only `@attalabs/vinaya` is still published. `aeg-core`, `aeg-forge-state`,
+// `aeg-types` and `vinaya-sources` stopped at 0.41.0 and are deprecated; their
+// pins stay where they are until Portal and Studio stop importing them.
+const VINAYA_PACKAGES = ['@attalabs/vinaya'] as const
 
 function sh(cmd: string, args: string[], opts: { cwd?: string } = {}): string {
   return execFileSync(cmd, args, { cwd: opts.cwd ?? REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
