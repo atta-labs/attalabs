@@ -53,6 +53,7 @@
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check . && turbo test --affected && bun scripts/check-forbidden-colors.ts",
     "test": "turbo test",
+    "test:selected": "bun scripts/run-selected-tests.ts",
     "test:selection-report": "bun scripts/test-selection-report.ts",
     "docs:index": "node scripts/generate-docs-index.mjs",
     "verify-docs": "bash scripts/verify-docs.sh",
