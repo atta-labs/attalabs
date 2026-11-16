@@ -189,7 +189,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.2 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
       - name: Review gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -202,7 +202,7 @@ jobs:
           # forge for them again. Set on this step only.
           VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
           PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
-        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check review-gate
+        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-check review-gate
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -295,7 +295,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes -p @attalabs/vinaya@0.42.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.42.2 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
           DELIM="PR_BODY_$(openssl rand -hex 16)"
           {
             echo "PR_BODY<<$DELIM"
@@ -334,7 +334,7 @@ jobs:
           # forge for them again. Set on this step only.
           VINAYA_FORGE_SNAPSHOT_DIR: ${{ runner.temp }}/vinaya-forge-snapshot
           PR_BODY_FILE: ${{ runner.temp }}/vinaya-forge-snapshot/body.md
-        run: npx --yes -p @attalabs/vinaya@0.42.1 vinaya-check evidence-fresh
+        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-check evidence-fresh
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:

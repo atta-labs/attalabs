@@ -6,7 +6,7 @@
       "args": [
         "--yes",
         "-p",
-        "@attalabs/vinaya@0.42.1",
+        "@attalabs/vinaya@0.42.2",
         "vinaya-task-tools-serve"
       ]
     },
@@ -16,7 +16,7 @@
       "args": [
         "--yes",
         "-p",
-        "@attalabs/vinaya@0.42.1",
+        "@attalabs/vinaya@0.42.2",
         "vinaya-task-tools-serve",
         "--seat",
         "planner"
@@ -28,7 +28,7 @@
       "args": [
         "--yes",
         "-p",
-        "@attalabs/vinaya@0.42.1",
+        "@attalabs/vinaya@0.42.2",
         "vinaya-task-tools-serve",
         "--seat",
         "architect"
@@ -40,7 +40,7 @@
       "args": [
         "--yes",
         "-p",
-        "@attalabs/vinaya@0.42.1",
+        "@attalabs/vinaya@0.42.2",
         "vinaya-task-tools-serve",
         "--seat",
         "tranche-archivist"
