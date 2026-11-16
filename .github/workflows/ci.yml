@@ -45,6 +45,18 @@
 #     branch literally named `main`, only `origin/main` — confirmed failing
 #     in real CI without this (`ambiguous argument 'main'`, silently falling
 #     back to testing every package, task 27's own PR #397).
+#   - The test selection report steps run last. First the report script's
+#     own unit tests (scripts/test-selection-report.test.ts — no package's
+#     test script runs the files under scripts/), an ordinary blocking step.
+#     Then the report itself (scripts/test-selection-report.ts): beside the
+#     packages whose test script `turbo test --affected` starts for this PR,
+#     it shows the test files the published @attalabs/test-selection library
+#     requires for the same change, counted per package, the packages where
+#     the two disagree, and the test files no test script runs. It is written
+#     to the job summary and the log. It is a report only: it decides nothing
+#     about which tests run — the unit-test step above alone does that — and
+#     it cannot change the job's result (`continue-on-error: true`); it runs
+#     even when an earlier step failed (`!cancelled()`).
 #
 # Enforcement substrate as everywhere: CI red + the T9 merge-gate hook.
 
@@ -115,3 +127,13 @@ jobs:
 
       - name: Vocabulary gate (repo-wide scan — not affected-scoped)
         run: bun scripts/verify-vocabulary-gate.ts
+
+      - name: Test selection report unit tests
+        run: bun test scripts/test-selection-report.test.ts
+
+      - name: Test selection report (report only — never changes the job's result)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          bun scripts/test-selection-report.ts --base "$(git merge-base origin/main HEAD)" --head HEAD | tee -a "$GITHUB_STEP_SUMMARY"
