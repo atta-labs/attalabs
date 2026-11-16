@@ -45,9 +45,12 @@
 #     branch literally named `main`, only `origin/main` — confirmed failing
 #     in real CI without this (`ambiguous argument 'main'`, silently falling
 #     back to testing every package, task 27's own PR #397).
-#   - The test selection report steps run last. First the report script's
-#     own unit tests (scripts/test-selection-report.test.ts — no package's
-#     test script runs the files under scripts/), an ordinary blocking step.
+#   - The test selection report steps run last. First the scripts' own unit
+#     tests — the report's (scripts/test-selection-report.test.ts) and the
+#     selected-test run's (scripts/run-selected-tests.test.ts, the script
+#     .vinaya/test-runner starts on the loop's final push; CI does not start
+#     it) — in one `bun test` command (no package's test script runs the
+#     files under scripts/), an ordinary blocking step.
 #     Then the report itself (scripts/test-selection-report.ts): beside the
 #     packages whose test script `turbo test --affected` starts for this PR,
 #     it shows the test files the published @attalabs/test-selection library
@@ -129,7 +132,7 @@ jobs:
         run: bun scripts/verify-vocabulary-gate.ts
 
       - name: Test selection report unit tests
-        run: bun test scripts/test-selection-report.test.ts
+        run: bun test scripts/test-selection-report.test.ts scripts/run-selected-tests.test.ts
 
       - name: Test selection report (report only — never changes the job's result)
         if: ${{ !cancelled() }}
