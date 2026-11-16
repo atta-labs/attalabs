@@ -136,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          npx --yes -p @attalabs/vinaya@0.42.2 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
+          npx --yes -p @attalabs/vinaya@0.43.1 vinaya-pr-snapshot --dir "$RUNNER_TEMP/vinaya-forge-snapshot"
           DELIM="PR_BODY_$(openssl rand -hex 16)"
           {
             echo "PR_BODY<<$DELIM"
@@ -198,7 +198,7 @@ jobs:
         # check runner's exit code and report a red suite green.
         run: |
           set -o pipefail
-          npx --yes -p @attalabs/vinaya@0.42.2 vinaya-check --all --diff-only | tee vinaya-check-output.txt
+          npx --yes -p @attalabs/vinaya@0.43.1 vinaya-check --all --diff-only | tee vinaya-check-output.txt
       # The job's one check name ("vinaya-check --all --diff-only: failing")
       # names no check. This step puts the runner's per-check lines — which
       # check failed, and its finding messages — on the run's Summary page,

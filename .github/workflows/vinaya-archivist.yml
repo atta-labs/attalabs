@@ -45,7 +45,7 @@ jobs:
       - name: Run vinaya-archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-archive --merge-sha=${{ github.sha }}
+        run: npx --yes -p @attalabs/vinaya@0.43.1 vinaya-archive --merge-sha=${{ github.sha }}
       - name: Self-archive the tranche once its last task merges (O4)
         # `vinaya-archive tranche` already IS the "any open task Issue left"
         # check (`trancheArchivalStatus`) — this step never re-derives that
@@ -61,7 +61,7 @@ jobs:
           BRANCH="$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq .head.ref)"
           SLUG="$(printf '%s' "$BRANCH" | sed -n 's#^task/\([^/]*\)/.*#\1#p')"
           if [ -z "$SLUG" ]; then exit 0; fi
-          npx --yes -p @attalabs/vinaya@0.42.2 vinaya-archive tranche "$SLUG" --yes
+          npx --yes -p @attalabs/vinaya@0.43.1 vinaya-archive tranche "$SLUG" --yes
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -123,7 +123,7 @@ jobs:
           SLUGS="$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.labels[].name | select(startswith("vinaya/tranche:")) | ltrimstr("vinaya/tranche:")')"
           for SLUG in $SLUGS; do
             case "$SLUG" in ''|-*|*[!A-Za-z0-9._-]*) continue ;; esac
-            npx --yes -p @attalabs/vinaya@0.42.2 vinaya-archive tranche "$SLUG" --yes
+            npx --yes -p @attalabs/vinaya@0.43.1 vinaya-archive tranche "$SLUG" --yes
           done
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true # never-red — this job is a notification channel, not a gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-audit --only=dead-branches
+        run: npx --yes -p @attalabs/vinaya@0.43.1 vinaya-audit --only=dead-branches
       - name: Archive every finished tranche not yet archived
         # The catch-up the two event-driven triggers cannot make: a tranche that
         # finished before this workflow existed, or whose closing event was
@@ -178,7 +178,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-archive tranches --yes
+        run: npx --yes -p @attalabs/vinaya@0.43.1 vinaya-archive tranches --yes
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
@@ -221,7 +221,7 @@ jobs:
       - name: Run vinaya audit --only=direct-push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes -p @attalabs/vinaya@0.42.2 vinaya-audit --only=direct-push --sha=${{ github.sha }}
+        run: npx --yes -p @attalabs/vinaya@0.43.1 vinaya-audit --only=direct-push --sha=${{ github.sha }}
       - name: Record the GraphQL budget at job end
         if: ${{ !cancelled() }}
         env:
