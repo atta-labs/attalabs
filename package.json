@@ -53,6 +53,7 @@
     "format-and-lint:fix": "biome check --fix .",
     "check": "turbo typecheck && biome check . && turbo test --affected && bun scripts/check-forbidden-colors.ts",
     "test": "turbo test",
+    "test:selection-report": "bun scripts/test-selection-report.ts",
     "docs:index": "node scripts/generate-docs-index.mjs",
     "verify-docs": "bash scripts/verify-docs.sh",
     "db": "bash scripts/db-studio.sh",
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@attalabs/aeg-core": "^0.40.0",
+    "@attalabs/test-selection": "0.3.0",
     "@attalabs/vinaya": "0.42.2",
     "@biomejs/biome": "^2.0.0",
     "@commitlint/cli": "^19.0.0",
