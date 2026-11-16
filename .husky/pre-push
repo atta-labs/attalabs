@@ -28,7 +28,7 @@ EOF
 # tell a tag-only push apart from one that also carries a branch ref.
 VINAYA_PUSH_REFS="$(cat)"
 export VINAYA_PUSH_REFS
-VINAYA_HOST=hook npx --yes -p @attalabs/vinaya@0.42.2 vinaya-check --all --local || exit 1
+VINAYA_HOST=hook npx --yes -p @attalabs/vinaya@0.43.1 vinaya-check --all --local || exit 1
 # The ready push (after approval) runs the repository's declared test
 # runner, .vinaya/test-runner: an executable run from the repository root
 # with no arguments, whose exit status is the verdict. A repository that
